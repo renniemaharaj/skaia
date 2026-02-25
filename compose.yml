@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: skaia-postgres
+    environment:
+      POSTGRES_DB: skaia
+      POSTGRES_USER: skaia_user
+      POSTGRES_PASSWORD: skaia_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - skaia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skaia_user -d skaia"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skaia-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DATABASE_URL=postgres://skaia_user:skaia_password@postgres:5432/skaia?sslmode=disable
+      - ENVIRONMENT=development
+    networks:
+      - skaia-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    build:
+      context: ./skaia
+      dockerfile: nginx/Dockerfile
+    container_name: skaia-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./skaia/dist:/usr/share/nginx/html:ro
+    networks:
+      - skaia-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  skaia-network:
+    driver: bridge

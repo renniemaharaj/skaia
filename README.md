@@ -1,73 +1,119 @@
-# React + TypeScript + Vite
+# Skaia - Full Stack Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack application with a React frontend and Golang backend.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Frontend**: React + TypeScript + Vite (port 5173)
+- **Backend**: Go with Chi router (port 8080)
+- **Linting/Formatting**: Biome for frontend
 
-## React Compiler
+## Quick Start
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 20+
+- Go 1.21+
+- Docker & Docker Compose (optional)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+#### Frontend
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd skaia
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run linter and formatter:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run lint      # Lint code
+npm run format    # Format code with Biome
 ```
+
+#### Backend
+
+```bash
+cd backend
+go mod download
+go run main.go
+```
+
+### Docker Compose
+
+Run both services together:
+
+```bash
+docker-compose up
+```
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8080
+
+## Project Structure
+
+```
+skaia/
+├── backend/           # Go backend service
+│   ├── main.go       # Chi router and endpoints
+│   ├── go.mod        # Go module file
+│   ├── Dockerfile    # Docker image for backend
+│   └── README.md     # Backend documentation
+├── skaia/            # React frontend
+│   ├── src/          # React components and assets
+│   ├── package.json  # Frontend dependencies
+│   ├── biome.json    # Biome linting/formatting config
+│   ├── Dockerfile    # Docker image for frontend
+│   └── vite.config.ts # Vite configuration
+└── compose.yml       # Docker Compose orchestration
+```
+
+## API Routes
+
+### Health Check
+
+- `GET /health`
+
+### Store (`/store`)
+
+- `GET /store` - List items
+- `POST /store` - Create item
+- `GET /store/{id}` - Get item
+- `PUT /store/{id}` - Update item
+- `DELETE /store/{id}` - Delete item
+
+### Forum (`/forum`)
+
+- `GET /forum` - List threads
+- `POST /forum` - Create thread
+- `GET /forum/{id}` - Get thread
+- `PUT /forum/{id}` - Update thread
+- `DELETE /forum/{id}` - Delete thread
+- `GET /forum/{id}/posts` - List posts in thread
+- `POST /forum/{id}/posts` - Create post in thread
+
+## Development Tools
+
+### Frontend
+
+- **Language**: TypeScript
+- **Framework**: React 19
+- **Build Tool**: Vite
+- **Linter/Formatter**: Biome
+- **Runtime**: Node.js
+
+### Backend
+
+- **Language**: Go 1.21
+- **Router**: Chi v5
+- **Runtime**: Go
+
+## Next Steps
+
+1. Implement database models and persistence layer
+2. Add authentication/authorization
+3. Create React components for frontend
+4. Add error handling and validation
+5. Set up logging and monitoring
