@@ -254,6 +254,7 @@
 }
 
 .modal-overlay {
+  min-width: 600px;
   display: none;
   position: fixed;
   top: 0;
@@ -261,7 +262,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 2000;
+  z-index: 20;
   align-items: center;
   justify-content: center;
   animation: fadeIn 0.3s ease;
@@ -281,15 +282,18 @@
 }
 
 .modal {
+  display: flex;
+  flex-direction: column;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 32px;
-  max-width: 600px;
-  width: 90%;
+  width: 800px;
+  max-width: 90%;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  margin: auto;
 }
 
 @keyframes slideUp {

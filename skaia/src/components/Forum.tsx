@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Forum.css";
+import { useNavigate } from "react-router-dom";
+// import { Navigate, useNavigate } from "react-router-dom";
 
 interface ForumThread {
   id: string;
@@ -91,56 +93,27 @@ const MOCK_FORUMS: ForumCategory[] = [
 ];
 
 export const Forum: React.FC<ForumProps> = ({
-  onThreadCreate,
+  // onThreadCreate,
   onThreadDelete,
   onThreadUpdate,
 }) => {
-  const [showNewThreadModal, setShowNewThreadModal] = useState(false);
-  const [threadTitle, setThreadTitle] = useState("");
-  const [threadContent, setThreadContent] = useState("");
+  // const [threadTitle, setThreadTitle] = useState("");
+  // const [threadContent, setThreadContent] = useState("");
   const [forumsLoading, setForumsLoading] = useState(true);
   const [forums, setForums] = useState<ForumCategory[]>([]);
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Simulate 5-second load delay for testing skeleton cards
-    const timer = setTimeout(() => {
-      setForums(MOCK_FORUMS);
-      setForumsLoading(false);
-    }, 5000);
-
-    return () => clearTimeout(timer);
+    // const timer = setTimeout(() => {
+    setForums(MOCK_FORUMS);
+    setForumsLoading(false);
+    // }, 300);
+    // return () => clearTimeout(timer);
   }, []);
-
-  const handleCreateThread = () => {
-    if (threadTitle.trim() && threadContent.trim()) {
-      // Call parent callback
-      onThreadCreate?.({ title: threadTitle, content: threadContent });
-
-      // Update local state
-      const newThread: ForumThread = {
-        id: Date.now().toString(),
-        title: threadTitle,
-        views: 0,
-        replies: 0,
-        content: threadContent,
-      };
-
-      setForums((prev) => {
-        const updated = [...prev];
-        if (updated[0]) {
-          updated[0].threads.unshift(newThread);
-        }
-        return updated;
-      });
-
-      setThreadTitle("");
-      setThreadContent("");
-      setShowNewThreadModal(false);
-    }
-  };
 
   const handleDeleteThread = (threadId: string) => {
     if (confirm("Are you sure you want to delete this thread?")) {
@@ -191,7 +164,7 @@ export const Forum: React.FC<ForumProps> = ({
         {/* New Thread Card */}
         <div
           className="new-thread-card"
-          onClick={() => setShowNewThreadModal(true)}
+          onClick={() => navigate("/new-thread")}
         >
           <div className="new-thread-content">
             <Plus size={48} className="new-thread-icon" />
@@ -261,65 +234,6 @@ export const Forum: React.FC<ForumProps> = ({
             </div>
           ))
         )}
-      </div>
-
-      {/* New Thread Modal */}
-      <div
-        className={`modal-overlay ${showNewThreadModal ? "active" : ""}`}
-        onClick={() => setShowNewThreadModal(false)}
-      >
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <div className="modal-title-wrapper">
-              <h2>Create New Thread</h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
-                Start a discussion with the community
-              </p>
-            </div>
-            <button
-              className="modal-close"
-              onClick={() => setShowNewThreadModal(false)}
-              title="Close"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="modal-form">
-            <div className="form-group">
-              <label htmlFor="title">Thread Title</label>
-              <input
-                id="title"
-                type="text"
-                placeholder="What's on your mind?"
-                value={threadTitle}
-                onChange={(e) => setThreadTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="content">Message</label>
-              <textarea
-                id="content"
-                placeholder="Write your message here..."
-                value={threadContent}
-                onChange={(e) => setThreadContent(e.target.value)}
-              ></textarea>
-            </div>
-
-            <div className="form-group">
-              <button
-                className="btn btn-primary"
-                onClick={handleCreateThread}
-                disabled={!threadTitle.trim() || !threadContent.trim()}
-                style={{ width: "100%" }}
-              >
-                <MessageCircle size={20} />
-                Post Thread
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Edit Thread Modal */}

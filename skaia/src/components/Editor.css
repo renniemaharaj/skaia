@@ -1,0 +1,23 @@
+.richtext-outline,
+.richtext-outline-1 {
+  outline: none;
+}
+
+/* TipTap Renderer Responsive Styling */
+.renderer-editor .ProseMirror {
+  padding: 0.5rem 0.75rem !important;
+}
+
+@media (max-width: 640px) {
+  .renderer-editor .ProseMirror {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Ensure editor doesn't have excessive borders */
+.richtext-editor,
+.richtext-editor-content {
+  border-width: 1px !important;
+  max-width: 100% !important;
+}
