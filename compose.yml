@@ -27,9 +27,9 @@ services:
       dockerfile: Dockerfile
     container_name: skaia-backend
     ports:
-      - "8080:8080"
+      - "1080:1080"
     environment:
-      - PORT=8080
+      - PORT=1080
       - DATABASE_URL=postgres://skaia_user:skaia_password@postgres:5432/skaia?sslmode=disable
       - ENVIRONMENT=development
     networks:
