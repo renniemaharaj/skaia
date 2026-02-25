@@ -1,0 +1,16 @@
+.base-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.base-main {
+  flex: 1;
+  width: 100%;
+}
+
+.base-content {
+  width: 100%;
+}

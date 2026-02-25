@@ -6,10 +6,11 @@ import {
   Star,
   Gamepad2,
   TrendingUp,
-  Github,
+  // Github,
   Twitter,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Landing.css";
 
@@ -25,11 +26,8 @@ interface SocialLink {
   link: string;
 }
 
-interface LandingProps {
-  onNavigate: (section: string) => void;
-}
-
-export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
+export const Landing: React.FC = () => {
+  const navigate = useNavigate();
   const [statsLoading, setStatsLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
 
@@ -67,15 +65,15 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       link: "https://discord.gg/cueballcraft",
     },
     {
-      name: "Twitter",
+      name: "X",
       icon: <Twitter size={20} />,
-      link: "https://twitter.com/cueballcraft",
+      link: "https://x.com/SkaiaGaming",
     },
-    {
-      name: "GitHub",
-      icon: <Github size={20} />,
-      link: "https://github.com/cueballcraft",
-    },
+    // {
+    //   name: "GitHub",
+    //   icon: <Github size={20} />,
+    //   link: "https://github.com/cueballcraft",
+    // },
   ];
 
   return (
@@ -94,14 +92,14 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             <div className="hero-buttons">
               <button
                 className="btn btn-primary btn-lg"
-                onClick={() => onNavigate("store")}
+                onClick={() => navigate("/store")}
               >
                 <ShoppingCart size={20} />
                 Shop Ranks & Items
               </button>
               <button
                 className="btn btn-secondary btn-lg"
-                onClick={() => onNavigate("forum")}
+                onClick={() => navigate("/forum")}
               >
                 <MessageCircle size={20} />
                 Join Community
@@ -230,6 +228,44 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </section>
 
+      {/* Community Legacy Section */}
+      <section className="community-legacy">
+        <div className="section-header">
+          <h2>12+ Years of Community Excellence</h2>
+          <p>A Legacy Built on Trust, Inclusivity, and Fun</p>
+        </div>
+        <div className="community-info">
+          <div className="info-card">
+            <h3>🚀 Established & Trusted</h3>
+            <p>
+              Over 12 years of continuous operation with a dedicated community
+              of players who believe in authentic Minecraft experiences.
+            </p>
+          </div>
+          <div className="info-card">
+            <h3>👨‍👩‍👧‍👦 Family Friendly</h3>
+            <p>
+              We maintain a welcoming, family-oriented environment where players
+              of all ages can enjoy safe and inclusive gameplay.
+            </p>
+          </div>
+          <div className="info-card">
+            <h3>🎮 All Players Welcome</h3>
+            <p>
+              Support for all Minecraft clients, including cracked clients,
+              means everyone can join regardless of their setup.
+            </p>
+          </div>
+          <div className="info-card">
+            <h3>🤝 Strong Community</h3>
+            <p>
+              Our players have built lasting friendships and memories together,
+              creating a thriving community that grows every day.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="cta">
         <div className="cta-content">
@@ -238,7 +274,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
           <div className="cta-buttons">
             <button
               className="btn btn-primary btn-lg"
-              onClick={() => onNavigate("store")}
+              onClick={() => navigate("/store")}
             >
               Get Started
             </button>

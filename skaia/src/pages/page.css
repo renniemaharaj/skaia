@@ -1,0 +1,12 @@
+.page-wrapper {
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}

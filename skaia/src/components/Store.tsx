@@ -106,14 +106,6 @@ export const Store: React.FC<StoreProps> = ({ onAddToCart }) => {
 
   return (
     <div className="store-container">
-      <div className="store-header">
-        <h1>Store</h1>
-        <p>
-          Support Cueballcraft Skaiacraft and unlock exclusive ranks, cosmetics,
-          and items. All purchases are delivered instantly!
-        </p>
-      </div>
-
       <div className="categories-section">
         <div className="categories-header">
           <h2>

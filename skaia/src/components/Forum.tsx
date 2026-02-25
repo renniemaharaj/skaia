@@ -187,14 +187,6 @@ export const Forum: React.FC<ForumProps> = ({
 
   return (
     <div className="forum-container">
-      <div className="forum-header">
-        <h1>Forum</h1>
-        <p>
-          Join the Cueballcraft Skaiacraft community and discuss with other
-          players
-        </p>
-      </div>
-
       <div className="forums-grid">
         {/* New Thread Card */}
         <div

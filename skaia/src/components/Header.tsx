@@ -1,25 +1,22 @@
 import { ShoppingCart, Moon, Sun, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Header.css";
 
 interface HeaderProps {
   cartCount: number;
-  onNavigate: (section: string) => void;
-  onHome: () => void;
-  currentSection: string;
   isDarkMode: boolean;
   onDarkModeToggle: (isDark: boolean) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   cartCount,
-  onNavigate,
-  onHome,
-  currentSection,
   isDarkMode,
   onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDarkModeToggle = () => {
     const newDarkMode = !isDarkMode;
@@ -31,10 +28,19 @@ export const Header: React.FC<HeaderProps> = ({
     localStorage.setItem("theme", newDarkMode ? "dark" : "light");
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setMenuOpen(false);
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path ? "active" : "";
+  };
+
   return (
     <header className="header">
       <div className="header-content">
-        <div className="logo" onClick={onHome} style={{ cursor: "pointer" }}>
+        <Link to="/" className="logo">
           <img
             src="/logo.png"
             alt="Cueballcraft Skaiacraft"
@@ -44,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="logo-title">CUEBALLCRAFT</span>
             <span className="logo-subtitle">Skaiacraft</span>
           </div>
-        </div>
+        </Link>
 
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -52,36 +58,27 @@ export const Header: React.FC<HeaderProps> = ({
 
         <nav className={`nav ${menuOpen ? "open" : ""}`}>
           <div className="nav-section">
-            <a
-              href="#home"
-              className={currentSection === "home" ? "active" : ""}
-              onClick={() => {
-                onHome();
-                setMenuOpen(false);
-              }}
+            <Link
+              to="/"
+              className={isActive("/")}
+              onClick={() => setMenuOpen(false)}
             >
               Home
-            </a>
-            <a
-              href="#store"
-              className={currentSection === "store" ? "active" : ""}
-              onClick={() => {
-                onNavigate("store");
-                setMenuOpen(false);
-              }}
+            </Link>
+            <Link
+              to="/store"
+              className={isActive("/store")}
+              onClick={() => setMenuOpen(false)}
             >
               Store
-            </a>
-            <a
-              href="#forum"
-              className={currentSection === "forum" ? "active" : ""}
-              onClick={() => {
-                onNavigate("forum");
-                setMenuOpen(false);
-              }}
+            </Link>
+            <Link
+              to="/forum"
+              className={isActive("/forum")}
+              onClick={() => setMenuOpen(false)}
             >
               Forum
-            </a>
+            </Link>
           </div>
 
           <div className="user-section">
@@ -94,11 +91,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <div
               className="cart-icon"
-              onClick={() => {
-                onNavigate("cart");
-                setMenuOpen(false);
-              }}
+              onClick={() => handleNavigation("/cart")}
               title="Shopping Cart"
+              style={{ cursor: "pointer" }}
             >
               <ShoppingCart size={20} />
               {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
