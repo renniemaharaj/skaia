@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: skaia
       POSTGRES_USER: skaia_user
       POSTGRES_PASSWORD: skaia_password
+      POSTGRES_INITDB_ARGS: "-U postgres"
     ports:
       - "5432:5432"
     volumes:
