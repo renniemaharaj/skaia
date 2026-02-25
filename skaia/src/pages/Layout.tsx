@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
+import { useCart } from "../context/CartContext";
 import "./Layout.css";
 
 interface LayoutProps {
@@ -17,6 +18,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return false;
   });
   const wsRef = useRef<WebSocket | null>(null);
+  const { getTotalItems } = useCart();
 
   // Set theme on mount
   useEffect(() => {
@@ -61,7 +63,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="layout">
       <Header
-        cartCount={0}
+        cartCount={getTotalItems()}
         isDarkMode={isDarkMode}
         onDarkModeToggle={setIsDarkMode}
       />

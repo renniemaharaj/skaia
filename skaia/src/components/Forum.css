@@ -48,7 +48,8 @@
     var(--skaia-green-primary) 0%,
     rgba(202, 255, 237, 0.6) 100%
   ); */
-  border: 2px dashed rgba(202, 255, 237, 0.5);
+  background-color: rgba(202, 255, 237, 0.05);
+  border: 2px dashed var(--skaia-green-primary);
   border-radius: 12px;
   padding: 40px 24px;
   cursor: pointer;
@@ -57,32 +58,57 @@
   align-items: center;
   justify-content: center;
   min-height: 280px;
+  position: relative;
+  overflow: hidden;
+}
+
+.new-thread-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--skaia-green-primary);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.3;
+  animation: dash 20s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 20;
+  }
 }
 
 .new-thread-card:hover {
   border-color: var(--skaia-green-primary);
-  box-shadow: 0 8px 24px rgba(202, 255, 237, 0.2);
+  background-color: rgba(202, 255, 237, 0.08);
+  box-shadow:
+    0 8px 24px rgba(202, 255, 237, 0.25),
+    inset 0 0 0 2px rgba(202, 255, 237, 0.1);
   transform: translateY(-6px);
 }
 
 .new-thread-content {
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 .new-thread-icon {
-  color: #ffffff;
+  color: var(--skaia-green-primary);
   margin-bottom: 16px;
-  opacity: 0.9;
+  opacity: 1;
+  transition: transform 0.3s ease;
 }
 
 .new-thread-card h3 {
-  color: #ffffff;
+  color: var(--skaia-green-primary);
   margin: 0 0 8px 0;
   font-size: 1.25rem;
 }
 
 .new-thread-card p {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-secondary);
   margin: 0;
   font-size: 0.95rem;
 }

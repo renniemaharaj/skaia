@@ -1,21 +1,23 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
+import { useCart } from "../../context/CartContext";
 import "../../styles/Cart.css";
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 export const CartPage = () => {
-  // TODO: Connect to actual cart state management
-  const cartItems: CartItem[] = [];
+  const { items, removeItem, updateQuantity, getTotalPrice, clearCart } =
+    useCart();
 
   const handleCheckout = () => {
     console.log("Checkout clicked");
-    // TODO: Implement checkout logic
+    alert("Payment failed: Demo mode - transaction error");
+    console.log("Attempting to process order with items:", items);
+  };
+
+  const handleQuantityChange = (id: string, newQuantity: string) => {
+    const quantity = parseInt(newQuantity);
+    if (quantity > 0) {
+      updateQuantity(id, quantity);
+    }
   };
 
   return (
@@ -27,46 +29,46 @@ export const CartPage = () => {
         </h1>
       </div>
 
-      {cartItems.length > 0 ? (
+      {items.length > 0 ? (
         <div className="cart-content">
           <div className="cart-items">
-            {cartItems.map((item) => (
+            {items.map((item) => (
               <div key={item.id} className="cart-item">
                 <div className="cart-item-info">
                   <h3>{item.name}</h3>
-                  <p>${item.price}</p>
+                  <p>${item.price.toFixed(2)}</p>
                 </div>
                 <div className="cart-item-controls">
                   <input
                     type="number"
                     min="1"
                     value={item.quantity}
-                    onChange={(e) => {
-                      const newQuantity = parseInt(e.target.value);
-                      if (newQuantity > 0) {
-                        // TODO: Update cart
-                      }
-                    }}
+                    onChange={(e) =>
+                      handleQuantityChange(item.id, e.target.value)
+                    }
                   />
                   <button
                     className="btn btn-secondary"
                     title="Remove from cart"
+                    onClick={() => removeItem(item.id)}
                   >
-                    Remove
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>
             ))}
           </div>
           <div className="cart-summary">
-            <h3>
-              Total: $
-              {cartItems
-                .reduce((sum, item) => sum + item.price * item.quantity, 0)
-                .toFixed(2)}
-            </h3>
+            <h3>Total: ${getTotalPrice().toFixed(2)}</h3>
             <button className="btn btn-primary" onClick={handleCheckout}>
               Checkout
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={clearCart}
+              style={{ marginTop: "8px" }}
+            >
+              Clear Cart
             </button>
           </div>
         </div>

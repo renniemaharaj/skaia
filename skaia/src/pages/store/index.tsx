@@ -1,13 +1,17 @@
 import { Store } from "../../components/Store";
+import { useCart } from "../../context/CartContext";
 
 export const StorePage = () => {
+  const { addItem } = useCart();
+
   const handleAddToCart = (product: {
     id: string;
     name: string;
     price: number;
+    description?: string;
   }) => {
+    addItem(product);
     console.log("Added to cart:", product);
-    // TODO: Connect to actual cart state management
   };
 
   return <Store onAddToCart={handleAddToCart} />;
