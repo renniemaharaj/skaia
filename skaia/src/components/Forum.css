@@ -43,11 +43,11 @@
 
 /* New Thread Card */
 .new-thread-card {
-  background: linear-gradient(
+  /* background: linear-gradient(
     135deg,
     var(--skaia-green-primary) 0%,
     rgba(202, 255, 237, 0.6) 100%
-  );
+  ); */
   border: 2px dashed rgba(202, 255, 237, 0.5);
   border-radius: 12px;
   padding: 40px 24px;

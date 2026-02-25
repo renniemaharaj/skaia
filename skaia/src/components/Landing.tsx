@@ -10,7 +10,7 @@ import {
   Twitter,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Landing.css";
 
@@ -27,7 +27,7 @@ interface SocialLink {
 }
 
 export const Landing: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [statsLoading, setStatsLoading] = useState(true);
   const [stats, setStats] = useState<StatItem[]>([]);
 
@@ -36,9 +36,19 @@ export const Landing: React.FC = () => {
     const timer = setTimeout(() => {
       const statsData: StatItem[] = [
         {
+          label: "Server Status",
+          value: "Online",
+          icon: <CheckCircle size={32} color="green" />,
+        },
+        {
           label: "Players Online",
           value: 47,
           icon: <Users size={32} />,
+        },
+        {
+          label: "Monthly Goal",
+          value: "75% funded",
+          icon: <TrendingUp size={32} />,
         },
         {
           label: "Last Supporter",
@@ -53,7 +63,7 @@ export const Landing: React.FC = () => {
       ];
       setStats(statsData);
       setStatsLoading(false);
-    }, 5000);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, []);
@@ -89,22 +99,6 @@ export const Landing: React.FC = () => {
           <div className="banner-content">
             <h1>CUEBALLCRAFT SKAIACRAFT</h1>
             <p>A Premium Vanilla Minecraft Experience</p>
-            <div className="hero-buttons">
-              <button
-                className="btn btn-primary btn-lg"
-                onClick={() => navigate("/store")}
-              >
-                <ShoppingCart size={20} />
-                Shop Ranks & Items
-              </button>
-              <button
-                className="btn btn-secondary btn-lg"
-                onClick={() => navigate("/forum")}
-              >
-                <MessageCircle size={20} />
-                Join Community
-              </button>
-            </div>
           </div>
         </div>
       </section>
@@ -175,9 +169,9 @@ export const Landing: React.FC = () => {
       {/* Features Section */}
       <section className="features">
         <div className="section-header">
-          <h2>Why Play Cueballcraft Skaiacraft?</h2>
+          <h2>What can you expect from Cueballcraft, Skaiacraft</h2>
           <p>
-            Everything you need for the ultimate vanilla Minecraft experience
+            Everything you need for the ultimate vanilla Minecraft experience!
           </p>
         </div>
         <div className="features-grid">
@@ -236,28 +230,21 @@ export const Landing: React.FC = () => {
         </div>
         <div className="community-info">
           <div className="info-card">
-            <h3>🚀 Established & Trusted</h3>
+            <h3>Established & Trusted</h3>
             <p>
               Over 12 years of continuous operation with a dedicated community
               of players who believe in authentic Minecraft experiences.
             </p>
           </div>
           <div className="info-card">
-            <h3>👨‍👩‍👧‍👦 Family Friendly</h3>
+            <h3>Family Friendly</h3>
             <p>
               We maintain a welcoming, family-oriented environment where players
               of all ages can enjoy safe and inclusive gameplay.
             </p>
           </div>
           <div className="info-card">
-            <h3>🎮 All Players Welcome</h3>
-            <p>
-              Support for all Minecraft clients, including cracked clients,
-              means everyone can join regardless of their setup.
-            </p>
-          </div>
-          <div className="info-card">
-            <h3>🤝 Strong Community</h3>
+            <h3>Strong Community</h3>
             <p>
               Our players have built lasting friendships and memories together,
               creating a thriving community that grows every day.
@@ -267,7 +254,7 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="cta">
+      {/* <section className="cta">
         <div className="cta-content">
           <h2>Ready to Join an Epic Adventure?</h2>
           <p>Start your journey on Cueballcraft Skaiacraft today</p>
@@ -283,7 +270,7 @@ export const Landing: React.FC = () => {
             </a>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };
