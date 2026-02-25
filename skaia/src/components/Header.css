@@ -157,6 +157,30 @@
   font-size: 0.75rem;
 }
 
+.auth-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.user-menu .btn {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   .menu-toggle {
     display: flex;
@@ -208,6 +232,25 @@
 
   .user-section .btn {
     width: 100%;
+  }
+
+  .auth-buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .auth-buttons .btn {
+    width: 100%;
+  }
+
+  .user-menu {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .user-menu .btn {
+    width: auto;
   }
 
   .logo {

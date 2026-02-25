@@ -1,0 +1,64 @@
+
+> skaia@0.0.0 test
+> vitest --run --reporter=verbose
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/renniem/Workspace/docker/skaia/skaia[39m
+
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mUnauthenticated State[2m > [22mrenders login and register buttons when not authenticated[33m 324[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mUnauthenticated State[2m > [22mdoes not render user menu when not authenticated[32m 14[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mUnauthenticated State[2m > [22mnavigates to login when clicking login button[32m 79[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mUnauthenticated State[2m > [22mnavigates to register when clicking register button[32m 44[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuthenticated State[2m > [22mrenders user menu when authenticated[32m 10[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuthenticated State[2m > [22mdoes not render login and register buttons when authenticated[32m 43[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuthenticated State[2m > [22mdisplays user email when username is not available[32m 13[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuthenticated State[2m > [22mshows logout button in user menu[32m 10[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mrenders login form by default[32m 273[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mdoes not show username field in login mode[32m 12[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuthenticated State[2m > [22mclears auth data and navigates to home on logout[32m 58[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mNavigation Links[2m > [22mrenders all navigation links[32m 55[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mallows toggling to register mode[32m 116[2mms[22m[39m
+ [31m×[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mNavigation Links[2m > [22mapplies active class to current page link[32m 40[2mms[22m[39m
+[31m   → [2mexpect([22m[31melement[31m[2m).toHaveClass([22m[32m[32m"active"[32m[31m[2m)[22m
+
+Expected the element to have class:
+[32m  active[31m
+Received:
+[31m[31m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mCart Icon[2m > [22mdisplays cart count badge when cart has items[32m 6[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mCart Icon[2m > [22mdoes not display cart count badge when cart is empty[32m 5[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mCart Icon[2m > [22mnavigates to cart page when clicking cart icon[32m 4[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mDark Mode Toggle[2m > [22mrenders theme toggle button[32m 7[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mDark Mode Toggle[2m > [22mcalls onDarkModeToggle when clicking theme button[32m 34[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mDark Mode Toggle[2m > [22mdisplays correct icon based on dark mode state[32m 7[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mDark Mode Toggle[2m > [22mpersists theme preference to localStorage[32m 25[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mMobile Menu[2m > [22mrenders menu toggle button on mobile[32m 44[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mMobile Menu[2m > [22mtoggles menu visibility[32m 46[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mMobile Menu[2m > [22mcloses menu when clicking navigation link[32m 3[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mLogo and Branding[2m > [22mrenders logo link to home[32m 33[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mLogo and Branding[2m > [22mdisplays logo image[32m 4[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mResponsive Behavior[2m > [22mrenders all elements without wrapping on desktop[32m 4[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mResponsive Behavior[2m > [22mmaintains functionality with high cart count[32m 3[2mms[22m[39m
+ [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mAuth State Transitions[2m > [22mtransitions from unauthenticated to authenticated state[32m 34[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22msubmits login form with valid credentials[33m 400[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mdisplays error on failed login[32m 300[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mshows loading state during submission[32m 203[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mRegister Mode[2m > [22mrenders register form when initialMode is register[32m 29[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mRegister Mode[2m > [22mshows all required fields for registration[32m 5[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mRegister Mode[2m > [22msubmits registration form with valid data[33m 326[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mRegister Mode[2m > [22mallows toggling back to login mode[32m 68[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mRegister Mode[2m > [22mdisplays error on registration failure[33m 385[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mForm Behavior[2m > [22mclears form data when toggling mode[32m 170[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mForm Behavior[2m > [22mclears error when user starts typing[32m 173[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mForm Behavior[2m > [22mdisables inputs during submission[32m 163[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mToken Storage[2m > [22mstores token and user in localStorage after successful login[32m 176[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mToken Storage[2m > [22mcalls success callback with token after authentication[32m 186[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mNavigation[2m > [22mnavigates to home after successful login[32m 183[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mForm Validation[2m > [22mshows required attribute on form inputs[32m 3[2mms[22m[39m
+ [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mForm Validation[2m > [22mshows all required fields in register mode[32m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m44 passed[39m[22m[90m (45)[39m
+[2m   Start at [22m 14:22:42
+[2m   Duration [22m 4.43s[2m (transform 153ms, setup 295ms, import 462ms, tests 4.13s, environment 1.18s)[22m
+

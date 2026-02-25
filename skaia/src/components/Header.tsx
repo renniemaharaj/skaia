@@ -1,5 +1,5 @@
-import { ShoppingCart, Moon, Sun, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Moon, Sun, Menu, X, LogOut } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Header.css";
 
@@ -15,8 +15,19 @@ export const Header: React.FC<HeaderProps> = ({
   onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const userData = localStorage.getItem("user");
+    setIsAuthenticated(!!token);
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   const handleDarkModeToggle = () => {
     const newDarkMode = !isDarkMode;
@@ -30,6 +41,15 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    setMenuOpen(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
+    setUser(null);
+    navigate("/");
     setMenuOpen(false);
   };
 
@@ -98,7 +118,33 @@ export const Header: React.FC<HeaderProps> = ({
               <ShoppingCart size={20} />
               {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
             </div>
-            <button className="btn btn-secondary">Login</button>
+            {isAuthenticated && user ? (
+              <div className="user-menu">
+                <span className="user-name">{user.username || user.email}</span>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleLogout}
+                  title="Logout"
+                >
+                  <LogOut size={20} />
+                </button>
+              </div>
+            ) : (
+              <div className="auth-buttons">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleNavigation("/login")}
+                >
+                  Login
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleNavigation("/register")}
+                >
+                  Register
+                </button>
+              </div>
+            )}
           </div>
         </nav>
       </div>
