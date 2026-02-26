@@ -41,6 +41,35 @@
   padding: 0 40px;
 }
 
+.forum-category-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.forum-category-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-6px);
+}
+
+.forum-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.forum-category-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
 /* New Thread Card */
 .new-thread-card {
   /* background: linear-gradient(
@@ -111,35 +140,6 @@
   /* color: var(--text-secondary); */
   margin: 0;
   font-size: 0.95rem;
-}
-
-.forum-category-card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.forum-category-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-6px);
-}
-
-.forum-category-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.forum-category-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin: 0;
 }
 
 .forum-threads-count {
@@ -253,21 +253,6 @@
   font-size: 0.9rem;
 }
 
-.modal-overlay {
-  min-width: 600px;
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 20;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -275,25 +260,6 @@
   to {
     opacity: 1;
   }
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 32px;
-  width: 800px;
-  max-width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-  margin: auto;
 }
 
 @keyframes slideUp {
@@ -305,88 +271,6 @@
     transform: translateY(0);
     opacity: 1;
   }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
-}
-
-.modal-title-wrapper {
-  flex: 1;
-}
-
-.modal-title-wrapper h2 {
-  margin-bottom: 4px;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.3s ease;
-  flex-shrink: 0;
-}
-
-.modal-close:hover {
-  color: var(--primary-color);
-}
-
-.modal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 12px;
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  transition: all 0.3s ease;
-  margin-bottom: 0;
-  font-family: inherit;
-  font-size: 0.95rem;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(91, 158, 142, 0.1);
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.form-group .btn {
-  margin-bottom: 0;
 }
 
 @media (max-width: 768px) {

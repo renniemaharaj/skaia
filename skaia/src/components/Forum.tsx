@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
-import {
-  MessageCircle,
-  Eye,
-  MessageSquare,
-  Plus,
-  X,
-  Edit2,
-  Trash2,
-} from "lucide-react";
+import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Forum.css";
 import "./FeatureCard.css";
+import "./NewThread.css";
+import "./FormGroup.css";
+
 import { useNavigate } from "react-router-dom";
 // import { Navigate, useNavigate } from "react-router-dom";
 
@@ -96,15 +91,11 @@ const MOCK_FORUMS: ForumCategory[] = [
 export const Forum: React.FC<ForumProps> = ({
   // onThreadCreate,
   onThreadDelete,
-  onThreadUpdate,
 }) => {
   // const [threadTitle, setThreadTitle] = useState("");
   // const [threadContent, setThreadContent] = useState("");
   const [forumsLoading, setForumsLoading] = useState(true);
   const [forums, setForums] = useState<ForumCategory[]>([]);
-  const [editingThreadId, setEditingThreadId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -126,36 +117,6 @@ export const Forum: React.FC<ForumProps> = ({
           threads: forum.threads.filter((t) => t.id !== threadId),
         }));
       });
-    }
-  };
-
-  const handleEditThread = (thread: ForumThread) => {
-    setEditingThreadId(thread.id);
-    setEditTitle(thread.title);
-    setEditContent(thread.content || "");
-  };
-
-  const handleSaveEdit = () => {
-    if (editTitle.trim() && editContent.trim() && editingThreadId) {
-      onThreadUpdate?.(editingThreadId, {
-        title: editTitle,
-        content: editContent,
-      });
-
-      setForums((prev) => {
-        return prev.map((forum) => ({
-          ...forum,
-          threads: forum.threads.map((t) =>
-            t.id === editingThreadId
-              ? { ...t, title: editTitle, content: editContent }
-              : t,
-          ),
-        }));
-      });
-
-      setEditingThreadId(null);
-      setEditTitle("");
-      setEditContent("");
     }
   };
 
@@ -199,7 +160,9 @@ export const Forum: React.FC<ForumProps> = ({
                         <div className="thread-actions">
                           <button
                             className="thread-action-btn edit-btn"
-                            onClick={() => handleEditThread(thread)}
+                            onClick={() =>
+                              navigate(`/edit-thread/${thread.id}`)
+                            }
                             title="Edit"
                           >
                             <Edit2 size={14} />
@@ -237,65 +200,6 @@ export const Forum: React.FC<ForumProps> = ({
             </div>
           ))
         )}
-      </div>
-
-      {/* Edit Thread Modal */}
-      <div
-        className={`modal-overlay ${editingThreadId ? "active" : ""}`}
-        onClick={() => setEditingThreadId(null)}
-      >
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <div className="modal-title-wrapper">
-              <h2>Edit Thread</h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
-                Update your discussion
-              </p>
-            </div>
-            <button
-              className="modal-close"
-              onClick={() => setEditingThreadId(null)}
-              title="Close"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <div className="modal-form">
-            <div className="form-group">
-              <label htmlFor="edit-title">Thread Title</label>
-              <input
-                id="edit-title"
-                type="text"
-                placeholder="Update title..."
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-content">Message</label>
-              <textarea
-                id="edit-content"
-                placeholder="Update your message..."
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-              ></textarea>
-            </div>
-
-            <div className="form-group">
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveEdit}
-                disabled={!editTitle.trim() || !editContent.trim()}
-                style={{ width: "100%" }}
-              >
-                <MessageCircle size={20} />
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

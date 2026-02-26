@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, User, AlertCircle, Loader } from "lucide-react";
 import "./Auth.css";
+import "./FormGroup.css";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
