@@ -43,7 +43,7 @@ const ViewThreadPage = () => {
           }}
           className="richtext-outline-1"
         >
-          <h2 style={{ marginBottom: 0 }}>Welcome the to forum</h2>
+          <h3 style={{ marginBottom: 0 }}>Welcome to the forum</h3>
           <button
             style={{
               //   alignSelf: "end",
