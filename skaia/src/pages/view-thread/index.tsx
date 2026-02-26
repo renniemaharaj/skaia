@@ -4,6 +4,7 @@ import ViewThreadMeta from "../../components/ViewThreadMeta";
 import "./index.css";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { welcomeMessage } from "../../components/welcome";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const ViewThreadPage = () => {
         <button
           style={{
             alignSelf: "end",
-            marginRight: "1rem",
+            marginRight: "0.1rem",
             marginTop: "1rem",
           }}
           className="modal-close"
@@ -46,9 +47,7 @@ const ViewThreadPage = () => {
         </button>
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
-          <ViewThread
-            content={"Fetching the content for thread ID: " + threadId}
-          />
+          <ViewThread content={welcomeMessage} />
         </div>
       </div>
     </div>
