@@ -95,20 +95,20 @@
 }
 
 .new-thread-icon {
-  color: var(--skaia-green-primary);
-  margin-bottom: 16px;
+  /* color: var(--skaia-green-primary); */
+  /* margin-bottom: 16px; */
   opacity: 1;
   transition: transform 0.3s ease;
 }
 
 .new-thread-card h3 {
-  color: var(--skaia-green-primary);
+  /* color: var(--skaia-green-primary); */
   margin: 0 0 8px 0;
   font-size: 1.25rem;
 }
 
 .new-thread-card p {
-  color: var(--text-secondary);
+  /* color: var(--text-secondary); */
   margin: 0;
   font-size: 0.95rem;
 }

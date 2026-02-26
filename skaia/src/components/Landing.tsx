@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 // import { useNavigate } from "react-router-dom";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Landing.css";
+import "./FeatureCard.css";
 
 interface StatItem {
   label: string;

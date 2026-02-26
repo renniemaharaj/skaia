@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Forum.css";
+import "./FeatureCard.css";
 import { useNavigate } from "react-router-dom";
 // import { Navigate, useNavigate } from "react-router-dom";
 
@@ -163,11 +164,13 @@ export const Forum: React.FC<ForumProps> = ({
       <div className="forums-grid">
         {/* New Thread Card */}
         <div
-          className="new-thread-card"
+          className="new-thread-card feature-card"
           onClick={() => navigate("/new-thread")}
         >
           <div className="new-thread-content">
-            <Plus size={48} className="new-thread-icon" />
+            <div className="feature-icon">
+              <Plus size={48} className="new-thread-icon" />
+            </div>
             <h3>Start a Discussion</h3>
             <p>Share your thoughts with the community</p>
           </div>
