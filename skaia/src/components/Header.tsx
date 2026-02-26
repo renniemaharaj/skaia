@@ -135,13 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="btn btn-secondary"
                   onClick={() => handleNavigation("/login")}
                 >
-                  Login
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => handleNavigation("/register")}
-                >
-                  Register
+                  Sign in
                 </button>
               </div>
             )}

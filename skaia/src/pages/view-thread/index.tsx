@@ -33,18 +33,31 @@ const ViewThreadPage = () => {
           flexDirection: "column",
         }}
       >
-        <button
+        <div
           style={{
-            alignSelf: "end",
-            marginRight: "0.1rem",
+            marginBottom: "2rem",
+            display: "flex",
+            justifyContent: "space-between",
             marginTop: "1rem",
+            paddingLeft: "1rem",
           }}
-          className="modal-close"
-          onClick={() => navigate("/forum")}
-          title="Close"
+          className="richtext-outline-1"
         >
-          <X size={24} />
-        </button>
+          <h2 style={{ marginBottom: 0 }}>Welcome the to forum</h2>
+          <button
+            style={{
+              //   alignSelf: "end",
+              marginRight: "1rem",
+              //   marginTop: "1rem",
+            }}
+            className="modal-close"
+            onClick={() => navigate("/forum")}
+            title="Close"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
           <ViewThread content={welcomeMessage} />
