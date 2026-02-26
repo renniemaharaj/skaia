@@ -15,6 +15,10 @@
   }
 }
 
+.ProseMirror-focused {
+  outline: none !important;
+}
+
 /* Ensure editor doesn't have excessive borders */
 .richtext-editor,
 .richtext-editor-content {

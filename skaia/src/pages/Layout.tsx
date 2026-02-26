@@ -4,6 +4,7 @@ import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import "./Layout.css";
+import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 
 interface LayoutProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const wsRef = useRef<WebSocket | null>(null);
   const { getTotalItems } = useCart();
 
+  const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
   useEffect(() => {
     const theme = isDarkMode ? "dark" : "light";
@@ -59,6 +61,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isPending) {
+      document.documentElement.scrollTo(0, 0);
+    }
+  }, [isPending, path]);
 
   return (
     <div className="layout">
