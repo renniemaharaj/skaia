@@ -5,6 +5,7 @@
   flex-wrap: wrap;
   /* flex-direction: row; */
   gap: 2rem;
+
   /* padding-top: 2rem; */
   position: sticky;
 }

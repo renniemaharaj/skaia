@@ -1,8 +1,78 @@
 .view-thread-meta-card {
+  /* display: flex; */
+  /* flex-direction: column; */
+  gap: 1rem;
+  position: sticky;
+  /* top: 1rem; */
+  padding: 0.5rem !important;
+  border-radius: 0.5rem;
+  max-height: fit-content;
+  background-color: var(--bg-color);
+  color: var(--skaia-green-contrast);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.view-thread-meta-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.view-thread-meta-card {
   position: sticky;
   top: 1rem;
   padding: 1rem !important;
   border-radius: 0.5rem;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.meta-tags {
+  align-items: flex-start;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-open {
+  background: rgba(0, 200, 0, 0.1);
+  color: green;
+}
+
+.status-closed {
+  background: rgba(200, 0, 0, 0.1);
+  color: red;
+}
+
+.status-archived {
+  background: rgba(100, 100, 100, 0.1);
+  color: gray;
+}
+.view-thread-meta-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .user-card {

@@ -38,8 +38,9 @@ const ViewThreadPage = () => {
             marginBottom: "2rem",
             display: "flex",
             justifyContent: "space-between",
+            backgroundColor: "var(--bg-color)",
             marginTop: "1rem",
-            paddingLeft: "1rem",
+            padding: "0.5rem",
           }}
           className="richtext-outline-1"
         >
