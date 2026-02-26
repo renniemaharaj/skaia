@@ -1,0 +1,17 @@
+.view-thread-page {
+  top: 0;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  /* flex-direction: row; */
+  gap: 2rem;
+  /* padding-top: 2rem; */
+  position: sticky;
+}
+
+@media (max-width: 768px) {
+  .view-thread-page {
+    flex-direction: column;
+    /* padding: 1rem; */
+  }
+}

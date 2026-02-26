@@ -9,6 +9,7 @@ import { LoginPage } from "./login/index.tsx";
 import { RegisterPage } from "./register/index.tsx";
 import { NewThreadPage } from "./new-thread/index.tsx";
 import EditThreadPage from "./edit-thread/index.tsx";
+import ViewThreadPage from "./view-thread/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "*", element: <NotFoundPage /> },
@@ -19,6 +20,7 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "forum", element: <ForumPage /> },
   { path: "new-thread", element: <NewThreadPage /> },
   { path: "edit-thread/:threadId", element: <EditThreadPage /> },
+  { path: "view-thread/:threadId", element: <ViewThreadPage /> },
   { path: "cart", element: <CartPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },

@@ -5,7 +5,15 @@
 }
 
 /* TipTap Renderer Responsive Styling */
+.renderer-editor {
+  /* max-width: 90% !important; */
+  width: 900px;
+  max-width: 100vw !important;
+  margin: 0 auto !important;
+}
+
 .renderer-editor .ProseMirror {
+  /* min-width: 50rem; */
   padding: 0.5rem 0.75rem !important;
 }
 

@@ -159,6 +159,15 @@ export const Forum: React.FC<ForumProps> = ({
                         <div className="thread-title">{thread.title}</div>
                         <div className="thread-actions">
                           <button
+                            className="thread-action-btn view-btn"
+                            onClick={() =>
+                              navigate(`/view-thread/${thread.id}`)
+                            }
+                            title="View"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
                             className="thread-action-btn edit-btn"
                             onClick={() =>
                               navigate(`/edit-thread/${thread.id}`)
