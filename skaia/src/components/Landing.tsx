@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { SkeletonCard } from "./SkeletonCard";
 import "./Landing.css";
 import "./FeatureCard.css";
+import Hero from "./Hero";
 
 interface StatItem {
   label: string;
@@ -90,19 +91,7 @@ export const Landing: React.FC = () => {
   return (
     <div className="landing-container">
       {/* Hero Banner Section */}
-      <section className="hero-banner">
-        <img
-          src="/banner_7783x7783.png"
-          alt="Cueballcraft Skaiacraft"
-          className="banner-image"
-        />
-        <div className="banner-overlay">
-          <div className="banner-content">
-            <h1>CUEBALLCRAFT SKAIACRAFT</h1>
-            <p>A Premium Vanilla Minecraft Experience</p>
-          </div>
-        </div>
-      </section>
+      <Hero />
 
       {/* Stats Section */}
       <section className="stats-section">

@@ -21,6 +21,8 @@
   position: sticky;
   top: 1rem;
   padding: 1rem !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
   border-radius: 0.5rem;
 }
 

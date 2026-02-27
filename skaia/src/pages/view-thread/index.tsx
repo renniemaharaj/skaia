@@ -5,6 +5,7 @@ import "./index.css";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { welcomeMessage } from "../../components/welcome";
+import Hero from "../../components/Hero";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ const ViewThreadPage = () => {
           flexDirection: "column",
         }}
       >
+        <Hero height="300px" />
         <div
           style={{
             marginBottom: "2rem",
@@ -40,7 +42,9 @@ const ViewThreadPage = () => {
             justifyContent: "space-between",
             backgroundColor: "var(--bg-color)",
             marginTop: "1rem",
-            padding: "0.5rem",
+            padding: "1rem",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
           }}
           className="richtext-outline-1"
         >
@@ -58,7 +62,6 @@ const ViewThreadPage = () => {
             <X size={24} />
           </button>
         </div>
-
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
           <ViewThread content={welcomeMessage} />
