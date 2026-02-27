@@ -7,7 +7,7 @@
   padding: 32px;
   width: 800px;
   max-width: 90%;
-  max-height: 90vh;
+  /* max-height: 90vh; */
   overflow-y: auto;
   animation: slideUp 0.3s ease;
   margin: auto;
@@ -21,6 +21,7 @@
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 16px;
+  max-height: auto;
 }
 
 .modal-title-wrapper {

@@ -8,8 +8,10 @@ import "react-image-crop/dist/ReactCrop.css";
 import { useEffect, useState } from "react";
 import "./Editor.css";
 import extensions from "./extensions";
+import { useThemeContext } from "../hooks/theme/useThemeContext";
 function ViewThread({ content }: { content: string }) {
   const [localContent, setLocalContent] = useState(content);
+  const { theme } = useThemeContext();
   const [key, setKey] = useState(1);
   useEffect(() => {
     setLocalContent(content);
@@ -26,8 +28,7 @@ function ViewThread({ content }: { content: string }) {
             key={key}
             content={localContent as any}
             extensions={extensions}
-            //   dark={theme === "dark"}
-            dark={false}
+            dark={theme === "dark"}
             disableBubble
             hideBubble
             removeDefaultWrapper

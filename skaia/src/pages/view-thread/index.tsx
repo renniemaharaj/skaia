@@ -6,18 +6,19 @@ import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { welcomeMessage } from "../../components/welcome";
 import Hero from "../../components/Hero";
+import ViewThreadComments from "../../components/ViewThreadComments";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
 
   const [mediaQuery, setMediaQuery] = useState(
-    window.matchMedia("(max-width: 600px)"),
+    window.matchMedia("(max-width: 880px)"),
   );
   const threadId = useParams().threadId;
 
   useEffect(() => {
     const handler = () =>
-      setMediaQuery(window.matchMedia("(max-width: 600px)"));
+      setMediaQuery(window.matchMedia("(max-width: 880px)"));
     mediaQuery.addEventListener("change", handler);
     return () => mediaQuery.removeEventListener("change", handler);
   }, [mediaQuery]);
@@ -65,6 +66,7 @@ const ViewThreadPage = () => {
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
           <ViewThread content={welcomeMessage} />
+          <ViewThreadComments threadId={threadId} />
         </div>
       </div>
     </div>

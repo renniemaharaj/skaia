@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import RichTextEditor from "reactjs-tiptap-editor";
 
@@ -14,9 +14,12 @@ import "./Editor.css";
 import { debounce } from "lodash";
 // import { useThemeContext } from "../context/theme/useThemeContext";
 import extensions from "./extensions";
+import { useThemeContext } from "../hooks/theme/useThemeContext";
 
 function Editor(value: any) {
   const [localContent, setLocalContent] = useState(value || "");
+  // const themeAtomValue = useAtomValue(themeAtom);
+  const { theme } = useThemeContext();
   // const { theme } = useThemeContext();
 
   const [key] = useState(1);
@@ -34,8 +37,7 @@ function Editor(value: any) {
             content={localContent as any}
             onChangeContent={onValueChange}
             extensions={extensions}
-            dark={false}
-            // dark={theme === "dark"}
+            dark={theme === "dark"}
           />
         </div>
       </div>

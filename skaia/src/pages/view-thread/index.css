@@ -10,6 +10,12 @@
   position: sticky;
 }
 
+.view-thread-page-comments {
+  width: 100%;
+  background-color: var(--bg-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
   .view-thread-page {
     flex-direction: column;

@@ -3,17 +3,20 @@ import "./App.css";
 import { publicRoutesFunc, protectedRoutesFunc } from "./pages/routing";
 import { Layout } from "./pages/Layout";
 import { CartProvider } from "./context/CartContext";
+import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 
 export default function App() {
   return (
     <CartProvider>
       <Router>
-        <Layout>
-          <Routes>
-            {publicRoutesFunc()}
-            {protectedRoutesFunc()}
-          </Routes>
-        </Layout>
+        <ThemeProvider>
+          <Layout>
+            <Routes>
+              {publicRoutesFunc()}
+              {protectedRoutesFunc()}
+            </Routes>
+          </Layout>
+        </ThemeProvider>
       </Router>
     </CartProvider>
   );

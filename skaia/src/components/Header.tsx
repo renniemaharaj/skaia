@@ -2,6 +2,7 @@ import { ShoppingCart, Moon, Sun, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./Header.css";
+import { useThemeContext } from "../hooks/theme/useThemeContext";
 
 interface HeaderProps {
   cartCount: number;
@@ -12,13 +13,15 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   cartCount,
   isDarkMode,
-  onDarkModeToggle,
+  // onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { theme, specifyTheme } = useThemeContext();
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -29,19 +32,13 @@ export const Header: React.FC<HeaderProps> = ({
     }
   }, []);
 
-  const handleDarkModeToggle = () => {
-    const newDarkMode = !isDarkMode;
-    onDarkModeToggle(newDarkMode);
-    document.documentElement.setAttribute(
-      "data-theme",
-      newDarkMode ? "dark" : "light",
-    );
-    localStorage.setItem("theme", newDarkMode ? "dark" : "light");
-  };
-
   const handleNavigation = (path: string) => {
     navigate(path);
     setMenuOpen(false);
+  };
+
+  const handleSetTheme = () => {
+    specifyTheme(theme === "dark" ? "light" : "dark");
   };
 
   const handleLogout = () => {
@@ -104,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="user-section">
             <button
               className="theme-toggle"
-              onClick={handleDarkModeToggle}
+              onClick={handleSetTheme}
               title="Toggle dark mode"
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
