@@ -24,7 +24,7 @@ const ViewThreadPage = () => {
 
   return (
     <div
-      style={{ width: "100vw", height: "100vh" }}
+      style={{ width: "100vw", maxHeight: "fit-content" }}
       className={`${mediaQuery.matches ? "mobile-view-thread-page" : "modal"}`}
       onClick={(e) => e.stopPropagation()}
     >
