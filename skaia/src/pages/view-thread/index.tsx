@@ -41,7 +41,7 @@ const ViewThreadPage = () => {
             marginBottom: "2rem",
             display: "flex",
             justifyContent: "space-between",
-            backgroundColor: "var(--bg-color)",
+            // backgroundColor: "var(--bg-color)",
             marginTop: "1rem",
             padding: "1rem",
             paddingLeft: "1rem",

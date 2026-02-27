@@ -7,7 +7,7 @@
   padding: 0.5rem !important;
   border-radius: 0.5rem;
   max-height: fit-content;
-  background-color: var(--bg-color);
+  /* background-color: var(--bg-color); */
   color: var(--skaia-green-contrast);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
