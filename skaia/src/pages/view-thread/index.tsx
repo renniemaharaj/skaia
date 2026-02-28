@@ -78,9 +78,9 @@ const ViewThreadPage = () => {
             justifyContent: "space-between",
             alignItems: "center",
             borderLeft: "3px solid var(--primary-color)",
-            borderRight: "3px solid var(--primary-color)",
+            // borderRight: "3px solid var(--primary-color)",
           }}
-          className="empty-state"
+          // className="empty-state"
         >
           <h3 style={{ margin: 0 }}>
             Thread :: @{threadId} Welcome to the forum!
