@@ -2,8 +2,9 @@ import { useState } from "react";
 import Editor from "./Editor";
 import ForumCategory from "./ForumCategory";
 import "./NewThread.css";
-import { X } from "lucide-react";
+import { CheckIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import "./IconButton.css";
 
 const NewThread = ({}) => {
   const [threadTitle, setThreadTitle] = useState("");
@@ -28,13 +29,23 @@ const NewThread = ({}) => {
             Start a discussion with the community
           </p>
         </div>
-        <button
-          className="modal-close"
-          onClick={() => navigate("/forum")}
-          title="Close"
-        >
-          <X size={24} />
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          {/* Close */}
+          <button
+            className="icon-button"
+            onClick={() => navigate("/forum")}
+            title="Close"
+          >
+            <X size={20} />
+          </button>
+          <button
+            className="icon-button"
+            onClick={handleCreateThread}
+            title="Submit"
+          >
+            <CheckIcon size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="modal-form">
@@ -55,18 +66,6 @@ const NewThread = ({}) => {
         <div className="form-group">
           <label htmlFor="content">Message</label>
           <Editor value={threadContent} onChange={setThreadContent} />
-        </div>
-
-        <div className="form-group">
-          <button
-            className="btn btn-primary"
-            onClick={handleCreateThread}
-            disabled={!threadTitle.trim() || !threadContent.trim()}
-            style={{ width: "100%" }}
-          >
-            {/* <MessageCircle size={20} /> */}
-            Post Thread
-          </button>
         </div>
       </div>
     </div>

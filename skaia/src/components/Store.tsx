@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, Package, Filter } from "lucide-react";
+import { ShoppingCart, Package } from "lucide-react";
 import "./Store.css";
 
 interface Category {
@@ -14,6 +14,7 @@ interface Product {
   description: string;
   price: number;
   image_url?: string;
+  category_id?: string;
   stock: number;
 }
 
@@ -36,6 +37,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Begin your adventure",
     price: 4.99,
     stock: 100,
+    category_id: "1",
   },
   {
     id: "2",
@@ -43,6 +45,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Unlock premium features",
     price: 9.99,
     stock: 50,
+    category_id: "1",
   },
   {
     id: "3",
@@ -50,6 +53,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Maximum benefits",
     price: 19.99,
     stock: 25,
+    category_id: "1",
   },
   {
     id: "4",
@@ -57,6 +61,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "In-game currency",
     price: 9.99,
     stock: 999,
+    category_id: "2",
   },
   {
     id: "5",
@@ -64,6 +69,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "In-game currency",
     price: 39.99,
     stock: 999,
+    category_id: "2",
   },
   {
     id: "6",
@@ -71,6 +77,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Get random items",
     price: 2.99,
     stock: 200,
+    category_id: "3",
   },
   {
     id: "7",
@@ -78,6 +85,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Rare drops guaranteed",
     price: 14.99,
     stock: 50,
+    category_id: "3",
   },
   {
     id: "8",
@@ -85,6 +93,7 @@ const MOCK_PRODUCTS: Product[] = [
     description: "Cosmetic item",
     price: 7.99,
     stock: 75,
+    category_id: "4",
   },
 ];
 
@@ -94,37 +103,37 @@ export const Store: React.FC<StoreProps> = ({ onAddToCart }) => {
 
   useEffect(() => {
     if (selectedCategory) {
-      setFilteredProducts(MOCK_PRODUCTS);
+      setFilteredProducts(
+        MOCK_PRODUCTS.filter(
+          (product) => product.category_id === selectedCategory,
+        ),
+      );
     } else {
       setFilteredProducts(MOCK_PRODUCTS);
     }
   }, [selectedCategory]);
 
   const handleCategoryClick = (categoryId: string) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+    setSelectedCategory(categoryId);
   };
 
   return (
     <div className="store-container">
       <div className="categories-section">
-        <div className="categories-header">
-          <h2>
-            <Filter size={24} className="header-icon" />
-            Select a Category
-          </h2>
-        </div>
         <div className="category-list">
-          {MOCK_CATEGORIES.map((category) => (
-            <button
-              key={category.id}
-              className={`category-button ${
-                selectedCategory === category.id ? "active" : ""
-              }`}
-              onClick={() => handleCategoryClick(category.id)}
-            >
-              {category.name}
-            </button>
-          ))}
+          {MOCK_CATEGORIES.map((category) => {
+            return (
+              <button
+                key={category.id}
+                className={`category-button ${
+                  selectedCategory === category.id ? "category-active" : ""
+                }`}
+                onClick={() => handleCategoryClick(category.id)}
+              >
+                {category.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 

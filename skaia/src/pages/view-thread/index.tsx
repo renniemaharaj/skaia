@@ -9,6 +9,7 @@ import Hero from "../../components/Hero";
 import { welcomeMessage } from "../../components/welcome";
 
 import "./index.css";
+import "../../components/IconButton.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();

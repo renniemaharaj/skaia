@@ -1,24 +1,17 @@
-import { X } from "lucide-react";
+import { CheckIcon, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ForumCategory from "./ForumCategory";
 import Editor from "./Editor";
+import "./IconButton.css";
 
 const EditThread = () => {
-  // const editingThreadId = useParams().threadId;
   const threadFromUrl = useParams().threadId;
-  //   const [editingThreadId, setEditingThreadId] = useState<string | null>(
-  // threadFromUrl || null,
-  //   );
   const [editTitle, setEditTitle] = useState("Loading title...");
   const [editContent, setEditContent] = useState("Loading content...");
   const navigate = useNavigate();
 
   return (
-    // <div
-    //   className={`modal-overlay ${editingThreadId ? "active" : ""}`}
-    //   onClick={() => setEditingThreadId(null)}
-    // >
     <div className="modal" onClick={(e) => e.stopPropagation()}>
       <div className="modal-header">
         <div className="modal-title-wrapper">
@@ -27,13 +20,19 @@ const EditThread = () => {
             Update your discussion
           </p>
         </div>
-        <button
-          className="modal-close"
-          onClick={() => navigate("/forum")}
-          title="Close"
-        >
-          <X size={24} />
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          {/* Close */}
+          <button
+            className="icon-button"
+            onClick={() => navigate("/forum")}
+            title="Close"
+          >
+            <X size={20} />
+          </button>
+          <button className="icon-button" title="Submit">
+            <CheckIcon size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="modal-form">
@@ -55,20 +54,8 @@ const EditThread = () => {
           <label htmlFor="content">Message</label>
           <Editor value={editContent} onChange={setEditContent} />
         </div>
-
-        <div className="form-group">
-          <button
-            className="btn btn-primary"
-            onClick={() => alert("Changes not saved in demo")}
-            disabled={!editTitle.trim() || !editContent.trim()}
-            style={{ width: "100%" }}
-          >
-            Save Changes
-          </button>
-        </div>
       </div>
     </div>
-    // </div>
   );
 };
 

@@ -22,20 +22,3 @@
     /* padding: 1rem; */
   }
 }
-
-.icon-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.icon-button:hover {
-  opacity: 0.7;
-}
-
-.icon-button.danger {
-  color: red;
-}
