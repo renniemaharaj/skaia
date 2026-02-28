@@ -19,7 +19,7 @@ const ViewThreadPage = () => {
     window.matchMedia("(max-width: 880px)").matches,
   );
 
-  const [reactions, setReactions] = useState({
+  const [, setReactions] = useState({
     like: 0,
   });
 
@@ -84,30 +84,38 @@ const ViewThreadPage = () => {
             Thread :: @{threadId} Welcome to the forum!
           </h3>
 
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div style={{ display: "flex", gap: "1rem" }}>
             {/* Reaction */}
-            <button className="icon-button" onClick={handleLike} title="Like">
+            <button
+              className="thread-action-btn like-btn"
+              onClick={handleLike}
+              title="Like"
+            >
               <ThumbsUp size={20} />
-              <span>{reactions.like}</span>
+              {/* <span>{reactions.like}</span> */}
             </button>
 
             {/* Edit */}
-            <button className="icon-button" onClick={handleEdit} title="Edit">
-              <Pencil size={20} />
+            <button
+              className="thread-action-btn edit-btn"
+              onClick={handleEdit}
+              title="Edit"
+            >
+              <Pencil size={14} />
             </button>
 
             {/* Delete */}
             <button
-              className="icon-button danger"
+              className="thread-action-btn delete-btn"
               onClick={handleDelete}
               title="Delete"
             >
-              <Trash2 size={20} />
+              <Trash2 size={14} />
             </button>
 
             {/* Close */}
             <button
-              className="icon-button"
+              className="thread-action-btn close-btn"
               onClick={() => navigate("/forum")}
               title="Close"
             >

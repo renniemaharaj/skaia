@@ -5,7 +5,7 @@ import "./Forum.css";
 import "./FeatureCard.css";
 import "./NewThread.css";
 import "./FormGroup.css";
-
+import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
 // import { Navigate, useNavigate } from "react-router-dom";
 

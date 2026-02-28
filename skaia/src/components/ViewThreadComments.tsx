@@ -1,5 +1,5 @@
 import "./ViewThreadComments.css";
-import { Send } from "lucide-react";
+import { Send, ThumbsUp, Trash2 } from "lucide-react";
 
 type Comment = {
   id: number;
@@ -32,26 +32,49 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   return (
     <div className="view-thread-comments">
       <div className="comments-header">
-        <h3>Comments for thread::{threadId}</h3>
+        <h3>Comments for thread :: @{threadId}</h3>
         <span className="comments-count">{mockComments.length} Comments</span>
       </div>
 
       <div className="comments-list">
         {mockComments.map((comment) => (
-          <div key={comment.id} className="comment-card">
-            <div className="comment-avatar">
-              <img src={comment.avatar} alt={comment.author} />
-            </div>
-
-            <div className="comment-body">
-              <div className="comment-meta">
-                <span className="comment-author">{comment.author}</span>
-                <span className="comment-date">{comment.date}</span>
+          <>
+            <div key={comment.id} className="comment-card">
+              <div className="comment-avatar">
+                <img src={comment.avatar} alt={comment.author} />
               </div>
 
-              <div className="comment-content">{comment.content}</div>
+              <div className="comment-body">
+                <div className="comment-meta">
+                  <span className="comment-author">{comment.author}</span>
+                  <span className="comment-date">{comment.date}</span>
+                </div>
+
+                <div className="comment-content">{comment.content}</div>
+              </div>
             </div>
-          </div>
+
+            <div style={{ display: "flex", gap: "1rem" }}>
+              {/* Reaction */}
+              <button
+                className="thread-action-btn like-btn"
+                // onClick={handleLike}
+                title="Like"
+              >
+                <ThumbsUp size={20} />
+                {/* <span>{reactions.like}</span> */}
+              </button>
+
+              {/* Delete */}
+              <button
+                className="thread-action-btn delete-btn"
+                // onClick={handleDelete}
+                title="Delete"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </>
         ))}
       </div>
 
