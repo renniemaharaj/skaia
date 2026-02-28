@@ -27,21 +27,38 @@ export interface AuthState {
   error: string | null;
 }
 
-// Store tokens in localStorage
-export const accessTokenAtom = atomWithStorage<string | null>(
+// Helper: Create an atom with custom localStorage storage (no JSON serialization)
+function customStorageAtom<T extends string | null>(
+  key: string,
+  initialValue: T,
+) {
+  const baseAtom = atom<T>((localStorage.getItem(key) as T) || initialValue);
+
+  return atom(
+    (get) => get(baseAtom),
+    (_get, set, newValue: T) => {
+      if (newValue === null) {
+        localStorage.removeItem(key);
+      } else {
+        localStorage.setItem(key, newValue as string);
+      }
+      set(baseAtom, newValue);
+    },
+  );
+}
+
+// Store tokens in localStorage WITHOUT JSON serialization
+export const accessTokenAtom = customStorageAtom<string | null>(
   "auth.accessToken",
   null,
 );
-export const refreshTokenAtom = atomWithStorage<string | null>(
+export const refreshTokenAtom = customStorageAtom<string | null>(
   "auth.refreshToken",
   null,
 );
 
 // Auth state - separate atoms for better granularity
-export const currentUserAtom = atomWithStorage<User | null>(
-  "auth.user",
-  null,
-);
+export const currentUserAtom = atomWithStorage<User | null>("auth.user", null);
 export const isAuthenticatedAtom = atomWithStorage<boolean>(
   "auth.isAuthenticated",
   false,
@@ -93,4 +110,4 @@ export const uiUpdateQueueAtom = atom<
     data: any;
     timestamp: number;
   }>
->([]);;
+>([]);

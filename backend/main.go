@@ -97,6 +97,15 @@ func main() {
 		r.Get("/profile", handleGetProfile(appCtx))
 		r.Post("/", handleCreateUser(appCtx))
 		r.Put("/{id}", handleUpdateUser(appCtx))
+		r.Get("/search", handleSearchUsers(appCtx))
+		r.Post("/{id}/permissions", handleAddUserPermission(appCtx))
+		r.Delete("/{id}/permissions/{perm}", handleRemoveUserPermission(appCtx))
+	})
+
+	// Permissions endpoints
+	r.Route("/permissions", func(r chi.Router) {
+		r.Use(JWTAuthMiddleware)
+		r.Get("/", handleGetPermissions(appCtx))
 	})
 
 	// Store endpoints
@@ -113,15 +122,17 @@ func main() {
 	// Forum endpoints
 	r.Route("/forum", func(r chi.Router) {
 		r.Get("/categories", handleForumCategories(appCtx))
+		r.With(JWTAuthMiddleware).Post("/categories", handleForumCategoryCreate(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/categories/{id}", handleForumCategoryDelete(appCtx))
 		r.Get("/threads", handleForumThreadsList(appCtx))
-		r.Post("/threads", handleForumThreadCreate(appCtx))
+		r.With(JWTAuthMiddleware).Post("/threads", handleForumThreadCreate(appCtx))
 		r.Get("/threads/{id}", handleForumThreadGet(appCtx))
-		r.Put("/threads/{id}", handleForumThreadUpdate(appCtx))
-		r.Delete("/threads/{id}", handleForumThreadDelete(appCtx))
+		r.With(JWTAuthMiddleware).Put("/threads/{id}", handleForumThreadUpdate(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/threads/{id}", handleForumThreadDelete(appCtx))
 		r.Get("/threads/{id}/posts", handleForumPostsList(appCtx))
-		r.Post("/threads/{id}/posts", handleForumPostCreate(appCtx))
-		r.Put("/posts/{id}", handleForumPostUpdate(appCtx))
-		r.Delete("/posts/{id}", handleForumPostDelete(appCtx))
+		r.With(JWTAuthMiddleware).Post("/threads/{id}/posts", handleForumPostCreate(appCtx))
+		r.With(JWTAuthMiddleware).Put("/posts/{id}", handleForumPostUpdate(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/posts/{id}", handleForumPostDelete(appCtx))
 	})
 
 	port := os.Getenv("PORT")
@@ -201,103 +212,6 @@ func handlePurchase(appCtx *AppContext) http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(SimpleResponse{
 			Message: "Purchase completed",
-			Status:  "success",
-		})
-	}
-}
-
-// Forum handlers
-func handleForumCategories(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		categories, err := appCtx.ForumCategoryRepo.ListCategories()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(categories)
-	}
-}
-
-func handleForumThreadsList(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"threads": []interface{}{}})
-	}
-}
-
-func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum thread created",
-			Status:  "success",
-		})
-	}
-}
-
-func handleForumThreadGet(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	}
-}
-
-func handleForumThreadUpdate(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum thread updated",
-			Status:  "success",
-		})
-	}
-}
-
-func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum thread deleted",
-			Status:  "success",
-		})
-	}
-}
-
-func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"posts": []interface{}{}})
-	}
-}
-
-func handleForumPostCreate(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum post created",
-			Status:  "success",
-		})
-	}
-}
-
-func handleForumPostUpdate(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum post updated",
-			Status:  "success",
-		})
-	}
-}
-
-func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum post deleted",
 			Status:  "success",
 		})
 	}

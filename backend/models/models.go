@@ -106,6 +106,15 @@ type OrderItem struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// Permission represents a permission in the system
+type Permission struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Category    string    `json:"category"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // ForumCategory represents a forum category
 type ForumCategory struct {
 	ID           uuid.UUID `json:"id"`

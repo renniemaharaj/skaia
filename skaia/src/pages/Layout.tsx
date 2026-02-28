@@ -2,7 +2,14 @@ import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
+import { useSetAtom } from "jotai";
 import { useCart } from "../context/CartContext";
+import {
+  accessTokenAtom,
+  refreshTokenAtom,
+  currentUserAtom,
+  isAuthenticatedAtom,
+} from "../atoms/auth";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 
@@ -20,6 +27,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
   const wsRef = useRef<WebSocket | null>(null);
   const { getTotalItems } = useCart();
+  const setAccessToken = useSetAtom(accessTokenAtom);
+  const setRefreshToken = useSetAtom(refreshTokenAtom);
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -27,6 +38,25 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const theme = isDarkMode ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", theme);
   }, [isDarkMode]);
+
+  // Listen for unauthorized (401) errors and logout
+  useEffect(() => {
+    const handleUnauthorized = (event: Event) => {
+      console.warn(
+        "Unauthorized access detected, clearing auth state",
+        (event as CustomEvent).detail,
+      );
+      setAccessToken(null);
+      setRefreshToken(null);
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    };
+
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
+    };
+  }, [setAccessToken, setRefreshToken, setCurrentUser, setIsAuthenticated]);
 
   // Initialize WebSocket connection
   useEffect(() => {

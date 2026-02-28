@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 
@@ -14,6 +15,7 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
+			log.Printf("DEBUG: No authorization header for %s %s", r.Method, r.URL.Path)
 			http.Error(w, `{"error": "missing authorization header"}`, http.StatusUnauthorized)
 			return
 		}
@@ -21,17 +23,23 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 		// Extract token from "Bearer <token>"
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
+			log.Printf("DEBUG: Invalid authorization format: %s", authHeader[:20])
 			http.Error(w, `{"error": "invalid authorization header"}`, http.StatusUnauthorized)
 			return
 		}
 
 		tokenString := parts[1]
+		log.Printf("DEBUG: Validating token (first 20 chars): %s... for %s %s", tokenString[:20], r.Method, r.URL.Path)
+
+		// Try to parse the token to get claims without validation first
 		claims, err := auth.ValidateToken(tokenString)
 		if err != nil {
+			log.Printf("DEBUG: Token validation error: %v (token exp in payload)", err)
 			http.Error(w, `{"error": "invalid token"}`, http.StatusUnauthorized)
 			return
 		}
 
+		log.Printf("DEBUG: Token valid for user %s (%s) with permissions: %v", claims.Username, claims.UserID, claims.Permissions)
 		// Store claims in request context
 		ctx := context.WithValue(r.Context(), "claims", claims)
 		ctx = context.WithValue(ctx, "user_id", claims.UserID)

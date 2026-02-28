@@ -28,7 +28,17 @@ export interface AuthResponse {
  * Get authorization headers with token
  */
 function getAuthHeaders(): Record<string, string> {
+  // Get token from localStorage as raw string (no JSON serialization)
   const token = localStorage.getItem("auth.accessToken");
+
+  if (token) {
+    console.debug(
+      "Auth token found in localStorage (first 20 chars):",
+      token.substring(0, 20) + "...",
+    );
+  } else {
+    console.warn("No auth token found in localStorage");
+  }
   return {
     "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -60,6 +70,21 @@ export async function apiRequest<T>(
     } catch {
       // Use default error message
     }
+
+    // Handle 401 Unauthorized - clear auth state
+    if (response.status === 401) {
+      // Clear auth tokens from localStorage
+      localStorage.removeItem("auth.accessToken");
+      localStorage.removeItem("auth.refreshToken");
+      localStorage.removeItem("auth.user");
+      localStorage.removeItem("auth.isAuthenticated");
+
+      // Dispatch custom event that the app can listen to
+      window.dispatchEvent(
+        new CustomEvent("auth:unauthorized", { detail: { errorMessage } }),
+      );
+    }
+
     throw new Error(errorMessage);
   }
 

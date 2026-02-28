@@ -1,0 +1,47 @@
+.user-link {
+  display: inline-block;
+  color: var(--primary-color, #0066cc);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.user-link:hover {
+  color: var(--primary-hover, #0052a3);
+  text-decoration: underline;
+  background-color: rgba(0, 102, 204, 0.05);
+}
+
+.user-link:active {
+  opacity: 0.8;
+}
+
+.user-link--subtle {
+  color: var(--text-primary, #1a1a1a);
+  font-weight: 400;
+}
+
+.user-link--subtle:hover {
+  color: var(--primary-color, #0066cc);
+  background-color: rgba(0, 102, 204, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .user-link {
+    color: var(--primary-light, #4d9fff);
+  }
+
+  .user-link:hover {
+    color: var(--primary-lighter, #99ccff);
+  }
+
+  .user-link--subtle {
+    color: var(--text-primary, #e0e0e0);
+  }
+
+  .user-link--subtle:hover {
+    color: var(--primary-light, #4d9fff);
+  }
+}

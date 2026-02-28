@@ -8,7 +8,6 @@ services:
       POSTGRES_DB: skaia
       POSTGRES_USER: skaia_user
       POSTGRES_PASSWORD: skaia_password
-      POSTGRES_INITDB_ARGS: "-U postgres"
     ports:
       - "5432:5432"
     volumes:
@@ -33,6 +32,7 @@ services:
       - PORT=1080
       - DATABASE_URL=postgres://skaia_user:skaia_password@postgres:5432/skaia?sslmode=disable
       - ENVIRONMENT=development
+      - JWT_SECRET=your-secret-key-change-in-production
     networks:
       - skaia-network
     depends_on:

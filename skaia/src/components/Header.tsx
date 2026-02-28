@@ -8,6 +8,7 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
 } from "../atoms/auth";
+import UserLink from "./UserLink";
 import "./Header.css";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
 
@@ -49,7 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
     try {
       // Call backend logout endpoint
       const token = localStorage.getItem("auth.accessToken");
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:1080";
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:1080";
       if (token) {
         await fetch(`${apiBaseUrl}/auth/logout`, {
           method: "POST",
@@ -139,7 +141,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             {isAuthenticated && user ? (
               <div className="user-menu">
-                <span className="user-name">{user.username || user.email}</span>
+                <UserLink
+                  userId={user.id}
+                  username={user.username}
+                  displayName={user.display_name}
+                  variant="subtle"
+                  className="user-link-header"
+                />
                 <button
                   className="btn btn-secondary"
                   onClick={handleLogout}

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -27,6 +28,7 @@ func getJWTSecret() string {
 	if secret == "" {
 		secret = "your-secret-key-change-in-production"
 	}
+	log.Printf("DEBUG AUTH: JWT_SECRET is set to: %s", secret)
 	return secret
 }
 

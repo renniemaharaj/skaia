@@ -169,6 +169,17 @@
   gap: 12px;
 }
 
+.user-link-header {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 4px 8px;
+}
+
+.user-link-header:hover {
+  color: var(--primary-color);
+}
+
 .user-name {
   color: var(--text-primary);
   font-weight: 500;

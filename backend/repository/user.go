@@ -315,3 +315,100 @@ func (r *UserRepositoryImpl) HasPermission(userID uuid.UUID, permission string) 
 
 	return count > 0, nil
 }
+
+// SearchUsers searches for users by username or email
+func (r *UserRepositoryImpl) SearchUsers(query string, limit int, offset int) ([]*models.User, error) {
+	query = "%" + query + "%"
+	rows, err := r.db.Query(
+		`SELECT id, username, email, password_hash, display_name, avatar_url, banner_url, photo_url, 
+		        bio, discord_id, is_suspended, suspended_at, suspended_reason, created_at, updated_at 
+		 FROM users 
+		 WHERE username ILIKE $1 OR email ILIKE $1 OR display_name ILIKE $1
+		 LIMIT $2 OFFSET $3`,
+		query, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.AvatarURL,
+			&user.BannerURL, &user.PhotoURL, &user.Bio, &user.DiscordID, &user.IsSuspended,
+			&user.SuspendedAt, &user.SuspendedReason, &user.CreatedAt, &user.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := r.getUserWithRolesAndPermissions(user); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+// AddPermission adds a permission to a user
+func (r *UserRepositoryImpl) AddPermission(userID uuid.UUID, permissionName string) error {
+	var permissionID uuid.UUID
+	err := r.db.QueryRow(
+		`SELECT id FROM permissions WHERE name = $1`,
+		permissionName,
+	).Scan(&permissionID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(
+		`INSERT INTO user_permissions (user_id, permission_id)
+		 VALUES ($1, $2)
+		 ON CONFLICT DO NOTHING`,
+		userID, permissionID,
+	)
+	return err
+}
+
+// RemovePermission removes a permission from a user
+func (r *UserRepositoryImpl) RemovePermission(userID uuid.UUID, permissionName string) error {
+	var permissionID uuid.UUID
+	err := r.db.QueryRow(
+		`SELECT id FROM permissions WHERE name = $1`,
+		permissionName,
+	).Scan(&permissionID)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(
+		`DELETE FROM user_permissions WHERE user_id = $1 AND permission_id = $2`,
+		userID, permissionID,
+	)
+	return err
+}
+
+// GetAllPermissions returns all available permissions
+func (r *UserRepositoryImpl) GetAllPermissions() ([]*models.Permission, error) {
+	rows, err := r.db.Query(
+		`SELECT id, name, category, description, created_at FROM permissions ORDER BY category, name`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []*models.Permission
+	for rows.Next() {
+		perm := &models.Permission{}
+		err := rows.Scan(&perm.ID, &perm.Name, &perm.Category, &perm.Description, &perm.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perm)
+	}
+
+	return permissions, nil
+}
