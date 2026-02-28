@@ -1,5 +1,5 @@
-import { Github, Twitter, MessageCircle } from "lucide-react";
 import "./Footer.css";
+import SocialLinks from "./SocialLinks";
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -27,32 +27,7 @@ export const Footer: React.FC = () => {
 
         <div className="footer-section">
           <h4>Connect</h4>
-          <div className="social-links">
-            <a
-              href="https://discord.gg/cueballcraft"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Discord"
-            >
-              <MessageCircle size={20} />
-            </a>
-            <a
-              href="https://twitter.com/cueballcraft"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Twitter"
-            >
-              <Twitter size={20} />
-            </a>
-            <a
-              href="https://github.com/cueballcraft"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="GitHub"
-            >
-              <Github size={20} />
-            </a>
-          </div>
+          <SocialLinks />
         </div>
       </div>
 

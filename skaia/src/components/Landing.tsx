@@ -1,13 +1,10 @@
 import {
   ShoppingCart,
-  MessageCircle,
   CheckCircle,
   Users,
   Star,
   Gamepad2,
   TrendingUp,
-  // Github,
-  Twitter,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 // import { useNavigate } from "react-router-dom";
@@ -15,17 +12,12 @@ import { SkeletonCard } from "./SkeletonCard";
 import "./Landing.css";
 import "./FeatureCard.css";
 import Hero from "./Hero";
+import SocialLinks from "./SocialLinks";
 
 interface StatItem {
   label: string;
   value: string | number;
   icon: React.ReactNode;
-}
-
-interface SocialLink {
-  name: string;
-  icon: React.ReactNode;
-  link: string;
 }
 
 export const Landing: React.FC = () => {
@@ -64,24 +56,6 @@ export const Landing: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  const socialLinks: SocialLink[] = [
-    {
-      name: "Discord",
-      icon: <MessageCircle size={20} />,
-      link: "https://discord.gg/cueballcraft",
-    },
-    {
-      name: "X",
-      icon: <Twitter size={20} />,
-      link: "https://x.com/SkaiaGaming",
-    },
-    // {
-    //   name: "GitHub",
-    //   icon: <Github size={20} />,
-    //   link: "https://github.com/cueballcraft",
-    // },
-  ];
 
   return (
     <div className="landing-container">
@@ -136,23 +110,9 @@ export const Landing: React.FC = () => {
             ))
           )}
         </div>
-
-        {/* Social Links */}
-        <div className="social-links">
-          {socialLinks.map((social, index) => (
-            <a
-              key={index}
-              href={social.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="social-link"
-              title={social.name}
-            >
-              {social.icon}
-            </a>
-          ))}
-        </div>
       </section>
+
+      <SocialLinks />
 
       {/* Showcase Section */}
       <section className="showcase">
