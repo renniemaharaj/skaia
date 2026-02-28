@@ -1,0 +1,32 @@
+.richtext-outline,
+.richtext-outline-1 {
+  outline: none;
+  background-color: transparent;
+}
+
+.renderer-editor {
+  width: 900px;
+  max-width: 100vw !important;
+  margin: 0 auto !important;
+}
+
+.renderer-editor .ProseMirror {
+  padding: 0.5rem 0.75rem !important;
+}
+
+@media (max-width: 640px) {
+  .renderer-editor .ProseMirror {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 14px !important;
+  }
+}
+
+.ProseMirror-focused {
+  outline: none !important;
+}
+
+.richtext-editor,
+.richtext-editor-content {
+  border-width: 1px !important;
+  max-width: 100% !important;
+}

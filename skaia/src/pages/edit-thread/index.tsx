@@ -1,4 +1,4 @@
-import EditThread from "../../components/EditThread";
+import { EditThread } from "../../components";
 
 const EditThreadPage = () => {
   return <EditThread />;

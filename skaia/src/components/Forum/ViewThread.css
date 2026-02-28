@@ -1,0 +1,14 @@
+.renderer-editor {
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: var(--bg-color);
+  margin: 1rem 0;
+}
+
+.blurred-div {
+  padding: 1rem;
+}
+
+.z-10 {
+  z-index: 10;
+}

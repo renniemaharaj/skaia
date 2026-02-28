@@ -1,4 +1,4 @@
-import NewThread from "../../components/NewThread";
+import { NewThread } from "../../components";
 
 export const NewThreadPage = ({}) => {
   return <NewThread />;

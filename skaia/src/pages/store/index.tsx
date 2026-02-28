@@ -1,4 +1,4 @@
-import { Store } from "../../components/Store";
+import { Store } from "../../components";
 import { useCart } from "../../context/CartContext";
 
 export const StorePage = () => {
