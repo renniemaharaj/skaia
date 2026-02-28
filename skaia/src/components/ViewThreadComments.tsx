@@ -38,7 +38,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
 
       <div className="comments-list">
         {mockComments.map((comment) => (
-          <div key={comment.id} className="comment-card richtext-outline-1">
+          <div key={comment.id} className="comment-card">
             <div className="comment-avatar">
               <img src={comment.avatar} alt={comment.author} />
             </div>

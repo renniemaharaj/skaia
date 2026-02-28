@@ -47,9 +47,11 @@ const ViewThreadPage = () => {
             paddingLeft: "1rem",
             paddingRight: "1rem",
           }}
-          className="richtext-outline-1"
+          // className="richtext-outline-1"
         >
-          <h3 style={{ marginBottom: 0 }}>Welcome to the forum</h3>
+          <h3 style={{ marginBottom: 0 }}>
+            Welcome to the forum guys! thread:: {threadId}
+          </h3>
           <button
             style={{
               //   alignSelf: "end",
