@@ -2,7 +2,7 @@
 .richtext-outline-1 {
   outline: none;
   box-shadow: 0 0 0 3px rgba(91, 158, 142, 0.1);
-  /* background-color: var(--bg-color); */
+  background-color: transparent;
   /* color: var(--text-primary); */
 }
 
