@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,7 +15,7 @@ func NewCartRepository(db *sql.DB) CartRepository {
 	return &CartRepositoryImpl{db: db}
 }
 
-func (r *CartRepositoryImpl) GetCartItem(userID, productID uuid.UUID) (*models.CartItem, error) {
+func (r *CartRepositoryImpl) GetCartItem(userID, productID int64) (*models.CartItem, error) {
 	item := &models.CartItem{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, product_id, quantity, added_at FROM cart_items WHERE user_id = $1 AND product_id = $2`,
@@ -29,7 +28,7 @@ func (r *CartRepositoryImpl) GetCartItem(userID, productID uuid.UUID) (*models.C
 	return item, err
 }
 
-func (r *CartRepositoryImpl) GetUserCart(userID uuid.UUID) ([]*models.CartItem, error) {
+func (r *CartRepositoryImpl) GetUserCart(userID int64) ([]*models.CartItem, error) {
 	rows, err := r.db.Query(
 		`SELECT id, user_id, product_id, quantity, added_at FROM cart_items WHERE user_id = $1 ORDER BY added_at DESC`,
 		userID,
@@ -52,9 +51,9 @@ func (r *CartRepositoryImpl) GetUserCart(userID uuid.UUID) ([]*models.CartItem, 
 	return items, rows.Err()
 }
 
-func (r *CartRepositoryImpl) AddToCart(userID, productID uuid.UUID, quantity int) (*models.CartItem, error) {
+func (r *CartRepositoryImpl) AddToCart(userID, productID int64, quantity int) (*models.CartItem, error) {
 	item := &models.CartItem{
-		ID:        uuid.New(),
+		ID: 0,
 		UserID:    userID,
 		ProductID: productID,
 		Quantity:  quantity,
@@ -71,7 +70,7 @@ func (r *CartRepositoryImpl) AddToCart(userID, productID uuid.UUID, quantity int
 	return item, err
 }
 
-func (r *CartRepositoryImpl) UpdateCartItem(userID, productID uuid.UUID, quantity int) (*models.CartItem, error) {
+func (r *CartRepositoryImpl) UpdateCartItem(userID, productID int64, quantity int) (*models.CartItem, error) {
 	item := &models.CartItem{}
 	err := r.db.QueryRow(
 		`UPDATE cart_items SET quantity = $1 WHERE user_id = $2 AND product_id = $3
@@ -82,7 +81,7 @@ func (r *CartRepositoryImpl) UpdateCartItem(userID, productID uuid.UUID, quantit
 	return item, err
 }
 
-func (r *CartRepositoryImpl) RemoveFromCart(userID, productID uuid.UUID) error {
+func (r *CartRepositoryImpl) RemoveFromCart(userID, productID int64) error {
 	_, err := r.db.Exec(
 		`DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2`,
 		userID, productID,
@@ -90,7 +89,7 @@ func (r *CartRepositoryImpl) RemoveFromCart(userID, productID uuid.UUID) error {
 	return err
 }
 
-func (r *CartRepositoryImpl) ClearCart(userID uuid.UUID) error {
+func (r *CartRepositoryImpl) ClearCart(userID int64) error {
 	_, err := r.db.Exec(`DELETE FROM cart_items WHERE user_id = $1`, userID)
 	return err
 }

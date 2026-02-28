@@ -224,6 +224,7 @@ func handleGetProfile(appCtx *AppContext) http.HandlerFunc {
 		json.NewEncoder(w).Encode(user)
 	}
 }
+
 // handleLogout handles user logout
 func handleLogout(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

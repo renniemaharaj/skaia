@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,7 +15,7 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 	return &ProductRepositoryImpl{db: db}
 }
 
-func (r *ProductRepositoryImpl) GetProductByID(id uuid.UUID) (*models.Product, error) {
+func (r *ProductRepositoryImpl) GetProductByID(id int64) (*models.Product, error) {
 	product := &models.Product{}
 	err := r.db.QueryRow(
 		`SELECT id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at
@@ -30,7 +29,7 @@ func (r *ProductRepositoryImpl) GetProductByID(id uuid.UUID) (*models.Product, e
 	return product, err
 }
 
-func (r *ProductRepositoryImpl) GetProductsByCategory(categoryID uuid.UUID, limit int, offset int) ([]*models.Product, error) {
+func (r *ProductRepositoryImpl) GetProductsByCategory(categoryID int64, limit int, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
 		`SELECT id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at
 		 FROM products WHERE category_id = $1 AND is_active = true
@@ -56,13 +55,11 @@ func (r *ProductRepositoryImpl) GetProductsByCategory(categoryID uuid.UUID, limi
 }
 
 func (r *ProductRepositoryImpl) CreateProduct(product *models.Product) (*models.Product, error) {
-	product.ID = uuid.New()
-
 	err := r.db.QueryRow(
-		`INSERT INTO products (id, category_id, name, description, price, image_url, stock, is_active)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		`INSERT INTO products (category_id, name, description, price, image_url, stock, is_active)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
 		 RETURNING id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at`,
-		product.ID, product.CategoryID, product.Name, product.Description, product.Price, product.ImageURL, product.Stock, product.IsActive,
+		product.CategoryID, product.Name, product.Description, product.Price, product.ImageURL, product.Stock, product.IsActive,
 	).Scan(&product.ID, &product.CategoryID, &product.Name, &product.Description, &product.Price, &product.ImageURL, &product.Stock, &product.IsActive, &product.CreatedAt, &product.UpdatedAt)
 
 	return product, err
@@ -79,7 +76,7 @@ func (r *ProductRepositoryImpl) UpdateProduct(product *models.Product) (*models.
 	return product, err
 }
 
-func (r *ProductRepositoryImpl) DeleteProduct(id uuid.UUID) error {
+func (r *ProductRepositoryImpl) DeleteProduct(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM products WHERE id = $1`, id)
 	return err
 }

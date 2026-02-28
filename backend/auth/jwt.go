@@ -7,17 +7,16 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 )
 
 // Claims represents JWT claims for an authenticated user
 type Claims struct {
-	UserID      uuid.UUID `json:"user_id"`
-	Username    string    `json:"username"`
-	Email       string    `json:"email"`
-	DisplayName string    `json:"display_name"`
-	Roles       []string  `json:"roles"`
-	Permissions []string  `json:"permissions"`
+	UserID      int64    `json:"user_id"`
+	Username    string   `json:"username"`
+	Email       string   `json:"email"`
+	DisplayName string   `json:"display_name"`
+	Roles       []string `json:"roles"`
+	Permissions []string `json:"permissions"`
 	jwt.RegisteredClaims
 }
 
@@ -33,17 +32,17 @@ func getJWTSecret() string {
 }
 
 // GenerateToken creates a new JWT access token for a user (24-hour expiration)
-func GenerateToken(userID uuid.UUID, username, email, displayName string, roles []string) (string, error) {
+func GenerateToken(userID int64, username, email, displayName string, roles []string) (string, error) {
 	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, []string{}, 24*time.Hour)
 }
 
 // GenerateTokenWithPermissions creates a JWT token with permissions
-func GenerateTokenWithPermissions(userID uuid.UUID, username, email, displayName string, roles, permissions []string) (string, error) {
+func GenerateTokenWithPermissions(userID int64, username, email, displayName string, roles, permissions []string) (string, error) {
 	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, permissions, 24*time.Hour)
 }
 
 // GenerateRefreshToken creates a new JWT refresh token (7-day expiration)
-func GenerateRefreshToken(userID uuid.UUID) (string, error) {
+func GenerateRefreshToken(userID int64) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -63,7 +62,7 @@ func GenerateRefreshToken(userID uuid.UUID) (string, error) {
 }
 
 // GenerateTokenWithExpiration creates a JWT token with custom expiration
-func GenerateTokenWithExpiration(userID uuid.UUID, username, email, displayName string, roles, permissions []string, expiresIn time.Duration) (string, error) {
+func GenerateTokenWithExpiration(userID int64, username, email, displayName string, roles, permissions []string, expiresIn time.Duration) (string, error) {
 	claims := Claims{
 		UserID:      userID,
 		Username:    username,
@@ -109,6 +108,6 @@ func ValidateToken(tokenString string) (*Claims, error) {
 }
 
 // RefreshToken generates a new access token from a refresh token
-func RefreshToken(userID uuid.UUID, username, email, displayName string, roles []string) (string, error) {
+func RefreshToken(userID int64, username, email, displayName string, roles []string) (string, error) {
 	return GenerateToken(userID, username, email, displayName, roles)
 }

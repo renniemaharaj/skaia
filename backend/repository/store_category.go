@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,7 +15,7 @@ func NewStoreCategoryRepository(db *sql.DB) StoreCategoryRepository {
 	return &StoreCategoryRepositoryImpl{db: db}
 }
 
-func (r *StoreCategoryRepositoryImpl) GetCategoryByID(id uuid.UUID) (*models.StoreCategory, error) {
+func (r *StoreCategoryRepositoryImpl) GetCategoryByID(id int64) (*models.StoreCategory, error) {
 	category := &models.StoreCategory{}
 	err := r.db.QueryRow(
 		`SELECT id, name, description, display_order, created_at FROM store_categories WHERE id = $1`,
@@ -43,7 +42,6 @@ func (r *StoreCategoryRepositoryImpl) GetCategoryByName(name string) (*models.St
 }
 
 func (r *StoreCategoryRepositoryImpl) CreateCategory(category *models.StoreCategory) (*models.StoreCategory, error) {
-	category.ID = uuid.New()
 
 	err := r.db.QueryRow(
 		`INSERT INTO store_categories (id, name, description, display_order)
@@ -66,7 +64,7 @@ func (r *StoreCategoryRepositoryImpl) UpdateCategory(category *models.StoreCateg
 	return category, err
 }
 
-func (r *StoreCategoryRepositoryImpl) DeleteCategory(id uuid.UUID) error {
+func (r *StoreCategoryRepositoryImpl) DeleteCategory(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM store_categories WHERE id = $1`, id)
 	return err
 }

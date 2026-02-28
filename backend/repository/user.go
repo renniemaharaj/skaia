@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -74,7 +73,7 @@ func (r *UserRepositoryImpl) getUserWithRolesAndPermissions(user *models.User) e
 	return nil
 }
 
-func (r *UserRepositoryImpl) GetUserByID(id uuid.UUID) (*models.User, error) {
+func (r *UserRepositoryImpl) GetUserByID(id int64) (*models.User, error) {
 	user := &models.User{}
 	err := r.db.QueryRow(
 		`SELECT id, username, email, password_hash, display_name, avatar_url, banner_url, photo_url, 
@@ -150,15 +149,13 @@ func (r *UserRepositoryImpl) GetUserByEmail(email string) (*models.User, error) 
 }
 
 func (r *UserRepositoryImpl) Create(user *models.User) error {
-	user.ID = uuid.New()
-
 	err := r.db.QueryRow(
-		`INSERT INTO users (id, username, email, password_hash, display_name, avatar_url, 
+		`INSERT INTO users (username, email, password_hash, display_name, avatar_url, 
 		                   banner_url, photo_url, bio, discord_id, is_suspended, suspended_at, suspended_reason)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		 RETURNING id, username, email, password_hash, display_name, avatar_url, banner_url, photo_url, 
 		          bio, discord_id, is_suspended, suspended_at, suspended_reason, created_at, updated_at`,
-		user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName, user.AvatarURL,
+		user.Username, user.Email, user.PasswordHash, user.DisplayName, user.AvatarURL,
 		user.BannerURL, user.PhotoURL, user.Bio, user.DiscordID, user.IsSuspended, user.SuspendedAt, user.SuspendedReason,
 	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.AvatarURL,
 		&user.BannerURL, &user.PhotoURL, &user.Bio, &user.DiscordID, &user.IsSuspended,
@@ -169,10 +166,9 @@ func (r *UserRepositoryImpl) Create(user *models.User) error {
 	}
 
 	// Assign default member role
-	memberRoleID := uuid.MustParse("10000000-0000-0000-0000-000000000003")
 	_, err = r.db.Exec(
 		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`,
-		user.ID, memberRoleID,
+		user.ID, int64(3),
 	)
 	if err != nil {
 		return err
@@ -183,16 +179,15 @@ func (r *UserRepositoryImpl) Create(user *models.User) error {
 }
 
 func (r *UserRepositoryImpl) CreateUser(user *models.User, passwordHash string) (*models.User, error) {
-	user.ID = uuid.New()
 	user.PasswordHash = passwordHash
 
 	err := r.db.QueryRow(
-		`INSERT INTO users (id, username, email, password_hash, display_name, avatar_url, 
+		`INSERT INTO users (username, email, password_hash, display_name, avatar_url, 
 		                   banner_url, photo_url, bio, discord_id, is_suspended, suspended_at, suspended_reason)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		 RETURNING id, username, email, password_hash, display_name, avatar_url, banner_url, photo_url, 
 		          bio, discord_id, is_suspended, suspended_at, suspended_reason, created_at, updated_at`,
-		user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName, user.AvatarURL,
+		user.Username, user.Email, user.PasswordHash, user.DisplayName, user.AvatarURL,
 		user.BannerURL, user.PhotoURL, user.Bio, user.DiscordID, user.IsSuspended, user.SuspendedAt, user.SuspendedReason,
 	).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.AvatarURL,
 		&user.BannerURL, &user.PhotoURL, &user.Bio, &user.DiscordID, &user.IsSuspended,
@@ -203,10 +198,9 @@ func (r *UserRepositoryImpl) CreateUser(user *models.User, passwordHash string) 
 	}
 
 	// Assign default member role
-	memberRoleID := uuid.MustParse("10000000-0000-0000-0000-000000000003")
 	_, err = r.db.Exec(
 		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`,
-		user.ID, memberRoleID,
+		user.ID, int64(3),
 	)
 	if err != nil {
 		return nil, err
@@ -238,7 +232,7 @@ func (r *UserRepositoryImpl) UpdateUser(user *models.User) (*models.User, error)
 	return r.GetUserByID(user.ID)
 }
 
-func (r *UserRepositoryImpl) DeleteUser(id uuid.UUID) error {
+func (r *UserRepositoryImpl) DeleteUser(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM users WHERE id = $1`, id)
 	return err
 }
@@ -274,7 +268,7 @@ func (r *UserRepositoryImpl) ListUsers(limit int, offset int) ([]*models.User, e
 }
 
 // AddRole adds a role to a user
-func (r *UserRepositoryImpl) AddRole(userID uuid.UUID, roleID uuid.UUID) error {
+func (r *UserRepositoryImpl) AddRole(userID int64, roleID int64) error {
 	_, err := r.db.Exec(
 		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)
 		 ON CONFLICT DO NOTHING`,
@@ -284,7 +278,7 @@ func (r *UserRepositoryImpl) AddRole(userID uuid.UUID, roleID uuid.UUID) error {
 }
 
 // RemoveRole removes a role from a user
-func (r *UserRepositoryImpl) RemoveRole(userID uuid.UUID, roleID uuid.UUID) error {
+func (r *UserRepositoryImpl) RemoveRole(userID int64, roleID int64) error {
 	_, err := r.db.Exec(
 		`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`,
 		userID, roleID,
@@ -293,7 +287,7 @@ func (r *UserRepositoryImpl) RemoveRole(userID uuid.UUID, roleID uuid.UUID) erro
 }
 
 // HasPermission checks if a user has a specific permission
-func (r *UserRepositoryImpl) HasPermission(userID uuid.UUID, permission string) (bool, error) {
+func (r *UserRepositoryImpl) HasPermission(userID int64, permission string) (bool, error) {
 	var count int
 	err := r.db.QueryRow(
 		`SELECT COUNT(*) FROM (
@@ -353,8 +347,8 @@ func (r *UserRepositoryImpl) SearchUsers(query string, limit int, offset int) ([
 }
 
 // AddPermission adds a permission to a user
-func (r *UserRepositoryImpl) AddPermission(userID uuid.UUID, permissionName string) error {
-	var permissionID uuid.UUID
+func (r *UserRepositoryImpl) AddPermission(userID int64, permissionName string) error {
+	var permissionID int64
 	err := r.db.QueryRow(
 		`SELECT id FROM permissions WHERE name = $1`,
 		permissionName,
@@ -373,8 +367,8 @@ func (r *UserRepositoryImpl) AddPermission(userID uuid.UUID, permissionName stri
 }
 
 // RemovePermission removes a permission from a user
-func (r *UserRepositoryImpl) RemovePermission(userID uuid.UUID, permissionName string) error {
-	var permissionID uuid.UUID
+func (r *UserRepositoryImpl) RemovePermission(userID int64, permissionName string) error {
+	var permissionID int64
 	err := r.db.QueryRow(
 		`SELECT id FROM permissions WHERE name = $1`,
 		permissionName,

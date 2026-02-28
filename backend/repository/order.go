@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -24,7 +23,6 @@ func (r *OrderRepositoryImpl) CreateOrder(order *models.Order, items []*models.O
 	}
 	defer tx.Rollback()
 
-	order.ID = uuid.New()
 	err = tx.QueryRow(
 		`INSERT INTO orders (id, user_id, total_price, status)
 		 VALUES ($1, $2, $3, $4)
@@ -38,7 +36,6 @@ func (r *OrderRepositoryImpl) CreateOrder(order *models.Order, items []*models.O
 
 	// Insert order items
 	for _, item := range items {
-		item.ID = uuid.New()
 		item.OrderID = order.ID
 		_, err := tx.Exec(
 			`INSERT INTO order_items (id, order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4, $5)`,
@@ -56,7 +53,7 @@ func (r *OrderRepositoryImpl) CreateOrder(order *models.Order, items []*models.O
 	return order, nil
 }
 
-func (r *OrderRepositoryImpl) GetOrderByID(id uuid.UUID) (*models.Order, error) {
+func (r *OrderRepositoryImpl) GetOrderByID(id int64) (*models.Order, error) {
 	order := &models.Order{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, total_price, status, created_at, updated_at FROM orders WHERE id = $1`,
@@ -69,7 +66,7 @@ func (r *OrderRepositoryImpl) GetOrderByID(id uuid.UUID) (*models.Order, error) 
 	return order, err
 }
 
-func (r *OrderRepositoryImpl) GetUserOrders(userID uuid.UUID, limit int, offset int) ([]*models.Order, error) {
+func (r *OrderRepositoryImpl) GetUserOrders(userID int64, limit int, offset int) ([]*models.Order, error) {
 	rows, err := r.db.Query(
 		`SELECT id, user_id, total_price, status, created_at, updated_at
 		 FROM orders WHERE user_id = $1
@@ -95,7 +92,7 @@ func (r *OrderRepositoryImpl) GetUserOrders(userID uuid.UUID, limit int, offset 
 	return orders, rows.Err()
 }
 
-func (r *OrderRepositoryImpl) UpdateOrderStatus(id uuid.UUID, status string) (*models.Order, error) {
+func (r *OrderRepositoryImpl) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
 	order := &models.Order{}
 	err := r.db.QueryRow(
 		`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2

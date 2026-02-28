@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,7 +15,7 @@ func NewForumCategoryRepository(db *sql.DB) ForumCategoryRepository {
 	return &ForumCategoryRepositoryImpl{db: db}
 }
 
-func (r *ForumCategoryRepositoryImpl) GetCategoryByID(id uuid.UUID) (*models.ForumCategory, error) {
+func (r *ForumCategoryRepositoryImpl) GetCategoryByID(id int64) (*models.ForumCategory, error) {
 	category := &models.ForumCategory{}
 	err := r.db.QueryRow(
 		`SELECT id, name, description, display_order, created_at FROM forum_categories WHERE id = $1`,
@@ -43,7 +42,6 @@ func (r *ForumCategoryRepositoryImpl) GetCategoryByName(name string) (*models.Fo
 }
 
 func (r *ForumCategoryRepositoryImpl) CreateCategory(category *models.ForumCategory) (*models.ForumCategory, error) {
-	category.ID = uuid.New()
 
 	err := r.db.QueryRow(
 		`INSERT INTO forum_categories (id, name, description, display_order)
@@ -66,7 +64,7 @@ func (r *ForumCategoryRepositoryImpl) UpdateCategory(category *models.ForumCateg
 	return category, err
 }
 
-func (r *ForumCategoryRepositoryImpl) DeleteCategory(id uuid.UUID) error {
+func (r *ForumCategoryRepositoryImpl) DeleteCategory(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM forum_categories WHERE id = $1`, id)
 	return err
 }

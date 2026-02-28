@@ -2,13 +2,11 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // User represents a user in the system
 type User struct {
-	ID              uuid.UUID  `json:"id"`
+	ID              int64      `json:"id"`
 	Username        string     `json:"username"`
 	Email           string     `json:"email"`
 	PasswordHash    string     `json:"-"`
@@ -56,7 +54,7 @@ type AuthResponse struct {
 
 // StoreCategory represents a category in the store
 type StoreCategory struct {
-	ID           uuid.UUID `json:"id"`
+	ID           int64     `json:"id"`
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	DisplayOrder int       `json:"display_order"`
@@ -65,8 +63,8 @@ type StoreCategory struct {
 
 // Product represents a product in the store
 type Product struct {
-	ID          uuid.UUID `json:"id"`
-	CategoryID  uuid.UUID `json:"category_id"`
+	ID          int64     `json:"id"`
+	CategoryID  int64     `json:"category_id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Price       float64   `json:"price"`
@@ -79,17 +77,17 @@ type Product struct {
 
 // CartItem represents an item in a user's cart
 type CartItem struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
-	ProductID uuid.UUID `json:"product_id"`
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	ProductID int64     `json:"product_id"`
 	Quantity  int       `json:"quantity"`
 	AddedAt   time.Time `json:"added_at"`
 }
 
 // Order represents a completed order
 type Order struct {
-	ID         uuid.UUID `json:"id"`
-	UserID     uuid.UUID `json:"user_id"`
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
 	TotalPrice float64   `json:"total_price"`
 	Status     string    `json:"status"` // pending, completed, cancelled
 	CreatedAt  time.Time `json:"created_at"`
@@ -98,9 +96,9 @@ type Order struct {
 
 // OrderItem represents an item in an order
 type OrderItem struct {
-	ID        uuid.UUID `json:"id"`
-	OrderID   uuid.UUID `json:"order_id"`
-	ProductID uuid.UUID `json:"product_id"`
+	ID        int64     `json:"id"`
+	OrderID   int64     `json:"order_id"`
+	ProductID int64     `json:"product_id"`
 	Quantity  int       `json:"quantity"`
 	Price     float64   `json:"price"`
 	CreatedAt time.Time `json:"created_at"`
@@ -108,7 +106,7 @@ type OrderItem struct {
 
 // Permission represents a permission in the system
 type Permission struct {
-	ID          uuid.UUID `json:"id"`
+	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
 	Category    string    `json:"category"`
 	Description string    `json:"description"`
@@ -117,7 +115,7 @@ type Permission struct {
 
 // ForumCategory represents a forum category
 type ForumCategory struct {
-	ID           uuid.UUID `json:"id"`
+	ID           int64     `json:"id"`
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	DisplayOrder int       `json:"display_order"`
@@ -126,9 +124,9 @@ type ForumCategory struct {
 
 // ForumThread represents a forum thread/topic
 type ForumThread struct {
-	ID         uuid.UUID `json:"id"`
-	CategoryID uuid.UUID `json:"category_id"`
-	UserID     uuid.UUID `json:"user_id"`
+	ID         int64     `json:"id"`
+	CategoryID int64     `json:"category_id"`
+	UserID     int64     `json:"user_id"`
 	Title      string    `json:"title"`
 	Content    string    `json:"content"`
 	ViewCount  int       `json:"view_count"`
@@ -141,9 +139,9 @@ type ForumThread struct {
 
 // ForumPost represents a post in a forum thread
 type ForumPost struct {
-	ID        uuid.UUID `json:"id"`
-	ThreadID  uuid.UUID `json:"thread_id"`
-	UserID    uuid.UUID `json:"user_id"`
+	ID        int64     `json:"id"`
+	ThreadID  int64     `json:"thread_id"`
+	UserID    int64     `json:"user_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/skaia/backend/auth"
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/websocket"
@@ -74,8 +74,8 @@ func handleForumCategoryCreate(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		var req struct {
-			Name        string `json:"name"`
-			Description string `json:"description"`
+			Name         string `json:"name"`
+			Description  string `json:"description"`
 			DisplayOrder int    `json:"display_order"`
 		}
 
@@ -150,7 +150,7 @@ func handleForumCategoryDelete(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		categoryID := chi.URLParam(r, "id")
-		id, err := uuid.Parse(categoryID)
+		id, err := strconv.ParseInt(categoryID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid category ID"})
@@ -219,7 +219,7 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		categoryID, err := uuid.Parse(req.CategoryID)
+		categoryID, err := strconv.ParseInt(req.CategoryID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid category ID"})
@@ -264,7 +264,7 @@ func handleForumThreadGet(appCtx *AppContext) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		threadID := chi.URLParam(r, "id")
-		id, err := uuid.Parse(threadID)
+		id, err := strconv.ParseInt(threadID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
@@ -298,7 +298,7 @@ func handleForumThreadUpdate(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		threadID := chi.URLParam(r, "id")
-		id, err := uuid.Parse(threadID)
+		id, err := strconv.ParseInt(threadID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
@@ -380,7 +380,7 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		threadID := chi.URLParam(r, "id")
-		id, err := uuid.Parse(threadID)
+		id, err := strconv.ParseInt(threadID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})

@@ -1,6 +1,6 @@
 -- Create forum categories table
 CREATE TABLE IF NOT EXISTS forum_categories (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     display_order INT DEFAULT 0,
@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS forum_categories (
 
 -- Create forum threads table
 CREATE TABLE IF NOT EXISTS forum_threads (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    category_id UUID NOT NULL REFERENCES forum_categories(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    category_id BIGINT NOT NULL REFERENCES forum_categories(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     view_count INT DEFAULT 0,
@@ -28,9 +28,9 @@ CREATE INDEX idx_forum_threads_created_at ON forum_threads(created_at DESC);
 
 -- Create forum posts table
 CREATE TABLE IF NOT EXISTS forum_posts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    thread_id UUID NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    thread_id BIGINT NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

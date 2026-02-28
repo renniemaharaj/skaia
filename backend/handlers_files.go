@@ -76,8 +76,8 @@ func handleUploadProfilePhoto(appCtx *AppContext) http.HandlerFunc {
 		file.Seek(0, 0)
 
 		// Save file
-		filename := fmt.Sprintf("photo_%s_%d%s",
-			claims.UserID.String(),
+		filename := fmt.Sprintf("photo_%d_%d%s",
+			claims.UserID,
 			time.Now().UnixNano(),
 			filepath.Ext(handler.Filename),
 		)
@@ -183,8 +183,8 @@ func handleUploadThreadBanner(appCtx *AppContext) http.HandlerFunc {
 		file.Seek(0, 0)
 
 		// Save file
-		filename := fmt.Sprintf("banner_%s_%d%s",
-			claims.UserID.String(),
+		filename := fmt.Sprintf("banner_%d_%d%s",
+			claims.UserID,
 			time.Now().UnixNano(),
 			filepath.Ext(handler.Filename),
 		)

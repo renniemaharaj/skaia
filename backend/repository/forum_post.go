@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,7 +15,7 @@ func NewForumPostRepository(db *sql.DB) ForumPostRepository {
 	return &ForumPostRepositoryImpl{db: db}
 }
 
-func (r *ForumPostRepositoryImpl) GetPostByID(id uuid.UUID) (*models.ForumPost, error) {
+func (r *ForumPostRepositoryImpl) GetPostByID(id int64) (*models.ForumPost, error) {
 	post := &models.ForumPost{}
 	err := r.db.QueryRow(
 		`SELECT id, thread_id, user_id, content, created_at, updated_at FROM forum_posts WHERE id = $1`,
@@ -29,7 +28,7 @@ func (r *ForumPostRepositoryImpl) GetPostByID(id uuid.UUID) (*models.ForumPost, 
 	return post, err
 }
 
-func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID uuid.UUID, limit int, offset int) ([]*models.ForumPost, error) {
+func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID int64, limit int, offset int) ([]*models.ForumPost, error) {
 	rows, err := r.db.Query(
 		`SELECT id, thread_id, user_id, content, created_at, updated_at
 		 FROM forum_posts WHERE thread_id = $1
@@ -56,7 +55,6 @@ func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID uuid.UUID, limit int, 
 }
 
 func (r *ForumPostRepositoryImpl) CreatePost(post *models.ForumPost) (*models.ForumPost, error) {
-	post.ID = uuid.New()
 
 	err := r.db.QueryRow(
 		`INSERT INTO forum_posts (id, thread_id, user_id, content)
@@ -84,9 +82,9 @@ func (r *ForumPostRepositoryImpl) UpdatePost(post *models.ForumPost) (*models.Fo
 	return post, err
 }
 
-func (r *ForumPostRepositoryImpl) DeletePost(id uuid.UUID) error {
+func (r *ForumPostRepositoryImpl) DeletePost(id int64) error {
 	// Get thread_id before deleting
-	var threadID uuid.UUID
+	var threadID int64
 	err := r.db.QueryRow(`SELECT thread_id FROM forum_posts WHERE id = $1`, id).Scan(&threadID)
 	if err != nil {
 		return err

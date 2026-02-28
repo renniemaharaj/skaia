@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/skaia/backend/auth"
 )
 
@@ -85,7 +85,7 @@ func handleAddUserPermission(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		userID := chi.URLParam(r, "id")
-		userUUID, err := uuid.Parse(userID)
+		userIDInt, err := strconv.ParseInt(userID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid user id"})
@@ -108,7 +108,7 @@ func handleAddUserPermission(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		err = appCtx.UserRepo.AddPermission(userUUID, req.Permission)
+		err = appCtx.UserRepo.AddPermission(userIDInt, req.Permission)
 		if err != nil {
 			log.Printf("Error adding permission: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -152,14 +152,14 @@ func handleRemoveUserPermission(appCtx *AppContext) http.HandlerFunc {
 		userID := chi.URLParam(r, "id")
 		permName := chi.URLParam(r, "perm")
 
-		userUUID, err := uuid.Parse(userID)
+		userIDInt, err := strconv.ParseInt(userID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid user id"})
 			return
 		}
 
-		err = appCtx.UserRepo.RemovePermission(userUUID, permName)
+		err = appCtx.UserRepo.RemovePermission(userIDInt, permName)
 		if err != nil {
 			log.Printf("Error removing permission: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)

@@ -5,20 +5,20 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/auth"
 	"github.com/skaia/backend/models"
 )
 
 type SocketMessage struct {
-	Type       string          `json:"type"`       // auth, update, delete, create, like, unlike, sync, error
+	Type       string          `json:"type"` // auth, update, delete, create, like, unlike, sync, error
 	Action     string          `json:"action"`
 	EntityType string          `json:"entityType"` // thread, post, user, permission, like
 	Data       json.RawMessage `json:"data"`
-	UserID     uuid.UUID       `json:"user_id,omitempty"`
+	UserID     int64           `json:"user_id,omitempty"`
 }
 
 type SocketClient struct {
@@ -115,7 +115,7 @@ func (c *SocketClient) handleCreatePost(msg SocketMessage) error {
 		return wrapError("invalid post data")
 	}
 
-	threadID, err := uuid.Parse(postData.ThreadID)
+	threadID, err := strconv.ParseInt(postData.ThreadID, 10, 64)
 	if err != nil {
 		return wrapError("invalid thread id")
 	}
@@ -155,7 +155,7 @@ func (c *SocketClient) handleCreateThread(msg SocketMessage) error {
 		return wrapError("invalid thread data")
 	}
 
-	categoryID, err := uuid.Parse(threadData.CategoryID)
+	categoryID, err := strconv.ParseInt(threadData.CategoryID, 10, 64)
 	if err != nil {
 		return wrapError("invalid category id")
 	}
@@ -201,7 +201,7 @@ func (c *SocketClient) handleUpdatePost(msg SocketMessage) error {
 		return wrapError("invalid update data")
 	}
 
-	postID, err := uuid.Parse(updateData.ID)
+	postID, err := strconv.ParseInt(updateData.ID, 10, 64)
 	if err != nil {
 		return wrapError("invalid post id")
 	}
@@ -251,7 +251,7 @@ func (c *SocketClient) handleDeletePost(msg SocketMessage) error {
 		return wrapError("invalid delete data")
 	}
 
-	postID, err := uuid.Parse(delData.ID)
+	postID, err := strconv.ParseInt(delData.ID, 10, 64)
 	if err != nil {
 		return wrapError("invalid post id")
 	}
@@ -371,8 +371,8 @@ func (c *SocketClient) writePump() {
 
 func (c *SocketClient) sendError(errMsg string) {
 	msg := SocketMessage{
-		Type:       "error",
-		Data:       json.RawMessage([]byte(`{"error":"` + errMsg + `"}`)),
+		Type: "error",
+		Data: json.RawMessage([]byte(`{"error":"` + errMsg + `"}`)),
 	}
 
 	select {

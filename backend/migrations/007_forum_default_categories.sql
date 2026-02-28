@@ -1,25 +1,23 @@
 -- Insert default forum categories
 INSERT INTO forum_categories (id, name, description, display_order) VALUES
-  ('550e8400-e29b-41d4-a716-446655440001'::UUID, 'General Discussion', 'Talk about anything related to our community', 1),
-  ('550e8400-e29b-41d4-a716-446655440002'::UUID, 'Support', 'Get help with server issues', 2),
-  ('550e8400-e29b-41d4-a716-446655440003'::UUID, 'Events & Competitions', 'Participate in community events', 3)
+  (1, 'General Discussion', 'Talk about anything related to our community', 1),
+  (2, 'Support', 'Get help with server issues', 2),
+  (3, 'Events & Competitions', 'Participate in community events', 3)
 ON CONFLICT (name) DO NOTHING;
 
--- Insert welcome threads using the admin user ID (adjust if admin user ID is different)
--- First get admin user ID from users table where username = 'admin'
+-- Insert welcome threads using the admin user ID
 DO $$
 DECLARE
-  admin_id UUID;
-  general_id UUID;
+  admin_id BIGINT;
+  general_id BIGINT;
 BEGIN
   SELECT id INTO admin_id FROM users WHERE username = 'admin' LIMIT 1;
   SELECT id INTO general_id FROM forum_categories WHERE name = 'General Discussion' LIMIT 1;
   
   IF admin_id IS NOT NULL AND general_id IS NOT NULL THEN
-    INSERT INTO forum_threads (id, category_id, user_id, title, content, view_count, reply_count)
+    INSERT INTO forum_threads (category_id, user_id, title, content, view_count, reply_count)
     VALUES
       (
-        '660e8400-e29b-41d4-a716-446655440001'::UUID,
         general_id,
         admin_id,
         'Welcome to the forum!',
@@ -28,7 +26,6 @@ BEGIN
         12
       ),
       (
-        '660e8400-e29b-41d4-a716-446655440002'::UUID,
         general_id,
         admin_id,
         'Server updates and news',

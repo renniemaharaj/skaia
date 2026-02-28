@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/models"
 )
@@ -28,7 +27,7 @@ const (
 // Message represents a WebSocket message
 type Message struct {
 	Type    MessageType     `json:"type"`
-	UserID  uuid.UUID       `json:"user_id,omitempty"`
+	UserID  int64       `json:"user_id,omitempty"`
 	Payload json.RawMessage `json:"payload"`
 }
 
@@ -59,7 +58,7 @@ type Client struct {
 	hub    *Hub
 	conn   *websocket.Conn
 	send   chan *Message
-	UserID uuid.UUID
+	UserID int64
 }
 
 // NewHub creates a new WebSocket hub
