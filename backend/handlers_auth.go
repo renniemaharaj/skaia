@@ -224,3 +224,27 @@ func handleGetProfile(appCtx *AppContext) http.HandlerFunc {
 		json.NewEncoder(w).Encode(user)
 	}
 }
+// handleLogout handles user logout
+func handleLogout(appCtx *AppContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		// Get claims from context (middleware should set this)
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		// Log the logout
+		log.Printf("User %s (%s) logged out", claims.Username, claims.UserID)
+
+		// Return success (client will clear tokens from storage)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "logged out successfully",
+			"status":  "success",
+		})
+	}
+}

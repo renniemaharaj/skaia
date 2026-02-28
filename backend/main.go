@@ -82,6 +82,23 @@ func main() {
 	// WebSocket route
 	r.Get("/ws", WSHandler(appCtx))
 
+	// Auth endpoints
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", handleRegister(appCtx))
+		r.Post("/login", handleLogin(appCtx))
+		r.Post("/refresh", handleRefreshToken(appCtx))
+		r.With(JWTAuthMiddleware).Post("/logout", handleLogout(appCtx))
+	})
+
+	// Protected user endpoints
+	r.Route("/users", func(r chi.Router) {
+		r.Use(JWTAuthMiddleware)
+		r.Get("/{id}", handleGetUser(appCtx))
+		r.Get("/profile", handleGetProfile(appCtx))
+		r.Post("/", handleCreateUser(appCtx))
+		r.Put("/{id}", handleUpdateUser(appCtx))
+	})
+
 	// Store endpoints
 	r.Route("/store", func(r chi.Router) {
 		r.Get("/categories", handleStoreCategories(appCtx))
@@ -105,13 +122,6 @@ func main() {
 		r.Post("/threads/{id}/posts", handleForumPostCreate(appCtx))
 		r.Put("/posts/{id}", handleForumPostUpdate(appCtx))
 		r.Delete("/posts/{id}", handleForumPostDelete(appCtx))
-	})
-
-	// User endpoints
-	r.Route("/users", func(r chi.Router) {
-		r.Get("/{id}", handleGetUser(appCtx))
-		r.Post("/", handleCreateUser(appCtx))
-		r.Put("/{id}", handleUpdateUser(appCtx))
 	})
 
 	port := os.Getenv("PORT")

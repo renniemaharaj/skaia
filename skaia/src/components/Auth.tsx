@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mail, Lock, User, AlertCircle, Loader } from "lucide-react";
+import { useSetAtom } from "jotai";
+import { Mail, Lock, User, AlertCircle, Loader, CheckCircle } from "lucide-react";
+import {
+  currentUserAtom,
+  accessTokenAtom,
+  refreshTokenAtom,
+  isAuthenticatedAtom,
+} from "../atoms/auth";
+import { loginUser, registerUser, type AuthResponse } from "../utils/api";
 import "./Auth.css";
 import "./FormGroup.css";
 
@@ -16,6 +24,7 @@ export const Auth: React.FC<AuthPageProps> = ({
   const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -23,8 +32,30 @@ export const Auth: React.FC<AuthPageProps> = ({
     passwordConfirm: "",
   });
 
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const setAccessToken = useSetAtom(accessTokenAtom);
+  const setRefreshToken = useSetAtom(refreshTokenAtom);
+  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
+
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Handle navigation state (e.g., success message from registration redirect)
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.message) {
+      setSuccess(state.message);
+      // Pre-fill email if provided
+      if (state?.email) {
+        setFormData((prev) => ({
+          ...prev,
+          email: state.email,
+        }));
+      }
+      // Clear the state so it doesn't persist on navigation
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -40,45 +71,57 @@ export const Auth: React.FC<AuthPageProps> = ({
     setLoading(true);
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const payload = isLogin
-        ? {
-            email: formData.email,
-            password: formData.password,
-          }
-        : {
-            username: formData.username,
-            email: formData.email,
-            password: formData.password,
-          };
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Authentication failed");
+      // Validate form
+      if (!isLogin && formData.password !== formData.passwordConfirm) {
+        throw new Error("Passwords do not match");
       }
 
-      const data = await response.json();
+      let data: AuthResponse;
+      if (isLogin) {
+        data = await loginUser(formData.email, formData.password);
+        
+        // Store tokens in atoms (atomWithStorage handles localStorage automatically)
+        setAccessToken(data.access_token);
+        if (data.refresh_token) {
+          setRefreshToken(data.refresh_token);
+        }
+        setCurrentUser(data.user);
+        setIsAuthenticated(true);
 
-      // Store token in localStorage
-      localStorage.setItem("authToken", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+        // Call success callback
+        if (onAuthSuccess) {
+          onAuthSuccess(data.access_token);
+        }
 
-      // Call success callback
-      if (onAuthSuccess) {
-        onAuthSuccess(data.token);
+        // Redirect to previous page or home (but not to /register)
+        const from = (location.state as any)?.from?.pathname;
+        const redirectTo = from && from !== "/register" ? from : "/";
+        navigate(redirectTo);
+      } else {
+        // Registration
+        data = await registerUser(
+          formData.username,
+          formData.email,
+          formData.password,
+        );
+
+        // Show success message and redirect to login
+        setError(null);
+        setFormData({
+          username: "",
+          email: "",
+          password: "",
+          passwordConfirm: "",
+        });
+        
+        // Redirect to login page with success message
+        navigate("/login", { 
+          state: { 
+            message: "Account created successfully! Please log in.",
+            email: formData.email 
+          } 
+        });
       }
-
-      // Redirect to previous page or home
-      const from = (location.state as any)?.from?.pathname || "/";
-      navigate(from);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -103,6 +146,13 @@ export const Auth: React.FC<AuthPageProps> = ({
             <div className="auth-error">
               <AlertCircle size={20} />
               <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="auth-success">
+              <CheckCircle size={20} />
+              <span>{success}</span>
             </div>
           )}
 
@@ -206,6 +256,7 @@ export const Auth: React.FC<AuthPageProps> = ({
                 onClick={() => {
                   setIsLogin(!isLogin);
                   setError(null);
+                  setSuccess(null);
                   setFormData({
                     username: "",
                     email: "",

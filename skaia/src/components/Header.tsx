@@ -1,6 +1,13 @@
 import { ShoppingCart, Moon, Sun, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAtomValue, useSetAtom } from "jotai";
+import {
+  isAuthenticatedAtom,
+  currentUserAtom,
+  accessTokenAtom,
+  refreshTokenAtom,
+} from "../atoms/auth";
 import "./Header.css";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
 
@@ -16,21 +23,18 @@ export const Header: React.FC<HeaderProps> = ({
   // onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { theme, specifyTheme } = useThemeContext();
+  // Use Jotai atoms for auth state
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const user = useAtomValue(currentUserAtom);
+  const setAccessToken = useSetAtom(accessTokenAtom);
+  const setRefreshToken = useSetAtom(refreshTokenAtom);
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
 
-  useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    const userData = localStorage.getItem("user");
-    setIsAuthenticated(!!token);
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
+  const { theme, specifyTheme } = useThemeContext();
 
   const handleNavigation = (path: string) => {
     navigate(path);
@@ -41,13 +45,31 @@ export const Header: React.FC<HeaderProps> = ({
     specifyTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    setIsAuthenticated(false);
-    setUser(null);
-    navigate("/");
-    setMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      // Call backend logout endpoint
+      const token = localStorage.getItem("auth.accessToken");
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:1080";
+      if (token) {
+        await fetch(`${apiBaseUrl}/auth/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      // Clear all auth atoms (atomWithStorage will also clear localStorage)
+      setAccessToken(null);
+      setRefreshToken(null);
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      navigate("/");
+      setMenuOpen(false);
+    }
   };
 
   const isActive = (path: string) => {

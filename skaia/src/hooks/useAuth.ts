@@ -13,9 +13,11 @@ import {
   //   type AuthState,
   authStateAtom,
 } from "../atoms/auth";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+import {
+  loginUser,
+  registerUser,
+  refreshAccessToken as refreshToken,
+} from "../utils/api";
 
 interface LoginCredentials {
   email: string;
@@ -71,19 +73,8 @@ export const useAuth = () => {
       setAuthError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Login failed");
-        }
-
-        const data = await response.json();
-        setAuthState(data.user, data.access_token, data.refresh_token);
+        const data = await loginUser(credentials.email, credentials.password);
+        setAuthState(data.user, data.access_token, data.refresh_token ?? "");
         return data;
       } catch (err) {
         const errorMessage =
@@ -110,19 +101,12 @@ export const useAuth = () => {
       setAuthError(null);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Registration failed");
-        }
-
-        const data = await response.json();
-        setAuthState(data.user, data.access_token, data.refresh_token);
+        const data = await registerUser(
+          credentials.username,
+          credentials.email,
+          credentials.password,
+        );
+        setAuthState(data.user, data.access_token, data.refresh_token ?? "");
         return data;
       } catch (err) {
         const errorMessage =
@@ -148,19 +132,9 @@ export const useAuth = () => {
   }, [setCurrentUser, setAccessToken, setRefreshToken, setIsAuthenticated]);
 
   const refreshAccessToken = useCallback(
-    async (refreshToken: string) => {
+    async (rToken: string) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refreshToken }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Token refresh failed");
-        }
-
-        const data = await response.json();
+        const data = await refreshToken(rToken);
         setAccessToken(data.access_token);
         return data.access_token;
       } catch (err) {

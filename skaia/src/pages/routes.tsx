@@ -12,16 +12,16 @@ import EditThreadPage from "./edit-thread/index.tsx";
 import ViewThreadPage from "./view-thread/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
-  { path: "*", element: <NotFoundPage /> },
-];
-export const publicRoutes: (CustomRoute | IndexRoute)[] = [
-  { index: true, element: <Index /> },
   { path: "store", element: <StorePage /> },
-  { path: "forum", element: <ForumPage /> },
   { path: "new-thread", element: <NewThreadPage /> },
   { path: "edit-thread/:threadId", element: <EditThreadPage /> },
   { path: "view-thread/:threadId", element: <ViewThreadPage /> },
+  { path: "forum", element: <ForumPage /> },
   { path: "cart", element: <CartPage /> },
+];
+export const publicRoutes: (CustomRoute | IndexRoute)[] = [
+  { index: true, element: <Index /> },
+  { path: "*", element: <NotFoundPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },
 ];

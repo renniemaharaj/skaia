@@ -1,6 +1,7 @@
 import { Route } from "react-router-dom";
 import Suspended from "./suspended";
 import { protectedRoutes, publicRoutes } from "./routes";
+import { ProtectedRoute } from "../components/ProtectedRoute";
 import type { JSX } from "react";
 
 export interface Primitve {
@@ -38,7 +39,11 @@ export const protectedRoutesFunc = () => {
     <Route
       key={`private-${(route as CustomRoute).path || i}` + i}
       path={(route as CustomRoute).path}
-      element={passThrough(route as CustomRoute)}
+      element={
+        <ProtectedRoute>
+          {passThrough(route as CustomRoute)}
+        </ProtectedRoute>
+      }
     />
   ));
 };
