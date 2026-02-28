@@ -36,7 +36,11 @@ const UserPermissionManager: React.FC = () => {
         const data = await apiRequest<Permission[]>("/permissions", {
           method: "GET",
         });
-        setPermissions(data || []);
+        if (data && Array.isArray(data)) {
+          setPermissions(data);
+        } else {
+          setPermissions([]);
+        }
       } catch (error) {
         console.error("Failed to fetch permissions:", error);
       }
@@ -60,7 +64,16 @@ const UserPermissionManager: React.FC = () => {
         `/users/search?q=${encodeURIComponent(query)}`,
         { method: "GET" },
       );
-      setSearchResults(results || []);
+      if (results && Array.isArray(results)) {
+        setSearchResults(
+          results.map((user) => ({
+            ...user,
+            permissions: user.permissions || [],
+          })),
+        );
+      } else {
+        setSearchResults([]);
+      }
     } catch (error) {
       console.error("Search failed:", error);
       setSearchResults([]);
@@ -116,10 +129,16 @@ const UserPermissionManager: React.FC = () => {
         method: "GET",
       });
       if (updatedUser) {
-        setSelectedUser(updatedUser);
+        const normalizedUser = {
+          ...updatedUser,
+          permissions: updatedUser.permissions || [],
+        };
+        setSelectedUser(normalizedUser);
         // Update in search results
         setSearchResults(
-          searchResults.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
+          searchResults.map((u) =>
+            u.id === normalizedUser.id ? normalizedUser : u,
+          ),
         );
       }
 
@@ -135,7 +154,8 @@ const UserPermissionManager: React.FC = () => {
   const hasPermission = (permissionName: string) => {
     if (!selectedUser) return false;
     const isChanging = permissionChanges.has(permissionName);
-    const currentlyHas = selectedUser.permissions.includes(permissionName);
+    const userPermissions = selectedUser.permissions || [];
+    const currentlyHas = userPermissions.includes(permissionName);
     return isChanging ? !currentlyHas : currentlyHas;
   };
 
@@ -182,9 +202,9 @@ const UserPermissionManager: React.FC = () => {
                 </div>
                 <div className="upm-user-email">{user.email}</div>
                 <div className="upm-user-perms">
-                  {user.permissions.length > 0 ? (
+                  {(user.permissions?.length ?? 0) > 0 ? (
                     <span className="upm-perm-count">
-                      {user.permissions.length} permissions
+                      {user.permissions?.length ?? 0} permissions
                     </span>
                   ) : (
                     <span className="upm-perm-count empty">No permissions</span>

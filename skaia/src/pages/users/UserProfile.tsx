@@ -36,7 +36,11 @@ const UserProfile: React.FC = () => {
           method: "GET",
         });
         if (userData) {
-          setUser(userData);
+          setUser({
+            ...userData,
+            roles: userData.roles || [],
+            permissions: userData.permissions || [],
+          });
           setError(null);
         } else {
           setError("User not found");
@@ -111,11 +115,11 @@ const UserProfile: React.FC = () => {
             <span className="stat-value">{createdDate}</span>
           </div>
 
-          {user.roles.length > 0 && (
+          {(user.roles?.length ?? 0) > 0 && (
             <div className="user-profile-stat">
               <span className="stat-label">Roles</span>
               <div className="stat-badges">
-                {user.roles.map((role) => (
+                {user.roles?.map((role) => (
                   <span key={role} className="badge badge-role">
                     {role}
                   </span>
@@ -124,18 +128,18 @@ const UserProfile: React.FC = () => {
             </div>
           )}
 
-          {user.permissions.length > 0 && (
+          {(user.permissions?.length ?? 0) > 0 && (
             <div className="user-profile-stat">
               <span className="stat-label">Permissions</span>
               <div className="stat-badges">
-                {user.permissions.slice(0, 5).map((perm) => (
+                {user.permissions?.slice(0, 5).map((perm) => (
                   <span key={perm} className="badge badge-permission">
                     {perm}
                   </span>
                 ))}
-                {user.permissions.length > 5 && (
+                {(user.permissions?.length ?? 0) > 5 && (
                   <span className="badge badge-more">
-                    +{user.permissions.length - 5}
+                    +{(user.permissions?.length ?? 0) - 5}
                   </span>
                 )}
               </div>

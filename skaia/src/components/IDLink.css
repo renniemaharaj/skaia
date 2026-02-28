@@ -1,0 +1,58 @@
+.id-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.id-link-text {
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: "Courier New", monospace;
+  font-size: 0.9em;
+}
+
+.id-link--user .id-link-text {
+  color: #3b82f6;
+}
+
+.id-link--user .id-link-text:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #1d4ed8;
+}
+
+.id-link--thread .id-link-text {
+  color: #8b5cf6;
+}
+
+.id-link--thread .id-link-text:hover {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #6d28d9;
+}
+
+.id-link-copy {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.id-link-copy:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #1f2937;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .id-link-copy:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+  }
+}

@@ -8,6 +8,7 @@ import {
   InfoIcon,
 } from "lucide-react";
 import "./ViewThreadMeta.css";
+import { truncate } from "lodash";
 
 type Author = {
   name: string;
@@ -151,7 +152,9 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
     {
       id: "thread-id",
       content: (
-        <div className="thread-meta-id">Thread ID: {threadMeta.threadId}</div>
+        <div className="thread-meta-id">
+          Thread ID: {truncate(threadMeta.threadId, { length: 10 })}
+        </div>
       ),
     },
   ];

@@ -4,6 +4,7 @@ import { publicRoutesFunc, protectedRoutesFunc } from "./pages/routing";
 import { Layout } from "./pages/Layout";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
+import ErrorBoundary from "./ErrorBoundary";
 
 export default function App() {
   return (
@@ -11,10 +12,12 @@ export default function App() {
       <Router>
         <ThemeProvider>
           <Layout>
-            <Routes>
-              {publicRoutesFunc()}
-              {protectedRoutesFunc()}
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                {publicRoutesFunc()}
+                {protectedRoutesFunc()}
+              </Routes>
+            </ErrorBoundary>
           </Layout>
         </ThemeProvider>
       </Router>
