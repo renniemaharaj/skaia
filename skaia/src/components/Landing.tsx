@@ -57,11 +57,6 @@ export const Landing: React.FC = () => {
           value: "CreeperSlayer92",
           icon: <Star size={32} />,
         },
-        {
-          label: "Discord Members",
-          value: "892 members",
-          icon: <MessageCircle size={32} />,
-        },
       ];
       setStats(statsData);
       setStatsLoading(false);
@@ -92,6 +87,37 @@ export const Landing: React.FC = () => {
     <div className="landing-container">
       {/* Hero Banner Section */}
       <Hero />
+
+      {/* Community Legacy Section */}
+      <section className="community-legacy">
+        <div className="section-header">
+          <h2>12+ Years of Community Excellence</h2>
+          <p>A Legacy Built on Trust, Inclusivity, and Fun</p>
+        </div>
+        <div className="community-info">
+          <div className="info-card">
+            <h3>Established & Trusted</h3>
+            <p>
+              Over 12 years of continuous operation with a dedicated community
+              of players who believe in authentic Minecraft experiences.
+            </p>
+          </div>
+          <div className="info-card">
+            <h3>Family Friendly</h3>
+            <p>
+              We maintain a welcoming, family-oriented environment where players
+              of all ages can enjoy safe and inclusive gameplay.
+            </p>
+          </div>
+          <div className="info-card">
+            <h3>Strong Community</h3>
+            <p>
+              Our players have built lasting friendships and memories together,
+              creating a thriving community that grows every day.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Stats Section */}
       <section className="stats-section">
@@ -208,37 +234,6 @@ export const Landing: React.FC = () => {
             </div>
             <h3>Premium Items</h3>
             <p>Shop for ranks, cosmetics, and exclusive content</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Community Legacy Section */}
-      <section className="community-legacy">
-        <div className="section-header">
-          <h2>12+ Years of Community Excellence</h2>
-          <p>A Legacy Built on Trust, Inclusivity, and Fun</p>
-        </div>
-        <div className="community-info">
-          <div className="info-card">
-            <h3>Established & Trusted</h3>
-            <p>
-              Over 12 years of continuous operation with a dedicated community
-              of players who believe in authentic Minecraft experiences.
-            </p>
-          </div>
-          <div className="info-card">
-            <h3>Family Friendly</h3>
-            <p>
-              We maintain a welcoming, family-oriented environment where players
-              of all ages can enjoy safe and inclusive gameplay.
-            </p>
-          </div>
-          <div className="info-card">
-            <h3>Strong Community</h3>
-            <p>
-              Our players have built lasting friendships and memories together,
-              creating a thriving community that grows every day.
-            </p>
           </div>
         </div>
       </section>

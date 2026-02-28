@@ -9,7 +9,7 @@
   max-height: fit-content;
   /* background-color: var(--bg-color); */
   color: var(--skaia-green-contrast);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
 }
 .view-thread-meta-container {
   /* flex-direction: row !important; */

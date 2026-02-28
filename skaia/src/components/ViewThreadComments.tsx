@@ -51,28 +51,27 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                 </div>
 
                 <div className="comment-content">{comment.content}</div>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                  {/* Reaction */}
+                  <button
+                    className="thread-action-btn like-btn"
+                    // onClick={handleLike}
+                    title="Like"
+                  >
+                    <ThumbsUp size={20} />
+                    {/* <span>{reactions.like}</span> */}
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    className="thread-action-btn delete-btn"
+                    // onClick={handleDelete}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "1rem" }}>
-              {/* Reaction */}
-              <button
-                className="thread-action-btn like-btn"
-                // onClick={handleLike}
-                title="Like"
-              >
-                <ThumbsUp size={20} />
-                {/* <span>{reactions.like}</span> */}
-              </button>
-
-              {/* Delete */}
-              <button
-                className="thread-action-btn delete-btn"
-                // onClick={handleDelete}
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
             </div>
           </>
         ))}

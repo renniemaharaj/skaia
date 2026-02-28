@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ShoppingCart, Package } from "lucide-react";
 import "./Store.css";
-
+import "./EmptyState.css";
 interface Category {
   id: string;
   name: string;

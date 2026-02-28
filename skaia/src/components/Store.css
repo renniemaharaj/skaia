@@ -272,16 +272,6 @@
   box-shadow: 0 2px 12px rgba(91, 158, 142, 0.4);
 }
 
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  color: var(--text-secondary);
-  background-color: var(--bg-secondary);
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  animation: fadeIn 0.6s ease-out;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;

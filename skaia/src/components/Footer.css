@@ -124,7 +124,7 @@
 }
 
 .social-links a:hover {
-  background: var(--accent-color);
+  color: var(--text-primary) !important;
   color: white;
   transform: translateY(-4px) scale(1.1);
   box-shadow: 0 8px 16px rgba(202, 255, 237, 0.2);

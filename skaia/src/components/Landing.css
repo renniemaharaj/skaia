@@ -229,11 +229,12 @@
 }
 
 .social-link:hover {
-  background-color: var(--skaia-green-primary);
-  color: #ffffff;
-  border-color: var(--skaia-green-primary);
+  /* background-color: var(--skaia-green-primary); */
+  /* color:; */
+  /* border-color: var(--skaia-green-primary); */
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(202, 255, 237, 0.2);
+  color: var(--text-primary) !important;
 }
 
 /* Showcase Section */

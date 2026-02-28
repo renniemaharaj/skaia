@@ -10,6 +10,7 @@ import { welcomeMessage } from "../../components/welcome";
 
 import "./index.css";
 import "../../components/IconButton.css";
+import "./../../components/EmptyState.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
@@ -79,6 +80,7 @@ const ViewThreadPage = () => {
             borderLeft: "3px solid var(--primary-color)",
             borderRight: "3px solid var(--primary-color)",
           }}
+          className="empty-state"
         >
           <h3 style={{ margin: 0 }}>
             Thread :: @{threadId} Welcome to the forum!

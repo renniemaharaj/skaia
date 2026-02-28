@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import ForumCategory from "./ForumCategory";
 import Editor from "./Editor";
 import "./IconButton.css";
+import "./ThreadActions.css";
 
 const EditThread = () => {
   const threadFromUrl = useParams().threadId;
@@ -23,13 +24,13 @@ const EditThread = () => {
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
           <button
-            className="icon-button"
+            className="thread-action-btn btn-close"
             onClick={() => navigate("/forum")}
             title="Close"
           >
             <X size={20} />
           </button>
-          <button className="icon-button" title="Submit">
+          <button className="thread-action-btn btn-submit" title="Submit">
             <CheckIcon size={20} />
           </button>
         </div>

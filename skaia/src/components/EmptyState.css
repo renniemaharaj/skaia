@@ -1,0 +1,9 @@
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  animation: fadeIn 0.6s ease-out;
+}
