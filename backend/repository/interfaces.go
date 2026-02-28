@@ -14,6 +14,9 @@ type UserRepository interface {
 	UpdateUser(user *models.User) (*models.User, error)
 	DeleteUser(id uuid.UUID) error
 	ListUsers(limit int, offset int) ([]*models.User, error)
+	AddRole(userID uuid.UUID, roleID uuid.UUID) error
+	RemoveRole(userID uuid.UUID, roleID uuid.UUID) error
+	HasPermission(userID uuid.UUID, permission string) (bool, error)
 }
 
 // ProductRepository defines operations for product data
