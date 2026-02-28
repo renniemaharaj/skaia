@@ -1,70 +1,121 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { ThumbsUp, Pencil, Trash2, X } from "lucide-react";
+
 import ViewThread from "../../components/ViewThread";
 import ViewThreadMeta from "../../components/ViewThreadMeta";
-import "./index.css";
-import { X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { welcomeMessage } from "../../components/welcome";
-import Hero from "../../components/Hero";
 import ViewThreadComments from "../../components/ViewThreadComments";
+import Hero from "../../components/Hero";
+import { welcomeMessage } from "../../components/welcome";
+
+import "./index.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
+  const { threadId } = useParams<{ threadId: string }>();
 
-  const [mediaQuery, setMediaQuery] = useState(
-    window.matchMedia("(max-width: 880px)"),
+  const [isMobile, setIsMobile] = useState(
+    window.matchMedia("(max-width: 880px)").matches,
   );
-  const threadId = useParams().threadId;
+
+  const [reactions, setReactions] = useState({
+    like: 0,
+  });
 
   useEffect(() => {
-    const handler = () =>
-      setMediaQuery(window.matchMedia("(max-width: 880px)"));
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, [mediaQuery]);
+    const media = window.matchMedia("(max-width: 880px)");
+    const handler = () => setIsMobile(media.matches);
+
+    media.addEventListener("change", handler);
+    return () => media.removeEventListener("change", handler);
+  }, []);
+
+  const handleLike = () => {
+    setReactions((prev) => ({
+      ...prev,
+      like: prev.like + 1,
+    }));
+
+    // TODO: call backend reaction API
+  };
+
+  const handleEdit = () => {
+    navigate(`/edit-thread/${threadId}`);
+  };
+
+  const handleDelete = async () => {
+    const confirmDelete = confirm(
+      "Are you sure you want to delete this thread?",
+    );
+    if (!confirmDelete) return;
+
+    try {
+      // TODO: call delete API
+      navigate("/forum");
+    } catch (err) {
+      console.error("Delete failed", err);
+    }
+  };
 
   return (
     <div
-      style={{ width: "100vw", maxHeight: "fit-content" }}
-      className={`${mediaQuery.matches ? "mobile-view-thread-page" : "modal"}`}
+      className={isMobile ? "mobile-view-thread-page" : "modal"}
+      style={{ width: "100vw" }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Hero height="300px" />
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <Hero height="350px" />
+
+        {/* Header */}
         <div
           style={{
+            marginTop: "1rem",
             marginBottom: "2rem",
+            padding: "1rem",
             display: "flex",
             justifyContent: "space-between",
-            // backgroundColor: "var(--bg-color)",
-            marginTop: "1rem",
-            padding: "1rem",
-            paddingLeft: "1rem",
-            paddingRight: "1rem",
+            alignItems: "center",
+            borderLeft: "3px solid var(--primary-color)",
+            borderRight: "3px solid var(--primary-color)",
           }}
-          // className="richtext-outline-1"
         >
-          <h3 style={{ marginBottom: 0 }}>
-            Welcome to the forum guys! thread:: {threadId}
+          <h3 style={{ margin: 0 }}>
+            Thread :: @{threadId} Welcome to the forum!
           </h3>
-          <button
-            style={{
-              //   alignSelf: "end",
-              marginRight: "1rem",
-              //   marginTop: "1rem",
-            }}
-            className="modal-close"
-            onClick={() => navigate("/forum")}
-            title="Close"
-          >
-            <X size={24} />
-          </button>
+
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            {/* Reaction */}
+            <button className="icon-button" onClick={handleLike} title="Like">
+              <ThumbsUp size={20} />
+              <span>{reactions.like}</span>
+            </button>
+
+            {/* Edit */}
+            <button className="icon-button" onClick={handleEdit} title="Edit">
+              <Pencil size={20} />
+            </button>
+
+            {/* Delete */}
+            <button
+              className="icon-button danger"
+              onClick={handleDelete}
+              title="Delete"
+            >
+              <Trash2 size={20} />
+            </button>
+
+            {/* Close */}
+            <button
+              className="icon-button"
+              onClick={() => navigate("/forum")}
+              title="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
+
+        {/* Body */}
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
           <ViewThread content={welcomeMessage} />
