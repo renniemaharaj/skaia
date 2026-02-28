@@ -1,4 +1,4 @@
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
 export interface User {
@@ -56,7 +56,10 @@ export const authStateAtom = atom((get) => ({
 // Atom for checking specific permissions
 export const hasPermissionAtom = atom((get) => (permission: string) => {
   const user = get(currentUserAtom);
-  return user?.permissions.includes(permission) ?? false;
+  if (!user) return false;
+  // Admin has all permissions
+  if (user.roles.includes("admin")) return true;
+  return user.permissions.includes(permission) ?? false;
 });
 
 // Atom for checking specific roles
@@ -79,9 +82,9 @@ export const uiUpdatingAtom = atom<boolean>(false);
 export const uiUpdateQueueAtom = atom<
   Array<{
     id: string;
-    type: "thread" | "post" | "user";
-    action: "create" | "update" | "delete";
+    type: "thread" | "post" | "user" | "like";
+    action: "create" | "update" | "delete" | "like" | "unlike";
     data: any;
     timestamp: number;
   }>
->([]);
+>([]);;

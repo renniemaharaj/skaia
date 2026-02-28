@@ -1,5 +1,4 @@
 import { useCallback } from "react";
-import { useAuthenticatedFetch } from "./useAuth";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -14,7 +13,6 @@ export interface UploadProgress {
  * Hook for handling file uploads (photos and banners)
  */
 export const useFileUpload = () => {
-  const authenticatedFetch = useAuthenticatedFetch();
 
   /**
    * Upload user profile photo (avatar)

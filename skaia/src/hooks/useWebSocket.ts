@@ -14,10 +14,10 @@ import {
 const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080";
 
 export interface SocketMessage {
-  type: "auth" | "update" | "delete" | "create" | "sync" | "presence" | "error";
+  type: "auth" | "update" | "delete" | "create" | "sync" | "presence" | "like" | "unlike" | "error";
   action?: string;
   data?: Record<string, any>;
-  entityType?: "thread" | "post" | "user" | "permission";
+  entityType?: "thread" | "post" | "user" | "permission" | "like";
   errorMessage?: string;
 }
 
@@ -134,6 +134,34 @@ export const useWebSocket = () => {
             if (message.data?.users) {
               setOnlineUsers(message.data.users);
             }
+            break;
+
+          case "like":
+          case "unlike":
+            // Post like/unlike
+            if (message.entityType === "post") {
+              setForumPosts((posts) =>
+                posts.map((p: any) =>
+                  p.id === message.data?.postId
+                    ? {
+                        ...p,
+                        likes: message.data?.likes || p.likes,
+                        isLiked: message.type === "like" ? true : false,
+                      }
+                    : p,
+                ),
+              );
+            }
+            setUIUpdateQueue((queue) => [
+              ...queue,
+              {
+                id: message.data?.postId || Math.random().toString(),
+                type: "like" as any,
+                action: message.type === "like" ? "like" : "unlike" as any,
+                data: message.data,
+                timestamp: Date.now(),
+              },
+            ]);
             break;
 
           case "error":
@@ -323,6 +351,28 @@ export const useRealtimeUpdate = () => {
     [send],
   );
 
+  const likePost = useCallback(
+    (postId: string) => {
+      send({
+        type: "like",
+        entityType: "post",
+        data: { postId },
+      });
+    },
+    [send],
+  );
+
+  const unlikePost = useCallback(
+    (postId: string) => {
+      send({
+        type: "unlike",
+        entityType: "post",
+        data: { postId },
+      });
+    },
+    [send],
+  );
+
   return {
     createThread,
     updateThread,
@@ -330,5 +380,7 @@ export const useRealtimeUpdate = () => {
     createPost,
     updatePost,
     deletePost,
+    likePost,
+    unlikePost,
   };
 };

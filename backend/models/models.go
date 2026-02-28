@@ -8,23 +8,23 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID               uuid.UUID  `json:"id"`
-	Username         string     `json:"username"`
-	Email            string     `json:"email"`
-	PasswordHash     string     `json:"-"`
-	DisplayName      string     `json:"display_name"`
-	AvatarURL        string     `json:"avatar_url"`
-	BannerURL        string     `json:"banner_url"`
-	PhotoURL         string     `json:"photo_url"`
-	Bio              string     `json:"bio"`
-	DiscordID        *string    `json:"discord_id"`
-	IsSuspended      bool       `json:"is_suspended"`
-	SuspendedAt      *time.Time `json:"suspended_at"`
-	SuspendedReason  *string    `json:"suspended_reason"`
-	Roles            []string   `json:"roles"`
-	Permissions      []string   `json:"permissions"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	ID              uuid.UUID  `json:"id"`
+	Username        string     `json:"username"`
+	Email           string     `json:"email"`
+	PasswordHash    string     `json:"-"`
+	DisplayName     string     `json:"display_name"`
+	AvatarURL       string     `json:"avatar_url"`
+	BannerURL       string     `json:"banner_url"`
+	PhotoURL        string     `json:"photo_url"`
+	Bio             string     `json:"bio"`
+	DiscordID       *string    `json:"discord_id"`
+	IsSuspended     bool       `json:"is_suspended"`
+	SuspendedAt     *time.Time `json:"suspended_at"`
+	SuspendedReason *string    `json:"suspended_reason"`
+	Roles           []string   `json:"roles"`
+	Permissions     []string   `json:"permissions"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 // RegisterRequest represents a user registration request
@@ -48,10 +48,10 @@ type RefreshRequest struct {
 
 // AuthResponse represents the response after login/register
 type AuthResponse struct {
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
-	User         *User        `json:"user"`
-	ExpiresIn    int          `json:"expires_in"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	User         *User  `json:"user"`
+	ExpiresIn    int    `json:"expires_in"`
 }
 
 // StoreCategory represents a category in the store

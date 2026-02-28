@@ -315,4 +315,3 @@ func (r *UserRepositoryImpl) HasPermission(userID uuid.UUID, permission string) 
 
 	return count > 0, nil
 }
-

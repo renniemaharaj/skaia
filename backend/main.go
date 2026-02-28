@@ -80,9 +80,7 @@ func main() {
 	})
 
 	// WebSocket route
-	r.Get("/ws", func(w http.ResponseWriter, req *http.Request) {
-		websocket.HandleConnection(w, req, appCtx.WebSocketHub)
-	})
+	r.Get("/ws", WSHandler(appCtx))
 
 	// Store endpoints
 	r.Route("/store", func(r chi.Router) {
