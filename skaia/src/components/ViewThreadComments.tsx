@@ -175,9 +175,12 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                     </button>
                   )}
 
-                  {/* Delete - only if user owns comment or has permission */}
+                  {/* Delete - only if user owns comment, has explicit permission, or can_delete flag */}
                   {(currentUser?.id === comment.user_id ||
-                    comment.can_delete) && (
+                    comment.can_delete ||
+                    currentUser?.permissions?.includes(
+                      "forum.delete-post",
+                    )) && (
                     <button
                       className="thread-action-btn delete-btn"
                       onClick={() => handleDeleteComment(comment.id)}

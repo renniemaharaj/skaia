@@ -29,9 +29,11 @@ export const useWebSocketSync = () => {
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
   const currentUser = useAtomValue(currentUserAtom);
-  // Keep a ref so the stable ws.onmessage callback always has the latest user ID
+  // Keep refs so the stable ws.onmessage callback always has the latest user info
   const currentUserIdRef = useRef<string | null>(null);
+  const currentUserPermissionsRef = useRef<string[] | null>(null);
   currentUserIdRef.current = currentUser?.id ?? null;
+  currentUserPermissionsRef.current = currentUser?.permissions ?? null;
 
   const setupWebSocket = useCallback(() => {
     // Prevent multiple simultaneous connection attempts
@@ -119,7 +121,23 @@ export const useWebSocketSync = () => {
                   (p) => String(p.id) === String(newPost.id),
                 );
                 if (!exists) {
-                  return [...prev, newPost];
+                  // Enrich permissions for the receiving client
+                  const userId = currentUserIdRef.current;
+                  const perms = currentUserPermissionsRef.current;
+                  const isOwner =
+                    userId != null &&
+                    String(newPost.user_id) === String(userId);
+                  const enriched = {
+                    ...newPost,
+                    can_delete:
+                      isOwner ||
+                      (perms?.includes("forum.delete-post") ?? false),
+                    can_edit:
+                      isOwner || (perms?.includes("forum.edit-post") ?? false),
+                    can_like_comments:
+                      perms?.includes("thread.canLikeComments") ?? false,
+                  };
+                  return [...prev, enriched];
                 }
                 return prev;
               });
@@ -258,11 +276,44 @@ export const useWebSocketSync = () => {
                     String(c.id) === String(id)
                       ? {
                           ...c,
-                          threads: data.threads || c.threads,
+                          threads: data.threads ?? c.threads,
                           updated_at: new Date().toISOString(),
                         }
                       : c,
                   );
+                }
+
+                case "thread_created": {
+                  // Broadcast fallback: update category list directly
+                  if (!data || !data.category_id) return prevCategories;
+                  const catId = String(data.category_id);
+                  return prevCategories.map((c) => {
+                    if (String(c.id) !== catId) return c;
+                    const alreadyExists = (c.threads || []).some(
+                      (t) => String(t.id) === String(data.id),
+                    );
+                    if (alreadyExists) return c;
+                    return {
+                      ...c,
+                      threads: [data, ...(c.threads || [])].slice(0, 2),
+                      thread_count: (c.thread_count || 0) + 1,
+                    };
+                  });
+                }
+
+                case "thread_deleted": {
+                  // Broadcast fallback: remove deleted thread from all categories
+                  return prevCategories.map((c) => {
+                    const filtered = (c.threads || []).filter(
+                      (t) => String(t.id) !== String(id),
+                    );
+                    if (filtered.length === (c.threads || []).length) return c;
+                    return {
+                      ...c,
+                      threads: filtered,
+                      thread_count: Math.max(0, (c.thread_count || 0) - 1),
+                    };
+                  });
                 }
 
                 default:
