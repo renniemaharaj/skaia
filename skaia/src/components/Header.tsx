@@ -8,6 +8,7 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
 } from "../atoms/auth";
+import { apiRequest } from "../utils/api";
 import UserLink from "./UserLink";
 import "./Header.css";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
@@ -48,19 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleLogout = async () => {
     try {
-      // Call backend logout endpoint
-      const token = localStorage.getItem("auth.accessToken");
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:1080";
-      if (token) {
-        await fetch(`${apiBaseUrl}/auth/logout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await apiRequest("/auth/logout", { method: "POST" });
     } catch (err) {
       console.error("Logout error:", err);
     } finally {

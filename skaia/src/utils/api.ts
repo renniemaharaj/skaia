@@ -4,8 +4,7 @@
 
 import { type User } from "../atoms/auth";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:1080";
+const API_BASE_URL = "/api";
 
 export interface ApiError {
   error: string;
