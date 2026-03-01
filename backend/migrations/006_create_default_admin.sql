@@ -26,6 +26,10 @@ WHERE NOT EXISTS (
   SELECT 1 FROM users WHERE username = 'admin'
 );
 
+-- Update the sequence to the next ID after the highest ID we just inserted
+SELECT setval(pg_get_serial_sequence('users', 'id'), 
+             (SELECT COALESCE(MAX(id), 0) + 1 FROM users), false);
+
 -- Assign admin role to the default admin user
 INSERT INTO user_roles (user_id, role_id)
 SELECT 1, 1

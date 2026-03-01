@@ -52,6 +52,10 @@ INSERT INTO roles (id, name, description) VALUES
     (4, 'banned', 'Banned user')
 ON CONFLICT DO NOTHING;
 
+-- Update roles sequence
+SELECT setval(pg_get_serial_sequence('roles', 'id'), 
+             (SELECT COALESCE(MAX(id), 0) + 1 FROM roles), false);
+
 -- Insert default permissions
 INSERT INTO permissions (id, name, category, description) VALUES
     (1, 'forum.new-thread', 'forum', 'Create new forum threads'),
@@ -65,6 +69,10 @@ INSERT INTO permissions (id, name, category, description) VALUES
     (9, 'user.manage-permissions', 'user', 'Manage user permissions'),
     (10, 'store.purchase', 'store', 'Purchase items from store')
 ON CONFLICT DO NOTHING;
+
+-- Update permissions sequence
+SELECT setval(pg_get_serial_sequence('permissions', 'id'), 
+             (SELECT COALESCE(MAX(id), 0) + 1 FROM permissions), false);
 
 -- Assign permissions to roles
 INSERT INTO role_permissions (role_id, permission_id) VALUES

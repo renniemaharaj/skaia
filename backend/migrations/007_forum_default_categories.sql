@@ -5,6 +5,10 @@ INSERT INTO forum_categories (id, name, description, display_order) VALUES
   (3, 'Events & Competitions', 'Participate in community events', 3)
 ON CONFLICT (name) DO NOTHING;
 
+-- Update forum_categories sequence
+SELECT setval(pg_get_serial_sequence('forum_categories', 'id'), 
+             (SELECT COALESCE(MAX(id), 0) + 1 FROM forum_categories), false);
+
 -- Insert welcome threads using the admin user ID
 DO $$
 DECLARE
