@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom, isAuthenticatedAtom } from "../atoms/auth";
@@ -32,39 +32,40 @@ export const Forum: React.FC<ForumProps> = () => {
   // Setup WebSocket synchronization for forum updates
   const { subscribe } = useWebSocketSync();
 
+  // Load forums from API
+  const loadForums = useCallback(async () => {
+    try {
+      setForumsLoading(true);
+      const response = await apiRequest("/forum/categories");
+      if (response && Array.isArray(response)) {
+        // Convert API response to ForumCategory format
+        const categories = response.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || "",
+          thread_count: cat.thread_count || 0,
+          created_at: cat.created_at,
+          updated_at: cat.updated_at,
+          threads: cat.threads || [],
+        }));
+        setForumCategories(categories);
+
+        // Subscribe to each category so we receive propagated updates
+        categories.forEach((category) => {
+          subscribe("forum_category", category.id);
+        });
+      }
+    } catch (error) {
+      console.error("Error loading forums:", error);
+    } finally {
+      setForumsLoading(false);
+    }
+  }, [setForumCategories, subscribe]);
+
   // Load forums from API on mount
   useEffect(() => {
-    const loadForums = async () => {
-      try {
-        setForumsLoading(true);
-        const response = await apiRequest("/forum/categories");
-        if (response && Array.isArray(response)) {
-          // Convert API response to ForumCategory format
-          const categories = response.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            description: cat.description || "",
-            thread_count: cat.thread_count || 0,
-            created_at: cat.created_at,
-            updated_at: cat.updated_at,
-            threads: cat.threads || [],
-          }));
-          setForumCategories(categories);
-
-          // Subscribe to each category so we receive propagated updates
-          categories.forEach((category) => {
-            subscribe("forum_category", category.id);
-          });
-        }
-      } catch (error) {
-        console.error("Error loading forums:", error);
-      } finally {
-        setForumsLoading(false);
-      }
-    };
-
     loadForums();
-  }, [setForumCategories, subscribe]);
+  }, [loadForums]);
 
   const handleDeleteCategory = async (categoryId: string) => {
     if (confirm("Are you sure you want to delete this category?")) {
@@ -79,11 +80,13 @@ export const Forum: React.FC<ForumProps> = () => {
     }
   };
 
-  const handleDeleteThread = (threadId: string) => {
+  const handleDeleteThread = (threadId: string, _: string) => {
     if (confirm("Are you sure you want to delete this thread?")) {
       apiRequest(`/forum/threads/${threadId}`, {
         method: "DELETE",
-      }).catch((error) => console.error("Error deleting thread:", error));
+      }).catch((error) => {
+        console.error("Error deleting thread:", error);
+      });
     }
   };
 
@@ -127,24 +130,34 @@ export const Forum: React.FC<ForumProps> = () => {
                   <h3>Start a Discussion</h3>
                   <p>Share your thoughts with the community</p>
                 </div>
-                {/* Create Category */}
-                <div
-                  onClick={() => setShowCreateCategoryDialog(true)}
-                  style={{
-                    flex: 1,
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <div className="feature-icon">
-                    <Plus size={48} className="new-thread-icon" />
+
+                {/* Create Category Icon */}
+                {canCreateCategory && (
+                  <div
+                    onClick={() => setShowCreateCategoryDialog(true)}
+                    style={{
+                      flex: 0,
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "8px",
+                      justifyContent: "center",
+                      padding: "0 16px",
+                      borderLeft: "1px solid var(--border-color)",
+                    }}
+                    title="Create Category"
+                  >
+                    <Plus
+                      size={32}
+                      className="new-thread-icon"
+                      style={{ opacity: 0.6 }}
+                    />
+                    <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>
+                      New Category
+                    </span>
                   </div>
-                  <h3>Create Category</h3>
-                  <p>Add a new forum category</p>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -162,36 +175,27 @@ export const Forum: React.FC<ForumProps> = () => {
           forums.map((forum) => (
             <div key={forum.id} className="forum-category-card">
               <div className="forum-category-header">
+                <h3 className="forum-category-title">{forum.name}</h3>
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
-                    width: "100%",
+                    gap: "12px",
                   }}
                 >
-                  <h3 className="forum-category-title">{forum.name}</h3>
+                  <span className="forum-threads-count">
+                    {(forum.threads || []).filter((t) => !t.is_locked).length}
+                  </span>
                   {canDeleteCategory && (
                     <button
+                      className="thread-action-btn delete-btn"
                       onClick={() => handleDeleteCategory(forum.id)}
                       title="Delete category"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        color: "#ef4444",
-                        padding: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
-                <span className="forum-threads-count">
-                  {(forum.threads || []).length}
-                </span>
               </div>
               <p className="forum-category-description">{forum.description}</p>
 
@@ -236,7 +240,9 @@ export const Forum: React.FC<ForumProps> = () => {
                             {canDeleteThread && (
                               <button
                                 className="thread-action-btn delete-btn"
-                                onClick={() => handleDeleteThread(thread.id)}
+                                onClick={() =>
+                                  handleDeleteThread(thread.id, forum.id)
+                                }
                                 title="Delete"
                               >
                                 <Trash2 size={14} />

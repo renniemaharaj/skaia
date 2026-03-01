@@ -56,17 +56,22 @@ export const useWebSocketSync = () => {
       ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
+          // Parse payload since it's a JSON-encoded string from backend
+          const payload =
+            typeof message.payload === "string"
+              ? JSON.parse(message.payload)
+              : message.payload;
 
           // Handle user update propagation
           if (message.type === "user:update") {
-            const { action, id } = message.payload;
+            const { action, id } = payload;
             console.log(`Received user update: ${action} for user ${id}`);
             // Update user atom if needed (implement custom hook for users)
           }
 
           // Handle forum update propagation
           if (message.type === "forum:update") {
-            const { action, id, data } = message.payload;
+            const { action, id, data } = payload;
             console.log(`Received forum propagation: ${action} for ${id}`);
 
             // Handle thread updates
@@ -84,6 +89,17 @@ export const useWebSocketSync = () => {
                     view_count: data.view_count ?? prev.view_count,
                     reply_count: data.reply_count ?? prev.reply_count,
                   };
+                }
+                return prev;
+              });
+            }
+
+            // Handle thread deletion
+            if (action === "thread_deleted") {
+              setCurrentThread((prev) => {
+                if (prev && (prev.id === String(id) || prev.id === id)) {
+                  // Clear the thread if viewing the deleted one
+                  return null;
                 }
                 return prev;
               });

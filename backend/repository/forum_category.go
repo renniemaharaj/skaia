@@ -44,10 +44,10 @@ func (r *ForumCategoryRepositoryImpl) GetCategoryByName(name string) (*models.Fo
 func (r *ForumCategoryRepositoryImpl) CreateCategory(category *models.ForumCategory) (*models.ForumCategory, error) {
 
 	err := r.db.QueryRow(
-		`INSERT INTO forum_categories (id, name, description, display_order)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO forum_categories (name, description, display_order)
+		 VALUES ($1, $2, $3)
 		 RETURNING id, name, description, display_order, created_at`,
-		category.ID, category.Name, category.Description, category.DisplayOrder,
+		category.Name, category.Description, category.DisplayOrder,
 	).Scan(&category.ID, &category.Name, &category.Description, &category.DisplayOrder, &category.CreatedAt)
 
 	return category, err

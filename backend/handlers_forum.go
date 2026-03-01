@@ -428,6 +428,28 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 		// Propagate to clients subscribed to this specific thread
 		appCtx.WebSocketHub.PropagateForumThread(id, nil, "thread_deleted")
 
+		// Broadcast deletion to all clients for awareness
+		appCtx.WebSocketHub.Broadcast(&websocket.Message{
+			Type: websocket.ForumUpdate,
+			Payload: json.RawMessage(func() []byte {
+				data, _ := json.Marshal(map[string]interface{}{
+					"action": "thread_deleted",
+					"id":     id,
+				})
+				return data
+			}()),
+		})
+
+		// Get updated thread snapshot for the category and propagate
+		recentThreads, err := appCtx.ForumThreadRepo.GetCategoryThreads(thread.CategoryID, 2, 0)
+		if err != nil {
+			log.Printf("Error fetching recent threads: %v", err)
+		}
+		// Always propagate, even if empty (signals to client the category has 0 threads)
+		appCtx.WebSocketHub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{
+			"threads": recentThreads,
+		}, "category_threads_updated")
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 	}
