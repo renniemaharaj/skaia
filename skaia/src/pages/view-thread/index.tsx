@@ -2,13 +2,15 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ThumbsUp, Pencil, Trash2, X } from "lucide-react";
 
-import { Hero } from "../../components";
-import ViewThread from "../../components/Forum/ViewThread";
-import ViewThreadMeta from "../../components/Forum/ViewThreadMeta";
-import ViewThreadComments from "../../components/Forum/ViewThreadComments";
+import ViewThread from "../../components/ViewThread";
+import ViewThreadMeta from "../../components/ViewThreadMeta";
+import ViewThreadComments from "../../components/ViewThreadComments";
+import Hero from "../../components/Hero";
+import { welcomeMessage } from "../../components/welcome";
 
 import "./index.css";
-import { welcomeMessage } from "../../components/Utils/welcome";
+import "../../components/IconButton.css";
+import "./../../components/EmptyState.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();

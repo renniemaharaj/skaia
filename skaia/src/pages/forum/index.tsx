@@ -1,4 +1,4 @@
-import { Forum } from "../../components";
+import { Forum } from "../../components/Forum";
 
 export const ForumPage = () => {
   const handleThreadCreate = (thread: { title: string; content: string }) => {

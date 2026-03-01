@@ -1,4 +1,4 @@
-import { Auth } from "../../components";
+import { Auth } from "../../components/Auth";
 
 export const RegisterPage = () => {
   const handleAuthSuccess = (token: string) => {

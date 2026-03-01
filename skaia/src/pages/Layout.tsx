@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
-import { Header, Footer } from "../components";
+import { Header } from "../components/Header";
+import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import "./Layout.css";
