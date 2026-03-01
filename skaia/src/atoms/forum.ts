@@ -28,6 +28,9 @@ export interface ForumThread {
   is_locked: boolean;
   created_at: string;
   updated_at: string;
+  user_name?: string;
+  can_edit?: boolean;
+  can_delete?: boolean;
 }
 
 export interface ForumCategory {
@@ -82,3 +85,6 @@ export const isPostLikedByUserAtom = atom((get) => (postId: string) => {
   const post = posts.find((p) => p.id === postId);
   return post?.is_liked || false;
 });
+
+// Current thread being viewed
+export const currentThreadAtom = atom<ForumThread | null>(null);

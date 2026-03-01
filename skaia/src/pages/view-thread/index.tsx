@@ -1,12 +1,15 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ThumbsUp, Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
+import { useAtom } from "jotai";
 
 import ViewThread from "../../components/ViewThread";
 import ViewThreadMeta from "../../components/ViewThreadMeta";
 import ViewThreadComments from "../../components/ViewThreadComments";
 import Hero from "../../components/Hero";
-import { welcomeMessage } from "../../components/welcome";
+import { currentThreadAtom } from "../../atoms/forum";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
 
 import "./index.css";
 import "../../components/IconButton.css";
@@ -15,14 +18,14 @@ import "./../../components/EmptyState.css";
 const ViewThreadPage = () => {
   const navigate = useNavigate();
   const { threadId } = useParams<{ threadId: string }>();
+  const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
+  const { subscribe, unsubscribe } = useWebSocketSync();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [isMobile, setIsMobile] = useState(
     window.matchMedia("(max-width: 880px)").matches,
   );
-
-  const [, setReactions] = useState({
-    like: 0,
-  });
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 880px)");
@@ -32,14 +35,42 @@ const ViewThreadPage = () => {
     return () => media.removeEventListener("change", handler);
   }, []);
 
-  const handleLike = () => {
-    setReactions((prev) => ({
-      ...prev,
-      like: prev.like + 1,
-    }));
+  // Load thread data
+  useEffect(() => {
+    const loadThread = async () => {
+      if (!threadId) {
+        setError("No thread ID provided");
+        setLoading(false);
+        return;
+      }
 
-    // TODO: call backend reaction API
-  };
+      try {
+        setLoading(true);
+        const response = await apiRequest<typeof currentThread>(
+          `/forum/threads/${threadId}`,
+        );
+        if (response) {
+          setCurrentThread(response);
+          // Subscribe to thread updates
+          subscribe("thread", Number(threadId));
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load thread");
+        console.error("Error loading thread:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThread();
+
+    return () => {
+      // Unsubscribe when leaving the page
+      if (threadId) {
+        unsubscribe("thread", Number(threadId));
+      }
+    };
+  }, [threadId, setCurrentThread, subscribe, unsubscribe]);
 
   const handleEdit = () => {
     navigate(`/edit-thread/${threadId}`);
@@ -52,12 +83,42 @@ const ViewThreadPage = () => {
     if (!confirmDelete) return;
 
     try {
-      // TODO: call delete API
+      await apiRequest(`/forum/threads/${threadId}`, {
+        method: "DELETE",
+      });
       navigate("/forum");
     } catch (err) {
       console.error("Delete failed", err);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="modal" style={{ width: "100vw" }}>
+        <div style={{ padding: "2rem", textAlign: "center" }}>
+          <p>Loading thread...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !currentThread) {
+    return (
+      <div className="modal" style={{ width: "100vw" }}>
+        <div style={{ padding: "2rem", textAlign: "center" }}>
+          <p style={{ color: "var(--text-secondary)" }}>
+            {error || "Thread not found"}
+          </p>
+          <button
+            onClick={() => navigate("/forum")}
+            style={{ marginTop: "1rem" }}
+          >
+            Back to Forum
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -83,20 +144,10 @@ const ViewThreadPage = () => {
           // className="empty-state"
         >
           <h3 style={{ margin: 0 }}>
-            Thread :: @{threadId} Welcome to the forum!
+            Thread :: @{currentThread.id} {currentThread.title}
           </h3>
 
           <div style={{ display: "flex", gap: "1rem" }}>
-            {/* Reaction */}
-            <button
-              className="thread-action-btn like-btn"
-              onClick={handleLike}
-              title="Like"
-            >
-              <ThumbsUp size={20} />
-              {/* <span>{reactions.like}</span> */}
-            </button>
-
             {/* Edit */}
             <button
               className="thread-action-btn edit-btn"
@@ -129,7 +180,7 @@ const ViewThreadPage = () => {
         {/* Body */}
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
-          <ViewThread content={welcomeMessage} />
+          <ViewThread content={currentThread.content} />
           <ViewThreadComments threadId={threadId} />
         </div>
       </div>

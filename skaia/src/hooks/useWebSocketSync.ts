@@ -1,6 +1,10 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useSetAtom } from "jotai";
-import { forumCategoriesAtom, type ForumCategory } from "../atoms/forum";
+import {
+  forumCategoriesAtom,
+  type ForumCategory,
+  currentThreadAtom,
+} from "../atoms/forum";
 import { socketAtom } from "../atoms/auth";
 
 interface WebSocketMessage {
@@ -19,6 +23,7 @@ interface WebSocketMessage {
 export const useWebSocketSync = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const setForumCategories = useSetAtom(forumCategoriesAtom);
+  const setCurrentThread = useSetAtom(currentThreadAtom);
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
 
@@ -62,9 +67,27 @@ export const useWebSocketSync = () => {
           // Handle forum update propagation
           if (message.type === "forum:update") {
             const { action, id, data } = message.payload;
-            console.log(
-              `Received forum propagation: ${action} for category ${id}`,
-            );
+            console.log(`Received forum propagation: ${action} for ${id}`);
+
+            // Handle thread updates
+            if (action === "thread_updated" || action === "thread_created") {
+              setCurrentThread((prev) => {
+                if (
+                  prev &&
+                  (prev.id === String(data.id) || prev.id === data.id)
+                ) {
+                  return {
+                    ...prev,
+                    title: data.title || prev.title,
+                    content: data.content || prev.content,
+                    updated_at: data.updated_at || prev.updated_at,
+                    view_count: data.view_count ?? prev.view_count,
+                    reply_count: data.reply_count ?? prev.reply_count,
+                  };
+                }
+                return prev;
+              });
+            }
 
             setForumCategories((prevCategories) => {
               switch (action) {
@@ -140,7 +163,7 @@ export const useWebSocketSync = () => {
         setupWebSocket();
       }, 3000);
     }
-  }, [setForumCategories, setSocket]);
+  }, [setForumCategories, setCurrentThread, setSocket]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates

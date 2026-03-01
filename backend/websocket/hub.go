@@ -357,6 +357,34 @@ func (h *Hub) PropagateForumCategories(categoryID int64, data interface{}, actio
 	}
 }
 
+// PropagateForumThread sends forum thread data to subscribed clients
+func (h *Hub) PropagateForumThread(threadID int64, data interface{}, action string) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	key := makeSubscriptionKey("thread", threadID)
+	if clients, exists := h.subscriptions[key]; exists {
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": action,
+			"id":     threadID,
+			"data":   data,
+		})
+
+		message := &Message{
+			Type:    ForumUpdate,
+			Payload: payload,
+		}
+
+		for _, client := range clients {
+			select {
+			case client.Send <- message:
+			default:
+				log.Printf("Failed to send forum propagation to client UserID=%d", client.UserID)
+			}
+		}
+	}
+}
+
 // PropagateToAll sends a message to all subscribed clients of a resource type
 func (h *Hub) PropagateToAll(resourceType string, data interface{}, action string) {
 	h.mu.RLock()

@@ -1,11 +1,14 @@
 import { CheckIcon, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAtom } from "jotai";
 import ForumCategory from "./ForumCategory";
 import Editor from "./Editor";
 import "./IconButton.css";
 import "./ThreadActions.css";
 import { apiRequest } from "../utils/api";
+import { currentThreadAtom } from "../atoms/forum";
+import { useWebSocketSync } from "../hooks/useWebSocketSync";
 
 interface ThreadData {
   id: string;
@@ -15,16 +18,24 @@ interface ThreadData {
   user_id: string;
   created_at: string;
   updated_at: string;
+  view_count: number;
+  reply_count: number;
+  is_pinned: boolean;
+  is_locked: boolean;
+  user_name?: string;
 }
 
 const EditThread = () => {
   const { threadId } = useParams<{ threadId: string }>();
+  const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
+  const { subscribe, unsubscribe } = useWebSocketSync();
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,11 +43,17 @@ const EditThread = () => {
       if (!threadId) return;
       try {
         setLoading(true);
-        const response = await apiRequest<ThreadData>(`/forum/threads/${threadId}`);
+        const response = await apiRequest<ThreadData>(
+          `/forum/threads/${threadId}`,
+        );
         if (response) {
+          setCurrentThread(response);
           setEditTitle(response.title);
           setEditContent(response.content);
           setSelectedCategory(response.category_id);
+          setLastUpdated(response.updated_at);
+          // Subscribe to thread updates to detect changes from other users
+          subscribe("thread", Number(threadId));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load thread");
@@ -44,8 +61,35 @@ const EditThread = () => {
         setLoading(false);
       }
     };
+
     loadThread();
-  }, [threadId]);
+
+    return () => {
+      if (threadId) {
+        unsubscribe("thread", Number(threadId));
+      }
+    };
+  }, [threadId, setCurrentThread, subscribe, unsubscribe]);
+
+  // Listen for thread updates from WebSocket to detect conflicts
+  useEffect(() => {
+    if (
+      currentThread &&
+      lastUpdated &&
+      currentThread.updated_at !== lastUpdated
+    ) {
+      // Thread was updated by another user
+      const userConfirm = confirm(
+        "This thread has been updated by another user. Do you want to reload the latest version?",
+      );
+      if (userConfirm) {
+        setEditTitle(currentThread.title);
+        setEditContent(currentThread.content);
+        setSelectedCategory(currentThread.category_id);
+        setLastUpdated(currentThread.updated_at);
+      }
+    }
+  }, [currentThread]);
 
   const handleUpdateThread = async () => {
     setError(null);
@@ -152,7 +196,10 @@ const EditThread = () => {
         </div>
 
         <div className="form-group">
-          <ForumCategory value={selectedCategory} onChange={setSelectedCategory} />
+          <ForumCategory
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+          />
         </div>
 
         <div className="form-group">
@@ -165,4 +212,3 @@ const EditThread = () => {
 };
 
 export default EditThread;
-

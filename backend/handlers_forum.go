@@ -232,7 +232,7 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to WebSocket subscribers
+		// Broadcast to all WebSocket subscribers
 		appCtx.WebSocketHub.Broadcast(&websocket.Message{
 			Type: websocket.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
@@ -243,6 +243,9 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 				return data
 			}()),
 		})
+
+		// Also propagate to clients subscribed to the specific thread
+		appCtx.WebSocketHub.PropagateForumThread(created.ID, created, "thread_created")
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(created)
@@ -342,17 +345,8 @@ func handleForumThreadUpdate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to WebSocket subscribers
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
-			Payload: json.RawMessage(func() []byte {
-				data, _ := json.Marshal(map[string]interface{}{
-					"action": "thread_updated",
-					"data":   updated,
-				})
-				return data
-			}()),
-		})
+		// Propagate to clients subscribed to this specific thread
+		appCtx.WebSocketHub.PropagateForumThread(id, updated, "thread_updated")
 
 		json.NewEncoder(w).Encode(updated)
 	}
@@ -409,17 +403,8 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to WebSocket subscribers
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
-			Payload: json.RawMessage(func() []byte {
-				data, _ := json.Marshal(map[string]interface{}{
-					"action": "thread_deleted",
-					"id":     id,
-				})
-				return data
-			}()),
-		})
+		// Propagate to clients subscribed to this specific thread
+		appCtx.WebSocketHub.PropagateForumThread(id, nil, "thread_deleted")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
+import { useAtomValue } from "jotai";
+import { currentThreadAtom } from "../atoms/forum";
 
 type Author = {
   name: string;
@@ -32,20 +34,22 @@ type MetaCard = {
 };
 
 const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
+  const currentThread = useAtomValue(currentThreadAtom);
+
   const author: Author = {
-    name: "John Doe",
+    name: currentThread?.user_name || "Unknown User",
     profilePicture: "",
     role: "Member",
   };
 
   const threadMeta: ThreadMeta = {
     threadId,
-    createdAt: "2024-06-01",
-    replyCount: 42,
-    lastActivity: "2024-06-10",
-    tags: ["Announcement", "General"],
-    views: 1234,
-    status: "Open",
+    createdAt: currentThread?.created_at?.split("T")[0] || "Unknown",
+    replyCount: currentThread?.reply_count || 0,
+    lastActivity: currentThread?.updated_at?.split("T")[0] || "Unknown",
+    tags: ["General"],
+    views: currentThread?.view_count || 0,
+    status: currentThread?.is_locked ? "Closed" : "Open",
   };
 
   const metaCards: MetaCard[] = [
