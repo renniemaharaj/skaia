@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import RichTextEditor from "reactjs-tiptap-editor";
 
@@ -16,17 +16,26 @@ import { debounce } from "lodash";
 import extensions from "./extensions";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
 
-function Editor(value: any) {
-  const [localContent, setLocalContent] = useState(value || "");
-  // const themeAtomValue = useAtomValue(themeAtom);
-  const { theme } = useThemeContext();
-  // const { theme } = useThemeContext();
+interface EditorProps {
+  value: string;
+  onChange: (content: string) => void;
+}
 
+function Editor({ value, onChange }: EditorProps) {
+  const [localContent, setLocalContent] = useState(value || "");
+  const { theme } = useThemeContext();
   const [key] = useState(1);
 
-  // const triggerRemount = () => setKey((prev) => prev + 1);
+  // Sync external value changes
+  useEffect(() => {
+    setLocalContent(value || "");
+  }, [value]);
 
-  const onValueChange = debounce((value: any) => setLocalContent(value), 300);
+  const onValueChange = debounce((newContent: string) => {
+    setLocalContent(newContent);
+    onChange(newContent);
+  }, 300);
+
   return (
     <main>
       <div>

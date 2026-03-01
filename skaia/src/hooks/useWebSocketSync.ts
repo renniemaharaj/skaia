@@ -129,6 +129,19 @@ export const useWebSocketSync = () => {
                   );
                 }
 
+                case "category_threads_updated": {
+                  // Update the 2 most recent threads for this category
+                  return prevCategories.map((c) =>
+                    c.id === id
+                      ? {
+                          ...c,
+                          threads: data.threads || c.threads,
+                          updated_at: new Date().toISOString(),
+                        }
+                      : c,
+                  );
+                }
+
                 default:
                   return prevCategories;
               }

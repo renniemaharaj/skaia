@@ -232,7 +232,7 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to all WebSocket subscribers
+		// Broadcast to all WebSocket subscribers (for general awareness)
 		appCtx.WebSocketHub.Broadcast(&websocket.Message{
 			Type: websocket.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
@@ -244,8 +244,19 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 			}()),
 		})
 
-		// Also propagate to clients subscribed to the specific thread
+		// Propagate to thread subscribers
 		appCtx.WebSocketHub.PropagateForumThread(created.ID, created, "thread_created")
+
+		// Get 2 most recent threads in the category and propagate to category subscribers
+		recentThreads, err := appCtx.ForumThreadRepo.GetCategoryThreads(categoryID, 2, 0)
+		if err != nil {
+			log.Printf("Error fetching recent threads: %v", err)
+		}
+		if len(recentThreads) > 0 {
+			appCtx.WebSocketHub.PropagateForumCategories(categoryID, map[string]interface{}{
+				"threads": recentThreads,
+			}, "category_threads_updated")
+		}
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(created)
@@ -347,6 +358,17 @@ func handleForumThreadUpdate(appCtx *AppContext) http.HandlerFunc {
 
 		// Propagate to clients subscribed to this specific thread
 		appCtx.WebSocketHub.PropagateForumThread(id, updated, "thread_updated")
+
+		// Propagate updated thread snapshot to category subscribers
+		recentThreads, err := appCtx.ForumThreadRepo.GetCategoryThreads(thread.CategoryID, 2, 0)
+		if err != nil {
+			log.Printf("Error fetching recent threads: %v", err)
+		}
+		if len(recentThreads) > 0 {
+			appCtx.WebSocketHub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{
+				"threads": recentThreads,
+			}, "category_threads_updated")
+		}
 
 		json.NewEncoder(w).Encode(updated)
 	}

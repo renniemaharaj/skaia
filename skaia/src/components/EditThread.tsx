@@ -107,17 +107,25 @@ const EditThread = () => {
     setSubmitting(true);
 
     try {
-      await apiRequest(`/forum/threads/${threadId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await apiRequest<ThreadData>(
+        `/forum/threads/${threadId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: editTitle,
+            content: editContent,
+            category_id: selectedCategory,
+          }),
         },
-        body: JSON.stringify({
-          title: editTitle,
-          content: editContent,
-          category_id: selectedCategory,
-        }),
-      });
+      );
+
+      // Update the atom with the fresh response from backend
+      if (response) {
+        setCurrentThread(response);
+      }
 
       // Navigate back to the thread view
       navigate(`/view-thread/${threadId}`);
