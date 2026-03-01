@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom } from "jotai";
 import { forumCategoriesAtom, type ForumCategory } from "../atoms/forum";
 import { socketAtom } from "../atoms/auth";
 
@@ -20,14 +20,22 @@ export const useWebSocketSync = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const setForumCategories = useSetAtom(forumCategoriesAtom);
   const setSocket = useSetAtom(socketAtom);
-  const socket = useAtomValue(socketAtom);
+  const connectingRef = useRef(false);
 
   const setupWebSocket = useCallback(() => {
-    if (socket) {
-      wsRef.current = socket;
+    // Prevent multiple simultaneous connection attempts
+    if (connectingRef.current) {
+      console.log("[setupWebSocket] Connection already in progress, skipping");
       return;
     }
 
+    // Don't reconnect if already connected
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log("[setupWebSocket] Already connected, skipping");
+      return;
+    }
+
+    connectingRef.current = true;
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/api/ws`;
 
@@ -35,6 +43,7 @@ export const useWebSocketSync = () => {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
+        connectingRef.current = false;
         console.log("WebSocket connected for change propagation");
         setSocket(ws);
       };
@@ -108,10 +117,12 @@ export const useWebSocketSync = () => {
       };
 
       ws.onerror = (error) => {
+        connectingRef.current = false;
         console.error("WebSocket error:", error);
       };
 
       ws.onclose = () => {
+        connectingRef.current = false;
         console.log("WebSocket disconnected");
         setSocket(null);
         // Attempt to reconnect after 3 seconds
@@ -122,13 +133,14 @@ export const useWebSocketSync = () => {
 
       wsRef.current = ws;
     } catch (error) {
+      connectingRef.current = false;
       console.error("WebSocket connection error:", error);
       // Retry connection
       setTimeout(() => {
         setupWebSocket();
       }, 3000);
     }
-  }, [setForumCategories, setSocket, socket]);
+  }, [setForumCategories, setSocket]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates
@@ -185,14 +197,15 @@ export const useWebSocketSync = () => {
   );
 
   useEffect(() => {
+    // Only setup once on mount; setupWebSocket has internal checks to prevent re-connecting
     setupWebSocket();
 
     return () => {
-      if (wsRef.current) {
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         wsRef.current.close();
       }
     };
-  }, [setupWebSocket]);
+  }, []);
 
   return { subscribe, unsubscribe };
 };

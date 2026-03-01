@@ -80,8 +80,8 @@ func NewHub() *Hub {
 	return &Hub{
 		clients:       make(map[*Client]bool),
 		broadcast:     make(chan *Message, 256),
-		register:      make(chan *Client),
-		unregister:    make(chan *Client),
+		register:      make(chan *Client, 256),
+		unregister:    make(chan *Client, 256),
 		subscriptions: make(map[string][]*Client),
 		subscribe:     make(chan ResourceSubscription, 256),
 		unsubscribe:   make(chan ResourceSubscription, 256),

@@ -105,14 +105,17 @@ func handleForumCategoryCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Propagate to all clients subscribed to forum_category resources
-		appCtx.WebSocketHub.PropagateToAll("forum_category", map[string]interface{}{
-			"id":            created.ID,
-			"name":          created.Name,
-			"description":   created.Description,
-			"display_order": created.DisplayOrder,
-			"created_at":    created.CreatedAt,
-		}, "category_created")
+		// Broadcast to all clients
+		appCtx.WebSocketHub.Broadcast(&websocket.Message{
+			Type: websocket.ForumUpdate,
+			Payload: json.RawMessage(func() []byte {
+				data, _ := json.Marshal(map[string]interface{}{
+					"action": "category_created",
+					"data":   created,
+				})
+				return data
+			}()),
+		})
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(created)
