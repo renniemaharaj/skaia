@@ -4,6 +4,7 @@ import { atomWithStorage } from "jotai/utils";
 export interface ForumPost {
   id: string;
   thread_id: string;
+  user_id: string;
   author_id: string;
   author_name: string;
   author_roles?: string[];
@@ -13,9 +14,10 @@ export interface ForumPost {
   is_liked: boolean;
   can_edit: boolean;
   can_delete: boolean;
+  can_like_comments: boolean;
   created_at: string;
   updated_at: string;
-  is_edited: boolean;
+  is_edited?: boolean;
 }
 
 export interface ForumThread {
@@ -33,8 +35,13 @@ export interface ForumThread {
   user_name?: string;
   user_roles?: string[];
   user_avatar?: string;
+  likes?: number;
+  is_liked?: boolean;
   can_edit?: boolean;
   can_delete?: boolean;
+  can_like_comments?: boolean;
+  can_delete_thread_comment?: boolean;
+  can_like_threads?: boolean;
 }
 
 export interface ForumCategory {
@@ -93,8 +100,5 @@ export const isPostLikedByUserAtom = atom((get) => (postId: string) => {
 // Current thread being viewed
 export const currentThreadAtom = atom<ForumThread | null>(null);
 
-// Comments for current thread
-export const threadCommentsAtom = atomWithStorage<ForumPost[]>(
-  "forum.thread-comments",
-  [],
-);
+// Comments for current thread - NOT persisted to localStorage because they're thread-specific
+export const threadCommentsAtom = atom<ForumPost[]>([]);

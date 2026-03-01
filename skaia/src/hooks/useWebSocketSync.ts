@@ -139,7 +139,67 @@ export const useWebSocketSync = () => {
                 ),
               );
             }
+            if (action === "post_liked") {
+              setThreadComments((prev) =>
+                prev.map((p) =>
+                  p.id === data.post_id
+                    ? {
+                        ...p,
+                        likes: data.likes || p.likes + 1,
+                        is_liked: true,
+                      }
+                    : p,
+                ),
+              );
+            }
 
+            if (action === "post_unliked") {
+              setThreadComments((prev) =>
+                prev.map((p) =>
+                  p.id === data.post_id
+                    ? {
+                        ...p,
+                        likes: Math.max(0, data.likes || p.likes - 1),
+                        is_liked: false,
+                      }
+                    : p,
+                ),
+              );
+            }
+
+            if (action === "thread_liked") {
+              setCurrentThread((prev) => {
+                if (
+                  prev &&
+                  (prev.id === String(data.thread_id) ||
+                    prev.id === data.thread_id)
+                ) {
+                  return {
+                    ...prev,
+                    likes: data.likes || (prev.likes || 0) + 1,
+                    is_liked: true,
+                  };
+                }
+                return prev;
+              });
+            }
+
+            if (action === "thread_unliked") {
+              setCurrentThread((prev) => {
+                if (
+                  prev &&
+                  (prev.id === String(data.thread_id) ||
+                    prev.id === data.thread_id)
+                ) {
+                  return {
+                    ...prev,
+                    likes: Math.max(0, data.likes || (prev.likes || 1) - 1),
+                    is_liked: false,
+                  };
+                }
+                return prev;
+              });
+            }
             setForumCategories((prevCategories) => {
               switch (action) {
                 case "category_created": {

@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
-import { useSetAtom } from "jotai";
+import { useSetAtom, useAtomValue } from "jotai";
 import { useCart } from "../context/CartContext";
 import {
   accessTokenAtom,
@@ -10,6 +10,7 @@ import {
   currentUserAtom,
   isAuthenticatedAtom,
 } from "../atoms/auth";
+import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 
@@ -31,6 +32,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -38,6 +40,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const theme = isDarkMode ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", theme);
   }, [isDarkMode]);
+
+  // Validate session on mount - clear stale tokens if session is invalid
+  useEffect(() => {
+    if (!isAuthenticated) return; // Skip if not authenticated
+
+    const validateSession = async () => {
+      try {
+        // Try to fetch user profile - this will return 401 if token is invalid
+        await apiRequest("/users/profile", { method: "GET" });
+      } catch (error) {
+        // If validation fails, it triggers auth:unauthorized event which clears state
+        // No need to do anything here
+      }
+    };
+
+    validateSession();
+  }, []); // Run once on mount
 
   // Listen for unauthorized (401) errors and logout
   useEffect(() => {

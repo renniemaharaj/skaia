@@ -6,11 +6,14 @@ import {
   TagIcon,
   EyeIcon,
   InfoIcon,
+  ThumbsUp,
 } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../atoms/forum";
+import { useCallback } from "react";
+import { apiRequest } from "../utils/api";
 
 type Author = {
   name: string;
@@ -35,6 +38,25 @@ type MetaCard = {
 
 const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   const currentThread = useAtomValue(currentThreadAtom);
+
+  const handleLikeThread = useCallback(async () => {
+    if (!threadId || !currentThread) return;
+
+    try {
+      if (currentThread.is_liked) {
+        await apiRequest(`/forum/threads/${threadId}/like`, {
+          method: "DELETE",
+        });
+      } else {
+        await apiRequest(`/forum/threads/${threadId}/like`, {
+          method: "POST",
+        });
+      }
+      // Update will be received through WebSocket
+    } catch (error) {
+      console.error("Error toggling thread like:", error);
+    }
+  }, [threadId, currentThread]);
 
   const author: Author = {
     name: currentThread?.user_name || "Unknown User",
@@ -161,6 +183,44 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
         </div>
       ),
     },
+
+    // Likes
+    ...(currentThread?.can_like_threads
+      ? [
+          {
+            id: "likes",
+            content: (
+              <div className="meta-row">
+                <button
+                  className="thread-action-btn like-btn"
+                  onClick={handleLikeThread}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: currentThread?.is_liked
+                      ? "var(--primary-color)"
+                      : "inherit",
+                  }}
+                >
+                  <ThumbsUp
+                    size={16}
+                    fill={currentThread?.is_liked ? "currentColor" : "none"}
+                  />
+                  <span>
+                    {currentThread?.likes && currentThread.likes > 0
+                      ? `${currentThread.likes} ${currentThread.likes === 1 ? "Like" : "Likes"}`
+                      : "Like"}
+                  </span>
+                </button>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
