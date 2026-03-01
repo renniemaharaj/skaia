@@ -22,6 +22,9 @@ export const Forum: React.FC<ForumProps> = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
+  const [hoveredSection, setHoveredSection] = useState<
+    "discussion" | "category" | null
+  >(null);
 
   const navigate = useNavigate();
   const currentUser = useAtomValue(currentUserAtom);
@@ -115,6 +118,8 @@ export const Forum: React.FC<ForumProps> = () => {
                 {/* Start Discussion */}
                 <div
                   onClick={() => navigate("/new-thread")}
+                  onMouseEnter={() => setHoveredSection("discussion")}
+                  onMouseLeave={() => setHoveredSection(null)}
                   style={{
                     flex: 1,
                     cursor: "pointer",
@@ -122,6 +127,15 @@ export const Forum: React.FC<ForumProps> = () => {
                     flexDirection: "column",
                     alignItems: "center",
                     gap: "8px",
+                    transition: "transform 0.2s ease, color 0.2s ease",
+                    transform:
+                      hoveredSection === "discussion"
+                        ? "scale(1.05)"
+                        : "scale(1)",
+                    color:
+                      hoveredSection === "discussion"
+                        ? "var(--primary-color)"
+                        : "inherit",
                   }}
                 >
                   <div className="feature-icon">
@@ -134,7 +148,12 @@ export const Forum: React.FC<ForumProps> = () => {
                 {/* Create Category Icon */}
                 {canCreateCategory && (
                   <div
-                    onClick={() => setShowCreateCategoryDialog(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCreateCategoryDialog(true);
+                    }}
+                    onMouseEnter={() => setHoveredSection("category")}
+                    onMouseLeave={() => setHoveredSection(null)}
                     style={{
                       flex: 0,
                       cursor: "pointer",
@@ -145,15 +164,34 @@ export const Forum: React.FC<ForumProps> = () => {
                       justifyContent: "center",
                       padding: "0 16px",
                       borderLeft: "1px solid var(--border-color)",
+                      transition:
+                        "background-color 0.2s ease, opacity 0.2s ease",
+                      backgroundColor:
+                        hoveredSection === "category"
+                          ? "var(--surface-hover-color, rgba(255,255,255,0.05))"
+                          : "transparent",
                     }}
                     title="Create Category"
                   >
                     <Plus
                       size={32}
                       className="new-thread-icon"
-                      style={{ opacity: 0.6 }}
+                      style={{
+                        opacity: hoveredSection === "category" ? 1 : 0.6,
+                        transition: "opacity 0.2s ease, transform 0.2s ease",
+                        transform:
+                          hoveredSection === "category"
+                            ? "rotate(180deg)"
+                            : "rotate(0deg)",
+                      }}
                     />
-                    <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        opacity: hoveredSection === "category" ? 1 : 0.6,
+                        transition: "opacity 0.2s ease",
+                      }}
+                    >
                       New Category
                     </span>
                   </div>
