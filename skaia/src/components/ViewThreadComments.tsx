@@ -89,34 +89,20 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     async (commentId: string, isCurrentlyLiked: boolean) => {
       try {
         if (isCurrentlyLiked) {
-          // Unlike
           await apiRequest(`/forum/posts/${commentId}/like`, {
             method: "DELETE",
           });
         } else {
-          // Like
           await apiRequest(`/forum/posts/${commentId}/like`, {
             method: "POST",
           });
         }
-        // Update local state optimistically and let WebSocket sync confirm
-        setComments(
-          comments.map((comment) => {
-            if (comment.id === commentId) {
-              return {
-                ...comment,
-                is_liked: !isCurrentlyLiked,
-                likes: isCurrentlyLiked ? comment.likes - 1 : comment.likes + 1,
-              };
-            }
-            return comment;
-          }),
-        );
+        // State update handled by WebSocket propagation
       } catch (error) {
         console.error("Error toggling like:", error);
       }
     },
-    [comments, setComments],
+    [],
   );
 
   return (

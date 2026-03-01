@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom } from "jotai";
 import { useCart } from "../context/CartContext";
 import {
   accessTokenAtom,
@@ -32,7 +32,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
-  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -43,15 +42,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   // Validate session on mount - clear stale tokens if session is invalid
   useEffect(() => {
-    if (!isAuthenticated) return; // Skip if not authenticated
+    // Read directly from localStorage to avoid stale Jotai atom hydration
+    const token = localStorage.getItem("auth.accessToken");
+    if (!token) return; // No token, nothing to validate
 
     const validateSession = async () => {
       try {
-        // Try to fetch user profile - this will return 401 if token is invalid
+        // Try to fetch user profile - returns 401 if token is invalid or user no longer exists
         await apiRequest("/users/profile", { method: "GET" });
-      } catch (error) {
-        // If validation fails, it triggers auth:unauthorized event which clears state
-        // No need to do anything here
+      } catch {
+        // Any error (401 from apiRequest already cleared localStorage; handle atom state here)
+        setAccessToken(null);
+        setRefreshToken(null);
+        setCurrentUser(null);
+        setIsAuthenticated(false);
       }
     };
 

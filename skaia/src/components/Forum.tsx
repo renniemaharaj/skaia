@@ -240,15 +240,16 @@ export const Forum: React.FC<ForumProps> = () => {
               {(forum.threads || []).length > 0 ? (
                 <div className="threads-list">
                   {(forum.threads || []).slice(0, 2).map((thread) => {
-                    const isThreadOwner = currentUser?.id === thread.user_id;
+                    const isThreadOwner =
+                      currentUser != null &&
+                      thread.user_id != null &&
+                      String(currentUser.id) === String(thread.user_id);
                     const canEditThread =
                       isThreadOwner ||
-                      currentUser?.permissions?.includes("forums.editAny") ||
-                      currentUser?.roles?.includes("admin");
+                      currentUser?.permissions?.includes("forum.edit-thread");
                     const canDeleteThread =
                       isThreadOwner ||
-                      currentUser?.permissions?.includes("forums.deleteAny") ||
-                      currentUser?.roles?.includes("admin");
+                      currentUser?.permissions?.includes("forum.delete-thread");
 
                     return (
                       <div key={thread.id} className="thread-item">

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useCallback } from "react";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   forumCategoriesAtom,
   type ForumCategory,
   currentThreadAtom,
   threadCommentsAtom,
 } from "../atoms/forum";
-import { socketAtom } from "../atoms/auth";
+import { socketAtom, currentUserAtom } from "../atoms/auth";
 
 interface WebSocketMessage {
   type: string;
@@ -28,6 +28,10 @@ export const useWebSocketSync = () => {
   const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
+  const currentUser = useAtomValue(currentUserAtom);
+  // Keep a ref so the stable ws.onmessage callback always has the latest user ID
+  const currentUserIdRef = useRef<string | null>(null);
+  currentUserIdRef.current = currentUser?.id ?? null;
 
   const setupWebSocket = useCallback(() => {
     // Prevent multiple simultaneous connection attempts
@@ -99,8 +103,7 @@ export const useWebSocketSync = () => {
             // Handle thread deletion
             if (action === "thread_deleted") {
               setCurrentThread((prev) => {
-                if (prev && (prev.id === String(id) || prev.id === id)) {
-                  // Clear the thread if viewing the deleted one
+                if (prev && String(prev.id) === String(id)) {
                   return null;
                 }
                 return prev;
@@ -112,7 +115,9 @@ export const useWebSocketSync = () => {
               setThreadComments((prev) => {
                 // Add new post if it's not already in the list
                 const newPost = data.new_post;
-                const exists = prev.some((p) => p.id === newPost.id);
+                const exists = prev.some(
+                  (p) => String(p.id) === String(newPost.id),
+                );
                 if (!exists) {
                   return [...prev, newPost];
                 }
@@ -122,14 +127,14 @@ export const useWebSocketSync = () => {
 
             if (action === "post_deleted") {
               setThreadComments((prev) =>
-                prev.filter((p) => p.id !== data.post_id),
+                prev.filter((p) => String(p.id) !== String(data.post_id)),
               );
             }
 
             if (action === "post_updated") {
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  p.id === data.post_id
+                  String(p.id) === String(data.post_id)
                     ? {
                         ...p,
                         content: data.content || p.content,
@@ -140,13 +145,17 @@ export const useWebSocketSync = () => {
               );
             }
             if (action === "post_liked") {
+              const actingUserId = String(data.user_id);
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  p.id === data.post_id
+                  String(p.id) === String(data.post_id)
                     ? {
                         ...p,
-                        likes: data.likes || p.likes + 1,
-                        is_liked: true,
+                        likes: data.likes ?? p.likes + 1,
+                        is_liked:
+                          actingUserId === currentUserIdRef.current
+                            ? true
+                            : p.is_liked,
                       }
                     : p,
                 ),
@@ -154,13 +163,17 @@ export const useWebSocketSync = () => {
             }
 
             if (action === "post_unliked") {
+              const actingUserId = String(data.user_id);
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  p.id === data.post_id
+                  String(p.id) === String(data.post_id)
                     ? {
                         ...p,
-                        likes: Math.max(0, data.likes || p.likes - 1),
-                        is_liked: false,
+                        likes: Math.max(0, data.likes ?? p.likes - 1),
+                        is_liked:
+                          actingUserId === currentUserIdRef.current
+                            ? false
+                            : p.is_liked,
                       }
                     : p,
                 ),
@@ -168,16 +181,16 @@ export const useWebSocketSync = () => {
             }
 
             if (action === "thread_liked") {
+              const actingUserId = String(data.user_id);
               setCurrentThread((prev) => {
-                if (
-                  prev &&
-                  (prev.id === String(data.thread_id) ||
-                    prev.id === data.thread_id)
-                ) {
+                if (prev && String(prev.id) === String(data.thread_id)) {
                   return {
                     ...prev,
-                    likes: data.likes || (prev.likes || 0) + 1,
-                    is_liked: true,
+                    likes: data.likes ?? (prev.likes || 0) + 1,
+                    is_liked:
+                      actingUserId === currentUserIdRef.current
+                        ? true
+                        : prev.is_liked,
                   };
                 }
                 return prev;
@@ -185,16 +198,16 @@ export const useWebSocketSync = () => {
             }
 
             if (action === "thread_unliked") {
+              const actingUserId = String(data.user_id);
               setCurrentThread((prev) => {
-                if (
-                  prev &&
-                  (prev.id === String(data.thread_id) ||
-                    prev.id === data.thread_id)
-                ) {
+                if (prev && String(prev.id) === String(data.thread_id)) {
                   return {
                     ...prev,
-                    likes: Math.max(0, data.likes || (prev.likes || 1) - 1),
-                    is_liked: false,
+                    likes: Math.max(0, data.likes ?? (prev.likes || 1) - 1),
+                    is_liked:
+                      actingUserId === currentUserIdRef.current
+                        ? false
+                        : prev.is_liked,
                   };
                 }
                 return prev;
@@ -220,14 +233,14 @@ export const useWebSocketSync = () => {
                 }
 
                 case "category_deleted": {
-                  // Remove category
-                  return prevCategories.filter((c) => c.id !== id);
+                  return prevCategories.filter(
+                    (c) => String(c.id) !== String(id),
+                  );
                 }
 
                 case "category_updated": {
-                  // Update existing category
                   return prevCategories.map((c) =>
-                    c.id === id
+                    String(c.id) === String(id)
                       ? {
                           ...c,
                           name: data.name || c.name,
@@ -241,9 +254,8 @@ export const useWebSocketSync = () => {
                 }
 
                 case "category_threads_updated": {
-                  // Update the 2 most recent threads for this category
                   return prevCategories.map((c) =>
-                    c.id === id
+                    String(c.id) === String(id)
                       ? {
                           ...c,
                           threads: data.threads || c.threads,

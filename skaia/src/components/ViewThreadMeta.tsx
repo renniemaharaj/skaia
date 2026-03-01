@@ -12,6 +12,7 @@ import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../atoms/forum";
+import { currentUserAtom } from "../atoms/auth";
 import { useCallback } from "react";
 import { apiRequest } from "../utils/api";
 
@@ -38,9 +39,10 @@ type MetaCard = {
 
 const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   const currentThread = useAtomValue(currentThreadAtom);
+  const currentUser = useAtomValue(currentUserAtom);
 
   const handleLikeThread = useCallback(async () => {
-    if (!threadId || !currentThread) return;
+    if (!threadId || !currentThread || !currentUser) return;
 
     try {
       if (currentThread.is_liked) {
@@ -52,11 +54,11 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           method: "POST",
         });
       }
-      // Update will be received through WebSocket
+      // State update handled by WebSocket propagation
     } catch (error) {
       console.error("Error toggling thread like:", error);
     }
-  }, [threadId, currentThread]);
+  }, [threadId, currentThread, currentUser]);
 
   const author: Author = {
     name: currentThread?.user_name || "Unknown User",
@@ -184,8 +186,8 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       ),
     },
 
-    // Likes
-    ...(currentThread?.can_like_threads
+    // Likes - show for any authenticated user
+    ...(currentUser
       ? [
           {
             id: "likes",

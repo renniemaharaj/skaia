@@ -148,23 +148,27 @@ const ViewThreadPage = () => {
           </h3>
 
           <div style={{ display: "flex", gap: "1rem" }}>
-            {/* Edit */}
-            <button
-              className="thread-action-btn edit-btn"
-              onClick={handleEdit}
-              title="Edit"
-            >
-              <Pencil size={14} />
-            </button>
+            {/* Edit - only if user has permission */}
+            {currentThread.can_edit && (
+              <button
+                className="thread-action-btn edit-btn"
+                onClick={handleEdit}
+                title="Edit"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
 
-            {/* Delete */}
-            <button
-              className="thread-action-btn delete-btn"
-              onClick={handleDelete}
-              title="Delete"
-            >
-              <Trash2 size={14} />
-            </button>
+            {/* Delete - only if user has permission */}
+            {currentThread.can_delete && (
+              <button
+                className="thread-action-btn delete-btn"
+                onClick={handleDelete}
+                title="Delete"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
 
             {/* Close */}
             <button
