@@ -254,6 +254,23 @@ export const useWebSocketSync = () => {
                   const exists = prevCategories.some((c) => c.id === data.id);
                   if (exists) return prevCategories;
 
+                  // Subscribe to this category so we receive future updates (e.g. deletion)
+                  if (data.id) {
+                    const key = `forum_category:${data.id}`;
+                    subscriptionsRef.current.add(key);
+                    if (ws.readyState === WebSocket.OPEN) {
+                      ws.send(
+                        JSON.stringify({
+                          type: "subscribe",
+                          payload: {
+                            resource_type: "forum_category",
+                            resource_id: data.id,
+                          },
+                        }),
+                      );
+                    }
+                  }
+
                   const newCategory: ForumCategory = {
                     id: data.id,
                     name: data.name,

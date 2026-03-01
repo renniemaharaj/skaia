@@ -164,8 +164,18 @@ func handleForumCategoryDelete(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Propagate deletion to all clients subscribed to this category
-		appCtx.WebSocketHub.PropagateForumCategories(id, nil, "category_deleted")
+		// Broadcast deletion to ALL clients (same as create) so any client
+		// showing the forum page removes the category, regardless of subscription state
+		appCtx.WebSocketHub.Broadcast(&websocket.Message{
+			Type: websocket.ForumUpdate,
+			Payload: json.RawMessage(func() []byte {
+				data, _ := json.Marshal(map[string]interface{}{
+					"action": "category_deleted",
+					"id":     id,
+				})
+				return data
+			}()),
+		})
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
