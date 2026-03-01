@@ -6,6 +6,8 @@ export interface ForumPost {
   thread_id: string;
   author_id: string;
   author_name: string;
+  author_roles?: string[];
+  author_avatar?: string;
   content: string;
   likes: number;
   is_liked: boolean;
@@ -29,6 +31,8 @@ export interface ForumThread {
   created_at: string;
   updated_at: string;
   user_name?: string;
+  user_roles?: string[];
+  user_avatar?: string;
   can_edit?: boolean;
   can_delete?: boolean;
 }
@@ -88,3 +92,9 @@ export const isPostLikedByUserAtom = atom((get) => (postId: string) => {
 
 // Current thread being viewed
 export const currentThreadAtom = atom<ForumThread | null>(null);
+
+// Comments for current thread
+export const threadCommentsAtom = atomWithStorage<ForumPost[]>(
+  "forum.thread-comments",
+  [],
+);

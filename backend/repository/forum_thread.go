@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/skaia/backend/models"
 )
@@ -17,16 +18,38 @@ func NewForumThreadRepository(db *sql.DB) ForumThreadRepository {
 
 func (r *ForumThreadRepositoryImpl) GetThreadByID(id int64) (*models.ForumThread, error) {
 	thread := &models.ForumThread{}
+	var roles sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, category_id, user_id, title, content, view_count, reply_count, is_pinned, is_locked, created_at, updated_at
-		 FROM forum_threads WHERE id = $1`,
+		`SELECT 
+			ft.id, ft.category_id, ft.user_id, ft.title, ft.content, ft.view_count, 
+			ft.reply_count, ft.is_pinned, ft.is_locked, ft.created_at, ft.updated_at,
+			u.username, u.avatar_url,
+			STRING_AGG(DISTINCT r.name, ',') as roles
+		 FROM forum_threads ft
+		 LEFT JOIN users u ON ft.user_id = u.id
+		 LEFT JOIN user_roles ur ON u.id = ur.user_id
+		 LEFT JOIN roles r ON ur.role_id = r.id
+		 WHERE ft.id = $1
+		 GROUP BY ft.id, u.id, u.username, u.avatar_url`,
 		id,
-	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content, &thread.ViewCount, &thread.ReplyCount, &thread.IsPinned, &thread.IsLocked, &thread.CreatedAt, &thread.UpdatedAt)
+	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content, &thread.ViewCount,
+		&thread.ReplyCount, &thread.IsPinned, &thread.IsLocked, &thread.CreatedAt, &thread.UpdatedAt,
+		&thread.UserName, &thread.UserAvatar, &roles)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("thread not found")
 	}
-	return thread, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse roles
+	if roles.Valid && roles.String != "" {
+		roleList := strings.Split(roles.String, ",")
+		thread.UserRoles = roleList
+	}
+
+	return thread, nil
 }
 
 func (r *ForumThreadRepositoryImpl) GetCategoryThreads(categoryID int64, limit int, offset int) ([]*models.ForumThread, error) {

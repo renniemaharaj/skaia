@@ -38,8 +38,8 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
 
   const author: Author = {
     name: currentThread?.user_name || "Unknown User",
-    profilePicture: "",
-    role: "Member",
+    profilePicture: currentThread?.user_avatar || "",
+    role: currentThread?.user_roles?.join(", ") || "Member",
   };
 
   const threadMeta: ThreadMeta = {

@@ -459,7 +459,39 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"posts": []interface{}{}})
+
+		threadID := chi.URLParam(r, "id")
+		id, err := strconv.ParseInt(threadID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
+			return
+		}
+
+		// Get query parameters for pagination
+		limit := 50
+		offset := 0
+		if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+			if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+				limit = l
+			}
+		}
+		if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+			if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+				offset = o
+			}
+		}
+
+		posts, err := appCtx.ForumPostRepo.GetThreadPosts(id, limit, offset)
+		if err != nil {
+			log.Printf("Error fetching posts: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch posts"})
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(posts)
 	}
 }
 
@@ -467,11 +499,65 @@ func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
 func handleForumPostCreate(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		threadID := chi.URLParam(r, "id")
+		id, err := strconv.ParseInt(threadID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
+			return
+		}
+
+		var req struct {
+			Content string `json:"content"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
+			return
+		}
+
+		if req.Content == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "content required"})
+			return
+		}
+
+		post := &models.ForumPost{
+			ThreadID: id,
+			UserID:   claims.UserID,
+			Content:  req.Content,
+		}
+
+		created, err := appCtx.ForumPostRepo.CreatePost(post)
+		if err != nil {
+			log.Printf("Error creating post: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to create post"})
+			return
+		}
+
+		// Fetch the post with user information before sending
+		createdWithUserInfo, err := appCtx.ForumPostRepo.GetPostByID(created.ID)
+		if err == nil {
+			created = createdWithUserInfo
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(id, map[string]interface{}{
+			"new_post": created,
+		}, "post_created")
+
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum post created",
-			Status:  "success",
-		})
+		json.NewEncoder(w).Encode(created)
 	}
 }
 
@@ -490,9 +576,59 @@ func handleForumPostUpdate(appCtx *AppContext) http.HandlerFunc {
 func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Forum post deleted",
-			Status:  "success",
-		})
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		postID := chi.URLParam(r, "postId")
+		id, err := strconv.ParseInt(postID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			return
+		}
+
+		// Get post to check ownership
+		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			return
+		}
+
+		// Check if user owns the post or has permission
+		if post.UserID != claims.UserID {
+			hasPermission := false
+			for _, perm := range claims.Permissions {
+				if perm == "forums.deleteAny" {
+					hasPermission = true
+					break
+				}
+			}
+			if !hasPermission {
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]string{"error": "insufficient permissions"})
+				return
+			}
+		}
+
+		if err := appCtx.ForumPostRepo.DeletePost(id); err != nil {
+			log.Printf("Error deleting post: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to delete post"})
+			return
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
+			"post_id": id,
+		}, "post_deleted")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 	}
 }

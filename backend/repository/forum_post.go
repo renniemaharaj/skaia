@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/skaia/backend/models"
 )
@@ -17,22 +18,51 @@ func NewForumPostRepository(db *sql.DB) ForumPostRepository {
 
 func (r *ForumPostRepositoryImpl) GetPostByID(id int64) (*models.ForumPost, error) {
 	post := &models.ForumPost{}
+	var roles sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, thread_id, user_id, content, created_at, updated_at FROM forum_posts WHERE id = $1`,
+		`SELECT 
+			fp.id, fp.thread_id, fp.user_id, fp.content, fp.created_at, fp.updated_at,
+			u.username, u.avatar_url,
+			STRING_AGG(DISTINCT r.name, ',') as roles
+		 FROM forum_posts fp
+		 LEFT JOIN users u ON fp.user_id = u.id
+		 LEFT JOIN user_roles ur ON u.id = ur.user_id
+		 LEFT JOIN roles r ON ur.role_id = r.id
+		 WHERE fp.id = $1
+		 GROUP BY fp.id, u.id, u.username, u.avatar_url`,
 		id,
-	).Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt, &post.UpdatedAt)
+	).Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt, &post.UpdatedAt,
+		&post.AuthorName, &post.AuthorAvatar, &roles)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("post not found")
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse roles
+	if roles.Valid && roles.String != "" {
+		roleList := strings.Split(roles.String, ",")
+		post.AuthorRoles = roleList
+	}
+
 	return post, err
 }
 
 func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID int64, limit int, offset int) ([]*models.ForumPost, error) {
 	rows, err := r.db.Query(
-		`SELECT id, thread_id, user_id, content, created_at, updated_at
-		 FROM forum_posts WHERE thread_id = $1
-		 ORDER BY created_at ASC
+		`SELECT 
+			fp.id, fp.thread_id, fp.user_id, fp.content, fp.created_at, fp.updated_at,
+			u.username, u.avatar_url,
+			STRING_AGG(DISTINCT r.name, ',') as roles
+		 FROM forum_posts fp
+		 LEFT JOIN users u ON fp.user_id = u.id
+		 LEFT JOIN user_roles ur ON u.id = ur.user_id
+		 LEFT JOIN roles r ON ur.role_id = r.id
+		 WHERE fp.thread_id = $1
+		 GROUP BY fp.id, u.id, u.username, u.avatar_url
+		 ORDER BY fp.created_at ASC
 		 LIMIT $2 OFFSET $3`,
 		threadID, limit, offset,
 	)
@@ -44,10 +74,19 @@ func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID int64, limit int, offs
 	var posts []*models.ForumPost
 	for rows.Next() {
 		post := &models.ForumPost{}
-		err := rows.Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt, &post.UpdatedAt)
+		var roles sql.NullString
+		err := rows.Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt, &post.UpdatedAt,
+			&post.AuthorName, &post.AuthorAvatar, &roles)
 		if err != nil {
 			return nil, err
 		}
+
+		// Parse roles
+		if roles.Valid && roles.String != "" {
+			roleList := strings.Split(roles.String, ",")
+			post.AuthorRoles = roleList
+		}
+
 		posts = append(posts, post)
 	}
 
@@ -57,10 +96,10 @@ func (r *ForumPostRepositoryImpl) GetThreadPosts(threadID int64, limit int, offs
 func (r *ForumPostRepositoryImpl) CreatePost(post *models.ForumPost) (*models.ForumPost, error) {
 
 	err := r.db.QueryRow(
-		`INSERT INTO forum_posts (id, thread_id, user_id, content)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO forum_posts (thread_id, user_id, content)
+		 VALUES ($1, $2, $3)
 		 RETURNING id, thread_id, user_id, content, created_at, updated_at`,
-		post.ID, post.ThreadID, post.UserID, post.Content,
+		post.ThreadID, post.UserID, post.Content,
 	).Scan(&post.ID, &post.ThreadID, &post.UserID, &post.Content, &post.CreatedAt, &post.UpdatedAt)
 
 	if err == nil {

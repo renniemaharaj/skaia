@@ -4,6 +4,7 @@ import {
   forumCategoriesAtom,
   type ForumCategory,
   currentThreadAtom,
+  threadCommentsAtom,
 } from "../atoms/forum";
 import { socketAtom } from "../atoms/auth";
 
@@ -24,6 +25,7 @@ export const useWebSocketSync = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const setForumCategories = useSetAtom(forumCategoriesAtom);
   const setCurrentThread = useSetAtom(currentThreadAtom);
+  const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
 
@@ -103,6 +105,39 @@ export const useWebSocketSync = () => {
                 }
                 return prev;
               });
+            }
+
+            // Handle post/comment operations
+            if (action === "post_created") {
+              setThreadComments((prev) => {
+                // Add new post if it's not already in the list
+                const newPost = data.new_post;
+                const exists = prev.some((p) => p.id === newPost.id);
+                if (!exists) {
+                  return [...prev, newPost];
+                }
+                return prev;
+              });
+            }
+
+            if (action === "post_deleted") {
+              setThreadComments((prev) =>
+                prev.filter((p) => p.id !== data.post_id),
+              );
+            }
+
+            if (action === "post_updated") {
+              setThreadComments((prev) =>
+                prev.map((p) =>
+                  p.id === data.post_id
+                    ? {
+                        ...p,
+                        content: data.content || p.content,
+                        updated_at: data.updated_at || p.updated_at,
+                      }
+                    : p,
+                ),
+              );
             }
 
             setForumCategories((prevCategories) => {
