@@ -276,6 +276,14 @@ func handleForumThreadGet(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
+		// Get current user info if authenticated
+		var currentUserID int64 = 0
+		var claims *auth.Claims
+		if c, ok := r.Context().Value("claims").(*auth.Claims); ok {
+			currentUserID = c.UserID
+			claims = c
+		}
+
 		thread, err := appCtx.ForumThreadRepo.GetThreadByID(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -285,6 +293,26 @@ func handleForumThreadGet(appCtx *AppContext) http.HandlerFunc {
 
 		// Increment view count
 		appCtx.ForumThreadRepo.IncrementViewCount(id)
+
+		// Check if user liked this thread
+		if currentUserID > 0 {
+			isLiked, err := appCtx.ForumThreadRepo.IsThreadLikedByUser(id, currentUserID)
+			if err == nil {
+				thread.IsLiked = isLiked
+			}
+		}
+
+		// Set thread permissions
+		if claims != nil {
+			thread.CanLikeComments = hasPermission(claims, "thread.canLikeComments")
+			thread.CanDeleteThreadComment = hasPermission(claims, "forum.delete-post")
+			thread.CanLikeThreads = hasPermission(claims, "thread.canLikeThreads")
+			thread.CanEdit = currentUserID == thread.UserID || hasPermission(claims, "forum.edit-thread")
+			thread.CanDelete = currentUserID == thread.UserID || hasPermission(claims, "forum.delete-thread")
+		} else {
+			thread.CanEdit = false
+			thread.CanDelete = false
+		}
 
 		json.NewEncoder(w).Encode(thread)
 	}
@@ -319,15 +347,15 @@ func handleForumThreadUpdate(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		if thread.UserID != claims.UserID {
-			// Check for forums.editAny permission
-			hasPermission := false
+			// Check for forum.edit-thread permission (admins/mods)
+			hasEditPerm := false
 			for _, perm := range claims.Permissions {
-				if perm == "forums.editAny" {
-					hasPermission = true
+				if perm == "forum.edit-thread" {
+					hasEditPerm = true
 					break
 				}
 			}
-			if !hasPermission {
+			if !hasEditPerm {
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(map[string]string{"error": "insufficient permissions"})
 				return
@@ -403,15 +431,15 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		if thread.UserID != claims.UserID {
-			// Check for forums.deleteAny permission
-			hasPermission := false
+			// Check for forum.delete-thread permission (admins/mods)
+			hasDeletePerm := false
 			for _, perm := range claims.Permissions {
-				if perm == "forums.deleteAny" {
-					hasPermission = true
+				if perm == "forum.delete-thread" {
+					hasDeletePerm = true
 					break
 				}
 			}
-			if !hasPermission {
+			if !hasDeletePerm {
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(map[string]string{"error": "insufficient permissions"})
 				return
@@ -468,6 +496,14 @@ func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
+		// Get current user info if authenticated
+		var currentUserID int64 = 0
+		var claims *auth.Claims
+		if c, ok := r.Context().Value("claims").(*auth.Claims); ok {
+			currentUserID = c.UserID
+			claims = c
+		}
+
 		// Get query parameters for pagination
 		limit := 50
 		offset := 0
@@ -488,6 +524,30 @@ func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch posts"})
 			return
+		}
+
+		// Enrich posts with like and permission info
+		for _, post := range posts {
+			// Check if user liked this post
+			if currentUserID > 0 {
+				isLiked, err := appCtx.ForumPostRepo.IsPostLikedByUser(post.ID, currentUserID)
+				if err == nil {
+					post.IsLiked = isLiked
+				}
+			}
+
+			// Set permissions based on user claims
+			if claims != nil {
+				post.CanLikeComments = hasPermission(claims, "thread.canLikeComments")
+				// can_delete: owns post OR has explicit delete-any permission (admin/mod only)
+				post.CanDelete = currentUserID == post.UserID || hasPermission(claims, "forum.delete-post")
+				// can_edit: owns post OR has explicit edit-any permission (admin/mod only)
+				post.CanEdit = currentUserID == post.UserID || hasPermission(claims, "forum.edit-post")
+			} else {
+				// Unauthenticated: no delete/edit rights
+				post.CanDelete = false
+				post.CanEdit = false
+			}
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -584,7 +644,7 @@ func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		postID := chi.URLParam(r, "postId")
+		postID := chi.URLParam(r, "id")
 		id, err := strconv.ParseInt(postID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -602,14 +662,14 @@ func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 
 		// Check if user owns the post or has permission
 		if post.UserID != claims.UserID {
-			hasPermission := false
+			hasDeletePerm := false
 			for _, perm := range claims.Permissions {
-				if perm == "forums.deleteAny" {
-					hasPermission = true
+				if perm == "forum.delete-post" || perm == "thread.canDeleteThreadComment" {
+					hasDeletePerm = true
 					break
 				}
 			}
-			if !hasPermission {
+			if !hasDeletePerm {
 				w.WriteHeader(http.StatusForbidden)
 				json.NewEncoder(w).Encode(map[string]string{"error": "insufficient permissions"})
 				return
@@ -630,5 +690,213 @@ func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
+	}
+}
+
+// handleForumPostLike likes a forum post
+func handleForumPostLike(appCtx *AppContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		postID := chi.URLParam(r, "postId")
+		id, err := strconv.ParseInt(postID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			return
+		}
+
+		// Get post to find thread ID
+		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			return
+		}
+
+		// Like the post
+		likeCount, err := appCtx.ForumPostRepo.LikePost(id, claims.UserID)
+		if err != nil {
+			log.Printf("Error liking post: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to like post"})
+			return
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
+			"post_id": id,
+			"likes":   likeCount,
+			"user_id": claims.UserID,
+		}, "post_liked")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "liked",
+			"likes":  likeCount,
+		})
+	}
+}
+
+// handleForumPostUnlike unlikes a forum post
+func handleForumPostUnlike(appCtx *AppContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		postID := chi.URLParam(r, "postId")
+		id, err := strconv.ParseInt(postID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			return
+		}
+
+		// Get post to find thread ID
+		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			return
+		}
+
+		// Unlike the post
+		likeCount, err := appCtx.ForumPostRepo.UnlikePost(id, claims.UserID)
+		if err != nil {
+			log.Printf("Error unliking post: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to unlike post"})
+			return
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
+			"post_id": id,
+			"likes":   likeCount,
+			"user_id": claims.UserID,
+		}, "post_unliked")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "unliked",
+			"likes":  likeCount,
+		})
+	}
+}
+
+// handleForumThreadLike likes a forum thread
+func handleForumThreadLike(appCtx *AppContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		threadID := chi.URLParam(r, "threadId")
+		id, err := strconv.ParseInt(threadID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
+			return
+		}
+
+		// Get thread to verify it exists
+		_, err = appCtx.ForumThreadRepo.GetThreadByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "thread not found"})
+			return
+		}
+
+		// Like the thread
+		likeCount, err := appCtx.ForumThreadRepo.LikeThread(id, claims.UserID)
+		if err != nil {
+			log.Printf("Error liking thread: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to like thread"})
+			return
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(id, map[string]interface{}{
+			"thread_id": id,
+			"likes":     likeCount,
+			"user_id":   claims.UserID,
+		}, "thread_liked")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "liked",
+			"likes":  likeCount,
+		})
+	}
+}
+
+// handleForumThreadUnlike unlikes a forum thread
+func handleForumThreadUnlike(appCtx *AppContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		claims, ok := r.Context().Value("claims").(*auth.Claims)
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+			return
+		}
+
+		threadID := chi.URLParam(r, "threadId")
+		id, err := strconv.ParseInt(threadID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid thread ID"})
+			return
+		}
+
+		// Get thread to verify it exists
+		_, err = appCtx.ForumThreadRepo.GetThreadByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "thread not found"})
+			return
+		}
+
+		// Unlike the thread
+		likeCount, err := appCtx.ForumThreadRepo.UnlikeThread(id, claims.UserID)
+		if err != nil {
+			log.Printf("Error unliking thread: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to unlike thread"})
+			return
+		}
+
+		// Propagate to clients subscribed to this thread
+		appCtx.WebSocketHub.PropagateForumThread(id, map[string]interface{}{
+			"thread_id": id,
+			"likes":     likeCount,
+			"user_id":   claims.UserID,
+		}, "thread_unliked")
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "unliked",
+			"likes":  likeCount,
+		})
 	}
 }

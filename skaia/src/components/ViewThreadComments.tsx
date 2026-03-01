@@ -87,6 +87,20 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
 
   const handleLikeComment = useCallback(
     async (commentId: string, isCurrentlyLiked: boolean) => {
+      // Optimistically flip is_liked immediately for the acting user
+      setComments((prev) =>
+        prev.map((p) =>
+          p.id === commentId
+            ? {
+                ...p,
+                is_liked: !isCurrentlyLiked,
+                likes: isCurrentlyLiked
+                  ? Math.max(0, p.likes - 1)
+                  : p.likes + 1,
+              }
+            : p,
+        ),
+      );
       try {
         if (isCurrentlyLiked) {
           await apiRequest(`/forum/posts/${commentId}/like`, {
@@ -97,12 +111,26 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
             method: "POST",
           });
         }
-        // State update handled by WebSocket propagation
+        // Count will be corrected by WebSocket propagation
       } catch (error) {
         console.error("Error toggling like:", error);
+        // Revert optimistic update on failure
+        setComments((prev) =>
+          prev.map((p) =>
+            p.id === commentId
+              ? {
+                  ...p,
+                  is_liked: isCurrentlyLiked,
+                  likes: isCurrentlyLiked
+                    ? p.likes + 1
+                    : Math.max(0, p.likes - 1),
+                }
+              : p,
+          ),
+        );
       }
     },
-    [],
+    [setComments],
   );
 
   return (

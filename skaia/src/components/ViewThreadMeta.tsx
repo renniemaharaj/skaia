@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { currentThreadAtom } from "../atoms/forum";
 import { currentUserAtom } from "../atoms/auth";
 import { useCallback } from "react";
@@ -41,11 +41,26 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   const currentThread = useAtomValue(currentThreadAtom);
   const currentUser = useAtomValue(currentUserAtom);
 
+  const setCurrentThread = useSetAtom(currentThreadAtom);
+
   const handleLikeThread = useCallback(async () => {
     if (!threadId || !currentThread || !currentUser) return;
 
+    const wasLiked = currentThread.is_liked;
+    // Optimistically flip is_liked immediately for the acting user
+    setCurrentThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            is_liked: !wasLiked,
+            likes: wasLiked
+              ? Math.max(0, (prev.likes || 0) - 1)
+              : (prev.likes || 0) + 1,
+          }
+        : prev,
+    );
     try {
-      if (currentThread.is_liked) {
+      if (wasLiked) {
         await apiRequest(`/forum/threads/${threadId}/like`, {
           method: "DELETE",
         });
@@ -54,11 +69,23 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           method: "POST",
         });
       }
-      // State update handled by WebSocket propagation
+      // Count will be corrected by WebSocket propagation
     } catch (error) {
       console.error("Error toggling thread like:", error);
+      // Revert optimistic update on failure
+      setCurrentThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_liked: wasLiked,
+              likes: wasLiked
+                ? (prev.likes || 0) + 1
+                : Math.max(0, (prev.likes || 0) - 1),
+            }
+          : prev,
+      );
     }
-  }, [threadId, currentThread, currentUser]);
+  }, [threadId, currentThread, currentUser, setCurrentThread]);
 
   const author: Author = {
     name: currentThread?.user_name || "Unknown User",

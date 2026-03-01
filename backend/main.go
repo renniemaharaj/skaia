@@ -122,18 +122,22 @@ func main() {
 
 	// Forum endpoints
 	r.Route("/forum", func(r chi.Router) {
-		r.Get("/categories", handleForumCategories(appCtx))
+		r.With(OptionalJWTAuthMiddleware).Get("/categories", handleForumCategories(appCtx))
 		r.With(JWTAuthMiddleware).Post("/categories", handleForumCategoryCreate(appCtx))
 		r.With(JWTAuthMiddleware).Delete("/categories/{id}", handleForumCategoryDelete(appCtx))
 		r.Get("/threads", handleForumThreadsList(appCtx))
 		r.With(JWTAuthMiddleware).Post("/threads", handleForumThreadCreate(appCtx))
-		r.Get("/threads/{id}", handleForumThreadGet(appCtx))
+		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}", handleForumThreadGet(appCtx))
 		r.With(JWTAuthMiddleware).Put("/threads/{id}", handleForumThreadUpdate(appCtx))
 		r.With(JWTAuthMiddleware).Delete("/threads/{id}", handleForumThreadDelete(appCtx))
-		r.Get("/threads/{id}/posts", handleForumPostsList(appCtx))
+		r.With(JWTAuthMiddleware).Post("/threads/{threadId}/like", handleForumThreadLike(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/threads/{threadId}/like", handleForumThreadUnlike(appCtx))
+		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}/posts", handleForumPostsList(appCtx))
 		r.With(JWTAuthMiddleware).Post("/threads/{id}/posts", handleForumPostCreate(appCtx))
 		r.With(JWTAuthMiddleware).Put("/posts/{id}", handleForumPostUpdate(appCtx))
 		r.With(JWTAuthMiddleware).Delete("/posts/{id}", handleForumPostDelete(appCtx))
+		r.With(JWTAuthMiddleware).Post("/posts/{postId}/like", handleForumPostLike(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/posts/{postId}/like", handleForumPostUnlike(appCtx))
 	})
 
 	port := os.Getenv("PORT")

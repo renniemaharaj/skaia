@@ -10,6 +10,26 @@ import (
 	"github.com/skaia/backend/auth"
 )
 
+// OptionalJWTAuthMiddleware parses the JWT token if present but does NOT fail on missing token.
+// Use this on public endpoints that want to enrich responses with user-specific data when authenticated.
+func OptionalJWTAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				if claims, err := auth.ValidateToken(parts[1]); err == nil {
+					ctx := context.WithValue(r.Context(), "claims", claims)
+					ctx = context.WithValue(ctx, "user_id", claims.UserID)
+					ctx = context.WithValue(ctx, "user_roles", claims.Roles)
+					r = r.WithContext(ctx)
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // JWTAuthMiddleware validates JWT tokens from the Authorization header
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

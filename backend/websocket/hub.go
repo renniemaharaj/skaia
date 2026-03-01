@@ -238,9 +238,9 @@ func (c *Client) ReadPump() {
 			var payload map[string]interface{}
 			json.Unmarshal(msg.Payload, &payload)
 			if resourceType, ok := payload["resource_type"].(string); ok {
-				if resourceID, ok := payload["resource_id"].(float64); ok {
-					c.Hub.Subscribe(c, resourceType, int64(resourceID))
-					log.Printf("Client subscribed to %s:%d", resourceType, int64(resourceID))
+				if rid, ok := parseResourceID(payload["resource_id"]); ok {
+					c.Hub.Subscribe(c, resourceType, rid)
+					log.Printf("Client subscribed to %s:%d", resourceType, rid)
 					continue
 				}
 			}
@@ -251,9 +251,9 @@ func (c *Client) ReadPump() {
 			var payload map[string]interface{}
 			json.Unmarshal(msg.Payload, &payload)
 			if resourceType, ok := payload["resource_type"].(string); ok {
-				if resourceID, ok := payload["resource_id"].(float64); ok {
-					c.Hub.Unsubscribe(c, resourceType, int64(resourceID))
-					log.Printf("Client unsubscribed from %s:%d", resourceType, int64(resourceID))
+				if rid, ok := parseResourceID(payload["resource_id"]); ok {
+					c.Hub.Unsubscribe(c, resourceType, rid)
+					log.Printf("Client unsubscribed from %s:%d", resourceType, rid)
 					continue
 				}
 			}
@@ -281,6 +281,19 @@ func (c *Client) WritePump() {
 // makeSubscriptionKey creates a unique key for a resource subscription
 func makeSubscriptionKey(resourceType string, resourceID int64) string {
 	return resourceType + ":" + strconv.FormatInt(resourceID, 10)
+}
+
+// parseResourceID accepts either a JSON number (float64) or string representation of an int64
+func parseResourceID(v interface{}) (int64, bool) {
+	switch val := v.(type) {
+	case float64:
+		return int64(val), true
+	case string:
+		if id, err := strconv.ParseInt(val, 10, 64); err == nil {
+			return id, true
+		}
+	}
+	return 0, false
 }
 
 // Subscribe adds a client subscription to a resource

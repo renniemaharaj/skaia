@@ -78,6 +78,9 @@ type ForumThreadRepository interface {
 	UpdateThread(thread *models.ForumThread) (*models.ForumThread, error)
 	DeleteThread(id int64) error
 	IncrementViewCount(id int64) error
+	LikeThread(threadID int64, userID int64) (int64, error)
+	UnlikeThread(threadID int64, userID int64) (int64, error)
+	IsThreadLikedByUser(threadID int64, userID int64) (bool, error)
 }
 
 // ForumPostRepository defines operations for forum post data
@@ -87,4 +90,7 @@ type ForumPostRepository interface {
 	CreatePost(post *models.ForumPost) (*models.ForumPost, error)
 	UpdatePost(post *models.ForumPost) (*models.ForumPost, error)
 	DeletePost(id int64) error
+	LikePost(postID int64, userID int64) (int64, error)
+	UnlikePost(postID int64, userID int64) (int64, error)
+	IsPostLikedByUser(postID int64, userID int64) (bool, error)
 }

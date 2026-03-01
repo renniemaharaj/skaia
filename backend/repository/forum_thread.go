@@ -24,17 +24,19 @@ func (r *ForumThreadRepositoryImpl) GetThreadByID(id int64) (*models.ForumThread
 			ft.id, ft.category_id, ft.user_id, ft.title, ft.content, ft.view_count, 
 			ft.reply_count, ft.is_pinned, ft.is_locked, ft.created_at, ft.updated_at,
 			u.username, u.avatar_url,
-			STRING_AGG(DISTINCT r.name, ',') as roles
+			STRING_AGG(DISTINCT r.name, ',') as roles,
+			COUNT(DISTINCT tl.id) as likes
 		 FROM forum_threads ft
 		 LEFT JOIN users u ON ft.user_id = u.id
 		 LEFT JOIN user_roles ur ON u.id = ur.user_id
 		 LEFT JOIN roles r ON ur.role_id = r.id
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
 		 WHERE ft.id = $1
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url`,
 		id,
 	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content, &thread.ViewCount,
 		&thread.ReplyCount, &thread.IsPinned, &thread.IsLocked, &thread.CreatedAt, &thread.UpdatedAt,
-		&thread.UserName, &thread.UserAvatar, &roles)
+		&thread.UserName, &thread.UserAvatar, &roles, &thread.Likes)
 
 	if err == sql.ErrNoRows {
 		return nil, errors.New("thread not found")
@@ -108,4 +110,54 @@ func (r *ForumThreadRepositoryImpl) DeleteThread(id int64) error {
 func (r *ForumThreadRepositoryImpl) IncrementViewCount(id int64) error {
 	_, err := r.db.Exec(`UPDATE forum_threads SET view_count = view_count + 1 WHERE id = $1`, id)
 	return err
+}
+
+// LikeThread adds a like from a user to a thread
+func (r *ForumThreadRepositoryImpl) LikeThread(threadID int64, userID int64) (int64, error) {
+	// Insert like, ignore if already exists (UPSERT behavior via ON CONFLICT)
+	_, err := r.db.Exec(
+		`INSERT INTO thread_likes (thread_id, user_id) VALUES ($1, $2) 
+		 ON CONFLICT DO NOTHING`,
+		threadID, userID,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get updated like count
+	var count int64
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1`,
+		threadID,
+	).Scan(&count)
+	return count, err
+}
+
+// UnlikeThread removes a like from a user on a thread
+func (r *ForumThreadRepositoryImpl) UnlikeThread(threadID int64, userID int64) (int64, error) {
+	_, err := r.db.Exec(
+		`DELETE FROM thread_likes WHERE thread_id = $1 AND user_id = $2`,
+		threadID, userID,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	// Get updated like count
+	var count int64
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1`,
+		threadID,
+	).Scan(&count)
+	return count, err
+}
+
+// IsThreadLikedByUser checks if a user liked a thread
+func (r *ForumThreadRepositoryImpl) IsThreadLikedByUser(threadID int64, userID int64) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM thread_likes WHERE thread_id = $1 AND user_id = $2)`,
+		threadID, userID,
+	).Scan(&exists)
+	return exists, err
 }

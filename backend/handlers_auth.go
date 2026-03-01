@@ -184,8 +184,16 @@ func handleRefreshToken(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Generate new access token
-		accessToken, err := auth.GenerateTokenWithPermissions(claims.UserID, claims.Username, claims.Email, claims.DisplayName, claims.Roles, claims.Permissions)
+		// Always reload user from DB so any new permissions/roles are picked up
+		user, err := appCtx.UserRepo.GetUserByID(claims.UserID)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "user not found"})
+			return
+		}
+
+		// Generate new access token with fresh roles/permissions from DB
+		accessToken, err := auth.GenerateTokenWithPermissions(user.ID, user.Username, user.Email, user.DisplayName, user.Roles, user.Permissions)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "failed to generate token"})
@@ -214,8 +222,9 @@ func handleGetProfile(appCtx *AppContext) http.HandlerFunc {
 		user, err := appCtx.UserRepo.GetUserByID(claims.UserID)
 		if err != nil {
 			log.Printf("Error fetching user: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch profile"})
+			// User no longer exists in DB (e.g. DB was wiped) — treat as unauthorized
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 			return
 		}
 

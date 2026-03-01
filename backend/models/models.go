@@ -124,32 +124,44 @@ type ForumCategory struct {
 
 // ForumThread represents a forum thread/topic
 type ForumThread struct {
-	ID         int64     `json:"id"`
-	CategoryID int64     `json:"category_id"`
-	UserID     int64     `json:"user_id"`
-	Title      string    `json:"title"`
-	Content    string    `json:"content"`
-	ViewCount  int       `json:"view_count"`
-	ReplyCount int       `json:"reply_count"`
-	IsPinned   bool      `json:"is_pinned"`
-	IsLocked   bool      `json:"is_locked"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	UserName   string    `json:"user_name,omitempty"`
-	UserRoles  []string  `json:"user_roles,omitempty"`
-	UserAvatar string    `json:"user_avatar,omitempty"`
+	ID                     int64     `json:"id"`
+	CategoryID             int64     `json:"category_id"`
+	UserID                 int64     `json:"user_id"`
+	Title                  string    `json:"title"`
+	Content                string    `json:"content"`
+	ViewCount              int       `json:"view_count"`
+	ReplyCount             int       `json:"reply_count"`
+	IsPinned               bool      `json:"is_pinned"`
+	IsLocked               bool      `json:"is_locked"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
+	UserName               string    `json:"user_name,omitempty"`
+	UserRoles              []string  `json:"user_roles,omitempty"`
+	UserAvatar             string    `json:"user_avatar,omitempty"`
+	Likes                  int       `json:"likes,omitempty"`
+	IsLiked                bool      `json:"is_liked,omitempty"`
+	CanEdit                bool      `json:"can_edit,omitempty"`
+	CanDelete              bool      `json:"can_delete,omitempty"`
+	CanLikeComments        bool      `json:"can_like_comments,omitempty"`
+	CanDeleteThreadComment bool      `json:"can_delete_thread_comment,omitempty"`
+	CanLikeThreads         bool      `json:"can_like_threads,omitempty"`
 }
 
 // ForumPost represents a post in a forum thread
 type ForumPost struct {
-	ID           int64     `json:"id"`
-	ThreadID     int64     `json:"thread_id"`
-	UserID       int64     `json:"user_id"`
-	Content      string    `json:"content"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	AuthorName   string    `json:"author_name,omitempty"`
-	AuthorRoles  []string  `json:"author_roles,omitempty"`
-	AuthorAvatar string    `json:"author_avatar,omitempty"`
-	Likes        int       `json:"likes,omitempty"`
+	ID              int64     `json:"id"`
+	ThreadID        int64     `json:"thread_id"`
+	UserID          int64     `json:"user_id"`
+	AuthorID        int64     `json:"author_id"`
+	Content         string    `json:"content"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	AuthorName      string    `json:"author_name,omitempty"`
+	AuthorRoles     []string  `json:"author_roles,omitempty"`
+	AuthorAvatar    string    `json:"author_avatar,omitempty"`
+	Likes           int       `json:"likes,omitempty"`
+	IsLiked         bool      `json:"is_liked,omitempty"`
+	CanEdit         bool      `json:"can_edit,omitempty"`
+	CanDelete       bool      `json:"can_delete,omitempty"`
+	CanLikeComments bool      `json:"can_like_comments,omitempty"`
 }
