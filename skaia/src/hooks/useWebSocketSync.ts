@@ -28,6 +28,8 @@ export const useWebSocketSync = () => {
   const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
+  // Tracks all active subscriptions so they can be replayed on reconnect
+  const subscriptionsRef = useRef<Set<string>>(new Set());
   const currentUser = useAtomValue(currentUserAtom);
   // Keep refs so the stable ws.onmessage callback always has the latest user info
   const currentUserIdRef = useRef<string | null>(null);
@@ -59,6 +61,18 @@ export const useWebSocketSync = () => {
         connectingRef.current = false;
         console.log("WebSocket connected for change propagation");
         setSocket(ws);
+
+        // Re-subscribe to all tracked resources after (re)connect
+        subscriptionsRef.current.forEach((key) => {
+          const [resourceType, resourceId] = key.split(":");
+          ws.send(
+            JSON.stringify({
+              type: "subscribe",
+              payload: { resource_type: resourceType, resource_id: resourceId },
+            }),
+          );
+          console.log(`[reconnect] Re-subscribed to ${key}`);
+        });
       };
 
       ws.onmessage = (event) => {
@@ -80,7 +94,9 @@ export const useWebSocketSync = () => {
           // Handle forum update propagation
           if (message.type === "forum:update") {
             const { action, id, data } = payload;
-            console.log(`Received forum propagation: ${action} for ${id}`);
+            console.log(
+              `Received forum propagation: ${action} for ${id ?? data?.id}`,
+            );
 
             // Handle thread updates
             if (action === "thread_updated" || action === "thread_created") {
@@ -358,15 +374,19 @@ export const useWebSocketSync = () => {
    */
   const subscribe = useCallback(
     (resourceType: string, resourceId: number | string) => {
+      const key = `${resourceType}:${resourceId}`;
+      // Always track so reconnects can replay this subscription
+      subscriptionsRef.current.add(key);
+
       if (!wsRef.current) {
         console.warn(
-          `[subscribe] WebSocket not initialized for ${resourceType}:${resourceId}`,
+          `[subscribe] WebSocket not initialized for ${key}, queued for reconnect`,
         );
         return;
       }
       if (wsRef.current.readyState !== WebSocket.OPEN) {
         console.warn(
-          `[subscribe] WebSocket not OPEN (state=${wsRef.current.readyState}) for ${resourceType}:${resourceId}`,
+          `[subscribe] WebSocket not OPEN (state=${wsRef.current.readyState}) for ${key}, queued for reconnect`,
         );
         return;
       }
@@ -379,7 +399,7 @@ export const useWebSocketSync = () => {
       };
       wsRef.current.send(JSON.stringify(subscription));
       console.log(
-        `[subscribe] Sent subscribe message for ${resourceType}:${resourceId}`,
+        `[subscribe] Sent subscribe message for ${key}`,
         subscription,
       );
     },
@@ -391,6 +411,9 @@ export const useWebSocketSync = () => {
    */
   const unsubscribe = useCallback(
     (resourceType: string, resourceId: number | string) => {
+      const key = `${resourceType}:${resourceId}`;
+      subscriptionsRef.current.delete(key);
+
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         const unsubscription = {
           type: "unsubscribe",
@@ -400,7 +423,7 @@ export const useWebSocketSync = () => {
           },
         };
         wsRef.current.send(JSON.stringify(unsubscription));
-        console.log(`Unsubscribed from ${resourceType}:${resourceId}`);
+        console.log(`Unsubscribed from ${key}`);
       }
     },
     [],
@@ -410,7 +433,20 @@ export const useWebSocketSync = () => {
     // Only setup once on mount; setupWebSocket has internal checks to prevent re-connecting
     setupWebSocket();
 
+    // Heartbeat: keep the connection alive and detect silent drops
+    const heartbeatInterval = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "ping" }));
+      } else if (
+        !wsRef.current ||
+        wsRef.current.readyState === WebSocket.CLOSED
+      ) {
+        setupWebSocket();
+      }
+    }, 30000);
+
     return () => {
+      clearInterval(heartbeatInterval);
       if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
         wsRef.current.close();
       }

@@ -26,6 +26,7 @@ const (
 	UserLeave   MessageType = "user:leave"
 	Subscribe   MessageType = "subscribe"
 	Unsubscribe MessageType = "unsubscribe"
+	Ping        MessageType = "ping"
 )
 
 // Message represents a WebSocket message
@@ -257,6 +258,11 @@ func (c *Client) ReadPump() {
 					continue
 				}
 			}
+		}
+
+		// Ignore client ping messages
+		if msg.Type == Ping {
+			continue
 		}
 
 		// Broadcast other messages to all clients (if needed)
