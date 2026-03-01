@@ -105,17 +105,14 @@ func handleForumCategoryCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to WebSocket subscribers
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
-			Payload: json.RawMessage(func() []byte {
-				data, _ := json.Marshal(map[string]interface{}{
-					"action": "category_created",
-					"data":   created,
-				})
-				return data
-			}()),
-		})
+		// Propagate to all clients subscribed to forum_category resources
+		appCtx.WebSocketHub.PropagateToAll("forum_category", map[string]interface{}{
+			"id":            created.ID,
+			"name":          created.Name,
+			"description":   created.Description,
+			"display_order": created.DisplayOrder,
+			"created_at":    created.CreatedAt,
+		}, "category_created")
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(created)
@@ -164,17 +161,8 @@ func handleForumCategoryDelete(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		// Broadcast to WebSocket subscribers
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
-			Payload: json.RawMessage(func() []byte {
-				data, _ := json.Marshal(map[string]interface{}{
-					"action": "category_deleted",
-					"id":     id,
-				})
-				return data
-			}()),
-		})
+		// Propagate deletion to all clients subscribed to this category
+		appCtx.WebSocketHub.PropagateForumCategories(id, nil, "category_deleted")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})

@@ -72,11 +72,22 @@ const UserProfile: React.FC = () => {
     return <div className="user-profile-container error">User not found</div>;
   }
 
-  const createdDate = new Date(user.created_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "Unknown";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Unknown";
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return "Unknown";
+    }
+  };
+
+  const createdDate = formatDate(user.created_at);
 
   return (
     <div className="user-profile-container">
@@ -97,8 +108,10 @@ const UserProfile: React.FC = () => {
           )}
 
           <div className="user-profile-info">
-            <h1>{user.display_name || user.username}</h1>
-            <p className="user-profile-username">@{user.username}</p>
+            <h1>{user.display_name || user.username || "Unknown"}</h1>
+            <p className="user-profile-username">
+              {user.username ? `@${user.username}` : "No username"}
+            </p>
             {user.email && <p className="user-profile-email">{user.email}</p>}
           </div>
         </div>

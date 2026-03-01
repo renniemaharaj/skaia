@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/auth"
 	"github.com/skaia/backend/models"
+	wshub "github.com/skaia/backend/websocket"
 )
 
 type SocketMessage struct {
@@ -382,7 +383,7 @@ func (c *SocketClient) sendError(errMsg string) {
 	}
 }
 
-// WSHandler handles WebSocket connections
+// WSHandler handles WebSocket connections using Hub-based subscriptions
 func WSHandler(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{
@@ -399,13 +400,18 @@ func WSHandler(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		client := &SocketClient{
-			conn:   conn,
-			appCtx: appCtx,
-			send:   make(chan SocketMessage, 256),
+		// Create Hub-based client for subscription management
+		client := &wshub.Client{
+			Hub:  appCtx.WebSocketHub,
+			Conn: conn,
+			Send: make(chan *wshub.Message, 256),
 		}
 
-		go client.readPump()
-		go client.writePump()
+		// Register with Hub for subscription tracking
+		appCtx.WebSocketHub.RegisterClient(client)
+
+		// Start Hub client pumps for subscription-based updates
+		go client.ReadPump()
+		go client.WritePump()
 	}
 }

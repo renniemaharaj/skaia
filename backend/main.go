@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -221,7 +222,28 @@ func handlePurchase(appCtx *AppContext) http.HandlerFunc {
 func handleGetUser(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+
+		userID := chi.URLParam(r, "id")
+		userIDInt, err := strconv.ParseInt(userID, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid user id"})
+			return
+		}
+
+		user, err := appCtx.UserRepo.GetUserByID(userIDInt)
+		if err != nil {
+			log.Printf("Error fetching user: %v", err)
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "user not found"})
+			return
+		}
+
+		// Don't expose password hash
+		user.PasswordHash = ""
+
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(user)
 	}
 }
 

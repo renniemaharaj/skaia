@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom, isAuthenticatedAtom } from "../atoms/auth";
+import { forumCategoriesAtom } from "../atoms/forum";
 import { apiRequest } from "../utils/api";
 import { SkeletonCard } from "./SkeletonCard";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
+import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import "./Forum.css";
 import "./FeatureCard.css";
 import "./NewThread.css";
@@ -12,141 +14,57 @@ import "./FormGroup.css";
 import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
 
-interface ForumThread {
-  id: string;
-  title: string;
-  view_count: number;
-  reply_count: number;
-  content?: string;
-  user_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface ForumCategory {
-  id: string;
-  name: string;
-  description: string;
-  threads: ForumThread[];
-  created_at?: string;
-  display_order?: number;
-}
-
 interface ForumProps {
   // No longer needed - all forum operations are now API-driven with WebSocket updates
 }
 
 export const Forum: React.FC<ForumProps> = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
-  const [forums, setForums] = useState<ForumCategory[]>([]);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
 
   const navigate = useNavigate();
   const currentUser = useAtomValue(currentUserAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
-  const wsRef = useRef<WebSocket | null>(null);
+  const forums = useAtomValue(forumCategoriesAtom);
+  const setForumCategories = useSetAtom(forumCategoriesAtom);
 
-  // Load forums from API
-  const loadForums = async () => {
-    try {
-      setForumsLoading(true);
-      const response = await apiRequest<ForumCategory[]>("/forum/categories");
-      setForums(response || []);
-    } catch (error) {
-      console.error("Error loading forums:", error);
-      setForums([]);
-    } finally {
-      setForumsLoading(false);
-    }
-  };
+  // Setup WebSocket synchronization for forum updates
+  const { subscribe } = useWebSocketSync();
 
-  // Setup WebSocket subscription
-  const setupWebSocket = () => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/api/ws`;
+  // Load forums from API on mount
+  useEffect(() => {
+    const loadForums = async () => {
+      try {
+        setForumsLoading(true);
+        const response = await apiRequest("/forum/categories");
+        if (response && Array.isArray(response)) {
+          // Convert API response to ForumCategory format
+          const categories = response.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            description: cat.description || "",
+            thread_count: cat.thread_count || 0,
+            created_at: cat.created_at,
+            updated_at: cat.updated_at,
+            threads: cat.threads || [],
+          }));
+          setForumCategories(categories);
 
-    try {
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        console.log("Connected to WebSocket for forum updates");
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-
-          if (message.type === "forum:update") {
-            const payload = message.payload;
-            if (payload.action === "category_created") {
-              setForums((prev) => [...prev, payload.data]);
-            } else if (payload.action === "category_deleted") {
-              setForums((prev) => prev.filter((c) => c.id !== payload.id));
-            } else if (payload.action === "thread_created") {
-              setForums((prev) =>
-                prev.map((category) => {
-                  if (category.id === payload.data.category_id) {
-                    return {
-                      ...category,
-                      threads: [payload.data, ...category.threads].slice(0, 2),
-                    };
-                  }
-                  return category;
-                }),
-              );
-            } else if (payload.action === "thread_deleted") {
-              setForums((prev) =>
-                prev.map((category) => ({
-                  ...category,
-                  threads: (category.threads || []).filter(
-                    (t) => t.id !== payload.id,
-                  ),
-                })),
-              );
-            } else if (payload.action === "thread_updated") {
-              setForums((prev) =>
-                prev.map((category) => ({
-                  ...category,
-                  threads: (category.threads || []).map((t) =>
-                    t.id === payload.data.id ? payload.data : t,
-                  ),
-                })),
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Error processing WebSocket message:", error);
+          // Subscribe to each category so we receive propagated updates
+          categories.forEach((category) => {
+            subscribe("forum_category", category.id);
+          });
         }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log("Disconnected from WebSocket");
-      };
-    } catch (error) {
-      console.error("WebSocket connection error:", error);
-    }
-  };
-
-  // Load forums on mount
-  useEffect(() => {
-    loadForums();
-  }, []);
-
-  // Setup WebSocket on mount
-  useEffect(() => {
-    setupWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+      } catch (error) {
+        console.error("Error loading forums:", error);
+      } finally {
+        setForumsLoading(false);
       }
     };
-  }, []);
+
+    loadForums();
+  }, [setForumCategories, subscribe]);
 
   const handleDeleteCategory = async (categoryId: string) => {
     if (confirm("Are you sure you want to delete this category?")) {
@@ -339,9 +257,9 @@ export const Forum: React.FC<ForumProps> = () => {
                       </div>
                     );
                   })}
-                  {forum.threads.length > 2 && (
+                  {(forum.threads || []).length > 2 && (
                     <div className="empty-threads">
-                      +{forum.threads.length - 2} more threads
+                      +{(forum.threads || []).length - 2} more threads
                     </div>
                   )}
                 </div>
