@@ -19,8 +19,8 @@ import (
 	istore "github.com/skaia/backend/internal/store"
 	"github.com/skaia/backend/internal/testutil"
 	iuser "github.com/skaia/backend/internal/user"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/repository"
-	"github.com/skaia/backend/websocket"
 )
 
 //go:embed migrations/*.sql
@@ -42,7 +42,7 @@ type AppContext struct {
 	ForumCategoryRepo repository.ForumCategoryRepository
 	ForumThreadRepo   repository.ForumThreadRepository
 	ThreadCommentRepo repository.ThreadCommentRepository
-	WebSocketHub      *websocket.Hub
+	WebSocketHub      *ws.Hub
 }
 
 func main() {
@@ -71,7 +71,7 @@ func main() {
 	}
 	defer database.Close()
 
-	hub := websocket.NewHub()
+	hub := ws.NewHub()
 	go hub.Run()
 
 	port := os.Getenv("PORT")
@@ -122,7 +122,7 @@ func runIntegrationSuite(db *sql.DB) {
 		log.Fatalf("integration: migrations failed: %v", err)
 	}
 
-	hub := websocket.NewHub()
+	hub := ws.NewHub()
 	go hub.Run()
 
 	suite := integration.NewSuite(buildRouter(db, hub))
@@ -140,7 +140,7 @@ func runIntegrationSuite(db *sql.DB) {
 
 // buildRouter constructs the fully-mounted chi.Router for the given db and hub.
 // This is used both in production and in the integration test suite.
-func buildRouter(db *sql.DB, hub *websocket.Hub) http.Handler {
+func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	// AppContext retains the legacy repos needed by the WebSocket handler.
 	appCtx := &AppContext{
 		UserRepo:          repository.NewUserRepository(db),

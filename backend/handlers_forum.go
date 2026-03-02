@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/auth"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
-	"github.com/skaia/backend/websocket"
 )
 
 // handleForumCategories fetches all forum categories with their recent threads
@@ -106,8 +106,8 @@ func handleForumCategoryCreate(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		// Broadcast to all clients
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
+		appCtx.WebSocketHub.Broadcast(&ws.Message{
+			Type: ws.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
 				data, _ := json.Marshal(map[string]interface{}{
 					"action": "category_created",
@@ -166,8 +166,8 @@ func handleForumCategoryDelete(appCtx *AppContext) http.HandlerFunc {
 
 		// Broadcast deletion to ALL clients (same as create) so any client
 		// showing the forum page removes the category, regardless of subscription state
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
+		appCtx.WebSocketHub.Broadcast(&ws.Message{
+			Type: ws.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
 				data, _ := json.Marshal(map[string]interface{}{
 					"action": "category_deleted",
@@ -243,8 +243,8 @@ func handleForumThreadCreate(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		// Broadcast to all WebSocket subscribers (for general awareness)
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
+		appCtx.WebSocketHub.Broadcast(&ws.Message{
+			Type: ws.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
 				data, _ := json.Marshal(map[string]interface{}{
 					"action": "thread_created",
@@ -467,8 +467,8 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 		appCtx.WebSocketHub.PropagateForumThread(id, nil, "thread_deleted")
 
 		// Broadcast deletion to all clients for awareness
-		appCtx.WebSocketHub.Broadcast(&websocket.Message{
-			Type: websocket.ForumUpdate,
+		appCtx.WebSocketHub.Broadcast(&ws.Message{
+			Type: ws.ForumUpdate,
 			Payload: json.RawMessage(func() []byte {
 				data, _ := json.Marshal(map[string]interface{}{
 					"action": "thread_deleted",

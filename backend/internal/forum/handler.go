@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	ws "github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
-	ws "github.com/skaia/backend/websocket"
 )
 
 // Handler exposes all forum HTTP endpoints.

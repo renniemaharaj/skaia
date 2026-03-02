@@ -10,8 +10,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/auth"
+	wshub "github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
-	wshub "github.com/skaia/backend/websocket"
 )
 
 type SocketMessage struct {
