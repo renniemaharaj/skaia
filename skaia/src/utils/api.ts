@@ -2,9 +2,11 @@
  * API service for centralized HTTP requests with authentication
  */
 
+import { getDefaultStore } from "jotai";
 import { type User } from "../atoms/auth";
+import { apiBaseUrlAtom } from "../atoms/config";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = getDefaultStore().get(apiBaseUrlAtom);
 
 export interface ApiError {
   error: string;

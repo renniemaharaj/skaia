@@ -7,6 +7,7 @@ import {
   threadCommentsAtom,
 } from "../atoms/forum";
 import { socketAtom, currentUserAtom } from "../atoms/auth";
+import { wsBaseUrlAtom } from "../atoms/config";
 
 interface WebSocketMessage {
   type: string;
@@ -28,6 +29,7 @@ export const useWebSocketSync = () => {
   const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
   const connectingRef = useRef(false);
+  const wsUrl = useAtomValue(wsBaseUrlAtom);
   // Tracks all active subscriptions so they can be replayed on reconnect
   const subscriptionsRef = useRef<Set<string>>(new Set());
   const currentUser = useAtomValue(currentUserAtom);
@@ -51,8 +53,6 @@ export const useWebSocketSync = () => {
     }
 
     connectingRef.current = true;
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/api/ws`;
 
     try {
       const ws = new WebSocket(wsUrl);
@@ -383,7 +383,7 @@ export const useWebSocketSync = () => {
         setupWebSocket();
       }, 3000);
     }
-  }, [setForumCategories, setCurrentThread, setSocket]);
+  }, [setForumCategories, setCurrentThread, setSocket, wsUrl]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates

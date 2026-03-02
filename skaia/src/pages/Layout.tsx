@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
-import { useSetAtom } from "jotai";
+import { useSetAtom, useAtomValue } from "jotai";
 import { useCart } from "../context/CartContext";
 import {
   accessTokenAtom,
@@ -11,6 +11,7 @@ import {
   isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
+import { wsBaseUrlAtom } from "../atoms/config";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
@@ -101,11 +102,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, [setAccessToken, setRefreshToken, setCurrentUser, setIsAuthenticated]);
 
+  const wsUrl = useAtomValue(wsBaseUrlAtom);
+
   // Initialize WebSocket connection
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/api/ws`;
-
     try {
       wsRef.current = new WebSocket(wsUrl);
 

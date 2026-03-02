@@ -2,6 +2,8 @@ import { Outlet } from "react-router-dom";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
+import { useAtomValue } from "jotai";
+import { wsBaseUrlAtom } from "../atoms/config";
 
 export const RootLayout: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -19,11 +21,10 @@ export const RootLayout: React.FC = () => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [isDarkMode]);
 
+  const wsUrl = useAtomValue(wsBaseUrlAtom);
+
   // Initialize WebSocket connection
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/api/ws`;
-
     try {
       wsRef.current = new WebSocket(wsUrl);
 
