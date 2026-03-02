@@ -147,11 +147,11 @@ export const useWebSocketSync = () => {
                     ...newComment,
                     can_delete:
                       isOwner ||
-                      (perms?.includes("forum.delete-post") ?? false),
+                      (perms?.includes("forum.thread-comment-delete") ?? false),
                     can_edit:
-                      isOwner || (perms?.includes("forum.edit-post") ?? false),
-                    can_like_comments:
-                      perms?.includes("thread.canLikeComments") ?? false,
+                      isOwner ||
+                      (perms?.includes("forum.thread-comment-delete") ?? false),
+                    can_like_comments: true,
                   };
                   return [...prev, enriched];
                 }

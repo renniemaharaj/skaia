@@ -81,14 +81,14 @@ export const hasPermissionAtom = atom((get) => (permission: string) => {
   const user = get(currentUserAtom);
   if (!user) return false;
   // Admin has all permissions
-  if (user.roles.includes("admin")) return true;
-  return user.permissions.includes(permission) ?? false;
+  if ((user.roles ?? []).includes("admin")) return true;
+  return (user.permissions ?? []).includes(permission);
 });
 
 // Atom for checking specific roles
 export const hasRoleAtom = atom((get) => (role: string) => {
   const user = get(currentUserAtom);
-  return user?.roles.includes(role) ?? false;
+  return (user?.roles ?? []).includes(role);
 });
 
 // Socket connection state

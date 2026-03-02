@@ -85,7 +85,7 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forums.createCategory") {
+	if !HasClaim(claims, "forum.category-new") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -127,7 +127,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forums.deleteCategory") {
+	if !HasClaim(claims, "forum.category-delete") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -221,6 +221,10 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
+	if !HasClaim(claims, "forum.thread-new") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
 
 	var req struct {
 		CategoryID string `json:"category_id"`
@@ -298,11 +302,11 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasClaims {
-		thread.CanLikeComments = HasClaim(claims, "thread.canLikeComments")
-		thread.CanDeleteThreadComment = HasClaim(claims, "forum.delete-post")
-		thread.CanLikeThreads = HasClaim(claims, "thread.canLikeThreads")
-		thread.CanEdit = userID == thread.UserID || HasClaim(claims, "forum.edit-thread")
-		thread.CanDelete = userID == thread.UserID || HasClaim(claims, "forum.delete-thread")
+		thread.CanLikeComments = true
+		thread.CanDeleteThreadComment = HasClaim(claims, "forum.thread-comment-delete")
+		thread.CanLikeThreads = true
+		thread.CanEdit = userID == thread.UserID || HasClaim(claims, "forum.thread-edit")
+		thread.CanDelete = userID == thread.UserID || HasClaim(claims, "forum.thread-delete")
 	}
 
 	WriteJSON(w, http.StatusOK, thread)
@@ -327,7 +331,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.edit-thread") {
+	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.thread-edit") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -378,7 +382,7 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.delete-thread") {
+	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.thread-delete") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -503,9 +507,9 @@ func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if hasClaims {
-			c.CanLikeComments = HasClaim(claims, "thread.canLikeComments")
-			c.CanDelete = userID == c.UserID || HasClaim(claims, "forum.delete-post")
-			c.CanEdit = userID == c.UserID || HasClaim(claims, "forum.edit-post")
+			c.CanLikeComments = true
+			c.CanDelete = userID == c.UserID || HasClaim(claims, "forum.thread-comment-delete")
+			c.CanEdit = userID == c.UserID || HasClaim(claims, "forum.thread-comment-delete")
 		}
 	}
 
@@ -516,6 +520,10 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 	claims, ok := ClaimsFromCtx(r)
 	if !ok {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !HasClaim(claims, "forum.thread-comment-new") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 
@@ -572,7 +580,7 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.edit-post") {
+	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.thread-comment-delete") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -616,7 +624,7 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.delete-post") && !HasClaim(claims, "thread.canDeleteThreadComment") {
+	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.thread-comment-delete") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}

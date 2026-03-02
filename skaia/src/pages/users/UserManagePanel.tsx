@@ -36,7 +36,7 @@ const UserManagePanel = ({
         <h3 className="up-manage-heading">Roles</h3>
         <div className="up-checkbox-grid">
           {allRoles.map((role) => {
-            const checked = user.roles.includes(role.name);
+            const checked = (user.roles ?? []).includes(role.name);
             const toggling = roleTogglingSet.has(role.name);
             return (
               <label
@@ -68,7 +68,7 @@ const UserManagePanel = ({
             <h4 className="up-perm-category">{category}</h4>
             <div className="up-checkbox-grid">
               {perms.map((perm) => {
-                const checked = user.permissions.includes(perm.name);
+                const checked = (user.permissions ?? []).includes(perm.name);
                 const toggling = permTogglingSet.has(perm.name);
                 return (
                   <label

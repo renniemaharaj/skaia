@@ -94,11 +94,10 @@ export const Forum: React.FC<ForumProps> = () => {
     }
   };
 
-  const canCreateCategory = currentUser?.permissions?.includes(
-    "forums.createCategory",
-  );
+  const canCreateCategory =
+    currentUser?.permissions?.includes("forum.category-new");
   const canDeleteCategory = currentUser?.permissions?.includes(
-    "forums.deleteCategory",
+    "forum.category-delete",
   );
 
   // Debug logging
@@ -254,10 +253,10 @@ export const Forum: React.FC<ForumProps> = () => {
                       String(currentUser.id) === String(thread.user_id);
                     const canEditThread =
                       isThreadOwner ||
-                      currentUser?.permissions?.includes("forum.edit-thread");
+                      currentUser?.permissions?.includes("forum.thread-edit");
                     const canDeleteThread =
                       isThreadOwner ||
-                      currentUser?.permissions?.includes("forum.delete-thread");
+                      currentUser?.permissions?.includes("forum.thread-delete");
 
                     return (
                       <div key={thread.id} className="thread-item">

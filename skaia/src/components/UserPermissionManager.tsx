@@ -105,7 +105,9 @@ const UserPermissionManager: React.FC = () => {
     setIsLoading(true);
     try {
       for (const permissionName of permissionChanges) {
-        const hasPermission = selectedUser.permissions.includes(permissionName);
+        const hasPermission = (selectedUser.permissions ?? []).includes(
+          permissionName,
+        );
 
         if (hasPermission) {
           // Remove permission

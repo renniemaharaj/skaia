@@ -86,7 +86,7 @@ const UserProfileCard = ({
               <p className="up-email">{user.email}</p>
             )}
             <div className="up-roles">
-              {user.roles.map((r) => (
+              {(user.roles ?? []).map((r) => (
                 <span key={r} className={`up-badge up-badge-${r}`}>
                   {r}
                 </span>

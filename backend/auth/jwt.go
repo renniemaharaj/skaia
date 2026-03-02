@@ -63,6 +63,12 @@ func GenerateRefreshToken(userID int64) (string, error) {
 
 // GenerateTokenWithExpiration creates a JWT token with custom expiration
 func GenerateTokenWithExpiration(userID int64, username, email, displayName string, roles, permissions []string, expiresIn time.Duration) (string, error) {
+	if roles == nil {
+		roles = []string{}
+	}
+	if permissions == nil {
+		permissions = []string{}
+	}
 	claims := Claims{
 		UserID:      userID,
 		Username:    username,

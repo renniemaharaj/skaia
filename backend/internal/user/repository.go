@@ -31,7 +31,7 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	}
 	defer rows.Close()
 
-	var roles []string
+	roles := []string{}
 	for rows.Next() {
 		var role string
 		if err := rows.Scan(&role); err != nil {
@@ -59,7 +59,7 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	defer permRows.Close()
 
 	seen := make(map[string]bool)
-	var perms []string
+	perms := []string{}
 	for permRows.Next() {
 		var p string
 		if err := permRows.Scan(&p); err != nil {
@@ -147,10 +147,11 @@ func (r *sqlRepository) Create(user *models.User, passwordHash string) (*models.
 		return nil, err
 	}
 
-	// Assign default "member" role (role_id = 3)
+	// Assign default "member" role (looked up by name so it is immune to ID changes)
 	if _, err = r.db.Exec(
-		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`,
-		inserted.ID, int64(3),
+		`INSERT INTO user_roles (user_id, role_id)
+		 SELECT $1, id FROM roles WHERE name = 'member' LIMIT 1`,
+		inserted.ID,
 	); err != nil {
 		return nil, err
 	}

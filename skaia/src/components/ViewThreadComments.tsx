@@ -215,7 +215,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                   {(currentUser?.id === comment.user_id ||
                     comment.can_delete ||
                     currentUser?.permissions?.includes(
-                      "forum.delete-post",
+                      "forum.thread-comment-delete",
                     )) && (
                     <button
                       className="thread-action-btn delete-btn"

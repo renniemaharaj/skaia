@@ -1,4 +1,4 @@
-import { atom } from 'jotai';
+import { atom } from "jotai";
 
 export interface User {
   id: string;
@@ -31,20 +31,16 @@ export const isAuthenticatedAtom = atom((get) => {
 });
 
 // Derived atoms for permission checking
-export const hasPermissionAtom = atom(
-  (get) => (permission: string) => {
-    const user = get(userAtom);
-    if (!user) return false;
-    // Admin has all permissions
-    if (user.roles.includes('admin')) return true;
-    return user.permissions.includes(permission);
-  }
-);
+export const hasPermissionAtom = atom((get) => (permission: string) => {
+  const user = get(userAtom);
+  if (!user) return false;
+  // Admin has all permissions
+  if ((user.roles ?? []).includes("admin")) return true;
+  return (user.permissions ?? []).includes(permission);
+});
 
-export const hasRoleAtom = atom(
-  (get) => (role: string) => {
-    const user = get(userAtom);
-    if (!user) return false;
-    return user.roles.includes(role);
-  }
-);
+export const hasRoleAtom = atom((get) => (role: string) => {
+  const user = get(userAtom);
+  if (!user) return false;
+  return (user.roles ?? []).includes(role);
+});

@@ -20,38 +20,59 @@ const UserProfile: React.FC = () => {
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
 
-  const canManage = hasPermission("user.manage-permissions");
+  const canManage = hasPermission("user.manage-others");
   const canSuspend = hasPermission("user.suspend");
-  const isOwnProfile = currentUser?.id === userId;
+  const isOwnProfile = String(currentUser?.id) === String(userId);
   const canEdit = canManage || isOwnProfile;
 
   const {
-    user, setUser, loading, error,
-    allPermissions, allRoles,
-    permTogglingSet, roleTogglingSet,
-    handlePermissionToggle, handleRoleToggle,
-    suspendDialogOpen, setSuspendDialogOpen,
-    suspendReason, setSuspendReason, suspendLoading,
-    handleSuspend, handleUnsuspend,
+    user,
+    setUser,
+    loading,
+    error,
+    allPermissions,
+    allRoles,
+    permTogglingSet,
+    roleTogglingSet,
+    handlePermissionToggle,
+    handleRoleToggle,
+    suspendDialogOpen,
+    setSuspendDialogOpen,
+    suspendReason,
+    setSuspendReason,
+    suspendLoading,
+    handleSuspend,
+    handleUnsuspend,
   } = useUserData(userId, canManage);
 
   const {
-    editOpen, setEditOpen,
-    editBio, setEditBio,
-    editDisplayName, setEditDisplayName,
-    avatarPreview, bannerPreview,
-    handleAvatarChange, handleBannerChange,
-    editSaving, editError, handleSave,
+    editOpen,
+    setEditOpen,
+    editBio,
+    setEditBio,
+    editDisplayName,
+    setEditDisplayName,
+    avatarPreview,
+    bannerPreview,
+    handleAvatarChange,
+    handleBannerChange,
+    editSaving,
+    editError,
+    handleSave,
   } = useProfileEdit({
     user,
     isOwnProfile,
-    onSaved: (updated) => setUser((u) => u ? { ...u, ...updated } : u),
+    onSaved: (updated) => setUser((u) => (u ? { ...u, ...updated } : u)),
   });
 
   const { threads, threadsLoading, sentinelRef } = useThreadsFeed(userId);
 
-  if (loading) return <div className="up-container up-loading">Loading profile…</div>;
-  if (error || !user) return <div className="up-container up-error">{error ?? "User not found"}</div>;
+  if (loading)
+    return <div className="up-container up-loading">Loading profile…</div>;
+  if (error || !user)
+    return (
+      <div className="up-container up-error">{error ?? "User not found"}</div>
+    );
 
   const displayAvatar = user.avatar_url || user.photo_url || null;
   const displayBanner = user.banner_url || null;

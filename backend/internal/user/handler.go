@@ -274,8 +274,8 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Only the owner or an admin may update.
-	if claims.UserID != id && !HasClaim(claims, "admin") {
+	// Only the owner or someone with user.manage-others may update.
+	if claims.UserID != id && !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -366,7 +366,7 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "user.manage-permissions") {
+	if !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -401,7 +401,7 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "user.manage-permissions") {
+	if !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -439,7 +439,7 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "user.manage-permissions") {
+	if !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -474,7 +474,7 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "user.manage-permissions") {
+	if !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -661,8 +661,8 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	// Only allow if acting on own profile or has manage permission
-	if claims.UserID != targetID && !HasClaim(claims, "user.manage-permissions") {
+	// Only allow if acting on own profile or has user.manage-others permission
+	if claims.UserID != targetID && !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -735,7 +735,7 @@ func (h *Handler) uploadUserBanner(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if claims.UserID != targetID && !HasClaim(claims, "user.manage-permissions") {
+	if claims.UserID != targetID && !HasClaim(claims, "user.manage-others") {
 		WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}

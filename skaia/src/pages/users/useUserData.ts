@@ -100,15 +100,15 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
 
   const handlePermissionToggle = async (permName: string) => {
     if (!user || !canManage || permTogglingSet.has(permName)) return;
-    const hasIt = user.permissions.includes(permName);
+    const hasIt = (user.permissions ?? []).includes(permName);
     setPermTogglingSet((s) => new Set(s).add(permName));
     setUser((u) =>
       u
         ? {
             ...u,
             permissions: hasIt
-              ? u.permissions.filter((p) => p !== permName)
-              : [...u.permissions, permName],
+              ? (u.permissions ?? []).filter((p) => p !== permName)
+              : [...(u.permissions ?? []), permName],
           }
         : u,
     );
@@ -129,8 +129,8 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
           ? {
               ...u,
               permissions: hasIt
-                ? [...u.permissions, permName]
-                : u.permissions.filter((p) => p !== permName),
+                ? [...(u.permissions ?? []), permName]
+                : (u.permissions ?? []).filter((p) => p !== permName),
             }
           : u,
       );
@@ -145,15 +145,15 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
 
   const handleRoleToggle = async (roleName: string) => {
     if (!user || !canManage || roleTogglingSet.has(roleName)) return;
-    const hasIt = user.roles.includes(roleName);
+    const hasIt = (user.roles ?? []).includes(roleName);
     setRoleTogglingSet((s) => new Set(s).add(roleName));
     setUser((u) =>
       u
         ? {
             ...u,
             roles: hasIt
-              ? u.roles.filter((r) => r !== roleName)
-              : [...u.roles, roleName],
+              ? (u.roles ?? []).filter((r) => r !== roleName)
+              : [...(u.roles ?? []), roleName],
           }
         : u,
     );
@@ -174,8 +174,8 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
           ? {
               ...u,
               roles: hasIt
-                ? [...u.roles, roleName]
-                : u.roles.filter((r) => r !== roleName),
+                ? [...(u.roles ?? []), roleName]
+                : (u.roles ?? []).filter((r) => r !== roleName),
             }
           : u,
       );
