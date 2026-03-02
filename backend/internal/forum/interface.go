@@ -19,6 +19,7 @@ type CategoryRepository interface {
 type ThreadRepository interface {
 	GetByID(id int64) (*models.ForumThread, error)
 	GetByCategory(categoryID int64, limit, offset int) ([]*models.ForumThread, error)
+	GetByUser(userID int64, limit, offset int) ([]*models.ForumThread, error)
 	Create(thread *models.ForumThread) (*models.ForumThread, error)
 	Update(thread *models.ForumThread) (*models.ForumThread, error)
 	Delete(id int64) error

@@ -113,6 +113,14 @@ type Permission struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// Role represents a role in the system
+type Role struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // ForumCategory represents a forum category
 type ForumCategory struct {
 	ID           int64     `json:"id"`

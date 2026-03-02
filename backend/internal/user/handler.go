@@ -24,6 +24,7 @@ import (
 const (
 	uploadsDir  = "./uploads"
 	photosDir   = uploadsDir + "/photos"
+	bannersDir  = uploadsDir + "/banners"
 	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
 
@@ -35,7 +36,8 @@ type Handler struct {
 
 // NewHandler returns a Handler backed by the given Service.
 func NewHandler(svc *Service) *Handler {
-	os.MkdirAll(photosDir, 0755) //nolint:errcheck
+	os.MkdirAll(photosDir, 0755)  //nolint:errcheck
+	os.MkdirAll(bannersDir, 0755) //nolint:errcheck
 	return &Handler{svc: svc}
 }
 
@@ -62,13 +64,24 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.Put("/{id}", h.updateUser)
 		r.Post("/{id}/permissions", h.addPermission)
 		r.Delete("/{id}/permissions/{perm}", h.removePermission)
+		r.Post("/{id}/roles", h.addRole)
+		r.Delete("/{id}/roles/{role}", h.removeRole)
+		r.Post("/{id}/suspend", h.suspendUser)
+		r.Delete("/{id}/suspend", h.unsuspendUser)
 		r.Post("/me/photo", h.uploadProfilePhoto)
+		r.Post("/me/banner", h.uploadProfileBanner)
+		r.Post("/{id}/photo", h.uploadUserPhoto)
+		r.Post("/{id}/banner", h.uploadUserBanner)
 	})
 
-	// Permissions catalogue
+	// Permissions & roles catalogue
 	r.Route("/permissions", func(r chi.Router) {
 		r.Use(jwt)
 		r.Get("/", h.getPermissions)
+	})
+	r.Route("/roles", func(r chi.Router) {
+		r.Use(jwt)
+		r.Get("/", h.getRoles)
 	})
 }
 
@@ -371,7 +384,137 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed"})
 }
 
-// File handlers
+func (h *Handler) getRoles(w http.ResponseWriter, r *http.Request) {
+	roles, err := h.svc.GetAllRoles()
+	if err != nil {
+		log.Printf("user.Handler.getRoles: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to fetch roles")
+		return
+	}
+	WriteJSON(w, http.StatusOK, roles)
+}
+
+func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !HasClaim(claims, "user.manage-permissions") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Role == "" {
+		WriteError(w, http.StatusBadRequest, "role name required")
+		return
+	}
+
+	if err := h.svc.AddRoleByName(targetID, req.Role); err != nil {
+		log.Printf("user.Handler.addRole: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to add role")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "role added"})
+}
+
+func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !HasClaim(claims, "user.manage-permissions") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	roleName := chi.URLParam(r, "role")
+	if roleName == "" {
+		WriteError(w, http.StatusBadRequest, "role name required")
+		return
+	}
+
+	if err := h.svc.RemoveRoleByName(targetID, roleName); err != nil {
+		log.Printf("user.Handler.removeRole: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to remove role")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "role removed"})
+}
+
+func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !HasClaim(claims, "user.suspend") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	var req struct {
+		Reason string `json:"reason"`
+	}
+	json.NewDecoder(r.Body).Decode(&req) //nolint:errcheck
+
+	if err := h.svc.Suspend(targetID, req.Reason); err != nil {
+		log.Printf("user.Handler.suspendUser: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to suspend user")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "user suspended"})
+}
+
+func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !HasClaim(claims, "user.suspend") {
+		WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	if err := h.svc.Unsuspend(targetID); err != nil {
+		log.Printf("user.Handler.unsuspendUser: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to unsuspend user")
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "user unsuspended"})
+}
 
 // FileUploadResponse is returned after a successful upload.
 type FileUploadResponse struct {
@@ -444,6 +587,144 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		Size:     size,
 		Type:     header.Header.Get("Content-Type"),
 	})
+}
+
+func (h *Handler) uploadProfileBanner(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	h.saveAndStoreBanner(w, r, claims.UserID)
+}
+
+func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	// Only allow if acting on own profile or has manage permission
+	if claims.UserID != targetID && !HasClaim(claims, "user.manage-permissions") {
+		WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+		WriteError(w, http.StatusBadRequest, "failed to parse form")
+		return
+	}
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "photo field required")
+		return
+	}
+	defer file.Close()
+
+	if err := validateImageFile(file, header.Header); err != nil {
+		WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	file.Seek(0, 0) //nolint:errcheck
+
+	filename := fmt.Sprintf("photo_%d_%d%s", targetID, time.Now().UnixNano(), filepath.Ext(header.Filename))
+	dst, err := os.Create(filepath.Join(photosDir, filename))
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, "failed to save file")
+		return
+	}
+	defer dst.Close()
+	size, err := io.Copy(dst, file)
+	if err != nil {
+		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to save file")
+		return
+	}
+
+	u, err := h.svc.GetByID(targetID)
+	if err != nil {
+		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to load user")
+		return
+	}
+	u.PhotoURL = "/uploads/photos/" + filename
+	if _, err = h.svc.Update(u); err != nil {
+		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to update user")
+		return
+	}
+	WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.PhotoURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
+}
+
+func (h *Handler) uploadUserBanner(w http.ResponseWriter, r *http.Request) {
+	claims := ClaimsFromCtx(r)
+	if claims == nil {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	if claims.UserID != targetID && !HasClaim(claims, "user.manage-permissions") {
+		WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	h.saveAndStoreBanner(w, r, targetID)
+}
+
+func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, userID int64) {
+	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+		WriteError(w, http.StatusBadRequest, "failed to parse form")
+		return
+	}
+	file, header, err := r.FormFile("banner")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "banner field required")
+		return
+	}
+	defer file.Close()
+
+	if err := validateImageFile(file, header.Header); err != nil {
+		WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	file.Seek(0, 0) //nolint:errcheck
+
+	filename := fmt.Sprintf("banner_%d_%d%s", userID, time.Now().UnixNano(), filepath.Ext(header.Filename))
+	dst, err := os.Create(filepath.Join(bannersDir, filename))
+	if err != nil {
+		log.Printf("user.Handler.saveAndStoreBanner: create file: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to save file")
+		return
+	}
+	defer dst.Close()
+	size, err := io.Copy(dst, file)
+	if err != nil {
+		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to save file")
+		return
+	}
+
+	u, err := h.svc.GetByID(userID)
+	if err != nil {
+		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to load user")
+		return
+	}
+	u.BannerURL = "/uploads/banners/" + filename
+	if _, err = h.svc.Update(u); err != nil {
+		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		WriteError(w, http.StatusInternalServerError, "failed to update user")
+		return
+	}
+	WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.BannerURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }
 
 // Internal utilities

@@ -16,6 +16,15 @@
   --skeleton-color: #e0e0e0;
   --skeleton-shine: #f0f0f0;
 
+  /* Semantic status colors */
+  --error-color: #dc3545;
+  --error-bg: rgba(220, 53, 69, 0.1);
+  --error-border: rgba(220, 53, 69, 0.25);
+  --success-color: #198754;
+  --success-bg: rgba(25, 135, 84, 0.1);
+  --warning-color: #e67e00;
+  --warning-bg: rgba(230, 126, 0, 0.1);
+
   /* Compatibility with existing code */
   --mint-primary: #5b9e8e;
   --mint-dark: #3d7366;
@@ -42,6 +51,15 @@ html[data-theme="dark"] {
   --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.4);
   --skeleton-color: #2a2a2a;
   --skeleton-shine: #333333;
+
+  /* Semantic status colors */
+  --error-color: #ff6b7a;
+  --error-bg: rgba(255, 107, 122, 0.12);
+  --error-border: rgba(255, 107, 122, 0.25);
+  --success-color: #34c97a;
+  --success-bg: rgba(52, 201, 122, 0.12);
+  --warning-color: #ffaa44;
+  --warning-bg: rgba(255, 170, 68, 0.12);
 
   /* Compatibility */
   --mint-primary: #7bb3a0;

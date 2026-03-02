@@ -66,6 +66,10 @@ func (s *Service) ListCategoryThreads(categoryID int64, limit, offset int) ([]*m
 	return s.threads.GetByCategory(categoryID, limit, offset)
 }
 
+func (s *Service) ListUserThreads(userID int64, limit, offset int) ([]*models.ForumThread, error) {
+	return s.threads.GetByUser(userID, limit, offset)
+}
+
 func (s *Service) CreateThread(thread *models.ForumThread) (*models.ForumThread, error) {
 	return s.threads.Create(thread)
 }

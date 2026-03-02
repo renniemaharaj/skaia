@@ -24,8 +24,15 @@ type Repository interface {
 	// Roles & permissions
 	AddRole(userID, roleID int64) error
 	RemoveRole(userID, roleID int64) error
+	AddRoleByName(userID int64, roleName string) error
+	RemoveRoleByName(userID int64, roleName string) error
+	GetAllRoles() ([]*models.Role, error)
 	HasPermission(userID int64, permission string) (bool, error)
 	AddPermission(userID int64, permissionName string) error
 	RemovePermission(userID int64, permissionName string) error
 	GetAllPermissions() ([]*models.Permission, error)
+
+	// Suspension
+	Suspend(userID int64, reason string) error
+	Unsuspend(userID int64) error
 }

@@ -26,7 +26,7 @@ export interface AuthResponse {
 /**
  * Get authorization headers with token
  */
-function getAuthHeaders(): Record<string, string> {
+function getAuthHeaders(includeContentType = true): Record<string, string> {
   // Get token from localStorage as raw string (no JSON serialization)
   const token = localStorage.getItem("auth.accessToken");
 
@@ -39,7 +39,7 @@ function getAuthHeaders(): Record<string, string> {
     console.warn("No auth token found in localStorage");
   }
   return {
-    "Content-Type": "application/json",
+    ...(includeContentType && { "Content-Type": "application/json" }),
     ...(token && { Authorization: `Bearer ${token}` }),
   };
 }
@@ -53,10 +53,11 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(url, {
     ...options,
     headers: {
-      ...getAuthHeaders(),
+      ...getAuthHeaders(!isFormData),
       ...options.headers,
     },
   });

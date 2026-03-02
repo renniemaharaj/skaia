@@ -213,6 +213,47 @@ func (s *Service) RemovePermission(userID int64, permissionName string) error {
 	return nil
 }
 
+// AddRoleByName assigns a role (by name) to a user.
+func (s *Service) AddRoleByName(userID int64, roleName string) error {
+	if err := s.repo.AddRoleByName(userID, roleName); err != nil {
+		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// RemoveRoleByName revokes a role (by name) from a user.
+func (s *Service) RemoveRoleByName(userID int64, roleName string) error {
+	if err := s.repo.RemoveRoleByName(userID, roleName); err != nil {
+		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// GetAllRoles returns every role definition in the system.
+func (s *Service) GetAllRoles() ([]*models.Role, error) {
+	return s.repo.GetAllRoles()
+}
+
+// Suspend suspends a user account with an optional reason.
+func (s *Service) Suspend(userID int64, reason string) error {
+	if err := s.repo.Suspend(userID, reason); err != nil {
+		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// Unsuspend reinstates a suspended user account.
+func (s *Service) Unsuspend(userID int64) error {
+	if err := s.repo.Unsuspend(userID); err != nil {
+		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
 // --- Domain errors ---
 
 // SuspendedError is returned by Login when the account is suspended.

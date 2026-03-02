@@ -175,5 +175,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	istore.NewHandler(storeSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
 
+	// Serve uploaded user assets (profile photos, banners)
+	uploadsFS := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads", uploadsFS))
+
 	return r
 }

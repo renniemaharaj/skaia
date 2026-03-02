@@ -28,3 +28,5 @@ vendor/
 # Build output
 dist/
 bin/
+uploads/*
+!uploads/**/.gitkeep

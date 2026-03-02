@@ -248,6 +248,64 @@ func (r *sqlRepository) RemoveRole(userID, roleID int64) error {
 	return err
 }
 
+func (r *sqlRepository) AddRoleByName(userID int64, roleName string) error {
+	var roleID int64
+	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1`, roleName).Scan(&roleID); err != nil {
+		return err
+	}
+	_, err := r.db.Exec(
+		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		userID, roleID,
+	)
+	return err
+}
+
+func (r *sqlRepository) RemoveRoleByName(userID int64, roleName string) error {
+	var roleID int64
+	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1`, roleName).Scan(&roleID); err != nil {
+		return err
+	}
+	_, err := r.db.Exec(
+		`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`,
+		userID, roleID,
+	)
+	return err
+}
+
+func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
+	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), created_at FROM roles ORDER BY id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []*models.Role
+	for rows.Next() {
+		ro := &models.Role{}
+		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.CreatedAt); err != nil {
+			return nil, err
+		}
+		roles = append(roles, ro)
+	}
+	return roles, rows.Err()
+}
+
+func (r *sqlRepository) Suspend(userID int64, reason string) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET is_suspended=TRUE, suspended_at=CURRENT_TIMESTAMP, suspended_reason=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
+		reason, userID,
+	)
+	return err
+}
+
+func (r *sqlRepository) Unsuspend(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET is_suspended=FALSE, suspended_at=NULL, suspended_reason=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+		userID,
+	)
+	return err
+}
+
 func (r *sqlRepository) HasPermission(userID int64, permission string) (bool, error) {
 	var count int
 	err := r.db.QueryRow(

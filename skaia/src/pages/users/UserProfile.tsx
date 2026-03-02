@@ -1,165 +1,124 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams } from "react-router-dom";
-import { apiRequest } from "../../utils/api";
-import "./UserProfile.css";
+import { useAtomValue } from "jotai";
+import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  display_name: string;
-  avatar_url?: string;
-  banner_url?: string;
-  bio?: string;
-  permissions: string[];
-  roles: string[];
-  created_at: string;
-}
+import { useUserData } from "./useUserData";
+import { useProfileEdit } from "./useProfileEdit";
+import { useThreadsFeed } from "./useThreadsFeed";
+
+import UserProfileCard from "./UserProfileCard";
+import UserManagePanel from "./UserManagePanel";
+import UserThreadsFeed from "./UserThreadsFeed";
+import EditProfileDialog from "./EditProfileDialog";
+import SuspendDialog from "./SuspendDialog";
+
+import "./UserProfile.css";
 
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const currentUser = useAtomValue(currentUserAtom);
+  const hasPermission = useAtomValue(hasPermissionAtom);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!userId) {
-        setError("No user ID provided");
-        setLoading(false);
-        return;
-      }
+  const canManage = hasPermission("user.manage-permissions");
+  const canSuspend = hasPermission("user.suspend");
+  const isOwnProfile = currentUser?.id === userId;
+  const canEdit = canManage || isOwnProfile;
 
-      setLoading(true);
-      try {
-        const userData = await apiRequest<User>(`/users/${userId}`, {
-          method: "GET",
-        });
-        if (userData) {
-          setUser({
-            ...userData,
-            roles: userData.roles || [],
-            permissions: userData.permissions || [],
-          });
-          setError(null);
-        } else {
-          setError("User not found");
-        }
-      } catch (err) {
-        console.error("Failed to fetch user:", err);
-        setError("Failed to load user profile");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const {
+    user, setUser, loading, error,
+    allPermissions, allRoles,
+    permTogglingSet, roleTogglingSet,
+    handlePermissionToggle, handleRoleToggle,
+    suspendDialogOpen, setSuspendDialogOpen,
+    suspendReason, setSuspendReason, suspendLoading,
+    handleSuspend, handleUnsuspend,
+  } = useUserData(userId, canManage);
 
-    fetchUser();
-  }, [userId]);
+  const {
+    editOpen, setEditOpen,
+    editBio, setEditBio,
+    editDisplayName, setEditDisplayName,
+    avatarPreview, bannerPreview,
+    handleAvatarChange, handleBannerChange,
+    editSaving, editError, handleSave,
+  } = useProfileEdit({
+    user,
+    isOwnProfile,
+    onSaved: (updated) => setUser((u) => u ? { ...u, ...updated } : u),
+  });
 
-  if (loading) {
-    return (
-      <div className="user-profile-container loading">
-        Loading user profile...
-      </div>
-    );
-  }
+  const { threads, threadsLoading, sentinelRef } = useThreadsFeed(userId);
 
-  if (error) {
-    return <div className="user-profile-container error">{error}</div>;
-  }
+  if (loading) return <div className="up-container up-loading">Loading profile…</div>;
+  if (error || !user) return <div className="up-container up-error">{error ?? "User not found"}</div>;
 
-  if (!user) {
-    return <div className="user-profile-container error">User not found</div>;
-  }
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Unknown";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Unknown";
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch {
-      return "Unknown";
-    }
-  };
-
-  const createdDate = formatDate(user.created_at);
+  const displayAvatar = user.avatar_url || user.photo_url || null;
+  const displayBanner = user.banner_url || null;
 
   return (
-    <div className="user-profile-container">
-      <div className="user-profile">
-        {user.banner_url && (
-          <div className="user-profile-banner">
-            <img src={user.banner_url} alt="Banner" />
-          </div>
-        )}
+    <div className="up-container">
+      <UserProfileCard
+        user={user}
+        displayAvatar={displayAvatar}
+        displayBanner={displayBanner}
+        canEdit={canEdit}
+        canSuspend={canSuspend}
+        isOwnProfile={isOwnProfile}
+        suspendLoading={suspendLoading}
+        onEditOpen={() => setEditOpen(true)}
+        onSuspendOpen={() => setSuspendDialogOpen(true)}
+        onUnsuspend={handleUnsuspend}
+      />
 
-        <div className="user-profile-header">
-          {user.avatar_url && (
-            <img
-              src={user.avatar_url}
-              alt={user.display_name}
-              className="user-profile-avatar"
-            />
-          )}
+      {canManage && (
+        <UserManagePanel
+          user={user}
+          allRoles={allRoles}
+          allPermissions={allPermissions}
+          roleTogglingSet={roleTogglingSet}
+          permTogglingSet={permTogglingSet}
+          onRoleToggle={handleRoleToggle}
+          onPermissionToggle={handlePermissionToggle}
+        />
+      )}
 
-          <div className="user-profile-info">
-            <h1>{user.display_name || user.username || "Unknown"}</h1>
-            <p className="user-profile-username">
-              {user.username ? `@${user.username}` : "No username"}
-            </p>
-            {user.email && <p className="user-profile-email">{user.email}</p>}
-          </div>
-        </div>
+      <UserThreadsFeed
+        displayName={user.display_name || user.username}
+        threads={threads}
+        threadsLoading={threadsLoading}
+        sentinelRef={sentinelRef}
+      />
 
-        {user.bio && (
-          <div className="user-profile-bio">
-            <p>{user.bio}</p>
-          </div>
-        )}
+      {editOpen && (
+        <EditProfileDialog
+          editDisplayName={editDisplayName}
+          setEditDisplayName={setEditDisplayName}
+          editBio={editBio}
+          setEditBio={setEditBio}
+          avatarPreview={avatarPreview}
+          bannerPreview={bannerPreview}
+          currentAvatarUrl={displayAvatar}
+          currentBannerUrl={displayBanner}
+          editSaving={editSaving}
+          editError={editError}
+          onAvatarChange={handleAvatarChange}
+          onBannerChange={handleBannerChange}
+          onSave={handleSave}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
 
-        <div className="user-profile-meta">
-          <div className="user-profile-stat">
-            <span className="stat-label">Member Since</span>
-            <span className="stat-value">{createdDate}</span>
-          </div>
-
-          {(user.roles?.length ?? 0) > 0 && (
-            <div className="user-profile-stat">
-              <span className="stat-label">Roles</span>
-              <div className="stat-badges">
-                {user.roles?.map((role) => (
-                  <span key={role} className="badge badge-role">
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(user.permissions?.length ?? 0) > 0 && (
-            <div className="user-profile-stat">
-              <span className="stat-label">Permissions</span>
-              <div className="stat-badges">
-                {user.permissions?.slice(0, 5).map((perm) => (
-                  <span key={perm} className="badge badge-permission">
-                    {perm}
-                  </span>
-                ))}
-                {(user.permissions?.length ?? 0) > 5 && (
-                  <span className="badge badge-more">
-                    +{(user.permissions?.length ?? 0) - 5}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      {suspendDialogOpen && (
+        <SuspendDialog
+          displayName={user.display_name || user.username}
+          suspendReason={suspendReason}
+          setSuspendReason={setSuspendReason}
+          suspendLoading={suspendLoading}
+          onConfirm={handleSuspend}
+          onClose={() => setSuspendDialogOpen(false)}
+        />
+      )}
     </div>
   );
 };

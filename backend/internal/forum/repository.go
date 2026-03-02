@@ -151,6 +151,40 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 	return threads, rows.Err()
 }
 
+func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*models.ForumThread, error) {
+	rows, err := r.db.Query(
+		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
+		        ft.view_count, ft.reply_count, ft.is_pinned, ft.is_locked,
+		        ft.created_at, ft.updated_at,
+		        u.username, u.avatar_url,
+		        COUNT(DISTINCT tl.id) AS likes
+		 FROM forum_threads ft
+		 LEFT JOIN users u ON ft.user_id = u.id
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
+		 WHERE ft.user_id = $1
+		 GROUP BY ft.id, u.id, u.username, u.avatar_url
+		 ORDER BY ft.created_at DESC
+		 LIMIT $2 OFFSET $3`,
+		userID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []*models.ForumThread
+	for rows.Next() {
+		t := &models.ForumThread{}
+		if err := rows.Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
+			&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked, &t.CreatedAt, &t.UpdatedAt,
+			&t.UserName, &t.UserAvatar, &t.Likes); err != nil {
+			return nil, err
+		}
+		threads = append(threads, t)
+	}
+	return threads, rows.Err()
+}
+
 func (r *sqlThreadRepository) Create(thread *models.ForumThread) (*models.ForumThread, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO forum_threads (category_id, user_id, title, content, is_pinned, is_locked)

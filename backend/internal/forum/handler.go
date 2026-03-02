@@ -157,6 +157,41 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 // Thread handlers
 
 func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	limit := 20
+	offset := 0
+	if v := q.Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	if v := q.Get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+
+	// Filter by author
+	if authorStr := q.Get("author_id"); authorStr != "" {
+		authorID, err := strconv.ParseInt(authorStr, 10, 64)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid author_id")
+			return
+		}
+		threads, err := h.svc.ListUserThreads(authorID, limit, offset)
+		if err != nil {
+			log.Printf("forum.listThreads(author): %v", err)
+			WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+			return
+		}
+		if threads == nil {
+			threads = []*models.ForumThread{}
+		}
+		WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
+		return
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": []interface{}{}})
 }
 
