@@ -58,6 +58,30 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
     fetchUser();
   }, [userId]);
 
+  // Mirror real-time updates broadcast via WebSocket (avatar, banner, roles, etc.)
+  useEffect(() => {
+    if (!userId) return;
+    const handler = (e: Event) => {
+      const { userId: updatedId, user: updatedUser } = (
+        e as CustomEvent<{ userId: string; user: ProfileUser }>
+      ).detail;
+      if (String(updatedId) === String(userId)) {
+        setUser((u) =>
+          u
+            ? {
+                ...u,
+                ...updatedUser,
+                roles: updatedUser.roles ?? u.roles,
+                permissions: updatedUser.permissions ?? u.permissions,
+              }
+            : u,
+        );
+      }
+    };
+    window.addEventListener("user:profile:updated", handler);
+    return () => window.removeEventListener("user:profile:updated", handler);
+  }, [userId]);
+
   // Fetch permissions & roles catalogues
   useEffect(() => {
     if (!canManage) return;

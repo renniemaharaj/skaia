@@ -17,6 +17,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/auth"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
@@ -32,13 +34,41 @@ const (
 // Wire it up via Mount once your chi.Router is created.
 type Handler struct {
 	svc *Service
+	hub *ws.Hub
 }
 
-// NewHandler returns a Handler backed by the given Service.
-func NewHandler(svc *Service) *Handler {
+// NewHandler returns a Handler backed by the given Service and WebSocket Hub.
+func NewHandler(svc *Service, hub *ws.Hub) *Handler {
 	os.MkdirAll(photosDir, 0755)  //nolint:errcheck
 	os.MkdirAll(bannersDir, 0755) //nolint:errcheck
-	return &Handler{svc: svc}
+	return &Handler{svc: svc, hub: hub}
+}
+
+// propagateUserSession fetches the latest user data from the DB, generates a
+// fresh JWT, and broadcasts both to the target user's WebSocket subscribers.
+// This is called after any permission, role, or suspension change so the
+// affected client can adopt the new token without re-logging in.
+func (h *Handler) propagateUserSession(userID int64) {
+	if h.hub == nil {
+		return
+	}
+	u, err := h.svc.GetByID(userID)
+	if err != nil {
+		log.Printf("user.Handler.propagateUserSession: fetch user %d: %v", userID, err)
+		return
+	}
+	u.PasswordHash = ""
+	token, err := auth.GenerateTokenWithPermissions(
+		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
+	)
+	if err != nil {
+		log.Printf("user.Handler.propagateUserSession: generate token for %d: %v", userID, err)
+		return
+	}
+	h.hub.PropagateUser(userID, map[string]interface{}{
+		"user":      u,
+		"new_token": token,
+	})
 }
 
 // Mount registers all user-domain routes onto r.
@@ -288,6 +318,9 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated.PasswordHash = ""
+	if h.hub != nil {
+		go h.hub.PropagateUser(id, map[string]interface{}{"user": updated})
+	}
 	WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -354,6 +387,7 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "permission added"})
 }
 
@@ -381,6 +415,7 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed"})
 }
 
@@ -425,6 +460,7 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "role added"})
 }
 
@@ -456,6 +492,7 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "role removed"})
 }
 
@@ -487,6 +524,7 @@ func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "user suspended"})
 }
 
@@ -513,6 +551,7 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagateUserSession(targetID)
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "user unsuspended"})
 }
 
@@ -581,6 +620,10 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.hub != nil {
+		u.PasswordHash = ""
+		go h.hub.PropagateUser(claims.UserID, map[string]interface{}{"user": u})
+	}
 	WriteJSON(w, http.StatusCreated, FileUploadResponse{
 		URL:      u.PhotoURL,
 		Filename: filename,
@@ -658,6 +701,10 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
+	if h.hub != nil {
+		u.PasswordHash = ""
+		go h.hub.PropagateUser(targetID, map[string]interface{}{"user": u})
+	}
 	WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.PhotoURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }
 
@@ -723,6 +770,10 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
+	}
+	if h.hub != nil {
+		u.PasswordHash = ""
+		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})
 	}
 	WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.BannerURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }

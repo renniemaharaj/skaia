@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { useAtomValue } from "jotai";
+import { Navigate } from "react-router-dom";
 import { isAuthenticatedAtom, currentUserAtom } from "../atoms/auth";
 import { Unauthorized } from "../page/Unauthorized";
 
@@ -20,6 +21,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If not authenticated, show unauthorized page
   if (!isAuthenticated) {
     return <Unauthorized />;
+  }
+
+  // Banned or suspended users can only access the root route
+  if (currentUser?.is_suspended || currentUser?.roles.includes("banned")) {
+    return <Navigate to="/" replace />;
   }
 
   // Check role-based access if required

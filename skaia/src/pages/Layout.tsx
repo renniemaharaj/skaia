@@ -9,6 +9,7 @@ import {
   refreshTokenAtom,
   currentUserAtom,
   isAuthenticatedAtom,
+  type User,
 } from "../atoms/auth";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
@@ -48,8 +49,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     const validateSession = async () => {
       try {
-        // Try to fetch user profile - returns 401 if token is invalid or user no longer exists
-        await apiRequest("/users/profile", { method: "GET" });
+        // Fetch user profile — refreshes currentUserAtom with latest DB data
+        // (picks up any permission/role/suspension changes made since last login)
+        const profile = await apiRequest<User>("/users/profile", {
+          method: "GET",
+        });
+        if (profile) {
+          setCurrentUser(profile);
+          setIsAuthenticated(true);
+          // After we know the user's ID, subscribe to their WS channel so
+          // real-time session updates (permissions, roles, suspension) arrive.
+          const id = Number(profile.id);
+          if (id && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "subscribe",
+                user_id: id,
+                payload: { resource_type: "user", resource_id: id },
+              }),
+            );
+          }
+        }
       } catch {
         // Any error (401 from apiRequest already cleared localStorage; handle atom state here)
         setAccessToken(null);
@@ -91,10 +111,71 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       wsRef.current.onopen = () => {
         console.log("Connected to WebSocket");
+        // Subscribe to own user channel for real-time session updates
+        const rawUser = localStorage.getItem("auth.user");
+        if (rawUser) {
+          try {
+            const user = JSON.parse(rawUser) as User;
+            const id = Number(user?.id);
+            if (id) {
+              wsRef.current?.send(
+                JSON.stringify({
+                  type: "subscribe",
+                  user_id: id,
+                  payload: { resource_type: "user", resource_id: id },
+                }),
+              );
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
       };
 
       wsRef.current.onmessage = (event) => {
-        console.log("WebSocket message:", event.data);
+        try {
+          const msg = JSON.parse(event.data as string) as {
+            type: string;
+            payload?: {
+              action?: string;
+              id?: number;
+              data?: { user?: User; new_token?: string };
+            };
+          };
+
+          if (msg.type === "user:update" && msg.payload?.data?.user) {
+            const updatedUser = msg.payload.data.user;
+            const newToken = msg.payload.data.new_token;
+
+            // Notify components displaying this user's profile (e.g. UserProfile page)
+            window.dispatchEvent(
+              new CustomEvent("user:profile:updated", {
+                detail: { userId: String(updatedUser.id), user: updatedUser },
+              }),
+            );
+
+            // If this update is for the currently logged-in user, refresh session
+            const rawCurrent = localStorage.getItem("auth.user");
+            const currentId = rawCurrent
+              ? (JSON.parse(rawCurrent) as User)?.id
+              : null;
+            if (currentId && String(updatedUser.id) === String(currentId)) {
+              setCurrentUser(updatedUser);
+              if (newToken) {
+                setAccessToken(newToken);
+              }
+              // If the user just got suspended, force logout
+              if (updatedUser.is_suspended) {
+                setAccessToken(null);
+                setRefreshToken(null);
+                setCurrentUser(null);
+                setIsAuthenticated(false);
+              }
+            }
+          }
+        } catch {
+          // non-JSON or unexpected shape — ignore
+        }
       };
 
       wsRef.current.onerror = (error) => {

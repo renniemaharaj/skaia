@@ -170,7 +170,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		ws.HandleConnection(w, r, hub)
 	})
 
-	iuser.NewHandler(userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iforum.NewHandler(forumSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	istore.NewHandler(storeSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
