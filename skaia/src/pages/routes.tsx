@@ -11,6 +11,7 @@ import { NewThreadPage } from "./new-thread/index.tsx";
 import EditThreadPage from "./edit-thread/index.tsx";
 import ViewThreadPage from "./view-thread/index.tsx";
 import UserDiscovery from "./users/index.tsx";
+import CategoryThreadsPage from "./threads/categories/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage /> },
@@ -18,6 +19,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "edit-thread/:threadId", element: <EditThreadPage /> },
   { path: "view-thread/:threadId", element: <ViewThreadPage /> },
   { path: "forum", element: <ForumPage /> },
+  { path: "threads/categories/:categoryId", element: <CategoryThreadsPage /> },
   { path: "cart", element: <CartPage /> },
   { path: "users", element: <UserDiscovery /> },
   { path: "users/:userId", element: <UserDiscovery /> },

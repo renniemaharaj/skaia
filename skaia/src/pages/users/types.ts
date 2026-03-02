@@ -32,6 +32,7 @@ export interface ForumThread {
   title: string;
   content: string;
   category_id: string;
+  user_id?: string;
   view_count: number;
   reply_count: number;
   likes: number;

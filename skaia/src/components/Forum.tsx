@@ -212,7 +212,11 @@ export const Forum: React.FC<ForumProps> = () => {
           <SkeletonCard count={3} />
         ) : (
           forums.map((forum) => (
-            <div key={forum.id} className="forum-category-card">
+            <div
+              key={forum.id}
+              className="forum-category-card"
+              onClick={() => navigate(`/threads/categories/${forum.id}`)}
+            >
               <div className="forum-category-header">
                 <h3 className="forum-category-title">{forum.name}</h3>
                 <div
@@ -228,7 +232,10 @@ export const Forum: React.FC<ForumProps> = () => {
                   {canDeleteCategory && (
                     <button
                       className="thread-action-btn delete-btn"
-                      onClick={() => handleDeleteCategory(forum.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCategory(forum.id);
+                      }}
                       title="Delete category"
                     >
                       <Trash2 size={14} />
@@ -259,9 +266,10 @@ export const Forum: React.FC<ForumProps> = () => {
                           <div className="thread-actions">
                             <button
                               className="thread-action-btn view-btn"
-                              onClick={() =>
-                                navigate(`/view-thread/${thread.id}`)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/view-thread/${thread.id}`);
+                              }}
                               title="View"
                             >
                               <Eye size={14} />
@@ -269,9 +277,10 @@ export const Forum: React.FC<ForumProps> = () => {
                             {canEditThread && (
                               <button
                                 className="thread-action-btn edit-btn"
-                                onClick={() =>
-                                  navigate(`/edit-thread/${thread.id}`)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/edit-thread/${thread.id}`);
+                                }}
                                 title="Edit"
                               >
                                 <Edit2 size={14} />
@@ -280,9 +289,10 @@ export const Forum: React.FC<ForumProps> = () => {
                             {canDeleteThread && (
                               <button
                                 className="thread-action-btn delete-btn"
-                                onClick={() =>
-                                  handleDeleteThread(thread.id, forum.id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteThread(thread.id, forum.id);
+                                }}
                                 title="Delete"
                               >
                                 <Trash2 size={14} />

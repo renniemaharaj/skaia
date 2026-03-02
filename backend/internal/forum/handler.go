@@ -192,6 +192,26 @@ func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Filter by category
+	if catStr := q.Get("category_id"); catStr != "" {
+		categoryID, err := strconv.ParseInt(catStr, 10, 64)
+		if err != nil {
+			WriteError(w, http.StatusBadRequest, "invalid category_id")
+			return
+		}
+		threads, err := h.svc.ListCategoryThreads(categoryID, limit, offset)
+		if err != nil {
+			log.Printf("forum.listThreads(category): %v", err)
+			WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+			return
+		}
+		if threads == nil {
+			threads = []*models.ForumThread{}
+		}
+		WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
+		return
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": []interface{}{}})
 }
 
