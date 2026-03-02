@@ -16,11 +16,12 @@ import (
 	"github.com/skaia/backend/database"
 	iforum "github.com/skaia/backend/internal/forum"
 	"github.com/skaia/backend/internal/integration"
+	imw "github.com/skaia/backend/internal/middleware"
 	istore "github.com/skaia/backend/internal/store"
 	"github.com/skaia/backend/internal/testutil"
+	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/ws"
-	"github.com/skaia/backend/repository"
 )
 
 //go:embed migrations/*.sql
@@ -30,19 +31,6 @@ var migrationFiles embed.FS
 type SimpleResponse struct {
 	Message string `json:"message"`
 	Status  string `json:"status"`
-}
-
-// AppContext is kept for the WebSocket handler which still relies on the legacy repos.
-type AppContext struct {
-	UserRepo          repository.UserRepository
-	ProductRepo       repository.ProductRepository
-	StoreCategoryRepo repository.StoreCategoryRepository
-	CartRepo          repository.CartRepository
-	OrderRepo         repository.OrderRepository
-	ForumCategoryRepo repository.ForumCategoryRepository
-	ForumThreadRepo   repository.ForumThreadRepository
-	ThreadCommentRepo repository.ThreadCommentRepository
-	WebSocketHub      *ws.Hub
 }
 
 func main() {
@@ -141,19 +129,6 @@ func runIntegrationSuite(db *sql.DB) {
 // buildRouter constructs the fully-mounted chi.Router for the given db and hub.
 // This is used both in production and in the integration test suite.
 func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
-	// AppContext retains the legacy repos needed by the WebSocket handler.
-	appCtx := &AppContext{
-		UserRepo:          repository.NewUserRepository(db),
-		ProductRepo:       repository.NewProductRepository(db),
-		StoreCategoryRepo: repository.NewStoreCategoryRepository(db),
-		CartRepo:          repository.NewCartRepository(db),
-		OrderRepo:         repository.NewOrderRepository(db),
-		ForumCategoryRepo: repository.NewForumCategoryRepository(db),
-		ForumThreadRepo:   repository.NewForumThreadRepository(db),
-		ThreadCommentRepo: repository.NewThreadCommentRepository(db),
-		WebSocketHub:      hub,
-	}
-
 	// User domain
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCache()
@@ -191,12 +166,14 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
 
-	// WebSocket (legacy — still uses AppContext until WS handler is migrated)
-	r.Get("/ws", WSHandler(appCtx))
+	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws.HandleConnection(w, r, hub)
+	})
 
-	iuser.NewHandler(userSvc).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
-	iforum.NewHandler(forumSvc, hub).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
-	istore.NewHandler(storeSvc).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
+	iuser.NewHandler(userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iforum.NewHandler(forumSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	istore.NewHandler(storeSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
 
 	return r
 }
