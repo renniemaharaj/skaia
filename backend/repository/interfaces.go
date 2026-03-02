@@ -32,16 +32,6 @@ type ProductRepository interface {
 	ListProducts(limit int, offset int) ([]*models.Product, error)
 }
 
-// StoreCategoryRepository defines operations for store category data
-type StoreCategoryRepository interface {
-	GetCategoryByID(id int64) (*models.StoreCategory, error)
-	GetCategoryByName(name string) (*models.StoreCategory, error)
-	CreateCategory(category *models.StoreCategory) (*models.StoreCategory, error)
-	UpdateCategory(category *models.StoreCategory) (*models.StoreCategory, error)
-	DeleteCategory(id int64) error
-	ListCategories() ([]*models.StoreCategory, error)
-}
-
 // CartRepository defines operations for cart data
 type CartRepository interface {
 	GetCartItem(userID, productID int64) (*models.CartItem, error)
@@ -50,6 +40,16 @@ type CartRepository interface {
 	UpdateCartItem(userID, productID int64, quantity int) (*models.CartItem, error)
 	RemoveFromCart(userID, productID int64) error
 	ClearCart(userID int64) error
+}
+
+// StoreCategoryRepository defines operations for store category data
+type StoreCategoryRepository interface {
+	GetCategoryByID(id int64) (*models.StoreCategory, error)
+	GetCategoryByName(name string) (*models.StoreCategory, error)
+	CreateCategory(category *models.StoreCategory) (*models.StoreCategory, error)
+	UpdateCategory(category *models.StoreCategory) (*models.StoreCategory, error)
+	DeleteCategory(id int64) error
+	ListCategories() ([]*models.StoreCategory, error)
 }
 
 // OrderRepository defines operations for order data

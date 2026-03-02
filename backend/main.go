@@ -1,19 +1,30 @@
 package main
 
 import (
+	"database/sql"
+	"embed"
 	"encoding/json"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/skaia/backend/database"
+	iforum "github.com/skaia/backend/internal/forum"
+	"github.com/skaia/backend/internal/integration"
+	istore "github.com/skaia/backend/internal/store"
+	"github.com/skaia/backend/internal/testutil"
+	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/repository"
 	"github.com/skaia/backend/websocket"
 )
+
+//go:embed migrations/*.sql
+var migrationFiles embed.FS
 
 // SimpleResponse is a basic JSON response structure
 type SimpleResponse struct {
@@ -21,6 +32,7 @@ type SimpleResponse struct {
 	Status  string `json:"status"`
 }
 
+// AppContext is kept for the WebSocket handler which still relies on the legacy repos.
 type AppContext struct {
 	UserRepo          repository.UserRepository
 	ProductRepo       repository.ProductRepository
@@ -34,32 +46,135 @@ type AppContext struct {
 }
 
 func main() {
-	// Initialize database
+	// ── Mode selection ────────────────────────────────────────────────────────
+	// The binary operates in exactly one of two modes:
+	//
+	//   Test mode:       TEST_DATABASE_URL is set  →  run integration suite, exit 0/1
+	//   Production mode: TEST_DATABASE_URL absent   →  start HTTP server
+	//
+	// The two compose files enforce this cleanly:
+	//   compose.yml      — production  (TEST_DATABASE_URL never set)
+	//   compose.test.yml — test runner (TEST_DATABASE_URL points to postgres-test)
+
+	if testURL := os.Getenv("TEST_DATABASE_URL"); testURL != "" {
+		log.Println("TEST_DATABASE_URL set — running in test mode")
+		testDB := tryConnectWithRetry(testURL, 10, 3*time.Second)
+		if testDB == nil {
+			log.Fatal("test mode: could not connect to test database after retries")
+		}
+		runIntegrationSuite(testDB) // calls os.Exit — never returns
+	}
+
+	// ── Production mode ───────────────────────────────────────────────────────
 	if err := database.Init(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer database.Close()
 
-	// Initialize repositories
-	appCtx := &AppContext{
-		UserRepo:          repository.NewUserRepository(database.DB),
-		ProductRepo:       repository.NewProductRepository(database.DB),
-		StoreCategoryRepo: repository.NewStoreCategoryRepository(database.DB),
-		CartRepo:          repository.NewCartRepository(database.DB),
-		OrderRepo:         repository.NewOrderRepository(database.DB),
-		ForumCategoryRepo: repository.NewForumCategoryRepository(database.DB),
-		ForumThreadRepo:   repository.NewForumThreadRepository(database.DB),
-		ThreadCommentRepo: repository.NewThreadCommentRepository(database.DB),
-		WebSocketHub:      websocket.NewHub(),
+	hub := websocket.NewHub()
+	go hub.Run()
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting server on :%s", port)
+	if err := http.ListenAndServe(":"+port, buildRouter(database.DB, hub)); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// tryConnectWithRetry tries to open dsn up to maxRetries times, sleeping
+// delay between attempts. Returns nil when all attempts fail.
+func tryConnectWithRetry(dsn string, maxRetries int, delay time.Duration) *sql.DB {
+	for i := 1; i <= maxRetries; i++ {
+		db, err := testutil.TryConnect(dsn)
+		if err == nil {
+			log.Printf("Connected to test database on attempt %d/%d", i, maxRetries)
+			return db
+		}
+		log.Printf("Test DB not ready (%d/%d): %v", i, maxRetries, err)
+		if i < maxRetries {
+			time.Sleep(delay)
+		}
+	}
+	return nil
+}
+
+// runIntegrationSuite applies migrations to db, mounts a test HTTP server,
+// runs every registered integration test, then exits with 0 (all pass) or 1.
+func runIntegrationSuite(db *sql.DB) {
+	defer db.Close()
+
+	log.Println("=== INTEGRATION TEST MODE ===")
+
+	// Wipe the schema so every run starts from a clean slate.
+	// This is safe because postgres-test is a dedicated throw-away container.
+	if _, err := db.Exec(`DROP SCHEMA public CASCADE`); err != nil {
+		log.Fatalf("integration: drop schema: %v", err)
+	}
+	if _, err := db.Exec(`CREATE SCHEMA public`); err != nil {
+		log.Fatalf("integration: create schema: %v", err)
 	}
 
-	// Start WebSocket hub
-	go appCtx.WebSocketHub.Run()
+	migrationsFS, _ := fs.Sub(migrationFiles, "migrations")
+	if err := testutil.ApplyMigrations(db, migrationsFS); err != nil {
+		log.Fatalf("integration: migrations failed: %v", err)
+	}
 
-	// Create router
+	hub := websocket.NewHub()
+	go hub.Run()
+
+	suite := integration.NewSuite(buildRouter(db, hub))
+	integration.RegisterUserTests(suite, db)
+	integration.RegisterForumTests(suite, db)
+	integration.RegisterStoreTests(suite, db)
+
+	passed, failed := suite.Run()
+	log.Printf("=== RESULTS: %d passed, %d failed ===", passed, failed)
+	if failed > 0 {
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+// buildRouter constructs the fully-mounted chi.Router for the given db and hub.
+// This is used both in production and in the integration test suite.
+func buildRouter(db *sql.DB, hub *websocket.Hub) http.Handler {
+	// AppContext retains the legacy repos needed by the WebSocket handler.
+	appCtx := &AppContext{
+		UserRepo:          repository.NewUserRepository(db),
+		ProductRepo:       repository.NewProductRepository(db),
+		StoreCategoryRepo: repository.NewStoreCategoryRepository(db),
+		CartRepo:          repository.NewCartRepository(db),
+		OrderRepo:         repository.NewOrderRepository(db),
+		ForumCategoryRepo: repository.NewForumCategoryRepository(db),
+		ForumThreadRepo:   repository.NewForumThreadRepository(db),
+		ThreadCommentRepo: repository.NewThreadCommentRepository(db),
+		WebSocketHub:      hub,
+	}
+
+	// User domain
+	userRepo := iuser.NewRepository(db)
+	userCache := iuser.NewCache()
+	userSvc := iuser.NewService(userRepo, userCache)
+
+	// Forum domain
+	forumCatRepo := iforum.NewCategoryRepository(db)
+	forumThreadRepo := iforum.NewThreadRepository(db)
+	forumCommentRepo := iforum.NewCommentRepository(db)
+	forumCache := iforum.NewThreadCache()
+	forumSvc := iforum.NewService(forumCatRepo, forumThreadRepo, forumCommentRepo, forumCache)
+
+	// Store domain
+	storeCatRepo := istore.NewCategoryRepository(db)
+	storeProdRepo := istore.NewProductRepository(db)
+	storeCartRepo := istore.NewCartRepository(db)
+	storeOrdRepo := istore.NewOrderRepository(db)
+	storeCache := istore.NewProductCache()
+	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storeCache)
+
 	r := chi.NewRouter()
-
-	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
@@ -71,203 +186,17 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	// Health check
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Skaia API is healthy",
-			Status:  "ok",
-		})
+		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
 
-	// WebSocket route
+	// WebSocket (legacy — still uses AppContext until WS handler is migrated)
 	r.Get("/ws", WSHandler(appCtx))
 
-	// Auth endpoints
-	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", handleRegister(appCtx))
-		r.Post("/login", handleLogin(appCtx))
-		r.Post("/refresh", handleRefreshToken(appCtx))
-		r.With(JWTAuthMiddleware).Post("/logout", handleLogout(appCtx))
-	})
+	iuser.NewHandler(userSvc).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
+	iforum.NewHandler(forumSvc, hub).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
+	istore.NewHandler(storeSvc).Mount(r, JWTAuthMiddleware, OptionalJWTAuthMiddleware)
 
-	// Protected user endpoints
-	r.Route("/users", func(r chi.Router) {
-		r.Use(JWTAuthMiddleware)
-		r.Get("/{id}", handleGetUser(appCtx))
-		r.Get("/profile", handleGetProfile(appCtx))
-		r.Post("/", handleCreateUser(appCtx))
-		r.Put("/{id}", handleUpdateUser(appCtx))
-		r.Get("/search", handleSearchUsers(appCtx))
-		r.Post("/{id}/permissions", handleAddUserPermission(appCtx))
-		r.Delete("/{id}/permissions/{perm}", handleRemoveUserPermission(appCtx))
-	})
-
-	// Permissions endpoints
-	r.Route("/permissions", func(r chi.Router) {
-		r.Use(JWTAuthMiddleware)
-		r.Get("/", handleGetPermissions(appCtx))
-	})
-
-	// Store endpoints
-	r.Route("/store", func(r chi.Router) {
-		r.Get("/categories", handleStoreCategories(appCtx))
-		r.Get("/categories/{id}", handleStoreCategoryGet(appCtx))
-		r.Get("/products", handleStoreProducts(appCtx))
-		r.Get("/products/{id}", handleStoreProductGet(appCtx))
-		r.Post("/cart/add", handleAddToCart(appCtx))
-		r.Get("/cart/{userId}", handleGetCart(appCtx))
-		r.Post("/purchase", handlePurchase(appCtx))
-	})
-
-	// Forum endpoints
-	r.Route("/forum", func(r chi.Router) {
-		r.With(OptionalJWTAuthMiddleware).Get("/categories", handleForumCategories(appCtx))
-		r.With(JWTAuthMiddleware).Post("/categories", handleForumCategoryCreate(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/categories/{id}", handleForumCategoryDelete(appCtx))
-		r.Get("/threads", handleForumThreadsList(appCtx))
-		r.With(JWTAuthMiddleware).Post("/threads", handleForumThreadCreate(appCtx))
-		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}", handleForumThreadGet(appCtx))
-		r.With(JWTAuthMiddleware).Put("/threads/{id}", handleForumThreadUpdate(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/threads/{id}", handleForumThreadDelete(appCtx))
-		r.With(JWTAuthMiddleware).Post("/threads/{threadId}/like", handleForumThreadLike(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/threads/{threadId}/like", handleForumThreadUnlike(appCtx))
-		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}/comments", handleThreadCommentsList(appCtx))
-		r.With(JWTAuthMiddleware).Post("/threads/{id}/comments", handleThreadCommentCreate(appCtx))
-		r.With(JWTAuthMiddleware).Put("/comments/{id}", handleThreadCommentUpdate(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/comments/{id}", handleThreadCommentDelete(appCtx))
-		r.With(JWTAuthMiddleware).Post("/comments/{commentId}/like", handleThreadCommentLike(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/comments/{commentId}/like", handleThreadCommentUnlike(appCtx))
-	})
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log.Printf("Starting server on :%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatal(err)
-	}
-}
-
-// Store handlers
-func handleStoreCategories(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		categories, err := appCtx.StoreCategoryRepo.ListCategories()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(categories)
-	}
-}
-
-func handleStoreCategoryGet(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Implementation for getting a specific category
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	}
-}
-
-func handleStoreProducts(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		products, err := appCtx.ProductRepo.ListProducts(50, 0)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(products)
-	}
-}
-
-func handleStoreProductGet(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-	}
-}
-
-func handleAddToCart(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Item added to cart",
-			Status:  "success",
-		})
-	}
-}
-
-func handleGetCart(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"items": []interface{}{}})
-	}
-}
-
-func handlePurchase(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "Purchase completed",
-			Status:  "success",
-		})
-	}
-}
-
-// User handlers
-func handleGetUser(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		userID := chi.URLParam(r, "id")
-		userIDInt, err := strconv.ParseInt(userID, 10, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid user id"})
-			return
-		}
-
-		user, err := appCtx.UserRepo.GetUserByID(userIDInt)
-		if err != nil {
-			log.Printf("Error fetching user: %v", err)
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "user not found"})
-			return
-		}
-
-		// Don't expose password hash
-		user.PasswordHash = ""
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(user)
-	}
-}
-
-func handleCreateUser(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "User created",
-			Status:  "success",
-		})
-	}
-}
-
-func handleUpdateUser(appCtx *AppContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(SimpleResponse{
-			Message: "User updated",
-			Status:  "success",
-		})
-	}
+	return r
 }

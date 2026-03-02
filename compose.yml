@@ -1,13 +1,14 @@
-version: '3.8'
+# Production stack.  Run with: docker compose up
+# For integration tests:     docker compose -f compose.test.yml up --abort-on-container-exit
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: skaia-postgres
     environment:
-      POSTGRES_DB: skaia
-      POSTGRES_USER: skaia_user
-      POSTGRES_PASSWORD: skaia_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +17,20 @@ services:
     networks:
       - skaia-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U skaia_user -d skaia"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: skaia-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - skaia-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,19 +41,23 @@ services:
       dockerfile: Dockerfile
     container_name: skaia-backend
     ports:
-      - "1080:1080"
+      - "${PORT}:${PORT}"
     environment:
-      - PORT=1080
-      - DATABASE_URL=postgres://skaia_user:skaia_password@postgres:5432/skaia?sslmode=disable
-      - ENVIRONMENT=development
-      - JWT_SECRET=your-secret-key-change-in-production
+      - PORT=${PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - JWT_SECRET=${JWT_SECRET}
+      # TEST_DATABASE_URL is intentionally absent — this is production.
     networks:
       - skaia-network
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${PORT}/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -61,6 +79,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ── Adminer — lightweight web DB manager ─────────────────────────────────────
+  adminer:
+    image: adminer:latest
+    container_name: skaia-adminer
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    networks:
+      - skaia-network
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:

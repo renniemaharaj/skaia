@@ -1,0 +1,62 @@
+# Integration test stack — no frontend, no production DB.
+#
+# Run:
+#   docker compose -f compose.test.yml up --abort-on-container-exit --exit-code-from backend
+#
+# The backend runs the full integration suite and exits 0 (all pass) or 1 (any fail).
+# --abort-on-container-exit tears everything down once the backend exits.
+# --exit-code-from backend propagates the backend exit code to the shell.
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: skaia-postgres-test
+    environment:
+      POSTGRES_DB: ${TEST_POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - skaia-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${TEST_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: skaia-redis-test
+    networks:
+      - skaia-test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skaia-backend-test
+    environment:
+      # Test mode: binary runs integration suite then exits.
+      # Uses the internal Docker-network hostname (postgres-test:5432).
+      - TEST_DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-test:5432/${TEST_POSTGRES_DB}?sslmode=disable
+      - REDIS_URL=redis://redis-test:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENVIRONMENT=test
+    networks:
+      - skaia-test-network
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    restart: "no"
+
+networks:
+  skaia-test-network:
+    driver: bridge

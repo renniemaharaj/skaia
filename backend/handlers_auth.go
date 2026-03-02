@@ -248,7 +248,7 @@ func handleLogout(appCtx *AppContext) http.HandlerFunc {
 		}
 
 		// Log the logout
-		log.Printf("User %s (%s) logged out", claims.Username, claims.UserID)
+		log.Printf("User %s (%d) logged out", claims.Username, claims.UserID)
 
 		// Return success (client will clear tokens from storage)
 		w.WriteHeader(http.StatusOK)

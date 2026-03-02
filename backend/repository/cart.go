@@ -53,7 +53,7 @@ func (r *CartRepositoryImpl) GetUserCart(userID int64) ([]*models.CartItem, erro
 
 func (r *CartRepositoryImpl) AddToCart(userID, productID int64, quantity int) (*models.CartItem, error) {
 	item := &models.CartItem{
-		ID: 0,
+		ID:        0,
 		UserID:    userID,
 		ProductID: productID,
 		Quantity:  quantity,

@@ -9,7 +9,10 @@ EXCEPTION WHEN DUPLICATE_OBJECT THEN
   ALTER ROLE skaia_user PASSWORD 'skaia_password';
 END $$;
 
--- Grant privileges to skaia_user
-GRANT ALL PRIVILEGES ON DATABASE skaia TO skaia_user;
+-- Grant privileges to skaia_user on whichever database this migration runs in.
+-- Using dynamic SQL because GRANT does not accept current_database() directly.
+DO $$ BEGIN
+  EXECUTE 'GRANT ALL PRIVILEGES ON DATABASE ' || quote_ident(current_database()) || ' TO skaia_user';
+END $$;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO skaia_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO skaia_user;

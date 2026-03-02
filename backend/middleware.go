@@ -43,13 +43,21 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 		// Extract token from "Bearer <token>"
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			log.Printf("DEBUG: Invalid authorization format: %s", authHeader[:20])
+			preview := authHeader
+			if len(preview) > 20 {
+				preview = preview[:20]
+			}
+			log.Printf("DEBUG: Invalid authorization format: %s", preview)
 			http.Error(w, `{"error": "invalid authorization header"}`, http.StatusUnauthorized)
 			return
 		}
 
 		tokenString := parts[1]
-		log.Printf("DEBUG: Validating token (first 20 chars): %s... for %s %s", tokenString[:20], r.Method, r.URL.Path)
+		preview := tokenString
+		if len(preview) > 20 {
+			preview = preview[:20]
+		}
+		log.Printf("DEBUG: Validating token (first 20 chars): %s... for %s %s", preview, r.Method, r.URL.Path)
 
 		// Try to parse the token to get claims without validation first
 		claims, err := auth.ValidateToken(tokenString)
@@ -59,7 +67,7 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		log.Printf("DEBUG: Token valid for user %s (%s) with permissions: %v", claims.Username, claims.UserID, claims.Permissions)
+		log.Printf("DEBUG: Token valid for user %s (%d) with permissions: %v", claims.Username, claims.UserID, claims.Permissions)
 		// Store claims in request context
 		ctx := context.WithValue(r.Context(), "claims", claims)
 		ctx = context.WithValue(ctx, "user_id", claims.UserID)
