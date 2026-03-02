@@ -13,6 +13,7 @@ import "./NewThread.css";
 import "./FormGroup.css";
 import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
+import UserLink from "./UserLink";
 
 interface ForumProps {
   // No longer needed - all forum operations are now API-driven with WebSocket updates
@@ -290,6 +291,15 @@ export const Forum: React.FC<ForumProps> = () => {
                           </div>
                         </div>
                         <div className="thread-meta">
+                          {thread.user_id && (
+                            <span className="thread-stat thread-author-stat">
+                              <UserLink
+                                userId={String(thread.user_id)}
+                                displayName={thread.user_name}
+                                variant="subtle"
+                              />
+                            </span>
+                          )}
                           <span className="thread-stat">
                             <Eye size={14} />
                             {thread.view_count} views

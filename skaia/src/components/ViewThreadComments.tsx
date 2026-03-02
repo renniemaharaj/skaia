@@ -7,6 +7,7 @@ import { type ThreadComment } from "../atoms/forum";
 import { apiRequest } from "../utils/api";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { currentUserAtom } from "../atoms/auth";
+import UserLink from "./UserLink";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -158,7 +159,12 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
 
               <div className="comment-body">
                 <div className="comment-meta">
-                  <span className="comment-author">{comment.author_name}</span>
+                  <UserLink
+                    userId={comment.author_id || comment.user_id}
+                    displayName={comment.author_name}
+                    variant="subtle"
+                    className="comment-author-link"
+                  />
                   {comment.author_roles && comment.author_roles.length > 0 && (
                     <span className="comment-role">
                       {comment.author_roles.join(", ")}

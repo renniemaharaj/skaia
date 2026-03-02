@@ -110,6 +110,12 @@
   font-weight: 600;
 }
 
+.user-card-name-link {
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 0;
+}
+
 .user-card-role {
   font-size: 0.85rem;
   opacity: 0.7;

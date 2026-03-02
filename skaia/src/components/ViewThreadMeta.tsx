@@ -15,6 +15,7 @@ import { currentThreadAtom } from "../atoms/forum";
 import { currentUserAtom } from "../atoms/auth";
 import { useCallback } from "react";
 import { apiRequest } from "../utils/api";
+import UserLink from "./UserLink";
 
 type Author = {
   name: string;
@@ -120,7 +121,11 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           )}
 
           <div className="user-card-info">
-            <div className="user-card-name">{author.name}</div>
+            <UserLink
+              userId={currentThread?.user_id || ""}
+              displayName={author.name}
+              className="user-card-name-link"
+            />
             {author.role && <div className="user-card-role">{author.role}</div>}
           </div>
         </div>

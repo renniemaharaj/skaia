@@ -219,6 +219,10 @@
   gap: 4px;
 }
 
+.thread-author-stat {
+  font-size: 0.82rem;
+}
+
 .empty-threads {
   color: var(--text-secondary);
   font-style: italic;
