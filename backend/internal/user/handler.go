@@ -22,13 +22,18 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-// Upload config — mirrors the global constants in handlers_files.go.
+// Upload config.
 const (
 	uploadsDir  = "./uploads"
-	photosDir   = uploadsDir + "/photos"
-	bannersDir  = uploadsDir + "/banners"
+	usersDir    = uploadsDir + "/users"
 	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
+
+// userContentDir returns (and creates) ./uploads/users/{userID}/{subdir}.
+func userContentDir(userID int64, subdir string) (string, error) {
+	dir := filepath.Join(usersDir, strconv.FormatInt(userID, 10), subdir)
+	return dir, os.MkdirAll(dir, 0755)
+}
 
 // Handler owns the HTTP layer for the user domain.
 // Wire it up via Mount once your chi.Router is created.
@@ -39,8 +44,7 @@ type Handler struct {
 
 // NewHandler returns a Handler backed by the given Service and WebSocket Hub.
 func NewHandler(svc *Service, hub *ws.Hub) *Handler {
-	os.MkdirAll(photosDir, 0755)  //nolint:errcheck
-	os.MkdirAll(bannersDir, 0755) //nolint:errcheck
+	os.MkdirAll(usersDir, 0755) //nolint:errcheck
 	return &Handler{svc: svc, hub: hub}
 }
 
@@ -588,10 +592,15 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	file.Seek(0, 0) //nolint:errcheck
 
-	filename := fmt.Sprintf("photo_%d_%d%s",
-		claims.UserID, time.Now().UnixNano(), filepath.Ext(header.Filename),
-	)
-	dst, err := os.Create(filepath.Join(photosDir, filename))
+	photoDir, err := userContentDir(claims.UserID, "photos")
+	if err != nil {
+		log.Printf("user.Handler.uploadProfilePhoto: mkdir: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to create upload directory")
+		return
+	}
+
+	filename := fmt.Sprintf("photo_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+	dst, err := os.Create(filepath.Join(photoDir, filename))
 	if err != nil {
 		log.Printf("user.Handler.uploadProfilePhoto: create file: %v", err)
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
@@ -601,21 +610,21 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 
 	size, err := io.Copy(dst, file)
 	if err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
 
 	u, err := h.svc.GetByID(claims.UserID)
 	if err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
 
-	u.PhotoURL = "/uploads/photos/" + filename
+	u.PhotoURL = fmt.Sprintf("/uploads/users/%d/photos/%s", claims.UserID, filename)
 	if _, err = h.svc.Update(u); err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
@@ -675,8 +684,15 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	file.Seek(0, 0) //nolint:errcheck
 
-	filename := fmt.Sprintf("photo_%d_%d%s", targetID, time.Now().UnixNano(), filepath.Ext(header.Filename))
-	dst, err := os.Create(filepath.Join(photosDir, filename))
+	photoDir, err := userContentDir(targetID, "photos")
+	if err != nil {
+		log.Printf("user.Handler.uploadUserPhoto: mkdir: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to create upload directory")
+		return
+	}
+
+	filename := fmt.Sprintf("photo_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+	dst, err := os.Create(filepath.Join(photoDir, filename))
 	if err != nil {
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
 		return
@@ -684,20 +700,20 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 	defer dst.Close()
 	size, err := io.Copy(dst, file)
 	if err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
 
 	u, err := h.svc.GetByID(targetID)
 	if err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
-	u.PhotoURL = "/uploads/photos/" + filename
+	u.PhotoURL = fmt.Sprintf("/uploads/users/%d/photos/%s", targetID, filename)
 	if _, err = h.svc.Update(u); err != nil {
-		os.Remove(filepath.Join(photosDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
@@ -744,8 +760,15 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 	}
 	file.Seek(0, 0) //nolint:errcheck
 
-	filename := fmt.Sprintf("banner_%d_%d%s", userID, time.Now().UnixNano(), filepath.Ext(header.Filename))
-	dst, err := os.Create(filepath.Join(bannersDir, filename))
+	bannerDir, err := userContentDir(userID, "banners")
+	if err != nil {
+		log.Printf("user.Handler.saveAndStoreBanner: mkdir: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to create upload directory")
+		return
+	}
+
+	filename := fmt.Sprintf("banner_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+	dst, err := os.Create(filepath.Join(bannerDir, filename))
 	if err != nil {
 		log.Printf("user.Handler.saveAndStoreBanner: create file: %v", err)
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
@@ -754,20 +777,20 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 	defer dst.Close()
 	size, err := io.Copy(dst, file)
 	if err != nil {
-		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(bannerDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to save file")
 		return
 	}
 
 	u, err := h.svc.GetByID(userID)
 	if err != nil {
-		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(bannerDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
-	u.BannerURL = "/uploads/banners/" + filename
+	u.BannerURL = fmt.Sprintf("/uploads/users/%d/banners/%s", userID, filename)
 	if _, err = h.svc.Update(u); err != nil {
-		os.Remove(filepath.Join(bannersDir, filename)) //nolint:errcheck
+		os.Remove(filepath.Join(bannerDir, filename)) //nolint:errcheck
 		WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
@@ -789,12 +812,12 @@ func validateImageFile(file io.Reader, headers map[string][]string) error {
 	if vals, ok := headers["Content-Type"]; ok && len(vals) > 0 {
 		ct = vals[0]
 	}
-	for _, allowed := range []string{"image/jpeg", "image/png"} {
+	for _, allowed := range []string{"image/jpeg", "image/png", "image/webp", "image/gif"} {
 		if ct == allowed {
 			return nil
 		}
 	}
-	return errors.New("only JPEG and PNG images are allowed")
+	return errors.New("only JPEG, PNG, WEBP, and GIF images are allowed")
 }
 
 func validateBannerDimensions(file io.Reader) error {
