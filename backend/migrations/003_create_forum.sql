@@ -26,8 +26,8 @@ CREATE INDEX idx_forum_threads_category_id ON forum_threads(category_id);
 CREATE INDEX idx_forum_threads_user_id ON forum_threads(user_id);
 CREATE INDEX idx_forum_threads_created_at ON forum_threads(created_at DESC);
 
--- Create forum posts table
-CREATE TABLE IF NOT EXISTS forum_posts (
+-- Create thread comments table
+CREATE TABLE IF NOT EXISTS thread_comments (
     id BIGSERIAL PRIMARY KEY,
     thread_id BIGINT NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -36,5 +36,5 @@ CREATE TABLE IF NOT EXISTS forum_posts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_forum_posts_thread_id ON forum_posts(thread_id);
-CREATE INDEX idx_forum_posts_user_id ON forum_posts(user_id);
+CREATE INDEX idx_thread_comments_thread_id ON thread_comments(thread_id);
+CREATE INDEX idx_thread_comments_user_id ON thread_comments(user_id);

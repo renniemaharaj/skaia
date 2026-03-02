@@ -44,10 +44,9 @@ type StorePayload struct {
 }
 
 // ForumPayload for forum updates
-// note1, posts should be thread Comments
 type ForumPayload struct {
-	Threads []*models.ForumThread `json:"threads,omitempty"`
-	Posts   []*models.ForumPost   `json:"posts,omitempty"`
+	Threads  []*models.ForumThread   `json:"threads,omitempty"`
+	Comments []*models.ThreadComment `json:"comments,omitempty"`
 }
 
 // ResourceSubscription tracks a client's interest in a specific resource

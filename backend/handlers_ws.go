@@ -94,7 +94,7 @@ func (c *SocketClient) handleCreate(msg SocketMessage) error {
 
 	switch msg.EntityType {
 	case "post":
-		return c.handleCreatePost(msg)
+		return c.handleCreateComment(msg)
 	case "thread":
 		return c.handleCreateThread(msg)
 	default:
@@ -102,7 +102,7 @@ func (c *SocketClient) handleCreate(msg SocketMessage) error {
 	}
 }
 
-func (c *SocketClient) handleCreatePost(msg SocketMessage) error {
+func (c *SocketClient) handleCreateComment(msg SocketMessage) error {
 	if !c.hasPermission("forum.post") {
 		return wrapError("insufficient permissions")
 	}
@@ -121,7 +121,7 @@ func (c *SocketClient) handleCreatePost(msg SocketMessage) error {
 		return wrapError("invalid thread id")
 	}
 
-	post := &models.ForumPost{
+	post := &models.ThreadComment{
 		ThreadID:  threadID,
 		UserID:    c.user.ID,
 		Content:   postData.Content,
@@ -129,7 +129,7 @@ func (c *SocketClient) handleCreatePost(msg SocketMessage) error {
 		UpdatedAt: time.Now(),
 	}
 
-	createdPost, err := c.appCtx.ForumPostRepo.CreatePost(post)
+	createdPost, err := c.appCtx.ThreadCommentRepo.CreateThreadComment(post)
 	if err != nil {
 		log.Printf("Error creating post: %v", err)
 		return wrapError("failed to create post")
@@ -186,13 +186,13 @@ func (c *SocketClient) handleUpdate(msg SocketMessage) error {
 
 	switch msg.EntityType {
 	case "post":
-		return c.handleUpdatePost(msg)
+		return c.handleUpdateComment(msg)
 	default:
 		return wrapError("unknown entity type")
 	}
 }
 
-func (c *SocketClient) handleUpdatePost(msg SocketMessage) error {
+func (c *SocketClient) handleUpdateComment(msg SocketMessage) error {
 	var updateData struct {
 		ID      string `json:"id"`
 		Content string `json:"content"`
@@ -207,10 +207,10 @@ func (c *SocketClient) handleUpdatePost(msg SocketMessage) error {
 		return wrapError("invalid post id")
 	}
 
-	// Fetch the post to check permissions
-	post, err := c.appCtx.ForumPostRepo.GetPostByID(postID)
+	// Fetch the comment to check permissions
+	post, err := c.appCtx.ThreadCommentRepo.GetThreadCommentByID(postID)
 	if err != nil {
-		return wrapError("post not found")
+		return wrapError("comment not found")
 	}
 
 	// Check if user owns the post or has moderator privileges
@@ -221,7 +221,7 @@ func (c *SocketClient) handleUpdatePost(msg SocketMessage) error {
 	post.Content = updateData.Content
 	post.UpdatedAt = time.Now()
 
-	_, err = c.appCtx.ForumPostRepo.UpdatePost(post)
+	_, err = c.appCtx.ThreadCommentRepo.UpdateThreadComment(post)
 	if err != nil {
 		log.Printf("Error updating post: %v", err)
 		return wrapError("failed to update post")
@@ -237,13 +237,13 @@ func (c *SocketClient) handleDelete(msg SocketMessage) error {
 
 	switch msg.EntityType {
 	case "post":
-		return c.handleDeletePost(msg)
+		return c.handleDeleteComment(msg)
 	default:
 		return wrapError("unknown entity type")
 	}
 }
 
-func (c *SocketClient) handleDeletePost(msg SocketMessage) error {
+func (c *SocketClient) handleDeleteComment(msg SocketMessage) error {
 	var delData struct {
 		ID string `json:"id"`
 	}
@@ -257,20 +257,19 @@ func (c *SocketClient) handleDeletePost(msg SocketMessage) error {
 		return wrapError("invalid post id")
 	}
 
-	// Fetch the post to check permissions
-	post, err := c.appCtx.ForumPostRepo.GetPostByID(postID)
+	post2, err := c.appCtx.ThreadCommentRepo.GetThreadCommentByID(postID)
 	if err != nil {
-		return wrapError("post not found")
+		return wrapError("comment not found")
 	}
 
 	// Check if user owns the post or has moderator privileges
-	if post.UserID != c.user.ID && !c.hasPermission("forum.moderate") {
+	if post2.UserID != c.user.ID && !c.hasPermission("forum.moderate") {
 		return wrapError("insufficient permissions")
 	}
 
-	if err := c.appCtx.ForumPostRepo.DeletePost(postID); err != nil {
-		log.Printf("Error deleting post: %v", err)
-		return wrapError("failed to delete post")
+	if err := c.appCtx.ThreadCommentRepo.DeleteThreadComment(postID); err != nil {
+		log.Printf("Error deleting comment: %v", err)
+		return wrapError("failed to delete comment")
 	}
 
 	return nil

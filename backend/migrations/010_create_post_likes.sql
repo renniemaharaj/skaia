@@ -1,14 +1,14 @@
--- 010_create_post_likes.sql
--- Create table to track likes on forum posts
+-- 010_create_thread_comment_likes.sql
+-- Create table to track likes on thread comments
 
-CREATE TABLE IF NOT EXISTS post_likes (
+CREATE TABLE IF NOT EXISTS thread_comment_likes (
     id BIGSERIAL PRIMARY KEY,
-    post_id BIGINT NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
+    thread_comment_id BIGINT NOT NULL REFERENCES thread_comments(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(post_id, user_id)
+    UNIQUE(thread_comment_id, user_id)
 );
 
 -- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);
-CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON post_likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_thread_comment_likes_comment_id ON thread_comment_likes(thread_comment_id);
+CREATE INDEX IF NOT EXISTS idx_thread_comment_likes_user_id ON thread_comment_likes(user_id);

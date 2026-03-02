@@ -128,13 +128,13 @@ export const useWebSocketSync = () => {
               });
             }
 
-            // Handle post/comment operations
-            if (action === "post_created") {
+            // Handle comment operations
+            if (action === "comment_created") {
               setThreadComments((prev) => {
-                // Add new post if it's not already in the list
-                const newPost = data.new_post;
+                // Add new comment if it's not already in the list
+                const newComment = data.new_comment;
                 const exists = prev.some(
-                  (p) => String(p.id) === String(newPost.id),
+                  (p) => String(p.id) === String(newComment.id),
                 );
                 if (!exists) {
                   // Enrich permissions for the receiving client
@@ -142,9 +142,9 @@ export const useWebSocketSync = () => {
                   const perms = currentUserPermissionsRef.current;
                   const isOwner =
                     userId != null &&
-                    String(newPost.user_id) === String(userId);
+                    String(newComment.user_id) === String(userId);
                   const enriched = {
-                    ...newPost,
+                    ...newComment,
                     can_delete:
                       isOwner ||
                       (perms?.includes("forum.delete-post") ?? false),
@@ -159,16 +159,16 @@ export const useWebSocketSync = () => {
               });
             }
 
-            if (action === "post_deleted") {
+            if (action === "comment_deleted") {
               setThreadComments((prev) =>
-                prev.filter((p) => String(p.id) !== String(data.post_id)),
+                prev.filter((p) => String(p.id) !== String(data.comment_id)),
               );
             }
 
-            if (action === "post_updated") {
+            if (action === "comment_updated") {
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  String(p.id) === String(data.post_id)
+                  String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         content: data.content || p.content,
@@ -178,11 +178,11 @@ export const useWebSocketSync = () => {
                 ),
               );
             }
-            if (action === "post_liked") {
+            if (action === "comment_liked") {
               const actingUserId = String(data.user_id);
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  String(p.id) === String(data.post_id)
+                  String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         likes: data.likes ?? p.likes + 1,
@@ -196,11 +196,11 @@ export const useWebSocketSync = () => {
               );
             }
 
-            if (action === "post_unliked") {
+            if (action === "comment_unliked") {
               const actingUserId = String(data.user_id);
               setThreadComments((prev) =>
                 prev.map((p) =>
-                  String(p.id) === String(data.post_id)
+                  String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         likes: Math.max(0, data.likes ?? p.likes - 1),

@@ -3,7 +3,7 @@ import { Send, ThumbsUp, Trash2, UserCog2Icon } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { threadCommentsAtom } from "../atoms/forum";
-import { type ForumPost } from "../atoms/forum";
+import { type ThreadComment } from "../atoms/forum";
 import { apiRequest } from "../utils/api";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { currentUserAtom } from "../atoms/auth";
@@ -25,9 +25,11 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     const loadComments = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest(`/forum/threads/${threadId}/posts`);
+        const response = await apiRequest(
+          `/forum/threads/${threadId}/comments`,
+        );
         if (Array.isArray(response)) {
-          setComments(response as ForumPost[]);
+          setComments(response as ThreadComment[]);
           // Subscribe to thread so we get real-time comment updates
           subscribe("thread", threadId);
         }
@@ -47,7 +49,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
 
     try {
       setIsSubmitting(true);
-      const response = await apiRequest(`/forum/threads/${threadId}/posts`, {
+      const response = await apiRequest(`/forum/threads/${threadId}/comments`, {
         method: "POST",
         body: JSON.stringify({ content: commentText }),
       });
@@ -76,7 +78,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     if (!confirm("Delete this comment?")) return;
 
     try {
-      await apiRequest(`/forum/posts/${commentId}`, {
+      await apiRequest(`/forum/comments/${commentId}`, {
         method: "DELETE",
       });
       // Comment will be removed through WebSocket propagation
@@ -103,11 +105,11 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       );
       try {
         if (isCurrentlyLiked) {
-          await apiRequest(`/forum/posts/${commentId}/like`, {
+          await apiRequest(`/forum/comments/${commentId}/like`, {
             method: "DELETE",
           });
         } else {
-          await apiRequest(`/forum/posts/${commentId}/like`, {
+          await apiRequest(`/forum/comments/${commentId}/like`, {
             method: "POST",
           });
         }

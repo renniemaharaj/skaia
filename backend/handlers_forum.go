@@ -493,8 +493,8 @@ func handleForumThreadDelete(appCtx *AppContext) http.HandlerFunc {
 	}
 }
 
-// handleForumPostsList gets all posts in a thread
-func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentsList gets all comments in a thread
+func handleThreadCommentsList(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -528,45 +528,45 @@ func handleForumPostsList(appCtx *AppContext) http.HandlerFunc {
 			}
 		}
 
-		posts, err := appCtx.ForumPostRepo.GetThreadPosts(id, limit, offset)
+		comments, err := appCtx.ThreadCommentRepo.GetThreadComments(id, limit, offset)
 		if err != nil {
-			log.Printf("Error fetching posts: %v", err)
+			log.Printf("Error fetching comments: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch posts"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to fetch comments"})
 			return
 		}
 
-		// Enrich posts with like and permission info
-		for _, post := range posts {
-			// Check if user liked this post
+		// Enrich comments with like and permission info
+		for _, comment := range comments {
+			// Check if user liked this comment
 			if currentUserID > 0 {
-				isLiked, err := appCtx.ForumPostRepo.IsPostLikedByUser(post.ID, currentUserID)
+				isLiked, err := appCtx.ThreadCommentRepo.IsThreadCommentLikedByUser(comment.ID, currentUserID)
 				if err == nil {
-					post.IsLiked = isLiked
+					comment.IsLiked = isLiked
 				}
 			}
 
 			// Set permissions based on user claims
 			if claims != nil {
-				post.CanLikeComments = hasPermission(claims, "thread.canLikeComments")
-				// can_delete: owns post OR has explicit delete-any permission (admin/mod only)
-				post.CanDelete = currentUserID == post.UserID || hasPermission(claims, "forum.delete-post")
-				// can_edit: owns post OR has explicit edit-any permission (admin/mod only)
-				post.CanEdit = currentUserID == post.UserID || hasPermission(claims, "forum.edit-post")
+				comment.CanLikeComments = hasPermission(claims, "thread.canLikeComments")
+				// can_delete: owns comment OR has explicit delete-any permission (admin/mod only)
+				comment.CanDelete = currentUserID == comment.UserID || hasPermission(claims, "forum.delete-post")
+				// can_edit: owns comment OR has explicit edit-any permission (admin/mod only)
+				comment.CanEdit = currentUserID == comment.UserID || hasPermission(claims, "forum.edit-post")
 			} else {
 				// Unauthenticated: no delete/edit rights
-				post.CanDelete = false
-				post.CanEdit = false
+				comment.CanDelete = false
+				comment.CanEdit = false
 			}
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(posts)
+		json.NewEncoder(w).Encode(comments)
 	}
 }
 
-// handleForumPostCreate creates a new forum post
-func handleForumPostCreate(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentCreate creates a new thread comment
+func handleThreadCommentCreate(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -601,38 +601,38 @@ func handleForumPostCreate(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		post := &models.ForumPost{
+		comment := &models.ThreadComment{
 			ThreadID: id,
 			UserID:   claims.UserID,
 			Content:  req.Content,
 		}
 
-		created, err := appCtx.ForumPostRepo.CreatePost(post)
+		created, err := appCtx.ThreadCommentRepo.CreateThreadComment(comment)
 		if err != nil {
-			log.Printf("Error creating post: %v", err)
+			log.Printf("Error creating comment: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to create post"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to create comment"})
 			return
 		}
 
-		// Fetch the post with user information before sending
-		createdWithUserInfo, err := appCtx.ForumPostRepo.GetPostByID(created.ID)
+		// Fetch the comment with user information before sending
+		createdWithUserInfo, err := appCtx.ThreadCommentRepo.GetThreadCommentByID(created.ID)
 		if err == nil {
 			created = createdWithUserInfo
 		}
 
 		// Propagate to clients subscribed to this thread
 		appCtx.WebSocketHub.PropagateForumThread(id, map[string]interface{}{
-			"new_post": created,
-		}, "post_created")
+			"new_comment": created,
+		}, "comment_created")
 
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(created)
 	}
 }
 
-// handleForumPostUpdate updates a forum post
-func handleForumPostUpdate(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentUpdate updates a thread comment
+func handleThreadCommentUpdate(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SimpleResponse{
@@ -642,8 +642,8 @@ func handleForumPostUpdate(appCtx *AppContext) http.HandlerFunc {
 	}
 }
 
-// handleForumPostDelete deletes a forum post
-func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentDelete deletes a thread comment
+func handleThreadCommentDelete(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -654,24 +654,24 @@ func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		postID := chi.URLParam(r, "id")
-		id, err := strconv.ParseInt(postID, 10, 64)
+		commentID := chi.URLParam(r, "id")
+		id, err := strconv.ParseInt(commentID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid comment ID"})
 			return
 		}
 
-		// Get post to check ownership
-		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		// Get comment to check ownership
+		comment, err := appCtx.ThreadCommentRepo.GetThreadCommentByID(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "comment not found"})
 			return
 		}
 
-		// Check if user owns the post or has permission
-		if post.UserID != claims.UserID {
+		// Check if user owns the comment or has permission
+		if comment.UserID != claims.UserID {
 			hasDeletePerm := false
 			for _, perm := range claims.Permissions {
 				if perm == "forum.delete-post" || perm == "thread.canDeleteThreadComment" {
@@ -686,25 +686,25 @@ func handleForumPostDelete(appCtx *AppContext) http.HandlerFunc {
 			}
 		}
 
-		if err := appCtx.ForumPostRepo.DeletePost(id); err != nil {
-			log.Printf("Error deleting post: %v", err)
+		if err := appCtx.ThreadCommentRepo.DeleteThreadComment(id); err != nil {
+			log.Printf("Error deleting comment: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to delete post"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to delete comment"})
 			return
 		}
 
 		// Propagate to clients subscribed to this thread
-		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
-			"post_id": id,
-		}, "post_deleted")
+		appCtx.WebSocketHub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
+			"comment_id": id,
+		}, "comment_deleted")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 	}
 }
 
-// handleForumPostLike likes a forum post
-func handleForumPostLike(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentLike likes a thread comment
+func handleThreadCommentLike(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -715,37 +715,37 @@ func handleForumPostLike(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		postID := chi.URLParam(r, "postId")
-		id, err := strconv.ParseInt(postID, 10, 64)
+		commentID := chi.URLParam(r, "commentId")
+		id, err := strconv.ParseInt(commentID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid comment ID"})
 			return
 		}
 
-		// Get post to find thread ID
-		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		// Get comment to find thread ID
+		comment, err := appCtx.ThreadCommentRepo.GetThreadCommentByID(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "comment not found"})
 			return
 		}
 
-		// Like the post
-		likeCount, err := appCtx.ForumPostRepo.LikePost(id, claims.UserID)
+		// Like the comment
+		likeCount, err := appCtx.ThreadCommentRepo.LikeThreadComment(id, claims.UserID)
 		if err != nil {
-			log.Printf("Error liking post: %v", err)
+			log.Printf("Error liking comment: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to like post"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to like comment"})
 			return
 		}
 
 		// Propagate to clients subscribed to this thread
-		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
-			"post_id": id,
-			"likes":   likeCount,
-			"user_id": claims.UserID,
-		}, "post_liked")
+		appCtx.WebSocketHub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
+			"comment_id": id,
+			"likes":      likeCount,
+			"user_id":    claims.UserID,
+		}, "comment_liked")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -755,8 +755,8 @@ func handleForumPostLike(appCtx *AppContext) http.HandlerFunc {
 	}
 }
 
-// handleForumPostUnlike unlikes a forum post
-func handleForumPostUnlike(appCtx *AppContext) http.HandlerFunc {
+// handleThreadCommentUnlike unlikes a thread comment
+func handleThreadCommentUnlike(appCtx *AppContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -767,37 +767,37 @@ func handleForumPostUnlike(appCtx *AppContext) http.HandlerFunc {
 			return
 		}
 
-		postID := chi.URLParam(r, "postId")
-		id, err := strconv.ParseInt(postID, 10, 64)
+		commentID := chi.URLParam(r, "commentId")
+		id, err := strconv.ParseInt(commentID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid post ID"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "invalid comment ID"})
 			return
 		}
 
-		// Get post to find thread ID
-		post, err := appCtx.ForumPostRepo.GetPostByID(id)
+		// Get comment to find thread ID
+		comment, err := appCtx.ThreadCommentRepo.GetThreadCommentByID(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "post not found"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "comment not found"})
 			return
 		}
 
-		// Unlike the post
-		likeCount, err := appCtx.ForumPostRepo.UnlikePost(id, claims.UserID)
+		// Unlike the comment
+		likeCount, err := appCtx.ThreadCommentRepo.UnlikeThreadComment(id, claims.UserID)
 		if err != nil {
-			log.Printf("Error unliking post: %v", err)
+			log.Printf("Error unliking comment: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "failed to unlike post"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "failed to unlike comment"})
 			return
 		}
 
 		// Propagate to clients subscribed to this thread
-		appCtx.WebSocketHub.PropagateForumThread(post.ThreadID, map[string]interface{}{
-			"post_id": id,
-			"likes":   likeCount,
-			"user_id": claims.UserID,
-		}, "post_unliked")
+		appCtx.WebSocketHub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
+			"comment_id": id,
+			"likes":      likeCount,
+			"user_id":    claims.UserID,
+		}, "comment_unliked")
 
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]interface{}{

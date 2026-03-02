@@ -29,7 +29,7 @@ type AppContext struct {
 	OrderRepo         repository.OrderRepository
 	ForumCategoryRepo repository.ForumCategoryRepository
 	ForumThreadRepo   repository.ForumThreadRepository
-	ForumPostRepo     repository.ForumPostRepository
+	ThreadCommentRepo repository.ThreadCommentRepository
 	WebSocketHub      *websocket.Hub
 }
 
@@ -49,7 +49,7 @@ func main() {
 		OrderRepo:         repository.NewOrderRepository(database.DB),
 		ForumCategoryRepo: repository.NewForumCategoryRepository(database.DB),
 		ForumThreadRepo:   repository.NewForumThreadRepository(database.DB),
-		ForumPostRepo:     repository.NewForumPostRepository(database.DB),
+		ThreadCommentRepo: repository.NewThreadCommentRepository(database.DB),
 		WebSocketHub:      websocket.NewHub(),
 	}
 
@@ -132,12 +132,12 @@ func main() {
 		r.With(JWTAuthMiddleware).Delete("/threads/{id}", handleForumThreadDelete(appCtx))
 		r.With(JWTAuthMiddleware).Post("/threads/{threadId}/like", handleForumThreadLike(appCtx))
 		r.With(JWTAuthMiddleware).Delete("/threads/{threadId}/like", handleForumThreadUnlike(appCtx))
-		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}/posts", handleForumPostsList(appCtx))
-		r.With(JWTAuthMiddleware).Post("/threads/{id}/posts", handleForumPostCreate(appCtx))
-		r.With(JWTAuthMiddleware).Put("/posts/{id}", handleForumPostUpdate(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/posts/{id}", handleForumPostDelete(appCtx))
-		r.With(JWTAuthMiddleware).Post("/posts/{postId}/like", handleForumPostLike(appCtx))
-		r.With(JWTAuthMiddleware).Delete("/posts/{postId}/like", handleForumPostUnlike(appCtx))
+		r.With(OptionalJWTAuthMiddleware).Get("/threads/{id}/comments", handleThreadCommentsList(appCtx))
+		r.With(JWTAuthMiddleware).Post("/threads/{id}/comments", handleThreadCommentCreate(appCtx))
+		r.With(JWTAuthMiddleware).Put("/comments/{id}", handleThreadCommentUpdate(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/comments/{id}", handleThreadCommentDelete(appCtx))
+		r.With(JWTAuthMiddleware).Post("/comments/{commentId}/like", handleThreadCommentLike(appCtx))
+		r.With(JWTAuthMiddleware).Delete("/comments/{commentId}/like", handleThreadCommentUnlike(appCtx))
 	})
 
 	port := os.Getenv("PORT")

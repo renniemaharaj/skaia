@@ -83,14 +83,14 @@ type ForumThreadRepository interface {
 	IsThreadLikedByUser(threadID int64, userID int64) (bool, error)
 }
 
-// ForumPostRepository defines operations for forum post data
-type ForumPostRepository interface {
-	GetPostByID(id int64) (*models.ForumPost, error)
-	GetThreadPosts(threadID int64, limit int, offset int) ([]*models.ForumPost, error)
-	CreatePost(post *models.ForumPost) (*models.ForumPost, error)
-	UpdatePost(post *models.ForumPost) (*models.ForumPost, error)
-	DeletePost(id int64) error
-	LikePost(postID int64, userID int64) (int64, error)
-	UnlikePost(postID int64, userID int64) (int64, error)
-	IsPostLikedByUser(postID int64, userID int64) (bool, error)
+// ThreadCommentRepository defines operations for forum thread comment data
+type ThreadCommentRepository interface {
+	GetThreadCommentByID(id int64) (*models.ThreadComment, error)
+	GetThreadComments(threadID int64, limit int, offset int) ([]*models.ThreadComment, error)
+	CreateThreadComment(comment *models.ThreadComment) (*models.ThreadComment, error)
+	UpdateThreadComment(comment *models.ThreadComment) (*models.ThreadComment, error)
+	DeleteThreadComment(id int64) error
+	LikeThreadComment(commentID int64, userID int64) (int64, error)
+	UnlikeThreadComment(commentID int64, userID int64) (int64, error)
+	IsThreadCommentLikedByUser(commentID int64, userID int64) (bool, error)
 }

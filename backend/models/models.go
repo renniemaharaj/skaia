@@ -147,8 +147,8 @@ type ForumThread struct {
 	CanLikeThreads         bool      `json:"can_like_threads,omitempty"`
 }
 
-// ForumPost represents a post in a forum thread
-type ForumPost struct {
+// ThreadComment represents a comment in a forum thread
+type ThreadComment struct {
 	ID              int64     `json:"id"`
 	ThreadID        int64     `json:"thread_id"`
 	UserID          int64     `json:"user_id"`
