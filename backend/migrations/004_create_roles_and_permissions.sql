@@ -1,5 +1,3 @@
--- 004_create_roles_and_permissions.sql
-
 -- Create roles table
 CREATE TABLE IF NOT EXISTS roles (
     id BIGSERIAL PRIMARY KEY,

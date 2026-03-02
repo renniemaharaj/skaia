@@ -93,21 +93,3 @@ export const hasRoleAtom = atom((get) => (role: string) => {
 
 // Socket connection state
 export const socketAtom = atom<WebSocket | null>(null);
-export const socketConnectedAtom = atom<boolean>(false);
-
-// Real-time updates from socket
-export const forumThreadsAtom = atomWithStorage<any[]>("forum.threads", []);
-export const forumPostsAtom = atomWithStorage<any[]>("forum.posts", []);
-export const onlineUsersAtom = atom<string[]>([]);
-
-// UI state atoms for real-time updates
-export const uiUpdatingAtom = atom<boolean>(false);
-export const uiUpdateQueueAtom = atom<
-  Array<{
-    id: string;
-    type: "thread" | "post" | "user" | "like";
-    action: "create" | "update" | "delete" | "like" | "unlike";
-    data: any;
-    timestamp: number;
-  }>
->([]);

@@ -44,6 +44,7 @@ type StorePayload struct {
 }
 
 // ForumPayload for forum updates
+// note1, posts should be thread Comments
 type ForumPayload struct {
 	Threads []*models.ForumThread `json:"threads,omitempty"`
 	Posts   []*models.ForumPost   `json:"posts,omitempty"`
@@ -97,7 +98,7 @@ func (h *Hub) Run() {
 			h.mu.Lock()
 			h.clients[client] = true
 			h.mu.Unlock()
-			log.Printf("Client registered: UserID=%d", client.UserID)
+			log.Printf("Client: %p registered: UserID=%d", client, client.UserID)
 
 		case client := <-h.unregister:
 			h.mu.Lock()
