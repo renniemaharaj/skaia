@@ -5,7 +5,7 @@ import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 
 import { useUserData } from "./useUserData";
 import { useProfileEdit } from "./useProfileEdit";
-import { useThreadsFeed } from "./useThreadsFeed";
+import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 
 import UserProfileCard from "./UserProfileCard";
 import UserManagePanel from "./UserManagePanel";
@@ -65,7 +65,14 @@ const UserProfile: React.FC = () => {
     onSaved: (updated) => setUser((u) => (u ? { ...u, ...updated } : u)),
   });
 
-  const { threads, threadsLoading, sentinelRef } = useThreadsFeed(userId);
+  const {
+    threads,
+    isLoading: threadsLoading,
+    loading: threadsLoadingOlder,
+    feedRef: threadsFeedRef,
+    sentinelRef: threadsSentinelRef,
+    handleScroll: threadsHandleScroll,
+  } = useThreadsFeed({ authorId: userId });
 
   if (loading)
     return <div className="up-container up-loading">Loading profile…</div>;
@@ -107,8 +114,11 @@ const UserProfile: React.FC = () => {
       <UserThreadsFeed
         displayName={user.display_name || user.username}
         threads={threads}
-        threadsLoading={threadsLoading}
-        sentinelRef={sentinelRef}
+        isLoading={threadsLoading}
+        loading={threadsLoadingOlder}
+        feedRef={threadsFeedRef}
+        sentinelRef={threadsSentinelRef}
+        handleScroll={threadsHandleScroll}
       />
 
       {editOpen && (

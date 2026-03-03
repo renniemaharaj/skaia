@@ -4,11 +4,10 @@ import { X, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { forumCategoriesAtom } from "../../../atoms/forum";
-import { useCategoryThreadsFeed } from "./useCategoryThreadsFeed";
+import { useThreadsFeed } from "../../../hooks/useThreadsFeed";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "../../../components/Forum";
 
-import "../../users/UserProfile.css";
 import "../../../components/NewThread.css";
 import "../../../components/ThreadActions.css";
 import "../../../components/IconButton.css";
@@ -20,7 +19,8 @@ const CategoryThreadsPage = () => {
   const [forumExpanded, setForumExpanded] = useState(true);
 
   const category = categories.find((c) => String(c.id) === String(categoryId));
-  const { threads, loading, sentinelRef } = useCategoryThreadsFeed(categoryId);
+  const { threads, isLoading, loading, feedRef, sentinelRef, handleScroll } =
+    useThreadsFeed({ categoryId });
 
   // Show the forum briefly on mount, then retract so the transition is visible
   useEffect(() => {
@@ -110,8 +110,11 @@ const CategoryThreadsPage = () => {
         <div style={{ paddingTop: "8px" }}>
           <CategoryThreadsFeed
             threads={threads}
+            isLoading={isLoading}
             loading={loading}
+            feedRef={feedRef}
             sentinelRef={sentinelRef}
+            handleScroll={handleScroll}
           />
         </div>
       </div>

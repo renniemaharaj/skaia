@@ -4,8 +4,13 @@ import { toast } from "sonner";
 import {
   forumCategoriesAtom,
   type ForumCategory,
+  type ForumThread,
   currentThreadAtom,
   threadCommentsAtom,
+  categoryFeedThreadsAtom,
+  activeCategoryFeedIdAtom,
+  userFeedThreadsAtom,
+  activeUserFeedIdAtom,
 } from "../atoms/forum";
 import {
   socketAtom,
@@ -59,6 +64,17 @@ export const useWebSocketSync = () => {
   const currentUserPermissionsRef = useRef<string[] | null>(null);
   currentUserIdRef.current = currentUser?.id ?? null;
   currentUserPermissionsRef.current = currentUser?.permissions ?? null;
+
+  // Live thread feed atoms — the WS handler pushes broadcast events into these
+  const setCategoryFeedThreads = useSetAtom(categoryFeedThreadsAtom);
+  const setUserFeedThreads = useSetAtom(userFeedThreadsAtom);
+  const activeCategoryFeedId = useAtomValue(activeCategoryFeedIdAtom);
+  const activeUserFeedId = useAtomValue(activeUserFeedIdAtom);
+  // Refs so the stable onmessage closure always reads current values
+  const activeCategoryFeedIdRef = useRef<string | null>(null);
+  const activeUserFeedIdRef = useRef<string | null>(null);
+  activeCategoryFeedIdRef.current = activeCategoryFeedId;
+  activeUserFeedIdRef.current = activeUserFeedId;
 
   const setupWebSocket = useCallback(() => {
     // Global singleton guard — only one WS connection per browser context.
@@ -173,6 +189,43 @@ export const useWebSocketSync = () => {
               });
             }
 
+            // ── Live feed: thread created (broadcast to all clients) ──────────
+            if (action === "thread_created" && data) {
+              const thread = data as ForumThread;
+              // Category feed
+              if (
+                activeCategoryFeedIdRef.current &&
+                String(thread.category_id) === activeCategoryFeedIdRef.current
+              ) {
+                setCategoryFeedThreads((prev) => {
+                  if (prev.some((t) => String(t.id) === String(thread.id)))
+                    return prev;
+                  return [...prev, thread]; // newest at end → bottom of the chat feed
+                });
+              }
+              // User feed
+              if (
+                activeUserFeedIdRef.current &&
+                String(thread.user_id) === activeUserFeedIdRef.current
+              ) {
+                setUserFeedThreads((prev) => {
+                  if (prev.some((t) => String(t.id) === String(thread.id)))
+                    return prev;
+                  return [...prev, thread];
+                });
+              }
+            }
+
+            // ── Live feed: thread updated (metadata refresh in both feeds) ───
+            if (action === "thread_updated" && data) {
+              const update = (prev: ForumThread[]) =>
+                prev.map((t) =>
+                  String(t.id) === String(data.id) ? { ...t, ...data } : t,
+                );
+              setCategoryFeedThreads(update);
+              setUserFeedThreads(update);
+            }
+
             // Handle thread deletion
             if (action === "thread_deleted") {
               setCurrentThread((prev) => {
@@ -181,6 +234,14 @@ export const useWebSocketSync = () => {
                 }
                 return prev;
               });
+            }
+
+            // ── Live feed: thread deleted (broadcast to all clients) ─────────
+            if (action === "thread_deleted" && id) {
+              const remove = (prev: ForumThread[]) =>
+                prev.filter((t) => String(t.id) !== String(id));
+              setCategoryFeedThreads(remove);
+              setUserFeedThreads(remove);
             }
 
             // Handle comment operations
@@ -459,6 +520,8 @@ export const useWebSocketSync = () => {
     setAccessToken,
     setRefreshToken,
     setIsAuthenticated,
+    setCategoryFeedThreads,
+    setUserFeedThreads,
     wsUrl,
   ]);
 
