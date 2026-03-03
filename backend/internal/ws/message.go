@@ -10,19 +10,24 @@ import (
 type MessageType string
 
 const (
-	StoreSync    MessageType = "store:sync"
-	StoreUpdate  MessageType = "store:update"
-	ForumSync    MessageType = "forum:sync"
-	ForumUpdate  MessageType = "forum:update"
-	UserUpdate   MessageType = "user:update"
-	UserJoin     MessageType = "user:join"
-	UserLeave    MessageType = "user:leave"
-	Subscribe    MessageType = "subscribe"
-	Unsubscribe  MessageType = "unsubscribe"
-	Ping         MessageType = "ping"
-	Presence     MessageType = "presence"        // client → server: announce route
-	PresenceSync MessageType = "presence:update" // server → client: online list
-	Tp           MessageType = "tp"              // client → server → target: teleport request
+	StoreSync         MessageType = "store:sync"
+	StoreUpdate       MessageType = "store:update"
+	ForumSync         MessageType = "forum:sync"
+	ForumUpdate       MessageType = "forum:update"
+	UserUpdate        MessageType = "user:update"
+	UserJoin          MessageType = "user:join"
+	UserLeave         MessageType = "user:leave"
+	Subscribe         MessageType = "subscribe"
+	Unsubscribe       MessageType = "unsubscribe"
+	Ping              MessageType = "ping"
+	Presence          MessageType = "presence"            // client → server: announce route
+	PresenceSync      MessageType = "presence:update"     // server → client: online list
+	Tp                MessageType = "tp"                  // client → server → target: teleport request
+	GlobalChat        MessageType = "global:chat"         // bidirectional: send / receive global chat
+	GlobalChatHistory MessageType = "global:chat:history" // server → client on connect: recent history
+	InboxUpdate       MessageType = "inbox:update"        // server → subscribed clients: conversation changed
+	InboxMsg          MessageType = "inbox:message"       // server → recipient: unread badge ping
+	NotificationMsg   MessageType = "notification"        // server → client: user notification
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.
@@ -31,6 +36,17 @@ type PresenceUser struct {
 	UserName string `json:"user_name"`
 	Avatar   string `json:"avatar"`
 	Route    string `json:"route"`
+}
+
+// GlobalChatMessage is a single message in the global channel.
+type GlobalChatMessage struct {
+	ID        int64  `json:"id"`
+	UserID    int64  `json:"user_id"`
+	UserName  string `json:"user_name"`
+	Avatar    string `json:"avatar"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+	IsGuest   bool   `json:"is_guest"`
 }
 
 // Message represents a WebSocket message.

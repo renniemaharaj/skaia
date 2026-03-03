@@ -1,4 +1,4 @@
-import { ShoppingCart, Moon, Sun, Menu, X, LogOut } from "lucide-react";
+import { ShoppingCart, Moon, Sun, Menu, X, LogOut, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -8,8 +8,10 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
 } from "../../atoms/auth";
+import { inboxUnreadCountAtom } from "../../atoms/inbox";
 import { apiRequest } from "../../utils/api";
 import UserLink from "../user/UserLink";
+import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 
@@ -35,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
+  const inboxUnread = useAtomValue(inboxUnreadCountAtom);
 
   const { theme, specifyTheme } = useThemeContext();
 
@@ -130,6 +133,20 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             {isAuthenticated && user ? (
               <div className="user-menu">
+                <NotificationBell />
+                <Link
+                  to="/inbox"
+                  className="header-inbox-btn"
+                  title="Messages"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <Mail size={20} />
+                  {inboxUnread > 0 && (
+                    <span className="header-inbox-badge">
+                      {inboxUnread > 99 ? "99+" : inboxUnread}
+                    </span>
+                  )}
+                </Link>
                 <UserLink
                   userId={user.id}
                   username={user.username}

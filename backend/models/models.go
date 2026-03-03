@@ -173,3 +173,59 @@ type ThreadComment struct {
 	CanDelete       bool      `json:"can_delete,omitempty"`
 	CanLikeComments bool      `json:"can_like_comments,omitempty"`
 }
+
+// ── Inbox ────────────────────────────────────────────────────────────────────
+
+// InboxConversation represents a private conversation between two users.
+type InboxConversation struct {
+	ID        int64     `json:"id"`
+	User1ID   int64     `json:"user1_id"`
+	User2ID   int64     `json:"user2_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	// Enriched fields resolved at the service layer
+	OtherUser   *User         `json:"other_user,omitempty"`
+	LastMessage *InboxMessage `json:"last_message,omitempty"`
+	UnreadCount int           `json:"unread_count,omitempty"`
+}
+
+// InboxMessage is a single message in a private conversation.
+type InboxMessage struct {
+	ID             int64     `json:"id"`
+	ConversationID int64     `json:"conversation_id"`
+	SenderID       int64     `json:"sender_id"`
+	SenderName     string    `json:"sender_name,omitempty"`
+	SenderAvatar   string    `json:"sender_avatar,omitempty"`
+	Content        string    `json:"content"`
+	IsRead         bool      `json:"is_read"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+
+// NotificationType constants keep the client and server using the same strings.
+const (
+	NotifCommentOnThread = "comment_on_thread"
+	NotifThreadLiked     = "thread_liked"
+	NotifThreadDeleted   = "thread_deleted"
+	NotifThreadEdited    = "thread_edited"
+	NotifCommentDeleted  = "comment_deleted"
+	NotifCommentLiked    = "comment_liked"
+	NotifProfileViewed   = "profile_viewed"
+	NotifSuspended       = "suspended"
+	NotifUnsuspended     = "unsuspended"
+	NotifBanned          = "banned"
+	NotifDirectMessage   = "direct_message"
+)
+
+// Notification is a user-facing notification.
+type Notification struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Type      string    `json:"type"`
+	Message   string    `json:"message"`
+	Route     string    `json:"route,omitempty"`
+	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
@@ -9,9 +9,18 @@ import {
   GhostIcon,
   Navigation,
   LocateFixed,
+  MessageCircle,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../atoms/presence";
-import { currentUserAtom, socketAtom, hasPermissionAtom } from "../../atoms/auth";
+import {
+  currentUserAtom,
+  socketAtom,
+  hasPermissionAtom,
+} from "../../atoms/auth";
+import {
+  globalChatMessagesAtom,
+  type GlobalChatMessage,
+} from "../../atoms/chat";
 import { toast } from "sonner";
 import "./PresencePanel.css";
 
@@ -30,10 +39,16 @@ interface PresenceRowAction {
 
 const PresencePanel = () => {
   const [expanded, setExpanded] = useState(true);
+  const [chatMode, setChatMode] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+  const [chatInput, setChatInput] = useState("");
+  const prevChatLenRef = useRef(0);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const rawUsers = useAtomValue(onlineUsersAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const socket = useAtomValue(socketAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
+  const chatMessages = useAtomValue(globalChatMessagesAtom);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -67,6 +82,16 @@ const PresencePanel = () => {
   // ── Row actions ───────────────────────────────────────────────
   // Add future actions here — they appear on hover in declaration order.
   const rowActions: PresenceRowAction[] = [
+    {
+      key: "dm",
+      icon: <MessageCircle size={11} />,
+      title: "Send message",
+      hidden: (u) =>
+        u.user_id < 0 ||
+        !currentUser ||
+        String(u.user_id) === String(currentUser.id),
+      handler: (u) => navigate(`/inbox?with=${u.user_id}`),
+    },
     {
       key: "tp_to",
       icon: <Navigation size={11} />,
@@ -104,6 +129,33 @@ const PresencePanel = () => {
 
   // ───────────────────────────────────────────────────────────────
 
+  // Auto-scroll chat feed to bottom when new messages arrive
+  useEffect(() => {
+    if (chatMode && expanded) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages, chatMode, expanded]);
+
+  // Track unread count while on the members tab.
+  // Only count a delta of exactly 1 — history loads arrive as a big batch
+  // and should NOT mark the chat tab as having new messages.
+  useEffect(() => {
+    const delta = chatMessages.length - prevChatLenRef.current;
+    prevChatLenRef.current = chatMessages.length;
+    if (delta === 1 && !chatMode) {
+      setChatUnread((n) => n + 1);
+    }
+  }, [chatMessages.length, chatMode]);
+
+  const sendChatMessage = () => {
+    const content = chatInput.trim();
+    if (!content || !socket || socket.readyState !== WebSocket.OPEN) return;
+    socket.send(JSON.stringify({ type: "global:chat", payload: { content } }));
+    setChatInput("");
+  };
+
+  // ───────────────────────────────────────────────────────────────
+
   const UserRow = ({ u, dim }: { u: OnlineUser; dim?: boolean }) => {
     const isGuest = u.user_id < 0;
     const isMe = !isGuest && String(u.user_id) === String(currentUser?.id);
@@ -120,7 +172,7 @@ const PresencePanel = () => {
         {visibleActions.map((action) => (
           <button
             key={action.key}
-            className="pp-action-btn"
+            className={`pp-action-btn pp-action-btn--${action.key}`}
             title={action.title}
             onClick={(e) => {
               e.preventDefault();
@@ -175,44 +227,139 @@ const PresencePanel = () => {
     );
   };
 
+  // Helper: render a single chat bubble
+  const ChatBubble = ({ msg }: { msg: GlobalChatMessage }) => {
+    const isMe =
+      !msg.is_guest && String(msg.user_id) === String(currentUser?.id);
+    const time = new Date(msg.created_at).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const nameEl = msg.is_guest ? (
+      <span className="pp-chat-author pp-chat-author--guest">Guest</span>
+    ) : (
+      <Link to={`/users/${msg.user_id}`} className="pp-chat-author">
+        {msg.user_name || `#${msg.user_id}`}
+      </Link>
+    );
+    return (
+      <div className={`pp-chat-bubble${isMe ? " pp-chat-bubble--me" : ""}`}>
+        <div className="pp-chat-meta">
+          {nameEl}
+          <span className="pp-chat-time">{time}</span>
+        </div>
+        <p className="pp-chat-content">{msg.content}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="presence-panel">
-      {/* Toggle button */}
-      <button
-        className="pp-toggle"
-        onClick={() => setExpanded((v) => !v)}
-        title={expanded ? "Hide online users" : "Show online users"}
-      >
-        <Users size={15} />
-        <span className="pp-count">{total}</span>
-        {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
-      </button>
+      {/* Control bar: mode tabs + expand toggle */}
+      <div className="pp-controls">
+        <div className="pp-tabs">
+          <button
+            className={`pp-tab${!chatMode ? " pp-tab--active" : ""}`}
+            onClick={() => setChatMode(false)}
+            title="Online members"
+          >
+            <Users size={13} />
+            <span className="pp-count">{total}</span>
+          </button>
+          <button
+            className={`pp-tab${chatMode ? " pp-tab--active" : ""}${chatUnread > 0 && !chatMode ? " pp-tab--has-unread" : ""}`}
+            onClick={() => {
+              setChatMode(true);
+              setChatUnread(0);
+            }}
+            title="Global chat"
+          >
+            <MessageCircle size={13} />
+            {chatUnread > 0 && !chatMode && (
+              <span className="pp-chat-badge">
+                {chatUnread > 9 ? "9+" : chatUnread}
+              </span>
+            )}
+          </button>
+        </div>
+        <button
+          className="pp-chevron"
+          onClick={() => setExpanded((v) => !v)}
+          title={expanded ? "Collapse" : "Expand"}
+        >
+          {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+        </button>
+      </div>
 
       {/* Expanded panel */}
-      <div className={`pp-body${expanded ? " pp-open" : ""}`}>
-        <div className="pp-scroll">
-          {here.length > 0 && (
-            <>
-              <p className="pp-section-label">On this page</p>
-              {here.map((u) => (
-                <UserRow key={u.user_id} u={u} />
-              ))}
-            </>
-          )}
+      <div
+        className={`pp-body${expanded ? " pp-open" : ""}${chatMode ? " pp-body--chat" : ""}`}
+      >
+        {!chatMode ? (
+          /* ── Members tab ── */
+          <div className="pp-scroll">
+            {here.length > 0 && (
+              <>
+                <p className="pp-section-label">On this page</p>
+                {here.map((u) => (
+                  <UserRow key={u.user_id} u={u} />
+                ))}
+              </>
+            )}
 
-          {elsewhere.length > 0 && (
-            <>
-              <p className="pp-section-label pp-section-label--elsewhere">
-                Elsewhere
-              </p>
-              {elsewhere.map((u) => (
-                <UserRow key={u.user_id} u={u} dim />
-              ))}
-            </>
-          )}
+            {elsewhere.length > 0 && (
+              <>
+                <p className="pp-section-label pp-section-label--elsewhere">
+                  Elsewhere
+                </p>
+                {elsewhere.map((u) => (
+                  <UserRow key={u.user_id} u={u} dim />
+                ))}
+              </>
+            )}
 
-          {total === 0 && <p className="pp-empty">No one online right now.</p>}
-        </div>
+            {total === 0 && (
+              <p className="pp-empty">No one online right now.</p>
+            )}
+          </div>
+        ) : (
+          /* ── Chat tab ── */
+          <>
+            <div className="pp-chat-feed">
+              {chatMessages.length === 0 && (
+                <p className="pp-empty">No messages yet. Say hi!</p>
+              )}
+              {chatMessages.map((msg) => (
+                <ChatBubble key={msg.id} msg={msg} />
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="pp-chat-input-row">
+              <input
+                className="pp-chat-input"
+                type="text"
+                placeholder="Say something…"
+                maxLength={500}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                  }
+                }}
+              />
+              <button
+                className="pp-chat-send"
+                onClick={sendChatMessage}
+                disabled={!chatInput.trim()}
+                title="Send"
+              >
+                ↑
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

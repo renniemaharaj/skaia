@@ -52,6 +52,8 @@ func (c *Client) ReadPump() {
 			c.handlePresence(msg)
 		case Tp:
 			c.handleTp(msg)
+		case GlobalChat:
+			c.handleGlobalChat(msg)
 		case Ping:
 			// nothing — client keepalive only
 		default:
@@ -148,6 +150,46 @@ func (c *Client) handleTp(msg Message) {
 		return
 	}
 	c.Hub.SendTeleport(p.TargetUserID, p.Route)
+}
+
+// handleGlobalChat validates and enqueues a global chat message from this client.
+func (c *Client) handleGlobalChat(msg Message) {
+	type chatPayload struct {
+		Content string `json:"content"`
+	}
+	var p chatPayload
+	if err := json.Unmarshal(msg.Payload, &p); err != nil || len(p.Content) == 0 {
+		return
+	}
+	// Truncate very long messages.
+	if len(p.Content) > 500 {
+		p.Content = p.Content[:500]
+	}
+
+	isGuest := c.UserID == 0
+	userID := c.UserID
+	if isGuest {
+		userID = -c.ClientID
+	}
+
+	name := c.UserName
+	if name == "" {
+		if isGuest {
+			name = "Guest"
+		} else {
+			name = "User"
+		}
+	}
+
+	now := time.Now()
+	c.Hub.SendGlobalChat(GlobalChatMessage{
+		UserID:    userID,
+		UserName:  name,
+		Avatar:    c.Avatar,
+		Content:   p.Content,
+		CreatedAt: now.UTC().Format(time.RFC3339),
+		IsGuest:   isGuest,
+	})
 }
 
 // subscriptionKey returns the canonical map key for a resource subscription.

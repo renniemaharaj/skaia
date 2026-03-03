@@ -2,6 +2,7 @@ package forum
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,15 +12,21 @@ import (
 	"github.com/skaia/backend/models"
 )
 
+// NotifSender is the minimal interface the forum handler needs to send user notifications.
+type NotifSender interface {
+	Send(userID int64, notifType, message, route string) (*models.Notification, error)
+}
+
 // Handler exposes all forum HTTP endpoints.
 type Handler struct {
-	svc *Service
-	hub *ws.Hub
+	svc      *Service
+	hub      *ws.Hub
+	notifSvc NotifSender
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub) *Handler {
-	return &Handler{svc: svc, hub: hub}
+func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender) *Handler {
+	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc}
 }
 
 // Mount registers all forum routes on r.
@@ -395,6 +402,21 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 	}
 
+	// Notify thread author when their thread is edited by someone else (admin)
+	if h.notifSvc != nil && thread.UserID != claims.UserID {
+		threadOwner := thread.UserID
+		tid := id
+		title := thread.Title
+		go func() {
+			_, _ = h.notifSvc.Send(
+				threadOwner,
+				"thread_edited",
+				fmt.Sprintf("Your thread \"%.60s\" was edited by a moderator", title),
+				"/view-thread/"+strconv.FormatInt(tid, 10),
+			)
+		}()
+	}
+
 	WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -440,6 +462,20 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 	recentThreads, _ := h.svc.ListCategoryThreads(thread.CategoryID, 2, 0)
 	h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 
+	// Notify thread author when their thread is deleted by someone else (admin)
+	if h.notifSvc != nil && thread.UserID != claims.UserID {
+		threadOwner := thread.UserID
+		title := thread.Title
+		go func() {
+			_, _ = h.notifSvc.Send(
+				threadOwner,
+				"thread_deleted",
+				fmt.Sprintf("Your thread \"%.60s\" was removed by a moderator", title),
+				"/forum",
+			)
+		}()
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -456,7 +492,8 @@ func (h *Handler) likeThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.svc.GetThread(id); err != nil {
+	thread, err := h.svc.GetThread(id)
+	if err != nil {
 		WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
@@ -471,6 +508,19 @@ func (h *Handler) likeThread(w http.ResponseWriter, r *http.Request) {
 	h.hub.PropagateForumThread(id, map[string]interface{}{
 		"thread_id": id, "likes": count, "user_id": claims.UserID,
 	}, "thread_liked")
+
+	// Notify the thread author (skip if liking own thread)
+	if h.notifSvc != nil && thread.UserID != claims.UserID {
+		go func() {
+			_, _ = h.notifSvc.Send(
+				thread.UserID,
+				"thread_liked",
+				fmt.Sprintf("Someone liked your thread: %s", thread.Title),
+				"/view-thread/"+strconv.FormatInt(id, 10),
+			)
+		}()
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
 
@@ -593,6 +643,24 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.hub.PropagateForumThread(id, map[string]interface{}{"new_comment": created}, "comment_created")
+
+	// Notify thread author that someone commented (skip if author commented on own thread)
+	if h.notifSvc != nil {
+		if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != claims.UserID {
+			tid := id
+			threadOwner := thread.UserID
+			threadTitle := thread.Title
+			go func() {
+				_, _ = h.notifSvc.Send(
+					threadOwner,
+					"comment_on_thread",
+					fmt.Sprintf("Someone commented on your thread: %s", threadTitle),
+					"/view-thread/"+strconv.FormatInt(tid, 10),
+				)
+			}()
+		}
+	}
+
 	WriteJSON(w, http.StatusCreated, created)
 }
 
@@ -672,6 +740,21 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
+
+	// Notify comment author when someone else (admin) deleted their comment
+	if h.notifSvc != nil && comment.UserID != claims.UserID {
+		commentOwner := comment.UserID
+		tid := threadID
+		go func() {
+			_, _ = h.notifSvc.Send(
+				commentOwner,
+				"comment_deleted",
+				"Your comment was removed by a moderator",
+				"/view-thread/"+strconv.FormatInt(tid, 10),
+			)
+		}()
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -704,6 +787,20 @@ func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
 	h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
 		"comment_id": id, "likes": count, "user_id": claims.UserID,
 	}, "comment_liked")
+
+	// Notify the comment author (skip if liking own comment)
+	if h.notifSvc != nil && comment.UserID != claims.UserID {
+		tid := comment.ThreadID
+		go func() {
+			_, _ = h.notifSvc.Send(
+				comment.UserID,
+				"comment_liked",
+				"Someone liked your comment",
+				"/view-thread/"+strconv.FormatInt(tid, 10),
+			)
+		}()
+	}
+
 	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
 

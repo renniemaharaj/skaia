@@ -12,6 +12,7 @@ import EditThreadPage from "./edit-thread/index.tsx";
 import ViewThreadPage from "./view-thread/index.tsx";
 import UserDiscovery from "./users/index.tsx";
 import CategoryThreadsPage from "./threads/categories/index.tsx";
+import InboxPage from "./inbox/InboxPage.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage /> },
@@ -23,6 +24,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "cart", element: <CartPage /> },
   { path: "users", element: <UserDiscovery /> },
   { path: "users/:userId", element: <UserDiscovery /> },
+  { path: "inbox", element: <InboxPage /> },
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index /> },

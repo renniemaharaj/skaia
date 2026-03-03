@@ -21,6 +21,9 @@ type TeleportRequest struct {
 	Route        string // route the target should navigate to
 }
 
+// globalChatRingSize is the maximum number of global chat messages kept in memory.
+const globalChatRingSize = 80
+
 // Hub manages WebSocket connections and resource subscriptions.
 // All channel operations are serialised through Run; field access outside
 // Run is protected by mu.
@@ -34,8 +37,14 @@ type Hub struct {
 	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
 	teleport        chan TeleportRequest
-	nextClientID    int64 // monotonic counter, incremented only in Run
-	mu              sync.RWMutex
+	// Global chat ring buffer — written only from Run goroutine.
+	globalChat   chan GlobalChatMessage
+	chatRing     [globalChatRingSize]GlobalChatMessage
+	chatHead     int // next write position (ring)
+	chatCount    int // total messages stored (capped at globalChatRingSize)
+	nextChatID   int64
+	nextClientID int64 // monotonic counter, incremented only in Run
+	mu           sync.RWMutex
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -50,6 +59,7 @@ func NewHub() *Hub {
 		unsubscribe:     make(chan ResourceSubscription, 256),
 		presenceUpdates: make(chan ClientPresence, 256),
 		teleport:        make(chan TeleportRequest, 256),
+		globalChat:      make(chan GlobalChatMessage, 256),
 	}
 }
 
@@ -70,6 +80,7 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.handleRegister(client)
+			h.sendChatHistory(client)
 			h.doPresenceBroadcast()
 		case client := <-h.unregister:
 			h.handleUnregister(client)
@@ -87,6 +98,8 @@ func (h *Hub) Run() {
 			h.doPresenceBroadcast()
 		case req := <-h.teleport:
 			h.handleTeleport(req)
+		case cm := <-h.globalChat:
+			h.handleGlobalChat(cm)
 		}
 	}
 }
@@ -257,6 +270,56 @@ func (h *Hub) handleTeleport(req TeleportRequest) {
 	}
 }
 
+// handleGlobalChat appends the message to the ring buffer and broadcasts it to all clients.
+func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
+	// Assign monotonic ID
+	h.nextChatID++
+	cm.ID = h.nextChatID
+
+	// Write into ring
+	h.chatRing[h.chatHead] = cm
+	h.chatHead = (h.chatHead + 1) % globalChatRingSize
+	if h.chatCount < globalChatRingSize {
+		h.chatCount++
+	}
+
+	// Broadcast to all clients
+	payload, _ := json.Marshal(cm)
+	msg := &Message{Type: GlobalChat, Payload: payload}
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for client := range h.clients {
+		select {
+		case client.Send <- msg:
+		default:
+			close(client.Send)
+			delete(h.clients, client)
+		}
+	}
+}
+
+// sendChatHistory delivers the recent global chat ring to a freshly connected client.
+// Must only be called from the Run goroutine.
+func (h *Hub) sendChatHistory(client *Client) {
+	if h.chatCount == 0 {
+		return
+	}
+
+	start := (h.chatHead - h.chatCount + globalChatRingSize) % globalChatRingSize
+	history := make([]GlobalChatMessage, h.chatCount)
+	for i := 0; i < h.chatCount; i++ {
+		history[i] = h.chatRing[(start+i)%globalChatRingSize]
+	}
+
+	payload, _ := json.Marshal(map[string]interface{}{"messages": history})
+	msg := &Message{Type: GlobalChatHistory, Payload: payload}
+	select {
+	case client.Send <- msg:
+	default:
+	}
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 // Broadcast enqueues a message for delivery to all connected clients.
@@ -274,6 +337,31 @@ func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	case h.teleport <- TeleportRequest{TargetUserID: targetUserID, Route: route}:
 	default:
 		log.Println("ws: teleport channel full, request dropped")
+	}
+}
+
+// SendGlobalChat enqueues a global chat message.
+func (h *Hub) SendGlobalChat(cm GlobalChatMessage) {
+	select {
+	case h.globalChat <- cm:
+	default:
+		log.Println("ws: global chat channel full, message dropped")
+	}
+}
+
+// SendToUser delivers a targeted message to all connections authenticated as userID.
+// Safe to call from any goroutine.
+func (h *Hub) SendToUser(userID int64, msg *Message) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.clients {
+		if client.UserID == userID {
+			select {
+			case client.Send <- msg:
+			default:
+				log.Printf("ws: send buffer full for userID=%d", userID)
+			}
+		}
 	}
 }
 
@@ -319,6 +407,11 @@ func (h *Hub) PropagateForumCategories(categoryID int64, data interface{}, actio
 // PropagateForumThread sends forum thread data to subscribed clients.
 func (h *Hub) PropagateForumThread(threadID int64, data interface{}, action string) {
 	h.propagate("thread", threadID, ForumUpdate, action, data)
+}
+
+// PropagateInboxConversation sends an inbox message event to all clients subscribed to a conversation.
+func (h *Hub) PropagateInboxConversation(conversationID int64, data interface{}, action string) {
+	h.propagate("inbox_conversation", conversationID, InboxUpdate, action, data)
 }
 
 // propagate is the shared implementation used by all Propagate* helpers.

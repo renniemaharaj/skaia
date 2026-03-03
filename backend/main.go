@@ -15,8 +15,10 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/skaia/backend/database"
 	iforum "github.com/skaia/backend/internal/forum"
+	iinbox "github.com/skaia/backend/internal/inbox"
 	"github.com/skaia/backend/internal/integration"
 	imw "github.com/skaia/backend/internal/middleware"
+	inotif "github.com/skaia/backend/internal/notification"
 	istore "github.com/skaia/backend/internal/store"
 	"github.com/skaia/backend/internal/testutil"
 	iupload "github.com/skaia/backend/internal/upload"
@@ -172,10 +174,21 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		ws.HandleConnection(w, r, hub)
 	})
 
+	// Notifications (created first so forum handler can send them)
+	notifRepo := inotif.NewRepository(db)
+	notifSvc := inotif.NewService(notifRepo, hub)
+
 	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iforum.NewHandler(forumSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iforum.NewHandler(forumSvc, hub, notifSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	istore.NewHandler(storeSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
+
+	inotif.NewHandler(notifSvc).Mount(r, imw.JWTAuthMiddleware)
+
+	// Inbox (private messaging)
+	inboxRepo := iinbox.NewRepository(db)
+	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
+	iinbox.NewHandler(inboxSvc).Mount(r, imw.JWTAuthMiddleware)
 
 	// Serve uploaded user assets (profile photos, banners)
 	uploadsFS := http.FileServer(http.Dir("./uploads"))

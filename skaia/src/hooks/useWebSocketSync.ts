@@ -22,6 +22,17 @@ import {
 } from "../atoms/auth";
 import { wsBaseUrlAtom } from "../atoms/config";
 import { onlineUsersAtom, pendingTpRouteAtom } from "../atoms/presence";
+import { globalChatMessagesAtom, type GlobalChatMessage } from "../atoms/chat";
+import {
+  inboxMessagesAtom,
+  inboxConversationsAtom,
+  inboxUnreadCountAtom,
+  activeConversationIdAtom,
+} from "../atoms/inbox";
+import {
+  notificationsAtom,
+  type AppNotification,
+} from "../atoms/notifications";
 
 interface WebSocketMessage {
   type: string;
@@ -39,6 +50,9 @@ interface WebSocketMessage {
  */
 let _globalWs: WebSocket | null = null;
 let _globalConnecting = false;
+// Module-level mirror of activeConversationIdAtom so the singleton onmessage
+// closure always has the latest value even across multiple hook instances.
+let _activeConversationId: string | null = null;
 
 /**
  * Hook to manage resource subscriptions and listen for backend propagated changes
@@ -75,6 +89,22 @@ export const useWebSocketSync = () => {
   const activeUserFeedIdRef = useRef<string | null>(null);
   activeCategoryFeedIdRef.current = activeCategoryFeedId;
   activeUserFeedIdRef.current = activeUserFeedId;
+
+  // ── Global chat ─────────────────────────────────────────────────────────
+  const setGlobalChatMessages = useSetAtom(globalChatMessagesAtom);
+
+  // ── Inbox ────────────────────────────────────────────────────────────────
+  const setInboxMessages = useSetAtom(inboxMessagesAtom);
+  const setInboxConversations = useSetAtom(inboxConversationsAtom);
+  const setInboxUnreadCount = useSetAtom(inboxUnreadCountAtom);
+  const activeConversationId = useAtomValue(activeConversationIdAtom);
+  const activeConversationIdRef = useRef<string | null>(null);
+  activeConversationIdRef.current = activeConversationId;
+  // Keep module-level var in sync so all setupWebSocket closures see the latest value.
+  _activeConversationId = activeConversationId;
+
+  // ── Notifications ────────────────────────────────────────────────────────
+  const setNotifications = useSetAtom(notificationsAtom);
 
   const setupWebSocket = useCallback(() => {
     // Global singleton guard — only one WS connection per browser context.
@@ -483,6 +513,74 @@ export const useWebSocketSync = () => {
               }
             });
           }
+
+          // ── Global chat ──────────────────────────────────────────────────
+          if (message.type === "global:chat") {
+            setGlobalChatMessages((prev) => {
+              const msgs = [...prev, payload as GlobalChatMessage];
+              return msgs.slice(-80);
+            });
+          }
+
+          if (message.type === "global:chat:history") {
+            const messages = (payload as any)?.messages;
+            if (Array.isArray(messages)) {
+              setGlobalChatMessages(messages);
+            }
+          }
+
+          // ── Inbox ─────────────────────────────────────────────────────────
+          if (message.type === "inbox:update") {
+            const { action: inboxAction, data: inboxData } = payload as any;
+            if (inboxAction === "message_created" && inboxData) {
+              const convStr = String(inboxData.conversation_id);
+              const activeId = _activeConversationId;
+              // Always append to the message feed — the subscription to
+              // inbox_conversation:{id} ensures we only receive events for
+              // the conversation currently open, just like thread comments.
+              // No extra activeId check needed; the backend only pushes to
+              // subscribers of that specific conversation.
+              setInboxMessages((prev) => {
+                if (prev.some((m) => String(m.id) === String(inboxData.id)))
+                  return prev;
+                return [...prev, inboxData];
+              });
+              // Always update sidebar: bump last_message + unread count
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === convStr
+                    ? {
+                        ...c,
+                        last_message: inboxData,
+                        unread_count:
+                          convStr !== activeId ? (c.unread_count ?? 0) + 1 : 0,
+                      }
+                    : c,
+                ),
+              );
+            }
+          }
+
+          if (message.type === "inbox:message") {
+            setInboxUnreadCount((prev) => prev + 1);
+          }
+
+          // ── Notifications ─────────────────────────────────────────────────
+          if (message.type === "notification") {
+            const notif = payload as AppNotification;
+            setNotifications((prev) => [notif, ...prev]);
+            toast(notif.message, {
+              duration: 6000,
+              action: notif.route
+                ? {
+                    label: "View",
+                    onClick: () => {
+                      window.location.assign(notif.route);
+                    },
+                  }
+                : undefined,
+            });
+          }
         } catch (error) {
           console.error("Error processing WebSocket message:", error);
         }
@@ -522,6 +620,11 @@ export const useWebSocketSync = () => {
     setIsAuthenticated,
     setCategoryFeedThreads,
     setUserFeedThreads,
+    setGlobalChatMessages,
+    setInboxMessages,
+    setInboxConversations,
+    setInboxUnreadCount,
+    setNotifications,
     wsUrl,
   ]);
 

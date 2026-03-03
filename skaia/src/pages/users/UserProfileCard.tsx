@@ -1,4 +1,12 @@
-import { Camera, Edit3, ShieldOff, UserCheck, UserX } from "lucide-react";
+import {
+  Camera,
+  Edit3,
+  MessageCircle,
+  ShieldOff,
+  UserCheck,
+  UserX,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { ProfileUser } from "./types";
 import { formatDate } from "./useUserData";
 
@@ -27,6 +35,7 @@ const UserProfileCard = ({
   onSuspendOpen,
   onUnsuspend,
 }: Props) => {
+  const navigate = useNavigate();
   return (
     <>
       {/* Banner */}
@@ -95,6 +104,15 @@ const UserProfileCard = ({
           </div>
 
           <div className="up-actions">
+            {!isOwnProfile && (
+              <button
+                className="up-btn up-btn-primary"
+                onClick={() => navigate(`/inbox?with=${user.id}`)}
+                title="Send message"
+              >
+                <MessageCircle size={14} /> Message
+              </button>
+            )}
             {canEdit && (
               <button className="up-btn up-btn-secondary" onClick={onEditOpen}>
                 <Edit3 size={14} /> Edit Profile

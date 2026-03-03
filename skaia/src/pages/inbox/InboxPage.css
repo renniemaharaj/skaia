@@ -1,0 +1,430 @@
+/* ── Page wrapper ─────────────────────────── */
+.inbox-page-wrapper {
+  padding: 0;
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 700px;
+}
+
+.inbox-page {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  /* No border-radius / border — full-bleed Discord look */
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ── Sidebar ──────────────────────────────── */
+.inbox-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.inbox-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inbox-sidebar-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.inbox-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+.inbox-new-btn:hover {
+  opacity: 0.85;
+}
+
+.inbox-new-dm {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.inbox-new-dm-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  outline: none;
+}
+.inbox-new-dm-input:focus {
+  border-color: var(--primary-color);
+}
+.inbox-new-dm-send {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inbox-conv-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.inbox-conv-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.12s ease;
+}
+.inbox-conv-row:hover {
+  background: var(--bg-tertiary);
+}
+.inbox-conv-row--active {
+  background: var(--bg-tertiary);
+}
+.inbox-conv-row--unread .inbox-conv-name {
+  font-weight: 700;
+}
+
+.inbox-conv-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+}
+.inbox-conv-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inbox-conv-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inbox-conv-name {
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inbox-conv-preview {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inbox-conv-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.inbox-conv-time {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inbox-unread-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: var(--bg-color);
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Main panel ───────────────────────────── */
+.inbox-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+.inbox-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  opacity: 0.45;
+}
+.inbox-placeholder p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.inbox-chat-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.inbox-chat-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+  width: fit-content;
+}
+.inbox-chat-user:hover .inbox-chat-username {
+  color: var(--primary-color);
+}
+
+.inbox-chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.inbox-chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inbox-chat-username {
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: color 0.12s ease;
+}
+
+/* Feed */
+.inbox-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inbox-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 75%;
+}
+.inbox-msg--me {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.inbox-msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+.inbox-msg-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inbox-msg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inbox-msg-author {
+  font-size: 0.7rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+
+.inbox-msg-content {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.inbox-msg--me .inbox-msg-content {
+  background: var(--primary-color);
+  color: var(--bg-color);
+  border-color: transparent;
+}
+
+.inbox-msg-time {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  align-self: flex-end;
+}
+.inbox-msg--me .inbox-msg-time {
+  align-self: flex-start;
+}
+
+/* Input */
+.inbox-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.inbox-input {
+  flex: 1;
+  padding: 9px 12px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.inbox-input:focus {
+  border-color: var(--primary-color);
+}
+.inbox-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.inbox-send-btn {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.inbox-send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.inbox-send-btn:not(:disabled):hover {
+  opacity: 0.85;
+}
+
+.inbox-loading,
+.inbox-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .inbox-page-wrapper {
+    min-height: unset;
+    height: 100%;
+    flex: 1;
+  }
+  .inbox-page {
+    border: none;
+  }
+  .inbox-sidebar {
+    width: 64px;
+  }
+  .inbox-conv-info,
+  .inbox-conv-meta,
+  .inbox-conv-name,
+  .inbox-conv-preview,
+  .inbox-conv-time {
+    display: none;
+  }
+  .inbox-sidebar-title {
+    display: none;
+  }
+}
