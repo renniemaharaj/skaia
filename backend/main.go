@@ -117,6 +117,8 @@ func runIntegrationSuite(db *sql.DB) {
 	integration.RegisterUserTests(suite, db)
 	integration.RegisterForumTests(suite, db)
 	integration.RegisterStoreTests(suite, db)
+	integration.RegisterUploadTests(suite, db)
+	integration.RegisterExtraTests(suite, db)
 
 	passed, failed := suite.Run()
 	log.Printf("=== RESULTS: %d passed, %d failed ===", passed, failed)

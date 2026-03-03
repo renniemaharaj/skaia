@@ -1,7 +1,9 @@
 # Integration test stack — no frontend, no production DB.
 #
 # Run:
-#   docker compose -f compose.test.yml up --abort-on-container-exit --exit-code-from backend
+#   docker compose -f compose.test.yml up --build --abort-on-container-exit --exit-code-from backend
+#
+# --build forces a rebuild of the backend image so code changes are always picked up.
 #
 # The backend runs the full integration suite and exits 0 (all pass) or 1 (any fail).
 # --abort-on-container-exit tears everything down once the backend exits.

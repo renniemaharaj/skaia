@@ -30,6 +30,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Put("/categories/{id}", h.updateCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
+		// Category-scoped product listing
+		r.With(optJWT).Get("/categories/{id}/products", h.listCategoryProducts)
+
 		// Product routes
 		r.With(optJWT).Get("/products", h.listProducts)
 		r.With(optJWT).Get("/products/{id}", h.getProduct)
@@ -165,6 +168,31 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // Product handlers
+
+// listCategoryProducts handles GET /store/categories/{id}/products
+func (h *Handler) listCategoryProducts(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		return
+	}
+	limit, offset := 50, 0
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 200 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	products, err := h.svc.ListProductsByCategory(id, limit, offset)
+	if err != nil {
+		WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if products == nil {
+		products = []*models.Product{}
+	}
+	WriteJSON(w, http.StatusOK, products)
+}
 
 func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
 	limit, offset := 50, 0

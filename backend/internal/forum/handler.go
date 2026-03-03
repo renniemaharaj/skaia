@@ -30,6 +30,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Post("/categories", h.createCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
+		// Category-scoped thread listing
+		r.With(optJWT).Get("/categories/{id}/threads", h.listCategoryThreads)
+
 		// Thread routes
 		r.With(optJWT).Get("/threads", h.listThreads)
 		r.With(jwt).Post("/threads", h.createThread)
@@ -77,6 +80,38 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 		out = append(out, &CategoryWithThreads{ForumCategory: cat, Threads: threads})
 	}
 	WriteJSON(w, http.StatusOK, out)
+}
+
+// listCategoryThreads handles GET /forum/categories/{id}/threads
+func (h *Handler) listCategoryThreads(w http.ResponseWriter, r *http.Request) {
+	categoryID, err := h.parseID(r, "id")
+	if err != nil {
+		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		return
+	}
+	q := r.URL.Query()
+	limit := 20
+	offset := 0
+	if v := q.Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	if v := q.Get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+	threads, err := h.svc.ListCategoryThreads(categoryID, limit, offset)
+	if err != nil {
+		log.Printf("forum.listCategoryThreads: %v", err)
+		WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+		return
+	}
+	if threads == nil {
+		threads = []*models.ForumThread{}
+	}
+	WriteJSON(w, http.StatusOK, threads)
 }
 
 func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
