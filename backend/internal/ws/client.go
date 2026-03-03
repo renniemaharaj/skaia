@@ -37,7 +37,11 @@ func (c *Client) ReadPump() {
 			return
 		}
 
-		c.UserID = msg.UserID
+		// Only accept a positive user_id from the client; messages like subscribe/ping
+		// omit the field (deserialises as 0) and must never overwrite an established identity.
+		if msg.UserID > 0 {
+			c.UserID = msg.UserID
+		}
 
 		switch msg.Type {
 		case Subscribe:
