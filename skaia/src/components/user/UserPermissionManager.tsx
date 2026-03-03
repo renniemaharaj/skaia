@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, X, Check } from "lucide-react";
-import { apiRequest } from "../utils/api";
+import { apiRequest } from "../../utils/api";
 import "./UserPermissionManager.css";
 
 interface User {

@@ -6,11 +6,11 @@ import { useState, useEffect } from "react";
 import { forumCategoriesAtom } from "../../../atoms/forum";
 import { useThreadsFeed } from "../../../hooks/useThreadsFeed";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
-import { Forum } from "../../../components/Forum";
+import { Forum } from "../../../components/forum/Forum";
 
-import "../../../components/NewThread.css";
-import "../../../components/ThreadActions.css";
-import "../../../components/IconButton.css";
+import "../../../components/forum/NewThread.css";
+import "../../../components/forum/ThreadActions.css";
+import "../../../components/forum/IconButton.css";
 
 const CategoryThreadsPage = () => {
   const { categoryId } = useParams<{ categoryId: string }>();

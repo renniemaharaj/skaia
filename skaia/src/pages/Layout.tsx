@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
-import { Header } from "../components/Header";
-import { Footer } from "../components/Footer";
+import { Header } from "../components/layout/Header";
+import { Footer } from "../components/layout/Footer";
 import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +18,7 @@ import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 import { usePresence } from "../hooks/usePresence";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
-import PresencePanel from "../components/PresencePanel";
+import PresencePanel from "../components/layout/PresencePanel";
 import { Toaster, toast } from "sonner";
 
 interface LayoutProps {

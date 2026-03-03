@@ -7,10 +7,10 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
   isAuthenticatedAtom,
-} from "../atoms/auth";
-import { loginUser, registerUser, type AuthResponse } from "../utils/api";
+} from "../../atoms/auth";
+import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
 import "./Auth.css";
-import "./FormGroup.css";
+import "../ui/FormGroup.css";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;

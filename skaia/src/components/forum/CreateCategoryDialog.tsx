@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Check, Loader } from "lucide-react";
-import { apiRequest } from "../utils/api";
+import { apiRequest } from "../../utils/api";
 import "./ThreadActions.css";
 
 const animationStyles = `

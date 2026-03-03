@@ -11,11 +11,11 @@ import {
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
 import { useAtomValue, useSetAtom } from "jotai";
-import { currentThreadAtom } from "../atoms/forum";
-import { currentUserAtom } from "../atoms/auth";
+import { currentThreadAtom } from "../../atoms/forum";
+import { currentUserAtom } from "../../atoms/auth";
 import { useCallback } from "react";
-import { apiRequest } from "../utils/api";
-import UserLink from "./UserLink";
+import { apiRequest } from "../../utils/api";
+import UserLink from "../user/UserLink";
 
 type Author = {
   name: string;

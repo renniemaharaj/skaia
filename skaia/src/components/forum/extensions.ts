@@ -35,7 +35,7 @@ import { TextDirection } from "reactjs-tiptap-editor/textdirection";
 import { TextUnderline } from "reactjs-tiptap-editor/textunderline";
 import { Video } from "reactjs-tiptap-editor/video";
 
-import { uploadEditorFile } from "../utils/upload";
+import { uploadEditorFile } from "../../utils/upload";
 
 const extensions = [
   BaseKit.configure({

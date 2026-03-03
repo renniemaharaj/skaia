@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 // import { useNavigate } from "react-router-dom";
-import { SkeletonCard } from "./SkeletonCard";
+import { SkeletonCard } from "../ui/SkeletonCard";
 import "./Landing.css";
-import "./FeatureCard.css";
+import "../ui/FeatureCard.css";
 import Hero from "./Hero";
 import SocialLinks from "./SocialLinks";
 

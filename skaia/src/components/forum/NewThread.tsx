@@ -6,7 +6,7 @@ import { CheckIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./IconButton.css";
 import "./ThreadActions.css";
-import { apiRequest } from "../utils/api";
+import { apiRequest } from "../../utils/api";
 
 interface CreateThreadResponse {
   id: string;

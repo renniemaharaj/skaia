@@ -1,19 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { currentUserAtom, isAuthenticatedAtom } from "../atoms/auth";
-import { forumCategoriesAtom } from "../atoms/forum";
-import { apiRequest } from "../utils/api";
-import { SkeletonCard } from "./SkeletonCard";
+import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
+import { forumCategoriesAtom } from "../../atoms/forum";
+import { apiRequest } from "../../utils/api";
+import { SkeletonCard } from "../ui/SkeletonCard";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
-import { useWebSocketSync } from "../hooks/useWebSocketSync";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import "./Forum.css";
-import "./FeatureCard.css";
+import "../ui/FeatureCard.css";
 import "./NewThread.css";
-import "./FormGroup.css";
+import "../ui/FormGroup.css";
 import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
-import UserLink from "./UserLink";
+import UserLink from "../user/UserLink";
 
 interface ForumProps {
   // No longer needed - all forum operations are now API-driven with WebSocket updates

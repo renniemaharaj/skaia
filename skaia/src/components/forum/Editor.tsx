@@ -14,7 +14,7 @@ import "./Editor.css";
 import { debounce } from "lodash";
 // import { useThemeContext } from "../context/theme/useThemeContext";
 import extensions from "./extensions";
-import { useThemeContext } from "../hooks/theme/useThemeContext";
+import { useThemeContext } from "../../hooks/theme/useThemeContext";
 
 interface EditorProps {
   value: string;

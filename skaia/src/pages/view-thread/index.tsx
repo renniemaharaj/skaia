@@ -3,17 +3,17 @@ import { useEffect, useState } from "react";
 import { Pencil, Trash2, X } from "lucide-react";
 import { useAtom } from "jotai";
 
-import ViewThread from "../../components/ViewThread";
-import ViewThreadMeta from "../../components/ViewThreadMeta";
-import ViewThreadComments from "../../components/ViewThreadComments";
-import Hero from "../../components/Hero";
+import ViewThread from "../../components/forum/ViewThread";
+import ViewThreadMeta from "../../components/forum/ViewThreadMeta";
+import ViewThreadComments from "../../components/forum/ViewThreadComments";
+import Hero from "../../components/layout/Hero";
 import { currentThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
 import "./index.css";
-import "../../components/IconButton.css";
-import "./../../components/EmptyState.css";
+import "../../components/forum/IconButton.css";
+import "./../../components/store/EmptyState.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();

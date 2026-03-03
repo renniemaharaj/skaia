@@ -2,12 +2,12 @@ import "./ViewThreadComments.css";
 import { Send, ThumbsUp, Trash2, UserCog2Icon } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { threadCommentsAtom } from "../atoms/forum";
-import { type ThreadComment } from "../atoms/forum";
-import { apiRequest } from "../utils/api";
-import { useWebSocketSync } from "../hooks/useWebSocketSync";
-import { currentUserAtom } from "../atoms/auth";
-import UserLink from "./UserLink";
+import { threadCommentsAtom } from "../../atoms/forum";
+import { type ThreadComment } from "../../atoms/forum";
+import { apiRequest } from "../../utils/api";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { currentUserAtom } from "../../atoms/auth";
+import UserLink from "../user/UserLink";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -1,6 +1,6 @@
 import { MessageSquare } from "lucide-react";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
-import ThreadsFeed from "../../components/ThreadsFeed";
+import ThreadsFeed from "../../components/forum/ThreadsFeed";
 
 interface Props {
   displayName: string;

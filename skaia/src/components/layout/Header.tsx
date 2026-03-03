@@ -7,11 +7,11 @@ import {
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
-} from "../atoms/auth";
-import { apiRequest } from "../utils/api";
-import UserLink from "./UserLink";
+} from "../../atoms/auth";
+import { apiRequest } from "../../utils/api";
+import UserLink from "../user/UserLink";
 import "./Header.css";
-import { useThemeContext } from "../hooks/theme/useThemeContext";
+import { useThemeContext } from "../../hooks/theme/useThemeContext";
 
 interface HeaderProps {
   cartCount: number;

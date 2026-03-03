@@ -1,7 +1,7 @@
 import { Route } from "react-router-dom";
 import Suspended from "./suspended";
 import { protectedRoutes, publicRoutes } from "./routes";
-import { ProtectedRoute } from "../components/ProtectedRoute";
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 import type { JSX } from "react";
 
 export interface Primitve {

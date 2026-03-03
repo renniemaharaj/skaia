@@ -10,8 +10,8 @@ import {
   Navigation,
   LocateFixed,
 } from "lucide-react";
-import { onlineUsersAtom, type OnlineUser } from "../atoms/presence";
-import { currentUserAtom, socketAtom, hasPermissionAtom } from "../atoms/auth";
+import { onlineUsersAtom, type OnlineUser } from "../../atoms/presence";
+import { currentUserAtom, socketAtom, hasPermissionAtom } from "../../atoms/auth";
 import { toast } from "sonner";
 import "./PresencePanel.css";
 

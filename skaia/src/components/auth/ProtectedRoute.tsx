@@ -1,8 +1,8 @@
 import { type ReactNode } from "react";
 import { useAtomValue } from "jotai";
 import { Navigate } from "react-router-dom";
-import { isAuthenticatedAtom, currentUserAtom } from "../atoms/auth";
-import { Unauthorized } from "../page/Unauthorized";
+import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
+import { Unauthorized } from "../../page/Unauthorized";
 
 interface ProtectedRouteProps {
   children: ReactNode;

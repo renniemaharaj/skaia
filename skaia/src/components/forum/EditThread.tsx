@@ -6,9 +6,9 @@ import ForumCategory from "./ForumCategory";
 import Editor from "./Editor";
 import "./IconButton.css";
 import "./ThreadActions.css";
-import { apiRequest } from "../utils/api";
-import { currentThreadAtom } from "../atoms/forum";
-import { useWebSocketSync } from "../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
+import { currentThreadAtom } from "../../atoms/forum";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 
 interface ThreadData {
   id: string;

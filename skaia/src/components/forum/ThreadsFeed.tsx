@@ -1,8 +1,8 @@
 import "./ThreadsFeed.css";
 import { Link } from "react-router-dom";
 import { ChevronUp, Eye, Heart, MessageSquare } from "lucide-react";
-import type { FeedThread } from "../hooks/useThreadsFeed";
-import UserLink from "./UserLink";
+import type { FeedThread } from "../../hooks/useThreadsFeed";
+import UserLink from "../user/UserLink";
 
 function formatDate(s: string): string {
   const d = new Date(s);
