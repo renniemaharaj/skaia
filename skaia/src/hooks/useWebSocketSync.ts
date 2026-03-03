@@ -8,6 +8,7 @@ import {
 } from "../atoms/forum";
 import { socketAtom, currentUserAtom } from "../atoms/auth";
 import { wsBaseUrlAtom } from "../atoms/config";
+import { onlineUsersAtom } from "../atoms/presence";
 
 interface WebSocketMessage {
   type: string;
@@ -28,6 +29,7 @@ export const useWebSocketSync = () => {
   const setCurrentThread = useSetAtom(currentThreadAtom);
   const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
+  const setOnlineUsers = useSetAtom(onlineUsersAtom);
   const connectingRef = useRef(false);
   const wsUrl = useAtomValue(wsBaseUrlAtom);
   // Tracks all active subscriptions so they can be replayed on reconnect
@@ -89,6 +91,14 @@ export const useWebSocketSync = () => {
             const { action, id } = payload;
             console.log(`Received user update: ${action} for user ${id}`);
             // Update user atom if needed (implement custom hook for users)
+          }
+
+          // Handle presence update
+          if (message.type === "presence:update") {
+            const { users } = payload;
+            if (Array.isArray(users)) {
+              setOnlineUsers(users);
+            }
           }
 
           // Handle forum update propagation
@@ -383,7 +393,7 @@ export const useWebSocketSync = () => {
         setupWebSocket();
       }, 3000);
     }
-  }, [setForumCategories, setCurrentThread, setSocket, wsUrl]);
+  }, [setForumCategories, setCurrentThread, setSocket, setOnlineUsers, wsUrl]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates

@@ -4,7 +4,7 @@ import { Footer } from "../components/Footer";
 import { useState, useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
 import { wsBaseUrlAtom } from "../atoms/config";
-
+import { usePresence } from "../hooks/usePresence";
 export const RootLayout: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -14,6 +14,8 @@ export const RootLayout: React.FC = () => {
     return false;
   });
   const wsRef = useRef<WebSocket | null>(null);
+
+  usePresence();
 
   // Set theme on mount
   useEffect(() => {

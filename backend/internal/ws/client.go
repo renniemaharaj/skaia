@@ -15,6 +15,10 @@ type Client struct {
 	Conn   *websocket.Conn
 	Send   chan *Message
 	UserID int64
+	// Presence fields — written only from Hub.Run via presenceUpdates channel.
+	Route    string
+	UserName string
+	Avatar   string
 }
 
 // ReadPump pumps inbound messages from the connection to the hub.
@@ -39,6 +43,8 @@ func (c *Client) ReadPump() {
 			c.handleSubscribe(msg)
 		case Unsubscribe:
 			c.handleUnsubscribe(msg)
+		case Presence:
+			c.handlePresence(msg)
 		case Ping:
 			// nothing — client keepalive only
 		default:
@@ -98,6 +104,23 @@ func (c *Client) handleUnsubscribe(msg Message) {
 	}
 	c.Hub.Unsubscribe(c, resourceType, rid)
 	log.Printf("ws: client %p unsubscribed from %s:%d", c, resourceType, rid)
+}
+
+// handlePresence forwards a presence announcement to the hub for processing.
+func (c *Client) handlePresence(msg Message) {
+	type presencePayload struct {
+		Route    string `json:"route"`
+		UserName string `json:"user_name"`
+		Avatar   string `json:"avatar"`
+	}
+	var p presencePayload
+	if err := json.Unmarshal(msg.Payload, &p); err != nil {
+		return
+	}
+	select {
+	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar}:
+	default:
+	}
 }
 
 // subscriptionKey returns the canonical map key for a resource subscription.

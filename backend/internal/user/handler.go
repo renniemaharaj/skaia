@@ -144,6 +144,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("auth: registered %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	WriteJSON(w, http.StatusCreated, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -178,6 +179,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("auth: login %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	WriteJSON(w, http.StatusOK, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: "",
@@ -209,7 +211,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	log.Printf("user.Handler.logout: user %s (%d) signed out", claims.Username, claims.UserID)
+	log.Printf("auth: logout %q (@%s, id=%d)", claims.DisplayName, claims.Username, claims.UserID)
 	WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "logged out successfully",
 		"status":  "success",

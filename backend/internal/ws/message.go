@@ -10,17 +10,27 @@ import (
 type MessageType string
 
 const (
-	StoreSync   MessageType = "store:sync"
-	StoreUpdate MessageType = "store:update"
-	ForumSync   MessageType = "forum:sync"
-	ForumUpdate MessageType = "forum:update"
-	UserUpdate  MessageType = "user:update"
-	UserJoin    MessageType = "user:join"
-	UserLeave   MessageType = "user:leave"
-	Subscribe   MessageType = "subscribe"
-	Unsubscribe MessageType = "unsubscribe"
-	Ping        MessageType = "ping"
+	StoreSync    MessageType = "store:sync"
+	StoreUpdate  MessageType = "store:update"
+	ForumSync    MessageType = "forum:sync"
+	ForumUpdate  MessageType = "forum:update"
+	UserUpdate   MessageType = "user:update"
+	UserJoin     MessageType = "user:join"
+	UserLeave    MessageType = "user:leave"
+	Subscribe    MessageType = "subscribe"
+	Unsubscribe  MessageType = "unsubscribe"
+	Ping         MessageType = "ping"
+	Presence     MessageType = "presence"        // client → server: announce route
+	PresenceSync MessageType = "presence:update" // server → client: online list
 )
+
+// PresenceUser is the public representation of a single online user sent to clients.
+type PresenceUser struct {
+	UserID   int64  `json:"user_id"`
+	UserName string `json:"user_name"`
+	Avatar   string `json:"avatar"`
+	Route    string `json:"route"`
+}
 
 // Message represents a WebSocket message.
 type Message struct {

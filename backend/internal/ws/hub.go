@@ -2,35 +2,54 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 )
+
+// ClientPresence carries a presence announcement from a client, processed in Run.
+type ClientPresence struct {
+	Client   *Client
+	Route    string
+	UserName string
+	Avatar   string
+}
 
 // Hub manages WebSocket connections and resource subscriptions.
 // All channel operations are serialised through Run; field access outside
 // Run is protected by mu.
 type Hub struct {
-	clients       map[*Client]bool
-	broadcast     chan *Message
-	register      chan *Client
-	unregister    chan *Client
-	subscriptions map[string][]*Client // key: "resource_type:resource_id"
-	subscribe     chan ResourceSubscription
-	unsubscribe   chan ResourceSubscription
-	mu            sync.RWMutex
+	clients         map[*Client]bool
+	broadcast       chan *Message
+	register        chan *Client
+	unregister      chan *Client
+	subscriptions   map[string][]*Client // key: "resource_type:resource_id"
+	subscribe       chan ResourceSubscription
+	unsubscribe     chan ResourceSubscription
+	presenceUpdates chan ClientPresence
+	mu              sync.RWMutex
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
 func NewHub() *Hub {
 	return &Hub{
-		clients:       make(map[*Client]bool),
-		broadcast:     make(chan *Message, 256),
-		register:      make(chan *Client, 256),
-		unregister:    make(chan *Client, 256),
-		subscriptions: make(map[string][]*Client),
-		subscribe:     make(chan ResourceSubscription, 256),
-		unsubscribe:   make(chan ResourceSubscription, 256),
+		clients:         make(map[*Client]bool),
+		broadcast:       make(chan *Message, 256),
+		register:        make(chan *Client, 256),
+		unregister:      make(chan *Client, 256),
+		subscriptions:   make(map[string][]*Client),
+		subscribe:       make(chan ResourceSubscription, 256),
+		unsubscribe:     make(chan ResourceSubscription, 256),
+		presenceUpdates: make(chan ClientPresence, 256),
 	}
+}
+
+// clientLabel returns a human-readable string for a Client suitable for log output.
+func clientLabel(c *Client) string {
+	if c.UserName != "" {
+		return fmt.Sprintf("%q (id=%d)", c.UserName, c.UserID)
+	}
+	return fmt.Sprintf("id=%d", c.UserID)
 }
 
 // Run is the hub's event loop. Start it in a dedicated goroutine.
@@ -39,14 +58,21 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.handleRegister(client)
+			h.doPresenceBroadcast()
 		case client := <-h.unregister:
 			h.handleUnregister(client)
+			h.doPresenceBroadcast()
 		case sub := <-h.subscribe:
 			h.handleSubscribe(sub)
 		case unsub := <-h.unsubscribe:
 			h.handleUnsubscribe(unsub)
 		case msg := <-h.broadcast:
 			h.handleBroadcast(msg)
+		case cp := <-h.presenceUpdates:
+			cp.Client.Route = cp.Route
+			cp.Client.UserName = cp.UserName
+			cp.Client.Avatar = cp.Avatar
+			h.doPresenceBroadcast()
 		}
 	}
 }
@@ -57,7 +83,7 @@ func (h *Hub) handleRegister(client *Client) {
 	h.mu.Lock()
 	h.clients[client] = true
 	h.mu.Unlock()
-	log.Printf("ws: client %p registered (userID=%d)", client, client.UserID)
+	log.Printf("ws: joined  %s", clientLabel(client))
 }
 
 func (h *Hub) handleUnregister(client *Client) {
@@ -85,7 +111,7 @@ func (h *Hub) handleUnregister(client *Client) {
 			h.subscriptions[key] = filtered
 		}
 	}
-	log.Printf("ws: client %p unregistered (userID=%d)", client, client.UserID)
+	log.Printf("ws: left    %s", clientLabel(client))
 }
 
 func (h *Hub) handleSubscribe(sub ResourceSubscription) {
@@ -93,7 +119,7 @@ func (h *Hub) handleSubscribe(sub ResourceSubscription) {
 	key := subscriptionKey(sub.ResourceType, sub.ResourceID)
 	h.subscriptions[key] = append(h.subscriptions[key], sub.Client)
 	h.mu.Unlock()
-	log.Printf("ws: client %p subscribed to %s", sub.Client, key)
+	log.Printf("ws: sub     %s → %s", clientLabel(sub.Client), key)
 }
 
 func (h *Hub) handleUnsubscribe(unsub ResourceSubscription) {
@@ -131,6 +157,52 @@ func (h *Hub) handleBroadcast(msg *Message) {
 		case client.Send <- msg:
 		default:
 			// Send buffer full — drop the client.
+			close(client.Send)
+			delete(h.clients, client)
+		}
+	}
+}
+
+// doPresenceBroadcast builds the current online user list and sends it to every
+// connected client. Must only be called from the Run goroutine.
+func (h *Hub) doPresenceBroadcast() {
+	h.mu.RLock()
+	// Deduplicate by UserID — if the same user has multiple connections
+	// (e.g. tab reload before old socket closes) keep the one with a name.
+	seen := make(map[int64]PresenceUser)
+	for client := range h.clients {
+		pu := PresenceUser{
+			UserID:   client.UserID,
+			UserName: client.UserName,
+			Avatar:   client.Avatar,
+			Route:    client.Route,
+		}
+		existing, ok := seen[client.UserID]
+		if !ok || (pu.UserName != "" && existing.UserName == "") {
+			seen[client.UserID] = pu
+		}
+	}
+	users := make([]PresenceUser, 0, len(seen))
+	for _, u := range seen {
+		if len(users) >= 100 {
+			break
+		}
+		users = append(users, u)
+	}
+	h.mu.RUnlock()
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "presence_updated",
+		"users":  users,
+	})
+	msg := &Message{Type: PresenceSync, Payload: payload}
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for client := range h.clients {
+		select {
+		case client.Send <- msg:
+		default:
 			close(client.Send)
 			delete(h.clients, client)
 		}

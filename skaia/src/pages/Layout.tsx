@@ -15,6 +15,8 @@ import { wsBaseUrlAtom } from "../atoms/config";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
+import { usePresence } from "../hooks/usePresence";
+import PresencePanel from "../components/PresencePanel";
 
 interface LayoutProps {
   children: ReactNode;
@@ -28,6 +30,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     return false;
   });
+
+  usePresence();
   const wsRef = useRef<WebSocket | null>(null);
   const { getTotalItems } = useCart();
   const setAccessToken = useSetAtom(accessTokenAtom);
@@ -211,6 +215,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
       <main className="layout-main">{children}</main>
       <Footer />
+      <PresencePanel />
     </div>
   );
 };
