@@ -100,9 +100,9 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
 	p := &models.Product{}
 	err := r.db.QueryRow(
-		`SELECT id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
 		 FROM products WHERE id = $1`, id,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("product not found")
 	}
@@ -111,7 +111,7 @@ func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
 
 func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
 		 FROM products WHERE category_id = $1 AND is_active = true
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		categoryID, limit, offset,
@@ -125,21 +125,21 @@ func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int
 
 func (r *sqlProductRepository) Create(p *models.Product) (*models.Product, error) {
 	err := r.db.QueryRow(
-		`INSERT INTO products (category_id, name, description, price, image_url, stock, is_active)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.IsActive,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+		`INSERT INTO products (category_id, name, description, price, image_url, stock, stock_unlimited, is_active)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at`,
+		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.StockUnlimited, p.IsActive,
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
 	return p, err
 }
 
 func (r *sqlProductRepository) Update(p *models.Product) (*models.Product, error) {
 	err := r.db.QueryRow(
-		`UPDATE products SET category_id=$1, name=$2, description=$3, price=$4, image_url=$5, stock=$6, is_active=$7, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$8
-		 RETURNING id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.IsActive, p.ID,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+		`UPDATE products SET category_id=$1, name=$2, description=$3, price=$4, image_url=$5, stock=$6, original_price=$7, stock_unlimited=$8, is_active=$9, updated_at=CURRENT_TIMESTAMP
+		 WHERE id=$10
+		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at`,
+		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.ID,
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
 	return p, err
 }
 
@@ -154,7 +154,7 @@ func (r *sqlProductRepository) Delete(id int64) error {
 
 func (r *sqlProductRepository) List(limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
 		 FROM products ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -169,7 +169,7 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 	var products []*models.Product
 	for rows.Next() {
 		p := &models.Product{}
-		if err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		products = append(products, p)
@@ -334,4 +334,44 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 		status, id,
 	).Scan(&o.ID, &o.UserID, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
 	return o, err
+}
+
+// --- Payment ---
+
+type sqlPaymentRepository struct{ db *sql.DB }
+
+func NewPaymentRepository(db *sql.DB) PaymentRepository {
+	return &sqlPaymentRepository{db: db}
+}
+
+func (r *sqlPaymentRepository) Create(p *models.Payment) (*models.Payment, error) {
+	err := r.db.QueryRow(
+		`INSERT INTO payments (order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		 RETURNING id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at`,
+		p.OrderID, p.UserID, p.Provider, p.ProviderRef, p.Amount, p.Currency, p.Status, p.FailureReason,
+	).Scan(&p.ID, &p.OrderID, &p.UserID, &p.Provider, &p.ProviderRef, &p.Amount, &p.Currency, &p.Status, &p.FailureReason, &p.CreatedAt, &p.UpdatedAt)
+	return p, err
+}
+
+func (r *sqlPaymentRepository) GetByOrderID(orderID int64) (*models.Payment, error) {
+	p := &models.Payment{}
+	err := r.db.QueryRow(
+		`SELECT id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at
+		 FROM payments WHERE order_id=$1 ORDER BY created_at DESC LIMIT 1`, orderID,
+	).Scan(&p.ID, &p.OrderID, &p.UserID, &p.Provider, &p.ProviderRef, &p.Amount, &p.Currency, &p.Status, &p.FailureReason, &p.CreatedAt, &p.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("payment not found")
+	}
+	return p, err
+}
+
+func (r *sqlPaymentRepository) UpdateStatus(id int64, status, failureReason string) (*models.Payment, error) {
+	p := &models.Payment{}
+	err := r.db.QueryRow(
+		`UPDATE payments SET status=$1, failure_reason=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$3
+		 RETURNING id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at`,
+		status, failureReason, id,
+	).Scan(&p.ID, &p.OrderID, &p.UserID, &p.Provider, &p.ProviderRef, &p.Amount, &p.Currency, &p.Status, &p.FailureReason, &p.CreatedAt, &p.UpdatedAt)
+	return p, err
 }

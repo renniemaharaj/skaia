@@ -4,7 +4,6 @@ import { Footer } from "../components/layout/Footer";
 import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
 import {
   accessTokenAtom,
   refreshTokenAtom,
@@ -13,6 +12,7 @@ import {
   type User,
 } from "../atoms/auth";
 import { pendingTpRouteAtom } from "../atoms/presence";
+import { cartItemCountAtom } from "../atoms/store";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
@@ -36,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   usePresence();
   const { subscribe } = useWebSocketSync();
-  const { getTotalItems } = useCart();
+  const cartCount = useAtomValue(cartItemCountAtom);
   const navigate = useNavigate();
   const pendingTpRoute = useAtomValue(pendingTpRouteAtom);
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
@@ -60,6 +60,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     const validateSession = async () => {
       try {
+        // Refresh the access token first so it carries up-to-date DB permissions.
+        // This is critical: after an admin grants/revokes permissions the old JWT
+        // still lacks those claims, so API calls would fail with 403 even though
+        // the currentUserAtom shows the correct permissions.
+        const storedRefreshToken = localStorage.getItem("auth.refreshToken");
+        if (storedRefreshToken) {
+          try {
+            const refreshResp = await apiRequest<{ access_token: string }>(
+              "/auth/refresh",
+              {
+                method: "POST",
+                body: JSON.stringify({ refresh_token: storedRefreshToken }),
+              },
+            );
+            if (refreshResp?.access_token) {
+              setAccessToken(refreshResp.access_token);
+            }
+          } catch {
+            // Refresh token expired/invalid — profile fetch below will 401 and clear state.
+          }
+        }
+
         // Fetch user profile — refreshes currentUserAtom with latest DB data
         // (picks up any permission/role/suspension changes made since last login)
         const profile = await apiRequest<User>("/users/profile", {
@@ -126,7 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className="layout">
       <Header
-        cartCount={getTotalItems()}
+        cartCount={cartCount}
         isDarkMode={isDarkMode}
         onDarkModeToggle={setIsDarkMode}
       />

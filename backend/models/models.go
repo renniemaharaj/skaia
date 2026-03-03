@@ -63,16 +63,18 @@ type StoreCategory struct {
 
 // Product represents a product in the store
 type Product struct {
-	ID          int64     `json:"id"`
-	CategoryID  int64     `json:"category_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Price       float64   `json:"price"`
-	ImageURL    string    `json:"image_url"`
-	Stock       int       `json:"stock"`
-	IsActive    bool      `json:"is_active"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID             int64     `json:"id"`
+	CategoryID     int64     `json:"category_id"`
+	Name           string    `json:"name"`
+	Description    string    `json:"description"`
+	Price          float64   `json:"price"`
+	ImageURL       string    `json:"image_url"`
+	Stock          int       `json:"stock"`
+	OriginalPrice  *float64  `json:"original_price,omitempty"`
+	StockUnlimited bool      `json:"stock_unlimited"`
+	IsActive       bool      `json:"is_active"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // CartItem represents an item in a user's cart
@@ -172,6 +174,49 @@ type ThreadComment struct {
 	CanEdit         bool      `json:"can_edit,omitempty"`
 	CanDelete       bool      `json:"can_delete,omitempty"`
 	CanLikeComments bool      `json:"can_like_comments,omitempty"`
+}
+
+// Payment tracks the payment-provider lifecycle for an order.
+// provider = "demo" for fully-simulated test payments; "stripe" for real Stripe charges.
+type Payment struct {
+	ID            int64     `json:"id"`
+	OrderID       int64     `json:"order_id"`
+	UserID        int64     `json:"user_id"`
+	Provider      string    `json:"provider"`
+	ProviderRef   string    `json:"provider_ref,omitempty"` // e.g. Stripe pi_xxx
+	Amount        float64   `json:"amount"`
+	Currency      string    `json:"currency"`
+	Status        string    `json:"status"` // pending | succeeded | failed | cancelled
+	FailureReason string    `json:"failure_reason,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// CheckoutRequest carries the items a user wants to purchase.
+type CheckoutRequest struct {
+	Items []CheckoutItem `json:"items"`
+	// Optional: Stripe PaymentMethod ID when using Stripe provider.
+	PaymentMethodID string `json:"payment_method_id,omitempty"`
+	// Currency defaults to "usd".
+	Currency string `json:"currency,omitempty"`
+}
+
+// CheckoutItem is a single line in a checkout request.
+type CheckoutItem struct {
+	ProductID int64   `json:"product_id"`
+	Quantity  int     `json:"quantity"`
+	Price     float64 `json:"price"` // server-side price authoritative; client sends what it knows
+}
+
+// CheckoutResponse is the result of a checkout call.
+type CheckoutResponse struct {
+	Order   *Order   `json:"order"`
+	Payment *Payment `json:"payment"`
+	// ClientSecret is set when provider = "stripe" and the intent needs
+	// additional client-side confirmation (e.g. 3DS).
+	ClientSecret string `json:"client_secret,omitempty"`
+	Status       string `json:"status"` // "succeeded" | "requires_action" | "failed"
+	Message      string `json:"message,omitempty"`
 }
 
 // ── Inbox ────────────────────────────────────────────────────────────────────

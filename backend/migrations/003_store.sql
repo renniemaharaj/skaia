@@ -12,9 +12,11 @@ CREATE TABLE IF NOT EXISTS products (
     name        VARCHAR(255)  NOT NULL,
     description TEXT,
     price       DECIMAL(10,2) NOT NULL,
-    image_url   TEXT,
-    stock       INT     DEFAULT 0,
-    is_active   BOOLEAN DEFAULT true,
+    image_url      TEXT,
+    stock          INT           DEFAULT 0,
+    original_price DECIMAL(10,2),
+    stock_unlimited BOOLEAN      DEFAULT false,
+    is_active      BOOLEAN       DEFAULT true,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

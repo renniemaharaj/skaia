@@ -1,5 +1,6 @@
 -- =============================================================================
 -- 008_seed.sql  –  Initial data (roles, permissions, admin account, forum seed)
+--                  Includes store permissions and payments table (was 011).
 -- =============================================================================
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
@@ -25,11 +26,15 @@ INSERT INTO permissions (id, name, category, description) VALUES
     (8,  'forum.thread-comment-delete', 'forum',    'Delete any thread comment'),
     (9,  'user.manage-others',          'user',     'Manage profile, permissions and roles of any user'),
     (10, 'user.suspend',                'user',     'Suspend or unsuspend any user'),
-    (11, 'presence.tp-here',            'presence', 'Teleport another user to your current page')
+    (11, 'presence.tp-here',            'presence', 'Teleport another user to your current page'),
+    (12, 'store.product-new',            'store',    'Create new store products'),
+    (13, 'store.product-delete',         'store',    'Delete store products'),
+    (14, 'store.product-edit',           'store',    'Edit existing store products'),
+    (15, 'store.manageCategories',       'store',    'Create, edit and delete store categories'),
+    (16, 'store.manageOrders',           'store',    'View and update the status of any order')
 ON CONFLICT DO NOTHING;
 
-SELECT setval(pg_get_serial_sequence('permissions', 'id'),
-              (SELECT COALESCE(MAX(id), 0) + 1 FROM permissions), false);
+SELECT setval(pg_get_serial_sequence('permissions', 'id'), 17, false);
 
 -- ── Role → permission assignments ─────────────────────────────────────────────
 -- member: can post threads and comments
@@ -88,6 +93,25 @@ ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('forum_categories', 'id'),
               (SELECT COALESCE(MAX(id), 0) + 1 FROM forum_categories), false);
+
+-- ── Payments table ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS payments (
+    id           BIGSERIAL     PRIMARY KEY,
+    order_id     BIGINT        NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    user_id      BIGINT        NOT NULL REFERENCES users(id)  ON DELETE CASCADE,
+    provider     VARCHAR(50)   NOT NULL DEFAULT 'demo',
+    provider_ref VARCHAR(255),
+    amount       DECIMAL(10,2) NOT NULL,
+    currency     VARCHAR(10)   NOT NULL DEFAULT 'usd',
+    status       VARCHAR(50)   NOT NULL DEFAULT 'pending',
+    failure_reason TEXT,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_user_id  ON payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status   ON payments(status);
 
 -- ── Welcome threads ───────────────────────────────────────────────────────────
 DO $$

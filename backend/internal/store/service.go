@@ -1,6 +1,9 @@
 package store
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/skaia/backend/models"
 )
 
@@ -10,17 +13,21 @@ type Service struct {
 	products   ProductRepository
 	cart       CartRepository
 	orders     OrderRepository
+	payments   PaymentRepository
 	cache      *ProductCache
+	provider   PaymentProvider
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, cache *ProductCache) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, cache *ProductCache, provider PaymentProvider) *Service {
 	return &Service{
 		categories: cats,
 		products:   products,
 		cart:       cart,
 		orders:     orders,
+		payments:   payments,
 		cache:      cache,
+		provider:   provider,
 	}
 }
 
@@ -126,4 +133,115 @@ func (s *Service) GetUserOrders(userID int64, limit, offset int) ([]*models.Orde
 
 func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
 	return s.orders.UpdateStatus(id, status)
+}
+
+// Checkout processes a purchase end-to-end:
+//  1. Resolve server-side prices (never trust client prices)
+//  2. Create the order record
+//  3. Delegate to the PaymentProvider
+//  4. Persist the payment record and update order status
+//  5. Clear the user's cart on success
+func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.CheckoutResponse, error) {
+	if len(req.Items) == 0 {
+		return nil, fmt.Errorf("no items in checkout request")
+	}
+
+	// Resolve authoritative prices from the DB
+	var orderItems []*models.OrderItem
+	var total float64
+	for _, item := range req.Items {
+		p, err := s.GetProduct(item.ProductID)
+		if err != nil {
+			return nil, fmt.Errorf("product %d not found", item.ProductID)
+		}
+		if !p.IsActive {
+			return nil, fmt.Errorf("product %q is not available", p.Name)
+		}
+		qty := item.Quantity
+		if qty <= 0 {
+			qty = 1
+		}
+		total += p.Price * float64(qty)
+		orderItems = append(orderItems, &models.OrderItem{
+			ProductID: p.ID,
+			Quantity:  qty,
+			Price:     p.Price,
+		})
+	}
+
+	// Create order in "pending" state
+	order, err := s.orders.Create(&models.Order{
+		UserID:     userID,
+		TotalPrice: total,
+		Status:     "pending",
+	}, orderItems)
+	if err != nil {
+		return nil, fmt.Errorf("create order: %w", err)
+	}
+
+	// Charge via provider
+	providerRef, payStatus, clientSecret, chargeErr := s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
+	if chargeErr != nil {
+		payStatus = "failed"
+	}
+
+	failureReason := ""
+	if chargeErr != nil {
+		failureReason = chargeErr.Error()
+	}
+
+	// Persist payment record
+	payment, err := s.payments.Create(&models.Payment{
+		OrderID:       order.ID,
+		UserID:        userID,
+		Provider:      providerOfEnv(),
+		ProviderRef:   providerRef,
+		Amount:        total,
+		Currency:      req.Currency,
+		Status:        payStatus,
+		FailureReason: failureReason,
+	})
+	if err != nil {
+		// Non-fatal: log but still return the result
+		_ = err
+	}
+
+	// Update order status to match payment outcome
+	orderStatus := "completed"
+	if payStatus != "succeeded" {
+		orderStatus = "failed"
+	}
+	updatedOrder, _ := s.orders.UpdateStatus(order.ID, orderStatus)
+	if updatedOrder != nil {
+		order = updatedOrder
+	}
+
+	// Clear cart only on success
+	if payStatus == "succeeded" {
+		_ = s.cart.ClearCart(userID)
+	}
+
+	resp := &models.CheckoutResponse{
+		Order:        order,
+		Payment:      payment,
+		ClientSecret: clientSecret,
+		Status:       payStatus,
+	}
+	if payStatus == "succeeded" {
+		resp.Message = "Payment successful"
+	} else {
+		resp.Message = "Payment failed"
+		if failureReason != "" {
+			resp.Message = failureReason
+		}
+	}
+	return resp, nil
+}
+
+// providerOfEnv returns the configured provider name.
+func providerOfEnv() string {
+	if p := os.Getenv("PAYMENT_PROVIDER"); p != "" {
+		return p
+	}
+	return "demo"
 }

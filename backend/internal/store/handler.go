@@ -7,17 +7,19 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
 // Handler exposes all store HTTP endpoints.
 type Handler struct {
 	svc *Service
+	hub *ws.Hub
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, hub *ws.Hub) *Handler {
+	return &Handler{svc: svc, hub: hub}
 }
 
 // Mount registers all store routes on r.
@@ -47,6 +49,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/cart/remove", h.removeFromCart)
 		r.With(jwt).Delete("/cart", h.clearCart)
 
+		// Checkout (payment) — all payment logic is backend-only
+		r.With(jwt).Post("/checkout", h.checkout)
+
 		// Order routes
 		r.With(jwt).Post("/orders", h.createOrder)
 		r.With(jwt).Get("/orders", h.listOrders)
@@ -56,6 +61,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Legacy cart/purchase aliases kept for backwards compatibility
 		r.With(jwt).Post("/cart/purchase", h.createOrder)
 		r.With(jwt).Post("/purchase", h.createOrder)
+
+		// Checkout (payment) — all payment logic is backend-only
+		r.With(jwt).Post("/checkout", h.checkout)
 	})
 }
 
@@ -113,6 +121,9 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "failed to create category")
 		return
 	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(cat, "category_created")
+	}
 	WriteJSON(w, http.StatusCreated, cat)
 }
 
@@ -146,6 +157,9 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "failed to update category")
 		return
 	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(cat, "category_updated")
+	}
 	WriteJSON(w, http.StatusOK, cat)
 }
 
@@ -163,6 +177,9 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.DeleteCategory(id); err != nil {
 		WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
+	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "category_deleted")
 	}
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
@@ -238,43 +255,48 @@ func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageProducts") {
+	if !ok || !HasClaim(claims, "store.product-new") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 	var req struct {
-		CategoryID  int64   `json:"category_id"`
-		Name        string  `json:"name"`
-		Description string  `json:"description"`
-		Price       float64 `json:"price"`
-		ImageURL    string  `json:"image_url"`
-		Stock       int     `json:"stock"`
-		IsActive    bool    `json:"is_active"`
+		CategoryID     int64   `json:"category_id"`
+		Name           string  `json:"name"`
+		Description    string  `json:"description"`
+		Price          float64 `json:"price"`
+		ImageURL       string  `json:"image_url"`
+		Stock          int     `json:"stock"`
+		StockUnlimited bool    `json:"stock_unlimited"`
+		IsActive       bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	p, err := h.svc.CreateProduct(&models.Product{
-		CategoryID:  req.CategoryID,
-		Name:        req.Name,
-		Description: req.Description,
-		Price:       req.Price,
-		ImageURL:    req.ImageURL,
-		Stock:       req.Stock,
-		IsActive:    req.IsActive,
+		CategoryID:     req.CategoryID,
+		Name:           req.Name,
+		Description:    req.Description,
+		Price:          req.Price,
+		ImageURL:       req.ImageURL,
+		Stock:          req.Stock,
+		StockUnlimited: req.StockUnlimited,
+		IsActive:       req.IsActive,
 	})
 	if err != nil {
 		log.Printf("store.createProduct: %v", err)
 		WriteError(w, http.StatusInternalServerError, "failed to create product")
 		return
 	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(p, "product_created")
+	}
 	WriteJSON(w, http.StatusCreated, p)
 }
 
 func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageProducts") {
+	if !ok || !HasClaim(claims, "store.product-edit") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -289,13 +311,14 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		CategoryID  *int64   `json:"category_id"`
-		Name        *string  `json:"name"`
-		Description *string  `json:"description"`
-		Price       *float64 `json:"price"`
-		ImageURL    *string  `json:"image_url"`
-		Stock       *int     `json:"stock"`
-		IsActive    *bool    `json:"is_active"`
+		CategoryID     *int64   `json:"category_id"`
+		Name           *string  `json:"name"`
+		Description    *string  `json:"description"`
+		Price          *float64 `json:"price"`
+		ImageURL       *string  `json:"image_url"`
+		Stock          *int     `json:"stock"`
+		StockUnlimited *bool    `json:"stock_unlimited"`
+		IsActive       *bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -311,13 +334,25 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		existing.Description = *req.Description
 	}
 	if req.Price != nil {
-		existing.Price = *req.Price
+		newPrice := *req.Price
+		if newPrice < existing.Price {
+			// Price dropped — record old price as original_price for strike-through display
+			old := existing.Price
+			existing.OriginalPrice = &old
+		} else if newPrice > existing.Price {
+			// Price went up or reset — clear strike-through
+			existing.OriginalPrice = nil
+		}
+		existing.Price = newPrice
 	}
 	if req.ImageURL != nil {
 		existing.ImageURL = *req.ImageURL
 	}
 	if req.Stock != nil {
 		existing.Stock = *req.Stock
+	}
+	if req.StockUnlimited != nil {
+		existing.StockUnlimited = *req.StockUnlimited
 	}
 	if req.IsActive != nil {
 		existing.IsActive = *req.IsActive
@@ -327,12 +362,15 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusInternalServerError, "failed to update product")
 		return
 	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(updated, "product_updated")
+	}
 	WriteJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageProducts") {
+	if !ok || !HasClaim(claims, "store.product-delete") {
 		WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -344,6 +382,9 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	if err := h.svc.DeleteProduct(id); err != nil {
 		WriteError(w, http.StatusInternalServerError, "failed to delete product")
 		return
+	}
+	if h.hub != nil {
+		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "product_deleted")
 	}
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
@@ -563,4 +604,56 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	WriteJSON(w, http.StatusOK, order)
+}
+
+// ── Checkout handler ──────────────────────────────────────────────────────────
+// All payment logic is server-side only. The client submits items and receives
+// a CheckoutResponse. The actual charge happens via the PaymentProvider abstraction.
+
+func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
+	claims, ok := ClaimsFromCtx(r)
+	if !ok {
+		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req models.CheckoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
+		WriteError(w, http.StatusBadRequest, "items required")
+		return
+	}
+	if req.Currency == "" {
+		req.Currency = "usd"
+	}
+
+	resp, err := h.svc.Checkout(claims.UserID, &req)
+	if err != nil {
+		log.Printf("store.checkout: %v", err)
+		WriteError(w, http.StatusInternalServerError, "checkout failed")
+		return
+	}
+
+	// Notify only the purchasing user of the outcome via WebSocket
+	if h.hub != nil {
+		action := "purchase_success"
+		if resp.Status == "failed" {
+			action = "purchase_failure"
+		}
+		h.hub.SendToUser(claims.UserID, buildStoreMsg(action, resp))
+	}
+
+	httpStatus := http.StatusCreated
+	if resp.Status == "failed" {
+		httpStatus = http.StatusPaymentRequired
+	}
+	WriteJSON(w, httpStatus, resp)
+}
+
+// buildStoreMsg creates a store:update WebSocket message for delivery to a specific user.
+func buildStoreMsg(action string, data interface{}) *ws.Message {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	return &ws.Message{Type: ws.StoreUpdate, Payload: payload}
 }

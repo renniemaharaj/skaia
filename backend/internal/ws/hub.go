@@ -414,6 +414,27 @@ func (h *Hub) PropagateInboxConversation(conversationID int64, data interface{},
 	h.propagate("inbox_conversation", conversationID, InboxUpdate, action, data)
 }
 
+// PropagateStoreProduct sends a store product event to all clients subscribed to that product.
+func (h *Hub) PropagateStoreProduct(productID int64, data interface{}, action string) {
+	h.propagate("store_product", productID, StoreUpdate, action, data)
+}
+
+// PropagateStoreCategory sends a store category event to all clients subscribed to that category.
+func (h *Hub) PropagateStoreCategory(categoryID int64, data interface{}, action string) {
+	h.propagate("store_category", categoryID, StoreUpdate, action, data)
+}
+
+// BroadcastStoreCatalog broadcasts a store catalog change to every connected client.
+// Used for events that all clients should react to (e.g. product created/deleted).
+func (h *Hub) BroadcastStoreCatalog(data interface{}, action string) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	msg := &Message{Type: StoreUpdate, Payload: payload}
+	h.Broadcast(msg)
+}
+
 // propagate is the shared implementation used by all Propagate* helpers.
 func (h *Hub) propagate(resourceType string, resourceID int64, msgType MessageType, action string, data interface{}) {
 	h.mu.RLock()

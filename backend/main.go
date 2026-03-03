@@ -150,8 +150,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	storeProdRepo := istore.NewProductRepository(db)
 	storeCartRepo := istore.NewCartRepository(db)
 	storeOrdRepo := istore.NewOrderRepository(db)
+	storePayRepo := istore.NewPaymentRepository(db)
 	storeCache := istore.NewProductCache()
-	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storeCache)
+	storeProv := istore.NewPaymentProvider()
+	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storeCache, storeProv)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -180,7 +182,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iforum.NewHandler(forumSvc, hub, notifSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	istore.NewHandler(storeSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	istore.NewHandler(storeSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
 
 	inotif.NewHandler(notifSvc).Mount(r, imw.JWTAuthMiddleware)

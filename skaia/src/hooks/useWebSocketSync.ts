@@ -34,6 +34,15 @@ import {
   type AppNotification,
 } from "../atoms/notifications";
 
+import {
+  productsAtom,
+  productCategoriesAtom,
+  storeCartItemsAtom,
+  type Product,
+  type StoreCategory,
+  type CheckoutResponse,
+} from "../atoms/store";
+
 interface WebSocketMessage {
   type: string;
   payload: {
@@ -105,6 +114,11 @@ export const useWebSocketSync = () => {
 
   // ── Notifications ────────────────────────────────────────────────────────
   const setNotifications = useSetAtom(notificationsAtom);
+
+  // ── Store ─────────────────────────────────────────────────────────────────
+  const setProducts = useSetAtom(productsAtom);
+  const setStoreCategories = useSetAtom(productCategoriesAtom);
+  const setStoreCartItems = useSetAtom(storeCartItemsAtom);
 
   const setupWebSocket = useCallback(() => {
     // Global singleton guard — only one WS connection per browser context.
@@ -565,6 +579,69 @@ export const useWebSocketSync = () => {
             setInboxUnreadCount((prev) => prev + 1);
           }
 
+          // ── Store ─────────────────────────────────────────────────────────
+          if (message.type === "store:update") {
+            const { action, data } = payload as { action: string; data?: any };
+
+            if (action === "category_created" && data) {
+              setStoreCategories((prev) => {
+                if (prev.some((c) => String(c.id) === String(data.id)))
+                  return prev;
+                return [...prev, data as StoreCategory];
+              });
+            }
+            if (action === "category_updated" && data) {
+              setStoreCategories((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(data.id) ? { ...c, ...data } : c,
+                ),
+              );
+            }
+            if (action === "category_deleted" && data?.id) {
+              setStoreCategories((prev) =>
+                prev.filter((c) => String(c.id) !== String(data.id)),
+              );
+            }
+
+            if (action === "product_created" && data) {
+              setProducts((prev) => {
+                if (prev.some((p) => String(p.id) === String(data.id)))
+                  return prev;
+                return [...prev, data as Product];
+              });
+            }
+            if (action === "product_updated" && data) {
+              setProducts((prev) =>
+                prev.map((p) =>
+                  String(p.id) === String(data.id) ? { ...p, ...data } : p,
+                ),
+              );
+            }
+            if (action === "product_deleted" && data?.id) {
+              setProducts((prev) =>
+                prev.filter((p) => String(p.id) !== String(data.id)),
+              );
+            }
+
+            // Purchase outcomes — targeted at the purchasing user only
+            if (action === "purchase_success") {
+              const resp = data as CheckoutResponse;
+              toast.success("Payment successful!", {
+                description: `Order #${resp?.order?.id} — $${resp?.order?.total_price?.toFixed(2)}`,
+                duration: 8000,
+              });
+              // Clear local cart after backend confirms success
+              setStoreCartItems([]);
+            }
+            if (action === "purchase_failure") {
+              const resp = data as CheckoutResponse;
+              toast.error("Payment failed", {
+                description: resp?.message ?? "Please try again.",
+                duration: 8000,
+              });
+            }
+          }
+
           // ── Notifications ─────────────────────────────────────────────────
           if (message.type === "notification") {
             const notif = payload as AppNotification;
@@ -625,6 +702,9 @@ export const useWebSocketSync = () => {
     setInboxConversations,
     setInboxUnreadCount,
     setNotifications,
+    setProducts,
+    setStoreCategories,
+    setStoreCartItems,
     wsUrl,
   ]);
 
