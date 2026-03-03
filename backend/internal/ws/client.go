@@ -11,10 +11,11 @@ import (
 
 // Client represents a single WebSocket connection managed by the Hub.
 type Client struct {
-	Hub    *Hub
-	Conn   *websocket.Conn
-	Send   chan *Message
-	UserID int64
+	Hub      *Hub
+	Conn     *websocket.Conn
+	Send     chan *Message
+	ClientID int64 // unique per connection, assigned by Hub at registration
+	UserID   int64
 	// Presence fields — written only from Hub.Run via presenceUpdates channel.
 	Route    string
 	UserName string
@@ -45,6 +46,8 @@ func (c *Client) ReadPump() {
 			c.handleUnsubscribe(msg)
 		case Presence:
 			c.handlePresence(msg)
+		case Tp:
+			c.handleTp(msg)
 		case Ping:
 			// nothing — client keepalive only
 		default:
@@ -121,6 +124,26 @@ func (c *Client) handlePresence(msg Message) {
 	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar}:
 	default:
 	}
+}
+
+// handleTp forwards a teleport request to the hub for targeted routing.
+func (c *Client) handleTp(msg Message) {
+	// Only authenticated users may send tp messages.
+	if c.UserID == 0 {
+		return
+	}
+	type tpPayload struct {
+		TargetUserID int64  `json:"target_user_id"`
+		Route        string `json:"route"`
+	}
+	var p tpPayload
+	if err := json.Unmarshal(msg.Payload, &p); err != nil {
+		return
+	}
+	if p.Route == "" || p.TargetUserID == 0 {
+		return
+	}
+	c.Hub.SendTeleport(p.TargetUserID, p.Route)
 }
 
 // subscriptionKey returns the canonical map key for a resource subscription.

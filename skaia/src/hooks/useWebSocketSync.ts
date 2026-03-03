@@ -6,9 +6,16 @@ import {
   currentThreadAtom,
   threadCommentsAtom,
 } from "../atoms/forum";
-import { socketAtom, currentUserAtom } from "../atoms/auth";
+import {
+  socketAtom,
+  currentUserAtom,
+  accessTokenAtom,
+  refreshTokenAtom,
+  isAuthenticatedAtom,
+  type User,
+} from "../atoms/auth";
 import { wsBaseUrlAtom } from "../atoms/config";
-import { onlineUsersAtom } from "../atoms/presence";
+import { onlineUsersAtom, pendingTpRouteAtom } from "../atoms/presence";
 
 interface WebSocketMessage {
   type: string;
@@ -20,17 +27,28 @@ interface WebSocketMessage {
 }
 
 /**
+ * Module-level singleton — shared across every hook instance in the same JS context.
+ * Prevents multiple concurrent WebSocket connections when the hook is called from
+ * both Layout and a page-level component at the same time.
+ */
+let _globalWs: WebSocket | null = null;
+let _globalConnecting = false;
+
+/**
  * Hook to manage resource subscriptions and listen for backend propagated changes
  * When the backend changes a resource, it propagates only to clients that have viewed it
  */
 export const useWebSocketSync = () => {
-  const wsRef = useRef<WebSocket | null>(null);
   const setForumCategories = useSetAtom(forumCategoriesAtom);
   const setCurrentThread = useSetAtom(currentThreadAtom);
   const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
   const setOnlineUsers = useSetAtom(onlineUsersAtom);
-  const connectingRef = useRef(false);
+  const setPendingTpRoute = useSetAtom(pendingTpRouteAtom);
+  const setCurrentUser = useSetAtom(currentUserAtom);
+  const setAccessToken = useSetAtom(accessTokenAtom);
+  const setRefreshToken = useSetAtom(refreshTokenAtom);
+  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
   const wsUrl = useAtomValue(wsBaseUrlAtom);
   // Tracks all active subscriptions so they can be replayed on reconnect
   const subscriptionsRef = useRef<Set<string>>(new Set());
@@ -42,26 +60,22 @@ export const useWebSocketSync = () => {
   currentUserPermissionsRef.current = currentUser?.permissions ?? null;
 
   const setupWebSocket = useCallback(() => {
-    // Prevent multiple simultaneous connection attempts
-    if (connectingRef.current) {
+    // Global singleton guard — only one WS connection per browser context.
+    if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
+      return;
+    }
+    if (_globalConnecting) {
       console.log("[setupWebSocket] Connection already in progress, skipping");
       return;
     }
-
-    // Don't reconnect if already connected
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log("[setupWebSocket] Already connected, skipping");
-      return;
-    }
-
-    connectingRef.current = true;
-
+    _globalConnecting = true;
     try {
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        connectingRef.current = false;
+        _globalConnecting = false;
         console.log("WebSocket connected for change propagation");
+        _globalWs = ws;
         setSocket(ws);
 
         // Re-subscribe to all tracked resources after (re)connect
@@ -87,10 +101,32 @@ export const useWebSocketSync = () => {
               : message.payload;
 
           // Handle user update propagation
-          if (message.type === "user:update") {
-            const { action, id } = payload;
-            console.log(`Received user update: ${action} for user ${id}`);
-            // Update user atom if needed (implement custom hook for users)
+          if (message.type === "user:update" && payload?.data?.user) {
+            const updatedUser = payload.data.user as User;
+            const newToken = payload.data.new_token as string | undefined;
+
+            // Notify profile pages displaying this user
+            window.dispatchEvent(
+              new CustomEvent("user:profile:updated", {
+                detail: { userId: String(updatedUser.id), user: updatedUser },
+              }),
+            );
+
+            // Apply session changes if this is the logged-in user
+            const rawCurrent = localStorage.getItem("auth.user");
+            const currentId = rawCurrent
+              ? (JSON.parse(rawCurrent) as User)?.id
+              : null;
+            if (currentId && String(updatedUser.id) === String(currentId)) {
+              setCurrentUser(updatedUser);
+              if (newToken) setAccessToken(newToken);
+              if (updatedUser.is_suspended) {
+                setAccessToken(null);
+                setRefreshToken(null);
+                setCurrentUser(null);
+                setIsAuthenticated(false);
+              }
+            }
           }
 
           // Handle presence update
@@ -98,6 +134,14 @@ export const useWebSocketSync = () => {
             const { users } = payload;
             if (Array.isArray(users)) {
               setOnlineUsers(users);
+            }
+          }
+
+          // Handle incoming teleport request — navigate this client to the given route
+          if (message.type === "tp") {
+            const route = payload?.route;
+            if (typeof route === "string" && route) {
+              setPendingTpRoute(route);
             }
           }
 
@@ -370,12 +414,13 @@ export const useWebSocketSync = () => {
       };
 
       ws.onerror = (error) => {
-        connectingRef.current = false;
+        _globalConnecting = false;
         console.error("WebSocket error:", error);
       };
 
       ws.onclose = () => {
-        connectingRef.current = false;
+        _globalConnecting = false;
+        _globalWs = null;
         console.log("WebSocket disconnected");
         setSocket(null);
         // Attempt to reconnect after 3 seconds
@@ -383,17 +428,25 @@ export const useWebSocketSync = () => {
           setupWebSocket();
         }, 3000);
       };
-
-      wsRef.current = ws;
     } catch (error) {
-      connectingRef.current = false;
+      _globalConnecting = false;
       console.error("WebSocket connection error:", error);
       // Retry connection
       setTimeout(() => {
         setupWebSocket();
       }, 3000);
     }
-  }, [setForumCategories, setCurrentThread, setSocket, setOnlineUsers, wsUrl]);
+  }, [
+    setForumCategories,
+    setCurrentThread,
+    setSocket,
+    setOnlineUsers,
+    setCurrentUser,
+    setAccessToken,
+    setRefreshToken,
+    setIsAuthenticated,
+    wsUrl,
+  ]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates
@@ -405,15 +458,15 @@ export const useWebSocketSync = () => {
       // Always track so reconnects can replay this subscription
       subscriptionsRef.current.add(key);
 
-      if (!wsRef.current) {
+      if (!_globalWs) {
         console.warn(
           `[subscribe] WebSocket not initialized for ${key}, queued for reconnect`,
         );
         return;
       }
-      if (wsRef.current.readyState !== WebSocket.OPEN) {
+      if (_globalWs.readyState !== WebSocket.OPEN) {
         console.warn(
-          `[subscribe] WebSocket not OPEN (state=${wsRef.current.readyState}) for ${key}, queued for reconnect`,
+          `[subscribe] WebSocket not OPEN (state=${_globalWs.readyState}) for ${key}, queued for reconnect`,
         );
         return;
       }
@@ -424,7 +477,7 @@ export const useWebSocketSync = () => {
           resource_id: resourceId,
         },
       };
-      wsRef.current.send(JSON.stringify(subscription));
+      _globalWs.send(JSON.stringify(subscription));
       console.log(
         `[subscribe] Sent subscribe message for ${key}`,
         subscription,
@@ -441,7 +494,7 @@ export const useWebSocketSync = () => {
       const key = `${resourceType}:${resourceId}`;
       subscriptionsRef.current.delete(key);
 
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
         const unsubscription = {
           type: "unsubscribe",
           payload: {
@@ -449,7 +502,7 @@ export const useWebSocketSync = () => {
             resource_id: resourceId,
           },
         };
-        wsRef.current.send(JSON.stringify(unsubscription));
+        _globalWs.send(JSON.stringify(unsubscription));
         console.log(`Unsubscribed from ${key}`);
       }
     },
@@ -462,21 +515,17 @@ export const useWebSocketSync = () => {
 
     // Heartbeat: keep the connection alive and detect silent drops
     const heartbeatInterval = setInterval(() => {
-      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: "ping" }));
-      } else if (
-        !wsRef.current ||
-        wsRef.current.readyState === WebSocket.CLOSED
-      ) {
+      if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
+        _globalWs.send(JSON.stringify({ type: "ping" }));
+      } else if (!_globalWs || _globalWs.readyState === WebSocket.CLOSED) {
         setupWebSocket();
       }
     }, 30000);
 
     return () => {
       clearInterval(heartbeatInterval);
-      if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-        wsRef.current.close();
-      }
+      // Do NOT close the global socket here — other mounted instances still need it.
+      // The socket is closed via onclose/reconnect logic or page unload.
     };
   }, []);
 

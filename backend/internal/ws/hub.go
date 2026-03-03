@@ -15,6 +15,12 @@ type ClientPresence struct {
 	Avatar   string
 }
 
+// TeleportRequest asks the hub to forward a tp message to a specific user.
+type TeleportRequest struct {
+	TargetUserID int64  // positive for authenticated users, negative (presence ID) for guests
+	Route        string // route the target should navigate to
+}
+
 // Hub manages WebSocket connections and resource subscriptions.
 // All channel operations are serialised through Run; field access outside
 // Run is protected by mu.
@@ -27,6 +33,8 @@ type Hub struct {
 	subscribe       chan ResourceSubscription
 	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
+	teleport        chan TeleportRequest
+	nextClientID    int64 // monotonic counter, incremented only in Run
 	mu              sync.RWMutex
 }
 
@@ -41,11 +49,15 @@ func NewHub() *Hub {
 		subscribe:       make(chan ResourceSubscription, 256),
 		unsubscribe:     make(chan ResourceSubscription, 256),
 		presenceUpdates: make(chan ClientPresence, 256),
+		teleport:        make(chan TeleportRequest, 256),
 	}
 }
 
 // clientLabel returns a human-readable string for a Client suitable for log output.
 func clientLabel(c *Client) string {
+	if c.UserID == 0 {
+		return fmt.Sprintf("guest (conn=%d)", c.ClientID)
+	}
 	if c.UserName != "" {
 		return fmt.Sprintf("%q (id=%d)", c.UserName, c.UserID)
 	}
@@ -73,6 +85,8 @@ func (h *Hub) Run() {
 			cp.Client.UserName = cp.UserName
 			cp.Client.Avatar = cp.Avatar
 			h.doPresenceBroadcast()
+		case req := <-h.teleport:
+			h.handleTeleport(req)
 		}
 	}
 }
@@ -80,6 +94,8 @@ func (h *Hub) Run() {
 // ── Run case handlers ────────────────────────────────────────────────────────
 
 func (h *Hub) handleRegister(client *Client) {
+	h.nextClientID++
+	client.ClientID = h.nextClientID
 	h.mu.Lock()
 	h.clients[client] = true
 	h.mu.Unlock()
@@ -167,19 +183,25 @@ func (h *Hub) handleBroadcast(msg *Message) {
 // connected client. Must only be called from the Run goroutine.
 func (h *Hub) doPresenceBroadcast() {
 	h.mu.RLock()
-	// Deduplicate by UserID — if the same user has multiple connections
-	// (e.g. tab reload before old socket closes) keep the one with a name.
+	// Authenticated users: deduplicate by UserID, prefer entry with a name.
+	// Guests: each connection is unique — use a negative ClientID as their presence ID.
 	seen := make(map[int64]PresenceUser)
 	for client := range h.clients {
+		var presenceID int64
+		if client.UserID == 0 {
+			presenceID = -client.ClientID // unique negative ID per guest connection
+		} else {
+			presenceID = client.UserID
+		}
 		pu := PresenceUser{
-			UserID:   client.UserID,
+			UserID:   presenceID,
 			UserName: client.UserName,
 			Avatar:   client.Avatar,
 			Route:    client.Route,
 		}
-		existing, ok := seen[client.UserID]
+		existing, ok := seen[presenceID]
 		if !ok || (pu.UserName != "" && existing.UserName == "") {
-			seen[client.UserID] = pu
+			seen[presenceID] = pu
 		}
 	}
 	users := make([]PresenceUser, 0, len(seen))
@@ -209,6 +231,32 @@ func (h *Hub) doPresenceBroadcast() {
 	}
 }
 
+// handleTeleport routes a tp message to every connection matching TargetUserID.
+// For authenticated users TargetUserID == UserID; for guests it equals -ClientID.
+func (h *Hub) handleTeleport(req TeleportRequest) {
+	payload, _ := json.Marshal(map[string]interface{}{"route": req.Route})
+	msg := &Message{Type: Tp, Payload: payload}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for client := range h.clients {
+		var presenceID int64
+		if client.UserID == 0 {
+			presenceID = -client.ClientID
+		} else {
+			presenceID = client.UserID
+		}
+		if presenceID == req.TargetUserID {
+			select {
+			case client.Send <- msg:
+			default:
+				log.Printf("ws: tp send buffer full for userID=%d", client.UserID)
+			}
+		}
+	}
+}
+
 // ── Public API ───────────────────────────────────────────────────────────────
 
 // Broadcast enqueues a message for delivery to all connected clients.
@@ -217,6 +265,15 @@ func (h *Hub) Broadcast(msg *Message) {
 	case h.broadcast <- msg:
 	default:
 		log.Println("ws: broadcast channel full, message dropped")
+	}
+}
+
+// SendTeleport enqueues a teleport request so the hub routes it to the target.
+func (h *Hub) SendTeleport(targetUserID int64, route string) {
+	select {
+	case h.teleport <- TeleportRequest{TargetUserID: targetUserID, Route: route}:
+	default:
+		log.Println("ws: teleport channel full, request dropped")
 	}
 }
 

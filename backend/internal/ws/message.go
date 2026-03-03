@@ -22,6 +22,7 @@ const (
 	Ping         MessageType = "ping"
 	Presence     MessageType = "presence"        // client → server: announce route
 	PresenceSync MessageType = "presence:update" // server → client: online list
+	Tp           MessageType = "tp"              // client → server → target: teleport request
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.

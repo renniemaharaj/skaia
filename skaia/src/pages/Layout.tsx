@@ -1,8 +1,9 @@
 import { type ReactNode } from "react";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import {
   accessTokenAtom,
@@ -11,11 +12,12 @@ import {
   isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
-import { wsBaseUrlAtom } from "../atoms/config";
+import { pendingTpRouteAtom } from "../atoms/presence";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 import { usePresence } from "../hooks/usePresence";
+import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import PresencePanel from "../components/PresencePanel";
 
 interface LayoutProps {
@@ -32,8 +34,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
 
   usePresence();
-  const wsRef = useRef<WebSocket | null>(null);
+  const { subscribe } = useWebSocketSync();
   const { getTotalItems } = useCart();
+  const navigate = useNavigate();
+  const pendingTpRoute = useAtomValue(pendingTpRouteAtom);
+  const clearTpRoute = useSetAtom(pendingTpRouteAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
@@ -62,18 +67,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         if (profile) {
           setCurrentUser(profile);
           setIsAuthenticated(true);
-          // After we know the user's ID, subscribe to their WS channel so
-          // real-time session updates (permissions, roles, suspension) arrive.
+          // Subscribe to own user channel via the shared WS so real-time
+          // session updates (permissions, roles, suspension) arrive.
           const id = Number(profile.id);
-          if (id && wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(
-              JSON.stringify({
-                type: "subscribe",
-                user_id: id,
-                payload: { resource_type: "user", resource_id: id },
-              }),
-            );
-          }
+          if (id) subscribe("user", id);
         }
       } catch {
         // Any error (401 from apiRequest already cleared localStorage; handle atom state here)
@@ -85,7 +82,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
 
     validateSession();
-  }, []); // Run once on mount
+  }, [subscribe]); // Re-run if subscribe identity changes (i.e. after socket reconnect)
 
   // Listen for unauthorized (401) errors and logout
   useEffect(() => {
@@ -106,105 +103,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, [setAccessToken, setRefreshToken, setCurrentUser, setIsAuthenticated]);
 
-  const wsUrl = useAtomValue(wsBaseUrlAtom);
-
-  // Initialize WebSocket connection
-  useEffect(() => {
-    try {
-      wsRef.current = new WebSocket(wsUrl);
-
-      wsRef.current.onopen = () => {
-        console.log("Connected to WebSocket");
-        // Subscribe to own user channel for real-time session updates
-        const rawUser = localStorage.getItem("auth.user");
-        if (rawUser) {
-          try {
-            const user = JSON.parse(rawUser) as User;
-            const id = Number(user?.id);
-            if (id) {
-              wsRef.current?.send(
-                JSON.stringify({
-                  type: "subscribe",
-                  user_id: id,
-                  payload: { resource_type: "user", resource_id: id },
-                }),
-              );
-            }
-          } catch {
-            // ignore parse errors
-          }
-        }
-      };
-
-      wsRef.current.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data as string) as {
-            type: string;
-            payload?: {
-              action?: string;
-              id?: number;
-              data?: { user?: User; new_token?: string };
-            };
-          };
-
-          if (msg.type === "user:update" && msg.payload?.data?.user) {
-            const updatedUser = msg.payload.data.user;
-            const newToken = msg.payload.data.new_token;
-
-            // Notify components displaying this user's profile (e.g. UserProfile page)
-            window.dispatchEvent(
-              new CustomEvent("user:profile:updated", {
-                detail: { userId: String(updatedUser.id), user: updatedUser },
-              }),
-            );
-
-            // If this update is for the currently logged-in user, refresh session
-            const rawCurrent = localStorage.getItem("auth.user");
-            const currentId = rawCurrent
-              ? (JSON.parse(rawCurrent) as User)?.id
-              : null;
-            if (currentId && String(updatedUser.id) === String(currentId)) {
-              setCurrentUser(updatedUser);
-              if (newToken) {
-                setAccessToken(newToken);
-              }
-              // If the user just got suspended, force logout
-              if (updatedUser.is_suspended) {
-                setAccessToken(null);
-                setRefreshToken(null);
-                setCurrentUser(null);
-                setIsAuthenticated(false);
-              }
-            }
-          }
-        } catch {
-          // non-JSON or unexpected shape — ignore
-        }
-      };
-
-      wsRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
-
-      wsRef.current.onclose = () => {
-        console.log("Disconnected from WebSocket");
-      };
-    } catch (error) {
-      console.error("WebSocket connection error:", error);
-    }
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
   useEffect(() => {
     if (!isPending) {
       document.documentElement.scrollTo(0, 0);
     }
   }, [isPending, path]);
+
+  // Consume pending teleport route set by an incoming "tp" WS message.
+  useEffect(() => {
+    if (pendingTpRoute) {
+      navigate(pendingTpRoute);
+      clearTpRoute(null);
+    }
+  }, [pendingTpRoute, navigate, clearTpRoute]);
 
   return (
     <div className="layout">

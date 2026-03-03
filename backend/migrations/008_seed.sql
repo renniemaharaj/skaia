@@ -4,9 +4,10 @@
 
 -- ── Roles ─────────────────────────────────────────────────────────────────────
 INSERT INTO roles (id, name, description) VALUES
-    (1, 'admin',  'Administrator with full access'),
-    (2, 'member', 'Regular member'),
-    (3, 'banned', 'Banned user')
+    (1, 'admin',     'Administrator with full access'),
+    (2, 'member',    'Regular member'),
+    (3, 'banned',    'Banned user'),
+    (4, 'moderator', 'Can moderate forum content and manage users')
 ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('roles', 'id'),
@@ -14,16 +15,17 @@ SELECT setval(pg_get_serial_sequence('roles', 'id'),
 
 -- ── Permissions ───────────────────────────────────────────────────────────────
 INSERT INTO permissions (id, name, category, description) VALUES
-    (1,  'forum.thread-new',            'forum', 'Create a thread in any category'),
-    (2,  'forum.thread-delete',         'forum', 'Delete a forum thread of any user'),
-    (3,  'forum.thread-edit',           'forum', 'Edit a forum thread of any user'),
-    (4,  'forum.category-new',          'forum', 'Create a new forum category'),
-    (5,  'forum.category-delete',       'forum', 'Delete any forum category'),
-    (6,  'forum.category-edit',         'forum', 'Edit any forum category'),
-    (7,  'forum.thread-comment-new',    'forum', 'Create a comment on any thread'),
-    (8,  'forum.thread-comment-delete', 'forum', 'Delete any thread comment'),
-    (9,  'user.manage-others',          'user',  'Manage profile, permissions and roles of any user'),
-    (10, 'user.suspend',                'user',  'Suspend or unsuspend any user')
+    (1,  'forum.thread-new',            'forum',    'Create a thread in any category'),
+    (2,  'forum.thread-delete',         'forum',    'Delete a forum thread of any user'),
+    (3,  'forum.thread-edit',           'forum',    'Edit a forum thread of any user'),
+    (4,  'forum.category-new',          'forum',    'Create a new forum category'),
+    (5,  'forum.category-delete',       'forum',    'Delete any forum category'),
+    (6,  'forum.category-edit',         'forum',    'Edit any forum category'),
+    (7,  'forum.thread-comment-new',    'forum',    'Create a comment on any thread'),
+    (8,  'forum.thread-comment-delete', 'forum',    'Delete any thread comment'),
+    (9,  'user.manage-others',          'user',     'Manage profile, permissions and roles of any user'),
+    (10, 'user.suspend',                'user',     'Suspend or unsuspend any user'),
+    (11, 'presence.tp-here',            'presence', 'Teleport another user to your current page')
 ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('permissions', 'id'),
@@ -34,6 +36,16 @@ SELECT setval(pg_get_serial_sequence('permissions', 'id'),
 INSERT INTO role_permissions (role_id, permission_id) VALUES
     (2, 1),   -- forum.thread-new
     (2, 7)    -- forum.thread-comment-new
+ON CONFLICT DO NOTHING;
+
+-- moderator: post + moderate forum content + manage users
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+    (4, 1),   -- forum.thread-new
+    (4, 2),   -- forum.thread-delete
+    (4, 3),   -- forum.thread-edit
+    (4, 7),   -- forum.thread-comment-new
+    (4, 8),   -- forum.thread-comment-delete
+    (4, 9)    -- user.manage-others
 ON CONFLICT DO NOTHING;
 
 -- admin: every permission
