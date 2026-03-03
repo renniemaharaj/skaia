@@ -232,29 +232,33 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
         </div>
       )}
 
-      <div className="comment-form-wrapper">
-        <form className="comment-form" onSubmit={handleCommentSubmit}>
-          <textarea
-            className="richtext-outline-1"
-            placeholder="Write a comment... (Shift+Enter for new line)"
-            rows={4}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isSubmitting}
-          />
-          <div className="comment-form-actions">
-            <button
-              type="submit"
-              className="comment-submit-btn"
-              disabled={isSubmitting || !commentText.trim()}
-            >
-              <Send size={16} />
-              <span>{isSubmitting ? "Posting..." : "Post Comment"}</span>
-            </button>
-          </div>
-        </form>
-      </div>
+      {(currentUser?.permissions ?? []).includes(
+        "forum.thread-comment-new",
+      ) && (
+        <div className="comment-form-wrapper">
+          <form className="comment-form" onSubmit={handleCommentSubmit}>
+            <textarea
+              className="richtext-outline-1"
+              placeholder="Write a comment... (Shift+Enter for new line)"
+              rows={4}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isSubmitting}
+            />
+            <div className="comment-form-actions">
+              <button
+                type="submit"
+                className="comment-submit-btn"
+                disabled={isSubmitting || !commentText.trim()}
+              >
+                <Send size={16} />
+                <span>{isSubmitting ? "Posting..." : "Post Comment"}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

@@ -301,7 +301,10 @@ export const Forum: React.FC<ForumProps> = () => {
                         </div>
                         <div className="thread-meta">
                           {thread.user_id && (
-                            <span className="thread-stat thread-author-stat">
+                            <span
+                              className="thread-stat thread-author-stat"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <UserLink
                                 userId={String(thread.user_id)}
                                 displayName={thread.user_name}
