@@ -1,0 +1,40 @@
+.cursor-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.cursor-avatar {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--primary-color, #6c63ff);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  background: var(--bg-tertiary, #2a2a3a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    left 80ms linear,
+    top 80ms linear;
+  will-change: left, top;
+}
+
+.cursor-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cursor-avatar-initials {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  line-height: 1;
+  user-select: none;
+}

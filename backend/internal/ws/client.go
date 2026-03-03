@@ -11,12 +11,13 @@ import (
 
 // Client represents a single WebSocket connection managed by the Hub.
 type Client struct {
-	Hub      *Hub
-	Conn     *websocket.Conn
-	Send     chan *Message
-	ClientID int64 // unique per connection, assigned by Hub at registration
-	UserID   int64
-	// Presence fields — written only from Hub.Run via presenceUpdates channel.
+	Hub             *Hub
+	Conn            *websocket.Conn
+	Send            chan *Message
+	ClientID        int64 // unique per connection, assigned by Hub at registration
+	UserID          int64
+	CursorSessionID int64 // cursor-presence session bucket, assigned at registration
+	// Presence fields — written under Hub.mu.Lock via presenceUpdates.
 	Route    string
 	UserName string
 	Avatar   string
@@ -54,6 +55,8 @@ func (c *Client) ReadPump() {
 			c.handleTp(msg)
 		case GlobalChat:
 			c.handleGlobalChat(msg)
+		case Cursor:
+			c.handleCursor(msg)
 		case Ping:
 			// nothing — client keepalive only
 		default:
@@ -128,6 +131,33 @@ func (c *Client) handlePresence(msg Message) {
 	}
 	select {
 	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar}:
+	default:
+	}
+}
+
+// handleCursor forwards a cursor position update to the hub for same-route broadcast.
+func (c *Client) handleCursor(msg Message) {
+	type cursorPayload struct {
+		X float64 `json:"x"`
+		Y float64 `json:"y"`
+	}
+	var p cursorPayload
+	if err := json.Unmarshal(msg.Payload, &p); err != nil {
+		return
+	}
+	// Clamp to [0, 1].
+	if p.X < 0 {
+		p.X = 0
+	} else if p.X > 1 {
+		p.X = 1
+	}
+	if p.Y < 0 {
+		p.Y = 0
+	} else if p.Y > 1 {
+		p.Y = 1
+	}
+	select {
+	case c.Hub.cursorUpdates <- CursorBroadcast{Client: c, X: p.X, Y: p.Y}:
 	default:
 	}
 }

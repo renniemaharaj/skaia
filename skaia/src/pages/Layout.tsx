@@ -17,8 +17,10 @@ import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 import { usePresence } from "../hooks/usePresence";
+import { useCursorTracking } from "../hooks/useCursorTracking";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import PresencePanel from "../components/layout/PresencePanel";
+import CursorOverlay from "../components/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
 
 interface LayoutProps {
@@ -35,6 +37,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   });
 
   usePresence();
+  useCursorTracking();
   const { subscribe } = useWebSocketSync();
   const cartCount = useAtomValue(cartItemCountAtom);
   const navigate = useNavigate();
@@ -155,6 +158,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="layout-main">{children}</main>
       <Footer />
       <PresencePanel />
+      <CursorOverlay />
       <Toaster position="bottom-right" richColors closeButton />
     </div>
   );

@@ -28,6 +28,7 @@ const (
 	InboxUpdate       MessageType = "inbox:update"        // server → subscribed clients: conversation changed
 	InboxMsg          MessageType = "inbox:message"       // server → recipient: unread badge ping
 	NotificationMsg   MessageType = "notification"        // server → client: user notification
+	Cursor            MessageType = "cursor:update"       // client → server → same-route clients: cursor position
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.

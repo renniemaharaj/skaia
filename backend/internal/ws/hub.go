@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 // ClientPresence carries a presence announcement from a client, processed in Run.
@@ -15,19 +16,32 @@ type ClientPresence struct {
 	Avatar   string
 }
 
+// CursorBroadcast carries a cursor position from a client to be relayed to others on the same route.
+type CursorBroadcast struct {
+	Client *Client
+	X      float64
+	Y      float64
+}
+
 // TeleportRequest asks the hub to forward a tp message to a specific user.
 type TeleportRequest struct {
 	TargetUserID int64  // positive for authenticated users, negative (presence ID) for guests
 	Route        string // route the target should navigate to
 }
 
-// globalChatRingSize is the maximum number of global chat messages kept in memory.
-const globalChatRingSize = 80
+const (
+	// globalChatRingSize is the maximum number of global chat messages kept in memory.
+	globalChatRingSize = 80
+	// cursorSessionSize caps how many clients share a cursor-presence session.
+	// Cursor updates are only relayed within a session, bounding fan-out to O(cursorSessionSize).
+	cursorSessionSize = 100
+)
 
 // Hub manages WebSocket connections and resource subscriptions.
-// All channel operations are serialised through Run; field access outside
-// Run is protected by mu.
+// Run dispatches each case into its own goroutine; shared state is protected
+// by the mutexes documented on each field group.
 type Hub struct {
+	// ── channels ────────────────────────────────────────────────────────────
 	clients         map[*Client]bool
 	broadcast       chan *Message
 	register        chan *Client
@@ -37,14 +51,29 @@ type Hub struct {
 	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
 	teleport        chan TeleportRequest
-	// Global chat ring buffer — written only from Run goroutine.
-	globalChat   chan GlobalChatMessage
-	chatRing     [globalChatRingSize]GlobalChatMessage
-	chatHead     int // next write position (ring)
-	chatCount    int // total messages stored (capped at globalChatRingSize)
-	nextChatID   int64
-	nextClientID int64 // monotonic counter, incremented only in Run
-	mu           sync.RWMutex
+	cursorUpdates   chan CursorBroadcast
+	globalChat      chan GlobalChatMessage
+
+	// ── clients + subscriptions — protected by mu ────────────────────────
+	mu sync.RWMutex
+
+	// ── global chat ring buffer — protected by chatMu ────────────────────
+	chatMu     sync.Mutex
+	chatRing   [globalChatRingSize]GlobalChatMessage
+	chatHead   int // next write position
+	chatCount  int // messages stored (capped at globalChatRingSize)
+	nextChatID int64
+
+	// ── cursor sessions — protected by cursorSessionMu ───────────────────
+	// Clients are bucketed into sessions of at most cursorSessionSize.
+	// Cursor updates are only fanned out within the sender's session,
+	// bounding per-update work regardless of total connection count.
+	cursorSessionMu   sync.Mutex
+	cursorSessions    map[int64]int // sessionID → active client count
+	nextCursorSession int64
+
+	// ── monotonic client ID — accessed via atomic ─────────────────────────
+	nextClientID atomic.Int64
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -60,6 +89,8 @@ func NewHub() *Hub {
 		presenceUpdates: make(chan ClientPresence, 256),
 		teleport:        make(chan TeleportRequest, 256),
 		globalChat:      make(chan GlobalChatMessage, 256),
+		cursorUpdates:   make(chan CursorBroadcast, 512),
+		cursorSessions:  make(map[int64]int),
 	}
 }
 
@@ -75,31 +106,46 @@ func clientLabel(c *Client) string {
 }
 
 // Run is the hub's event loop. Start it in a dedicated goroutine.
+// Each case is dispatched into its own goroutine so that slow fan-outs
+// (broadcasts, cursor relays, presence rebuilds) never stall the selector.
 func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.handleRegister(client)
-			h.sendChatHistory(client)
-			h.doPresenceBroadcast()
+			go func(c *Client) {
+				h.handleRegister(c)
+				h.sendChatHistory(c)
+				h.doPresenceBroadcast()
+			}(client)
 		case client := <-h.unregister:
-			h.handleUnregister(client)
-			h.doPresenceBroadcast()
+			go func(c *Client) {
+				h.handleUnregister(c)
+				h.doPresenceBroadcast()
+			}(client)
 		case sub := <-h.subscribe:
-			h.handleSubscribe(sub)
+			go h.handleSubscribe(sub)
 		case unsub := <-h.unsubscribe:
-			h.handleUnsubscribe(unsub)
+			go h.handleUnsubscribe(unsub)
 		case msg := <-h.broadcast:
-			h.handleBroadcast(msg)
+			go h.handleBroadcast(msg)
 		case cp := <-h.presenceUpdates:
-			cp.Client.Route = cp.Route
-			cp.Client.UserName = cp.UserName
-			cp.Client.Avatar = cp.Avatar
-			h.doPresenceBroadcast()
+			go func(p ClientPresence) {
+				// Write client presence fields under mu so concurrent
+				// readers in doPresenceBroadcast / handleCursorBroadcast
+				// always see a consistent snapshot.
+				h.mu.Lock()
+				p.Client.Route = p.Route
+				p.Client.UserName = p.UserName
+				p.Client.Avatar = p.Avatar
+				h.mu.Unlock()
+				h.doPresenceBroadcast()
+			}(cp)
 		case req := <-h.teleport:
-			h.handleTeleport(req)
+			go h.handleTeleport(req)
+		case cu := <-h.cursorUpdates:
+			go h.handleCursorBroadcast(cu)
 		case cm := <-h.globalChat:
-			h.handleGlobalChat(cm)
+			go h.handleGlobalChat(cm)
 		}
 	}
 }
@@ -107,15 +153,46 @@ func (h *Hub) Run() {
 // ── Run case handlers ────────────────────────────────────────────────────────
 
 func (h *Hub) handleRegister(client *Client) {
-	h.nextClientID++
-	client.ClientID = h.nextClientID
+	client.ClientID = h.nextClientID.Add(1)
+
 	h.mu.Lock()
 	h.clients[client] = true
 	h.mu.Unlock()
-	log.Printf("ws: joined  %s", clientLabel(client))
+
+	// Assign the client to a cursor session with available capacity, or open a new one.
+	h.cursorSessionMu.Lock()
+	assigned := false
+	for sid, count := range h.cursorSessions {
+		if count < cursorSessionSize {
+			h.cursorSessions[sid]++
+			client.CursorSessionID = sid
+			assigned = true
+			break
+		}
+	}
+	if !assigned {
+		h.nextCursorSession++
+		sid := h.nextCursorSession
+		h.cursorSessions[sid] = 1
+		client.CursorSessionID = sid
+	}
+	h.cursorSessionMu.Unlock()
+
+	log.Printf("ws: joined  %s (cursor session %d)", clientLabel(client), client.CursorSessionID)
 }
 
 func (h *Hub) handleUnregister(client *Client) {
+	// Release cursor session slot before acquiring the main lock.
+	h.cursorSessionMu.Lock()
+	if count, ok := h.cursorSessions[client.CursorSessionID]; ok {
+		if count <= 1 {
+			delete(h.cursorSessions, client.CursorSessionID)
+		} else {
+			h.cursorSessions[client.CursorSessionID]--
+		}
+	}
+	h.cursorSessionMu.Unlock()
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -193,7 +270,7 @@ func (h *Hub) handleBroadcast(msg *Message) {
 }
 
 // doPresenceBroadcast builds the current online user list and sends it to every
-// connected client. Must only be called from the Run goroutine.
+// connected client. Safe to call from any goroutine.
 func (h *Hub) doPresenceBroadcast() {
 	h.mu.RLock()
 	// Authenticated users: deduplicate by UserID, prefer entry with a name.
@@ -270,18 +347,59 @@ func (h *Hub) handleTeleport(req TeleportRequest) {
 	}
 }
 
+// handleCursorBroadcast relays a cursor position to every other client
+// in the same cursor session AND on the same route.
+// Sessions cap fan-out to cursorSessionSize regardless of total connection count.
+func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
+	sender := cu.Client
+	if sender.Route == "" {
+		return
+	}
+
+	var presenceID int64
+	if sender.UserID == 0 {
+		presenceID = -sender.ClientID
+	} else {
+		presenceID = sender.UserID
+	}
+
+	payload, _ := json.Marshal(map[string]interface{}{
+		"user_id":   presenceID,
+		"user_name": sender.UserName,
+		"avatar":    sender.Avatar,
+		"x":         cu.X,
+		"y":         cu.Y,
+	})
+	msg := &Message{Type: Cursor, Payload: payload}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.clients {
+		if client == sender ||
+			client.CursorSessionID != sender.CursorSessionID ||
+			client.Route != sender.Route {
+			continue
+		}
+		select {
+		case client.Send <- msg:
+		default:
+		}
+	}
+}
+
 // handleGlobalChat appends the message to the ring buffer and broadcasts it to all clients.
 func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
-	// Assign monotonic ID
+	// Update ring buffer under chatMu so concurrent sendChatHistory calls
+	// always see a consistent snapshot.
+	h.chatMu.Lock()
 	h.nextChatID++
 	cm.ID = h.nextChatID
-
-	// Write into ring
 	h.chatRing[h.chatHead] = cm
 	h.chatHead = (h.chatHead + 1) % globalChatRingSize
 	if h.chatCount < globalChatRingSize {
 		h.chatCount++
 	}
+	h.chatMu.Unlock()
 
 	// Broadcast to all clients
 	payload, _ := json.Marshal(cm)
@@ -300,17 +418,18 @@ func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
 }
 
 // sendChatHistory delivers the recent global chat ring to a freshly connected client.
-// Must only be called from the Run goroutine.
 func (h *Hub) sendChatHistory(client *Client) {
+	h.chatMu.Lock()
 	if h.chatCount == 0 {
+		h.chatMu.Unlock()
 		return
 	}
-
 	start := (h.chatHead - h.chatCount + globalChatRingSize) % globalChatRingSize
 	history := make([]GlobalChatMessage, h.chatCount)
 	for i := 0; i < h.chatCount; i++ {
 		history[i] = h.chatRing[(start+i)%globalChatRingSize]
 	}
+	h.chatMu.Unlock()
 
 	payload, _ := json.Marshal(map[string]interface{}{"messages": history})
 	msg := &Message{Type: GlobalChatHistory, Payload: payload}

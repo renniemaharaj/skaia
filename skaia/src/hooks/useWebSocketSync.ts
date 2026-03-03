@@ -21,7 +21,12 @@ import {
   type User,
 } from "../atoms/auth";
 import { wsBaseUrlAtom } from "../atoms/config";
-import { onlineUsersAtom, pendingTpRouteAtom } from "../atoms/presence";
+import {
+  onlineUsersAtom,
+  pendingTpRouteAtom,
+  cursorPositionsAtom,
+  type CursorPosition,
+} from "../atoms/presence";
 import { globalChatMessagesAtom, type GlobalChatMessage } from "../atoms/chat";
 import {
   inboxMessagesAtom,
@@ -74,6 +79,7 @@ export const useWebSocketSync = () => {
   const setSocket = useSetAtom(socketAtom);
   const setOnlineUsers = useSetAtom(onlineUsersAtom);
   const setPendingTpRoute = useSetAtom(pendingTpRouteAtom);
+  const setCursorPositions = useSetAtom(cursorPositionsAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
@@ -195,6 +201,18 @@ export const useWebSocketSync = () => {
             const { users } = payload;
             if (Array.isArray(users)) {
               setOnlineUsers(users);
+            }
+          }
+
+          // Handle cursor position update from another client on same route
+          if (message.type === "cursor:update") {
+            const cp = payload as CursorPosition;
+            if (cp && typeof cp.user_id === "number") {
+              setCursorPositions((prev) => {
+                const next = new Map(prev);
+                next.set(cp.user_id, { ...cp, updatedAt: Date.now() });
+                return next;
+              });
             }
           }
 
@@ -705,6 +723,7 @@ export const useWebSocketSync = () => {
     setProducts,
     setStoreCategories,
     setStoreCartItems,
+    setCursorPositions,
     wsUrl,
   ]);
 
