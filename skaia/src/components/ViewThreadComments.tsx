@@ -270,27 +270,34 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       {(currentUser?.permissions ?? []).includes(
         "forum.thread-comment-new",
       ) && (
-        <div className="comment-form-wrapper">
-          <form className="comment-form" onSubmit={handleCommentSubmit}>
+        <div className="comment-composer">
+          <form
+            className="comment-composer-form"
+            onSubmit={handleCommentSubmit}
+          >
             <textarea
-              className="richtext-outline-1"
-              placeholder="Write a comment… (Enter to send, Shift+Enter for new line)"
-              rows={3}
+              className="comment-composer-input"
+              placeholder="Write a comment… (Shift+Enter for new line)"
+              rows={1}
               value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
+              onChange={(e) => {
+                setCommentText(e.target.value);
+                // Auto-grow
+                e.target.style.height = "auto";
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+              }}
               onKeyDown={handleKeyDown}
               disabled={isSubmitting}
             />
-            <div className="comment-form-actions">
-              <button
-                type="submit"
-                className="comment-submit-btn"
-                disabled={isSubmitting || !commentText.trim()}
-              >
-                <Send size={15} />
-                <span>{isSubmitting ? "Posting…" : "Post"}</span>
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="comment-composer-send"
+              disabled={isSubmitting || !commentText.trim()}
+              title="Post comment"
+              aria-label="Send"
+            >
+              <Send size={15} />
+            </button>
           </form>
         </div>
       )}

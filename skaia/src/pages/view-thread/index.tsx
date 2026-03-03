@@ -143,9 +143,7 @@ const ViewThreadPage = () => {
           }}
           // className="empty-state"
         >
-          <h3 style={{ margin: 0 }}>
-            Thread :: @{currentThread.id} {currentThread.title}
-          </h3>
+          <h3 style={{ margin: 0 }}>{currentThread.title}</h3>
 
           <div style={{ display: "flex", gap: "1rem" }}>
             {/* Edit - only if user has permission */}
@@ -184,8 +182,10 @@ const ViewThreadPage = () => {
         {/* Body */}
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
-          <ViewThread content={currentThread.content} />
-          <ViewThreadComments threadId={threadId} />
+          <div>
+            <ViewThread content={currentThread.content} />
+            <ViewThreadComments threadId={threadId} />
+          </div>
         </div>
       </div>
     </div>
