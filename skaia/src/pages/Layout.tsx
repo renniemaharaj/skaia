@@ -19,6 +19,7 @@ import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 import { usePresence } from "../hooks/usePresence";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import PresencePanel from "../components/PresencePanel";
+import { Toaster, toast } from "sonner";
 
 interface LayoutProps {
   children: ReactNode;
@@ -112,6 +113,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Consume pending teleport route set by an incoming "tp" WS message.
   useEffect(() => {
     if (pendingTpRoute) {
+      toast("You are being teleported", {
+        description: `Heading to ${pendingTpRoute}`,
+        duration: 4000,
+        icon: "⚡",
+      });
       navigate(pendingTpRoute);
       clearTpRoute(null);
     }
@@ -127,6 +133,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <main className="layout-main">{children}</main>
       <Footer />
       <PresencePanel />
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
   );
 };

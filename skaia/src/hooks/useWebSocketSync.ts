@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { toast } from "sonner";
 import {
   forumCategoriesAtom,
   type ForumCategory,
@@ -207,6 +208,19 @@ export const useWebSocketSync = () => {
                       (perms?.includes("forum.thread-comment-delete") ?? false),
                     can_like_comments: true,
                   };
+
+                  // Notify the viewing user of a new comment from someone else
+                  if (!isOwner) {
+                    const preview =
+                      newComment.content?.length > 80
+                        ? `${newComment.content.slice(0, 80)}…`
+                        : newComment.content;
+                    toast(`${newComment.author_name || "Someone"} commented`, {
+                      description: preview,
+                      duration: 5000,
+                    });
+                  }
+
                   return [...prev, enriched];
                 }
                 return prev;

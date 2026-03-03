@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../atoms/presence";
 import { currentUserAtom, socketAtom, hasPermissionAtom } from "../atoms/auth";
+import { toast } from "sonner";
 import "./PresencePanel.css";
 
 /**
@@ -92,6 +93,11 @@ const PresencePanel = () => {
             payload: { target_user_id: u.user_id, route: location.pathname },
           }),
         );
+        toast(`${u.user_name || "User"} summoned`, {
+          description: `Teleporting them to ${location.pathname}`,
+          duration: 4000,
+          icon: "⚡",
+        });
       },
     },
   ];

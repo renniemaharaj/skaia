@@ -1,6 +1,6 @@
 import "./ViewThreadComments.css";
 import { Send, ThumbsUp, Trash2, UserCog2Icon } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { threadCommentsAtom } from "../atoms/forum";
 import { type ThreadComment } from "../atoms/forum";
@@ -18,10 +18,25 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const setComments = useSetAtom(threadCommentsAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const { subscribe } = useWebSocketSync();
+  const feedRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const prevCountRef = useRef(0);
+
+  // Track whether user is near the bottom of the feed
+  const handleScroll = useCallback(() => {
+    if (!feedRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = feedRef.current;
+    isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
+  }, []);
 
   // Load comments when thread changes
   useEffect(() => {
     if (!threadId) return;
+
+    // Immediately clear stale comments from the previous thread
+    setComments([]);
+    prevCountRef.current = 0;
+    isAtBottomRef.current = true;
 
     const loadComments = async () => {
       try {
@@ -29,13 +44,15 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
         const response = await apiRequest(
           `/forum/threads/${threadId}/comments`,
         );
-        if (Array.isArray(response)) {
-          setComments(response as ThreadComment[]);
-          // Subscribe to thread so we get real-time comment updates
-          subscribe("thread", threadId);
-        }
+        // Always set — even if null/empty — so stale data never lingers
+        setComments(
+          Array.isArray(response) ? (response as ThreadComment[]) : [],
+        );
+        // Subscribe to thread so we get real-time comment updates
+        subscribe("thread", threadId);
       } catch (error) {
         console.error("Error loading comments:", error);
+        setComments([]);
       } finally {
         setIsLoading(false);
       }
@@ -43,6 +60,23 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
 
     loadComments();
   }, [threadId, setComments, subscribe]);
+
+  // Scroll to bottom once comments finish loading
+  useEffect(() => {
+    if (!isLoading && feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+      isAtBottomRef.current = true;
+    }
+  }, [isLoading]);
+
+  // Auto-scroll when new comments arrive (only if already near bottom)
+  useEffect(() => {
+    const prev = prevCountRef.current;
+    prevCountRef.current = comments.length;
+    if (comments.length > prev && feedRef.current && isAtBottomRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight;
+    }
+  }, [comments.length]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,24 +170,38 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     [setComments],
   );
 
+  const formatTimestamp = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return (
+      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+      " · " +
+      d.toLocaleDateString([], { month: "short", day: "numeric" })
+    );
+  };
+
   return (
     <div className="view-thread-comments">
       <div className="comments-header">
-        <h3>Comments for thread :: @{threadId}</h3>
-        <span className="comments-count">{comments.length} Comments</span>
+        <h3>Comments</h3>
+        <span className="comments-count">{comments.length}</span>
       </div>
 
-      {isLoading ? (
-        <div className="loading">Loading comments...</div>
-      ) : (
-        <div className="comments-list">
-          {comments.map((comment) => (
+      {/* Scrollable feed — newest messages at bottom */}
+      <div className="comments-feed" ref={feedRef} onScroll={handleScroll}>
+        {isLoading ? (
+          <div className="comments-feed-empty">Loading comments…</div>
+        ) : comments.length === 0 ? (
+          <div className="comments-feed-empty">
+            No comments yet. Be the first!
+          </div>
+        ) : (
+          comments.map((comment) => (
             <div key={comment.id} className="comment-card">
               <div className="comment-avatar">
                 {comment.author_avatar ? (
                   <img src={comment.author_avatar} alt={comment.author_name} />
                 ) : (
-                  <UserCog2Icon size={40} style={{ opacity: 0.5 }} />
+                  <UserCog2Icon size={30} style={{ opacity: 0.45 }} />
                 )}
               </div>
 
@@ -171,47 +219,34 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                     </span>
                   )}
                   <span className="comment-date">
-                    {new Date(comment.created_at).toLocaleDateString()}
+                    {formatTimestamp(comment.created_at)}
                   </span>
+                  {comment.is_edited && (
+                    <span className="comment-edited">(edited)</span>
+                  )}
                 </div>
 
                 <div className="comment-content">{comment.content}</div>
-                <div
-                  style={{ display: "flex", gap: "1rem", alignItems: "center" }}
-                >
-                  {/* Like Button - show if user is authenticated */}
+
+                <div className="comment-actions">
+                  {/* Like button */}
                   {currentUser && (
                     <button
-                      className={`thread-action-btn like-btn ${
-                        comment.is_liked ? "liked" : ""
-                      }`}
+                      className={`thread-action-btn like-btn${comment.is_liked ? " liked" : ""}`}
                       onClick={() =>
                         handleLikeComment(comment.id, comment.is_liked)
                       }
                       title={comment.is_liked ? "Unlike" : "Like"}
-                      style={{
-                        color: comment.is_liked
-                          ? "var(--primary-color)"
-                          : "inherit",
-                        transition: "color 0.2s ease",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
                     >
                       <ThumbsUp
-                        size={16}
+                        size={14}
                         fill={comment.is_liked ? "currentColor" : "none"}
                       />
-                      {comment.likes > 0 && (
-                        <span style={{ fontSize: "0.75rem" }}>
-                          {comment.likes}
-                        </span>
-                      )}
+                      {comment.likes > 0 && <span>{comment.likes}</span>}
                     </button>
                   )}
 
-                  {/* Delete - only if user owns comment, has explicit permission, or can_delete flag */}
+                  {/* Delete */}
                   {(currentUser?.id === comment.user_id ||
                     comment.can_delete ||
                     currentUser?.permissions?.includes(
@@ -228,9 +263,9 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       {(currentUser?.permissions ?? []).includes(
         "forum.thread-comment-new",
@@ -239,8 +274,8 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
           <form className="comment-form" onSubmit={handleCommentSubmit}>
             <textarea
               className="richtext-outline-1"
-              placeholder="Write a comment... (Shift+Enter for new line)"
-              rows={4}
+              placeholder="Write a comment… (Enter to send, Shift+Enter for new line)"
+              rows={3}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -252,8 +287,8 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
                 className="comment-submit-btn"
                 disabled={isSubmitting || !commentText.trim()}
               >
-                <Send size={16} />
-                <span>{isSubmitting ? "Posting..." : "Post Comment"}</span>
+                <Send size={15} />
+                <span>{isSubmitting ? "Posting…" : "Post"}</span>
               </button>
             </div>
           </form>
