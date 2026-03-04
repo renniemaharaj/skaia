@@ -15,14 +15,30 @@ import SuspendDialog from "./SuspendDialog";
 
 import "./UserProfile.css";
 
-const UserProfile: React.FC = () => {
+interface UserProfileProps {
+  userIdOverride?: string;
+  handleThreads?: (
+    threadsPanelHandle: React.ReactElement,
+  ) => React.ReactElement;
+  handlePermissions?: (
+    permissionsPanelHandle: React.ReactElement,
+  ) => React.ReactElement;
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({
+  userIdOverride,
+  handleThreads,
+  handlePermissions,
+}) => {
   const { userId } = useParams<{ userId: string }>();
+  const effectiveUserId = userIdOverride || userId;
+
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
 
   const canManage = hasPermission("user.manage-others");
   const canSuspend = hasPermission("user.suspend");
-  const isOwnProfile = String(currentUser?.id) === String(userId);
+  const isOwnProfile = String(currentUser?.id) === String(effectiveUserId);
   const canEdit = canManage || isOwnProfile;
 
   const {
@@ -43,7 +59,7 @@ const UserProfile: React.FC = () => {
     suspendLoading,
     handleSuspend,
     handleUnsuspend,
-  } = useUserData(userId, canManage);
+  } = useUserData(effectiveUserId, canManage);
 
   const {
     editOpen,
@@ -72,7 +88,7 @@ const UserProfile: React.FC = () => {
     feedRef: threadsFeedRef,
     sentinelRef: threadsSentinelRef,
     handleScroll: threadsHandleScroll,
-  } = useThreadsFeed({ authorId: userId });
+  } = useThreadsFeed({ authorId: effectiveUserId });
 
   if (loading)
     return <div className="up-container up-loading">Loading profile…</div>;
@@ -83,6 +99,30 @@ const UserProfile: React.FC = () => {
 
   const displayAvatar = user.avatar_url || user.photo_url || null;
   const displayBanner = user.banner_url || null;
+
+  const permissionPanel = (
+    <UserManagePanel
+      user={user}
+      allRoles={allRoles}
+      allPermissions={allPermissions}
+      roleTogglingSet={roleTogglingSet}
+      permTogglingSet={permTogglingSet}
+      onRoleToggle={handleRoleToggle}
+      onPermissionToggle={handlePermissionToggle}
+    />
+  );
+
+  const threadsPanel = (
+    <UserThreadsFeed
+      displayName={user.display_name || user.username}
+      threads={threads}
+      isLoading={threadsLoading}
+      loading={threadsLoadingOlder}
+      feedRef={threadsFeedRef}
+      sentinelRef={threadsSentinelRef}
+      handleScroll={threadsHandleScroll}
+    />
+  );
 
   return (
     <div className="up-container">
@@ -99,27 +139,11 @@ const UserProfile: React.FC = () => {
         onUnsuspend={handleUnsuspend}
       />
 
-      {canManage && (
-        <UserManagePanel
-          user={user}
-          allRoles={allRoles}
-          allPermissions={allPermissions}
-          roleTogglingSet={roleTogglingSet}
-          permTogglingSet={permTogglingSet}
-          onRoleToggle={handleRoleToggle}
-          onPermissionToggle={handlePermissionToggle}
-        />
-      )}
+      {canManage && handlePermissions
+        ? handlePermissions(permissionPanel)
+        : permissionPanel}
 
-      <UserThreadsFeed
-        displayName={user.display_name || user.username}
-        threads={threads}
-        isLoading={threadsLoading}
-        loading={threadsLoadingOlder}
-        feedRef={threadsFeedRef}
-        sentinelRef={threadsSentinelRef}
-        handleScroll={threadsHandleScroll}
-      />
+      {canManage && handleThreads ? handleThreads(threadsPanel) : threadsPanel}
 
       {editOpen && (
         <EditProfileDialog

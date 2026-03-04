@@ -1,5 +1,4 @@
 import {
-  UserCog2Icon,
   CalendarIcon,
   MessageCircleIcon,
   ClockIcon,
@@ -110,16 +109,6 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "author",
       content: (
         <div className="user-card">
-          {author.profilePicture ? (
-            <img
-              className="user-card-avatar"
-              src={author.profilePicture}
-              alt={author.name}
-            />
-          ) : (
-            <UserCog2Icon className="user-card-avatar" />
-          )}
-
           <div className="user-card-info">
             <UserLink
               userId={currentThread?.user_id || ""}
@@ -137,7 +126,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "created",
       content: (
         <div className="meta-row">
-          <CalendarIcon size={16} />
+          <CalendarIcon size={14} />
           <span>Created: {threadMeta.createdAt}</span>
         </div>
       ),
@@ -148,7 +137,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "replies",
       content: (
         <div className="meta-row">
-          <MessageCircleIcon size={16} />
+          <MessageCircleIcon size={14} />
           <span>{threadMeta.replyCount} Replies</span>
         </div>
       ),
@@ -159,7 +148,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "last-activity",
       content: (
         <div className="meta-row">
-          <ClockIcon size={16} />
+          <ClockIcon size={14} />
           <span>Last Activity: {threadMeta.lastActivity}</span>
         </div>
       ),
@@ -170,7 +159,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "tags",
       content: (
         <div className="meta-row meta-tags">
-          <TagIcon size={16} />
+          <TagIcon size={14} />
           <div className="tag-list">
             {threadMeta.tags.map((tag) => (
               <span key={tag} className="tag">
@@ -187,7 +176,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "views",
       content: (
         <div className="meta-row">
-          <EyeIcon size={16} />
+          <EyeIcon size={14} />
           <span>{threadMeta.views} Views</span>
         </div>
       ),
@@ -198,7 +187,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
       id: "status",
       content: (
         <div className="meta-row">
-          <InfoIcon size={16} />
+          <InfoIcon size={14} />
           <span
             className={`status-badge status-${threadMeta.status.toLowerCase()}`}
           >
@@ -241,7 +230,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
                   }}
                 >
                   <ThumbsUp
-                    size={16}
+                    size={14}
                     fill={currentThread?.is_liked ? "currentColor" : "none"}
                   />
                   <span>

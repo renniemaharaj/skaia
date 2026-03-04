@@ -6,7 +6,6 @@ import { useAtom } from "jotai";
 import ViewThread from "../../components/forum/ViewThread";
 import ViewThreadMeta from "../../components/forum/ViewThreadMeta";
 import ViewThreadComments from "../../components/forum/ViewThreadComments";
-import Hero from "../../components/layout/Hero";
 import { currentThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
@@ -14,6 +13,7 @@ import { apiRequest } from "../../utils/api";
 import "./index.css";
 import "../../components/forum/IconButton.css";
 import "./../../components/store/EmptyState.css";
+import UserProfile from "../users/UserProfile";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
@@ -122,8 +122,12 @@ const ViewThreadPage = () => {
       onClick={(e) => e.stopPropagation()}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
-        <Hero height="350px" />
-
+        {/* <Hero height="350px" /> */}
+        <UserProfile
+          userIdOverride={String(currentThread.user_id)}
+          handlePermissions={(): React.ReactElement => <></>}
+          handleThreads={(): React.ReactElement => <></>}
+        />
         {/* Header */}
         <div
           style={{
@@ -133,7 +137,7 @@ const ViewThreadPage = () => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderLeft: "3px solid var(--primary-color)",
+            // borderLeft: "3px solid var(--primary-color)",
             // borderRight: "3px solid var(--primary-color)",
           }}
           // className="empty-state"

@@ -10,6 +10,7 @@
   /* background-color: var(--bg-color); */
   color: var(--skaia-green-contrast);
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+  align-items: flex-end !important;
 }
 .view-thread-meta-container {
   /* flex-direction: row !important; */
@@ -38,13 +39,13 @@
 
 .meta-row {
   display: flex;
-  align-items: center;
+  align-items: flex-end !important;
   gap: 0.5rem;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .meta-tags {
-  align-items: flex-start;
+  align-items: flex-start !important;
 }
 
 .tag-list {
