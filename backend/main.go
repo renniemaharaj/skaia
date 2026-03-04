@@ -26,7 +26,7 @@ import (
 	"github.com/skaia/backend/internal/ws"
 )
 
-//go:embed migrations/*.sql
+//go:embed internal/migrations/*.sql
 var migrationFiles embed.FS
 
 // SimpleResponse is a basic JSON response structure
@@ -107,7 +107,7 @@ func runIntegrationSuite(db *sql.DB) {
 		log.Fatalf("integration: create schema: %v", err)
 	}
 
-	migrationsFS, _ := fs.Sub(migrationFiles, "migrations")
+	migrationsFS, _ := fs.Sub(migrationFiles, "internal/migrations")
 	if err := testutil.ApplyMigrations(db, migrationsFS); err != nil {
 		log.Fatalf("integration: migrations failed: %v", err)
 	}
@@ -181,8 +181,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	notifSvc := inotif.NewService(notifRepo, hub)
 
 	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iforum.NewHandler(forumSvc, hub, notifSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	istore.NewHandler(storeSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	istore.NewHandler(storeSvc, hub, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
 
 	inotif.NewHandler(notifSvc).Mount(r, imw.JWTAuthMiddleware)

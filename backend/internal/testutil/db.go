@@ -52,9 +52,9 @@ func RunMigrations(t testing.TB, db *sql.DB) {
 	t.Helper()
 
 	// Locate migrations relative to this source file:
-	// internal/testutil/db.go → ../../migrations
+	// internal/testutil/db.go → ../migrations
 	_, self, _, _ := runtime.Caller(0)
-	migrationsDir := filepath.Join(filepath.Dir(self), "..", "..", "migrations")
+	migrationsDir := filepath.Join(filepath.Dir(self), "..", "migrations")
 
 	matches, err := filepath.Glob(filepath.Join(migrationsDir, "*.sql"))
 	if err != nil {

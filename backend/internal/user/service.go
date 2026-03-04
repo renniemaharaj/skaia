@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/skaia/backend/auth"
+	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/models"
 )
 
@@ -193,6 +193,12 @@ func (s *Service) Delete(id int64) error {
 	}
 	s.cache.Invalidate(id)
 	return nil
+}
+
+// HasPermission reports whether userID holds the named permission (or is an
+// admin). This is the DB-authoritative check used by all domain handlers.
+func (s *Service) HasPermission(userID int64, permission string) (bool, error) {
+	return s.repo.HasPermission(userID, permission)
 }
 
 // AddPermission grants a named permission to the user and evicts the cache entry.

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/skaia/backend/auth"
+	"github.com/skaia/backend/internal/utils"
 )
 
 // Directory layout
@@ -89,10 +89,9 @@ func ServeUploads(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	claims, ok := r.Context().Value("claims").(*auth.Claims)
-	if !ok || claims == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -118,7 +117,7 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	file.Seek(0, 0)
 
-	dir, err := userDir(claims.UserID, "images")
+	dir, err := userDir(userID, "images")
 	if err != nil {
 		log.Printf("upload: mkdir images: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -129,7 +128,7 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 	ext := sanitizeExt(header.Filename)
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
-	url, size, err := saveFile(file, dir, filename, claims.UserID, "images")
+	url, size, err := saveFile(file, dir, filename, userID, "images")
 	if err != nil {
 		log.Printf("upload: save image: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -145,10 +144,9 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	claims, ok := r.Context().Value("claims").(*auth.Claims)
-	if !ok || claims == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -174,7 +172,7 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	file.Seek(0, 0)
 
-	dir, err := userDir(claims.UserID, "videos")
+	dir, err := userDir(userID, "videos")
 	if err != nil {
 		log.Printf("upload: mkdir videos: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -185,7 +183,7 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 	ext := sanitizeExt(header.Filename)
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
-	url, size, err := saveFile(file, dir, filename, claims.UserID, "videos")
+	url, size, err := saveFile(file, dir, filename, userID, "videos")
 	if err != nil {
 		log.Printf("upload: save video: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -201,10 +199,9 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	claims, ok := r.Context().Value("claims").(*auth.Claims)
-	if !ok || claims == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -222,7 +219,7 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	dir, err := userDir(claims.UserID, "files")
+	dir, err := userDir(userID, "files")
 	if err != nil {
 		log.Printf("upload: mkdir files: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -239,7 +236,7 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 	safe := sanitizeName(header.Filename)
 	filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), safe)
 
-	url, size, err := saveFile(file, dir, filename, claims.UserID, "files")
+	url, size, err := saveFile(file, dir, filename, userID, "files")
 	if err != nil {
 		log.Printf("upload: save file: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -257,18 +254,12 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	claims, ok := r.Context().Value("claims").(*auth.Claims)
-	if !ok || claims == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	if !hasClaim(claims, "forum.new-thread") {
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "insufficient permissions"})
-		return
-	}
 
 	if err := r.ParseMultipartForm(MaxImgSize); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -299,7 +290,7 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 	}
 	file.Seek(0, 0)
 
-	dir, err := userDir(claims.UserID, "banners")
+	dir, err := userDir(userID, "banners")
 	if err != nil {
 		log.Printf("upload: mkdir banners: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -310,7 +301,7 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 	ext := sanitizeExt(header.Filename)
 	filename := fmt.Sprintf("banner_%d%s", time.Now().UnixNano(), ext)
 
-	url, size, err := saveFile(file, dir, filename, claims.UserID, "banners")
+	url, size, err := saveFile(file, dir, filename, userID, "banners")
 	if err != nil {
 		log.Printf("upload: save banner: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -395,20 +386,6 @@ func typeAllowed(ct string, allowed []string) bool {
 	return false
 }
 
-// hasClaim reports whether claims contains the given permission or the "admin" role.
-func hasClaim(claims *auth.Claims, permission string) bool {
-	for _, r := range claims.Roles {
-		if r == "admin" {
-			return true
-		}
-	}
-	for _, p := range claims.Permissions {
-		if p == permission {
-			return true
-		}
-	}
-	return false
-}
 
 // validateBannerDimensions requires exactly 350px height.
 func validateBannerDimensions(file io.Reader) error {

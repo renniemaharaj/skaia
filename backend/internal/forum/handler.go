@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/utils"
 	ws "github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
@@ -22,11 +23,12 @@ type Handler struct {
 	svc      *Service
 	hub      *ws.Hub
 	notifSvc NotifSender
+	authz    utils.Authorizer
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender) *Handler {
-	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc}
+func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Authorizer) *Handler {
+	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz}
 }
 
 // Mount registers all forum routes on r.
@@ -69,7 +71,7 @@ func (h *Handler) parseID(r *http.Request, param string) (int64, error) {
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.svc.ListCategories()
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -86,14 +88,14 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, &CategoryWithThreads{ForumCategory: cat, Threads: threads})
 	}
-	WriteJSON(w, http.StatusOK, out)
+	utils.WriteJSON(w, http.StatusOK, out)
 }
 
 // listCategoryThreads handles GET /forum/categories/{id}/threads
 func (h *Handler) listCategoryThreads(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 	q := r.URL.Query()
@@ -112,23 +114,22 @@ func (h *Handler) listCategoryThreads(w http.ResponseWriter, r *http.Request) {
 	threads, err := h.svc.ListCategoryThreads(categoryID, limit, offset)
 	if err != nil {
 		log.Printf("forum.listCategoryThreads: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 		return
 	}
 	if threads == nil {
 		threads = []*models.ForumThread{}
 	}
-	WriteJSON(w, http.StatusOK, threads)
+	utils.WriteJSON(w, http.StatusOK, threads)
 }
 
 func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forum.category-new") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	if !utils.CheckPerm(w, h.authz, userID, "forum.category-new") {
 		return
 	}
 
@@ -138,7 +139,7 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		DisplayOrder int    `json:"display_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		WriteError(w, http.StatusBadRequest, "name required")
+		utils.WriteError(w, http.StatusBadRequest, "name required")
 		return
 	}
 
@@ -149,7 +150,7 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("forum.createCategory: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create category")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create category")
 		return
 	}
 
@@ -160,29 +161,28 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 			"data":   created,
 		}),
 	})
-	WriteJSON(w, http.StatusCreated, created)
+	utils.WriteJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forum.category-delete") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	if !utils.CheckPerm(w, h.authz, userID, "forum.category-delete") {
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 
 	if err := h.svc.DeleteCategory(id); err != nil {
 		log.Printf("forum.deleteCategory: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to delete category")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
 	}
 
@@ -193,7 +193,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 			"id":     id,
 		}),
 	})
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // Thread handlers
@@ -218,19 +218,19 @@ func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 	if authorStr := q.Get("author_id"); authorStr != "" {
 		authorID, err := strconv.ParseInt(authorStr, 10, 64)
 		if err != nil {
-			WriteError(w, http.StatusBadRequest, "invalid author_id")
+			utils.WriteError(w, http.StatusBadRequest, "invalid author_id")
 			return
 		}
 		threads, err := h.svc.ListUserThreads(authorID, limit, offset)
 		if err != nil {
 			log.Printf("forum.listThreads(author): %v", err)
-			WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+			utils.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 			return
 		}
 		if threads == nil {
 			threads = []*models.ForumThread{}
 		}
-		WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
 		return
 	}
 
@@ -238,33 +238,32 @@ func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 	if catStr := q.Get("category_id"); catStr != "" {
 		categoryID, err := strconv.ParseInt(catStr, 10, 64)
 		if err != nil {
-			WriteError(w, http.StatusBadRequest, "invalid category_id")
+			utils.WriteError(w, http.StatusBadRequest, "invalid category_id")
 			return
 		}
 		threads, err := h.svc.ListCategoryThreads(categoryID, limit, offset)
 		if err != nil {
 			log.Printf("forum.listThreads(category): %v", err)
-			WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+			utils.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
 			return
 		}
 		if threads == nil {
 			threads = []*models.ForumThread{}
 		}
-		WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
 		return
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": []interface{}{}})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": []interface{}{}})
 }
 
 func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forum.thread-new") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	if !utils.CheckPerm(w, h.authz, userID, "forum.thread-new") {
 		return
 	}
 
@@ -274,29 +273,29 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		Content    string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Title == "" || req.Content == "" || req.CategoryID == "" {
-		WriteError(w, http.StatusBadRequest, "title, content, and category_id required")
+		utils.WriteError(w, http.StatusBadRequest, "title, content, and category_id required")
 		return
 	}
 
 	categoryID, err := strconv.ParseInt(req.CategoryID, 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 
 	created, err := h.svc.CreateThread(&models.ForumThread{
 		CategoryID: categoryID,
-		UserID:     claims.UserID,
+		UserID:     userID,
 		Title:      req.Title,
 		Content:    req.Content,
 	})
 	if err != nil {
 		log.Printf("forum.createThread: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create thread")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create thread")
 		return
 	}
 
@@ -313,29 +312,25 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		h.hub.PropagateForumCategories(categoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 	}
 
-	WriteJSON(w, http.StatusCreated, created)
+	utils.WriteJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
 	thread, err := h.svc.GetThread(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "thread not found")
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
 
 	_ = h.svc.IncrementViewCount(id)
 
-	var userID int64
-	claims, hasClaims := ClaimsFromCtx(r)
-	if hasClaims {
-		userID = claims.UserID
-	}
+	userID, hasClaims := utils.UserIDFromCtx(r)
 
 	if userID > 0 {
 		if isLiked, err := h.svc.IsThreadLikedByUser(id, userID); err == nil {
@@ -345,36 +340,40 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 
 	if hasClaims {
 		thread.CanLikeComments = true
-		thread.CanDeleteThreadComment = HasClaim(claims, "forum.thread-comment-delete")
+		canDelComment, _ := h.authz.HasPermission(userID, "forum.thread-comment-delete")
+		thread.CanDeleteThreadComment = canDelComment
 		thread.CanLikeThreads = true
-		thread.CanEdit = userID == thread.UserID || HasClaim(claims, "forum.thread-edit")
-		thread.CanDelete = userID == thread.UserID || HasClaim(claims, "forum.thread-delete")
+		canEdit, _ := h.authz.HasPermission(userID, "forum.thread-edit")
+		thread.CanEdit = userID == thread.UserID || canEdit
+		canDel, _ := h.authz.HasPermission(userID, "forum.thread-delete")
+		thread.CanDelete = userID == thread.UserID || canDel
 	}
 
-	WriteJSON(w, http.StatusOK, thread)
+	utils.WriteJSON(w, http.StatusOK, thread)
 }
 
 func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
 	thread, err := h.svc.GetThread(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "thread not found")
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
 
-	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.thread-edit") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	canEdit, _ := h.authz.HasPermission(userID, "forum.thread-edit")
+	if thread.UserID != userID && !canEdit {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 
@@ -383,7 +382,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	thread.Title = req.Title
@@ -392,7 +391,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 	updated, err := h.svc.UpdateThread(thread)
 	if err != nil {
 		log.Printf("forum.updateThread: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to update thread")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update thread")
 		return
 	}
 
@@ -403,7 +402,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Notify thread author when their thread is edited by someone else (admin)
-	if h.notifSvc != nil && thread.UserID != claims.UserID {
+	if h.notifSvc != nil && thread.UserID != userID {
 		threadOwner := thread.UserID
 		tid := id
 		title := thread.Title
@@ -417,36 +416,37 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	WriteJSON(w, http.StatusOK, updated)
+	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
 	thread, err := h.svc.GetThread(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "thread not found")
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
 
-	if thread.UserID != claims.UserID && !HasClaim(claims, "forum.thread-delete") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	canDel, _ := h.authz.HasPermission(userID, "forum.thread-delete")
+	if thread.UserID != userID && !canDel {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 
 	if err := h.svc.DeleteThread(id); err != nil {
 		log.Printf("forum.deleteThread: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to delete thread")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete thread")
 		return
 	}
 
@@ -463,7 +463,7 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 	h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 
 	// Notify thread author when their thread is deleted by someone else (admin)
-	if h.notifSvc != nil && thread.UserID != claims.UserID {
+	if h.notifSvc != nil && thread.UserID != userID {
 		threadOwner := thread.UserID
 		title := thread.Title
 		go func() {
@@ -476,41 +476,41 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (h *Handler) likeThread(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "threadId")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
 	thread, err := h.svc.GetThread(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "thread not found")
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
 
-	count, err := h.svc.LikeThread(id, claims.UserID)
+	count, err := h.svc.LikeThread(id, userID)
 	if err != nil {
 		log.Printf("forum.likeThread: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to like thread")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to like thread")
 		return
 	}
 
 	h.hub.PropagateForumThread(id, map[string]interface{}{
-		"thread_id": id, "likes": count, "user_id": claims.UserID,
+		"thread_id": id, "likes": count, "user_id": userID,
 	}, "thread_liked")
 
 	// Notify the thread author (skip if liking own thread)
-	if h.notifSvc != nil && thread.UserID != claims.UserID {
+	if h.notifSvc != nil && thread.UserID != userID {
 		go func() {
 			_, _ = h.notifSvc.Send(
 				thread.UserID,
@@ -521,38 +521,38 @@ func (h *Handler) likeThread(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
 
 func (h *Handler) unlikeThread(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "threadId")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
 	if _, err := h.svc.GetThread(id); err != nil {
-		WriteError(w, http.StatusNotFound, "thread not found")
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
 		return
 	}
 
-	count, err := h.svc.UnlikeThread(id, claims.UserID)
+	count, err := h.svc.UnlikeThread(id, userID)
 	if err != nil {
 		log.Printf("forum.unlikeThread: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to unlike thread")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to unlike thread")
 		return
 	}
 
 	h.hub.PropagateForumThread(id, map[string]interface{}{
-		"thread_id": id, "likes": count, "user_id": claims.UserID,
+		"thread_id": id, "likes": count, "user_id": userID,
 	}, "thread_unliked")
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
 }
 
 // Comment handlers
@@ -560,7 +560,7 @@ func (h *Handler) unlikeThread(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
@@ -575,14 +575,15 @@ func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 	comments, err := h.svc.ListThreadComments(id, limit, offset)
 	if err != nil {
 		log.Printf("forum.listComments: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to fetch comments")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to fetch comments")
 		return
 	}
 
-	var userID int64
-	claims, hasClaims := ClaimsFromCtx(r)
+	userID, hasClaims := utils.UserIDFromCtx(r)
+
+	var canDelComment bool
 	if hasClaims {
-		userID = claims.UserID
+		canDelComment, _ = h.authz.HasPermission(userID, "forum.thread-comment-delete")
 	}
 
 	for _, c := range comments {
@@ -593,28 +594,27 @@ func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 		}
 		if hasClaims {
 			c.CanLikeComments = true
-			c.CanDelete = userID == c.UserID || HasClaim(claims, "forum.thread-comment-delete")
-			c.CanEdit = userID == c.UserID || HasClaim(claims, "forum.thread-comment-delete")
+			c.CanDelete = userID == c.UserID || canDelComment
+			c.CanEdit = userID == c.UserID || canDelComment
 		}
 	}
 
-	WriteJSON(w, http.StatusOK, comments)
+	utils.WriteJSON(w, http.StatusOK, comments)
 }
 
 func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if !HasClaim(claims, "forum.thread-comment-new") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	if !utils.CheckPerm(w, h.authz, userID, "forum.thread-comment-new") {
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
 		return
 	}
 
@@ -622,18 +622,18 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content == "" {
-		WriteError(w, http.StatusBadRequest, "content required")
+		utils.WriteError(w, http.StatusBadRequest, "content required")
 		return
 	}
 
 	created, err := h.svc.CreateComment(&models.ThreadComment{
 		ThreadID: id,
-		UserID:   claims.UserID,
+		UserID:   userID,
 		Content:  req.Content,
 	})
 	if err != nil {
 		log.Printf("forum.createComment: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create comment")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create comment")
 		return
 	}
 
@@ -646,7 +646,7 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 
 	// Notify thread author that someone commented (skip if author commented on own thread)
 	if h.notifSvc != nil {
-		if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != claims.UserID {
+		if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != userID {
 			tid := id
 			threadOwner := thread.UserID
 			threadTitle := thread.Title
@@ -661,30 +661,31 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	WriteJSON(w, http.StatusCreated, created)
+	utils.WriteJSON(w, http.StatusCreated, created)
 }
 
 func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid comment ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid comment ID")
 		return
 	}
 
 	comment, err := h.svc.GetComment(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "comment not found")
+		utils.WriteError(w, http.StatusNotFound, "comment not found")
 		return
 	}
 
-	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.thread-comment-delete") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	canEdit, _ := h.authz.HasPermission(userID, "forum.thread-comment-delete")
+	if comment.UserID != userID && !canEdit {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 
@@ -692,7 +693,7 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content == "" {
-		WriteError(w, http.StatusBadRequest, "content required")
+		utils.WriteError(w, http.StatusBadRequest, "content required")
 		return
 	}
 	comment.Content = req.Content
@@ -700,49 +701,50 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 	updated, err := h.svc.UpdateComment(comment)
 	if err != nil {
 		log.Printf("forum.updateComment: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to update comment")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update comment")
 		return
 	}
 
 	h.hub.PropagateForumThread(updated.ThreadID, map[string]interface{}{"comment": updated}, "comment_updated")
-	WriteJSON(w, http.StatusOK, updated)
+	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid comment ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid comment ID")
 		return
 	}
 
 	comment, err := h.svc.GetComment(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "comment not found")
+		utils.WriteError(w, http.StatusNotFound, "comment not found")
 		return
 	}
 
-	if comment.UserID != claims.UserID && !HasClaim(claims, "forum.thread-comment-delete") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	canDel, _ := h.authz.HasPermission(userID, "forum.thread-comment-delete")
+	if comment.UserID != userID && !canDel {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 
 	threadID := comment.ThreadID
 	if err := h.svc.DeleteComment(id); err != nil {
 		log.Printf("forum.deleteComment: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to delete comment")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete comment")
 		return
 	}
 
 	h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
 
 	// Notify comment author when someone else (admin) deleted their comment
-	if h.notifSvc != nil && comment.UserID != claims.UserID {
+	if h.notifSvc != nil && comment.UserID != userID {
 		commentOwner := comment.UserID
 		tid := threadID
 		go func() {
@@ -755,41 +757,41 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "commentId")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid comment ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid comment ID")
 		return
 	}
 
 	comment, err := h.svc.GetComment(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "comment not found")
+		utils.WriteError(w, http.StatusNotFound, "comment not found")
 		return
 	}
 
-	count, err := h.svc.LikeComment(id, claims.UserID)
+	count, err := h.svc.LikeComment(id, userID)
 	if err != nil {
 		log.Printf("forum.likeComment: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to like comment")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to like comment")
 		return
 	}
 
 	h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
-		"comment_id": id, "likes": count, "user_id": claims.UserID,
+		"comment_id": id, "likes": count, "user_id": userID,
 	}, "comment_liked")
 
 	// Notify the comment author (skip if liking own comment)
-	if h.notifSvc != nil && comment.UserID != claims.UserID {
+	if h.notifSvc != nil && comment.UserID != userID {
 		tid := comment.ThreadID
 		go func() {
 			_, _ = h.notifSvc.Send(
@@ -801,39 +803,39 @@ func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
 
 func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	id, err := h.parseID(r, "commentId")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid comment ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid comment ID")
 		return
 	}
 
 	comment, err := h.svc.GetComment(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "comment not found")
+		utils.WriteError(w, http.StatusNotFound, "comment not found")
 		return
 	}
 
-	count, err := h.svc.UnlikeComment(id, claims.UserID)
+	count, err := h.svc.UnlikeComment(id, userID)
 	if err != nil {
 		log.Printf("forum.unlikeComment: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to unlike comment")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to unlike comment")
 		return
 	}
 
 	h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
-		"comment_id": id, "likes": count, "user_id": claims.UserID,
+		"comment_id": id, "likes": count, "user_id": userID,
 	}, "comment_unliked")
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
 }
 
 // marshalPayload encodes v to json.RawMessage, silently ignoring errors.

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
 
@@ -38,26 +39,26 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 }
 
 func (h *Handler) listConversations(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	convs, err := h.svc.ListConversations(claims.UserID)
+	convs, err := h.svc.ListConversations(userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if convs == nil {
 		convs = []*models.InboxConversation{}
 	}
-	WriteJSON(w, http.StatusOK, convs)
+	utils.WriteJSON(w, http.StatusOK, convs)
 }
 
 func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	var body struct {
@@ -65,7 +66,7 @@ func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
 		TargetUsername string `json:"target_username"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 
@@ -74,36 +75,36 @@ func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
 	if targetID == 0 && body.TargetUsername != "" {
 		u, err := h.svc.FindUserByUsername(body.TargetUsername)
 		if err != nil || u == nil {
-			WriteError(w, http.StatusNotFound, "user not found")
+			utils.WriteError(w, http.StatusNotFound, "user not found")
 			return
 		}
 		targetID = u.ID
 	}
 	if targetID == 0 {
-		WriteError(w, http.StatusBadRequest, "target_user_id or target_username required")
+		utils.WriteError(w, http.StatusBadRequest, "target_user_id or target_username required")
 		return
 	}
-	if targetID == claims.UserID {
-		WriteError(w, http.StatusBadRequest, "cannot message yourself")
+	if targetID == userID {
+		utils.WriteError(w, http.StatusBadRequest, "cannot message yourself")
 		return
 	}
-	conv, err := h.svc.GetOrStartConversation(claims.UserID, targetID)
+	conv, err := h.svc.GetOrStartConversation(userID, targetID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, conv)
+	utils.WriteJSON(w, http.StatusOK, conv)
 }
 
 func (h *Handler) listMessages(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 	limit := int64(30)
@@ -118,101 +119,101 @@ func (h *Handler) listMessages(w http.ResponseWriter, r *http.Request) {
 			offset = n
 		}
 	}
-	msgs, err := h.svc.ListMessages(id, claims.UserID, limit, offset)
+	msgs, err := h.svc.ListMessages(id, userID, limit, offset)
 	if err != nil {
 		if err == errForbidden {
-			WriteError(w, http.StatusForbidden, "forbidden")
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
 			return
 		}
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if msgs == nil {
 		msgs = []*models.InboxMessage{}
 	}
-	WriteJSON(w, http.StatusOK, msgs)
+	utils.WriteJSON(w, http.StatusOK, msgs)
 }
 
 func (h *Handler) sendMessage(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
 	var body struct {
 		Content string `json:"content"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Content == "" {
-		WriteError(w, http.StatusBadRequest, "content required")
+		utils.WriteError(w, http.StatusBadRequest, "content required")
 		return
 	}
-	msg, err := h.svc.SendMessage(body.Content, id, claims.UserID)
+	msg, err := h.svc.SendMessage(body.Content, id, userID)
 	if err != nil {
 		if err == errForbidden {
-			WriteError(w, http.StatusForbidden, "forbidden")
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
 			return
 		}
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusCreated, msg)
+	utils.WriteJSON(w, http.StatusCreated, msg)
 }
 
 func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.MarkRead(id, claims.UserID); err != nil {
+	if err := h.svc.MarkRead(id, userID); err != nil {
 		if err == errForbidden {
-			WriteError(w, http.StatusForbidden, "forbidden")
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
 			return
 		}
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (h *Handler) deleteMessage(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.DeleteMessage(id, claims.UserID); err != nil {
-		WriteError(w, http.StatusNotFound, err.Error())
+	if err := h.svc.DeleteMessage(id, userID); err != nil {
+		utils.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (h *Handler) unreadTotal(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	count, err := h.svc.UnreadTotal(claims.UserID)
+	count, err := h.svc.UnreadTotal(userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]int{"count": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]int{"count": count})
 }

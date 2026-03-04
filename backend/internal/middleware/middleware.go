@@ -10,7 +10,7 @@ import (
 "strings"
 
 "github.com/go-chi/httprate"
-"github.com/skaia/backend/auth"
+"github.com/skaia/backend/internal/auth"
 )
 
 // JWTAuthMiddleware validates the Bearer token in the Authorization header.

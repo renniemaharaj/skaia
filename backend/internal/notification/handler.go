@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
 
@@ -32,9 +33,9 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	limit := 50
@@ -49,89 +50,89 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 			offset = n
 		}
 	}
-	list, err := h.svc.List(claims.UserID, limit, offset)
+	list, err := h.svc.List(userID, limit, offset)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if list == nil {
 		list = []*models.Notification{}
 	}
-	WriteJSON(w, http.StatusOK, list)
+	utils.WriteJSON(w, http.StatusOK, list)
 }
 
 func (h *Handler) unreadCount(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	count, err := h.svc.UnreadCount(claims.UserID)
+	count, err := h.svc.UnreadCount(userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]int{"count": count})
+	utils.WriteJSON(w, http.StatusOK, map[string]int{"count": count})
 }
 
 func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.MarkRead(id, claims.UserID); err != nil {
-		WriteError(w, http.StatusNotFound, err.Error())
+	if err := h.svc.MarkRead(id, userID); err != nil {
+		utils.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (h *Handler) markAllRead(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if err := h.svc.MarkAllRead(claims.UserID); err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+	if err := h.svc.MarkAllRead(userID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid id")
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.Delete(id, claims.UserID); err != nil {
-		WriteError(w, http.StatusNotFound, err.Error())
+	if err := h.svc.Delete(id, userID); err != nil {
+		utils.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (h *Handler) deleteAll(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if err := h.svc.DeleteAll(claims.UserID); err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+	if err := h.svc.DeleteAll(userID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

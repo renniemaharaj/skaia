@@ -5,7 +5,7 @@ import (
 "net/http/httptest"
 "testing"
 
-"github.com/skaia/backend/auth"
+"github.com/skaia/backend/internal/auth"
 mw "github.com/skaia/backend/internal/middleware"
 "github.com/stretchr/testify/assert"
 "github.com/stretchr/testify/require"

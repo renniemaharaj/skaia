@@ -7,19 +7,21 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
 // Handler exposes all store HTTP endpoints.
 type Handler struct {
-	svc *Service
-	hub *ws.Hub
+	svc   *Service
+	hub   *ws.Hub
+	authz utils.Authorizer
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub) *Handler {
-	return &Handler{svc: svc, hub: hub}
+func NewHandler(svc *Service, hub *ws.Hub, authz utils.Authorizer) *Handler {
+	return &Handler{svc: svc, hub: hub, authz: authz}
 }
 
 // Mount registers all store routes on r.
@@ -76,30 +78,33 @@ func (h *Handler) parseID(r *http.Request, param string) (int64, error) {
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	cats, err := h.svc.ListCategories()
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, cats)
+	utils.WriteJSON(w, http.StatusOK, cats)
 }
 
 func (h *Handler) getCategory(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 	cat, err := h.svc.GetCategory(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "category not found")
+		utils.WriteError(w, http.StatusNotFound, "category not found")
 		return
 	}
-	WriteJSON(w, http.StatusOK, cat)
+	utils.WriteJSON(w, http.StatusOK, cat)
 }
 
 func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageCategories") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageCategories") {
 		return
 	}
 	var req struct {
@@ -108,7 +113,7 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		DisplayOrder int    `json:"display_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		WriteError(w, http.StatusBadRequest, "name required")
+		utils.WriteError(w, http.StatusBadRequest, "name required")
 		return
 	}
 	cat, err := h.svc.CreateCategory(&models.StoreCategory{
@@ -118,24 +123,27 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("store.createCategory: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create category")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create category")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(cat, "category_created")
 	}
-	WriteJSON(w, http.StatusCreated, cat)
+	utils.WriteJSON(w, http.StatusCreated, cat)
 }
 
 func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageCategories") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageCategories") {
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 	var req struct {
@@ -144,7 +152,7 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		DisplayOrder int    `json:"display_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	cat, err := h.svc.UpdateCategory(&models.StoreCategory{
@@ -154,34 +162,37 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		DisplayOrder: req.DisplayOrder,
 	})
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to update category")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update category")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(cat, "category_updated")
 	}
-	WriteJSON(w, http.StatusOK, cat)
+	utils.WriteJSON(w, http.StatusOK, cat)
 }
 
 func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageCategories") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageCategories") {
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 	if err := h.svc.DeleteCategory(id); err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to delete category")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "category_deleted")
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // Product handlers
@@ -190,7 +201,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) listCategoryProducts(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid category ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
 	limit, offset := 50, 0
@@ -202,13 +213,13 @@ func (h *Handler) listCategoryProducts(w http.ResponseWriter, r *http.Request) {
 	}
 	products, err := h.svc.ListProductsByCategory(id, limit, offset)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if products == nil {
 		products = []*models.Product{}
 	}
-	WriteJSON(w, http.StatusOK, products)
+	utils.WriteJSON(w, http.StatusOK, products)
 }
 
 func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
@@ -225,7 +236,7 @@ func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
 	if catStr := r.URL.Query().Get("category_id"); catStr != "" {
 		catID, parseErr := strconv.ParseInt(catStr, 10, 64)
 		if parseErr != nil {
-			WriteError(w, http.StatusBadRequest, "invalid category_id")
+			utils.WriteError(w, http.StatusBadRequest, "invalid category_id")
 			return
 		}
 		products, err = h.svc.ListProductsByCategory(catID, limit, offset)
@@ -233,30 +244,33 @@ func (h *Handler) listProducts(w http.ResponseWriter, r *http.Request) {
 		products, err = h.svc.ListProducts(limit, offset)
 	}
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, products)
+	utils.WriteJSON(w, http.StatusOK, products)
 }
 
 func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid product ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
 		return
 	}
 	p, err := h.svc.GetProduct(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "product not found")
+		utils.WriteError(w, http.StatusNotFound, "product not found")
 		return
 	}
-	WriteJSON(w, http.StatusOK, p)
+	utils.WriteJSON(w, http.StatusOK, p)
 }
 
 func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.product-new") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.product-new") {
 		return
 	}
 	var req struct {
@@ -270,7 +284,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		IsActive       bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	p, err := h.svc.CreateProduct(&models.Product{
@@ -285,29 +299,32 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Printf("store.createProduct: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create product")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create product")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(p, "product_created")
 	}
-	WriteJSON(w, http.StatusCreated, p)
+	utils.WriteJSON(w, http.StatusCreated, p)
 }
 
 func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.product-edit") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.product-edit") {
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid product ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
 		return
 	}
 	existing, err := h.svc.GetProduct(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "product not found")
+		utils.WriteError(w, http.StatusNotFound, "product not found")
 		return
 	}
 	var req struct {
@@ -321,7 +338,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		IsActive       *bool    `json:"is_active"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.CategoryID != nil {
@@ -359,56 +376,59 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	updated, err := h.svc.UpdateProduct(existing)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to update product")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update product")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(updated, "product_updated")
 	}
-	WriteJSON(w, http.StatusOK, updated)
+	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
 func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.product-delete") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.product-delete") {
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid product ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
 		return
 	}
 	if err := h.svc.DeleteProduct(id); err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to delete product")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete product")
 		return
 	}
 	if h.hub != nil {
 		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "product_deleted")
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 // Cart handlers
 
 func (h *Handler) getCart(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	items, err := h.svc.GetUserCart(claims.UserID)
+	items, err := h.svc.GetUserCart(userID)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]interface{}{"items": items})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": items})
 }
 
 func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	var req struct {
@@ -416,25 +436,25 @@ func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
 		Quantity  int   `json:"quantity"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ProductID == 0 {
-		WriteError(w, http.StatusBadRequest, "product_id required")
+		utils.WriteError(w, http.StatusBadRequest, "product_id required")
 		return
 	}
 	if req.Quantity <= 0 {
 		req.Quantity = 1
 	}
-	item, err := h.svc.AddToCart(claims.UserID, req.ProductID, req.Quantity)
+	item, err := h.svc.AddToCart(userID, req.ProductID, req.Quantity)
 	if err != nil {
 		log.Printf("store.addToCart: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to add item to cart")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to add item to cart")
 		return
 	}
-	WriteJSON(w, http.StatusCreated, item)
+	utils.WriteJSON(w, http.StatusCreated, item)
 }
 
 func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	var req struct {
@@ -442,56 +462,56 @@ func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
 		Quantity  int   `json:"quantity"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	item, err := h.svc.UpdateCartItem(claims.UserID, req.ProductID, req.Quantity)
+	item, err := h.svc.UpdateCartItem(userID, req.ProductID, req.Quantity)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to update cart item")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update cart item")
 		return
 	}
-	WriteJSON(w, http.StatusOK, item)
+	utils.WriteJSON(w, http.StatusOK, item)
 }
 
 func (h *Handler) removeFromCart(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	var req struct {
 		ProductID int64 `json:"product_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if err := h.svc.RemoveFromCart(claims.UserID, req.ProductID); err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to remove item from cart")
+	if err := h.svc.RemoveFromCart(userID, req.ProductID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to remove item from cart")
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "removed"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "removed"})
 }
 
 func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	if err := h.svc.ClearCart(claims.UserID); err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to clear cart")
+	if err := h.svc.ClearCart(userID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to clear cart")
 		return
 	}
-	WriteJSON(w, http.StatusOK, map[string]string{"status": "cleared"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "cleared"})
 }
 
 // Order handlers
 
 func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -503,7 +523,7 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		} `json:"items"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
-		WriteError(w, http.StatusBadRequest, "items required")
+		utils.WriteError(w, http.StatusBadRequest, "items required")
 		return
 	}
 
@@ -519,26 +539,26 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order, err := h.svc.CreateOrder(&models.Order{
-		UserID:     claims.UserID,
+		UserID:     userID,
 		TotalPrice: total,
 		Status:     "pending",
 	}, items)
 	if err != nil {
 		log.Printf("store.createOrder: %v", err)
-		WriteError(w, http.StatusInternalServerError, "failed to create order")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create order")
 		return
 	}
 
 	// Clear cart after successful purchase
-	_ = h.svc.ClearCart(claims.UserID)
+	_ = h.svc.ClearCart(userID)
 
-	WriteJSON(w, http.StatusCreated, order)
+	utils.WriteJSON(w, http.StatusCreated, order)
 }
 
 func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	limit, offset := 20, 0
@@ -548,62 +568,66 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
 		offset = o
 	}
-	orders, err := h.svc.GetUserOrders(claims.UserID, limit, offset)
+	orders, err := h.svc.GetUserOrders(userID, limit, offset)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	WriteJSON(w, http.StatusOK, orders)
+	utils.WriteJSON(w, http.StatusOK, orders)
 }
 
 func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid order ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
 		return
 	}
 	order, err := h.svc.GetOrder(id)
 	if err != nil {
-		WriteError(w, http.StatusNotFound, "order not found")
+		utils.WriteError(w, http.StatusNotFound, "order not found")
 		return
 	}
 	// Only allow user to see their own orders unless admin
-	if order.UserID != claims.UserID && !HasClaim(claims, "store.manageOrders") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	if order.UserID != userID && !canManage {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	WriteJSON(w, http.StatusOK, order)
+	utils.WriteJSON(w, http.StatusOK, order)
 }
 
 func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
-	if !ok || !HasClaim(claims, "store.manageOrders") {
-		WriteError(w, http.StatusForbidden, "insufficient permissions")
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
 		return
 	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
-		WriteError(w, http.StatusBadRequest, "invalid order ID")
+		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
 		return
 	}
 	var req struct {
 		Status string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Status == "" {
-		WriteError(w, http.StatusBadRequest, "status required")
+		utils.WriteError(w, http.StatusBadRequest, "status required")
 		return
 	}
 	order, err := h.svc.UpdateOrderStatus(id, req.Status)
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "failed to update order status")
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update order status")
 		return
 	}
-	WriteJSON(w, http.StatusOK, order)
+	utils.WriteJSON(w, http.StatusOK, order)
 }
 
 // ── Checkout handler ──────────────────────────────────────────────────────────
@@ -611,25 +635,25 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 // a CheckoutResponse. The actual charge happens via the PaymentProvider abstraction.
 
 func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
-	claims, ok := ClaimsFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
 	var req models.CheckoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
-		WriteError(w, http.StatusBadRequest, "items required")
+		utils.WriteError(w, http.StatusBadRequest, "items required")
 		return
 	}
 	if req.Currency == "" {
 		req.Currency = "usd"
 	}
 
-	resp, err := h.svc.Checkout(claims.UserID, &req)
+	resp, err := h.svc.Checkout(userID, &req)
 	if err != nil {
 		log.Printf("store.checkout: %v", err)
-		WriteError(w, http.StatusInternalServerError, "checkout failed")
+		utils.WriteError(w, http.StatusInternalServerError, "checkout failed")
 		return
 	}
 
@@ -639,14 +663,14 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 		if resp.Status == "failed" {
 			action = "purchase_failure"
 		}
-		h.hub.SendToUser(claims.UserID, buildStoreMsg(action, resp))
+		h.hub.SendToUser(userID, buildStoreMsg(action, resp))
 	}
 
 	httpStatus := http.StatusCreated
 	if resp.Status == "failed" {
 		httpStatus = http.StatusPaymentRequired
 	}
-	WriteJSON(w, httpStatus, resp)
+	utils.WriteJSON(w, httpStatus, resp)
 }
 
 // buildStoreMsg creates a store:update WebSocket message for delivery to a specific user.

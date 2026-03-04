@@ -18,7 +18,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - ./backend/migrations:/docker-entrypoint-initdb.d
+      - ./backend/internal/migrations:/docker-entrypoint-initdb.d
     networks:
       - skaia-test-network
     healthcheck:
