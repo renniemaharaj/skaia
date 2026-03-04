@@ -77,11 +77,6 @@ const ViewThreadPage = () => {
   };
 
   const handleDelete = async () => {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete this thread?",
-    );
-    if (!confirmDelete) return;
-
     try {
       await apiRequest(`/forum/threads/${threadId}`, {
         method: "DELETE",

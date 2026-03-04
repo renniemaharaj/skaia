@@ -72,26 +72,22 @@ export const Forum: React.FC<ForumProps> = () => {
   }, [loadForums]);
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (confirm("Are you sure you want to delete this category?")) {
-      try {
-        await apiRequest(`/forum/categories/${categoryId}`, {
-          method: "DELETE",
-        });
-        // Deletion will come through WebSocket
-      } catch (error) {
-        console.error("Error deleting category:", error);
-      }
+    try {
+      await apiRequest(`/forum/categories/${categoryId}`, {
+        method: "DELETE",
+      });
+      // Deletion will come through WebSocket
+    } catch (error) {
+      console.error("Error deleting category:", error);
     }
   };
 
   const handleDeleteThread = (threadId: string, _: string) => {
-    if (confirm("Are you sure you want to delete this thread?")) {
-      apiRequest(`/forum/threads/${threadId}`, {
-        method: "DELETE",
-      }).catch((error) => {
-        console.error("Error deleting thread:", error);
-      });
-    }
+    apiRequest(`/forum/threads/${threadId}`, {
+      method: "DELETE",
+    }).catch((error) => {
+      console.error("Error deleting thread:", error);
+    });
   };
 
   const canCreateCategory =

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { Link, useSearchParams } from "react-router-dom";
 import { Send, UserCog2Icon, Plus, InboxIcon } from "lucide-react";
+import { toast } from "sonner";
 import {
   inboxConversationsAtom,
   inboxMessagesAtom,
@@ -206,7 +207,7 @@ const InboxPage = () => {
         setActiveId(conv.id);
       }
     } catch {
-      alert("User not found or cannot start conversation.");
+      toast.error("User not found or cannot start conversation.");
     } finally {
       setShowNewDm(false);
       setNewDmTarget("");

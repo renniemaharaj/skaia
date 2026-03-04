@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ShoppingCart, Package, Plus, Edit2, Trash2, Tag } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
+import {
+  currentUserAtom,
+  isAuthenticatedAtom,
+  socketAtom,
+} from "../../atoms/auth";
 import {
   productsAtom,
   productCategoriesAtom,
@@ -152,7 +156,6 @@ export const Store: React.FC = () => {
 
   // ── Admin actions ─────────────────────────────────────────────────────────
   const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
     try {
       await apiRequest(`/store/products/${productId}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== productId));
@@ -162,10 +165,6 @@ export const Store: React.FC = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (
-      !confirm("Delete this category? All products in it will also be deleted.")
-    )
-      return;
     try {
       await apiRequest(`/store/categories/${categoryId}`, { method: "DELETE" });
       setCategories((prev) => prev.filter((c) => c.id !== categoryId));

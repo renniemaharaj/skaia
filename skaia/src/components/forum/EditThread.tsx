@@ -71,23 +71,17 @@ const EditThread = () => {
     };
   }, [threadId, setCurrentThread, subscribe, unsubscribe]);
 
-  // Listen for thread updates from WebSocket to detect conflicts
+  // Silently sync editor fields when the thread is updated via WebSocket
   useEffect(() => {
     if (
       currentThread &&
       lastUpdated &&
       currentThread.updated_at !== lastUpdated
     ) {
-      // Thread was updated by another user
-      const userConfirm = confirm(
-        "This thread has been updated by another user. Do you want to reload the latest version?",
-      );
-      if (userConfirm) {
-        setEditTitle(currentThread.title);
-        setEditContent(currentThread.content);
-        setSelectedCategory(currentThread.category_id);
-        setLastUpdated(currentThread.updated_at);
-      }
+      setEditTitle(currentThread.title);
+      setEditContent(currentThread.content);
+      setSelectedCategory(currentThread.category_id);
+      setLastUpdated(currentThread.updated_at);
     }
   }, [currentThread]);
 

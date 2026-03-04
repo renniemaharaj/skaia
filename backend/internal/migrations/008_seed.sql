@@ -60,15 +60,15 @@ FROM   permissions p
 ON CONFLICT DO NOTHING;
 
 -- ── Default admin account ─────────────────────────────────────────────────────
--- Password: password123
--- Re-hash with: bcrypt.GenerateFromPassword([]byte("password123"), 10)
+-- The password_hash here is a dummy placeholder.  The real hash is set by the
+-- Go backend on every startup from the ADMIN_PASSWORD environment variable.
 INSERT INTO users (id, username, email, password_hash, display_name, bio,
                    avatar_url, banner_url, photo_url,
                    is_suspended, created_at, updated_at)
 SELECT 1,
        'admin',
        'admin@skaiacraft.local',
-       '$2a$10$5rGYDGGQ32l5bhO5m0uph.Xr11UMG2ox9eDBEFAYJRQyccw7FWYEG',
+       '$placeholder$',
        'Administrator',
        'Default administrator account',
        '', '', '',

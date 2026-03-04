@@ -14,6 +14,9 @@ FROM nginx:alpine
 # Copy nginx config
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 
+# Create the proxy-cache directory used by the /uploads/ cache zone
+RUN mkdir -p /var/cache/nginx/uploads
+
 # Copy built assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 

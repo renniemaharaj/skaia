@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/skaia/backend/database"
+	"github.com/skaia/backend/internal/auth"
 	iforum "github.com/skaia/backend/internal/forum"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	"github.com/skaia/backend/internal/integration"
@@ -60,6 +61,8 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer database.Close()
+
+	seedAdminPassword(database.DB)
 
 	hub := ws.NewHub()
 	go hub.Run()
@@ -130,6 +133,27 @@ func runIntegrationSuite(db *sql.DB) {
 	os.Exit(0)
 }
 
+// seedAdminPassword reads ADMIN_PASSWORD from the environment, bcrypt-hashes it,
+// and updates the admin user's password_hash in the database.  This runs once on
+// every startup so the admin password always matches the env var.
+func seedAdminPassword(db *sql.DB) {
+	pw := os.Getenv("ADMIN_PASSWORD")
+	if pw == "" {
+		log.Println("ADMIN_PASSWORD not set — skipping admin password seed")
+		return
+	}
+	hash, err := auth.HashPassword(pw)
+	if err != nil {
+		log.Printf("admin seed: failed to hash password: %v", err)
+		return
+	}
+	if _, err := db.Exec(`UPDATE users SET password_hash = $1 WHERE username = 'admin'`, hash); err != nil {
+		log.Printf("admin seed: failed to update password: %v", err)
+		return
+	}
+	log.Println("admin seed: admin password updated from ADMIN_PASSWORD")
+}
+
 // buildRouter constructs the fully-mounted chi.Router for the given db and hub.
 // This is used both in production and in the integration test suite.
 func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
@@ -191,10 +215,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	inboxRepo := iinbox.NewRepository(db)
 	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 	iinbox.NewHandler(inboxSvc).Mount(r, imw.JWTAuthMiddleware)
-
-	// Serve uploaded user assets (profile photos, banners)
-	uploadsFS := http.FileServer(http.Dir("./uploads"))
-	r.Handle("/uploads/*", http.StripPrefix("/uploads", uploadsFS))
 
 	return r
 }

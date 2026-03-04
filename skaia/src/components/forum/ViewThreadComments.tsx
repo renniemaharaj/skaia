@@ -110,8 +110,6 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   };
 
   const handleDeleteComment = useCallback(async (commentId: string) => {
-    if (!confirm("Delete this comment?")) return;
-
     try {
       await apiRequest(`/forum/comments/${commentId}`, {
         method: "DELETE",
