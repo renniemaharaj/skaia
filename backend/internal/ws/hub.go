@@ -3,10 +3,51 @@ package ws
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 )
+
+// ── Environment-driven configuration ────────────────────────────────────────
+// All values default to production-ready settings tuned for 100 K concurrent
+// connections. Override via environment variables (see .env.example).
+
+// HubConfig holds runtime-tunable WebSocket hub settings read from the
+// environment at startup. Use loadHubConfig() to populate.
+type HubConfig struct {
+	MaxConnections   int64
+	MaxWorkers       int
+	SessionSize      int
+	ChatRingSize     int
+	PresenceInterval time.Duration
+}
+
+// envInt reads key from the environment, returning def when absent or invalid.
+func envInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		log.Printf("ws: invalid %s=%q, using default %d", key, v, def)
+		return def
+	}
+	return n
+}
+
+// loadHubConfig reads hub tuning knobs from the environment.
+func loadHubConfig() HubConfig {
+	return HubConfig{
+		MaxConnections:   int64(envInt("WS_MAX_CONNECTIONS", 100_000)),
+		MaxWorkers:       envInt("WS_MAX_WORKERS", 256),
+		SessionSize:      envInt("WS_SESSION_SIZE", 100),
+		ChatRingSize:     envInt("WS_CHAT_RING_SIZE", 80),
+		PresenceInterval: time.Duration(envInt("WS_PRESENCE_INTERVAL_MS", 1000)) * time.Millisecond,
+	}
+}
 
 // ClientPresence carries a presence announcement from a client, processed in Run.
 type ClientPresence struct {
@@ -29,25 +70,44 @@ type TeleportRequest struct {
 	Route        string // route the target should navigate to
 }
 
-const (
-	// globalChatRingSize is the maximum number of global chat messages kept in memory.
-	globalChatRingSize = 80
-	// cursorSessionSize caps how many clients share a cursor-presence session.
-	// Cursor updates are only relayed within a session, bounding fan-out to O(cursorSessionSize).
-	cursorSessionSize = 100
-	// maxConnections is the total number of simultaneous WebSocket connections the hub will accept.
-	// Registrations above this threshold are rejected immediately.
-	maxConnections = 10_000
-	// maxWorkers limits concurrent fan-out goroutines in the hub's worker pool.
-	maxWorkers = 64
-	// presenceInterval is the minimum interval between coalesced presence broadcasts.
-	presenceInterval = 1 * time.Second
-)
+// sessionChatRing is a per-session circular buffer for chat history.
+type sessionChatRing struct {
+	ring  []GlobalChatMessage
+	head  int
+	count int
+	size  int
+}
+
+func newSessionChatRing(size int) *sessionChatRing {
+	return &sessionChatRing{ring: make([]GlobalChatMessage, size), size: size}
+}
+
+func (r *sessionChatRing) push(msg GlobalChatMessage) {
+	r.ring[r.head] = msg
+	r.head = (r.head + 1) % r.size
+	if r.count < r.size {
+		r.count++
+	}
+}
+
+func (r *sessionChatRing) history() []GlobalChatMessage {
+	if r.count == 0 {
+		return nil
+	}
+	start := (r.head - r.count + r.size) % r.size
+	out := make([]GlobalChatMessage, r.count)
+	for i := 0; i < r.count; i++ {
+		out[i] = r.ring[(start+i)%r.size]
+	}
+	return out
+}
 
 // Hub manages WebSocket connections and resource subscriptions.
 // Run dispatches work to a bounded worker pool; shared state is protected
 // by the mutexes documented on each field group.
 type Hub struct {
+	cfg HubConfig
+
 	// ── channels ────────────────────────────────────────────────────────────
 	clients         map[*Client]bool
 	broadcast       chan *Message
@@ -68,20 +128,18 @@ type Hub struct {
 	// ── worker pool — caps concurrent fan-out goroutines ─────────────────
 	workerSem chan struct{}
 
-	// ── global chat ring buffer — protected by chatMu ────────────────────
+	// ── per-session chat ring buffers — protected by sessionMu ───────────
 	chatMu     sync.Mutex
-	chatRing   [globalChatRingSize]GlobalChatMessage
-	chatHead   int // next write position
-	chatCount  int // messages stored (capped at globalChatRingSize)
+	chatRings  map[int64]*sessionChatRing // sessionID → ring
 	nextChatID int64
 
-	// ── cursor sessions — protected by cursorSessionMu ───────────────────
-	// Clients are bucketed into sessions of at most cursorSessionSize.
-	// Cursor updates are only fanned out within the sender's session,
-	// bounding per-update work regardless of total connection count.
-	cursorSessionMu   sync.Mutex
-	cursorSessions    map[int64]int // sessionID → active client count
-	nextCursorSession int64
+	// ── sessions — protected by sessionMu ────────────────────────────────
+	// Clients are bucketed into sessions of at most cfg.SessionSize.
+	// Chat, presence and cursor updates are scoped to a session, bounding
+	// per-event fan-out to O(SessionSize) regardless of total connections.
+	sessionMu   sync.Mutex
+	sessions    map[int64]int // sessionID → active client count
+	nextSession int64
 
 	// ── monotonic client ID — accessed via atomic ─────────────────────────
 	nextClientID atomic.Int64
@@ -95,7 +153,11 @@ type Hub struct {
 
 // NewHub creates and initialises a Hub ready to be started with Run.
 func NewHub() *Hub {
+	cfg := loadHubConfig()
+	log.Printf("ws: hub config — max_conn=%d workers=%d session_size=%d chat_ring=%d presence_ms=%d",
+		cfg.MaxConnections, cfg.MaxWorkers, cfg.SessionSize, cfg.ChatRingSize, cfg.PresenceInterval.Milliseconds())
 	return &Hub{
+		cfg:             cfg,
 		clients:         make(map[*Client]bool),
 		broadcast:       make(chan *Message, 2048),
 		register:        make(chan *Client, 2048),
@@ -108,8 +170,9 @@ func NewHub() *Hub {
 		teleport:        make(chan TeleportRequest, 256),
 		globalChat:      make(chan GlobalChatMessage, 1024),
 		cursorUpdates:   make(chan CursorBroadcast, 2048),
-		cursorSessions:  make(map[int64]int),
-		workerSem:       make(chan struct{}, maxWorkers),
+		sessions:        make(map[int64]int),
+		chatRings:       make(map[int64]*sessionChatRing),
+		workerSem:       make(chan struct{}, cfg.MaxWorkers),
 	}
 }
 
@@ -125,16 +188,15 @@ func clientLabel(c *Client) string {
 }
 
 // Run is the hub's event loop. Start it in a dedicated goroutine.
-// Fan-out work is dispatched to a bounded worker pool (maxWorkers) so
-// that slow broadcasts never spawn unbounded goroutines. Presence
-// broadcasts are coalesced: rapid changes set a dirty flag and a
-// background ticker fires the actual broadcast at most once per
-// presenceInterval.
+// Fan-out work is dispatched to a bounded worker pool so that slow
+// broadcasts never spawn unbounded goroutines. Presence broadcasts are
+// coalesced: rapid changes set a dirty flag and a background ticker
+// fires the actual broadcast at most once per cfg.PresenceInterval.
 func (h *Hub) Run() {
 	// Presence debounce: a background ticker checks the dirty flag and
-	// broadcasts at most once per presenceInterval.
+	// broadcasts at most once per cfg.PresenceInterval.
 	go func() {
-		ticker := time.NewTicker(presenceInterval)
+		ticker := time.NewTicker(h.cfg.PresenceInterval)
 		defer ticker.Stop()
 		for range ticker.C {
 			if h.presenceDirty.CompareAndSwap(1, 0) {

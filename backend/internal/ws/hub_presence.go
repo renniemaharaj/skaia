@@ -5,22 +5,31 @@ import (
 	"log"
 )
 
-// doPresenceBroadcast builds the current online user list and sends it to every
-// connected client. Uses a read lock so broadcasts, subscriptions and other
-// read-side operations are never blocked by presence fan-out.
-// Clients with full send buffers are skipped rather than evicted — cleanup
-// is handled by the client's WritePump / ReadPump deadline.
+// doPresenceBroadcast builds a per-session online user list and sends it only
+// to clients within the same session. This bounds fan-out to O(SessionSize)
+// per session regardless of total connection count.
 func (h *Hub) doPresenceBroadcast() {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	// Authenticated users: deduplicate by UserID, prefer entry with a name.
-	// Guests: each connection is unique — use a negative ClientID as their presence ID.
-	seen := make(map[int64]PresenceUser, len(h.clients))
+	// Group clients by session, deduplicating users within each session.
+	type sessionData struct {
+		seen    map[int64]PresenceUser
+		clients []*Client
+	}
+	bySession := make(map[int64]*sessionData)
+
 	for client := range h.clients {
+		sd, ok := bySession[client.SessionID]
+		if !ok {
+			sd = &sessionData{seen: make(map[int64]PresenceUser)}
+			bySession[client.SessionID] = sd
+		}
+		sd.clients = append(sd.clients, client)
+
 		var presenceID int64
 		if client.UserID == 0 {
-			presenceID = -client.ClientID // unique negative ID per guest connection
+			presenceID = -client.ClientID
 		} else {
 			presenceID = client.UserID
 		}
@@ -30,30 +39,32 @@ func (h *Hub) doPresenceBroadcast() {
 			Avatar:   client.Avatar,
 			Route:    client.Route,
 		}
-		existing, ok := seen[presenceID]
-		if !ok || (pu.UserName != "" && existing.UserName == "") {
-			seen[presenceID] = pu
+		existing, exists := sd.seen[presenceID]
+		if !exists || (pu.UserName != "" && existing.UserName == "") {
+			sd.seen[presenceID] = pu
 		}
 	}
-	users := make([]PresenceUser, 0, len(seen))
-	for _, u := range seen {
-		if len(users) >= 100 {
-			break
+
+	for _, sd := range bySession {
+		users := make([]PresenceUser, 0, len(sd.seen))
+		for _, u := range sd.seen {
+			if len(users) >= 100 {
+				break
+			}
+			users = append(users, u)
 		}
-		users = append(users, u)
-	}
 
-	payload, _ := json.Marshal(map[string]interface{}{
-		"action": "presence_updated",
-		"users":  users,
-	})
-	msg := &Message{Type: PresenceSync, Payload: payload}
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": "presence_updated",
+			"users":  users,
+		})
+		msg := &Message{Type: PresenceSync, Payload: payload}
 
-	for client := range h.clients {
-		select {
-		case client.Send <- msg:
-		default:
-			// Buffer full — skip. Client will be reaped by its write deadline.
+		for _, client := range sd.clients {
+			select {
+			case client.Send <- msg:
+			default:
+			}
 		}
 	}
 }
@@ -85,8 +96,8 @@ func (h *Hub) handleTeleport(req TeleportRequest) {
 }
 
 // handleCursorBroadcast relays a cursor position to every other client
-// in the same cursor session AND on the same route.
-// Sessions cap fan-out to cursorSessionSize regardless of total connection count.
+// in the same session AND on the same route.
+// Sessions cap fan-out to cfg.SessionSize regardless of total connection count.
 func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
 	sender := cu.Client
 	if sender.Route == "" {
@@ -113,7 +124,7 @@ func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
 	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client == sender ||
-			client.CursorSessionID != sender.CursorSessionID ||
+			client.SessionID != sender.SessionID ||
 			client.Route != sender.Route {
 			continue
 		}

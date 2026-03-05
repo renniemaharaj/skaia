@@ -11,12 +11,12 @@ import (
 
 // Client represents a single WebSocket connection managed by the Hub.
 type Client struct {
-	Hub             *Hub
-	Conn            *websocket.Conn
-	Send            chan *Message
-	ClientID        int64 // unique per connection, assigned by Hub at registration
-	UserID          int64
-	CursorSessionID int64 // cursor-presence session bucket, assigned at registration
+	Hub       *Hub
+	Conn      *websocket.Conn
+	Send      chan *Message
+	ClientID  int64 // unique per connection, assigned by Hub at registration
+	UserID    int64
+	SessionID int64 // session bucket for chat, presence & cursor fan-out
 	// Presence fields — written under Hub.mu.Lock via presenceUpdates.
 	Route    string
 	UserName string
@@ -266,6 +266,7 @@ func (c *Client) handleGlobalChat(msg Message) {
 		Content:   p.Content,
 		CreatedAt: now.UTC().Format(time.RFC3339),
 		IsGuest:   isGuest,
+		SessionID: c.SessionID,
 	})
 }
 

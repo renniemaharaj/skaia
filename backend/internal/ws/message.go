@@ -39,7 +39,7 @@ type PresenceUser struct {
 	Route    string `json:"route"`
 }
 
-// GlobalChatMessage is a single message in the global channel.
+// GlobalChatMessage is a single message in the session chat channel.
 type GlobalChatMessage struct {
 	ID        int64  `json:"id"`
 	UserID    int64  `json:"user_id"`
@@ -48,6 +48,7 @@ type GlobalChatMessage struct {
 	Content   string `json:"content"`
 	CreatedAt string `json:"created_at"`
 	IsGuest   bool   `json:"is_guest"`
+	SessionID int64  `json:"-"` // internal routing — not serialised to clients
 }
 
 // Message represents a WebSocket message.

@@ -2,12 +2,14 @@ package ws
 
 import "log"
 
-// handleRegister assigns a ClientID and cursor session to the new client,
-// then adds it to the hub's client map. Rejects the connection if the server
-// is at capacity.
+// handleRegister assigns a ClientID and session to the new client, then adds
+// it to the hub's client map. Sessions are shared buckets used for chat,
+// presence and cursor fan-out — existing sessions with capacity are reused
+// before a new one is created. Rejects the connection if the server is at
+// capacity.
 func (h *Hub) handleRegister(client *Client) {
-	if h.connCount.Load() >= maxConnections {
-		log.Printf("ws: connection limit (%d) reached, rejecting %s", maxConnections, clientLabel(client))
+	if h.connCount.Load() >= h.cfg.MaxConnections {
+		log.Printf("ws: connection limit (%d) reached, rejecting %s", h.cfg.MaxConnections, clientLabel(client))
 		close(client.Send)
 		return
 	}
@@ -19,44 +21,56 @@ func (h *Hub) handleRegister(client *Client) {
 	h.clients[client] = true
 	h.mu.Unlock()
 
-	// Assign the client to a cursor session with available capacity, or open a new one.
-	h.cursorSessionMu.Lock()
+	// Assign the client to a session with available capacity, or open a new one.
+	h.sessionMu.Lock()
 	assigned := false
-	for sid, count := range h.cursorSessions {
-		if count < cursorSessionSize {
-			h.cursorSessions[sid]++
-			client.CursorSessionID = sid
+	for sid, count := range h.sessions {
+		if count < h.cfg.SessionSize {
+			h.sessions[sid]++
+			client.SessionID = sid
 			assigned = true
 			break
 		}
 	}
 	if !assigned {
-		h.nextCursorSession++
-		sid := h.nextCursorSession
-		h.cursorSessions[sid] = 1
-		client.CursorSessionID = sid
+		h.nextSession++
+		sid := h.nextSession
+		h.sessions[sid] = 1
+		client.SessionID = sid
 	}
-	h.cursorSessionMu.Unlock()
 
-	log.Printf("ws: joined  %s (cursor session %d)", clientLabel(client), client.CursorSessionID)
+	// Ensure the session has a chat ring buffer.
+	h.chatMu.Lock()
+	if _, ok := h.chatRings[client.SessionID]; !ok {
+		h.chatRings[client.SessionID] = newSessionChatRing(h.cfg.ChatRingSize)
+	}
+	h.chatMu.Unlock()
+
+	h.sessionMu.Unlock()
+
+	log.Printf("ws: joined  %s (session %d)", clientLabel(client), client.SessionID)
 }
 
-// handleUnregister releases a client's cursor session slot, removes it from all
+// handleUnregister releases a client's session slot, removes it from all
 // subscriptions, closes its send channel, and decrements the connection counter.
 func (h *Hub) handleUnregister(client *Client) {
 	// Decrement the connection counter so new connections can take this slot.
 	h.connCount.Add(-1)
 
-	// Release cursor session slot before acquiring the main lock.
-	h.cursorSessionMu.Lock()
-	if count, ok := h.cursorSessions[client.CursorSessionID]; ok {
+	// Release session slot before acquiring the main lock.
+	h.sessionMu.Lock()
+	if count, ok := h.sessions[client.SessionID]; ok {
 		if count <= 1 {
-			delete(h.cursorSessions, client.CursorSessionID)
+			delete(h.sessions, client.SessionID)
+			// Clean up the chat ring for a now-empty session.
+			h.chatMu.Lock()
+			delete(h.chatRings, client.SessionID)
+			h.chatMu.Unlock()
 		} else {
-			h.cursorSessions[client.CursorSessionID]--
+			h.sessions[client.SessionID]--
 		}
 	}
-	h.cursorSessionMu.Unlock()
+	h.sessionMu.Unlock()
 
 	h.mu.Lock()
 	defer h.mu.Unlock()

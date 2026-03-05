@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -32,6 +33,20 @@ import (
 
 //go:embed internal/migrations/*.sql
 var migrationFiles embed.FS
+
+// mainEnvInt reads an integer from the environment, returning def when absent.
+func mainEnvInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		log.Printf("main: invalid %s=%q, using default %d", key, v, def)
+		return def
+	}
+	return n
+}
 
 // SimpleResponse is a basic JSON response structure
 type SimpleResponse struct {
@@ -78,9 +93,9 @@ func main() {
 	srv := &http.Server{
 		Addr:         ":" + port,
 		Handler:      buildRouter(database.DB, hub),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  time.Duration(mainEnvInt("HTTP_READ_TIMEOUT_SEC", 15)) * time.Second,
+		WriteTimeout: time.Duration(mainEnvInt("HTTP_WRITE_TIMEOUT_SEC", 15)) * time.Second,
+		IdleTimeout:  time.Duration(mainEnvInt("HTTP_IDLE_TIMEOUT_SEC", 60)) * time.Second,
 	}
 
 	go func() {
@@ -96,8 +111,9 @@ func main() {
 	<-quit
 	log.Println("Shutting down server…")
 
-	// Allow up to 30 s for in-flight requests to complete.
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Allow up to N seconds for in-flight requests to complete.
+	shutdownSec := mainEnvInt("HTTP_SHUTDOWN_TIMEOUT_SEC", 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(shutdownSec)*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced shutdown: %v", err)
