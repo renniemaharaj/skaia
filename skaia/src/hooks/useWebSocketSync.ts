@@ -594,7 +594,35 @@ export const useWebSocketSync = () => {
           }
 
           if (message.type === "inbox:message") {
-            setInboxUnreadCount((prev) => prev + 1);
+            // Direct push to recipient — no subscription required.
+            // Bump global badge and update the sidebar so the conversation
+            // list stays current even when no specific chat is open.
+            const inboxMsgConvId = String(
+              (payload as any)?.conversation_id ?? "",
+            );
+            const isActiveConv =
+              inboxMsgConvId &&
+              inboxMsgConvId === String(_activeConversationId);
+            if (!isActiveConv) {
+              setInboxUnreadCount((prev) => prev + 1);
+            }
+            // Always refresh last_message in the sidebar; only bump
+            // unread_count when the conversation is not currently open.
+            if (inboxMsgConvId) {
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === inboxMsgConvId
+                    ? {
+                        ...c,
+                        last_message: payload as any,
+                        unread_count: isActiveConv
+                          ? 0
+                          : (c.unread_count ?? 0) + 1,
+                      }
+                    : c,
+                ),
+              );
+            }
           }
 
           // ── Store ─────────────────────────────────────────────────────────

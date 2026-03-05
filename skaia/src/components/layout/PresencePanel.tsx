@@ -22,6 +22,7 @@ import {
   type GlobalChatMessage,
 } from "../../atoms/chat";
 import { toast } from "sonner";
+import { formatLocalTime } from "../../utils/serverTime";
 import "./PresencePanel.css";
 
 /**
@@ -231,10 +232,7 @@ const PresencePanel = () => {
   const ChatBubble = ({ msg }: { msg: GlobalChatMessage }) => {
     const isMe =
       !msg.is_guest && String(msg.user_id) === String(currentUser?.id);
-    const time = new Date(msg.created_at).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const time = formatLocalTime(msg.created_at);
     const nameEl = msg.is_guest ? (
       <span className="pp-chat-author pp-chat-author--guest">Guest</span>
     ) : (

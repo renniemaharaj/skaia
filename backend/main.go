@@ -224,6 +224,17 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
 
+	// Server time endpoint — lets clients correct clock-skew before computing
+	// relative timestamps. Returns the server's current UTC time in RFC 3339
+	// format so the frontend can calibrate its local clock against the
+	// authoritative backend clock regardless of timezone.
+	r.Get("/time", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"now": time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.HandleConnection(w, r, hub)
 	})

@@ -3,15 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronUp, Eye, Heart, MessageSquare } from "lucide-react";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
 import UserLink from "../user/UserLink";
-
-function formatDate(s: string): string {
-  const d = new Date(s);
-  return (
-    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
-    " · " +
-    d.toLocaleDateString([], { month: "short", day: "numeric" })
-  );
-}
+import { formatDate } from "../../utils/serverTime";
 
 interface Props {
   threads: FeedThread[];

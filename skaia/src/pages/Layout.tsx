@@ -22,6 +22,7 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import PresencePanel from "../components/layout/PresencePanel";
 import CursorOverlay from "../components/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
+import { syncServerTime } from "../utils/serverTime";
 
 interface LayoutProps {
   children: ReactNode;
@@ -35,6 +36,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     return false;
   });
+
+  // Sync client clock against the server once so relative-time calculations
+  // ("5m ago") are anchored to the authoritative UTC backend clock rather than
+  // the potentially drifted client system clock.
+  useEffect(() => {
+    syncServerTime();
+  }, []);
 
   usePresence();
   useCursorTracking();

@@ -14,18 +14,13 @@ import {
 import { currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import {
+  relativeTime,
+  formatLocalTime,
+  formatFullDateTime,
+} from "../../utils/serverTime";
 import "./InboxPage.css";
-
-const relativeTime = (iso: string) => {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-};
+import { parseInt } from "lodash";
 
 const InboxPage = () => {
   const currentUser = useAtomValue(currentUserAtom);
@@ -43,9 +38,24 @@ const InboxPage = () => {
   const [showNewDm, setShowNewDm] = useState(false);
   const [newDmTarget, setNewDmTarget] = useState("");
 
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
   const prevCountRef = useRef(0);
+  const subscribedConvsRef = useRef<Set<number>>(new Set());
+
+  // Keep the inbox flush with the remaining viewport height
+  useEffect(() => {
+    const recalcHeight = () => {
+      if (wrapperRef.current) {
+        const top = wrapperRef.current.getBoundingClientRect().top;
+        wrapperRef.current.style.height = `${window.innerHeight - top}px`;
+      }
+    };
+    recalcHeight();
+    window.addEventListener("resize", recalcHeight);
+    return () => window.removeEventListener("resize", recalcHeight);
+  }, []);
 
   // Load conversations on mount
   useEffect(() => {
@@ -95,8 +105,24 @@ const InboxPage = () => {
     return () => {
       // Clear active when leaving the page
       setActiveId(null);
+      // Unsubscribe from all conversations subscribed while on this page
+      subscribedConvsRef.current.forEach((id) =>
+        unsubscribe("inbox_conversation", id),
+      );
+      subscribedConvsRef.current.clear();
     };
   }, []);
+
+  // Subscribe to every conversation so inbox:update events propagate to the
+  // sidebar even when no specific chat is open.
+  useEffect(() => {
+    conversations.forEach((c) => {
+      if (!subscribedConvsRef.current.has(parseInt(String(c.id)))) {
+        subscribe("inbox_conversation", c.id);
+        subscribedConvsRef.current.add(parseInt(String(c.id)));
+      }
+    });
+  }, [conversations]);
 
   // When active conversation changes: load messages and subscribe
   useEffect(() => {
@@ -113,7 +139,14 @@ const InboxPage = () => {
 
     apiRequest<InboxMessage[]>(`/inbox/conversations/${activeId}/messages`)
       .then((data) => {
-        if (!cancelled) setMessages(data ?? []);
+        if (!cancelled) {
+          const sorted = (data ?? []).sort(
+            (a, b) =>
+              new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime(),
+          );
+          setMessages(sorted);
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -122,13 +155,16 @@ const InboxPage = () => {
 
     subscribe("inbox_conversation", activeId);
 
-    // Mark conversation as read
+    // Mark conversation as read — subtract the actual per-conversation
+    // unread count so the global badge stays accurate.
+    const convToMark = conversations.find((c) => c.id === activeId);
+    const prevUnread = convToMark?.unread_count ?? 0;
     apiRequest(`/inbox/conversations/${activeId}/read`, { method: "PUT" })
       .then(() => {
         setConversations((prev) =>
           prev.map((c) => (c.id === activeId ? { ...c, unread_count: 0 } : c)),
         );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - prevUnread));
       })
       .catch(() => {});
 
@@ -146,7 +182,8 @@ const InboxPage = () => {
     }
   }, [loadingMsgs]);
 
-  // Auto-scroll on new messages
+  // Auto-scroll to bottom when new messages arrive, but only if the user is
+  // already near the bottom — preserve scroll position when reading history.
   useEffect(() => {
     const prev = prevCountRef.current;
     prevCountRef.current = messages.length;
@@ -217,7 +254,7 @@ const InboxPage = () => {
   const activeConv = conversations.find((c) => c.id === activeId);
 
   return (
-    <div className="inbox-page-wrapper">
+    <div className="inbox-page-wrapper" ref={wrapperRef}>
       <div className="inbox-page">
         {/* ── Left: Conversation list ── */}
         <aside className="inbox-sidebar">
@@ -294,7 +331,7 @@ const InboxPage = () => {
                         {relativeTime(c.last_message.created_at)}
                       </span>
                     )}
-                    {c.unread_count > 0 && (
+                    {c.unread_count > 0 && c.id !== activeId && (
                       <span className="inbox-unread-badge">
                         {c.unread_count}
                       </span>
@@ -370,11 +407,11 @@ const InboxPage = () => {
                           </span>
                         )}
                         <p className="inbox-msg-content">{m.content}</p>
-                        <span className="inbox-msg-time">
-                          {new Date(m.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                        <span
+                          className="inbox-msg-time"
+                          title={formatFullDateTime(m.created_at)}
+                        >
+                          {formatLocalTime(m.created_at)}
                         </span>
                       </div>
                     </div>

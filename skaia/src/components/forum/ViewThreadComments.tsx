@@ -8,6 +8,7 @@ import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { currentUserAtom } from "../../atoms/auth";
 import UserLink from "../user/UserLink";
+import { formatDate } from "../../utils/serverTime";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,14 +169,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     [setComments],
   );
 
-  const formatTimestamp = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return (
-      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
-      " · " +
-      d.toLocaleDateString([], { month: "short", day: "numeric" })
-    );
-  };
+  const formatTimestamp = (dateStr: string) => formatDate(dateStr);
 
   return (
     <div className="view-thread-comments">

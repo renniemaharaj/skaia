@@ -2,10 +2,12 @@
 .inbox-page-wrapper {
   padding: 0;
   width: 100%;
-  flex: 1;
+  flex: unset !important;
   display: flex;
   flex-direction: column;
-  min-height: 700px;
+  /* Height is set dynamically via JS to fill the remaining viewport */
+  /* height: 20rem !important; */
+  overflow: hidden;
 }
 
 .inbox-page {

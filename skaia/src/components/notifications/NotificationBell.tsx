@@ -23,6 +23,7 @@ import {
 } from "../../atoms/notifications";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
+import { relativeTimeAgo } from "../../utils/serverTime";
 import "./NotificationBell.css";
 
 const PAGE_SIZE = 30;
@@ -54,17 +55,6 @@ const typeIcon = (type: NotificationType) => {
     default:
       return <Bell size={14} />;
   }
-};
-
-const relativeTime = (iso: string) => {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 };
 
 const NotificationBell = () => {
@@ -260,7 +250,9 @@ const NotificationBell = () => {
                 </span>
                 <div className="notif-body">
                   <p className="notif-message">{n.message}</p>
-                  <span className="notif-time">{relativeTime(n.created_at)}</span>
+                  <span className="notif-time">
+                    {relativeTimeAgo(n.created_at)}
+                  </span>
                 </div>
                 <button
                   className="notif-delete-btn"
