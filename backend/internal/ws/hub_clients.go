@@ -68,19 +68,24 @@ func (h *Hub) handleUnregister(client *Client) {
 	delete(h.clients, client)
 	close(client.Send)
 
-	// Remove all subscriptions for this client.
-	for key, clients := range h.subscriptions {
-		filtered := make([]*Client, 0, len(clients))
-		for _, c := range clients {
-			if c != client {
-				filtered = append(filtered, c)
+	// Use the reverse index for O(subscribed-keys) cleanup instead of
+	// scanning every subscription key in the map.
+	if keys, ok := h.clientSubs[client]; ok {
+		for key := range keys {
+			subs := h.subscriptions[key]
+			filtered := make([]*Client, 0, len(subs))
+			for _, c := range subs {
+				if c != client {
+					filtered = append(filtered, c)
+				}
+			}
+			if len(filtered) == 0 {
+				delete(h.subscriptions, key)
+			} else {
+				h.subscriptions[key] = filtered
 			}
 		}
-		if len(filtered) == 0 {
-			delete(h.subscriptions, key)
-		} else {
-			h.subscriptions[key] = filtered
-		}
+		delete(h.clientSubs, client)
 	}
 	log.Printf("ws: left    %s", clientLabel(client))
 }
@@ -89,6 +94,10 @@ func (h *Hub) handleSubscribe(sub ResourceSubscription) {
 	h.mu.Lock()
 	key := subscriptionKey(sub.ResourceType, sub.ResourceID)
 	h.subscriptions[key] = append(h.subscriptions[key], sub.Client)
+	if h.clientSubs[sub.Client] == nil {
+		h.clientSubs[sub.Client] = make(map[string]bool)
+	}
+	h.clientSubs[sub.Client][key] = true
 	h.mu.Unlock()
 	log.Printf("ws: sub     %s → %s", clientLabel(sub.Client), key)
 }
@@ -114,22 +123,28 @@ func (h *Hub) handleUnsubscribe(unsub ResourceSubscription) {
 	} else {
 		h.subscriptions[key] = filtered
 	}
+	if keys, ok := h.clientSubs[unsub.Client]; ok {
+		delete(keys, key)
+		if len(keys) == 0 {
+			delete(h.clientSubs, unsub.Client)
+		}
+	}
 	log.Printf("ws: client %p unsubscribed from %s", unsub.Client, key)
 }
 
 // handleBroadcast fans a message out to every connected client.
-// Clients whose send channel is full are evicted.
+// Uses a read lock so other operations are not blocked during fan-out.
+// Clients with full send buffers are skipped; cleanup is handled by
+// the client's WritePump / ReadPump deadlines.
 func (h *Hub) handleBroadcast(msg *Message) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	for client := range h.clients {
 		select {
 		case client.Send <- msg:
 		default:
-			// Send buffer full — drop the client.
-			close(client.Send)
-			delete(h.clients, client)
+			// Buffer full — skip. Client will be reaped by its write deadline.
 		}
 	}
 }

@@ -21,7 +21,23 @@ type Client struct {
 	Route    string
 	UserName string
 	Avatar   string
+	// Per-client rate limiters — used only from ReadPump (single goroutine).
+	chatLimit      rateBucket
+	cursorLimit    rateBucket
+	presenceLimit  rateBucket
+	broadcastLimit rateBucket
 }
+
+const (
+	// pongWait is how long we wait for a pong before considering the
+	// connection dead. Clients must respond to pings within this window.
+	pongWait = 60 * time.Second
+	// pingPeriod is how often we send pings. Must be shorter than pongWait
+	// so the peer has time to reply before the read deadline fires.
+	pingPeriod = (pongWait * 9) / 10 // 54 s
+	// writeWait is the deadline for any individual write (message or ping).
+	writeWait = 10 * time.Second
+)
 
 // ReadPump pumps inbound messages from the connection to the hub.
 // It runs in its own goroutine for each client.
@@ -31,7 +47,11 @@ func (c *Client) ReadPump() {
 		c.Conn.Close()
 	}()
 
-	c.Conn.SetReadDeadline(time.Time{}) // no deadline
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 	for {
 		var msg Message
 		if err := c.Conn.ReadJSON(&msg); err != nil {
@@ -50,36 +70,63 @@ func (c *Client) ReadPump() {
 		case Unsubscribe:
 			c.handleUnsubscribe(msg)
 		case Presence:
-			c.handlePresence(msg)
+			if c.presenceLimit.allow() {
+				c.handlePresence(msg)
+			}
 		case Tp:
 			c.handleTp(msg)
 		case GlobalChat:
-			c.handleGlobalChat(msg)
+			if c.chatLimit.allow() {
+				c.handleGlobalChat(msg)
+			}
 		case Cursor:
-			c.handleCursor(msg)
+			if c.cursorLimit.allow() {
+				c.handleCursor(msg)
+			}
 		case Ping:
 			// nothing — client keepalive only
 		default:
-			c.Hub.Broadcast(&msg)
+			if c.broadcastLimit.allow() {
+				c.Hub.Broadcast(&msg)
+			}
 		}
 	}
 }
 
-// WritePump pumps outbound messages from the hub to the connection.
-// It runs in its own goroutine for each client.
+// WritePump pumps outbound messages from the hub to the connection and
+// periodically sends WebSocket pings. If a ping fails or the send channel
+// is closed, the connection is torn down.
 func (c *Client) WritePump() {
-	for msg := range c.Send {
-		w, err := c.Conn.NextWriter(websocket.TextMessage)
-		if err != nil {
-			return
-		}
-		if err := json.NewEncoder(w).Encode(msg); err != nil {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+	for {
+		select {
+		case msg, ok := <-c.Send:
+			if !ok {
+				// Hub closed the channel.
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			if err := json.NewEncoder(w).Encode(msg); err != nil {
+				w.Close()
+				return
+			}
 			w.Close()
-			return
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
-		w.Close()
 	}
-	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 // ── internal helpers ─────────────────────────────────────────────────────────

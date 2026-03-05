@@ -6,12 +6,13 @@ import (
 )
 
 // doPresenceBroadcast builds the current online user list and sends it to every
-// connected client. Holds a single write lock for the entire operation to
-// prevent TOCTOU races between building the snapshot and sending: no client
-// can be evicted (and its Send channel closed) while we are iterating.
+// connected client. Uses a read lock so broadcasts, subscriptions and other
+// read-side operations are never blocked by presence fan-out.
+// Clients with full send buffers are skipped rather than evicted — cleanup
+// is handled by the client's WritePump / ReadPump deadline.
 func (h *Hub) doPresenceBroadcast() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	// Authenticated users: deduplicate by UserID, prefer entry with a name.
 	// Guests: each connection is unique — use a negative ClientID as their presence ID.
@@ -52,8 +53,7 @@ func (h *Hub) doPresenceBroadcast() {
 		select {
 		case client.Send <- msg:
 		default:
-			close(client.Send)
-			delete(h.clients, client)
+			// Buffer full — skip. Client will be reaped by its write deadline.
 		}
 	}
 }

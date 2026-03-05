@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/httprate"
 	"github.com/skaia/backend/internal/auth"
@@ -97,20 +98,22 @@ func PermissionMiddleware(permission string) func(http.Handler) http.Handler {
 	}
 }
 
-// RateLimitMiddleware applies a broad rate limit (100 req/min) suitable for
-// most API endpoints.
+// RateLimitMiddleware applies a broad rate limit (100 req/min) keyed by IP,
+// suitable for most API endpoints.
 func RateLimitMiddleware() func(http.Handler) http.Handler {
-	return httprate.Limit(100, 1,
+	return httprate.Limit(100, time.Minute,
+		httprate.WithKeyByIP(),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
 		}),
 	)
 }
 
-// AuthLimitMiddleware applies a stricter rate limit (10 req/min) for
-// authentication endpoints to slow down brute-force attempts.
+// AuthLimitMiddleware applies a stricter rate limit (10 req/min) keyed by IP
+// for authentication endpoints to slow down brute-force attempts.
 func AuthLimitMiddleware() func(http.Handler) http.Handler {
-	return httprate.Limit(10, 1,
+	return httprate.Limit(10, time.Minute,
+		httprate.WithKeyByIP(),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"too many auth attempts"}`, http.StatusTooManyRequests)
 		}),

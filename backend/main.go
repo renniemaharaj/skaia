@@ -186,15 +186,17 @@ func seedAdminPassword(db *sql.DB) {
 // This is used both in production and in the integration test suite.
 func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	// User domain
+	rdb := database.NewRedisClient()
+
 	userRepo := iuser.NewRepository(db)
-	userCache := iuser.NewCache()
+	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
 
 	// Forum domain
 	forumCatRepo := iforum.NewCategoryRepository(db)
 	forumThreadRepo := iforum.NewThreadRepository(db)
 	forumCommentRepo := iforum.NewCommentRepository(db)
-	forumCache := iforum.NewThreadCache()
+	forumCache := iforum.NewThreadCacheWithClient(rdb)
 	forumSvc := iforum.NewService(forumCatRepo, forumThreadRepo, forumCommentRepo, forumCache)
 
 	// Store domain
@@ -203,7 +205,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	storeCartRepo := istore.NewCartRepository(db)
 	storeOrdRepo := istore.NewOrderRepository(db)
 	storePayRepo := istore.NewPaymentRepository(db)
-	storeCache := istore.NewProductCache()
+	storeCache := istore.NewProductCacheWithClient(rdb)
 	storeProv := istore.NewPaymentProvider()
 	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storeCache, storeProv)
 

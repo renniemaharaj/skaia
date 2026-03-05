@@ -16,18 +16,18 @@ func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
 	}
 	h.chatMu.Unlock()
 
-	// Broadcast to all clients
+	// Broadcast to all clients — read lock only; clients with full buffers
+	// are skipped and reaped by their write deadline.
 	payload, _ := json.Marshal(cm)
 	msg := &Message{Type: GlobalChat, Payload: payload}
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 	for client := range h.clients {
 		select {
 		case client.Send <- msg:
 		default:
-			close(client.Send)
-			delete(h.clients, client)
+			// Buffer full — skip. Client will be reaped by its write deadline.
 		}
 	}
 }

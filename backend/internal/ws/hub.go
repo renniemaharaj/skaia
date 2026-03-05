@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 // ClientPresence carries a presence announcement from a client, processed in Run.
@@ -37,10 +38,14 @@ const (
 	// maxConnections is the total number of simultaneous WebSocket connections the hub will accept.
 	// Registrations above this threshold are rejected immediately.
 	maxConnections = 10_000
+	// maxWorkers limits concurrent fan-out goroutines in the hub's worker pool.
+	maxWorkers = 64
+	// presenceInterval is the minimum interval between coalesced presence broadcasts.
+	presenceInterval = 1 * time.Second
 )
 
 // Hub manages WebSocket connections and resource subscriptions.
-// Run dispatches each case into its own goroutine; shared state is protected
+// Run dispatches work to a bounded worker pool; shared state is protected
 // by the mutexes documented on each field group.
 type Hub struct {
 	// ── channels ────────────────────────────────────────────────────────────
@@ -48,7 +53,8 @@ type Hub struct {
 	broadcast       chan *Message
 	register        chan *Client
 	unregister      chan *Client
-	subscriptions   map[string][]*Client // key: "resource_type:resource_id"
+	subscriptions   map[string][]*Client        // key: "resource_type:resource_id"
+	clientSubs      map[*Client]map[string]bool // reverse index: client → subscription keys
 	subscribe       chan ResourceSubscription
 	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
@@ -58,6 +64,9 @@ type Hub struct {
 
 	// ── clients + subscriptions — protected by mu ────────────────────────
 	mu sync.RWMutex
+
+	// ── worker pool — caps concurrent fan-out goroutines ─────────────────
+	workerSem chan struct{}
 
 	// ── global chat ring buffer — protected by chatMu ────────────────────
 	chatMu     sync.Mutex
@@ -79,23 +88,28 @@ type Hub struct {
 
 	// ── active connection counter — accessed via atomic ───────────────────
 	connCount atomic.Int64
+
+	// ── presence coalescing — accessed via atomic ─────────────────────────
+	presenceDirty atomic.Int32
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
 func NewHub() *Hub {
 	return &Hub{
 		clients:         make(map[*Client]bool),
-		broadcast:       make(chan *Message, 256),
-		register:        make(chan *Client, 256),
-		unregister:      make(chan *Client, 256),
+		broadcast:       make(chan *Message, 2048),
+		register:        make(chan *Client, 2048),
+		unregister:      make(chan *Client, 2048),
 		subscriptions:   make(map[string][]*Client),
-		subscribe:       make(chan ResourceSubscription, 256),
-		unsubscribe:     make(chan ResourceSubscription, 256),
-		presenceUpdates: make(chan ClientPresence, 256),
+		clientSubs:      make(map[*Client]map[string]bool),
+		subscribe:       make(chan ResourceSubscription, 1024),
+		unsubscribe:     make(chan ResourceSubscription, 1024),
+		presenceUpdates: make(chan ClientPresence, 4096),
 		teleport:        make(chan TeleportRequest, 256),
-		globalChat:      make(chan GlobalChatMessage, 256),
-		cursorUpdates:   make(chan CursorBroadcast, 512),
+		globalChat:      make(chan GlobalChatMessage, 1024),
+		cursorUpdates:   make(chan CursorBroadcast, 2048),
 		cursorSessions:  make(map[int64]int),
+		workerSem:       make(chan struct{}, maxWorkers),
 	}
 }
 
@@ -111,48 +125,80 @@ func clientLabel(c *Client) string {
 }
 
 // Run is the hub's event loop. Start it in a dedicated goroutine.
-// Each case is dispatched into its own goroutine so that slow fan-outs
-// (broadcasts, cursor relays, presence rebuilds) never stall the selector.
+// Fan-out work is dispatched to a bounded worker pool (maxWorkers) so
+// that slow broadcasts never spawn unbounded goroutines. Presence
+// broadcasts are coalesced: rapid changes set a dirty flag and a
+// background ticker fires the actual broadcast at most once per
+// presenceInterval.
 func (h *Hub) Run() {
+	// Presence debounce: a background ticker checks the dirty flag and
+	// broadcasts at most once per presenceInterval.
+	go func() {
+		ticker := time.NewTicker(presenceInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			if h.presenceDirty.CompareAndSwap(1, 0) {
+				h.dispatch(h.doPresenceBroadcast)
+			}
+		}
+	}()
+
 	for {
 		select {
 		case client := <-h.register:
-			go func(c *Client) {
-				h.handleRegister(c)
-				h.sendChatHistory(c)
-				h.doPresenceBroadcast()
-			}(client)
+			h.dispatch(func() {
+				h.handleRegister(client)
+				h.sendChatHistory(client)
+				h.markPresenceDirty()
+			})
 		case client := <-h.unregister:
-			go func(c *Client) {
-				h.handleUnregister(c)
-				h.doPresenceBroadcast()
-			}(client)
+			h.dispatch(func() {
+				h.handleUnregister(client)
+				h.markPresenceDirty()
+			})
 		case sub := <-h.subscribe:
-			h.handleSubscribe(sub) // fast map write — run inline, no goroutine
+			h.handleSubscribe(sub) // fast map write — run inline
 		case unsub := <-h.unsubscribe:
-			h.handleUnsubscribe(unsub) // fast map write — run inline, no goroutine
+			h.handleUnsubscribe(unsub) // fast map write — run inline
 		case msg := <-h.broadcast:
-			go h.handleBroadcast(msg)
+			h.dispatch(func() { h.handleBroadcast(msg) })
 		case cp := <-h.presenceUpdates:
-			go func(p ClientPresence) {
+			h.dispatch(func() {
 				// Write client presence fields under mu so concurrent
 				// readers in doPresenceBroadcast / handleCursorBroadcast
 				// always see a consistent snapshot.
 				h.mu.Lock()
-				p.Client.Route = p.Route
-				p.Client.UserName = p.UserName
-				p.Client.Avatar = p.Avatar
+				cp.Client.Route = cp.Route
+				cp.Client.UserName = cp.UserName
+				cp.Client.Avatar = cp.Avatar
 				h.mu.Unlock()
-				h.doPresenceBroadcast()
-			}(cp)
+				h.markPresenceDirty()
+			})
 		case req := <-h.teleport:
-			go h.handleTeleport(req)
+			h.dispatch(func() { h.handleTeleport(req) })
 		case cu := <-h.cursorUpdates:
-			go h.handleCursorBroadcast(cu)
+			h.dispatch(func() { h.handleCursorBroadcast(cu) })
 		case cm := <-h.globalChat:
-			go h.handleGlobalChat(cm)
+			h.dispatch(func() { h.handleGlobalChat(cm) })
 		}
 	}
+}
+
+// dispatch runs fn on a pooled goroutine, blocking if all maxWorkers slots
+// are occupied. This caps concurrent fan-out and provides natural back-pressure
+// through the channel buffers.
+func (h *Hub) dispatch(fn func()) {
+	h.workerSem <- struct{}{}
+	go func() {
+		defer func() { <-h.workerSem }()
+		fn()
+	}()
+}
+
+// markPresenceDirty flags that a presence broadcast is needed. The background
+// ticker in Run coalesces rapid changes into a single broadcast.
+func (h *Hub) markPresenceDirty() {
+	h.presenceDirty.Store(1)
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────

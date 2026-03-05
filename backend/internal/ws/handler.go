@@ -32,9 +32,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	}
 
 	client := &Client{
-		Hub:  hub,
-		Conn: conn,
-		Send: make(chan *Message, 256),
+		Hub:            hub,
+		Conn:           conn,
+		Send:           make(chan *Message, 256),
+		chatLimit:      newRateBucket(5, 5),
+		cursorLimit:    newRateBucket(30, 30),
+		presenceLimit:  newRateBucket(5, 5),
+		broadcastLimit: newRateBucket(10, 10),
 	}
 
 	hub.register <- client
