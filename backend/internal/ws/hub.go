@@ -34,6 +34,9 @@ const (
 	// cursorSessionSize caps how many clients share a cursor-presence session.
 	// Cursor updates are only relayed within a session, bounding fan-out to O(cursorSessionSize).
 	cursorSessionSize = 100
+	// maxConnections is the total number of simultaneous WebSocket connections the hub will accept.
+	// Registrations above this threshold are rejected immediately.
+	maxConnections = 10_000
 )
 
 // Hub manages WebSocket connections and resource subscriptions.
@@ -73,6 +76,9 @@ type Hub struct {
 
 	// ── monotonic client ID — accessed via atomic ─────────────────────────
 	nextClientID atomic.Int64
+
+	// ── active connection counter — accessed via atomic ───────────────────
+	connCount atomic.Int64
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -122,9 +128,9 @@ func (h *Hub) Run() {
 				h.doPresenceBroadcast()
 			}(client)
 		case sub := <-h.subscribe:
-			go h.handleSubscribe(sub)
+			h.handleSubscribe(sub) // fast map write — run inline, no goroutine
 		case unsub := <-h.unsubscribe:
-			go h.handleUnsubscribe(unsub)
+			h.handleUnsubscribe(unsub) // fast map write — run inline, no goroutine
 		case msg := <-h.broadcast:
 			go h.handleBroadcast(msg)
 		case cp := <-h.presenceUpdates:
@@ -205,18 +211,28 @@ func (h *Hub) RegisterClient(client *Client) {
 
 // Subscribe requests that client receives updates for the given resource.
 func (h *Hub) Subscribe(client *Client, resourceType string, resourceID int64) {
-	h.subscribe <- ResourceSubscription{
+	sub := ResourceSubscription{
 		Client:       client,
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
+	}
+	select {
+	case h.subscribe <- sub:
+	default:
+		log.Println("ws: subscribe channel full, request dropped")
 	}
 }
 
 // Unsubscribe removes client's subscription for the given resource.
 func (h *Hub) Unsubscribe(client *Client, resourceType string, resourceID int64) {
-	h.unsubscribe <- ResourceSubscription{
+	unsub := ResourceSubscription{
 		Client:       client,
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
+	}
+	select {
+	case h.unsubscribe <- unsub:
+	default:
+		log.Println("ws: unsubscribe channel full, request dropped")
 	}
 }

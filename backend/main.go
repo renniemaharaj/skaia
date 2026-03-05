@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"encoding/json"
@@ -8,6 +9,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -71,10 +74,35 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Starting server on :%s", port)
-	if err := http.ListenAndServe(":"+port, buildRouter(database.DB, hub)); err != nil {
-		log.Fatal(err)
+
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      buildRouter(database.DB, hub),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	go func() {
+		log.Printf("Starting server on :%s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server: %v", err)
+		}
+	}()
+
+	// Block until SIGINT or SIGTERM is received.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server…")
+
+	// Allow up to 30 s for in-flight requests to complete.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("server forced shutdown: %v", err)
+	}
+	log.Println("Server stopped")
 }
 
 // tryConnectWithRetry tries to open dsn up to maxRetries times, sleeping

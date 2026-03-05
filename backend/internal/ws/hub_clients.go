@@ -3,8 +3,16 @@ package ws
 import "log"
 
 // handleRegister assigns a ClientID and cursor session to the new client,
-// then adds it to the hub's client map.
+// then adds it to the hub's client map. Rejects the connection if the server
+// is at capacity.
 func (h *Hub) handleRegister(client *Client) {
+	if h.connCount.Load() >= maxConnections {
+		log.Printf("ws: connection limit (%d) reached, rejecting %s", maxConnections, clientLabel(client))
+		close(client.Send)
+		return
+	}
+	h.connCount.Add(1)
+
 	client.ClientID = h.nextClientID.Add(1)
 
 	h.mu.Lock()
@@ -34,8 +42,11 @@ func (h *Hub) handleRegister(client *Client) {
 }
 
 // handleUnregister releases a client's cursor session slot, removes it from all
-// subscriptions, and closes its send channel.
+// subscriptions, closes its send channel, and decrements the connection counter.
 func (h *Hub) handleUnregister(client *Client) {
+	// Decrement the connection counter so new connections can take this slot.
+	h.connCount.Add(-1)
+
 	// Release cursor session slot before acquiring the main lock.
 	h.cursorSessionMu.Lock()
 	if count, ok := h.cursorSessions[client.CursorSessionID]; ok {

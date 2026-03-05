@@ -19,7 +19,7 @@ type Authorizer interface {
 // (populated by JWTAuthMiddleware). Returns (0, false) for unauthenticated
 // requests.
 func UserIDFromCtx(r *http.Request) (int64, bool) {
-	c, ok := r.Context().Value("claims").(*auth.Claims)
+	c, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
 	if !ok || c == nil {
 		return 0, false
 	}

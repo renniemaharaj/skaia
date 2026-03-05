@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -28,7 +29,13 @@ func Init() error {
 	}
 
 	DB.SetMaxOpenConns(25)
-	DB.SetMaxIdleConns(5)
+	DB.SetMaxIdleConns(10)
+	// Recycle connections after 30 minutes to avoid stale connections after
+	// network interruptions or server-side idle timeouts.
+	DB.SetConnMaxLifetime(30 * time.Minute)
+	// Discard idle connections after 5 minutes to avoid holding unnecessary
+	// resources when traffic is low.
+	DB.SetConnMaxIdleTime(5 * time.Minute)
 
 	return nil
 }

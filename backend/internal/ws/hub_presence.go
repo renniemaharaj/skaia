@@ -6,12 +6,16 @@ import (
 )
 
 // doPresenceBroadcast builds the current online user list and sends it to every
-// connected client. Safe to call from any goroutine.
+// connected client. Holds a single write lock for the entire operation to
+// prevent TOCTOU races between building the snapshot and sending: no client
+// can be evicted (and its Send channel closed) while we are iterating.
 func (h *Hub) doPresenceBroadcast() {
-	h.mu.RLock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	// Authenticated users: deduplicate by UserID, prefer entry with a name.
 	// Guests: each connection is unique — use a negative ClientID as their presence ID.
-	seen := make(map[int64]PresenceUser)
+	seen := make(map[int64]PresenceUser, len(h.clients))
 	for client := range h.clients {
 		var presenceID int64
 		if client.UserID == 0 {
@@ -37,7 +41,6 @@ func (h *Hub) doPresenceBroadcast() {
 		}
 		users = append(users, u)
 	}
-	h.mu.RUnlock()
 
 	payload, _ := json.Marshal(map[string]interface{}{
 		"action": "presence_updated",
@@ -45,8 +48,6 @@ func (h *Hub) doPresenceBroadcast() {
 	})
 	msg := &Message{Type: PresenceSync, Payload: payload}
 
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	for client := range h.clients {
 		select {
 		case client.Send <- msg:

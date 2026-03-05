@@ -25,9 +25,9 @@ var jwtSecret = []byte(getJWTSecret())
 func getJWTSecret() string {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
+		log.Println("WARNING: JWT_SECRET not set — using insecure default. Set JWT_SECRET before deploying.")
 		secret = "your-secret-key-change-in-production"
 	}
-	log.Printf("DEBUG AUTH: JWT_SECRET is set to: %s", secret)
 	return secret
 }
 
