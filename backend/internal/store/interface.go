@@ -49,12 +49,31 @@ type PaymentRepository interface {
 	UpdateStatus(id int64, status, failureReason string) (*models.Payment, error)
 }
 
+// SubscriptionPlanRepository manages subscription plans.
+type SubscriptionPlanRepository interface {
+	Create(plan *models.SubscriptionPlan) (*models.SubscriptionPlan, error)
+	GetByID(id int64) (*models.SubscriptionPlan, error)
+	Update(plan *models.SubscriptionPlan) (*models.SubscriptionPlan, error)
+	Delete(id int64) error
+	List() ([]*models.SubscriptionPlan, error)
+}
+
+// SubscriptionRepository manages user subscriptions.
+type SubscriptionRepository interface {
+	Create(s *models.Subscription) (*models.Subscription, error)
+	GetByID(id int64) (*models.Subscription, error)
+	GetByUserID(userID int64) (*models.Subscription, error)
+	GetByProviderID(providerSubID string) (*models.Subscription, error)
+	Update(s *models.Subscription) (*models.Subscription, error)
+	ListByUser(userID int64) ([]*models.Subscription, error)
+}
+
 // PaymentProvider is the abstraction over real/simulated payment gateways.
-// The "demo" provider simulates charges without talking to any external API.
-// A "stripe" provider would integrate stripe-go here.
 type PaymentProvider interface {
-	// Charge attempts to process the payment. It returns the provider reference
-	// (e.g. Stripe PaymentIntent ID) and a status ("succeeded" | "failed"),
-	// plus an optional client secret for 3DS flows.
-	Charge(userID int64, amount float64, currency, paymentMethodID string) (providerRef, status, clientSecret string, err error)
+	Charge(userID, amountCents int64, currency, paymentMethodID string) (providerRef, status, clientSecret string, err error)
+	GetPaymentStatus(providerRef string) (string, error)
+	CreateSubscription(userID int64, plan *models.SubscriptionPlan, email string) (*SubscriptionResult, error)
+	CancelSubscription(providerSubID string, atPeriodEnd bool) error
+	GetSubscriptionStatus(providerSubID string) (string, error)
+	CreateCheckoutSession(plan *models.SubscriptionPlan, customerEmail, successURL, cancelURL string) (string, error)
 }

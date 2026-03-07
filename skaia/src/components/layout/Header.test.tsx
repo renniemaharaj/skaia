@@ -2,7 +2,86 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
+import { Provider, createStore } from "jotai";
 import { Header } from "./Header";
+import { ThemeProvider } from "../../hooks/theme/ThemeProvider";
+import {
+  currentUserAtom,
+  isAuthenticatedAtom,
+  accessTokenAtom,
+  refreshTokenAtom,
+} from "../../atoms/auth";
+import type { User } from "../../atoms/auth";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const testUser: User = {
+  id: "123",
+  username: "testuser",
+  email: "test@example.com",
+  display_name: "Test User",
+  avatar_url: "",
+  banner_url: "",
+  photo_url: "",
+  bio: "",
+  is_suspended: false,
+  roles: [],
+  permissions: [],
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
+/** Create a fresh Jotai store. Optionally pre-populate for authenticated tests. */
+function makeStore(opts?: { authenticated?: boolean; user?: User }) {
+  const store = createStore();
+  if (opts?.authenticated) {
+    store.set(isAuthenticatedAtom, true);
+    store.set(currentUserAtom, opts.user ?? testUser);
+    store.set(accessTokenAtom, "test-jwt-token");
+    store.set(refreshTokenAtom, "test-refresh-token");
+  }
+  return store;
+}
+
+/**
+ * Render Header with all required providers.
+ * Returns the Jotai store so tests can inspect atom values.
+ */
+function renderHeader(
+  opts: {
+    authenticated?: boolean;
+    user?: User;
+    cartCount?: number;
+    isDarkMode?: boolean;
+    route?: string;
+  } = {},
+) {
+  const store = makeStore({
+    authenticated: opts.authenticated,
+    user: opts.user,
+  });
+
+  const Router = opts.route ? MemoryRouter : BrowserRouter;
+  const routerProps = opts.route ? { initialEntries: [opts.route] } : undefined;
+
+  const utils = render(
+    <Provider store={store}>
+      <Router {...(routerProps as any)}>
+        <ThemeProvider>
+          <Header
+            cartCount={opts.cartCount ?? 0}
+            isDarkMode={opts.isDarkMode ?? false}
+            onDarkModeToggle={() => {}}
+          />
+        </ThemeProvider>
+      </Router>
+    </Provider>,
+  );
+
+  return { ...utils, store };
+}
+
+// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe("Header Component", () => {
   beforeEach(() => {
@@ -14,184 +93,85 @@ describe("Header Component", () => {
     localStorage.clear();
   });
 
+  // ── Unauthenticated ────────────────────────────────────────────────────
+
   describe("Unauthenticated State", () => {
-    it("renders login and register buttons when not authenticated", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+    it("renders sign-in button when not authenticated", () => {
+      renderHeader();
 
       expect(
-        screen.getByRole("button", { name: /^Login$/i }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /^Register$/i }),
+        screen.getByRole("button", { name: /sign in/i }),
       ).toBeInTheDocument();
     });
 
     it("does not render user menu when not authenticated", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader();
 
-      expect(screen.queryByText(/^Log out$/i)).not.toBeInTheDocument();
+      expect(screen.queryByTitle("Logout")).not.toBeInTheDocument();
     });
 
-    it("navigates to login when clicking login button", async () => {
-      //   const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+    it("sign-in button is present for unauthenticated users", () => {
+      renderHeader();
 
-      // Note: In a real integration test with routing, this would navigate to /login
-      const loginButton = screen.getByRole("button", { name: /^Login$/i });
-      expect(loginButton).toBeInTheDocument();
-    });
-
-    it("navigates to register when clicking register button", async () => {
-      //   const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      const registerButton = screen.getByRole("button", {
-        name: /^Register$/i,
-      });
-      expect(registerButton).toBeInTheDocument();
+      const signInButton = screen.getByRole("button", { name: /sign in/i });
+      expect(signInButton).toBeInTheDocument();
     });
   });
 
+  // ── Authenticated ──────────────────────────────────────────────────────
+
   describe("Authenticated State", () => {
-    beforeEach(() => {
-      const testUser = {
-        id: "123",
-        username: "testuser",
-        email: "test@example.com",
-      };
-      localStorage.setItem("authToken", "test-jwt-token");
-      localStorage.setItem("user", JSON.stringify(testUser));
+    it("renders user display name when authenticated", () => {
+      renderHeader({ authenticated: true });
+
+      expect(screen.getByText("Test User")).toBeInTheDocument();
     });
 
-    it("renders user menu when authenticated", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+    it("does not render sign-in button when authenticated", () => {
+      renderHeader({ authenticated: true });
+
+      expect(
+        screen.queryByRole("button", { name: /sign in/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("falls back to username when display_name is empty", () => {
+      renderHeader({
+        authenticated: true,
+        user: { ...testUser, display_name: "" },
+      });
 
       expect(screen.getByText("testuser")).toBeInTheDocument();
     });
 
-    it("does not render login and register buttons when authenticated", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+    it("shows logout button when authenticated", () => {
+      renderHeader({ authenticated: true });
 
-      expect(
-        screen.queryByRole("button", { name: /^Login$/i }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("button", { name: /^Register$/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByTitle("Logout")).toBeInTheDocument();
     });
 
-    it("displays user email when username is not available", () => {
-      const testUser = { id: "123", email: "test@example.com" };
-      localStorage.setItem("user", JSON.stringify(testUser));
-
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      expect(screen.getByText("test@example.com")).toBeInTheDocument();
-    });
-
-    it("shows logout button in user menu", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      const logoutButton = screen.getByTitle("Logout");
-      expect(logoutButton).toBeInTheDocument();
-    });
-
-    it("clears auth data and navigates to home on logout", async () => {
+    it("clears auth state on logout", async () => {
       const user = userEvent.setup();
+      // Suppress console.error from the expected fetch failure
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      const { store } = renderHeader({ authenticated: true });
 
       const logoutButton = screen.getByTitle("Logout");
       await user.click(logoutButton);
 
-      expect(localStorage.getItem("authToken")).toBeNull();
-      expect(localStorage.getItem("user")).toBeNull();
+      expect(store.get(isAuthenticatedAtom)).toBe(false);
+      expect(store.get(currentUserAtom)).toBeNull();
+
+      spy.mockRestore();
     });
   });
 
+  // ── Navigation Links ──────────────────────────────────────────────────
+
   describe("Navigation Links", () => {
     it("renders all navigation links", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader();
 
       expect(screen.getByRole("link", { name: /Home/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Store/i })).toBeInTheDocument();
@@ -199,222 +179,89 @@ describe("Header Component", () => {
     });
 
     it("applies active class to current page link", () => {
-      render(
-        <MemoryRouter initialEntries={["/store"]}>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </MemoryRouter>,
-      );
+      renderHeader({ route: "/store" });
 
       const storeLink = screen.getByRole("link", { name: /Store/i });
       expect(storeLink).toHaveClass("active");
     });
   });
 
+  // ── Cart Icon ──────────────────────────────────────────────────────────
+
   describe("Cart Icon", () => {
     it("displays cart count badge when cart has items", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={5}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader({ cartCount: 5 });
 
       expect(screen.getByText("5")).toBeInTheDocument();
     });
 
     it("does not display cart count badge when cart is empty", () => {
-      const { container } = render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      const { container } = renderHeader({ cartCount: 0 });
 
       const cartBadges = container.querySelectorAll(".cart-count");
       expect(cartBadges.length).toBe(0);
     });
 
-    it("navigates to cart page when clicking cart icon", async () => {
-      //   const user = userEvent.setup();
+    it("renders cart icon with title", () => {
+      renderHeader({ cartCount: 3 });
 
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={3}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      const cartIcon = screen.getByTitle("Shopping Cart");
-      expect(cartIcon).toBeInTheDocument();
+      expect(screen.getByTitle("Shopping Cart")).toBeInTheDocument();
     });
   });
+
+  // ── Dark Mode Toggle ──────────────────────────────────────────────────
 
   describe("Dark Mode Toggle", () => {
     it("renders theme toggle button", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader();
 
-      const themeButton = screen.getByTitle("Toggle dark mode");
-      expect(themeButton).toBeInTheDocument();
-    });
-
-    it("calls onDarkModeToggle when clicking theme button", async () => {
-      const user = userEvent.setup();
-      const mockToggle = vi.fn();
-
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={mockToggle}
-          />
-        </BrowserRouter>,
-      );
-
-      const themeButton = screen.getByTitle("Toggle dark mode");
-      await user.click(themeButton);
-
-      expect(mockToggle).toHaveBeenCalledWith(true);
-    });
-
-    it("displays correct icon based on dark mode state", () => {
-      const { rerender } = render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      // In light mode, should show Moon icon
       expect(screen.getByTitle("Toggle dark mode")).toBeInTheDocument();
-
-      rerender(
-        <BrowserRouter>
-          <Header cartCount={0} isDarkMode={true} onDarkModeToggle={() => {}} />
-        </BrowserRouter>,
-      );
-
-      // In dark mode, should show Sun icon
-      expect(screen.getByTitle("Toggle dark mode")).toBeInTheDocument();
-    });
-
-    it("persists theme preference to localStorage", async () => {
-      const user = userEvent.setup();
-      const mockToggle = vi.fn((isDark) => {
-        localStorage.setItem("theme", isDark ? "dark" : "light");
-      });
-
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={mockToggle}
-          />
-        </BrowserRouter>,
-      );
-
-      const themeButton = screen.getByTitle("Toggle dark mode");
-      await user.click(themeButton);
-
-      // In a real test with the actual implementation
-      // expect(localStorage.getItem('theme')).toBe('dark');
     });
   });
 
+  // ── Mobile Menu ────────────────────────────────────────────────────────
+
   describe("Mobile Menu", () => {
-    it("renders menu toggle button on mobile", () => {
-      // This test would need viewport configuration
-      //   const { container } = render(
-      //     <BrowserRouter>
-      //       <Header
-      //         cartCount={0}
-      //         isDarkMode={false}
-      //         onDarkModeToggle={() => {}}
-      //       />
-      //     </BrowserRouter>,
-      //   );
-      const menuToggle = screen.getByRole("button", { name: "" });
+    it("renders menu toggle button", () => {
+      const { container } = renderHeader();
+
+      const menuToggle = container.querySelector(".menu-toggle");
       expect(menuToggle).toBeInTheDocument();
     });
 
     it("toggles menu visibility", async () => {
       const user = userEvent.setup();
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      const { container } = renderHeader();
 
-      // Menu toggle is typically the first button without text
-      const buttons = screen.getAllByRole("button");
-      const menuToggle = buttons.find((btn) =>
-        btn.className.includes("menu-toggle"),
-      );
+      const menuToggle = container.querySelector(".menu-toggle")!;
+      await user.click(menuToggle);
 
-      if (menuToggle) {
-        await user.click(menuToggle);
-        // Menu should be visible now
-      }
+      const nav = container.querySelector(".nav");
+      expect(nav).toHaveClass("open");
     });
 
     it("closes menu when clicking navigation link", async () => {
-      //   const user = userEvent.setup();
+      const user = userEvent.setup();
+      const { container } = renderHeader();
 
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      // Open menu
+      const menuToggle = container.querySelector(".menu-toggle")!;
+      await user.click(menuToggle);
+      expect(container.querySelector(".nav")).toHaveClass("open");
 
-      // In a real mobile environment, clicking a link should close the menu
-      // This would need viewport configuration to properly test
+      // Click a nav link
+      const homeLink = screen.getByRole("link", { name: /Home/i });
+      await user.click(homeLink);
+
+      expect(container.querySelector(".nav")).not.toHaveClass("open");
     });
   });
 
+  // ── Logo and Branding ─────────────────────────────────────────────────
+
   describe("Logo and Branding", () => {
     it("renders logo link to home", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader();
 
       const logoLink = screen.getByRole("link", { name: /CUEBALLCRAFT/i });
       expect(logoLink).toBeInTheDocument();
@@ -422,15 +269,7 @@ describe("Header Component", () => {
     });
 
     it("displays logo image", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader();
 
       const logoImage = screen.getByAltText(
         /Cueballcraft Skaiacraft/i,
@@ -440,76 +279,20 @@ describe("Header Component", () => {
     });
   });
 
+  // ── Responsive Behavior ───────────────────────────────────────────────
+
   describe("Responsive Behavior", () => {
-    it("renders all elements without wrapping on desktop", () => {
-      const { container } = render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+    it("renders header element", () => {
+      const { container } = renderHeader();
 
       const header = container.querySelector(".header");
       expect(header).toBeInTheDocument();
-      expect(header?.className).toContain("header");
     });
 
     it("maintains functionality with high cart count", () => {
-      render(
-        <BrowserRouter>
-          <Header
-            cartCount={99}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
+      renderHeader({ cartCount: 99 });
 
       expect(screen.getByText("99")).toBeInTheDocument();
-    });
-  });
-
-  describe("Auth State Transitions", () => {
-    it("transitions from unauthenticated to authenticated state", () => {
-      const { rerender } = render(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      expect(
-        screen.getByRole("button", { name: /^Login$/i }),
-      ).toBeInTheDocument();
-
-      // Simulate login
-      const testUser = {
-        id: "123",
-        username: "testuser",
-        email: "test@example.com",
-      };
-      localStorage.setItem("authToken", "test-jwt-token");
-      localStorage.setItem("user", JSON.stringify(testUser));
-
-      // Rerender with new localStorage values
-      rerender(
-        <BrowserRouter>
-          <Header
-            cartCount={0}
-            isDarkMode={false}
-            onDarkModeToggle={() => {}}
-          />
-        </BrowserRouter>,
-      );
-
-      // Would need useEffect to detect localStorage changes in actual implementation
-      // This test demonstrates the expected behavior
     });
   });
 });

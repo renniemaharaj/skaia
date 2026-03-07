@@ -14,7 +14,7 @@ func NewRepository(db *sql.DB) Repository {
 	return &sqlRepository{db: db}
 }
 
-// ── Conversations ──────────────────────────────────────────────────────────
+// Conversations
 
 func (r *sqlRepository) GetConversation(id int64) (*models.InboxConversation, error) {
 	c := &models.InboxConversation{}
@@ -84,7 +84,7 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 	return out, rows.Err()
 }
 
-// ── Messages ───────────────────────────────────────────────────────────────
+// Messages
 
 func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 	m := &models.InboxMessage{}
@@ -174,6 +174,19 @@ func (r *sqlRepository) UnreadTotal(userID int64) (int, error) {
 		   AND im.sender_id != $1
 		   AND im.is_read = FALSE`,
 		userID,
+	).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) UnreadCount(conversationID, userID int64) (int, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*)
+		 FROM inbox_messages
+		 WHERE conversation_id = $1
+		   AND sender_id != $2
+		   AND is_read = FALSE`,
+		conversationID, userID,
 	).Scan(&count)
 	return count, err
 }

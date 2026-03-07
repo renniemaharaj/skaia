@@ -21,8 +21,6 @@ func NewService(repo Repository, cache *Cache) *Service {
 	return &Service{repo: repo, cache: cache}
 }
 
-// --- Read operations ---
-
 // GetByID returns the user with the given id.
 // The result is served from the cache when available; otherwise it is loaded
 // from the database and stored in the cache for subsequent calls.
@@ -73,8 +71,6 @@ func (s *Service) Search(query string, limit, offset int) ([]*models.User, error
 func (s *Service) GetAllPermissions() ([]*models.Permission, error) {
 	return s.repo.GetAllPermissions()
 }
-
-// --- Write operations ---
 
 // Register creates a new user account and returns JWT tokens on success.
 func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, string, error) {
@@ -259,8 +255,6 @@ func (s *Service) Unsuspend(userID int64) error {
 	s.cache.Invalidate(userID)
 	return nil
 }
-
-// --- Domain errors ---
 
 // SuspendedError is returned by Login when the account is suspended.
 type SuspendedError struct {

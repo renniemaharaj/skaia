@@ -2,7 +2,10 @@ import "./ViewThreadComments.css";
 import { Send, ThumbsUp, Trash2, UserCog2Icon } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { threadCommentsAtom } from "../../atoms/forum";
+import {
+  threadCommentsAtom,
+  enrichedThreadCommentsAtom,
+} from "../../atoms/forum";
 import { type ThreadComment } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -15,7 +18,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [commentText, setCommentText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const comments = useAtomValue(threadCommentsAtom);
+  const comments = useAtomValue(enrichedThreadCommentsAtom);
   const setComments = useSetAtom(threadCommentsAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const { subscribe } = useWebSocketSync();

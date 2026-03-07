@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// User represents a user in the system
+// User represents a user in the system.
 type User struct {
 	ID              int64      `json:"id"`
 	Username        string     `json:"username"`
@@ -25,7 +25,7 @@ type User struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// RegisterRequest represents a user registration request
+// RegisterRequest represents a user registration request.
 type RegisterRequest struct {
 	Username    string `json:"username"`
 	Email       string `json:"email"`
@@ -33,18 +33,18 @@ type RegisterRequest struct {
 	DisplayName string `json:"display_name"`
 }
 
-// LoginRequest represents a user login request
+// LoginRequest represents a user login request.
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// RefreshRequest represents a token refresh request
+// RefreshRequest represents a token refresh request.
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// AuthResponse represents the response after login/register
+// AuthResponse represents the response after login/register.
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -52,7 +52,7 @@ type AuthResponse struct {
 	ExpiresIn    int    `json:"expires_in"`
 }
 
-// StoreCategory represents a category in the store
+// StoreCategory represents a category in the store.
 type StoreCategory struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`
@@ -61,23 +61,23 @@ type StoreCategory struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// Product represents a product in the store
+// Product represents a product in the store. Prices are in cents.
 type Product struct {
 	ID             int64     `json:"id"`
 	CategoryID     int64     `json:"category_id"`
 	Name           string    `json:"name"`
 	Description    string    `json:"description"`
-	Price          float64   `json:"price"`
+	Price          int64     `json:"price"`
 	ImageURL       string    `json:"image_url"`
 	Stock          int       `json:"stock"`
-	OriginalPrice  *float64  `json:"original_price,omitempty"`
+	OriginalPrice  *int64    `json:"original_price,omitempty"`
 	StockUnlimited bool      `json:"stock_unlimited"`
 	IsActive       bool      `json:"is_active"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-// CartItem represents an item in a user's cart
+// CartItem represents an item in a user's cart.
 type CartItem struct {
 	ID        int64     `json:"id"`
 	UserID    int64     `json:"user_id"`
@@ -86,27 +86,27 @@ type CartItem struct {
 	AddedAt   time.Time `json:"added_at"`
 }
 
-// Order represents a completed order
+// Order represents a completed order. TotalPrice is in cents.
 type Order struct {
 	ID         int64     `json:"id"`
 	UserID     int64     `json:"user_id"`
-	TotalPrice float64   `json:"total_price"`
-	Status     string    `json:"status"` // pending, completed, cancelled
+	TotalPrice int64     `json:"total_price"`
+	Status     string    `json:"status"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-// OrderItem represents an item in an order
+// OrderItem represents an item in an order. Price is in cents.
 type OrderItem struct {
 	ID        int64     `json:"id"`
 	OrderID   int64     `json:"order_id"`
 	ProductID int64     `json:"product_id"`
 	Quantity  int       `json:"quantity"`
-	Price     float64   `json:"price"`
+	Price     int64     `json:"price"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// Permission represents a permission in the system
+// Permission represents a permission in the system.
 type Permission struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -115,7 +115,7 @@ type Permission struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// Role represents a role in the system
+// Role represents a role in the system.
 type Role struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -123,7 +123,7 @@ type Role struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// ForumCategory represents a forum category
+// ForumCategory represents a forum category.
 type ForumCategory struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`
@@ -132,7 +132,7 @@ type ForumCategory struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// ForumThread represents a forum thread/topic
+// ForumThread represents a forum thread/topic.
 type ForumThread struct {
 	ID                     int64     `json:"id"`
 	CategoryID             int64     `json:"category_id"`
@@ -157,11 +157,10 @@ type ForumThread struct {
 	CanLikeThreads         bool      `json:"can_like_threads,omitempty"`
 }
 
-// ThreadComment represents a comment in a forum thread
+// ThreadComment represents a comment in a forum thread.
 type ThreadComment struct {
 	ID              int64     `json:"id"`
 	ThreadID        int64     `json:"thread_id"`
-	UserID          int64     `json:"user_id"`
 	AuthorID        int64     `json:"author_id"`
 	Content         string    `json:"content"`
 	CreatedAt       time.Time `json:"created_at"`
@@ -176,17 +175,16 @@ type ThreadComment struct {
 	CanLikeComments bool      `json:"can_like_comments,omitempty"`
 }
 
-// Payment tracks the payment-provider lifecycle for an order.
-// provider = "demo" for fully-simulated test payments; "stripe" for real Stripe charges.
+// Payment tracks the payment-provider lifecycle for an order. Amount is in cents.
 type Payment struct {
 	ID            int64     `json:"id"`
 	OrderID       int64     `json:"order_id"`
 	UserID        int64     `json:"user_id"`
 	Provider      string    `json:"provider"`
-	ProviderRef   string    `json:"provider_ref,omitempty"` // e.g. Stripe pi_xxx
-	Amount        float64   `json:"amount"`
+	ProviderRef   string    `json:"provider_ref,omitempty"`
+	Amount        int64     `json:"amount"`
 	Currency      string    `json:"currency"`
-	Status        string    `json:"status"` // pending | succeeded | failed | cancelled
+	Status        string    `json:"status"`
 	FailureReason string    `json:"failure_reason,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
@@ -194,32 +192,59 @@ type Payment struct {
 
 // CheckoutRequest carries the items a user wants to purchase.
 type CheckoutRequest struct {
-	Items []CheckoutItem `json:"items"`
-	// Optional: Stripe PaymentMethod ID when using Stripe provider.
-	PaymentMethodID string `json:"payment_method_id,omitempty"`
-	// Currency defaults to "usd".
-	Currency string `json:"currency,omitempty"`
+	Items           []CheckoutItem `json:"items"`
+	PaymentMethodID string         `json:"payment_method_id,omitempty"`
+	Currency        string         `json:"currency,omitempty"`
 }
 
 // CheckoutItem is a single line in a checkout request.
 type CheckoutItem struct {
-	ProductID int64   `json:"product_id"`
-	Quantity  int     `json:"quantity"`
-	Price     float64 `json:"price"` // server-side price authoritative; client sends what it knows
+	ProductID int64 `json:"product_id"`
+	Quantity  int   `json:"quantity"`
+	Price     int64 `json:"price"`
 }
 
 // CheckoutResponse is the result of a checkout call.
 type CheckoutResponse struct {
-	Order   *Order   `json:"order"`
-	Payment *Payment `json:"payment"`
-	// ClientSecret is set when provider = "stripe" and the intent needs
-	// additional client-side confirmation (e.g. 3DS).
-	ClientSecret string `json:"client_secret,omitempty"`
-	Status       string `json:"status"` // "succeeded" | "requires_action" | "failed"
-	Message      string `json:"message,omitempty"`
+	Order        *Order   `json:"order"`
+	Payment      *Payment `json:"payment"`
+	ClientSecret string   `json:"client_secret,omitempty"`
+	Status       string   `json:"status"`
+	Message      string   `json:"message,omitempty"`
 }
 
-// ── Inbox ────────────────────────────────────────────────────────────────────
+// SubscriptionPlan defines a recurring billing plan. PriceCents is per interval.
+type SubscriptionPlan struct {
+	ID              int64     `json:"id"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	PriceCents      int64     `json:"price_cents"`
+	Currency        string    `json:"currency"`
+	IntervalUnit    string    `json:"interval_unit"`
+	IntervalCount   int       `json:"interval_count"`
+	TrialDays       int       `json:"trial_days"`
+	StripePriceID   string    `json:"stripe_price_id,omitempty"`
+	IsActive        bool      `json:"is_active"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// Subscription tracks a user's active subscription to a plan.
+type Subscription struct {
+	ID                   int64      `json:"id"`
+	UserID               int64      `json:"user_id"`
+	PlanID               int64      `json:"plan_id"`
+	Provider             string     `json:"provider"`
+	ProviderSubscriptionID string   `json:"provider_subscription_id,omitempty"`
+	ProviderCustomerID   string     `json:"provider_customer_id,omitempty"`
+	Status               string     `json:"status"`
+	CurrentPeriodStart   time.Time  `json:"current_period_start"`
+	CurrentPeriodEnd     time.Time  `json:"current_period_end"`
+	CancelAtPeriodEnd    bool       `json:"cancel_at_period_end"`
+	CancelledAt          *time.Time `json:"cancelled_at,omitempty"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
+}
 
 // InboxConversation represents a private conversation between two users.
 type InboxConversation struct {
@@ -247,9 +272,7 @@ type InboxMessage struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-// ── Notifications ────────────────────────────────────────────────────────────
-
-// NotificationType constants keep the client and server using the same strings.
+// Notification type constants.
 const (
 	NotifCommentOnThread = "comment_on_thread"
 	NotifThreadLiked     = "thread_liked"

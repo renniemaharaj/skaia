@@ -1,11 +1,7 @@
-// Package middleware provides reusable HTTP middleware for JWT authentication
-// and rate limiting. Import it in main (or any handler package) and pass the
-// exported functions wherever a func(http.Handler) http.Handler is expected.
 package middleware
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -15,13 +11,10 @@ import (
 )
 
 // JWTAuthMiddleware validates the Bearer token in the Authorization header.
-// It responds 401 when the header is absent or the token is invalid, and
-// stores the parsed *auth.Claims in the request context under the key "claims".
 func JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			log.Printf("mw: no authorization header for %s %s", r.Method, r.URL.Path)
 			http.Error(w, `{"error":"missing authorization header"}`, http.StatusUnauthorized)
 			return
 		}
@@ -34,7 +27,6 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 
 		claims, err := auth.ValidateToken(parts[1])
 		if err != nil {
-			log.Printf("mw: token validation error: %v", err)
 			http.Error(w, `{"error":"invalid token"}`, http.StatusUnauthorized)
 			return
 		}
@@ -46,9 +38,8 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// OptionalJWTAuthMiddleware enriches the request context when a valid Bearer
-// token is present but passes the request through even without one.
-// Use this on public endpoints that optionally serve personalised data.
+// OptionalJWTAuthMiddleware enriches context when a valid Bearer token
+// is present but passes unauthenticated requests through.
 func OptionalJWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -67,9 +58,7 @@ func OptionalJWTAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// PermissionMiddleware checks that the authenticated user holds the given
-// permission string (or the "admin" role). Must be chained after
-// JWTAuthMiddleware so that claims are present in the context.
+// PermissionMiddleware checks that the user holds a permission or the admin role.
 func PermissionMiddleware(permission string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +87,7 @@ func PermissionMiddleware(permission string) func(http.Handler) http.Handler {
 	}
 }
 
-// RateLimitMiddleware applies a broad rate limit (100 req/min) keyed by IP,
-// suitable for most API endpoints.
+// RateLimitMiddleware applies 100 req/min per IP.
 func RateLimitMiddleware() func(http.Handler) http.Handler {
 	return httprate.Limit(100, time.Minute,
 		httprate.WithKeyByIP(),
@@ -109,8 +97,7 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 	)
 }
 
-// AuthLimitMiddleware applies a stricter rate limit (10 req/min) keyed by IP
-// for authentication endpoints to slow down brute-force attempts.
+// AuthLimitMiddleware applies 10 req/min per IP for auth endpoints.
 func AuthLimitMiddleware() func(http.Handler) http.Handler {
 	return httprate.Limit(10, time.Minute,
 		httprate.WithKeyByIP(),

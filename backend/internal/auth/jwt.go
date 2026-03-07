@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Claims represents JWT claims for an authenticated user
+// Claims represents JWT claims for an authenticated user.
 type Claims struct {
 	UserID      int64    `json:"user_id"`
 	Username    string   `json:"username"`
@@ -20,28 +20,27 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret = []byte(getJWTSecret())
+var jwtSecret []byte
 
-func getJWTSecret() string {
+func init() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		log.Println("WARNING: JWT_SECRET not set — using insecure default. Set JWT_SECRET before deploying.")
-		secret = "your-secret-key-change-in-production"
+		log.Fatal("JWT_SECRET is required")
 	}
-	return secret
+	jwtSecret = []byte(secret)
 }
 
-// GenerateToken creates a new JWT access token for a user (24-hour expiration)
+// GenerateToken creates a JWT access token (15-minute expiration).
 func GenerateToken(userID int64, username, email, displayName string, roles []string) (string, error) {
-	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, []string{}, 24*time.Hour)
+	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, []string{}, 15*time.Minute)
 }
 
-// GenerateTokenWithPermissions creates a JWT token with permissions
+// GenerateTokenWithPermissions creates a JWT token including permissions.
 func GenerateTokenWithPermissions(userID int64, username, email, displayName string, roles, permissions []string) (string, error) {
-	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, permissions, 24*time.Hour)
+	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, permissions, 15*time.Minute)
 }
 
-// GenerateRefreshToken creates a new JWT refresh token (7-day expiration)
+// GenerateRefreshToken creates a JWT refresh token (7-day expiration).
 func GenerateRefreshToken(userID int64) (string, error) {
 	claims := Claims{
 		UserID: userID,
@@ -51,17 +50,15 @@ func GenerateRefreshToken(userID int64) (string, error) {
 			Issuer:    "skaia-api",
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
-
 	return tokenString, nil
 }
 
-// GenerateTokenWithExpiration creates a JWT token with custom expiration
+// GenerateTokenWithExpiration creates a JWT with custom expiration.
 func GenerateTokenWithExpiration(userID int64, username, email, displayName string, roles, permissions []string, expiresIn time.Duration) (string, error) {
 	if roles == nil {
 		roles = []string{}
@@ -82,17 +79,15 @@ func GenerateTokenWithExpiration(userID int64, username, email, displayName stri
 			Issuer:    "skaia-api",
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
-
 	return tokenString, nil
 }
 
-// ValidateToken parses and validates a JWT token
+// ValidateToken parses and validates a JWT token.
 func ValidateToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
@@ -101,19 +96,16 @@ func ValidateToken(tokenString string) (*Claims, error) {
 		}
 		return jwtSecret, nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("token parsing error: %w", err)
 	}
-
 	if !token.Valid {
 		return nil, fmt.Errorf("invalid token")
 	}
-
 	return claims, nil
 }
 
-// RefreshToken generates a new access token from a refresh token
+// RefreshToken generates a new access token from a refresh token.
 func RefreshToken(userID int64, username, email, displayName string, roles []string) (string, error) {
 	return GenerateToken(userID, username, email, displayName, roles)
 }

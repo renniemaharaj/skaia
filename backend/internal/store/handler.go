@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 
@@ -51,7 +52,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/cart/remove", h.removeFromCart)
 		r.With(jwt).Delete("/cart", h.clearCart)
 
-		// Checkout (payment) — all payment logic is backend-only
+		// Checkout — all payment logic is backend-only
 		r.With(jwt).Post("/checkout", h.checkout)
 
 		// Order routes
@@ -60,12 +61,20 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Get("/orders/{id}", h.getOrder)
 		r.With(jwt).Put("/orders/{id}/status", h.updateOrderStatus)
 
-		// Legacy cart/purchase aliases kept for backwards compatibility
-		r.With(jwt).Post("/cart/purchase", h.createOrder)
-		r.With(jwt).Post("/purchase", h.createOrder)
+		// Subscription plan routes
+		r.With(optJWT).Get("/plans", h.listPlans)
+		r.With(jwt).Post("/plans", h.createPlan)
+		r.With(jwt).Put("/plans/{id}", h.updatePlan)
+		r.With(jwt).Delete("/plans/{id}", h.deletePlan)
 
-		// Checkout (payment) — all payment logic is backend-only
-		r.With(jwt).Post("/checkout", h.checkout)
+		// Subscription routes
+		r.With(jwt).Post("/subscribe", h.subscribe)
+		r.With(jwt).Get("/subscriptions", h.listSubscriptions)
+		r.With(jwt).Get("/subscriptions/current", h.getCurrentSubscription)
+		r.With(jwt).Post("/subscriptions/{id}/cancel", h.cancelSubscription)
+
+		// Payment status
+		r.With(jwt).Get("/payments/{ref}/status", h.getPaymentStatus)
 	})
 }
 
@@ -287,11 +296,16 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	price := int64(math.Round(req.Price))
+	if price < 0 {
+		utils.WriteError(w, http.StatusBadRequest, "price must be >= 0")
+		return
+	}
 	p, err := h.svc.CreateProduct(&models.Product{
 		CategoryID:     req.CategoryID,
 		Name:           req.Name,
 		Description:    req.Description,
-		Price:          req.Price,
+		Price:          price,
 		ImageURL:       req.ImageURL,
 		Stock:          req.Stock,
 		StockUnlimited: req.StockUnlimited,
@@ -351,7 +365,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		existing.Description = *req.Description
 	}
 	if req.Price != nil {
-		newPrice := *req.Price
+		newPrice := int64(math.Round(*req.Price))
 		if newPrice < existing.Price {
 			// Price dropped — record old price as original_price for strike-through display
 			old := existing.Price
@@ -517,9 +531,8 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Items []struct {
-			ProductID int64   `json:"product_id"`
-			Quantity  int     `json:"quantity"`
-			Price     float64 `json:"price"`
+			ProductID int64 `json:"product_id"`
+			Quantity  int   `json:"quantity"`
 		} `json:"items"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
@@ -527,14 +540,32 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var total float64
+	// resolve server-side prices, never trust client
+	var total int64
 	var items []*models.OrderItem
 	for _, i := range req.Items {
-		total += i.Price * float64(i.Quantity)
+		if i.Quantity <= 0 {
+			utils.WriteError(w, http.StatusBadRequest, "quantity must be > 0")
+			return
+		}
+		p, err := h.svc.GetProduct(i.ProductID)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "product not found")
+			return
+		}
+		if !p.IsActive {
+			utils.WriteError(w, http.StatusBadRequest, "product not available")
+			return
+		}
+		if !p.StockUnlimited && p.Stock < i.Quantity {
+			utils.WriteError(w, http.StatusBadRequest, "insufficient stock")
+			return
+		}
+		total += p.Price * int64(i.Quantity)
 		items = append(items, &models.OrderItem{
-			ProductID: i.ProductID,
+			ProductID: p.ID,
 			Quantity:  i.Quantity,
-			Price:     i.Price,
+			Price:     p.Price,
 		})
 	}
 
@@ -549,9 +580,7 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear cart after successful purchase
 	_ = h.svc.ClearCart(userID)
-
 	utils.WriteJSON(w, http.StatusCreated, order)
 }
 
@@ -630,9 +659,7 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, order)
 }
 
-// ── Checkout handler ──────────────────────────────────────────────────────────
-// All payment logic is server-side only. The client submits items and receives
-// a CheckoutResponse. The actual charge happens via the PaymentProvider abstraction.
+// Checkout handler
 
 func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
@@ -680,4 +707,265 @@ func buildStoreMsg(action string, data interface{}) *ws.Message {
 		"data":   data,
 	})
 	return &ws.Message{Type: ws.StoreUpdate, Payload: payload}
+}
+
+// Subscription plan handlers
+
+func (h *Handler) listPlans(w http.ResponseWriter, r *http.Request) {
+	plans, err := h.svc.ListPlans()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if plans == nil {
+		plans = []*models.SubscriptionPlan{}
+	}
+	utils.WriteJSON(w, http.StatusOK, plans)
+}
+
+func (h *Handler) createPlan(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.managePlans") {
+		return
+	}
+	var req struct {
+		Name          string `json:"name"`
+		Description   string `json:"description"`
+		PriceCents    int64  `json:"price_cents"`
+		Currency      string `json:"currency"`
+		IntervalUnit  string `json:"interval_unit"`
+		IntervalCount int    `json:"interval_count"`
+		TrialDays     int    `json:"trial_days"`
+		StripePriceID string `json:"stripe_price_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		utils.WriteError(w, http.StatusBadRequest, "name required")
+		return
+	}
+	if req.Currency == "" {
+		req.Currency = "usd"
+	}
+	if req.IntervalUnit == "" {
+		req.IntervalUnit = "month"
+	}
+	if req.IntervalCount <= 0 {
+		req.IntervalCount = 1
+	}
+	plan, err := h.svc.CreatePlan(&models.SubscriptionPlan{
+		Name:          req.Name,
+		Description:   req.Description,
+		PriceCents:    req.PriceCents,
+		Currency:      req.Currency,
+		IntervalUnit:  req.IntervalUnit,
+		IntervalCount: req.IntervalCount,
+		TrialDays:     req.TrialDays,
+		StripePriceID: req.StripePriceID,
+		IsActive:      true,
+	})
+	if err != nil {
+		log.Printf("store.createPlan: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create plan")
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, plan)
+}
+
+func (h *Handler) updatePlan(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.managePlans") {
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid plan ID")
+		return
+	}
+	existing, err := h.svc.GetPlan(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "plan not found")
+		return
+	}
+	var req struct {
+		Name          *string `json:"name"`
+		Description   *string `json:"description"`
+		PriceCents    *int64  `json:"price_cents"`
+		Currency      *string `json:"currency"`
+		IntervalUnit  *string `json:"interval_unit"`
+		IntervalCount *int    `json:"interval_count"`
+		TrialDays     *int    `json:"trial_days"`
+		StripePriceID *string `json:"stripe_price_id"`
+		IsActive      *bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Name != nil {
+		existing.Name = *req.Name
+	}
+	if req.Description != nil {
+		existing.Description = *req.Description
+	}
+	if req.PriceCents != nil {
+		existing.PriceCents = *req.PriceCents
+	}
+	if req.Currency != nil {
+		existing.Currency = *req.Currency
+	}
+	if req.IntervalUnit != nil {
+		existing.IntervalUnit = *req.IntervalUnit
+	}
+	if req.IntervalCount != nil {
+		existing.IntervalCount = *req.IntervalCount
+	}
+	if req.TrialDays != nil {
+		existing.TrialDays = *req.TrialDays
+	}
+	if req.StripePriceID != nil {
+		existing.StripePriceID = *req.StripePriceID
+	}
+	if req.IsActive != nil {
+		existing.IsActive = *req.IsActive
+	}
+	updated, err := h.svc.UpdatePlan(existing)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update plan")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, updated)
+}
+
+func (h *Handler) deletePlan(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.managePlans") {
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid plan ID")
+		return
+	}
+	if err := h.svc.DeletePlan(id); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete plan")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// Subscription handlers
+
+func (h *Handler) subscribe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	var req struct {
+		PlanID int64  `json:"plan_id"`
+		Email  string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.PlanID == 0 {
+		utils.WriteError(w, http.StatusBadRequest, "plan_id required")
+		return
+	}
+	sub, err := h.svc.Subscribe(userID, req.PlanID, req.Email)
+	if err != nil {
+		log.Printf("store.subscribe: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, sub)
+}
+
+func (h *Handler) getCurrentSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	sub, err := h.svc.GetUserSubscription(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if sub == nil {
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"subscription": nil})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, sub)
+}
+
+func (h *Handler) listSubscriptions(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	subs, err := h.svc.ListUserSubscriptions(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if subs == nil {
+		subs = []*models.Subscription{}
+	}
+	utils.WriteJSON(w, http.StatusOK, subs)
+}
+
+func (h *Handler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid subscription ID")
+		return
+	}
+	var req struct {
+		AtPeriodEnd bool `json:"at_period_end"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	sub, err := h.svc.CancelSubscription(userID, id, req.AtPeriodEnd)
+	if err != nil {
+		log.Printf("store.cancelSubscription: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, sub)
+}
+
+// Payment status handler
+
+func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
+	_, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	ref := chi.URLParam(r, "ref")
+	if ref == "" {
+		utils.WriteError(w, http.StatusBadRequest, "provider ref required")
+		return
+	}
+	status, err := h.svc.GetPaymentStatus(ref)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": status})
 }

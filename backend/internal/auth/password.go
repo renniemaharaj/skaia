@@ -1,24 +1,29 @@
 package auth
 
 import (
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	DefaultBcryptCost = bcrypt.DefaultCost
-)
+const bcryptCost = 12
 
-// HashPassword generates a bcrypt hash of the password
+// HashPassword generates a bcrypt hash at cost 12.
 func HashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), DefaultBcryptCost)
+	if len(password) < 8 {
+		return "", errors.New("password must be at least 8 characters")
+	}
+	if len(password) > 72 {
+		return "", errors.New("password must be at most 72 characters")
+	}
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
 		return "", err
 	}
-	return string(hashedPassword), nil
+	return string(hashed), nil
 }
 
-// ComparePassword checks if the provided password matches the hash
+// ComparePassword checks if the provided password matches the hash.
 func ComparePassword(hashedPassword, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err == nil
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }

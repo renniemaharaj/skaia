@@ -23,11 +23,11 @@ type ThreadCache struct {
 	rdb *redis.Client
 }
 
-// NewThreadCache returns a ThreadCache connected to REDIS_URL (default redis://localhost:6379).
+// NewThreadCache returns a ThreadCache connected to REDIS_URL.
 func NewThreadCache() *ThreadCache {
 	addr := os.Getenv("REDIS_URL")
 	if addr == "" {
-		addr = "redis://localhost:6379"
+		log.Fatal("REDIS_URL is required")
 	}
 	opts, err := redis.ParseURL(addr)
 	if err != nil {
@@ -83,15 +83,23 @@ func (c *ThreadCache) Invalidate(id int64) {
 
 // Flush removes all forum thread cache entries.
 func (c *ThreadCache) Flush() {
+	ctx := context.Background()
 	pattern := fmt.Sprintf("%s*", threadKeyPrefix)
-	keys, err := c.rdb.Keys(context.Background(), pattern).Result()
-	if err != nil {
-		log.Printf("forum.ThreadCache.Flush: %v", err)
-		return
-	}
-	if len(keys) > 0 {
-		if err := c.rdb.Del(context.Background(), keys...).Err(); err != nil {
-			log.Printf("forum.ThreadCache.Flush: del: %v", err)
+	var cursor uint64
+	for {
+		keys, next, err := c.rdb.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			log.Printf("forum.ThreadCache.Flush: scan: %v", err)
+			return
+		}
+		if len(keys) > 0 {
+			if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
+				log.Printf("forum.ThreadCache.Flush: del: %v", err)
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			break
 		}
 	}
 }

@@ -50,6 +50,7 @@ services:
       - REDIS_URL=redis://redis-test:6379
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-password123}
+      - CORS_ORIGINS=http://localhost:5173
       - ENVIRONMENT=test
     networks:
       - skaia-test-network

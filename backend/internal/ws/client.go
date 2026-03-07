@@ -58,12 +58,7 @@ func (c *Client) ReadPump() {
 			return
 		}
 
-		// Only accept a positive user_id from the client; messages like subscribe/ping
-		// omit the field (deserialises as 0) and must never overwrite an established identity.
-		if msg.UserID > 0 {
-			c.UserID = msg.UserID
-		}
-
+		// user identity is set at connection time from JWT; never trust the client
 		switch msg.Type {
 		case Subscribe:
 			c.handleSubscribe(msg)
@@ -129,7 +124,7 @@ func (c *Client) WritePump() {
 	}
 }
 
-// ── internal helpers ─────────────────────────────────────────────────────────
+// Internal helpers
 
 func (c *Client) handleSubscribe(msg Message) {
 	var payload map[string]interface{}

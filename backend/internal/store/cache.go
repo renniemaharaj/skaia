@@ -23,11 +23,11 @@ type ProductCache struct {
 	rdb *redis.Client
 }
 
-// NewProductCache returns a ProductCache connected to REDIS_URL (default redis://localhost:6379).
+// NewProductCache returns a ProductCache connected to REDIS_URL.
 func NewProductCache() *ProductCache {
 	addr := os.Getenv("REDIS_URL")
 	if addr == "" {
-		addr = "redis://localhost:6379"
+		log.Fatal("REDIS_URL is required")
 	}
 	opts, err := redis.ParseURL(addr)
 	if err != nil {
@@ -83,15 +83,23 @@ func (c *ProductCache) Invalidate(id int64) {
 
 // Flush removes all store product cache entries.
 func (c *ProductCache) Flush() {
+	ctx := context.Background()
 	pattern := fmt.Sprintf("%s*", productKeyPrefix)
-	keys, err := c.rdb.Keys(context.Background(), pattern).Result()
-	if err != nil {
-		log.Printf("store.ProductCache.Flush: %v", err)
-		return
-	}
-	if len(keys) > 0 {
-		if err := c.rdb.Del(context.Background(), keys...).Err(); err != nil {
-			log.Printf("store.ProductCache.Flush: del: %v", err)
+	var cursor uint64
+	for {
+		keys, next, err := c.rdb.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			log.Printf("store.ProductCache.Flush: scan: %v", err)
+			return
+		}
+		if len(keys) > 0 {
+			if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
+				log.Printf("store.ProductCache.Flush: del: %v", err)
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			break
 		}
 	}
 }

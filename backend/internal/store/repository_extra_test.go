@@ -49,7 +49,7 @@ cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("del_pca
 p, err := prodRepo.Create(&models.Product{
 CategoryID: cat.ID,
 Name:       testutil.UniqueStr("del_prod"),
-Price:      1.0,
+Price:      100,
 IsActive:   true,
 })
 require.NoError(t, err)
@@ -69,7 +69,7 @@ for i := 0; i < 3; i++ {
 _, err := prodRepo.Create(&models.Product{
 CategoryID: cat.ID,
 Name:       testutil.UniqueStr("catprod"),
-Price:      1.0,
+Price:      100,
 IsActive:   true,
 })
 require.NoError(t, err)
@@ -77,7 +77,7 @@ require.NoError(t, err)
 _, err := prodRepo.Create(&models.Product{
 CategoryID: other.ID,
 Name:       testutil.UniqueStr("otherprod"),
-Price:      1.0,
+Price:      100,
 IsActive:   true,
 })
 require.NoError(t, err)
@@ -101,7 +101,7 @@ cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("pag_pca
 for i := 0; i < 5; i++ {
 _, err := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("pag_prod"),
-Price: 1.0, IsActive: true,
+Price: 100, IsActive: true,
 })
 require.NoError(t, err)
 }
@@ -131,7 +131,7 @@ uid := createStoreTestUser(t, db)
 cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("gi_cat")})
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("gi_prod"),
-Price: 2.0, IsActive: true,
+Price: 200, IsActive: true,
 })
 _, err := cartRepo.AddToCart(uid, prod.ID, 3)
 require.NoError(t, err)
@@ -151,7 +151,7 @@ uid := createStoreTestUser(t, db)
 cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("ui_cat")})
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("ui_prod"),
-Price: 3.0, IsActive: true,
+Price: 300, IsActive: true,
 })
 _, err := cartRepo.AddToCart(uid, prod.ID, 5)
 require.NoError(t, err)
@@ -174,7 +174,7 @@ cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("cc_cat"
 for i := 0; i < 3; i++ {
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("cc_prod"),
-Price: 1.0, IsActive: true,
+Price: 100, IsActive: true,
 })
 _, err := cartRepo.AddToCart(uid, prod.ID, 1)
 require.NoError(t, err)
@@ -209,12 +209,12 @@ uid := createStoreTestUser(t, db)
 cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("gbu_cat")})
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("gbu_prod"),
-Price: 5.0, IsActive: true,
+Price: 500, IsActive: true,
 })
 // Create 3 orders.
 for i := 0; i < 3; i++ {
 _, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 5.0, Status: "pending"},
+&models.Order{UserID: uid, TotalPrice: 500, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 5.0}},
 )
 require.NoError(t, err)
@@ -236,11 +236,11 @@ uid := createStoreTestUser(t, db)
 cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("opag_cat")})
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("opag_prod"),
-Price: 1.0, IsActive: true,
+Price: 100, IsActive: true,
 })
 for i := 0; i < 5; i++ {
 _, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 1.0, Status: "pending"},
+&models.Order{UserID: uid, TotalPrice: 100, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 1.0}},
 )
 require.NoError(t, err)
@@ -269,10 +269,10 @@ uid := createStoreTestUser(t, db)
 cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("trans_cat")})
 prod, _ := prodRepo.Create(&models.Product{
 CategoryID: cat.ID, Name: testutil.UniqueStr("trans_prod"),
-Price: 1.0, IsActive: true,
+Price: 100, IsActive: true,
 })
 order, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 1.0, Status: "pending"},
+&models.Order{UserID: uid, TotalPrice: 100, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 1.0}},
 )
 require.NoError(t, err)

@@ -126,6 +126,11 @@ export const useWebSocketSync = () => {
   const setStoreCategories = useSetAtom(productCategoriesAtom);
   const setStoreCartItems = useSetAtom(storeCartItemsAtom);
 
+  // read token so the WS connection is authenticated server-side
+  const accessToken = useAtomValue(accessTokenAtom);
+  const accessTokenRef = useRef(accessToken);
+  accessTokenRef.current = accessToken;
+
   const setupWebSocket = useCallback(() => {
     // Global singleton guard — only one WS connection per browser context.
     if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
@@ -137,7 +142,9 @@ export const useWebSocketSync = () => {
     }
     _globalConnecting = true;
     try {
-      const ws = new WebSocket(wsUrl);
+      const token = accessTokenRef.current;
+      const url = token ? `${wsUrl}?token=${encodeURIComponent(token)}` : wsUrl;
+      const ws = new WebSocket(url);
 
       ws.onopen = () => {
         _globalConnecting = false;
@@ -168,30 +175,66 @@ export const useWebSocketSync = () => {
               : message.payload;
 
           // Handle user update propagation
-          if (message.type === "user:update" && payload?.data?.user) {
-            const updatedUser = payload.data.user as User;
-            const newToken = payload.data.new_token as string | undefined;
+          if (message.type === "user:update") {
+            const { action: userAction, data: userData } = payload;
 
-            // Notify profile pages displaying this user
-            window.dispatchEvent(
-              new CustomEvent("user:profile:updated", {
-                detail: { userId: String(updatedUser.id), user: updatedUser },
-              }),
-            );
+            // ── Lightweight permission/role push ─────────────────────────
+            // Sent directly to the user's client (no subscription needed).
+            // Only contains id, roles, permissions, new_token — merge into
+            // currentUserAtom so derived atoms react instantly.
+            if (userAction === "permissions_changed" && userData) {
+              const myId = currentUserIdRef.current;
+              if (myId && String(userData.id) === String(myId)) {
+                setCurrentUser((prev) => {
+                  if (!prev) return prev;
+                  return {
+                    ...prev,
+                    roles: userData.roles ?? prev.roles,
+                    permissions: userData.permissions ?? prev.permissions,
+                  };
+                });
+                if (userData.new_token) setAccessToken(userData.new_token);
+              }
+              // Also notify profile pages displaying this user
+              window.dispatchEvent(
+                new CustomEvent("user:profile:updated", {
+                  detail: {
+                    userId: String(userData.id),
+                    user: {
+                      roles: userData.roles,
+                      permissions: userData.permissions,
+                    },
+                  },
+                }),
+              );
+            }
 
-            // Apply session changes if this is the logged-in user
-            const rawCurrent = localStorage.getItem("auth.user");
-            const currentId = rawCurrent
-              ? (JSON.parse(rawCurrent) as User)?.id
-              : null;
-            if (currentId && String(updatedUser.id) === String(currentId)) {
-              setCurrentUser(updatedUser);
-              if (newToken) setAccessToken(newToken);
-              if (updatedUser.is_suspended) {
-                setAccessToken(null);
-                setRefreshToken(null);
-                setCurrentUser(null);
-                setIsAuthenticated(false);
+            // ── Full user object push (profile edits, avatar, suspend…) ──
+            if (payload?.data?.user) {
+              const updatedUser = payload.data.user as User;
+              const newToken = payload.data.new_token as string | undefined;
+
+              // Notify profile pages displaying this user
+              window.dispatchEvent(
+                new CustomEvent("user:profile:updated", {
+                  detail: {
+                    userId: String(updatedUser.id),
+                    user: updatedUser,
+                  },
+                }),
+              );
+
+              // Apply session changes if this is the logged-in user
+              const myId = currentUserIdRef.current;
+              if (myId && String(updatedUser.id) === String(myId)) {
+                setCurrentUser(updatedUser);
+                if (newToken) setAccessToken(newToken);
+                if (updatedUser.is_suspended) {
+                  setAccessToken(null);
+                  setRefreshToken(null);
+                  setCurrentUser(null);
+                  setIsAuthenticated(false);
+                }
               }
             }
           }
@@ -754,6 +797,21 @@ export const useWebSocketSync = () => {
     setCursorPositions,
     wsUrl,
   ]);
+
+  // Reconnect only when the *user identity* changes (login / logout),
+  // NOT on every token refresh.  Permission propagation updates the token
+  // in-place — that must NOT tear down the socket or we create a
+  // disconnect/reconnect loop that drops messages.
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const prevAuthRef = useRef(isAuthenticated);
+  useEffect(() => {
+    // Only reconnect when auth state actually flips (logged-in ↔ logged-out).
+    if (prevAuthRef.current === isAuthenticated) return;
+    prevAuthRef.current = isAuthenticated;
+    if (!_globalWs) return;
+    _globalWs.close();
+    _globalWs = null;
+  }, [isAuthenticated]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates

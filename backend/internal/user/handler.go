@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/lib/pq"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -37,7 +38,6 @@ func userContentDir(userID int64, subdir string) (string, error) {
 }
 
 // Handler owns the HTTP layer for the user domain.
-// Wire it up via Mount once your chi.Router is created.
 type Handler struct {
 	svc *Service
 	hub *ws.Hub
@@ -49,10 +49,7 @@ func NewHandler(svc *Service, hub *ws.Hub) *Handler {
 	return &Handler{svc: svc, hub: hub}
 }
 
-// propagateUserSession fetches the latest user data from the DB, generates a
-// fresh JWT, and broadcasts both to the target user's WebSocket subscribers.
-// This is called after any permission, role, or suspension change so the
-// affected client can adopt the new token without re-logging in.
+// propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
 func (h *Handler) propagateUserSession(userID int64) {
 	if h.hub == nil {
 		return
@@ -76,10 +73,40 @@ func (h *Handler) propagateUserSession(userID int64) {
 	})
 }
 
+// propagatePermissions sends only the changed permissions/roles and a fresh
+// JWT directly to the user's connected client(s). No subscription required —
+// if the user is online they receive it immediately.
+func (h *Handler) propagatePermissions(userID int64) {
+	if h.hub == nil {
+		return
+	}
+	u, err := h.svc.GetByID(userID)
+	if err != nil {
+		log.Printf("user.Handler.propagatePermissions: fetch user %d: %v", userID, err)
+		return
+	}
+	token, err := auth.GenerateTokenWithPermissions(
+		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
+	)
+	if err != nil {
+		log.Printf("user.Handler.propagatePermissions: generate token for %d: %v", userID, err)
+		return
+	}
+	// Send only the fields that matter — the frontend merges them into
+	// the existing currentUserAtom so the UI reacts instantly.
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "permissions_changed",
+		"data": map[string]interface{}{
+			"id":          u.ID,
+			"roles":       u.Roles,
+			"permissions": u.Permissions,
+			"new_token":   token,
+		},
+	})
+	h.hub.SendToUser(userID, &ws.Message{Type: ws.UserUpdate, Payload: payload})
+}
+
 // Mount registers all user-domain routes onto r.
-//
-//	jwt     — middleware that requires a valid JWT (401 on missing/invalid).
-//	optJWT  — middleware that enriches context when a JWT is present but passes through unauthenticated requests.
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
 	// Auth
 	r.Route("/auth", func(r chi.Router) {
@@ -129,17 +156,36 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// input validation
+	req.Username = strings.TrimSpace(req.Username)
+	req.Email = strings.TrimSpace(req.Email)
+	if len(req.Username) < 3 || len(req.Username) > 32 {
+		utils.WriteError(w, http.StatusBadRequest, "username must be 3-32 characters")
+		return
+	}
+	if !strings.Contains(req.Email, "@") || !strings.Contains(req.Email, ".") {
+		utils.WriteError(w, http.StatusBadRequest, "invalid email format")
+		return
+	}
+	if len(req.Password) < 8 {
+		utils.WriteError(w, http.StatusBadRequest, "password must be at least 8 characters")
+		return
+	}
+	if len(req.Password) > 72 {
+		utils.WriteError(w, http.StatusBadRequest, "password must be at most 72 characters")
+		return
+	}
+
 	user, accessToken, refreshToken, err := h.svc.Register(&req)
 	if err != nil {
-		log.Printf("user.Handler.register: %v", err)
+		var pqErr *pq.Error
 		switch {
 		case strings.Contains(err.Error(), "required"):
 			utils.WriteError(w, http.StatusBadRequest, err.Error())
-		case strings.Contains(err.Error(), "unique") ||
-			strings.Contains(err.Error(), "duplicate") ||
-			strings.Contains(err.Error(), "UNIQUE"):
+		case errors.As(err, &pqErr) && pqErr.Code == "23505":
 			utils.WriteError(w, http.StatusConflict, "user already exists")
 		default:
+			log.Printf("user.Handler.register: %v", err)
 			utils.WriteError(w, http.StatusInternalServerError, "registration failed")
 		}
 		return
@@ -327,7 +373,15 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 
 	updated.PasswordHash = ""
 	if h.hub != nil {
+		// Subscription-based: anyone viewing this profile receives the update
 		go h.hub.PropagateUser(id, map[string]interface{}{"user": updated})
+		// Direct push: the profile owner always gets their own update
+		// even without a subscription (updates currentUserAtom in place)
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": "user_updated",
+			"data":   map[string]interface{}{"user": updated},
+		})
+		go h.hub.SendToUser(id, &ws.Message{Type: ws.UserUpdate, Payload: payload})
 	}
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
@@ -394,6 +448,7 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagatePermissions(targetID)
 	go h.propagateUserSession(targetID)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission added"})
 }
@@ -421,6 +476,7 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagatePermissions(targetID)
 	go h.propagateUserSession(targetID)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed"})
 }
@@ -465,6 +521,7 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagatePermissions(targetID)
 	go h.propagateUserSession(targetID)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "role added"})
 }
@@ -496,6 +553,7 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go h.propagatePermissions(targetID)
 	go h.propagateUserSession(targetID)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "role removed"})
 }
@@ -630,6 +688,11 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	if h.hub != nil {
 		u.PasswordHash = ""
 		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": "user_updated",
+			"data":   map[string]interface{}{"user": u},
+		})
+		go h.hub.SendToUser(userID, &ws.Message{Type: ws.UserUpdate, Payload: payload})
 	}
 	utils.WriteJSON(w, http.StatusCreated, FileUploadResponse{
 		URL:      u.PhotoURL,
@@ -719,6 +782,11 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 	if h.hub != nil {
 		u.PasswordHash = ""
 		go h.hub.PropagateUser(targetID, map[string]interface{}{"user": u})
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": "user_updated",
+			"data":   map[string]interface{}{"user": u},
+		})
+		go h.hub.SendToUser(targetID, &ws.Message{Type: ws.UserUpdate, Payload: payload})
 	}
 	utils.WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.PhotoURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }
@@ -797,6 +865,11 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 	if h.hub != nil {
 		u.PasswordHash = ""
 		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})
+		payload, _ := json.Marshal(map[string]interface{}{
+			"action": "user_updated",
+			"data":   map[string]interface{}{"user": u},
+		})
+		go h.hub.SendToUser(userID, &ws.Message{Type: ws.UserUpdate, Payload: payload})
 	}
 	utils.WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.BannerURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }

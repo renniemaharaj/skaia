@@ -1,53 +1,42 @@
-# Skaia Backend API
+# Backend
 
-Golang backend service for the Skaia application using Chi router.
+Go API server. Uses chi/v5, lib/pq, go-redis/v9, golang-jwt/v5.
 
-## Setup
-
-### Prerequisites
-
-- Go 1.21+
-- Make (optional)
-
-### Installation
+## Run
 
 ```bash
-cd backend
-go mod download
 go run main.go
 ```
 
-## API Endpoints
+Requires `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `CORS_ORIGINS` in the environment (see root `.env`).
 
-### Health Check
+## Structure
 
-- `GET /health` - Check if the API is running
-
-### Store Endpoints (`/store`)
-
-- `GET /store` - List all store items
-- `POST /store` - Create a new store item
-- `GET /store/{id}` - Get a specific store item
-- `PUT /store/{id}` - Update a store item
-- `DELETE /store/{id}` - Delete a store item
-
-### Forum Endpoints (`/forum`)
-
-- `GET /forum` - List all forum threads
-- `POST /forum` - Create a new forum thread
-- `GET /forum/{id}` - Get a specific forum thread
-- `PUT /forum/{id}` - Update a forum thread
-- `DELETE /forum/{id}` - Delete a forum thread
-
-#### Forum Posts
-
-- `GET /forum/{id}/posts` - List all posts in a forum thread
-- `POST /forum/{id}/posts` - Create a new post in a forum thread
-
-## Running with Docker
-
-```bash
-docker-compose up backend
 ```
+main.go              entrypoint, router wiring
+database/db.go       postgres + redis init
+models/models.go     all domain structs
+internal/
+  auth/              jwt, password hashing, context helpers
+  middleware/         jwt auth middleware
+  user/              user CRUD, roles, permissions, cache
+  forum/             categories, threads, comments, likes, cache
+  store/             categories, products, cart, orders, payments, subscriptions
+  inbox/             conversations, messages
+  notification/      notifications
+  upload/            avatar/banner uploads
+  ws/                websocket hub, chat, presence
+  utils/             http helpers
+migrations/          SQL schema and seed data
+```
+
+## Payments
+
+Set `PAYMENT_PROVIDER=stripe` and `STRIPE_SECRET_KEY` to use Stripe. Default is `demo` which simulates all operations locally.
+
+## Tuning
+
+`backend/.env` contains pool sizes and timeouts. These are not secrets and are tracked in git.
+
 
 The API will be available at `http://localhost:8080`

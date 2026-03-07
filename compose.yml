@@ -2,12 +2,11 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: skaia-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
       - ./backend/internal/migrations:/docker-entrypoint-initdb.d
@@ -22,8 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: skaia-redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
     networks:
       - skaia-network
     healthcheck:
@@ -37,6 +35,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: skaia-backend
+    restart: unless-stopped
     ports:
       - "${PORT}:${PORT}"
     environment:
@@ -46,6 +45,10 @@ services:
       - ENVIRONMENT=${ENVIRONMENT}
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-demo}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # Database pool tuning
       - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS:-100}
       - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS:-50}
@@ -62,9 +65,8 @@ services:
       - HTTP_WRITE_TIMEOUT_SEC=${HTTP_WRITE_TIMEOUT_SEC:-15}
       - HTTP_IDLE_TIMEOUT_SEC=${HTTP_IDLE_TIMEOUT_SEC:-60}
       - HTTP_SHUTDOWN_TIMEOUT_SEC=${HTTP_SHUTDOWN_TIMEOUT_SEC:-30}
-      # TEST_DATABASE_URL is intentionally absent — this is production.
     volumes:
-      - ./backend/uploads:/root/uploads
+      - ./backend/uploads:/app/uploads
     networks:
       - skaia-network
     depends_on:
@@ -83,6 +85,7 @@ services:
       context: ./skaia
       dockerfile: nginx/Dockerfile
     container_name: skaia-frontend
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -95,19 +98,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # ── Adminer — lightweight web DB manager ─────────────────────────────────────
-  adminer:
-    image: adminer:latest
-    container_name: skaia-adminer
-    ports:
-      - "8081:8080"
-    environment:
-      ADMINER_DEFAULT_SERVER: postgres
-    networks:
-      - skaia-network
-    depends_on:
-      - postgres
 
 volumes:
   postgres_data:

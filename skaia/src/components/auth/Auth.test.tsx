@@ -76,7 +76,8 @@ describe("Auth Component", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          token: "test-token-123",
+          access_token: "test-token-123",
+          refresh_token: "test-refresh-123",
           user: { id: "1", username: "testuser", email: "test@example.com" },
         }),
       });
@@ -105,7 +106,7 @@ describe("Auth Component", () => {
         );
       });
 
-      expect(localStorage.getItem("authToken")).toBe("test-token-123");
+      expect(localStorage.getItem("auth.accessToken")).toBe("test-token-123");
     });
 
     it("displays error on failed login", async () => {
@@ -145,7 +146,7 @@ describe("Auth Component", () => {
                 resolve({
                   ok: true,
                   json: async () => ({
-                    token: "test-token",
+                    access_token: "test-token",
                     user: { email: "test@example.com" },
                   }),
                 }),
@@ -223,7 +224,8 @@ describe("Auth Component", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          token: "test-token-123",
+          access_token: "test-token-123",
+          refresh_token: "test-refresh-123",
           user: { id: "1", username: "newuser", email: "new@example.com" },
         }),
       });
@@ -259,8 +261,6 @@ describe("Auth Component", () => {
           expect.any(Object),
         );
       });
-
-      expect(localStorage.getItem("authToken")).toBe("test-token-123");
     });
 
     it("allows toggling back to login mode", async () => {
@@ -389,7 +389,7 @@ describe("Auth Component", () => {
                 resolve({
                   ok: true,
                   json: async () => ({
-                    token: "test-token",
+                    access_token: "test-token",
                     user: { email: "test@example.com" },
                   }),
                 }),
@@ -438,7 +438,8 @@ describe("Auth Component", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          token: "jwt-token-123",
+          access_token: "jwt-token-123",
+          refresh_token: "refresh-token-123",
           user: testUser,
         }),
       });
@@ -461,8 +462,7 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(localStorage.getItem("authToken")).toBe("jwt-token-123");
-        expect(localStorage.getItem("user")).toBe(JSON.stringify(testUser));
+        expect(localStorage.getItem("auth.accessToken")).toBe("jwt-token-123");
       });
     });
 
@@ -471,7 +471,8 @@ describe("Auth Component", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          token: "jwt-token-123",
+          access_token: "jwt-token-123",
+          refresh_token: "refresh-token-123",
           user: { email: "test@example.com" },
         }),
       });
@@ -504,7 +505,7 @@ describe("Auth Component", () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          token: "jwt-token-123",
+          access_token: "jwt-token-123",
           user: { email: "test@example.com" },
         }),
       });

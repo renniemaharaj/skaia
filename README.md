@@ -1,119 +1,71 @@
-# Skaia - Full Stack Application
+# Skaia
 
-A full-stack application with a React frontend and Golang backend.
+Full-stack application: React frontend, Go backend, PostgreSQL, Redis.
 
-## Architecture
+## Stack
 
-- **Frontend**: React + TypeScript + Vite (port 5173)
-- **Backend**: Go with Chi router (port 8080)
-- **Linting/Formatting**: Biome for frontend
+| Layer    | Tech                           |
+|----------|--------------------------------|
+| Frontend | React 19, TypeScript, Vite     |
+| Backend  | Go 1.24, chi/v5, lib/pq        |
+| Database | PostgreSQL 16                  |
+| Cache    | Redis 7                        |
+| Proxy    | nginx                          |
+| Payments | Stripe (demo provider default) |
 
-## Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- Go 1.21+
-- Docker & Docker Compose (optional)
-
-### Development
-
-#### Frontend
+## Setup
 
 ```bash
-cd skaia
-npm install
-npm run dev
+cp .env.example .env   # fill in secrets
+docker compose up -d
 ```
 
-Run linter and formatter:
+Backend: `http://localhost:8080`
+Frontend: `http://localhost:5173`
 
-```bash
-npm run lint      # Lint code
-npm run format    # Format code with Biome
-```
+## Environment
 
-#### Backend
+| File | Purpose | Git |
+|------|---------|-----|
+| `.env` | secrets (DB creds, JWT, Stripe keys) | ignored |
+| `backend/.env` | tuning params (pool sizes, timeouts) | tracked |
 
-```bash
-cd backend
-go mod download
-go run main.go
-```
+## API routes
 
-### Docker Compose
+### General
+- `GET /health` — health check
+- `GET /time` — server time
+- `GET /ws` — websocket
 
-Run both services together:
+### Auth (`/auth`)
+- `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
 
-```bash
-docker-compose up
-```
-
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8080
-
-## Project Structure
-
-```
-skaia/
-├── backend/           # Go backend service
-│   ├── main.go       # Chi router and endpoints
-│   ├── go.mod        # Go module file
-│   ├── Dockerfile    # Docker image for backend
-│   └── README.md     # Backend documentation
-├── skaia/            # React frontend
-│   ├── src/          # React components and assets
-│   ├── package.json  # Frontend dependencies
-│   ├── biome.json    # Biome linting/formatting config
-│   ├── Dockerfile    # Docker image for frontend
-│   └── vite.config.ts # Vite configuration
-└── compose.yml       # Docker Compose orchestration
-```
-
-## API Routes
-
-### Health Check
-
-- `GET /health`
-
-### Store (`/store`)
-
-- `GET /store` - List items
-- `POST /store` - Create item
-- `GET /store/{id}` - Get item
-- `PUT /store/{id}` - Update item
-- `DELETE /store/{id}` - Delete item
+### Users (`/users`)
+- `GET /users`, `GET /users/{id}`, `PUT /users/{id}`, `DELETE /users/{id}`
+- `GET /users/{id}/roles`, `PUT /users/{id}/roles`
 
 ### Forum (`/forum`)
+- categories: `GET /forum/categories`, CRUD `/forum/categories/{id}`
+- threads: `GET /forum/threads`, CRUD `/forum/threads/{id}`
+- comments: `GET /forum/threads/{id}/comments`, CRUD
+- likes: `POST /forum/threads/{id}/like`, `POST /forum/comments/{id}/like`
 
-- `GET /forum` - List threads
-- `POST /forum` - Create thread
-- `GET /forum/{id}` - Get thread
-- `PUT /forum/{id}` - Update thread
-- `DELETE /forum/{id}` - Delete thread
-- `GET /forum/{id}/posts` - List posts in thread
-- `POST /forum/{id}/posts` - Create post in thread
+### Store (`/store`)
+- categories: `GET /store/categories`, CRUD
+- products: `GET /store/products`, CRUD
+- cart: `GET /store/cart`, `POST /store/cart/add`, `PUT /store/cart/update`, `DELETE /store/cart/remove`
+- checkout: `POST /store/checkout`
+- orders: `GET /store/orders`, `GET /store/orders/{id}`
+- plans: `GET /store/plans`, CRUD (admin)
+- subscriptions: `POST /store/subscribe`, `GET /store/subscriptions`, `POST /store/subscriptions/{id}/cancel`
+- payments: `GET /store/payments/{ref}/status`
 
-## Development Tools
+### Inbox (`/inbox`)
+- `GET /inbox/conversations`, `POST /inbox/conversations`
+- `GET /inbox/conversations/{id}/messages`, `POST /inbox/conversations/{id}/messages`
 
-### Frontend
+### Notifications (`/notifications`)
+- `GET /notifications`, `PUT /notifications/{id}/read`, `PUT /notifications/read-all`
 
-- **Language**: TypeScript
-- **Framework**: React 19
-- **Build Tool**: Vite
-- **Linter/Formatter**: Biome
-- **Runtime**: Node.js
-
-### Backend
-
-- **Language**: Go 1.21
-- **Router**: Chi v5
-- **Runtime**: Go
-
-## Next Steps
-
-1. Implement database models and persistence layer
-2. Add authentication/authorization
-3. Create React components for frontend
-4. Add error handling and validation
-5. Set up logging and monitoring
+### Uploads (`/upload`)
+- `POST /upload/avatar`, `POST /upload/banner`

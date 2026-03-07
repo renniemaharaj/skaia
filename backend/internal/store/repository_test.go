@@ -71,7 +71,7 @@ func TestProductRepository_CreateAndGet(t *testing.T) {
 		CategoryID:  cat.ID,
 		Name:        testutil.UniqueStr("Widget"),
 		Description: "A fine widget",
-		Price:       9.99,
+		Price:       999,
 		Stock:       50,
 		IsActive:    true,
 	})
@@ -81,7 +81,7 @@ func TestProductRepository_CreateAndGet(t *testing.T) {
 	fetched, err := prodRepo.GetByID(p.ID)
 	require.NoError(t, err)
 	assert.Equal(t, p.Name, fetched.Name)
-	assert.InDelta(t, 9.99, fetched.Price, 0.01)
+	assert.Equal(t, int64(999), fetched.Price)
 }
 
 func TestProductRepository_List(t *testing.T) {
@@ -96,7 +96,7 @@ func TestProductRepository_List(t *testing.T) {
 		_, err := prodRepo.Create(&models.Product{
 			CategoryID: cat.ID,
 			Name:       testutil.UniqueStr("prod"),
-			Price:      1.0,
+			Price:      100,
 			IsActive:   true,
 		})
 		require.NoError(t, err)
@@ -116,15 +116,15 @@ func TestProductRepository_Update(t *testing.T) {
 	p, err := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("updateme"),
-		Price:      5.00,
+		Price:      500,
 		IsActive:   true,
 	})
 	require.NoError(t, err)
 
-	p.Price = 12.50
+	p.Price = 1250
 	updated, err := prodRepo.Update(p)
 	require.NoError(t, err)
-	assert.InDelta(t, 12.50, updated.Price, 0.01)
+	assert.Equal(t, int64(1250), updated.Price)
 }
 
 // --- Cart tests ---
@@ -140,7 +140,7 @@ func TestCartRepository_AddAndGet(t *testing.T) {
 	prod, _ := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("cartprod"),
-		Price:      3.00,
+		Price:      300,
 		IsActive:   true,
 	})
 
@@ -165,7 +165,7 @@ func TestCartRepository_AddToCart_Upsert(t *testing.T) {
 	prod, _ := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("upsprod"),
-		Price:      1.00,
+		Price:      100,
 		IsActive:   true,
 	})
 
@@ -188,7 +188,7 @@ func TestCartRepository_RemoveFromCart(t *testing.T) {
 	prod, _ := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("rmprod"),
-		Price:      1.00,
+		Price:      100,
 		IsActive:   true,
 	})
 
@@ -215,16 +215,16 @@ func TestOrderRepository_CreateAndGet(t *testing.T) {
 	prod, _ := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("ordprod"),
-		Price:      10.00,
+		Price:      1000,
 		IsActive:   true,
 	})
 
 	order, err := orderRepo.Create(&models.Order{
 		UserID:     uid,
-		TotalPrice: 20.00,
+		TotalPrice: 2000,
 		Status:     "pending",
 	}, []*models.OrderItem{
-		{ProductID: prod.ID, Quantity: 2, Price: 10.00},
+		{ProductID: prod.ID, Quantity: 2, Price: 1000},
 	})
 	require.NoError(t, err)
 	require.NotZero(t, order.ID)
@@ -246,16 +246,16 @@ func TestOrderRepository_UpdateStatus(t *testing.T) {
 	prod, _ := prodRepo.Create(&models.Product{
 		CategoryID: cat.ID,
 		Name:       testutil.UniqueStr("stprod"),
-		Price:      5.00,
+		Price:      500,
 		IsActive:   true,
 	})
 
 	order, _ := orderRepo.Create(&models.Order{
 		UserID:     uid,
-		TotalPrice: 5.00,
+		TotalPrice: 500,
 		Status:     "pending",
 	}, []*models.OrderItem{
-		{ProductID: prod.ID, Quantity: 1, Price: 5.00},
+		{ProductID: prod.ID, Quantity: 1, Price: 500},
 	})
 
 	updated, err := orderRepo.UpdateStatus(order.ID, "completed")

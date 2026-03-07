@@ -594,8 +594,8 @@ func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 		}
 		if hasClaims {
 			c.CanLikeComments = true
-			c.CanDelete = userID == c.UserID || canDelComment
-			c.CanEdit = userID == c.UserID || canDelComment
+			c.CanDelete = userID == c.AuthorID || canDelComment
+			c.CanEdit = userID == c.AuthorID || canDelComment
 		}
 	}
 
@@ -628,7 +628,7 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 
 	created, err := h.svc.CreateComment(&models.ThreadComment{
 		ThreadID: id,
-		UserID:   userID,
+		AuthorID: userID,
 		Content:  req.Content,
 	})
 	if err != nil {
@@ -684,7 +684,7 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	canEdit, _ := h.authz.HasPermission(userID, "forum.thread-comment-delete")
-	if comment.UserID != userID && !canEdit {
+	if comment.AuthorID != userID && !canEdit {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -729,7 +729,7 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	canDel, _ := h.authz.HasPermission(userID, "forum.thread-comment-delete")
-	if comment.UserID != userID && !canDel {
+	if comment.AuthorID != userID && !canDel {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -744,8 +744,8 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 	h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
 
 	// Notify comment author when someone else (admin) deleted their comment
-	if h.notifSvc != nil && comment.UserID != userID {
-		commentOwner := comment.UserID
+	if h.notifSvc != nil && comment.AuthorID != userID {
+		commentOwner := comment.AuthorID
 		tid := threadID
 		go func() {
 			_, _ = h.notifSvc.Send(
@@ -791,11 +791,11 @@ func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
 	}, "comment_liked")
 
 	// Notify the comment author (skip if liking own comment)
-	if h.notifSvc != nil && comment.UserID != userID {
+	if h.notifSvc != nil && comment.AuthorID != userID {
 		tid := comment.ThreadID
 		go func() {
 			_, _ = h.notifSvc.Send(
-				comment.UserID,
+				comment.AuthorID,
 				"comment_liked",
 				"Someone liked your comment",
 				"/view-thread/"+strconv.FormatInt(tid, 10),

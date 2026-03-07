@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { currentUserAtom } from "./auth";
 
 export interface ThreadComment {
   id: string;
@@ -81,3 +82,52 @@ export const activeCategoryFeedIdAtom = atom<string | null>(null);
 
 export const userFeedThreadsAtom = atom<ForumThread[]>([]);
 export const activeUserFeedIdAtom = atom<string | null>(null);
+
+// ── Derived thread permissions ──────────────────────────────────────────────
+// Reactively recomputes permissions from the live user atom so any
+// permission/role change propagated over WS is instantly reflected.
+export const threadPermissionsAtom = atom((get) => {
+  const user = get(currentUserAtom);
+  const thread = get(currentThreadAtom);
+  if (!user || !thread) {
+    return {
+      canEdit: false,
+      canDelete: false,
+      canLikeComments: false,
+      canDeleteThreadComment: false,
+      canLikeThreads: false,
+    };
+  }
+  const isAdmin = (user.roles ?? []).includes("admin");
+  const perms = user.permissions ?? [];
+  const isOwner = String(user.id) === String(thread.user_id);
+
+  return {
+    canEdit: isOwner || isAdmin || perms.includes("forum.thread-edit"),
+    canDelete: isOwner || isAdmin || perms.includes("forum.thread-delete"),
+    canLikeComments: true,
+    canDeleteThreadComment:
+      isAdmin || perms.includes("forum.thread-comment-delete"),
+    canLikeThreads: true,
+  };
+});
+
+// Derived per-comment permissions — enriches each comment with live user perms.
+export const enrichedThreadCommentsAtom = atom((get) => {
+  const user = get(currentUserAtom);
+  const comments = get(threadCommentsAtom);
+  if (!user) return comments;
+  const isAdmin = (user.roles ?? []).includes("admin");
+  const perms = user.permissions ?? [];
+  return comments.map((c) => {
+    const isOwner = String(user.id) === String(c.user_id);
+    return {
+      ...c,
+      can_edit:
+        isOwner || isAdmin || perms.includes("forum.thread-comment-delete"),
+      can_delete:
+        isOwner || isAdmin || perms.includes("forum.thread-comment-delete"),
+      can_like_comments: true,
+    };
+  });
+});

@@ -8,7 +8,7 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-// --- Category ---
+// Category repository
 
 type sqlCategoryRepository struct{ db *sql.DB }
 
@@ -83,7 +83,7 @@ func (r *sqlCategoryRepository) List() ([]*models.ForumCategory, error) {
 	return cats, rows.Err()
 }
 
-// --- Thread ---
+// Thread repository
 
 type sqlThreadRepository struct{ db *sql.DB }
 
@@ -262,7 +262,7 @@ func (r *sqlThreadRepository) IsLikedByUser(threadID, userID int64) (bool, error
 	return exists, err
 }
 
-// --- Comment ---
+// Comment repository
 
 type sqlCommentRepository struct{ db *sql.DB }
 
@@ -283,7 +283,7 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 		 LEFT JOIN roles r ON ur.role_id = r.id
 		 WHERE tc.id = $1
 		 GROUP BY tc.id, u.id, u.username, u.avatar_url`, id,
-	).Scan(&c.ID, &c.ThreadID, &c.UserID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
+	).Scan(&c.ID, &c.ThreadID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
 		&c.AuthorName, &c.AuthorAvatar, &roles)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("comment not found")
@@ -294,7 +294,6 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 	if roles.Valid && roles.String != "" {
 		c.AuthorRoles = strings.Split(roles.String, ",")
 	}
-	c.AuthorID = c.UserID
 	return c, nil
 }
 
@@ -324,11 +323,10 @@ func (r *sqlCommentRepository) GetByThread(threadID int64, limit, offset int) ([
 	for rows.Next() {
 		c := &models.ThreadComment{}
 		var roles sql.NullString
-		if err := rows.Scan(&c.ID, &c.ThreadID, &c.UserID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
+		if err := rows.Scan(&c.ID, &c.ThreadID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
 			&c.AuthorName, &c.AuthorAvatar, &roles, &c.Likes); err != nil {
 			return nil, err
 		}
-		c.AuthorID = c.UserID
 		if roles.Valid && roles.String != "" {
 			c.AuthorRoles = strings.Split(roles.String, ",")
 		}
@@ -342,8 +340,8 @@ func (r *sqlCommentRepository) Create(comment *models.ThreadComment) (*models.Th
 		`INSERT INTO thread_comments (thread_id, user_id, content)
 		 VALUES ($1, $2, $3)
 		 RETURNING id, thread_id, user_id, content, created_at, updated_at`,
-		comment.ThreadID, comment.UserID, comment.Content,
-	).Scan(&comment.ID, &comment.ThreadID, &comment.UserID, &comment.Content,
+		comment.ThreadID, comment.AuthorID, comment.Content,
+	).Scan(&comment.ID, &comment.ThreadID, &comment.AuthorID, &comment.Content,
 		&comment.CreatedAt, &comment.UpdatedAt)
 	if err == nil {
 		_, _ = r.db.Exec(`UPDATE forum_threads SET reply_count = reply_count + 1 WHERE id = $1`, comment.ThreadID)
@@ -357,7 +355,7 @@ func (r *sqlCommentRepository) Update(comment *models.ThreadComment) (*models.Th
 		 WHERE id=$2
 		 RETURNING id, thread_id, user_id, content, created_at, updated_at`,
 		comment.Content, comment.ID,
-	).Scan(&comment.ID, &comment.ThreadID, &comment.UserID, &comment.Content,
+	).Scan(&comment.ID, &comment.ThreadID, &comment.AuthorID, &comment.Content,
 		&comment.CreatedAt, &comment.UpdatedAt)
 	return comment, err
 }

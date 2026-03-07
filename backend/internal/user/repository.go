@@ -16,8 +16,6 @@ func NewRepository(db *sql.DB) Repository {
 	return &sqlRepository{db: db}
 }
 
-// --- internal helpers ---
-
 func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	// Roles
 	rows, err := r.db.Query(
@@ -88,8 +86,6 @@ func scanUser(row interface {
 	)
 	return u, err
 }
-
-// --- Repository interface ---
 
 func (r *sqlRepository) GetByID(id int64) (*models.User, error) {
 	user, err := scanUser(r.db.QueryRow(

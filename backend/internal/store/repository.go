@@ -8,7 +8,7 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-// --- Category ---
+// Category repository
 
 type sqlCategoryRepository struct{ db *sql.DB }
 
@@ -89,7 +89,7 @@ func (r *sqlCategoryRepository) List() ([]*models.StoreCategory, error) {
 	return cats, rows.Err()
 }
 
-// --- Product ---
+// Product repository
 
 type sqlProductRepository struct{ db *sql.DB }
 
@@ -177,7 +177,7 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 	return products, rows.Err()
 }
 
-// --- Cart ---
+// Cart repository
 
 type sqlCartRepository struct{ db *sql.DB }
 
@@ -250,7 +250,7 @@ func (r *sqlCartRepository) ClearCart(userID int64) error {
 	return err
 }
 
-// --- Order ---
+// Order repository
 
 type sqlOrderRepository struct{ db *sql.DB }
 
@@ -336,7 +336,7 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 	return o, err
 }
 
-// --- Payment ---
+// Payment repository
 
 type sqlPaymentRepository struct{ db *sql.DB }
 

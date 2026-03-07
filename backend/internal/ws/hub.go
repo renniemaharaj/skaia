@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// ── Environment-driven configuration ────────────────────────────────────────
-// All values default to production-ready settings tuned for 100 K concurrent
-// connections. Override via environment variables (see .env.example).
+// Environment-driven configuration
+// All values default to production-ready settings tuned for 100K concurrent
+// connections. Override via environment variables.
 
 // HubConfig holds runtime-tunable WebSocket hub settings read from the
 // environment at startup. Use loadHubConfig() to populate.
@@ -108,7 +108,7 @@ func (r *sessionChatRing) history() []GlobalChatMessage {
 type Hub struct {
 	cfg HubConfig
 
-	// ── channels ────────────────────────────────────────────────────────────
+	// channels
 	clients         map[*Client]bool
 	broadcast       chan *Message
 	register        chan *Client
@@ -122,32 +122,29 @@ type Hub struct {
 	cursorUpdates   chan CursorBroadcast
 	globalChat      chan GlobalChatMessage
 
-	// ── clients + subscriptions — protected by mu ────────────────────────
+	// clients + subscriptions — protected by mu
 	mu sync.RWMutex
 
-	// ── worker pool — caps concurrent fan-out goroutines ─────────────────
+	// worker pool
 	workerSem chan struct{}
 
-	// ── per-session chat ring buffers — protected by sessionMu ───────────
+	// per-session chat ring buffers — protected by chatMu
 	chatMu     sync.Mutex
 	chatRings  map[int64]*sessionChatRing // sessionID → ring
 	nextChatID int64
 
-	// ── sessions — protected by sessionMu ────────────────────────────────
-	// Clients are bucketed into sessions of at most cfg.SessionSize.
-	// Chat, presence and cursor updates are scoped to a session, bounding
-	// per-event fan-out to O(SessionSize) regardless of total connections.
+	// sessions — protected by sessionMu
 	sessionMu   sync.Mutex
 	sessions    map[int64]int // sessionID → active client count
 	nextSession int64
 
-	// ── monotonic client ID — accessed via atomic ─────────────────────────
+	// monotonic client ID
 	nextClientID atomic.Int64
 
-	// ── active connection counter — accessed via atomic ───────────────────
+	// active connection counter
 	connCount atomic.Int64
 
-	// ── presence coalescing — accessed via atomic ─────────────────────────
+	// presence coalescing
 	presenceDirty atomic.Int32
 }
 
@@ -263,7 +260,7 @@ func (h *Hub) markPresenceDirty() {
 	h.presenceDirty.Store(1)
 }
 
-// ── Public API ───────────────────────────────────────────────────────────────
+// Public API
 
 // Broadcast enqueues a message for delivery to all connected clients.
 func (h *Hub) Broadcast(msg *Message) {

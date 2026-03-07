@@ -73,8 +73,49 @@ export async function apiRequest<T>(
       // Use default error message
     }
 
-    // Handle 401 Unauthorized - clear auth state
+    // Handle 401 Unauthorized — attempt a token refresh before logging out
     if (response.status === 401) {
+      const refreshToken = localStorage.getItem("auth.refreshToken");
+
+      if (refreshToken && !endpoint.includes("/auth/refresh")) {
+        try {
+          const refreshResp = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+          if (refreshResp.ok) {
+            const data: AuthResponse = await refreshResp.json();
+            localStorage.setItem("auth.accessToken", data.access_token);
+            if (data.refresh_token) {
+              localStorage.setItem("auth.refreshToken", data.refresh_token);
+            }
+            if (data.user) {
+              localStorage.setItem("auth.user", JSON.stringify(data.user));
+            }
+
+            // Retry the original request with the new token
+            const retryResp = await fetch(url, {
+              ...options,
+              headers: {
+                ...getAuthHeaders(!isFormData),
+                ...options.headers,
+              },
+            });
+            if (retryResp.ok) {
+              try {
+                return await retryResp.json();
+              } catch {
+                return null as T;
+              }
+            }
+            // Retry also failed — fall through to clear auth
+          }
+        } catch {
+          // Refresh request failed — fall through to clear auth
+        }
+      }
+
       // Clear auth tokens from localStorage
       localStorage.removeItem("auth.accessToken");
       localStorage.removeItem("auth.refreshToken");

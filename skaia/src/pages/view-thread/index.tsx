@@ -1,12 +1,12 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Pencil, Trash2, X } from "lucide-react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 
 import ViewThread from "../../components/forum/ViewThread";
 import ViewThreadMeta from "../../components/forum/ViewThreadMeta";
 import ViewThreadComments from "../../components/forum/ViewThreadComments";
-import { currentThreadAtom } from "../../atoms/forum";
+import { currentThreadAtom, threadPermissionsAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
@@ -19,6 +19,7 @@ const ViewThreadPage = () => {
   const navigate = useNavigate();
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
+  const { canEdit, canDelete } = useAtomValue(threadPermissionsAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,8 +146,8 @@ const ViewThreadPage = () => {
           <h3 style={{ margin: 0 }}>{currentThread.title}</h3>
 
           <div style={{ display: "flex", gap: "1rem" }}>
-            {/* Edit - only if user has permission */}
-            {currentThread.can_edit && (
+            {/* Edit - derived from live user permissions atom */}
+            {canEdit && (
               <button
                 className="thread-action-btn edit-btn"
                 onClick={handleEdit}
@@ -156,8 +157,8 @@ const ViewThreadPage = () => {
               </button>
             )}
 
-            {/* Delete - only if user has permission */}
-            {currentThread.can_delete && (
+            {/* Delete - derived from live user permissions atom */}
+            {canDelete && (
               <button
                 className="thread-action-btn delete-btn"
                 onClick={handleDelete}

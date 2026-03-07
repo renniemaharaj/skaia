@@ -202,7 +202,7 @@ Title: testutil.UniqueStr("gbt_thread"), Content: "x",
 })
 for i := 0; i < 4; i++ {
 _, err := commentRepo.Create(&models.ThreadComment{
-ThreadID: thread.ID, UserID: uid,
+ThreadID: thread.ID, AuthorID: uid,
 Content: "comment content",
 })
 require.NoError(t, err)
@@ -228,7 +228,7 @@ Title: testutil.UniqueStr("cpag_thread"), Content: "x",
 })
 for i := 0; i < 5; i++ {
 _, err := commentRepo.Create(&models.ThreadComment{
-ThreadID: thread.ID, UserID: uid, Content: "pag comment",
+ThreadID: thread.ID, AuthorID: uid, Content: "pag comment",
 })
 require.NoError(t, err)
 }
@@ -259,7 +259,7 @@ CategoryID: cat.ID, UserID: uid,
 Title: testutil.UniqueStr("updc_thread"), Content: "x",
 })
 comment, err := commentRepo.Create(&models.ThreadComment{
-ThreadID: thread.ID, UserID: uid, Content: "original comment",
+ThreadID: thread.ID, AuthorID: uid, Content: "original comment",
 })
 require.NoError(t, err)
 comment.Content = "updated comment"
@@ -283,7 +283,7 @@ CategoryID: cat.ID, UserID: uid,
 Title: testutil.UniqueStr("cl_thread"), Content: "x",
 })
 comment, err := commentRepo.Create(&models.ThreadComment{
-ThreadID: thread.ID, UserID: uid, Content: "likeable comment",
+ThreadID: thread.ID, AuthorID: uid, Content: "likeable comment",
 })
 require.NoError(t, err)
 // Like.
@@ -314,7 +314,7 @@ CategoryID: cat.ID, UserID: uid,
 Title: testutil.UniqueStr("cnl_thread"), Content: "x",
 })
 comment, _ := commentRepo.Create(&models.ThreadComment{
-ThreadID: thread.ID, UserID: uid, Content: "not liked",
+ThreadID: thread.ID, AuthorID: uid, Content: "not liked",
 })
 liked, err := commentRepo.IsLikedByUser(comment.ID, uid)
 require.NoError(t, err)

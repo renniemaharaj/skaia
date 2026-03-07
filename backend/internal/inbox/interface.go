@@ -18,4 +18,5 @@ type Repository interface {
 	DeleteMessage(id, senderID int64) error
 	MarkConversationRead(conversationID, userID int64) error
 	UnreadTotal(userID int64) (int, error)
+	UnreadCount(conversationID, userID int64) (int, error)
 }

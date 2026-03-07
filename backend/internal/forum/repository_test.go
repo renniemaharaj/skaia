@@ -155,7 +155,7 @@ func TestCommentRepository_CreateAndGet(t *testing.T) {
 
 	comment, err := commentRepo.Create(&models.ThreadComment{
 		ThreadID: thread.ID,
-		UserID:   uid,
+		AuthorID: uid,
 		Content:  "Hello!",
 	})
 	require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestCommentRepository_Delete_DecrementsReplyCount(t *testing.T) {
 	})
 	comment, _ := commentRepo.Create(&models.ThreadComment{
 		ThreadID: thread.ID,
-		UserID:   uid,
+		AuthorID: uid,
 		Content:  "going away",
 	})
 

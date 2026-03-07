@@ -139,11 +139,13 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onUnsuspend={handleUnsuspend}
       />
 
-      {canManage && handlePermissions
+      {handlePermissions
         ? handlePermissions(permissionPanel)
-        : permissionPanel}
+        : canManage
+          ? permissionPanel
+          : null}
 
-      {canManage && handleThreads ? handleThreads(threadsPanel) : threadsPanel}
+      {handleThreads ? handleThreads(threadsPanel) : threadsPanel}
 
       {editOpen && (
         <EditProfileDialog

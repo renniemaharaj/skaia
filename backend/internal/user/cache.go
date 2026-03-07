@@ -19,18 +19,15 @@ const (
 )
 
 // Cache is a Redis-backed per-ID store for User objects.
-// Call Invalidate whenever a user is mutated so the next read falls through
-// to the database and re-populates the entry.
 type Cache struct {
 	rdb *redis.Client
 }
 
-// NewCache returns a Cache connected to the Redis instance at REDIS_URL
-// (defaults to redis://localhost:6379).
+// NewCache returns a Cache connected to the Redis instance at REDIS_URL.
 func NewCache() *Cache {
 	addr := os.Getenv("REDIS_URL")
 	if addr == "" {
-		addr = "redis://localhost:6379"
+		log.Fatal("REDIS_URL is required")
 	}
 	opts, err := redis.ParseURL(addr)
 	if err != nil {
@@ -40,7 +37,6 @@ func NewCache() *Cache {
 }
 
 // NewCacheWithClient returns a Cache that uses the supplied Redis client.
-// Useful for tests or when sharing a client across packages.
 func NewCacheWithClient(rdb *redis.Client) *Cache {
 	return &Cache{rdb: rdb}
 }
@@ -50,12 +46,11 @@ func cacheKey(id int64) string {
 }
 
 // GetByID returns the cached user for the given id.
-// The second return value is false on a cache miss or any Redis error.
 func (c *Cache) GetByID(id int64) (*models.User, bool) {
 	ctx := context.Background()
 	data, err := c.rdb.Get(ctx, cacheKey(id)).Bytes()
 	if err != nil {
-		// ErrNil = cache miss; anything else is an error we log but treat as miss.
+		// cache miss or error
 		if err != redis.Nil {
 			log.Printf("user.Cache.GetByID(%d): %v", id, err)
 		}
@@ -69,7 +64,7 @@ func (c *Cache) GetByID(id int64) (*models.User, bool) {
 	return &u, true
 }
 
-// SetByID stores (or replaces) the user for the given id with a TTL of 5 minutes.
+// SetByID stores the user for the given id with a 5 minute TTL.
 func (c *Cache) SetByID(id int64, u *models.User) {
 	data, err := json.Marshal(u)
 	if err != nil {
@@ -82,8 +77,7 @@ func (c *Cache) SetByID(id int64, u *models.User) {
 	}
 }
 
-// Invalidate removes the entry for id, forcing the next GetByID to reload
-// from the database.
+// Invalidate removes the entry for id.
 func (c *Cache) Invalidate(id int64) {
 	ctx := context.Background()
 	if err := c.rdb.Del(ctx, cacheKey(id)).Err(); err != nil {
@@ -95,15 +89,21 @@ func (c *Cache) Invalidate(id int64) {
 func (c *Cache) Flush() {
 	ctx := context.Background()
 	pattern := fmt.Sprintf("%s*", cacheKeyPrefix)
-	keys, err := c.rdb.Keys(ctx, pattern).Result()
-	if err != nil {
-		log.Printf("user.Cache.Flush: keys scan: %v", err)
-		return
-	}
-	if len(keys) == 0 {
-		return
-	}
-	if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
-		log.Printf("user.Cache.Flush: del: %v", err)
+	var cursor uint64
+	for {
+		keys, next, err := c.rdb.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			log.Printf("user.Cache.Flush: scan: %v", err)
+			return
+		}
+		if len(keys) > 0 {
+			if err := c.rdb.Del(ctx, keys...).Err(); err != nil {
+				log.Printf("user.Cache.Flush: del: %v", err)
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
 	}
 }

@@ -50,7 +50,7 @@ func (s *Service) GetConversation(id, callerID int64) (*models.InboxConversation
 	return c, nil
 }
 
-// ListConversations returns all conversations enriched with the other user's info and last message.
+// ListConversations returns all conversations enriched with the other user and last message.
 func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, error) {
 	convs, err := s.repo.ListConversations(userID)
 	if err != nil {
@@ -72,13 +72,9 @@ func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, 
 				msgs[0].SenderAvatar = u.AvatarURL
 			}
 		}
-		// Unread count for caller
-		if msgs, err := s.repo.ListMessages(c.ID, 200, 0); err == nil {
-			for _, m := range msgs {
-				if m.SenderID != userID && !m.IsRead {
-					c.UnreadCount++
-				}
-			}
+		// use COUNT query instead of fetching all messages
+		if count, err := s.repo.UnreadCount(c.ID, userID); err == nil {
+			c.UnreadCount = count
 		}
 	}
 	return convs, nil
