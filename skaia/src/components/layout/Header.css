@@ -36,6 +36,31 @@
   object-fit: contain;
 }
 
+.logo-img-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.logo-img-edit {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 4px;
+  padding: 3px 5px;
+  cursor: pointer;
+  color: #ddd;
+  z-index: 5;
+  transition: background 0.15s;
+}
+
+.logo-img-edit:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 .logo-info {
   display: flex;
   flex-direction: column;

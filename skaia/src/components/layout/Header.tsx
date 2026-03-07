@@ -7,13 +7,18 @@ import {
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
+  hasPermissionAtom,
 } from "../../atoms/auth";
 import { inboxUnreadCountAtom } from "../../atoms/inbox";
+import { brandingAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
+import { EditableText, ImagePickerButton } from "../landing/EditControls";
 import UserLink from "../user/UserLink";
 import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
+import { toast } from "sonner";
+import type { Branding } from "../landing/types";
 
 interface HeaderProps {
   cartCount: number;
@@ -38,6 +43,31 @@ export const Header: React.FC<HeaderProps> = ({
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
   const inboxUnread = useAtomValue(inboxUnreadCountAtom);
+
+  // Branding + edit permission
+  const hasPermission = useAtomValue(hasPermissionAtom);
+  const canEdit = hasPermission("home.manage");
+  const branding = useAtomValue(brandingAtom);
+  const setBranding = useSetAtom(brandingAtom);
+
+  const logoUrl = branding?.logo_url || "/logo.png";
+  const headerTitle =
+    branding?.header_title || branding?.site_name || "CUEBALLCRAFT";
+  const headerSubtitle = branding?.header_subtitle || "Skaiacraft";
+
+  const saveBranding = async (updates: Partial<Branding>) => {
+    const updated = { ...branding, ...updates } as Branding;
+    try {
+      await apiRequest("/config/branding", {
+        method: "PUT",
+        body: JSON.stringify(updated),
+      });
+      setBranding(updated);
+      toast.success("Branding saved");
+    } catch {
+      toast.error("Failed to save branding");
+    }
+  };
 
   const { theme, specifyTheme } = useThemeContext();
 
@@ -74,14 +104,37 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="header">
       <div className="header-content">
         <Link to="/" className="logo">
-          <img
-            src="/logo.png"
-            alt="Cueballcraft Skaiacraft"
-            className="logo-img"
-          />
+          <div className="logo-img-wrapper">
+            <img src={logoUrl} alt={headerTitle} className="logo-img" />
+            {canEdit && (
+              <ImagePickerButton
+                onUploaded={(url) => saveBranding({ logo_url: url })}
+                className="logo-img-edit"
+              />
+            )}
+          </div>
           <div className="logo-info">
-            <span className="logo-title">CUEBALLCRAFT</span>
-            <span className="logo-subtitle">Skaiacraft</span>
+            {canEdit ? (
+              <>
+                <EditableText
+                  value={headerTitle}
+                  onSave={(v) => saveBranding({ header_title: v })}
+                  tag="span"
+                  className="logo-title"
+                />
+                <EditableText
+                  value={headerSubtitle}
+                  onSave={(v) => saveBranding({ header_subtitle: v })}
+                  tag="span"
+                  className="logo-subtitle"
+                />
+              </>
+            ) : (
+              <>
+                <span className="logo-title">{headerTitle}</span>
+                <span className="logo-subtitle">{headerSubtitle}</span>
+              </>
+            )}
           </div>
         </Link>
 

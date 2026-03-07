@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/internal/auth"
+	icfg "github.com/skaia/backend/internal/config"
 	iforum "github.com/skaia/backend/internal/forum"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	imw "github.com/skaia/backend/internal/middleware"
@@ -206,6 +207,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	inboxRepo := iinbox.NewRepository(db)
 	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 	iinbox.NewHandler(inboxSvc).Mount(r, imw.JWTAuthMiddleware)
+
+	cfgRepo := icfg.NewRepository(db)
+	cfgSvc := icfg.NewService(cfgRepo)
+	icfg.NewHandler(cfgSvc, userSvc).Mount(r, imw.JWTAuthMiddleware)
 
 	return r
 }

@@ -1,0 +1,261 @@
+import { ICON_MAP, ICON_NAMES } from "./iconMap";
+import type { LandingItem } from "./types";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  ChevronDown,
+  ImageIcon,
+  Loader2,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { apiRequest } from "../../utils/api";
+import { toast } from "sonner";
+
+/** Inline-editable text — click pencil to edit, Enter/blur to save. */
+export const EditableText = ({
+  value,
+  onSave,
+  tag: Tag = "span",
+  className = "",
+  placeholder = "Click to edit…",
+}: {
+  value: string;
+  onSave: (v: string) => void;
+  tag?: "h1" | "h2" | "h3" | "h4" | "p" | "span";
+  className?: string;
+  placeholder?: string;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (editing) {
+    return (
+      <input
+        className="landing-inline-input"
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          if (draft !== value) onSave(draft);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            setEditing(false);
+            if (draft !== value) onSave(draft);
+          }
+          if (e.key === "Escape") {
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+      />
+    );
+  }
+
+  return (
+    <Tag className={className} style={{ cursor: "pointer" }}>
+      {value || <em style={{ opacity: 0.4 }}>{placeholder}</em>}
+      <button
+        className="landing-edit-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setDraft(value);
+          setEditing(true);
+        }}
+        title="Edit"
+      >
+        <Pencil size={12} />
+      </button>
+    </Tag>
+  );
+};
+
+/** Icon picker dropdown. */
+export const IconPicker = ({
+  current,
+  onPick,
+}: {
+  current: string;
+  onPick: (name: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const Icon = ICON_MAP[current];
+
+  return (
+    <div className="landing-icon-picker">
+      <button
+        className="landing-icon-picker-trigger"
+        onClick={() => setOpen(!open)}
+        title="Change icon"
+      >
+        {Icon ? <Icon size={20} /> : <ChevronDown size={16} />}
+      </button>
+      {open && (
+        <div className="landing-icon-picker-dropdown">
+          {ICON_NAMES.map((name) => {
+            const Ic = ICON_MAP[name];
+            return (
+              <button
+                key={name}
+                className={`landing-icon-picker-item${name === current ? " active" : ""}`}
+                onClick={() => {
+                  onPick(name);
+                  setOpen(false);
+                }}
+                title={name}
+              >
+                <Ic size={18} />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Toolbar for a section: delete, collapsed info, optional extra actions. */
+export const SectionToolbar = ({
+  onDelete,
+  label,
+  extra,
+}: {
+  onDelete: () => void;
+  label: string;
+  extra?: React.ReactNode;
+}) => (
+  <div className="landing-section-toolbar">
+    <span className="landing-section-toolbar-label">{label}</span>
+    <div className="landing-section-toolbar-actions">
+      {extra}
+      <button
+        className="landing-section-toolbar-btn danger"
+        onClick={onDelete}
+        title="Remove section"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  </div>
+);
+
+/** Add-item button inside a section. */
+export const AddItemButton = ({
+  onClick,
+  label = "Add card",
+}: {
+  onClick: () => void;
+  label?: string;
+}) => (
+  <button className="landing-add-item-btn" onClick={onClick}>
+    <Plus size={16} /> {label}
+  </button>
+);
+
+/** Delete-item button overlaid on a card. */
+export const DeleteItemButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    className="landing-delete-item-btn"
+    onClick={(e) => {
+      e.stopPropagation();
+      onClick();
+    }}
+    title="Remove"
+  >
+    <Trash2 size={12} />
+  </button>
+);
+
+/** Helper to create a blank item for a section. */
+export function blankItem(
+  sectionId: number,
+  order: number,
+): Omit<LandingItem, "id"> {
+  return {
+    section_id: sectionId,
+    display_order: order,
+    icon: "",
+    heading: "",
+    subheading: "",
+    image_url: "",
+    link_url: "",
+    config: "{}",
+  };
+}
+
+/**
+ * Image picker button — click to open file dialog, uploads via /upload/image,
+ * returns the URL to the caller. Does NOT wrap children — just renders a button.
+ * Parent handles positioning via className.
+ */
+export const ImagePickerButton = ({
+  onUploaded,
+  className = "",
+}: {
+  onUploaded: (url: string) => void;
+  className?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP or GIF images are allowed");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image must be under 10 MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "landing");
+      const res = await apiRequest<{ url: string }>("/upload/image", {
+        method: "POST",
+        body: fd,
+      });
+      onUploaded(res.url);
+      toast.success("Image uploaded");
+    } catch {
+      toast.error("Image upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        className={`landing-action-btn ${className}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!uploading) inputRef.current?.click();
+        }}
+        title="Change image"
+      >
+        {uploading ? (
+          <Loader2 size={14} className="spin" />
+        ) : (
+          <ImageIcon size={14} />
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        style={{ display: "none" }}
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+};

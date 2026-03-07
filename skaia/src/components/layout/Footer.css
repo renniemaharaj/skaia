@@ -99,6 +99,57 @@
   transition: color 0.3s ease;
 }
 
+.footer-community-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-check-icon {
+  color: var(--primary-color, #5b9e8e);
+  flex-shrink: 0;
+}
+
+.footer-remove-item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  color: var(--text-secondary, #888);
+  border-radius: 4px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+}
+
+.footer-remove-item-btn:hover {
+  color: var(--color-danger, #e74c3c);
+  background: rgba(231, 76, 60, 0.1);
+}
+
+.footer-add-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px dashed var(--border-color, #555);
+  border-radius: 6px;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.footer-add-item-btn:hover {
+  border-color: var(--accent-color, #5b9e8e);
+  color: var(--accent-color, #5b9e8e);
+}
+
 .footer-section ul li:hover {
   color: var(--primary-color);
 }

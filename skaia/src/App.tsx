@@ -5,20 +5,28 @@ import { Layout } from "./pages/Layout";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import ErrorBoundary from "./ErrorBoundary";
+import { useSiteConfig } from "./hooks/useSiteConfig";
+
+function SiteConfigLoader({ children }: { children: React.ReactNode }) {
+  useSiteConfig();
+  return <>{children}</>;
+}
 
 export default function App() {
   return (
     <CartProvider>
       <Router>
         <ThemeProvider>
-          <Layout>
-            <ErrorBoundary>
-              <Routes>
-                {publicRoutesFunc()}
-                {protectedRoutesFunc()}
-              </Routes>
-            </ErrorBoundary>
-          </Layout>
+          <SiteConfigLoader>
+            <Layout>
+              <ErrorBoundary>
+                <Routes>
+                  {publicRoutesFunc()}
+                  {protectedRoutesFunc()}
+                </Routes>
+              </ErrorBoundary>
+            </Layout>
+          </SiteConfigLoader>
         </ThemeProvider>
       </Router>
     </CartProvider>
