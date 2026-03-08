@@ -46,19 +46,19 @@
   position: absolute;
   bottom: -4px;
   right: -4px;
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
+  background: color-mix(in srgb, var(--bg-color) 80%, transparent);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   padding: 3px 5px;
   cursor: pointer;
-  color: #ddd;
+  color: var(--text-secondary);
   z-index: 5;
   transition: background 0.15s;
 }
 
 .logo-img-edit:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .logo-info {
@@ -331,4 +331,72 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+}
+
+/* ── Logo edit controls (prevent navigation on click) ──────────── */
+
+.logo-edit-controls {
+  display: contents;
+}
+
+/* ── Mobile Menu Variant 2: Fullscreen overlay ───────────────────── */
+
+@media (max-width: 768px) {
+  .menu-v2 .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-secondary);
+    z-index: 1100;
+    padding: 2rem;
+    gap: 2rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-height 0.35s ease,
+      opacity 0.35s ease;
+  }
+
+  .menu-v2 .nav.open {
+    max-height: 100vh;
+    opacity: 1;
+  }
+
+  .menu-v2 .nav-section {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .menu-v2 .nav-section a {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 12px 24px;
+    border-radius: 12px;
+  }
+
+  .menu-v2 .nav-section a:hover,
+  .menu-v2 .nav-section a.active {
+    background: rgba(91, 158, 142, 0.12);
+  }
+
+  .menu-v2 .user-section {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .menu-v2 .menu-toggle {
+    z-index: 1200;
+  }
 }

@@ -29,6 +29,8 @@ export interface Branding {
   favicon_url: string;
   header_title: string;
   header_subtitle: string;
+  header_variant: number;
+  menu_variant: number;
 }
 
 export interface SEOConfig {
@@ -37,12 +39,22 @@ export interface SEOConfig {
   og_image: string;
 }
 
+export interface FooterLink {
+  label: string;
+  url: string;
+}
+
 export interface FooterConfig {
+  variant: number;
   site_title: string;
   site_description: string;
   community_heading: string;
   community_items: string[];
   copyright_text: string;
+  quick_links: FooterLink[];
+  contact_heading: string;
+  contact_text: string;
+  tagline: string;
 }
 
 /** All section types the renderer knows about. */
@@ -54,6 +66,9 @@ export const SECTION_TYPES = [
   "image_gallery",
   "feature_grid",
   "cta",
+  "event_highlights",
+  "profile_card",
+  "rich_text",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -66,4 +81,7 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   image_gallery: "Image Gallery",
   feature_grid: "Feature Grid (icon tiles)",
   cta: "Call to Action",
+  event_highlights: "Event Highlights",
+  profile_card: "Profile Card",
+  rich_text: "Rich Text",
 };

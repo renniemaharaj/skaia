@@ -77,6 +77,7 @@ func (h *Handler) getBranding(w http.ResponseWriter, r *http.Request) {
 		log.Printf("config.getBranding: %v", err)
 		utils.WriteJSON(w, http.StatusOK, models.Branding{
 			SiteName: "Skaia", Tagline: "", LogoURL: "/logo.png", FaviconURL: "/favicon.ico",
+			HeaderTitle: "CUEBALLCRAFT", HeaderSubtitle: "Skaiacraft", HeaderVariant: 1, MenuVariant: 1,
 		})
 		return
 	}
@@ -138,11 +139,16 @@ func (h *Handler) getFooter(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("config.getFooter: %v", err)
 		utils.WriteJSON(w, http.StatusOK, models.Footer{
+			Variant:          1,
 			SiteTitle:        "Cueballcraft Skaiacraft",
 			SiteDescription:  "A premium vanilla Minecraft server with a community spanning over 12 years",
 			CommunityHeading: "Community",
 			CommunityItems:   []string{"Family Friendly Environment", "Support for All Clients", "Active Moderation", "Welcoming to New Players"},
 			CopyrightText:    "Cueballcraft Skaiacraft. All rights reserved.",
+			QuickLinks:       []models.Link{{Label: "Home", URL: "/"}, {Label: "Store", URL: "/store"}, {Label: "Forum", URL: "/forum"}},
+			ContactHeading:   "Get In Touch",
+			ContactText:      "Join our community and be part of the adventure.",
+			Tagline:          "Crafted with care",
 		})
 		return
 	}

@@ -12,13 +12,19 @@ import {
 import { inboxUnreadCountAtom } from "../../atoms/inbox";
 import { brandingAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
-import { EditableText, ImagePickerButton } from "../landing/EditControls";
+import {
+  EditableText,
+  ImagePickerButton,
+  VariantCycler,
+} from "../landing/EditControls";
 import UserLink from "../user/UserLink";
 import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
 import type { Branding } from "../landing/types";
+
+const MENU_VARIANTS = 2;
 
 interface HeaderProps {
   cartCount: number;
@@ -54,6 +60,7 @@ export const Header: React.FC<HeaderProps> = ({
   const headerTitle =
     branding?.header_title || branding?.site_name || "CUEBALLCRAFT";
   const headerSubtitle = branding?.header_subtitle || "Skaiacraft";
+  const menuVariant = branding?.menu_variant || 1;
 
   const saveBranding = async (updates: Partial<Branding>) => {
     const updated = { ...branding, ...updates } as Branding;
@@ -101,21 +108,41 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="header">
+    <header className={`header menu-v${menuVariant}`}>
       <div className="header-content">
-        <Link to="/" className="logo">
+        <Link
+          to="/"
+          className="logo"
+          tabIndex={-1}
+          onClick={(e) => {
+            if (canEdit) e.preventDefault();
+          }}
+          onMouseDown={(e) => {
+            if (canEdit) e.preventDefault();
+          }}
+        >
           <div className="logo-img-wrapper">
             <img src={logoUrl} alt={headerTitle} className="logo-img" />
             {canEdit && (
-              <ImagePickerButton
-                onUploaded={(url) => saveBranding({ logo_url: url })}
-                className="logo-img-edit"
-              />
+              <div
+                className="logo-edit-controls"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <ImagePickerButton
+                  onUploaded={(url) => saveBranding({ logo_url: url })}
+                  className="logo-img-edit"
+                />
+              </div>
             )}
           </div>
           <div className="logo-info">
             {canEdit ? (
-              <>
+              <div
+                className="logo-edit-controls"
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
                 <EditableText
                   value={headerTitle}
                   onSave={(v) => saveBranding({ header_title: v })}
@@ -128,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
                   tag="span"
                   className="logo-subtitle"
                 />
-              </>
+              </div>
             ) : (
               <>
                 <span className="logo-title">{headerTitle}</span>
@@ -137,6 +164,15 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
         </Link>
+
+        {canEdit && (
+          <VariantCycler
+            current={menuVariant}
+            total={MENU_VARIANTS}
+            onCycle={(v) => saveBranding({ menu_variant: v })}
+            label="Menu"
+          />
+        )}
 
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? <X size={24} /> : <Menu size={24} />}

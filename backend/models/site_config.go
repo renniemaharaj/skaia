@@ -39,10 +39,14 @@ type LandingItem struct {
 
 // Branding holds site identity fetched from site_config.
 type Branding struct {
-	SiteName   string `json:"site_name"`
-	Tagline    string `json:"tagline"`
-	LogoURL    string `json:"logo_url"`
-	FaviconURL string `json:"favicon_url"`
+	SiteName       string `json:"site_name"`
+	Tagline        string `json:"tagline"`
+	LogoURL        string `json:"logo_url"`
+	FaviconURL     string `json:"favicon_url"`
+	HeaderTitle    string `json:"header_title"`
+	HeaderSubtitle string `json:"header_subtitle"`
+	HeaderVariant  int    `json:"header_variant"`
+	MenuVariant    int    `json:"menu_variant"`
 }
 
 // SEO holds meta tag information from site_config.
@@ -54,9 +58,20 @@ type SEO struct {
 
 // Footer holds the customisable footer content from site_config.
 type Footer struct {
+	Variant          int      `json:"variant"`
 	SiteTitle        string   `json:"site_title"`
 	SiteDescription  string   `json:"site_description"`
 	CommunityHeading string   `json:"community_heading"`
 	CommunityItems   []string `json:"community_items"`
 	CopyrightText    string   `json:"copyright_text"`
+	QuickLinks       []Link   `json:"quick_links"`
+	ContactHeading   string   `json:"contact_heading"`
+	ContactText      string   `json:"contact_text"`
+	Tagline          string   `json:"tagline"`
+}
+
+// Link is a named URL used in footer quick links.
+type Link struct {
+	Label string `json:"label"`
+	URL   string `json:"url"`
 }

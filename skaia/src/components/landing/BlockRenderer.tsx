@@ -7,6 +7,9 @@ import { SocialLinksBlock } from "./blocks/SocialLinksBlock";
 import { ImageGalleryBlock } from "./blocks/ImageGalleryBlock";
 import { FeatureGridBlock } from "./blocks/FeatureGridBlock";
 import { CTABlock } from "./blocks/CTABlock";
+import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
+import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
+import { RichTextBlock } from "./blocks/RichTextBlock";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -41,6 +44,9 @@ const BLOCK_MAP: Record<
   image_gallery: ImageGalleryBlock,
   feature_grid: FeatureGridBlock,
   cta: CTABlock as never,
+  event_highlights: EventHighlightsBlock,
+  profile_card: ProfileCardBlock as never,
+  rich_text: RichTextBlock as never,
 };
 
 export const BlockRenderer = ({

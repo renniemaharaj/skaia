@@ -135,9 +135,9 @@
   margin-top: 8px;
   padding: 6px 12px;
   background: transparent;
-  border: 1px dashed var(--border-color, #555);
+  border: 1px dashed var(--border-color);
   border-radius: 6px;
-  color: var(--text-secondary, #aaa);
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.8rem;
   transition:
@@ -146,8 +146,8 @@
 }
 
 .footer-add-item-btn:hover {
-  border-color: var(--accent-color, #5b9e8e);
-  color: var(--accent-color, #5b9e8e);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .footer-section ul li:hover {
@@ -211,5 +211,87 @@
   .footer {
     padding: 2.5rem 1.5rem 1.5rem;
     margin-top: 2rem;
+  }
+}
+
+/* ── Variant cycler wrapper ───────────────────────────────────────── */
+
+.footer-variant-cycler-wrapper {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  z-index: 5;
+}
+
+/* ── Footer Variant 2 ─────────────────────────────────────────────── */
+
+.footer-v2 {
+  background: var(--bg-secondary);
+}
+
+.footer-v2-watermark {
+  position: absolute;
+  right: -80px;
+  bottom: -60px;
+  width: 320px;
+  height: 320px;
+  object-fit: contain;
+  opacity: 0.03;
+  pointer-events: none;
+  user-select: none;
+}
+
+.footer-v2-grid {
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+}
+
+.footer-v2-grid .footer-section {
+  align-items: flex-start;
+}
+
+.footer-v2-links-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+}
+
+.footer-v2-link-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-v2-link-item a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: color 0.2s;
+}
+
+.footer-v2-link-item a:hover {
+  color: var(--primary-color);
+}
+
+.footer-v2-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+}
+
+.footer-v2-tagline {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .footer-v2-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-v2-bottom {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
   }
 }

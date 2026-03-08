@@ -7,6 +7,9 @@ import {
   ChevronDown,
   ImageIcon,
   Loader2,
+  RefreshCw,
+  Video,
+  Palette,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { apiRequest } from "../../utils/api";
@@ -50,6 +53,8 @@ export const EditableText = ({
             setEditing(false);
           }
         }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       />
     );
   }
@@ -64,6 +69,7 @@ export const EditableText = ({
           setDraft(value);
           setEditing(true);
         }}
+        onMouseDown={(e) => e.stopPropagation()}
         title="Edit"
       >
         <Pencil size={12} />
@@ -259,3 +265,156 @@ export const ImagePickerButton = ({
     </>
   );
 };
+
+/**
+ * Video picker button — same pattern as ImagePickerButton but accepts video files.
+ * Uploads via /upload/video.
+ */
+export const VideoPickerButton = ({
+  onUploaded,
+  className = "",
+}: {
+  onUploaded: (url: string) => void;
+  className?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFile = async (file: File) => {
+    const validTypes = [
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/quicktime",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only MP4, WebM, OGG or MOV videos are allowed");
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Video must be under 50 MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("type", "landing");
+      const res = await apiRequest<{ url: string }>("/upload/video", {
+        method: "POST",
+        body: fd,
+      });
+      onUploaded(res.url);
+      toast.success("Video uploaded");
+    } catch {
+      toast.error("Video upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        className={`landing-action-btn ${className}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!uploading) inputRef.current?.click();
+        }}
+        title="Upload video"
+      >
+        {uploading ? (
+          <Loader2 size={14} className="spin" />
+        ) : (
+          <Video size={14} />
+        )}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        style={{ display: "none" }}
+        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+          e.target.value = "";
+        }}
+      />
+    </>
+  );
+};
+
+/** Inline color picker — renders a small swatch that opens a native color input. */
+export const ColorPickerButton = ({
+  value,
+  onChange,
+  className = "",
+  title = "Pick color",
+}: {
+  value: string;
+  onChange: (color: string) => void;
+  className?: string;
+  title?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <button
+      className={`landing-action-btn landing-color-picker ${className}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        inputRef.current?.click();
+      }}
+      title={title}
+      style={{ position: "relative" }}
+    >
+      <Palette size={14} />
+      <span
+        className="landing-color-swatch"
+        style={{ backgroundColor: value || "rgba(0,0,0,0.5)" }}
+      />
+      <input
+        ref={inputRef}
+        type="color"
+        value={value || "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          position: "absolute",
+          opacity: 0,
+          width: 0,
+          height: 0,
+          overflow: "hidden",
+        }}
+      />
+    </button>
+  );
+};
+
+/** Cycle button for switching between style variants (header, footer, etc.). */
+export const VariantCycler = ({
+  current,
+  total,
+  onCycle,
+  label,
+}: {
+  current: number;
+  total: number;
+  onCycle: (v: number) => void;
+  label: string;
+}) => (
+  <button
+    className="landing-variant-cycler"
+    onClick={(e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      onCycle((current % total) + 1);
+    }}
+    title={`Switch ${label} style (${current}/${total})`}
+  >
+    <RefreshCw size={12} />
+    <span>
+      Style {current}/{total}
+    </span>
+  </button>
+);
