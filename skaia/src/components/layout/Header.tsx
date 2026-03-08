@@ -107,63 +107,65 @@ export const Header: React.FC<HeaderProps> = ({
     return location.pathname === path ? "active" : "";
   };
 
+  const logoContent = (
+    <>
+      <div className="logo-img-wrapper">
+        <img src={logoUrl} alt={headerTitle} className="logo-img" />
+        {canEdit && (
+          <div
+            className="logo-edit-controls"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <ImagePickerButton
+              onUploaded={(url) => saveBranding({ logo_url: url })}
+              className="logo-img-edit"
+            />
+          </div>
+        )}
+      </div>
+      <div className="logo-info">
+        {canEdit ? (
+          <div
+            className="logo-edit-controls"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <EditableText
+              value={headerTitle}
+              onSave={(v) => saveBranding({ header_title: v })}
+              tag="span"
+              className="logo-title"
+            />
+            <EditableText
+              value={headerSubtitle}
+              onSave={(v) => saveBranding({ header_subtitle: v })}
+              tag="span"
+              className="logo-subtitle"
+            />
+          </div>
+        ) : (
+          <>
+            <span className="logo-title">{headerTitle}</span>
+            <span className="logo-subtitle">{headerSubtitle}</span>
+          </>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <header className={`header menu-v${menuVariant}`}>
       <div className="header-content">
-        <Link
-          to="/"
-          className="logo"
-          tabIndex={-1}
-          onClick={(e) => {
-            if (canEdit) e.preventDefault();
-          }}
-          onMouseDown={(e) => {
-            if (canEdit) e.preventDefault();
-          }}
-        >
-          <div className="logo-img-wrapper">
-            <img src={logoUrl} alt={headerTitle} className="logo-img" />
-            {canEdit && (
-              <div
-                className="logo-edit-controls"
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <ImagePickerButton
-                  onUploaded={(url) => saveBranding({ logo_url: url })}
-                  className="logo-img-edit"
-                />
-              </div>
-            )}
+        {canEdit ? (
+          <div className="logo" tabIndex={-1}>
+            {logoContent}
           </div>
-          <div className="logo-info">
-            {canEdit ? (
-              <div
-                className="logo-edit-controls"
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <EditableText
-                  value={headerTitle}
-                  onSave={(v) => saveBranding({ header_title: v })}
-                  tag="span"
-                  className="logo-title"
-                />
-                <EditableText
-                  value={headerSubtitle}
-                  onSave={(v) => saveBranding({ header_subtitle: v })}
-                  tag="span"
-                  className="logo-subtitle"
-                />
-              </div>
-            ) : (
-              <>
-                <span className="logo-title">{headerTitle}</span>
-                <span className="logo-subtitle">{headerSubtitle}</span>
-              </>
-            )}
-          </div>
-        </Link>
+        ) : (
+          <Link to="/" className="logo" tabIndex={-1}>
+            {logoContent}
+          </Link>
+        )}
 
         {canEdit && (
           <VariantCycler
