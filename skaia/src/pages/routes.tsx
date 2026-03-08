@@ -13,6 +13,7 @@ import ViewThreadPage from "./view-thread/index.tsx";
 import UserDiscovery from "./users/index.tsx";
 import CategoryThreadsPage from "./threads/categories/index.tsx";
 import InboxPage from "./inbox/InboxPage.tsx";
+import { AdminMetaSettings } from "./admin/meta.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage /> },
@@ -25,6 +26,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users", element: <UserDiscovery /> },
   { path: "users/:userId", element: <UserDiscovery /> },
   { path: "inbox", element: <InboxPage /> },
+  { path: "admin/meta", element: <AdminMetaSettings /> },
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index /> },

@@ -73,8 +73,7 @@ export function useSiteConfig() {
             link.rel = "icon";
             document.head.appendChild(link);
           }
-          // link.href = b.favicon_url ?? "/logo.png";
-          link.href = "/logo.png";
+          link.href = b.favicon_url;
         }
       } catch (err) {
         console.warn("Failed to load site config:", err);

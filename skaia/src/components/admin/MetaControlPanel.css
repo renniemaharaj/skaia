@@ -1,0 +1,55 @@
+.meta-control-panel {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid var(--border-color);
+}
+.meta-control-panel label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  gap: 0.5rem;
+  color: var(--text-primary);
+}
+.meta-control-panel input[type="text"],
+.meta-control-panel textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--bg-color);
+  color: var(--text-primary);
+}
+.meta-control-panel input[type="file"] {
+  margin-top: 0.5rem;
+}
+.meta-control-panel .actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+.meta-control-panel .btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.meta-control-panel .btn-primary {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  border: 1px solid transparent;
+}
+.meta-control-panel .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.meta-control-panel .error {
+  color: var(--error-color);
+  font-weight: 600;
+}
