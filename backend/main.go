@@ -193,6 +193,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		})
 	})
 
+	// websocket endpoints – keep both /api/ws and /ws for backwards compatibility
 	r.Get("/api/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.HandleConnection(w, r, hub)
 	})
@@ -201,22 +202,29 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		ws.HandleConnection(w, r, hub)
 	})
 
+	// create a sub-router mounted at /api; the frontend already prefixes all
+	// requests with /api so this keeps the handler signatures unchanged.
+	api := chi.NewRouter()
+
 	notifRepo := inotif.NewRepository(db)
 	notifSvc := inotif.NewService(notifRepo, hub)
 
-	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	istore.NewHandler(storeSvc, hub, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iupload.NewHandler().Mount(r, imw.JWTAuthMiddleware)
-	inotif.NewHandler(notifSvc).Mount(r, imw.JWTAuthMiddleware)
+	iuser.NewHandler(userSvc, hub).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	istore.NewHandler(storeSvc, hub, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+	iupload.NewHandler().Mount(api, imw.JWTAuthMiddleware)
+	inotif.NewHandler(notifSvc).Mount(api, imw.JWTAuthMiddleware)
 
 	inboxRepo := iinbox.NewRepository(db)
 	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
-	iinbox.NewHandler(inboxSvc).Mount(r, imw.JWTAuthMiddleware)
+	iinbox.NewHandler(inboxSvc).Mount(api, imw.JWTAuthMiddleware)
 
 	cfgRepo := icfg.NewRepository(db)
 	cfgSvc := icfg.NewService(cfgRepo)
-	icfg.NewHandler(cfgSvc, userSvc).Mount(r, imw.JWTAuthMiddleware)
+	icfg.NewHandler(cfgSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+	// mount the assembled API router under /api on the top-level router
+	r.Mount("/api", api)
 
 	// Server-side index handler for SEO: returns index.html with injected head
 	// tags (title, meta, og:image, favicon) built from site_config.
