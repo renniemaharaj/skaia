@@ -25,7 +25,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 
 	// ── setup: create admin ───────────────────────────────────────────────────
 	s.Add("user/setup_admin", func(t *T) {
-		resp := s.POST("/api/auth/register", map[string]any{
+		resp := s.POST("/auth/register", map[string]any{
 			"username":     adminUsername,
 			"email":        adminEmail,
 			"password":     adminPassword,
@@ -39,7 +39,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.RequireNoError(grantAdminRole(db, adminID))
 
 		// Re-login to receive a JWT that includes the admin role.
-		resp2 := s.POST("/api/auth/login", map[string]any{
+		resp2 := s.POST("/auth/login", map[string]any{
 			"email":    adminEmail,
 			"password": adminPassword,
 		}, nil)
@@ -51,7 +51,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 
 	// ── user/register ─────────────────────────────────────────────────────────
 	s.Add("user/register", func(t *T) {
-		resp := s.POST("/api/auth/register", map[string]any{
+		resp := s.POST("/auth/register", map[string]any{
 			"username":     userUsername,
 			"email":        userEmail,
 			"password":     userPassword,
@@ -67,7 +67,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 
 	// ── user/login ────────────────────────────────────────────────────────────
 	s.Add("user/login", func(t *T) {
-		resp := s.POST("/api/auth/login", map[string]any{
+		resp := s.POST("/auth/login", map[string]any{
 			"email":    userEmail,
 			"password": userPassword,
 		}, nil)
@@ -80,7 +80,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 
 	// ── user/login_wrong_password ─────────────────────────────────────────────
 	s.Add("user/login_wrong_password", func(t *T) {
-		resp := s.POST("/api/auth/login", map[string]any{
+		resp := s.POST("/auth/login", map[string]any{
 			"email":    userEmail,
 			"password": "WrongPass999!",
 		}, nil)
@@ -99,7 +99,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 
 	// ── user/get_profile ──────────────────────────────────────────────────────
 	s.Add("user/get_profile", func(t *T) {
-		resp := s.GET("/api/users/profile", Bearer(userToken))
+		resp := s.GET("/users/profile", Bearer(userToken))
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		t.AssertEqual(Str(data["email"]), userEmail, "email")
@@ -108,7 +108,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 	// ── user/update ───────────────────────────────────────────────────────────
 	s.Add("user/update_display_name", func(t *T) {
 		newName := uniq("DisplayName")
-		resp := s.PUT(fmt.Sprintf("/api/users/%d", userID), map[string]any{
+		resp := s.PUT(fmt.Sprintf("/users/%d", userID), map[string]any{
 			"display_name": newName,
 			"bio":          "Integration test bio",
 		}, Bearer(userToken))

@@ -6,7 +6,7 @@ import { getDefaultStore } from "jotai";
 import { type User } from "../atoms/auth";
 import { apiBaseUrlAtom } from "../atoms/config";
 
-const API_BASE_URL = getDefaultStore().get(apiBaseUrlAtom);
+const API_BASE_URL = getDefaultStore().get(apiBaseUrlAtom); // should be "" or "/" for same-origin
 
 export interface ApiError {
   error: string;

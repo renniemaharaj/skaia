@@ -104,8 +104,8 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		data := ReadJSON(resp)
 		t.Require(Str(data["url"]) != "", "url must be present in upload response")
 		t.Require(ID(data["size"]) > 0, "size must be non-zero")
-		t.Require(strings.HasPrefix(Str(data["url"]), "/api/uploads/"),
-			"url must be under /api/uploads/, got %s", Str(data["url"]))
+		t.Require(strings.HasPrefix(Str(data["url"]), "/uploads/"),
+			"url must be under /uploads/, got %s", Str(data["url"]))
 	})
 
 	// ── upload/file_success ───────────────────────────────────────────────────
@@ -122,7 +122,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 
 	// ── upload/serve_traversal_blocked ────────────────────────────────────────
 	s.Add("upload/serve_traversal_blocked", func(t *T) {
-		resp := s.GET("/api/uploads/../etc/passwd", nil)
+		resp := s.GET("/uploads/../etc/passwd", nil)
 		// Go's http.FileServer cleans the path (/../etc/passwd → /etc/passwd) and
 		// returns 404 when the file doesn't exist, which is equally safe as 403.
 		t.Require(resp.StatusCode == 403 || resp.StatusCode == 400 || resp.StatusCode == 404,
@@ -132,7 +132,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 
 	// ── upload/serve_nonexistent ──────────────────────────────────────────────
 	s.Add("upload/serve_nonexistent", func(t *T) {
-		resp := s.GET("/api/uploads/users/0/nonexistent_file_xyz.png", nil)
+		resp := s.GET("/uploads/users/0/nonexistent_file_xyz.png", nil)
 		t.Require(resp.StatusCode == 404,
 			"missing upload file must return 404, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -153,6 +153,15 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		t.Require(serveResp.StatusCode == 200,
 			"uploaded file must be served at its reported URL, got %d", serveResp.StatusCode)
 		serveResp.Body.Close()
+
+		// legacy path should also work
+		if strings.HasPrefix(url, "/uploads/") {
+			legacy := "/api" + url
+			legacyResp := s.GET(legacy, nil)
+			t.Require(legacyResp.StatusCode == 200,
+				"legacy URL must still serve upload, got %d", legacyResp.StatusCode)
+			legacyResp.Body.Close()
+		}
 	})
 }
 

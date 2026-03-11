@@ -1,10 +1,10 @@
 import { atom } from "jotai";
 import type { Branding, FooterConfig } from "../components/landing/types";
 
-export const apiBaseUrlAtom = atom("/api");
+export const apiBaseUrlAtom = atom("");
 
 export const wsBaseUrlAtom = atom(
-  `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/api/ws`,
+  `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`,
 );
 
 export const brandingAtom = atom<Branding | null>(null);

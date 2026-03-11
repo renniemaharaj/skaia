@@ -38,9 +38,9 @@ Frontend: `http://localhost:5173`
 - `GET /time` — server time
 - `GET /ws` — websocket
 
-### Auth (`/api/auth`)
+### Auth (`/auth`)
 
-- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
+- `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
 
 ### Users (`/users`)
 

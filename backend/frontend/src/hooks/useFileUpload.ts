@@ -3,7 +3,7 @@ import { useCallback } from "react";
 const API_BASE_URL =
   window.location.hostname === "localhost"
     ? import.meta.env.VITE_API_BASE_URL || "http://localhost:1080"
-    : "/api";
+    : "";
 
 export interface UploadProgress {
   loaded: number;

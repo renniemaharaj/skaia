@@ -339,7 +339,7 @@ func saveFile(src io.Reader, dir, filename string, userID int64, subdir string) 
 		return "", 0, err
 	}
 
-	url = fmt.Sprintf("/api/uploads/users/%d/%s/%s", userID, subdir, filename)
+	url = fmt.Sprintf("/uploads/users/%d/%s/%s", userID, subdir, filename)
 	return url, size, nil
 }
 

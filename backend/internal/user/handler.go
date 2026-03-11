@@ -678,7 +678,7 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.PhotoURL = fmt.Sprintf("/api/uploads/users/%d/photos/%s", userID, filename)
+	u.PhotoURL = fmt.Sprintf("/uploads/users/%d/photos/%s", userID, filename)
 	if _, err = h.svc.Update(u); err != nil {
 		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update user")
@@ -856,7 +856,7 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		utils.WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
-	u.BannerURL = fmt.Sprintf("/api/uploads/users/%d/banners/%s", userID, filename)
+	u.BannerURL = fmt.Sprintf("/uploads/users/%d/banners/%s", userID, filename)
 	if _, err = h.svc.Update(u); err != nil {
 		os.Remove(filepath.Join(bannerDir, filename)) //nolint:errcheck
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update user")
