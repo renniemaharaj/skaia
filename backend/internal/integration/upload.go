@@ -138,6 +138,14 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
+	// ── upload/serve_nonexistent_webp ──────────────────────────────────────────
+	s.Add("upload/serve_nonexistent_webp", func(t *T) {
+		resp := s.GET("/uploads/users/0/nonexistent_file_xyz.webp", nil)
+		t.Require(resp.StatusCode == 404,
+			"missing webp upload file must return 404, got %d", resp.StatusCode)
+		resp.Body.Close()
+	})
+
 	// ── upload/image_served_after_upload ─────────────────────────────────────
 	s.Add("upload/image_served_after_upload", func(t *T) {
 		// Upload a fresh image, then verify it is accessible via the static URL.

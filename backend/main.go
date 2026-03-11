@@ -258,10 +258,11 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		}
 
 		ext := filepath.Ext(req.URL.Path)
-
-		switch ext {
-		case ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map":
-			http.NotFound(w, req)
+		// if the request has any file extension it’s not a client-side route;
+		// respond 404 rather than falling through to the SSR index handler.  this
+		// covers .webp, .mp4, .pdf, and any other static-looking paths without
+		// needing to keep a hard‑coded list.
+		if ext != "" {
 			return
 		}
 
