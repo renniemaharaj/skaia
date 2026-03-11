@@ -1,29 +1,44 @@
+version: "3.9"
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: skaia-postgres
+    container_name: "${PROJECT_NAME:-skaia}-postgres"  # optional
     restart: unless-stopped
+    # allow the host port to be configured via .env so multiple stacks can
+    # co‑exist; the container itself always listens on 5432
+    ports:
+      - "${PGPORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # if clients inside the network need to know the port (e.g. psql), set
+      # PGPORT appropriately; not required for our backend because it uses
+      # DATABASE_URL below
+      PGPORT: ${PGPORT:-5432}
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
       - ./backend/internal/migrations:/docker-entrypoint-initdb.d
     networks:
-      - skaia-network
+      "skaia-network":
+        aliases:
+          - postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -p ${PGPORT:-5432}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: skaia-redis
+    container_name: "${PROJECT_NAME:-skaia}-redis"  # optional
     restart: unless-stopped
+    # persist Redis data on the host so each instance keeps its own storage
+    volumes:
+      - ./redis_data:/data
     networks:
-      - skaia-network
+      - "skaia-network"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -31,16 +46,22 @@ services:
       retries: 5
 
   backend:
+    # backend can reach postgres via the alias "postgres"; if you prefer to
+    # refer to the container by its full name you can use
+    # "${PROJECT_NAME:-skaia}-postgres" instead.
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: skaia-backend
+    container_name: "${PROJECT_NAME:-skaia}-backend"
     restart: unless-stopped
     ports:
       - "${PORT}:${PORT}"
     environment:
       - PORT=${PORT}
-      - DATABASE_URL=${DATABASE_URL}
+      # construct a sensible default URL using the same PGPORT value the
+      # postgres service publishes; users may still override DATABASE_URL
+      # via their own env file if they wish.
+      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${PGPORT:-5432}/${POSTGRES_DB}}
       - REDIS_URL=${REDIS_URL}
       - ENVIRONMENT=${ENVIRONMENT}
       - JWT_SECRET=${JWT_SECRET}
@@ -70,7 +91,7 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
-      - skaia-network
+      - "skaia-network"
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,28 +103,11 @@ services:
       timeout: 5s
       retries: 5
 
-  nginx:
-    build:
-      context: ./backend/frontend
-      dockerfile: nginx/Dockerfile
-    container_name: skaia-frontend
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    networks:
-      - skaia-network
-    depends_on:
-      - backend
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
-  skaia-network:
+  "skaia-network":
     driver: bridge
