@@ -197,6 +197,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		ws.HandleConnection(w, r, hub)
 	})
 
+	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws.HandleConnection(w, r, hub)
+	})
+
 	notifRepo := inotif.NewRepository(db)
 	notifSvc := inotif.NewService(notifRepo, hub)
 
