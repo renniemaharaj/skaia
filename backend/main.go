@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -23,6 +24,7 @@ import (
 	iinbox "github.com/skaia/backend/internal/inbox"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
+	"github.com/skaia/backend/internal/ssr"
 	istore "github.com/skaia/backend/internal/store"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
@@ -191,7 +193,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		})
 	})
 
-	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/api/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.HandleConnection(w, r, hub)
 	})
 
@@ -211,6 +213,47 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	cfgRepo := icfg.NewRepository(db)
 	cfgSvc := icfg.NewService(cfgRepo)
 	icfg.NewHandler(cfgSvc, userSvc).Mount(r, imw.JWTAuthMiddleware)
+
+	// Server-side index handler for SEO: returns index.html with injected head
+	// tags (title, meta, og:image, favicon) built from site_config.
+	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
+		ssrHandler := ssr.IndexHandler(cfgSvc)
+		ssrHandler(w, req)
+	})
+
+	// Serve static frontend assets directly from the build output. This mirrors
+	// the nginx configuration used in production, allowing the Go backend to
+	// stand alone (useful for local development or simplified deployments).
+	//
+	// The handler is installed as a NotFound fallback so that API routes defined
+	// above take precedence. If the file exists on disk we serve it, otherwise
+	// we fall back to the SSR index handler which injects head tags and returns
+	// index.html (useful for client-side routing).
+	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
+
+		if strings.Contains(req.URL.Path, "..") {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+
+		fsPath := "frontend/dist" + req.URL.Path
+
+		if info, err := os.Stat(fsPath); err == nil && !info.IsDir() {
+			http.ServeFile(w, req, fsPath)
+			return
+		}
+
+		ext := filepath.Ext(req.URL.Path)
+
+		switch ext {
+		case ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".map":
+			http.NotFound(w, req)
+			return
+		}
+
+		ssrHandler := ssr.IndexHandler(cfgSvc)
+		ssrHandler(w, req)
+	})
 
 	return r
 }

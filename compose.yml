@@ -46,6 +46,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - CORS_ORIGINS=${CORS_ORIGINS}
+      # point SSR handler at the built frontend index
+      - INDEX_FILE_PATH=/app/frontend/dist/index.html
       - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-demo}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
@@ -82,7 +84,7 @@ services:
 
   nginx:
     build:
-      context: ./skaia
+      context: ./backend/frontend
       dockerfile: nginx/Dockerfile
     container_name: skaia-frontend
     restart: unless-stopped

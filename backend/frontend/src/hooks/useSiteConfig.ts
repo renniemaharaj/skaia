@@ -33,48 +33,9 @@ export function useSiteConfig() {
         setBrandingAtom(b);
         setFooterAtom(f);
 
-        // Title
-        if (s?.title) {
-          document.title = s.title;
-        }
-
-        // Meta description
-        if (s?.description) {
-          let meta = document.querySelector<HTMLMetaElement>(
-            'meta[name="description"]',
-          );
-          if (!meta) {
-            meta = document.createElement("meta");
-            meta.name = "description";
-            document.head.appendChild(meta);
-          }
-          meta.content = s.description;
-        }
-
-        // OG Image
-        if (s?.og_image) {
-          let og = document.querySelector<HTMLMetaElement>(
-            'meta[property="og:image"]',
-          );
-          if (!og) {
-            og = document.createElement("meta");
-            og.setAttribute("property", "og:image");
-            document.head.appendChild(og);
-          }
-          og.content = s.og_image;
-        }
-
-        // Favicon
-        if (b?.favicon_url) {
-          let link =
-            document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-          if (!link) {
-            link = document.createElement("link");
-            link.rel = "icon";
-            document.head.appendChild(link);
-          }
-          link.href = b.favicon_url;
-        }
+        // We intentionally do not mutate the document head here.
+        // A dedicated React component (using react-helmet-async) consumes
+        // `branding` and `seo` to render head tags in a React-friendly way.
       } catch (err) {
         console.warn("Failed to load site config:", err);
       }

@@ -10,6 +10,19 @@ go run main.go
 
 Requires `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `CORS_ORIGINS` in the environment (see root `.env`).
 
+## Frontend build
+
+The repository now includes a Vite-based React frontend under `backend/frontend`.
+The Docker build process takes care of compiling it:
+
+1. The builder image installs Node.js and npm.
+2. `npm ci` and `npm run build` are executed in `backend/frontend`, producing `dist/`.
+3. The resulting `dist` folder is copied into the runtime image at `/app/frontend/dist`.
+
+At runtime the backend serves the built SPA under `/index`, injecting SEO tags
+into `frontend/dist/index.html`. Override the location with
+`INDEX_FILE_PATH` if needed.
+
 ## Structure
 
 ```
@@ -37,6 +50,5 @@ Set `PAYMENT_PROVIDER=stripe` and `STRIPE_SECRET_KEY` to use Stripe. Default is 
 ## Tuning
 
 `backend/.env` contains pool sizes and timeouts. These are not secrets and are tracked in git.
-
 
 The API will be available at `http://localhost:8080`

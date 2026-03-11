@@ -6,10 +6,16 @@ import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import ErrorBoundary from "./ErrorBoundary";
 import { useSiteConfig } from "./hooks/useSiteConfig";
+import SiteHead from "./components/SiteHead";
 
 function SiteConfigLoader({ children }: { children: React.ReactNode }) {
-  useSiteConfig();
-  return <>{children}</>;
+  const { branding, seo } = useSiteConfig();
+  return (
+    <>
+      <SiteHead seo={seo} branding={branding} />
+      {children}
+    </>
+  );
 }
 
 export default function App() {

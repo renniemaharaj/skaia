@@ -18,11 +18,11 @@ COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 RUN mkdir -p /var/cache/nginx/uploads
 
 # Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+# COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Fix permissions so nginx user can read files
-RUN chmod -R 755 /usr/share/nginx/html && \
-    find /usr/share/nginx/html -type f -exec chmod 644 {} \;
+# RUN chmod -R 755 /usr/share/nginx/html && \
+# find /usr/share/nginx/html -type f -exec chmod 644 {} \;
 
 EXPOSE 80
 
