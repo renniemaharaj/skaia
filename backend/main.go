@@ -212,7 +212,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	iuser.NewHandler(userSvc, hub).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 	istore.NewHandler(storeSvc, hub, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iupload.NewHandler().Mount(api, imw.JWTAuthMiddleware)
+	// upload handler needs to live at the root so that the nginx /uploads
+	// proxy (which does not add an /api prefix) can retrieve files.  We also
+	// register it on the api router so that the frontend's authenticated
+	// POST endpoints (which are called via `/api/upload/...`) continue working.
+	uploadHandler := iupload.NewHandler()
+	uploadHandler.Mount(r, imw.JWTAuthMiddleware)   // registers /uploads/* + /upload/*
+	uploadHandler.Mount(api, imw.JWTAuthMiddleware) // registers /api/uploads/* & /api/upload/*
 	inotif.NewHandler(notifSvc).Mount(api, imw.JWTAuthMiddleware)
 
 	inboxRepo := iinbox.NewRepository(db)

@@ -260,7 +260,6 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	if err := r.ParseMultipartForm(MaxImgSize); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
@@ -340,7 +339,7 @@ func saveFile(src io.Reader, dir, filename string, userID int64, subdir string) 
 		return "", 0, err
 	}
 
-	url = fmt.Sprintf("/uploads/users/%d/%s/%s", userID, subdir, filename)
+	url = fmt.Sprintf("/api/uploads/users/%d/%s/%s", userID, subdir, filename)
 	return url, size, nil
 }
 
@@ -385,7 +384,6 @@ func typeAllowed(ct string, allowed []string) bool {
 	}
 	return false
 }
-
 
 // validateBannerDimensions requires exactly 350px height.
 func validateBannerDimensions(file io.Reader) error {

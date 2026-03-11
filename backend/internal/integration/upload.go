@@ -104,8 +104,8 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		data := ReadJSON(resp)
 		t.Require(Str(data["url"]) != "", "url must be present in upload response")
 		t.Require(ID(data["size"]) > 0, "size must be non-zero")
-		t.Require(strings.HasPrefix(Str(data["url"]), "/uploads/"),
-			"url must be under /uploads/, got %s", Str(data["url"]))
+		t.Require(strings.HasPrefix(Str(data["url"]), "/api/uploads/"),
+			"url must be under /api/uploads/, got %s", Str(data["url"]))
 	})
 
 	// ── upload/file_success ───────────────────────────────────────────────────
@@ -122,7 +122,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 
 	// ── upload/serve_traversal_blocked ────────────────────────────────────────
 	s.Add("upload/serve_traversal_blocked", func(t *T) {
-		resp := s.GET("/uploads/../etc/passwd", nil)
+		resp := s.GET("/api/uploads/../etc/passwd", nil)
 		// Go's http.FileServer cleans the path (/../etc/passwd → /etc/passwd) and
 		// returns 404 when the file doesn't exist, which is equally safe as 403.
 		t.Require(resp.StatusCode == 403 || resp.StatusCode == 400 || resp.StatusCode == 404,
@@ -132,7 +132,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 
 	// ── upload/serve_nonexistent ──────────────────────────────────────────────
 	s.Add("upload/serve_nonexistent", func(t *T) {
-		resp := s.GET("/uploads/users/0/nonexistent_file_xyz.png", nil)
+		resp := s.GET("/api/uploads/users/0/nonexistent_file_xyz.png", nil)
 		t.Require(resp.StatusCode == 404,
 			"missing upload file must return 404, got %d", resp.StatusCode)
 		resp.Body.Close()
