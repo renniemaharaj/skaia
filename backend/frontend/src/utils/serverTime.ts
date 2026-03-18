@@ -40,7 +40,7 @@ let _offsetMs = 0;
 export async function syncServerTime(): Promise<void> {
   try {
     const clientBefore = Date.now();
-    const res = await fetch("/time", { method: "GET" });
+    const res = await fetch("/api/time", { method: "GET" });
     const clientAfter = Date.now();
     if (!res.ok) return;
     const data: { now: string } = await res.json();

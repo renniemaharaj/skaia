@@ -23,7 +23,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	s.Add("upload/setup", func(t *T) {
 		email := uniq("uploader") + "@skaia.test"
 		username := uniq("uploader")
-		resp := s.POST("/auth/register", map[string]any{
+		resp := s.POST("/api/auth/register", map[string]any{
 			"username": username,
 			"email":    email,
 			"password": "UploaderPass123!",
@@ -36,7 +36,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	// ── upload/image_requires_auth ────────────────────────────────────────────
 	s.Add("upload/image_requires_auth", func(t *T) {
 		body, ct := buildMultipartImage(t, "test.png", makePNG(1, 1))
-		resp := doMultipart(s, "POST", "/upload/image", body, ct, nil)
+		resp := doMultipart(s, "POST", "/api/upload/image", body, ct, nil)
 		t.Require(resp.StatusCode == 401,
 			"image upload without auth must return 401, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -45,7 +45,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	// ── upload/video_requires_auth ────────────────────────────────────────────
 	s.Add("upload/video_requires_auth", func(t *T) {
 		body, ct := buildMultipartRaw(t, "file", "clip.mp4", []byte("fake video"))
-		resp := doMultipart(s, "POST", "/upload/video", body, ct, nil)
+		resp := doMultipart(s, "POST", "/api/upload/video", body, ct, nil)
 		t.Require(resp.StatusCode == 401,
 			"video upload without auth must return 401, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -54,7 +54,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	// ── upload/file_requires_auth ─────────────────────────────────────────────
 	s.Add("upload/file_requires_auth", func(t *T) {
 		body, ct := buildMultipartRaw(t, "file", "doc.pdf", []byte("fake doc"))
-		resp := doMultipart(s, "POST", "/upload/file", body, ct, nil)
+		resp := doMultipart(s, "POST", "/api/upload/file", body, ct, nil)
 		t.Require(resp.StatusCode == 401,
 			"file upload without auth must return 401, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -65,7 +65,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		body, ct := buildMultipartImage(t, "banner.png", makePNG(800, 350))
 		// Use "banner" field name as the handler expects.
 		body, ct = buildMultipartRaw(t, "banner", "banner.png", encodePNG(makePNG(800, 350)))
-		resp := doMultipart(s, "POST", "/upload/banner", body, ct, nil)
+		resp := doMultipart(s, "POST", "/api/upload/banner", body, ct, nil)
 		t.Require(resp.StatusCode == 401,
 			"banner upload without auth must return 401, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -77,7 +77,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		var buf bytes.Buffer
 		w := multipart.NewWriter(&buf)
 		w.Close()
-		resp := doMultipart(s, "POST", "/upload/image", &buf, w.FormDataContentType(), Bearer(userToken))
+		resp := doMultipart(s, "POST", "/api/upload/image", &buf, w.FormDataContentType(), Bearer(userToken))
 		t.Require(resp.StatusCode == 400,
 			"image upload with missing field must return 400, got %d", resp.StatusCode)
 		resp.Body.Close()
@@ -87,7 +87,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	s.Add("upload/image_wrong_content_type", func(t *T) {
 		// Send a plaintext file disguised with a .png extension.
 		body, ct := buildMultipartRaw(t, "file", "notanimage.png", []byte("this is plain text, not an image"))
-		resp := doMultipart(s, "POST", "/upload/image", body, ct, Bearer(userToken))
+		resp := doMultipart(s, "POST", "/api/upload/image", body, ct, Bearer(userToken))
 		t.Require(resp.StatusCode == 400,
 			"image upload with wrong content type must return 400, got %d", resp.StatusCode)
 		data := ReadJSON(resp)
@@ -98,7 +98,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	s.Add("upload/image_success", func(t *T) {
 		pngData := encodePNG(makePNG(100, 100))
 		body, ct := buildMultipartRaw(t, "file", "photo.png", pngData)
-		resp := doMultipart(s, "POST", "/upload/image", body, ct, Bearer(userToken))
+		resp := doMultipart(s, "POST", "/api/upload/image", body, ct, Bearer(userToken))
 		t.Require(resp.StatusCode == 201,
 			"valid image upload must return 201, got %d", resp.StatusCode)
 		data := ReadJSON(resp)
@@ -112,7 +112,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	s.Add("upload/file_success", func(t *T) {
 		content := []byte("Hello integration test attachment")
 		body, ct := buildMultipartRaw(t, "file", "readme.txt", content)
-		resp := doMultipart(s, "POST", "/upload/file", body, ct, Bearer(userToken))
+		resp := doMultipart(s, "POST", "/api/upload/file", body, ct, Bearer(userToken))
 		t.Require(resp.StatusCode == 201,
 			"valid file upload must return 201, got %d", resp.StatusCode)
 		data := ReadJSON(resp)
@@ -151,7 +151,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		// Upload a fresh image, then verify it is accessible via the static URL.
 		pngData := encodePNG(makePNG(50, 50))
 		body, ct := buildMultipartRaw(t, "file", "served.png", pngData)
-		uploadResp := doMultipart(s, "POST", "/upload/image", body, ct, Bearer(userToken))
+		uploadResp := doMultipart(s, "POST", "/api/upload/image", body, ct, Bearer(userToken))
 		t.RequireStatus(uploadResp, 201)
 		data := ReadJSON(uploadResp)
 		url := Str(data["url"])

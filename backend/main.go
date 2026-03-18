@@ -181,70 +181,73 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		MaxAge:           300,
 	}))
 
+	// ── Health check at root (for Docker healthcheck probes) ───────────
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
 
-	r.Get("/time", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"now": time.Now().UTC().Format(time.RFC3339),
-		})
-	})
-
-	// websocket endpoint (also support legacy /api/ws)
+	// ── WebSocket at root (nginx proxies /ws directly) ─────────────────
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.HandleConnection(w, r, hub)
 	})
-	r.Get("/api/ws", func(w http.ResponseWriter, r *http.Request) {
-		ws.HandleConnection(w, r, hub)
-	})
 
-	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
-		ws.HandleConnection(w, r, hub)
-	})
+	// ── Static file serving for user uploads (at root — URLs are stored
+	// in the DB as /uploads/users/…) ────────────────────────────────────
+	r.Get("/uploads/*", iupload.ServeUploads)
 
 	notifRepo := inotif.NewRepository(db)
 	notifSvc := inotif.NewService(notifRepo, hub)
 
-	iuser.NewHandler(userSvc, hub).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	istore.NewHandler(storeSvc, hub, userSvc).Mount(r, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-	// upload handler registers both /uploads/* and /upload/* routes at root.
-	// keep an additional /api/uploads/* alias for any existing URLs stored
-	// before the /api prefix was removed.
-	uploadHandler := iupload.NewHandler()
-	uploadHandler.Mount(r, imw.JWTAuthMiddleware)
-	// alias for legacy URLs
-	r.Get("/api/uploads/*", iupload.ServeUploads)
-	inotif.NewHandler(notifSvc).Mount(r, imw.JWTAuthMiddleware)
-
-	inboxRepo := iinbox.NewRepository(db)
-	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
-	iinbox.NewHandler(inboxSvc).Mount(r, imw.JWTAuthMiddleware)
-
 	cfgRepo := icfg.NewRepository(db)
 	cfgSvc := icfg.NewService(cfgRepo)
-	icfg.NewHandler(cfgSvc, userSvc).Mount(r, imw.JWTAuthMiddleware)
 
-	// Server-side index handler for SEO: returns index.html with injected head
-	// tags (title, meta, og:image, favicon) built from site_config.
+	// ── All API routes under /api ──────────────────────────────────────
+	r.Route("/api", func(api chi.Router) {
+		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+		})
+
+		api.Get("/time", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]string{
+				"now": time.Now().UTC().Format(time.RFC3339),
+			})
+		})
+
+		api.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+			ws.HandleConnection(w, r, hub)
+		})
+
+		iuser.NewHandler(userSvc, hub).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		istore.NewHandler(storeSvc, hub, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+
+		uploadHandler := iupload.NewHandler()
+		uploadHandler.Mount(api, imw.JWTAuthMiddleware)
+
+		inotif.NewHandler(notifSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		inboxRepo := iinbox.NewRepository(db)
+		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
+		iinbox.NewHandler(inboxSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		icfg.NewHandler(cfgSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+	})
+
+	// ── SSR: serve index.html with injected SEO head tags ──────────────
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
 		ssrHandler := ssr.IndexHandler(cfgSvc)
 		ssrHandler(w, req)
 	})
 
-	// Serve static frontend assets directly from the build output. This mirrors
-	// the nginx configuration used in production, allowing the Go backend to
-	// stand alone (useful for local development or simplified deployments).
-	//
-	// The handler is installed as a NotFound fallback so that API routes defined
-	// above take precedence. If the file exists on disk we serve it, otherwise
-	// we fall back to the SSR index handler which injects head tags and returns
-	// index.html (useful for client-side routing).
+	// ── SPA fallback ───────────────────────────────────────────────────
+	// API routes and /uploads/* above take precedence.  If a static file
+	// exists on disk we serve it; extensionless paths get the SSR index
+	// (client-side routing).  Paths with a file extension that don't exist
+	// on disk get a proper 404.
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
-
 		if strings.Contains(req.URL.Path, "..") {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
@@ -258,11 +261,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		}
 
 		ext := filepath.Ext(req.URL.Path)
-		// if the request has any file extension it’s not a client-side route;
-		// respond 404 rather than falling through to the SSR index handler.  this
-		// covers .webp, .mp4, .pdf, and any other static-looking paths without
-		// needing to keep a hard‑coded list.
 		if ext != "" {
+			http.NotFound(w, req)
 			return
 		}
 

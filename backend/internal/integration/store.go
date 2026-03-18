@@ -27,7 +27,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 	// ── setup ─────────────────────────────────────────────────────────────────
 	s.Add("store/setup", func(t *T) {
 		// Admin
-		resp := s.POST("/auth/register", map[string]any{
+		resp := s.POST("/api/auth/register", map[string]any{
 			"username": adminUsername,
 			"email":    adminEmail,
 			"password": adminPassword,
@@ -37,7 +37,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 		t.Require(adminID != 0, "admin user id must be non-zero")
 		t.RequireNoError(grantAdminRole(db, adminID))
 
-		resp2 := s.POST("/auth/login", map[string]any{
+		resp2 := s.POST("/api/auth/login", map[string]any{
 			"email": adminEmail, "password": adminPassword,
 		}, nil)
 		t.RequireStatus(resp2, 200)
@@ -45,7 +45,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 		t.Require(adminToken != "", "admin token must be non-empty")
 
 		// Regular user
-		resp3 := s.POST("/auth/register", map[string]any{
+		resp3 := s.POST("/api/auth/register", map[string]any{
 			"username": userUsername,
 			"email":    userEmail,
 			"password": userPassword,
@@ -57,7 +57,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/create_category ─────────────────────────────────────────────────
 	s.Add("store/create_category", func(t *T) {
-		resp := s.POST("/store/categories", map[string]any{
+		resp := s.POST("/api/store/categories", map[string]any{
 			"name":        uniq("Electronics"),
 			"description": "Electronic products for testing",
 		}, Bearer(adminToken))
@@ -69,7 +69,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/create_category_requires_admin ──────────────────────────────────
 	s.Add("store/create_category_requires_admin", func(t *T) {
-		resp := s.POST("/store/categories", map[string]any{
+		resp := s.POST("/api/store/categories", map[string]any{
 			"name": uniq("UnauthorizedCat"),
 		}, Bearer(userToken))
 		t.Require(resp.StatusCode == 403, "non-admin must get 403, got %d", resp.StatusCode)
@@ -78,7 +78,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/list_categories ─────────────────────────────────────────────────
 	s.Add("store/list_categories", func(t *T) {
-		resp := s.GET("/store/categories", nil)
+		resp := s.GET("/api/store/categories", nil)
 		t.RequireStatus(resp, 200)
 		list := ReadJSONList(resp)
 		t.Require(len(list) >= 1, "must return at least the created category")
@@ -86,7 +86,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/create_product ──────────────────────────────────────────────────
 	s.Add("store/create_product", func(t *T) {
-		resp := s.POST("/store/products", map[string]any{
+		resp := s.POST("/api/store/products", map[string]any{
 			"category_id": categoryID,
 			"name":        uniq("Widget"),
 			"description": "A fine widget for integration testing",
@@ -102,7 +102,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/get_product ─────────────────────────────────────────────────────
 	s.Add("store/get_product", func(t *T) {
-		resp := s.GET(fmt.Sprintf("/store/products/%d", productID), nil)
+		resp := s.GET(fmt.Sprintf("/api/store/products/%d", productID), nil)
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		t.Require(ID(data["id"]) == productID, "fetched product id must match")
@@ -110,7 +110,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/list_products ───────────────────────────────────────────────────
 	s.Add("store/list_products", func(t *T) {
-		resp := s.GET("/store/products", nil)
+		resp := s.GET("/api/store/products", nil)
 		t.RequireStatus(resp, 200)
 		list := ReadJSONList(resp)
 		t.Require(len(list) >= 1, "must return at least the created product")
@@ -119,7 +119,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 	// ── store/update_product ──────────────────────────────────────────────────
 	s.Add("store/update_product", func(t *T) {
 		newPrice := 49.99
-		resp := s.PUT(fmt.Sprintf("/store/products/%d", productID), map[string]any{
+		resp := s.PUT(fmt.Sprintf("/api/store/products/%d", productID), map[string]any{
 			"price": newPrice,
 			"stock": 50,
 		}, Bearer(adminToken))
@@ -131,7 +131,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/update_product_verify_persistence ───────────────────────────────
 	s.Add("store/update_product_verify_persistence", func(t *T) {
-		resp := s.GET(fmt.Sprintf("/store/products/%d", productID), nil)
+		resp := s.GET(fmt.Sprintf("/api/store/products/%d", productID), nil)
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		got, _ := data["price"].(float64)
@@ -142,7 +142,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/add_to_cart ─────────────────────────────────────────────────────
 	s.Add("store/add_to_cart", func(t *T) {
-		resp := s.POST("/store/cart/add", map[string]any{
+		resp := s.POST("/api/store/cart/add", map[string]any{
 			"product_id": productID,
 			"quantity":   2,
 		}, Bearer(userToken))
@@ -155,7 +155,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 	// ── store/add_to_cart_upsert ──────────────────────────────────────────────
 	s.Add("store/add_to_cart_upsert", func(t *T) {
 		// Adding the same product again must add quantities (ON CONFLICT upsert).
-		resp := s.POST("/store/cart/add", map[string]any{
+		resp := s.POST("/api/store/cart/add", map[string]any{
 			"product_id": productID,
 			"quantity":   3,
 		}, Bearer(userToken))
@@ -167,7 +167,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/get_cart ────────────────────────────────────────────────────────
 	s.Add("store/get_cart", func(t *T) {
-		resp := s.GET("/store/cart", Bearer(userToken))
+		resp := s.GET("/api/store/cart", Bearer(userToken))
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		items, _ := data["items"].([]any)
@@ -176,7 +176,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/update_cart ─────────────────────────────────────────────────────
 	s.Add("store/update_cart_item", func(t *T) {
-		resp := s.PUT("/store/cart/update", map[string]any{
+		resp := s.PUT("/api/store/cart/update", map[string]any{
 			"product_id": productID,
 			"quantity":   1,
 		}, Bearer(userToken))
@@ -188,13 +188,13 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/remove_from_cart ────────────────────────────────────────────────
 	s.Add("store/remove_from_cart", func(t *T) {
-		resp := s.DELETE("/store/cart/remove", map[string]any{
+		resp := s.DELETE("/api/store/cart/remove", map[string]any{
 			"product_id": productID,
 		}, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 
 		// Verify the cart is now empty.
-		resp2 := s.GET("/store/cart", Bearer(userToken))
+		resp2 := s.GET("/api/store/cart", Bearer(userToken))
 		t.RequireStatus(resp2, 200)
 		data := ReadJSON(resp2)
 		items, _ := data["items"].([]any)
@@ -203,7 +203,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/create_order ────────────────────────────────────────────────────
 	s.Add("store/create_order", func(t *T) {
-		resp := s.POST("/store/orders", map[string]any{
+		resp := s.POST("/api/store/orders", map[string]any{
 			"items": []map[string]any{
 				{"product_id": productID, "quantity": 1, "price": 49.99},
 			},
@@ -217,7 +217,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/get_order ───────────────────────────────────────────────────────
 	s.Add("store/get_order", func(t *T) {
-		resp := s.GET(fmt.Sprintf("/store/orders/%d", orderID), Bearer(userToken))
+		resp := s.GET(fmt.Sprintf("/api/store/orders/%d", orderID), Bearer(userToken))
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		t.Require(ID(data["id"]) == orderID, "fetched order id must match")
@@ -225,7 +225,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/update_order_status ─────────────────────────────────────────────
 	s.Add("store/update_order_status", func(t *T) {
-		resp := s.PUT(fmt.Sprintf("/store/orders/%d/status", orderID), map[string]any{
+		resp := s.PUT(fmt.Sprintf("/api/store/orders/%d/status", orderID), map[string]any{
 			"status": "completed",
 		}, Bearer(adminToken))
 		t.RequireStatus(resp, 200)
@@ -235,7 +235,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/update_order_verify_persistence ─────────────────────────────────
 	s.Add("store/update_order_verify_persistence", func(t *T) {
-		resp := s.GET(fmt.Sprintf("/store/orders/%d", orderID), Bearer(userToken))
+		resp := s.GET(fmt.Sprintf("/api/store/orders/%d", orderID), Bearer(userToken))
 		t.RequireStatus(resp, 200)
 		data := ReadJSON(resp)
 		t.AssertEqual(Str(data["status"]), "completed", "order status must persist in DB")
@@ -243,11 +243,11 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/delete_product ──────────────────────────────────────────────────
 	s.Add("store/delete_product", func(t *T) {
-		resp := s.DELETE(fmt.Sprintf("/store/products/%d", productID), nil, Bearer(adminToken))
+		resp := s.DELETE(fmt.Sprintf("/api/store/products/%d", productID), nil, Bearer(adminToken))
 		t.RequireStatus(resp, 200)
 
 		// Verify it's gone.
-		resp2 := s.GET(fmt.Sprintf("/store/products/%d", productID), nil)
+		resp2 := s.GET(fmt.Sprintf("/api/store/products/%d", productID), nil)
 		t.Require(resp2.StatusCode == 404,
 			"deleted product must return 404, got %d", resp2.StatusCode)
 		resp2.Body.Close()
@@ -255,7 +255,7 @@ func RegisterStoreTests(s *Suite, db *sql.DB) {
 
 	// ── store/delete_category ─────────────────────────────────────────────────
 	s.Add("store/delete_category", func(t *T) {
-		resp := s.DELETE(fmt.Sprintf("/store/categories/%d", categoryID), nil, Bearer(adminToken))
+		resp := s.DELETE(fmt.Sprintf("/api/store/categories/%d", categoryID), nil, Bearer(adminToken))
 		t.RequireStatus(resp, 200)
 	})
 }
