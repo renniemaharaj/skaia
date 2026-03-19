@@ -102,7 +102,7 @@ func seedAdminPassword(db *sql.DB) {
 		log.Println("ADMIN_PASSWORD not set, skipping admin seed")
 		return
 	}
-	hash, err := auth.HashPassword(pw)
+	hash, err := auth.HashPasswordUnchecked(pw)
 	if err != nil {
 		log.Printf("admin seed: hash failed: %v", err)
 		return
