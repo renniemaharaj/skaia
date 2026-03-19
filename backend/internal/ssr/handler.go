@@ -42,19 +42,30 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 			_ = json.Unmarshal([]byte(sc.Value), &seo)
 		}
 
+		// Build SSR title from branding (the source of truth for site identity).
+		// SiteHead.tsx can further override client-side via react-helmet if
+		// the user sets a custom SEO title in the admin panel.
+		title := branding.SiteName
+		if branding.Tagline != "" && title != "" {
+			title += " – " + branding.Tagline
+		}
 		titleTag := ""
-		if seo.Title != "" {
-			titleTag = "<title>" + htmlEscape(seo.Title) + "</title>"
+		if title != "" {
+			titleTag = "<title>" + htmlEscape(title) + "</title>"
 		}
 
+		// Description from branding tagline; SEO description used only by
+		// SiteHead client-side if the user fills it in.
 		descTag := ""
-		if seo.Description != "" {
-			descTag = "<meta name=\"description\" content=\"" + htmlEscape(seo.Description) + "\">"
+		if branding.Tagline != "" {
+			descTag = "<meta name=\"description\" content=\"" + htmlEscape(branding.Tagline) + "\">"
 		}
 
 		ogTag := ""
 		if seo.OGImage != "" {
 			ogTag = "<meta property=\"og:image\" content=\"" + htmlEscape(seo.OGImage) + "\">"
+		} else if branding.LogoURL != "" {
+			ogTag = "<meta property=\"og:image\" content=\"" + htmlEscape(branding.LogoURL) + "\">"
 		}
 
 		faviconTag := ""
