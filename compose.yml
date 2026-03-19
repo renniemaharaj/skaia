@@ -1,65 +1,66 @@
-version: "3.9"
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Skaia – single-file Compose with nginx, backend, postgres, redis.
+# Skaia — Shared infrastructure
 #
-# Multi-tenant: to spin up extra tenants, duplicate only the "backend" service
-# block (backend_2, backend_3 …) with a unique PROJECT_NAME / PORT / DB, and
-# add matching upstream + map entries in nginx/default.conf.
+# This compose file runs the shared services: nginx, postgres, redis.
+# Individual backend instances live in backends/<name>/compose.yml and are
+# managed by the `grengo` CLI.
+#
+#   grengo new skaiacraft --domain skaiacraft.com
+#   grengo compose up
+#   grengo compose down
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
   # ── Nginx reverse-proxy (shared across all tenants) ────────────────────────
   nginx:
-    build:
-      context: ./backend/frontend
-      dockerfile: nginx/Dockerfile
+    image: nginx:alpine
     container_name: skaia-nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    command: >
+      /bin/sh -c "mkdir -p /var/cache/nginx/uploads && exec nginx -g 'daemon off;'"
     networks:
       - skaia-network
-    depends_on:
-      backend:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
-      interval: 10s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
   # ── PostgreSQL ─────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: "${PROJECT_NAME:-skaia}-postgres"
+    container_name: skaia-postgres
     restart: unless-stopped
     ports:
       - "${PGPORT:-5432}:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-skaia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       PGPORT: ${PGPORT:-5432}
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-      - ./backend/internal/migrations:/docker-entrypoint-initdb.d
     networks:
       skaia-network:
         aliases:
           - postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -p ${PGPORT:-5432}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skaia} -d template1 -p ${PGPORT:-5432}"]
+      interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # ── Redis ──────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: "${PROJECT_NAME:-skaia}-redis"
+    container_name: skaia-redis
     restart: unless-stopped
     volumes:
       - ./redis_data:/data
@@ -67,68 +68,12 @@ services:
       - skaia-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-
-  # ── Go backend ─────────────────────────────────────────────────────────────
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: "${PROJECT_NAME:-skaia}-backend"
-    restart: unless-stopped
-    # Expose PORT on the host for direct access / debugging.
-    # In production, traffic arrives through nginx.
-    ports:
-      - "${PORT}:${PORT}"
-    environment:
-      - PORT=${PORT}
-      - DATABASE_URL=${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${PGPORT:-5432}/${POSTGRES_DB}}
-      - REDIS_URL=${REDIS_URL}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - JWT_SECRET=${JWT_SECRET}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - CORS_ORIGINS=${CORS_ORIGINS}
-      - INDEX_FILE_PATH=/app/frontend/dist/index.html
-      - PAYMENT_PROVIDER=${PAYMENT_PROVIDER:-demo}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-      # Database pool tuning
-      - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS:-100}
-      - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS:-50}
-      - DB_CONN_MAX_LIFETIME_MIN=${DB_CONN_MAX_LIFETIME_MIN:-30}
-      - DB_CONN_MAX_IDLE_TIME_MIN=${DB_CONN_MAX_IDLE_TIME_MIN:-5}
-      # WebSocket hub tuning
-      - WS_MAX_CONNECTIONS=${WS_MAX_CONNECTIONS:-100000}
-      - WS_MAX_WORKERS=${WS_MAX_WORKERS:-256}
-      - WS_SESSION_SIZE=${WS_SESSION_SIZE:-100}
-      - WS_CHAT_RING_SIZE=${WS_CHAT_RING_SIZE:-80}
-      - WS_PRESENCE_INTERVAL_MS=${WS_PRESENCE_INTERVAL_MS:-1000}
-      # HTTP server tuning
-      - HTTP_READ_TIMEOUT_SEC=${HTTP_READ_TIMEOUT_SEC:-15}
-      - HTTP_WRITE_TIMEOUT_SEC=${HTTP_WRITE_TIMEOUT_SEC:-15}
-      - HTTP_IDLE_TIMEOUT_SEC=${HTTP_IDLE_TIMEOUT_SEC:-60}
-      - HTTP_SHUTDOWN_TIMEOUT_SEC=${HTTP_SHUTDOWN_TIMEOUT_SEC:-30}
-    volumes:
-      - ./backend/uploads:/app/uploads
-    networks:
-      - skaia-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${PORT}/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-  redis_data:
+      start_period: 5s
 
 networks:
   skaia-network:
+    name: skaia-network
     driver: bridge
