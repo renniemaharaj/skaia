@@ -8,3 +8,9 @@ dist/
 .env.local
 .env.*.local
 !backend/.env
+
+# Grengo state
+backends/
+nginx/default.conf
+grengo
+cmd/grengo/grengo
