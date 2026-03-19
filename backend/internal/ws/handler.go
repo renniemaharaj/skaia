@@ -24,15 +24,25 @@ func checkOrigin(r *http.Request) bool {
 	if origin == "" {
 		return false
 	}
-	allowed := os.Getenv("CORS_ORIGINS")
-	if allowed == "" {
-		return false
-	}
-	for _, o := range strings.Split(allowed, ",") {
-		if strings.TrimSpace(o) == origin {
-			return true
+
+	// Check explicit CORS_ORIGINS first (exact match).
+	if allowed := os.Getenv("CORS_ORIGINS"); allowed != "" {
+		for _, o := range strings.Split(allowed, ",") {
+			if strings.TrimSpace(o) == origin {
+				return true
+			}
 		}
 	}
+
+	// Derive allowed origins from DOMAINS (accept both http and https).
+	if domains := os.Getenv("DOMAINS"); domains != "" {
+		for _, d := range strings.Fields(domains) {
+			if origin == "http://"+d || origin == "https://"+d {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 

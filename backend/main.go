@@ -144,8 +144,24 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 			origins = append(origins, strings.TrimSpace(o))
 		}
 	}
+	// Also derive origins from DOMAINS (both http and https).
+	if domains := os.Getenv("DOMAINS"); domains != "" {
+		for _, d := range strings.Fields(domains) {
+			origins = append(origins, "http://"+d, "https://"+d)
+		}
+	}
+	// Deduplicate.
+	seen := map[string]bool{}
+	deduped := origins[:0]
+	for _, o := range origins {
+		if !seen[o] {
+			seen[o] = true
+			deduped = append(deduped, o)
+		}
+	}
+	origins = deduped
 	if len(origins) == 0 {
-		log.Fatal("CORS_ORIGINS not set; provide comma-separated allowed origins")
+		log.Fatal("CORS_ORIGINS or DOMAINS must be set; provide allowed origins")
 	}
 
 	r := chi.NewRouter()
