@@ -34,11 +34,17 @@ func checkOrigin(r *http.Request) bool {
 		}
 	}
 
-	// Derive allowed origins from DOMAINS (accept both http and https).
+	// Derive allowed origins from DOMAINS (accept both http and https, plus www. variants).
 	if domains := os.Getenv("DOMAINS"); domains != "" {
 		for _, d := range strings.Fields(domains) {
 			if origin == "http://"+d || origin == "https://"+d {
 				return true
+			}
+			if !strings.HasPrefix(d, "www.") {
+				www := "www." + d
+				if origin == "http://"+www || origin == "https://"+www {
+					return true
+				}
 			}
 		}
 	}

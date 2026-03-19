@@ -15,6 +15,38 @@ type clientInfo struct {
 	Domains []string
 }
 
+// expandDomains adds www. variants for production domains (not localhost or IPs).
+func expandDomains(domains []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, d := range domains {
+		if seen[d] {
+			continue
+		}
+		seen[d] = true
+		out = append(out, d)
+		// Add www. variant for real domains (skip localhost, IPs, already-www)
+		if d != "localhost" && !strings.HasPrefix(d, "www.") && strings.Contains(d, ".") && !isIPAddress(d) {
+			www := "www." + d
+			if !seen[www] {
+				seen[www] = true
+				out = append(out, www)
+			}
+		}
+	}
+	return out
+}
+
+// isIPAddress returns true if the string looks like an IPv4 address.
+func isIPAddress(s string) bool {
+	for _, c := range s {
+		if c != '.' && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return true
+}
+
 // enabledClients scans the backends directory and returns info for all enabled clients.
 func enabledClients() []clientInfo {
 	var clients []clientInfo
@@ -43,7 +75,7 @@ func enabledClients() []clientInfo {
 		}
 		var domains []string
 		if domainsStr != "" {
-			domains = strings.Fields(domainsStr)
+			domains = expandDomains(strings.Fields(domainsStr))
 		}
 		clients = append(clients, clientInfo{Name: name, Port: port, Domains: domains})
 	}

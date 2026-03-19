@@ -144,10 +144,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 			origins = append(origins, strings.TrimSpace(o))
 		}
 	}
-	// Also derive origins from DOMAINS (both http and https).
+	// Also derive origins from DOMAINS (both http and https, plus www. variants).
 	if domains := os.Getenv("DOMAINS"); domains != "" {
 		for _, d := range strings.Fields(domains) {
 			origins = append(origins, "http://"+d, "https://"+d)
+			if !strings.HasPrefix(d, "www.") {
+				origins = append(origins, "http://www."+d, "https://www."+d)
+			}
 		}
 	}
 	// Deduplicate.
