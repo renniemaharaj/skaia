@@ -38,7 +38,13 @@ export const Footer: React.FC = () => {
   const branding = useAtomValue(brandingAtom);
 
   const loading = !footerConfig && !branding;
-  const cfg: FooterConfig = { ...DEFAULTS, ...footerConfig };
+  const merged: FooterConfig = { ...DEFAULTS, ...footerConfig };
+  // Guard against null arrays from API (JSON null overrides defaults)
+  const cfg: FooterConfig = {
+    ...merged,
+    community_items: merged.community_items ?? [],
+    quick_links: merged.quick_links ?? DEFAULTS.quick_links!,
+  };
   const variant = cfg.variant || 1;
   const logoUrl = branding?.logo_url || "/logo.png";
 
@@ -73,7 +79,7 @@ export const Footer: React.FC = () => {
   };
 
   // Quick links (V2)
-  const links = cfg.quick_links || DEFAULTS.quick_links!;
+  const links = cfg.quick_links;
   const updateLink = (index: number, updates: Partial<FooterLink>) => {
     const next = links.map((l, i) => (i === index ? { ...l, ...updates } : l));
     saveFooter({ quick_links: next });
