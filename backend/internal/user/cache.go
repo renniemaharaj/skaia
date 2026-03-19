@@ -13,10 +13,17 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-const (
-	cacheKeyPrefix = "user:"
-	cacheTTL       = 5 * time.Minute
-)
+var cacheKeyPrefix = clientPrefix() + "user:"
+
+const cacheTTL = 5 * time.Minute
+
+func clientPrefix() string {
+	name := os.Getenv("CLIENT_NAME")
+	if name == "" {
+		return ""
+	}
+	return name + ":"
+}
 
 // Cache is a Redis-backed per-ID store for User objects.
 type Cache struct {

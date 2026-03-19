@@ -13,10 +13,17 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-const (
-	threadKeyPrefix = "forum:thread:"
-	threadTTL       = 5 * time.Minute
-)
+var threadKeyPrefix = forumClientPrefix() + "forum:thread:"
+
+const threadTTL = 5 * time.Minute
+
+func forumClientPrefix() string {
+	name := os.Getenv("CLIENT_NAME")
+	if name == "" {
+		return ""
+	}
+	return name + ":"
+}
 
 // ThreadCache is a Redis-backed per-ID store for ForumThread objects.
 type ThreadCache struct {

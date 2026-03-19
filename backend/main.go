@@ -168,6 +168,17 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	}
 
 	r := chi.NewRouter()
+	// Inject X-Backend header on every response (identifies which tenant backend handled it).
+	clientName := os.Getenv("CLIENT_NAME")
+	if clientName == "" {
+		clientName = "unknown"
+	}
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Backend", clientName)
+			next.ServeHTTP(w, r)
+		})
+	})
 	// Custom request logger that redacts sensitive query params (e.g. token)
 	// from log output.  The default chi Logger prints the full RequestURI
 	// which leaks JWTs for WebSocket upgrade requests.

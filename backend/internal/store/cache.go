@@ -13,10 +13,17 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-const (
-	productKeyPrefix = "store:product:"
-	productTTL       = 5 * time.Minute
-)
+var productKeyPrefix = storeClientPrefix() + "store:product:"
+
+const productTTL = 5 * time.Minute
+
+func storeClientPrefix() string {
+	name := os.Getenv("CLIENT_NAME")
+	if name == "" {
+		return ""
+	}
+	return name + ":"
+}
 
 // ProductCache is a Redis-backed per-ID store for Product objects.
 type ProductCache struct {
