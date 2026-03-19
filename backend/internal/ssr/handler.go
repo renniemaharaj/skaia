@@ -43,22 +43,30 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 		}
 
 		// Build SSR title from branding (the source of truth for site identity).
-		// SiteHead.tsx can further override client-side via react-helmet if
-		// the user sets a custom SEO title in the admin panel.
+		// Try site_name first, then header_title, then header_subtitle.
 		title := branding.SiteName
-		if branding.Tagline != "" && title != "" {
-			title += " – " + branding.Tagline
+		if title == "" {
+			title = branding.HeaderTitle
+		}
+		if title == "" {
+			title = branding.HeaderSubtitle
+		}
+		tagline := branding.Tagline
+		if tagline == "" && branding.HeaderSubtitle != "" && branding.HeaderSubtitle != title {
+			tagline = branding.HeaderSubtitle
+		}
+		if tagline != "" && title != "" {
+			title += " – " + tagline
 		}
 		titleTag := ""
 		if title != "" {
 			titleTag = "<title>" + htmlEscape(title) + "</title>"
 		}
 
-		// Description from branding tagline; SEO description used only by
-		// SiteHead client-side if the user fills it in.
+		// Description from tagline.
 		descTag := ""
-		if branding.Tagline != "" {
-			descTag = "<meta name=\"description\" content=\"" + htmlEscape(branding.Tagline) + "\">"
+		if tagline != "" {
+			descTag = "<meta name=\"description\" content=\"" + htmlEscape(tagline) + "\">"
 		}
 
 		ogTag := ""
