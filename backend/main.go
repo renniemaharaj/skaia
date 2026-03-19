@@ -234,6 +234,14 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 	// ── All API routes under /api ──────────────────────────────────────
 	r.Route("/api", func(api chi.Router) {
+		// Prevent Cloudflare (and browsers) from caching API responses.
+		api.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+				w.Header().Set("Pragma", "no-cache")
+				next.ServeHTTP(w, r)
+			})
+		})
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
