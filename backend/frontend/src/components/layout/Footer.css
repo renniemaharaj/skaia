@@ -159,9 +159,10 @@
   gap: 1.2rem;
   margin-top: 1rem;
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-.social-links a {
+.social-links a.social-link {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,13 +173,108 @@
   color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   border: 1px solid var(--border-color);
+  text-decoration: none;
 }
 
-.social-links a:hover {
-  color: var(--text-primary) !important;
-  color: white;
+.social-link-emoji {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.social-links a.social-link:hover {
   transform: translateY(-4px) scale(1.1);
   box-shadow: 0 8px 16px rgba(202, 255, 237, 0.2);
+}
+
+/* ── Editable social link wrapper ── */
+.social-link-editable {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.social-link-actions {
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.social-link-editable:hover .social-link-actions {
+  opacity: 1;
+}
+
+.social-link-action-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.social-link-action-btn:hover {
+  color: var(--accent-color);
+  background: var(--bg-secondary);
+}
+
+.social-link-action-btn.danger:hover {
+  color: #e74c3c;
+}
+
+/* ── Social link inline editor ── */
+.social-link-editor {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.social-link-url-input {
+  width: 160px;
+  height: 32px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: 0 0.5rem;
+}
+
+.social-link-url-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(202, 255, 237, 0.15);
+}
+
+/* ── Add social link button ── */
+.social-link-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 2px dashed var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.social-link-add-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: scale(1.05);
 }
 
 .footer-bottom {

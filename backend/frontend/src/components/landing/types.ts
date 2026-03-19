@@ -44,6 +44,11 @@ export interface FooterLink {
   url: string;
 }
 
+export interface FooterSocialLink {
+  icon: string;
+  url: string;
+}
+
 export interface FooterConfig {
   variant: number;
   site_title: string;
@@ -55,6 +60,7 @@ export interface FooterConfig {
   contact_heading: string;
   contact_text: string;
   tagline: string;
+  social_links: FooterSocialLink[];
 }
 
 /** All section types the renderer knows about. */

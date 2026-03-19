@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -141,6 +142,11 @@ func cmdNew(args []string) {
 	corsOrigins := strings.Join(corsParts, ",")
 
 	env := loadSharedEnv()
+
+	// Ensure backends/ parent dir exists and is writable (Docker may have
+	// created it as root via volume mounts).
+	ensureWritableDir(backendsDir())
+
 	cdir := clientDir(name)
 	if err := os.MkdirAll(filepath.Join(cdir, "uploads"), 0755); err != nil {
 		die("Cannot create client directory: %v", err)
@@ -363,7 +369,15 @@ func cmdRemove(name string) {
 		die("Refusing to remove dangerous path")
 	}
 	if err := os.RemoveAll(dir); err != nil {
-		die("Cannot remove client directory: %v", err)
+		// Likely root-owned files from Docker volume mounts.
+		warn("Cannot remove as current user — retrying with sudo…")
+		cmd := exec.Command("sudo", "rm", "-rf", dir)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			die("Cannot remove client directory: %v\n  Try: sudo rm -rf %s", err, dir)
+		}
 	}
 	log("Client '%s' removed", name)
 

@@ -24,6 +24,12 @@ import {
   Compass,
   Flame,
   Swords,
+  Youtube,
+  Facebook,
+  Twitch,
+  Linkedin,
+  Music,
+  Link,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +54,12 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Compass,
   Flame,
   Swords,
+  Youtube,
+  Facebook,
+  Twitch,
+  Linkedin,
+  Music,
+  Link,
 };
 
 export const ICON_NAMES = Object.keys(ICON_MAP);

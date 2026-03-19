@@ -5,7 +5,11 @@ import { footerConfigAtom } from "../../atoms/config";
 import { brandingAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
 import { EditableText, VariantCycler } from "../landing/EditControls";
-import type { FooterConfig, FooterLink } from "../landing/types";
+import type {
+  FooterConfig,
+  FooterLink,
+  FooterSocialLink,
+} from "../landing/types";
 import { toast } from "sonner";
 import "./Footer.css";
 import SocialLinks from "./SocialLinks";
@@ -27,6 +31,7 @@ const DEFAULTS: FooterConfig = {
   contact_heading: "",
   contact_text: "",
   tagline: "",
+  social_links: [],
 };
 
 export const Footer: React.FC = () => {
@@ -44,6 +49,7 @@ export const Footer: React.FC = () => {
     ...merged,
     community_items: merged.community_items ?? [],
     quick_links: merged.quick_links ?? DEFAULTS.quick_links!,
+    social_links: merged.social_links ?? [],
   };
   const variant = cfg.variant || 1;
   const logoUrl = branding?.logo_url || "/logo.png";
@@ -91,6 +97,28 @@ export const Footer: React.FC = () => {
 
   const removeLink = (index: number) => {
     saveFooter({ quick_links: links.filter((_, i) => i !== index) });
+  };
+
+  // Social links
+  const socialLinks = cfg.social_links;
+  const updateSocialLink = (
+    index: number,
+    updates: Partial<FooterSocialLink>,
+  ) => {
+    const next = socialLinks.map((l, i) =>
+      i === index ? { ...l, ...updates } : l,
+    );
+    saveFooter({ social_links: next });
+  };
+
+  const addSocialLink = () => {
+    saveFooter({
+      social_links: [...socialLinks, { icon: "Globe", url: "https://" }],
+    });
+  };
+
+  const removeSocialLink = (index: number) => {
+    saveFooter({ social_links: socialLinks.filter((_, i) => i !== index) });
   };
 
   if (loading) {
@@ -218,7 +246,13 @@ export const Footer: React.FC = () => {
 
             <div className="footer-section">
               <h4>Connect</h4>
-              <SocialLinks />
+              <SocialLinks
+                links={socialLinks}
+                canEdit={canEdit}
+                onUpdate={updateSocialLink}
+                onAdd={addSocialLink}
+                onRemove={removeSocialLink}
+              />
             </div>
           </div>
 
@@ -272,7 +306,13 @@ export const Footer: React.FC = () => {
                   <p>{cfg.site_description}</p>
                 </>
               )}
-              <SocialLinks />
+              <SocialLinks
+                links={socialLinks}
+                canEdit={canEdit}
+                onUpdate={updateSocialLink}
+                onAdd={addSocialLink}
+                onRemove={removeSocialLink}
+              />
             </div>
 
             {/* Quick Links column */}

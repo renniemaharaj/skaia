@@ -58,20 +58,27 @@ type SEO struct {
 
 // Footer holds the customisable footer content from site_config.
 type Footer struct {
-	Variant          int      `json:"variant"`
-	SiteTitle        string   `json:"site_title"`
-	SiteDescription  string   `json:"site_description"`
-	CommunityHeading string   `json:"community_heading"`
-	CommunityItems   []string `json:"community_items"`
-	CopyrightText    string   `json:"copyright_text"`
-	QuickLinks       []Link   `json:"quick_links"`
-	ContactHeading   string   `json:"contact_heading"`
-	ContactText      string   `json:"contact_text"`
-	Tagline          string   `json:"tagline"`
+	Variant          int          `json:"variant"`
+	SiteTitle        string       `json:"site_title"`
+	SiteDescription  string       `json:"site_description"`
+	CommunityHeading string       `json:"community_heading"`
+	CommunityItems   []string     `json:"community_items"`
+	CopyrightText    string       `json:"copyright_text"`
+	QuickLinks       []Link       `json:"quick_links"`
+	ContactHeading   string       `json:"contact_heading"`
+	ContactText      string       `json:"contact_text"`
+	Tagline          string       `json:"tagline"`
+	SocialLinks      []SocialLink `json:"social_links"`
 }
 
 // Link is a named URL used in footer quick links.
 type Link struct {
 	Label string `json:"label"`
 	URL   string `json:"url"`
+}
+
+// SocialLink is an icon-key + URL pair used in footer and landing social sections.
+type SocialLink struct {
+	Icon string `json:"icon"`
+	URL  string `json:"url"`
 }
