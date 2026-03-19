@@ -6,15 +6,16 @@ const Hero = ({ height }: { height?: string }) => {
       }}
       className="hero-banner"
     >
-      <img
-        src="/banner_7783x7783.png"
-        alt="Cueballcraft Skaiacraft"
-        className="banner-image"
-      />
       <div className="banner-overlay">
         <div className="banner-content">
-          <h1>CUEBALLCRAFT SKAIACRAFT</h1>
-          <p>A Premium Vanilla Minecraft Experience</p>
+          <div
+            className="skeleton"
+            style={{ width: 200, height: 28, margin: "0 auto 12px" }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: 300, height: 16, margin: "0 auto" }}
+          />
         </div>
       </div>
     </section>

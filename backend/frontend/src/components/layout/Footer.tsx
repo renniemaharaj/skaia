@@ -13,26 +13,20 @@ import SocialLinks from "./SocialLinks";
 const FOOTER_VARIANTS = 2;
 
 const DEFAULTS: FooterConfig = {
-  site_title: "Cueballcraft Skaiacraft",
-  site_description:
-    "A premium vanilla Minecraft server with a community spanning over 12 years",
-  community_heading: "Community",
-  community_items: [
-    "Family Friendly Environment",
-    "Support for All Clients",
-    "Active Moderation",
-    "Welcoming to New Players",
-  ],
-  copyright_text: "Cueballcraft Skaiacraft. All rights reserved.",
+  site_title: "",
+  site_description: "",
+  community_heading: "",
+  community_items: [],
+  copyright_text: "",
   variant: 1,
   quick_links: [
     { label: "Home", url: "/" },
     { label: "Store", url: "/store" },
     { label: "Forum", url: "/forum" },
   ],
-  contact_heading: "Get in Touch",
-  contact_text: "Have questions or want to learn more? Reach out to us.",
-  tagline: "Crafted with care",
+  contact_heading: "",
+  contact_text: "",
+  tagline: "",
 };
 
 export const Footer: React.FC = () => {
@@ -43,6 +37,7 @@ export const Footer: React.FC = () => {
   const setFooter = useSetAtom(footerConfigAtom);
   const branding = useAtomValue(brandingAtom);
 
+  const loading = !footerConfig && !branding;
   const cfg: FooterConfig = { ...DEFAULTS, ...footerConfig };
   const variant = cfg.variant || 1;
   const logoUrl = branding?.logo_url || "/logo.png";
@@ -91,6 +86,45 @@ export const Footer: React.FC = () => {
   const removeLink = (index: number) => {
     saveFooter({ quick_links: links.filter((_, i) => i !== index) });
   };
+
+  if (loading) {
+    return (
+      <footer className="footer footer-v1">
+        <div
+          className="footer-content"
+          style={{
+            display: "flex",
+            gap: "2rem",
+            padding: "2rem",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ flex: 1, maxWidth: 300 }}>
+            <div
+              className="skeleton"
+              style={{ width: "60%", height: 18, marginBottom: 12 }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: "90%", height: 12, marginBottom: 8 }}
+            />
+            <div className="skeleton" style={{ width: "70%", height: 12 }} />
+          </div>
+          <div style={{ flex: 1, maxWidth: 300 }}>
+            <div
+              className="skeleton"
+              style={{ width: "50%", height: 18, marginBottom: 12 }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: "80%", height: 12, marginBottom: 8 }}
+            />
+            <div className="skeleton" style={{ width: "60%", height: 12 }} />
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className={`footer footer-v${variant}`}>

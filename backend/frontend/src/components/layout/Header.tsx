@@ -56,10 +56,10 @@ export const Header: React.FC<HeaderProps> = ({
   const branding = useAtomValue(brandingAtom);
   const setBranding = useSetAtom(brandingAtom);
 
+  const loading = !branding;
   const logoUrl = branding?.logo_url || "/logo.png";
-  const headerTitle =
-    branding?.header_title || branding?.site_name || "CUEBALLCRAFT";
-  const headerSubtitle = branding?.header_subtitle || "Skaiacraft";
+  const headerTitle = branding?.header_title || branding?.site_name || "";
+  const headerSubtitle = branding?.header_subtitle || "";
   const menuVariant = branding?.menu_variant || 1;
 
   const saveBranding = async (updates: Partial<Branding>) => {
@@ -107,7 +107,28 @@ export const Header: React.FC<HeaderProps> = ({
     return location.pathname === path ? "active" : "";
   };
 
-  const logoContent = (
+  const logoContent = loading ? (
+    <>
+      <div className="logo-img-wrapper">
+        <div className="skeleton logo-img" style={{ width: 40, height: 40 }} />
+      </div>
+      <div className="logo-info">
+        <span
+          className="skeleton"
+          style={{ width: 120, height: 16, display: "inline-block" }}
+        />
+        <span
+          className="skeleton"
+          style={{
+            width: 80,
+            height: 12,
+            display: "inline-block",
+            marginTop: 4,
+          }}
+        />
+      </div>
+    </>
+  ) : (
     <>
       <div className="logo-img-wrapper">
         <img src={logoUrl} alt={headerTitle} className="logo-img" />
