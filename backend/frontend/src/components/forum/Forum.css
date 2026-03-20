@@ -48,6 +48,10 @@
   padding: 24px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 280px; /* match skeleton card fixed tile height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .forum-category-card:hover {
