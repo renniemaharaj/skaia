@@ -12,5 +12,3 @@ dist/
 # Grengo state
 backends/
 nginx/default.conf
-grengo
-cmd/grengo/grengo
