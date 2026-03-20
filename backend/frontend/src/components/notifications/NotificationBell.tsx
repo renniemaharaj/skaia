@@ -81,12 +81,14 @@ const NotificationBell = () => {
       .catch(() => {});
   }, [isAuthenticated]);
 
-  // Auto-scroll to bottom (newest) whenever the panel opens or a new live
-  // notification prepends to the atom (reversed display puts them at bottom).
+  // Auto-scroll to bottom (newest) whenever the panel opens or new notifs arrive.
+  // Use `scrollTop` on the scroll container to avoid scrolling the page viewport.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !feedRef.current) return;
+
     requestAnimationFrame(() => {
-      feedEndRef.current?.scrollIntoView({ behavior: "instant" });
+      const list = feedRef.current;
+      if (list) list.scrollTop = list.scrollHeight;
     });
   }, [open, notifs.length]);
 
