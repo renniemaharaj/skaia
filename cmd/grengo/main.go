@@ -22,13 +22,22 @@ Commands:
   db init <name>                             Create database & run migrations
   logs <name> [-f]                           View / tail client logs
 
+  export <name> [-o <file.tar.gz>]           Export a single client to a portable archive
+  import <file.tar.gz> [--name <n>] [--port <p>]  Import a client archive onto this node
+  export-node [-o <file.tar.gz>]             Export ALL clients as a single node archive
+  import-node <file.tar.gz>                  Restore a full node archive onto this node
+
 Examples:
   grengo new                           # fully interactive
   grengo new skaiacraft                # name provided, rest prompted
   grengo new skaiacraft --domain skaiacraft.com --domain localhost
   grengo compose up
   grengo disable writers
-  grengo compose down`
+  grengo compose down
+  grengo export mysite
+  grengo import grengo-client-mysite-20260319-120000.tar.gz --name mysite-copy
+  grengo export-node -o full-backup.tar.gz
+  grengo import-node full-backup.tar.gz`
 
 func usage() {
 	fmt.Println(usageText)
@@ -114,6 +123,50 @@ func main() {
 	case "logs":
 		name := requireArg(rest, "logs <name> [-f]")
 		cmdLogs(name, rest[1:])
+
+	case "export":
+		name := requireArg(rest, "export <name> [-o <file.tar.gz>]")
+		var outFile string
+		for i := 1; i < len(rest); i++ {
+			if (rest[i] == "-o" || rest[i] == "--output") && i+1 < len(rest) {
+				i++
+				outFile = rest[i]
+			}
+		}
+		cmdExportClient(name, outFile)
+
+	case "import":
+		archivePath := requireArg(rest, "import <file.tar.gz> [--name <n>] [--port <p>]")
+		var newName, newPort string
+		for i := 1; i < len(rest); i++ {
+			switch rest[i] {
+			case "--name":
+				if i+1 < len(rest) {
+					i++
+					newName = rest[i]
+				}
+			case "--port":
+				if i+1 < len(rest) {
+					i++
+					newPort = rest[i]
+				}
+			}
+		}
+		cmdImportClient(archivePath, newName, newPort)
+
+	case "export-node":
+		var outFile string
+		for i := 0; i < len(rest); i++ {
+			if (rest[i] == "-o" || rest[i] == "--output") && i+1 < len(rest) {
+				i++
+				outFile = rest[i]
+			}
+		}
+		cmdExportNode(outFile)
+
+	case "import-node":
+		archivePath := requireArg(rest, "import-node <file.tar.gz>")
+		cmdImportNode(archivePath)
 
 	case "help", "--help", "-h":
 		usage()
