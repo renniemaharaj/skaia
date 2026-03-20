@@ -150,13 +150,13 @@
 .comment-composer-form {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: 0.6rem;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 0.85rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 1rem;
   background: var(--bg-color, #fff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -172,54 +172,84 @@
 .comment-composer-input {
   flex: 1;
   resize: none;
-  min-height: 36px;
-  max-height: 140px;
-  padding: 0.3rem 0.25rem;
-  border: none;
-  background: transparent;
+  min-height: 48px;
+  max-height: 180px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #d7dde8);
+  background: var(--bg-color, #fff);
   font-family: inherit;
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.95rem;
+  line-height: 1.5;
   color: inherit;
   overflow-y: auto;
 }
 
 .comment-composer-input:focus {
   outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  border-color: var(--primary-color, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.12);
 }
 
 .comment-composer-input::placeholder {
-  opacity: 0.38;
+  opacity: 0.5;
 }
 
 .comment-composer-send {
   flex-shrink: 0;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* width: 32px; */
-  /* height: 32px; */
   margin-right: -0.25rem;
   margin-bottom: 0.1rem;
-  border-radius: 0.6rem;
+  border-radius: 10px;
   border: none;
   background: var(--primary-color, #4a90d9);
   color: #fff;
   cursor: pointer;
+  padding: 0;
   transition:
     opacity 0.12s ease,
     transform 0.1s ease;
 }
 
 .comment-composer-send:hover:not(:disabled) {
-  opacity: 0.88;
-  transform: scale(1.07);
+  opacity: 0.92;
+  transform: translateY(-1px) scale(1.03);
 }
 
 .comment-composer-send:disabled {
-  opacity: 0.28;
-  cursor: default;
+  opacity: 0.32;
+  cursor: not-allowed;
   transform: none;
+}
+
+.composer-send,
+.comment-composer-send,
+.pp-chat-send {
+  background: var(--primary-color, #4a90d9);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.composer-send--large {
+  width: 54px;
+  height: 54px;
+  min-width: 54px;
+  min-height: 54px;
+  border-radius: 12px;
+}
+
+.composer-send:disabled,
+.comment-composer-send:disabled,
+.pp-chat-send:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
 }

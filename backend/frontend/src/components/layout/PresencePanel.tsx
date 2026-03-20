@@ -10,6 +10,7 @@ import {
   Navigation,
   LocateFixed,
   MessageCircle,
+  Send,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../atoms/presence";
 import {
@@ -332,9 +333,9 @@ const PresencePanel = () => {
               ))}
               <div ref={chatEndRef} />
             </div>
-            <div className="pp-chat-input-row">
+            <div className="pp-chat-input-row chat-composer">
               <input
-                className="pp-chat-input"
+                className="pp-chat-input composer-input"
                 type="text"
                 placeholder="Say something…"
                 maxLength={500}
@@ -346,14 +347,16 @@ const PresencePanel = () => {
                     sendChatMessage();
                   }
                 }}
+                aria-label="Global chat message"
               />
               <button
-                className="pp-chat-send"
+                className="pp-chat-send composer-send"
                 onClick={sendChatMessage}
                 disabled={!chatInput.trim()}
                 title="Send"
+                aria-label="Send global chat message"
               >
-                ↑
+                <Send size={16} />
               </button>
             </div>
           </>

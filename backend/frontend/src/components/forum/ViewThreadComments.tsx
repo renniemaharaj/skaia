@@ -286,12 +286,12 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
             />
             <button
               type="submit"
-              className="comment-composer-send"
+              className="comment-composer-send composer-send composer-send--large"
               disabled={isSubmitting || !commentText.trim()}
               title="Post comment"
-              aria-label="Send"
+              aria-label="Send comment"
             >
-              <Send size={15} />
+              <Send size={18} />
             </button>
           </form>
         </div>
