@@ -1,0 +1,21 @@
+.user-avatar,
+.user-avatar-placeholder {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.06));
+  color: var(--text-color, #222);
+  overflow: hidden;
+}
+
+.user-avatar {
+  border: 2px solid var(--bg-secondary, rgba(0, 0, 0, 0.08));
+}
+
+.user-avatar-placeholder {
+  background: var(--primary-color, #4a90d9);
+  color: #fff;
+  font-weight: 700;
+}

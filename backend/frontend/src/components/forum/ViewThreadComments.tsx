@@ -1,7 +1,8 @@
 import "./ViewThreadComments.css";
-import { Send, ThumbsUp, Trash2, UserCog2Icon } from "lucide-react";
+import { Send, ThumbsUp, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import UserAvatar from "../user/UserAvatar";
 import {
   threadCommentsAtom,
   enrichedThreadCommentsAtom,
@@ -193,11 +194,12 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
           comments.map((comment) => (
             <div key={comment.id} className="comment-card">
               <div className="comment-avatar">
-                {comment.author_avatar ? (
-                  <img src={comment.author_avatar} alt={comment.author_name} />
-                ) : (
-                  <UserCog2Icon size={30} style={{ opacity: 0.45 }} />
-                )}
+                <UserAvatar
+                  src={comment.author_avatar || undefined}
+                  alt={comment.author_name || "Comment author"}
+                  size={32}
+                  initials={comment.author_name?.[0]?.toUpperCase()}
+                />
               </div>
 
               <div className="comment-body">

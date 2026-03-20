@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import type { ProfileUser } from "./types";
 import { formatDate } from "./useUserData";
+import UserAvatar from "../../components/user/UserAvatar";
 
 interface Props {
   user: ProfileUser;
@@ -73,17 +74,15 @@ const UserProfileCard = ({
 
         <div className="up-header">
           <div className="up-avatar-wrap">
-            {displayAvatar ? (
-              <img
-                src={displayAvatar}
-                alt={user.display_name}
-                className="up-avatar"
-              />
-            ) : (
-              <div className="up-avatar up-avatar-placeholder">
-                {(user.display_name || user.username || "?")[0].toUpperCase()}
-              </div>
-            )}
+            <UserAvatar
+              src={displayAvatar || undefined}
+              alt={user.display_name || user.username || "User"}
+              size={100}
+              initials={(user.display_name ||
+                user.username ||
+                "?")[0]?.toUpperCase()}
+              className="up-avatar"
+            />
           </div>
 
           <div className="up-header-info">
