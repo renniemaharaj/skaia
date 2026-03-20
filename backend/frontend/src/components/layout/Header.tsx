@@ -12,19 +12,13 @@ import {
 import { inboxUnreadCountAtom } from "../../atoms/inbox";
 import { brandingAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
-import {
-  EditableText,
-  ImagePickerButton,
-  VariantCycler,
-} from "../landing/EditControls";
+import { EditableText, ImagePickerButton } from "../landing/EditControls";
 import UserLink from "../user/UserLink";
 import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
 import type { Branding } from "../landing/types";
-
-const MENU_VARIANTS = 2;
 
 interface HeaderProps {
   cartCount: number;
@@ -60,7 +54,6 @@ export const Header: React.FC<HeaderProps> = ({
   const logoUrl = branding?.logo_url || "/logo.png";
   const headerTitle = branding?.header_title || branding?.site_name || "";
   const headerSubtitle = branding?.header_subtitle || "";
-  const menuVariant = branding?.menu_variant || 1;
 
   const saveBranding = async (updates: Partial<Branding>) => {
     const updated = { ...branding, ...updates } as Branding;
@@ -176,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className={`header menu-v${menuVariant}`}>
+    <header className="header">
       <div className="header-content">
         {canEdit ? (
           <div className="logo" tabIndex={-1}>
@@ -186,15 +179,6 @@ export const Header: React.FC<HeaderProps> = ({
           <Link to="/" className="logo" tabIndex={-1}>
             {logoContent}
           </Link>
-        )}
-
-        {canEdit && (
-          <VariantCycler
-            current={menuVariant}
-            total={MENU_VARIANTS}
-            onCycle={(v) => saveBranding({ menu_variant: v })}
-            label="Menu"
-          />
         )}
 
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>

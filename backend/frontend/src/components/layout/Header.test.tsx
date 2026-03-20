@@ -11,6 +11,7 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
 } from "../../atoms/auth";
+import { brandingAtom } from "../../atoms/config";
 import type { User } from "../../atoms/auth";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,6 +41,18 @@ function makeStore(opts?: { authenticated?: boolean; user?: User }) {
     store.set(accessTokenAtom, "test-jwt-token");
     store.set(refreshTokenAtom, "test-refresh-token");
   }
+
+  store.set(brandingAtom, {
+    site_name: "CUEBALLCRAFT",
+    tagline: "",
+    logo_url: "/logo.png",
+    favicon_url: "",
+    header_title: "Cueballcraft Skaiacraft",
+    header_subtitle: "",
+    header_variant: 1,
+    menu_variant: 1,
+  });
+
   return store;
 }
 

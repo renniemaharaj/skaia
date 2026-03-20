@@ -101,7 +101,7 @@ describe("Auth Component", () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          "/auth/login",
+          "/api/auth/login",
           expect.any(Object),
         );
       });
@@ -257,7 +257,7 @@ describe("Auth Component", () => {
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
-          "/auth/register",
+          "/api/auth/register",
           expect.any(Object),
         );
       });
