@@ -90,7 +90,8 @@
 
 /* Expandable body */
 .pp-body {
-  width: 220px;
+  width: min(95vw, 220px);
+  max-width: 100%;
   max-height: 0;
   overflow: hidden;
   border-radius: 10px;
@@ -107,7 +108,8 @@
   opacity: 1;
 }
 .pp-body.pp-open.pp-body--chat {
-  width: 380px;
+  width: min(95vw, 380px);
+  max-width: 100%;
   max-height: 500px;
 }
 

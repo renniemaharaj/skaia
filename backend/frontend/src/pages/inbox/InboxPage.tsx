@@ -38,6 +38,9 @@ const InboxPage = () => {
   const [showNewDm, setShowNewDm] = useState(false);
   const [newDmTarget, setNewDmTarget] = useState("");
 
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 640);
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+
   const wrapperRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
@@ -56,6 +59,31 @@ const InboxPage = () => {
     window.addEventListener("resize", recalcHeight);
     return () => window.removeEventListener("resize", recalcHeight);
   }, []);
+
+  // Mobile detection and panel switch state
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= 640;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setMobileView("chat");
+      } else if (!activeId) {
+        setMobileView("list");
+      }
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeId]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    if (activeId) {
+      setMobileView("chat");
+    } else {
+      setMobileView("list");
+    }
+  }, [activeId, isMobile]);
 
   // Load conversations on mount
   useEffect(() => {
@@ -253,9 +281,13 @@ const InboxPage = () => {
 
   const activeConv = conversations.find((c) => c.id === activeId);
 
+  const inboxPageClass = isMobile
+    ? `inbox-page inbox-page--mobile-${mobileView}`
+    : "inbox-page";
+
   return (
     <div className="inbox-page-wrapper" ref={wrapperRef}>
-      <div className="inbox-page">
+      <div className={inboxPageClass}>
         {/* ── Left: Conversation list ── */}
         <aside className="inbox-sidebar">
           <div className="inbox-sidebar-header">
@@ -303,7 +335,10 @@ const InboxPage = () => {
                 <button
                   key={c.id}
                   className={`inbox-conv-row${isActive ? " inbox-conv-row--active" : ""}${c.unread_count > 0 ? " inbox-conv-row--unread" : ""}`}
-                  onClick={() => setActiveId(c.id)}
+                  onClick={() => {
+                    setActiveId(c.id);
+                    if (isMobile) setMobileView("chat");
+                  }}
                 >
                   <span className="inbox-conv-avatar">
                     {other?.avatar_url ? (
@@ -354,6 +389,15 @@ const InboxPage = () => {
             <>
               {/* Conversation header */}
               <div className="inbox-chat-header">
+                {isMobile && (
+                  <button
+                    className="inbox-back-btn"
+                    onClick={() => setMobileView("list")}
+                    title="Back to conversations"
+                  >
+                    ←
+                  </button>
+                )}
                 {activeConv?.other_user ? (
                   <Link
                     to={`/users/${activeConv.other_user.id}`}

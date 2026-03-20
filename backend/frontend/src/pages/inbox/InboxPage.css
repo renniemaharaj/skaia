@@ -218,7 +218,10 @@
 }
 
 .inbox-chat-header {
-  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px 12px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
   flex-shrink: 0;
@@ -230,7 +233,48 @@
   gap: 10px;
   text-decoration: none;
   color: var(--text-primary);
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
+  margin-top: 2px;
+}
+
+.inbox-chat-avatar {
+  margin-top: 2px;
+}
+
+.inbox-chat-username {
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: color 0.12s ease;
+  max-width: calc(100% - 42px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inbox-chat-user:hover .inbox-chat-username {
+  color: var(--primary-color);
+}
+
+.inbox-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  margin-top: 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.inbox-back-btn:hover {
+  background: var(--bg-tertiary);
 }
 .inbox-chat-user:hover .inbox-chat-username {
   color: var(--primary-color);
@@ -415,18 +459,68 @@
   }
   .inbox-page {
     border: none;
+    position: relative;
+    overflow: hidden;
   }
+
+  .inbox-sidebar,
+  .inbox-main {
+    width: 100%;
+    display: none;
+    height: 100%;
+  }
+
+  .inbox-page--mobile-list .inbox-sidebar {
+    display: flex;
+    flex-direction: column;
+  }
+  .inbox-page--mobile-list .inbox-main {
+    display: none;
+  }
+
+  .inbox-page--mobile-chat .inbox-sidebar {
+    display: none;
+  }
+  .inbox-page--mobile-chat .inbox-main {
+    display: flex;
+    flex-direction: column;
+  }
+
   .inbox-sidebar {
-    width: 64px;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
   }
+
   .inbox-conv-info,
   .inbox-conv-meta,
   .inbox-conv-name,
   .inbox-conv-preview,
   .inbox-conv-time {
-    display: none;
+    display: block;
   }
   .inbox-sidebar-title {
-    display: none;
+    display: block;
+  }
+
+  .inbox-chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .inbox-back-btn {
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+  }
+  .inbox-back-btn:hover {
+    background: var(--bg-tertiary);
   }
 }
