@@ -65,6 +65,29 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.notif-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 6px;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.notif-panel-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
 .notif-panel-title {
   font-weight: 700;
   font-size: 0.85rem;
@@ -236,4 +259,52 @@
 .notif-delete-btn:hover {
   background: var(--bg-color);
   color: var(--danger-color, #e53e3e);
+}
+
+@media (max-width: 840px) {
+  .notif-bell-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    pointer-events: none;
+  }
+
+  .notif-bell-btn {
+    z-index: 3100;
+    pointer-events: auto;
+  }
+
+  .notif-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+    border: none;
+    margin: 0;
+    box-shadow: none;
+    background: var(--bg-secondary);
+    overflow: hidden;
+    z-index: 3100;
+  }
+
+  .notif-panel-header {
+    padding: 12px 14px;
+  }
+
+  .notif-list {
+    height: calc(100vh - 54px);
+  }
+
+  .notif-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .notif-panel-title {
+    font-size: 0.92rem;
+  }
 }

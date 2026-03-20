@@ -205,6 +205,14 @@ const NotificationBell = () => {
           <div className="notif-panel-header">
             <span className="notif-panel-title">Notifications</span>
             <div className="notif-panel-actions">
+              <button
+                className="notif-panel-close"
+                onClick={() => setOpen(false)}
+                title="Close"
+                aria-label="Close notifications"
+              >
+                <X size={16} />
+              </button>
               {unread > 0 && (
                 <button
                   className="notif-mark-all"
