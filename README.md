@@ -1,36 +1,59 @@
 # Skaia
 
-Full-stack application: React frontend, Go backend, PostgreSQL, Redis.
+Full-stack tenant-based app: React frontend + Go backend + PostgreSQL + Redis + nginx.
 
 ## Stack
 
-| Layer    | Tech                           |
-| -------- | ------------------------------ |
-| Frontend | React 19, TypeScript, Vite     |
-| Backend  | Go 1.24, chi/v5, lib/pq        |
-| Database | PostgreSQL 16                  |
-| Cache    | Redis 7                        |
-| Proxy    | nginx                          |
-| Payments | Stripe (demo provider default) |
+- Frontend: React 19.2, TypeScript, Vite
+- Backend: Go 1.24, chi/v5, lib/pq
+- Database: PostgreSQL 16
+- Cache: Redis 7
+- Proxy: nginx
+- Payments: Stripe (demo provider default)
 
-## Setup
+## Repo layout
 
-```bash
-cp .env.example .env   # fill in secrets
-docker compose up -d
-```
+- `compose.yml` (shared infrastructure: nginx/postgres/redis)
+- `backends/<tenant>/compose.yml` (tenant-specific backend service)
+- `backend/` (Go server + app source)
+- `backend/frontend/` (React app source)
+- `internal/` (app internal modules, routes, services, tests)
 
-Backend: `http://localhost:8080`
-Frontend: `http://localhost:5173`
+## Quickstart
 
-## Environment
+1. copy shared env and configure:
+   ```bash
+   cp .env.example .env
+   # set POSTGRES_PASSWORD at minimum
+   ```
+2. start shared infra:
+   ```bash
+   docker compose up -d
+   ```
+3. build and start backend tenant (example `home`):
+   ```bash
+   cd backends/home
+   docker compose up -d
+   ```
 
-| File           | Purpose                              | Git     |
-| -------------- | ------------------------------------ | ------- |
-| `.env`         | secrets (DB creds, JWT, Stripe keys) | ignored |
-| `backend/.env` | tuning params (pool sizes, timeouts) | tracked |
+> Optional: use `grengo` CLI for tenant scaffolding and compose commands from project root:
+>
+> - `grengo compose up`
+> - `grengo compose down`
+> - `grengo new <name> --domain <host>`
 
-## API routes
+## Services
+
+- Backend (tenant): `http://localhost:<PORT>` (varies by tenant config)
+- Frontend dev: `http://localhost:5173` (from `backend/frontend` via `npm run dev`)
+
+## Environment files
+
+- `.env` (shared secrets, DB creds, required, not tracked)
+- `backend/.env` (backend tuning values, tracked)
+- `backends/<tenant>/.env` (tenant runtime config via env file in compose)
+
+## API endpoints
 
 ### General
 
@@ -40,40 +63,55 @@ Frontend: `http://localhost:5173`
 
 ### Auth (`/auth`)
 
-- `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
 
 ### Users (`/users`)
 
-- `GET /users`, `GET /users/{id}`, `PUT /users/{id}`, `DELETE /users/{id}`
-- `GET /users/{id}/roles`, `PUT /users/{id}/roles`
+- `GET /users`
+- `GET /users/{id}`
+- `PUT /users/{id}`
+- `DELETE /users/{id}`
+- `GET /users/{id}/roles`
+- `PUT /users/{id}/roles`
 
 ### Forum (`/forum`)
 
-- categories: `GET /forum/categories`, CRUD `/forum/categories/{id}`
-- threads: `GET /forum/threads`, CRUD `/forum/threads/{id}`
-- comments: `GET /forum/threads/{id}/comments`, CRUD
-- likes: `POST /forum/threads/{id}/like`, `POST /forum/comments/{id}/like`
+- `GET /forum/categories`, `POST /forum/categories`, `PUT /forum/categories/{id}`, `DELETE /forum/categories/{id}`
+- `GET /forum/threads`, `POST /forum/threads`, `GET /forum/threads/{id}`, `PUT /forum/threads/{id}`, `DELETE /forum/threads/{id}`
+- `GET /forum/threads/{id}/comments`, plus CRUD for comments
+- `POST /forum/threads/{id}/like`, `POST /forum/comments/{id}/like`
 
 ### Store (`/store`)
 
-- categories: `GET /store/categories`, CRUD
-- products: `GET /store/products`, CRUD
-- cart: `GET /store/cart`, `POST /store/cart/add`, `PUT /store/cart/update`, `DELETE /store/cart/remove`
-- checkout: `POST /store/checkout`
-- orders: `GET /store/orders`, `GET /store/orders/{id}`
-- plans: `GET /store/plans`, CRUD (admin)
-- subscriptions: `POST /store/subscribe`, `GET /store/subscriptions`, `POST /store/subscriptions/{id}/cancel`
-- payments: `GET /store/payments/{ref}/status`
+- categories, products, cart, checkout, orders, plans, subscriptions, payments as in code
 
 ### Inbox (`/inbox`)
 
-- `GET /inbox/conversations`, `POST /inbox/conversations`
-- `GET /inbox/conversations/{id}/messages`, `POST /inbox/conversations/{id}/messages`
+- `GET /inbox/conversations`
+- `POST /inbox/conversations`
+- `GET /inbox/conversations/{id}/messages`
+- `POST /inbox/conversations/{id}/messages`
 
 ### Notifications (`/notifications`)
 
-- `GET /notifications`, `PUT /notifications/{id}/read`, `PUT /notifications/read-all`
+- `GET /notifications`
+- `PUT /notifications/{id}/read`
+- `PUT /notifications/read-all`
 
 ### Uploads (`/upload`)
 
-- `POST /upload/avatar`, `POST /upload/banner`
+- `POST /upload/avatar`
+- `POST /upload/banner`
+
+## Testing
+
+- Backend tests: `go test ./...`
+- Frontend tests: `cd backend/frontend && npm test`
+
+## Notes
+
+- API route list is current as of 2026-03-20 from internal modules `internal/auth`, `internal/user`, `internal/forum`, `internal/store`, `internal/inbox`, `internal/notification`, `internal/upload`.
+- Ensure `nginx`, `postgres`, and `redis` are up before starting tenant backends.
