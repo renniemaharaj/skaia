@@ -60,6 +60,19 @@
   transform: translateY(-6px);
 }
 
+.forums-grid .skeleton-card-wrapper {
+  width: 100%;
+}
+
+.forums-grid .skeleton-card-wrapper .skeleton-card {
+  min-height: 280px;
+  padding: 24px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
 .forum-category-header {
   display: flex;
   justify-content: space-between;

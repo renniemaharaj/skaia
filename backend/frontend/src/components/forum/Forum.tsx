@@ -204,7 +204,7 @@ export const Forum: React.FC<ForumProps> = () => {
 
         {/* Forum Categories */}
         {forumsLoading ? (
-          <SkeletonCard count={3} />
+          <SkeletonCard count={3} variant="forumCategory" />
         ) : (
           forums.map((forum) => (
             <div
