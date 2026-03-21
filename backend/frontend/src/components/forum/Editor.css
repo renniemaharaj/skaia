@@ -30,6 +30,32 @@
   outline: none !important;
 }
 
+/* Import HTML button toolbar */
+.editor-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.import-html-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.import-html-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.import-html-btn:active {
+  transform: translateY(1px);
+}
+
 /* Ensure editor doesn't have excessive borders */
 .richtext-editor,
 .richtext-editor-content {
