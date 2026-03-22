@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -112,6 +113,39 @@ func seedAdminPassword(db *sql.DB) {
 		return
 	}
 	log.Println("admin seed: password updated")
+}
+
+func validateArmHeaders(r *http.Request) (string, error) {
+	clientID := r.Header.Get("X-Client-ID")
+	adminPassword := r.Header.Get("X-Admin-Password")
+	if clientID == "" || adminPassword == "" {
+		return "", fmt.Errorf("missing authentication headers")
+	}
+	expectedClientID := os.Getenv("CLIENT_ID")
+	expectedAdminPw := os.Getenv("ADMIN_PASSWORD")
+	if expectedClientID == "" || expectedAdminPw == "" {
+		return "", fmt.Errorf("server missing CLIENT_ID or ADMIN_PASSWORD")
+	}
+	if clientID != expectedClientID || adminPassword != expectedAdminPw {
+		return "", fmt.Errorf("invalid credentials")
+	}
+	return clientID, nil
+}
+
+func writeArmedFile(armedDir, clientID string) error {
+	if err := os.MkdirAll(armedDir, 0755); err != nil {
+		return err
+	}
+	filePath := filepath.Join(armedDir, clientID+".armed")
+	return os.WriteFile(filePath, []byte(time.Now().UTC().Format(time.RFC3339)), 0644)
+}
+
+func removeArmedFile(armedDir, clientID string) error {
+	filePath := filepath.Join(armedDir, clientID+".armed")
+	if _, err := os.Stat(filePath); err != nil {
+		return err
+	}
+	return os.Remove(filePath)
 }
 
 func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
@@ -234,6 +268,12 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 	// ── All API routes under /api ──────────────────────────────────────
 	r.Route("/api", func(api chi.Router) {
+		armedDir := os.Getenv("ARMED_DIR")
+		if armedDir == "" {
+			armedDir = "armed"
+		}
+		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/health", "/api/time"}))
+
 		// Prevent Cloudflare (and browsers) from caching API responses.
 		api.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -245,6 +285,54 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+		})
+
+		api.Post("/arm", func(w http.ResponseWriter, r *http.Request) {
+			clientID, err := validateArmHeaders(r)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnauthorized)
+				return
+			}
+
+			armedDir := os.Getenv("ARMED_DIR")
+			if armedDir == "" {
+				armedDir = "armed"
+			}
+
+			if err := writeArmedFile(armedDir, clientID); err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(SimpleResponse{Message: "backend armed", Status: "ok"})
+		})
+
+		api.Post("/disarm", func(w http.ResponseWriter, r *http.Request) {
+			clientID, err := validateArmHeaders(r)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnauthorized)
+				return
+			}
+
+			armedDir := os.Getenv("ARMED_DIR")
+			if armedDir == "" {
+				armedDir = "armed"
+			}
+
+			if err := removeArmedFile(armedDir, clientID); err != nil {
+				if os.IsNotExist(err) {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusNotFound)
+					json.NewEncoder(w).Encode(SimpleResponse{Message: "not armed", Status: "ok"})
+					return
+				}
+				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(SimpleResponse{Message: "backend disarmed", Status: "ok"})
 		})
 
 		api.Get("/time", func(w http.ResponseWriter, r *http.Request) {

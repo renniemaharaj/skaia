@@ -3,6 +3,8 @@ package middleware_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/skaia/backend/internal/auth"
@@ -263,7 +265,43 @@ func TestAuthLimitMiddleware_ExceedsLimit_Returns429(t *testing.T) {
 			break
 		}
 	}
-	assert.True(t, hitLimit, "sending 15 rapid requests to the auth limiter must trigger 429")
+	assert.True(t, hitLimit, "rate limit must eventually be hit")
+}
+
+func TestIsArmed_EmptyDir_ReturnsFalse(t *testing.T) {
+	dir := t.TempDir()
+	assert.False(t, mw.IsArmed(dir))
+}
+
+func TestIsArmed_FilePresent_ReturnsTrue(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "client1.armed")
+	require.NoError(t, os.WriteFile(path, []byte("armed"), 0644))
+	assert.True(t, mw.IsArmed(dir))
+}
+
+func TestArmedMiddleware_ServiceUnavailableWhenArmed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "client1.armed")
+	require.NoError(t, os.WriteFile(path, []byte("armed"), 0644))
+
+	m := mw.ArmedMiddleware(dir, []string{"/api/arm", "/api/disarm", "/api/health"})(okHandler())
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/restricted", nil)
+	m.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+}
+
+func TestArmedMiddleware_AllowsWhitelistedPath(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "client1.armed")
+	require.NoError(t, os.WriteFile(path, []byte("armed"), 0644))
+
+	m := mw.ArmedMiddleware(dir, []string{"/api/arm", "/api/disarm", "/api/health"})(okHandler())
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/arm", nil)
+	m.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestAuthLimitMiddleware_Returns429WithErrorBody(t *testing.T) {
