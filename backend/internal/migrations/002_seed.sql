@@ -104,3 +104,43 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 END $$;
+-- Home/manage permission and default site config seed
+INSERT INTO permissions (name, category, description) VALUES
+    ('home.manage', 'home', 'Edit landing page sections, branding, and site config')
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id FROM roles r, permissions p
+WHERE r.name = 'admin' AND p.name = 'home.manage'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO site_config (key, value) VALUES
+    ('branding', '{
+        "site_name": "",
+        "tagline": "",
+        "logo_url": "",
+        "favicon_url": "",
+        "header_title": "",
+        "header_subtitle": "",
+        "header_variant": 0,
+        "menu_variant": 0
+    }'::jsonb),
+    ('seo', '{
+        "title": "",
+        "description": "",
+        "og_image": ""
+    }'::jsonb),
+    ('footer', '{
+        "variant": 0,
+        "site_title": "",
+        "site_description": "",
+        "community_heading": "",
+        "community_items": [],
+        "copyright_text": "",
+        "quick_links": [],
+        "contact_heading": "",
+        "contact_text": "",
+        "tagline": "",
+        "social_links": []
+    }'::jsonb)
+ON CONFLICT (key) DO NOTHING;

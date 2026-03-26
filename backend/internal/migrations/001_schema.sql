@@ -289,3 +289,41 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id     ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read   ON notifications(user_id, is_read);
+
+-- Site config: branding, SEO, and landing page blocks.
+
+-- ── Site config (key-value) ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS site_config (
+    key        VARCHAR(255) PRIMARY KEY,
+    value      JSONB        NOT NULL DEFAULT '{}',
+    updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ── Landing page sections (ordered blocks) ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS landing_sections (
+    id            BIGSERIAL    PRIMARY KEY,
+    display_order INT          NOT NULL DEFAULT 0,
+    section_type  VARCHAR(50)  NOT NULL,
+    heading       TEXT         NOT NULL DEFAULT '',
+    subheading    TEXT         NOT NULL DEFAULT '',
+    config        JSONB        NOT NULL DEFAULT '{}',
+    created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_landing_sections_order ON landing_sections(display_order);
+
+-- ── Landing section items (cards/tiles within a section) ────────────────────
+CREATE TABLE IF NOT EXISTS landing_items (
+    id            BIGSERIAL    PRIMARY KEY,
+    section_id    BIGINT       NOT NULL REFERENCES landing_sections(id) ON DELETE CASCADE,
+    display_order INT          NOT NULL DEFAULT 0,
+    icon          VARCHAR(100) NOT NULL DEFAULT '',
+    heading       TEXT         NOT NULL DEFAULT '',
+    subheading    TEXT         NOT NULL DEFAULT '',
+    image_url     TEXT         NOT NULL DEFAULT '',
+    link_url      TEXT         NOT NULL DEFAULT '',
+    config        JSONB        NOT NULL DEFAULT '{}',
+    created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_landing_items_section ON landing_items(section_id, display_order);
