@@ -15,6 +15,7 @@ Commands:
   start <name>                               Start a client backend
   stop <name>                                Stop a client backend
   remove <name>                              Remove a client (with confirmation)
+  update <name|all>                          Update FEATURES_ENABLED in client(s) .env with selected features
   build                                      Build / rebuild the backend Docker image
   compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything
@@ -96,14 +97,18 @@ func main() {
 		switch sub {
 		case "up":
 			follow := false
-			if len(rest) > 1 {
-				if rest[1] == "--follow" || rest[1] == "--no-detach" {
+			build := false
+			for i := 1; i < len(rest); i++ {
+				switch rest[i] {
+				case "--follow", "--no-detach":
 					follow = true
-				} else {
-					die("Unknown compose up option: %s", rest[1])
+				case "--build":
+					build = true
+				default:
+					die("Unknown compose up option: %s", rest[i])
 				}
 			}
-			cmdComposeUp(follow)
+			cmdComposeUp(follow, build)
 		case "down":
 			cmdComposeDown()
 		default:
@@ -132,6 +137,15 @@ func main() {
 	case "logs":
 		name := requireArg(rest, "logs <name> [-f]")
 		cmdLogs(name, rest[1:])
+
+	case "update":
+		sub := requireArg(rest, "update <name|all>")
+		switch sub {
+		case "all":
+			cmdUpdateAll()
+		default:
+			cmdUpdateClient(sub)
+		}
 
 	case "export":
 		name := requireArg(rest, "export <name> [-o <file.tar.gz>]")

@@ -8,7 +8,11 @@ import { socketAtom, currentUserAtom } from "../atoms/auth";
  * a new WebSocket connection is established. The server broadcasts the full
  * online-user list to every connected client after each update.
  */
-export const usePresence = () => {
+export const usePresence = (enabled = true) => {
+  if (!enabled) {
+    return;
+  }
+
   const socket = useAtomValue(socketAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const location = useLocation();

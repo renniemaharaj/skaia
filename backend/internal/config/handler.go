@@ -4,13 +4,79 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
+
+// feature spec: list keys of modules that can be toggled via env
+var defaultFeatureSet = []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"}
+
+func getFeaturesStatus() map[string]bool {
+	raw := os.Getenv("FEATURES_ENABLED")
+	features := map[string]bool{}
+
+	if strings.TrimSpace(raw) == "" {
+		// no explicit list => all default features enabled for backwards compatibility
+		for _, f := range defaultFeatureSet {
+			features[f] = true
+		}
+		return features
+	}
+
+	for _, part := range strings.Split(raw, ",") {
+		name := strings.TrimSpace(strings.ToLower(part))
+		if name != "" {
+			features[name] = true
+		}
+	}
+
+	// Ensure unspecified default features are explicitly disabled
+	for _, f := range defaultFeatureSet {
+		if _, ok := features[f]; !ok {
+			features[f] = false
+		}
+	}
+
+	return features
+}
+
+func getEnabledFeatures() []string {
+	status := getFeaturesStatus()
+	enabled := []string{}
+	for _, f := range defaultFeatureSet {
+		if status[f] {
+			enabled = append(enabled, f)
+		}
+	}
+	return enabled
+}
+
+func (h *Handler) getFeatures(w http.ResponseWriter, r *http.Request) {
+	// Return a predictable array of enabled features (possibly empty), with stable ordering
+	utils.WriteJSON(w, http.StatusOK, getEnabledFeatures())
+}
+
+func (h *Handler) getFeature(w http.ResponseWriter, r *http.Request) {
+	feature := chi.URLParam(r, "feature")
+	if feature == "" {
+		utils.WriteError(w, http.StatusBadRequest, "missing feature")
+		return
+	}
+
+	enabled := getFeaturesStatus()[feature]
+	if !enabled {
+		utils.WriteError(w, http.StatusNotFound, "feature not enabled")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"allowed": true})
+}
 
 // Handler serves site-configuration and landing-page endpoints.
 type Handler struct {
@@ -26,11 +92,13 @@ func NewHandler(svc *Service, userSvc *iuser.Service) *Handler {
 // Mount registers routes.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.Route("/config", func(r chi.Router) {
-		// Public – anyone can read branding, SEO, and landing layout
+		// Public – anyone can read branding, SEO, landing layout, and feature toggles
 		r.Get("/branding", h.getBranding)
 		r.Get("/seo", h.getSEO)
 		r.Get("/footer", h.getFooter)
 		r.Get("/landing", h.getLanding)
+		r.Get("/features", h.getFeatures)
+		r.Get("/feature/{feature}", h.getFeature)
 
 		// Protected – requires home.manage
 		r.Group(func(r chi.Router) {

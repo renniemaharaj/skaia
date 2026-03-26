@@ -10,7 +10,7 @@ import {
   hasPermissionAtom,
 } from "../../atoms/auth";
 import { inboxUnreadCountAtom } from "../../atoms/inbox";
-import { brandingAtom } from "../../atoms/config";
+import { brandingAtom, featuresAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
 import { EditableText, ImagePickerButton } from "../landing/EditControls";
 import UserLink from "../user/UserLink";
@@ -49,6 +49,13 @@ export const Header: React.FC<HeaderProps> = ({
   const canEdit = hasPermission("home.manage");
   const branding = useAtomValue(brandingAtom);
   const setBranding = useSetAtom(brandingAtom);
+  const features = useAtomValue(featuresAtom);
+
+  const routeAllowed = (feature?: string) => {
+    if (!feature) return true;
+    if (!features) return true;
+    return !!features[feature];
+  };
 
   const loading = !branding;
   const logoUrl = branding?.logo_url || "/logo.png";
@@ -187,27 +194,33 @@ export const Header: React.FC<HeaderProps> = ({
 
         <nav className={`nav ${menuOpen ? "open" : ""}`}>
           <div className="nav-section">
-            <Link
-              to="/"
-              className={isActive("/")}
-              onClick={() => setMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/store"
-              className={isActive("/store")}
-              onClick={() => setMenuOpen(false)}
-            >
-              Store
-            </Link>
-            <Link
-              to="/forum"
-              className={isActive("/forum")}
-              onClick={() => setMenuOpen(false)}
-            >
-              Forum
-            </Link>
+            {routeAllowed("landing") && (
+              <Link
+                to="/"
+                className={isActive("/")}
+                onClick={() => setMenuOpen(false)}
+              >
+                Home
+              </Link>
+            )}
+            {routeAllowed("store") && (
+              <Link
+                to="/store"
+                className={isActive("/store")}
+                onClick={() => setMenuOpen(false)}
+              >
+                Store
+              </Link>
+            )}
+            {routeAllowed("forum") && (
+              <Link
+                to="/forum"
+                className={isActive("/forum")}
+                onClick={() => setMenuOpen(false)}
+              >
+                Forum
+              </Link>
+            )}
           </div>
 
           <div className="user-section">
@@ -218,31 +231,37 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <div
-              className="cart-icon"
-              onClick={() => handleNavigation("/cart")}
-              title="Shopping Cart"
-              style={{ cursor: "pointer" }}
-            >
-              <ShoppingCart size={20} />
-              {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
-            </div>
+            {routeAllowed("store") && (
+              <div
+                className="cart-icon"
+                onClick={() => handleNavigation("/cart")}
+                title="Shopping Cart"
+                style={{ cursor: "pointer" }}
+              >
+                <ShoppingCart size={20} />
+                {cartCount > 0 && (
+                  <span className="cart-count">{cartCount}</span>
+                )}
+              </div>
+            )}
             {isAuthenticated && user ? (
               <div className="user-menu">
                 <NotificationBell />
-                <Link
-                  to="/inbox"
-                  className="header-inbox-btn"
-                  title="Messages"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <Mail size={20} />
-                  {inboxUnread > 0 && (
-                    <span className="header-inbox-badge">
-                      {inboxUnread > 99 ? "99+" : inboxUnread}
-                    </span>
-                  )}
-                </Link>
+                {routeAllowed("inbox") && (
+                  <Link
+                    to="/inbox"
+                    className="header-inbox-btn"
+                    title="Messages"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Mail size={20} />
+                    {inboxUnread > 0 && (
+                      <span className="header-inbox-badge">
+                        {inboxUnread > 99 ? "99+" : inboxUnread}
+                      </span>
+                    )}
+                  </Link>
+                )}
                 <UserLink
                   userId={user.id}
                   username={user.username}

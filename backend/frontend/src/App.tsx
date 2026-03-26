@@ -7,6 +7,7 @@ import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import ErrorBoundary from "./ErrorBoundary";
 import { useSiteConfig } from "./hooks/useSiteConfig";
 import SiteHead from "./components/SiteHead";
+import { useFeatures } from "./hooks/useFeatures";
 
 function SiteConfigLoader({ children }: { children: React.ReactNode }) {
   const { branding, seo } = useSiteConfig();
@@ -19,6 +20,8 @@ function SiteConfigLoader({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const features = useFeatures();
+
   return (
     <CartProvider>
       <Router>
@@ -27,8 +30,8 @@ export default function App() {
             <Layout>
               <ErrorBoundary>
                 <Routes>
-                  {publicRoutesFunc()}
-                  {protectedRoutesFunc()}
+                  {publicRoutesFunc(features)}
+                  {protectedRoutesFunc(features)}
                 </Routes>
               </ErrorBoundary>
             </Layout>

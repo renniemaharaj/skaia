@@ -26,7 +26,11 @@ function ViewThread({ content }: { content: string }) {
           <RichTextEditor
             output="html"
             key={key}
-            content={localContent as any}
+            content={
+              typeof localContent === "string"
+                ? localContent
+                : String(localContent ?? "")
+            }
             extensions={extensions}
             dark={theme === "dark"}
             disableBubble

@@ -12,7 +12,31 @@ import (
 	"time"
 )
 
-// cmdNew creates a new client interactively.
+func normalizeFeatures(input string, allowed []string) string {
+	allowedSet := map[string]bool{}
+	for _, f := range allowed {
+		allowedSet[f] = true
+	}
+	parts := strings.Split(input, ",")
+	seen := map[string]bool{}
+	var output []string
+	for _, p := range parts {
+		v := strings.TrimSpace(strings.ToLower(p))
+		if v == "" {
+			continue
+		}
+		if !allowedSet[v] {
+			warn("Ignoring unknown feature: %s", v)
+			continue
+		}
+		if !seen[v] {
+			seen[v] = true
+			output = append(output, v)
+		}
+	}
+	return strings.Join(output, ",")
+}
+
 func cmdNew(args []string) {
 	var name, port string
 	var domains []string
@@ -123,6 +147,14 @@ func cmdNew(args []string) {
 
 	// Payment provider
 	paymentProvider := promptChoice("Payment provider", "demo", []string{"demo", "stripe"})
+
+	// Feature toggles
+	allFeatures := []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"}
+	defaultFeatures := strings.Join(allFeatures, ",")
+	featurePrompt := fmt.Sprintf("Enabled features (comma-separated) - available: %s", strings.Join(allFeatures, ","))
+	features := prompt(featurePrompt, defaultFeatures, false)
+	features = normalizeFeatures(features, allFeatures)
+
 	var stripeKey, stripeWebhook string
 	if paymentProvider == "stripe" {
 		stripeKey = prompt("Stripe secret key", "", false)
@@ -176,6 +208,9 @@ func cmdNew(args []string) {
 		"",
 		"# Frontend SSR",
 		"INDEX_FILE_PATH=/app/frontend/dist/index.html",
+		"",
+		"# Features",
+		fmt.Sprintf("FEATURES_ENABLED=%s", features),
 		"",
 		"# Payments",
 		fmt.Sprintf("PAYMENT_PROVIDER=%s", paymentProvider),
@@ -339,6 +374,62 @@ func cmdStart(name string) {
 	log("%s started", name)
 }
 
+func cmdUpdateClient(name string) {
+	if !clientExists(name) {
+		die("Client '%s' not found", name)
+	}
+	const oneHint = "Comma-separated list: landing, store, forum, cart, users, inbox, presence"
+	current := envVal(clientEnvFile(name), "FEATURES_ENABLED")
+	if current == "" {
+		current = "landing,store,forum,cart,users,inbox,presence"
+	}
+	fmt.Println()
+	fmt.Printf("Updating features for client %s\n", name)
+	fmt.Printf("%s\n", oneHint)
+	values := prompt("Enabled features", current, false)
+	values = normalizeFeatures(values, []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"})
+	if values == "" {
+		values = "landing,store,forum,cart,users,inbox,presence"
+	}
+	if err := setEnvVal(clientEnvFile(name), "FEATURES_ENABLED", values); err != nil {
+		die("Failed to update .env for %s: %v", name, err)
+	}
+	log("Updated %s: FEATURES_ENABLED=%s", name, values)
+}
+
+func cmdUpdateAll() {
+	entries, err := os.ReadDir(backendsDir())
+	if err != nil {
+		die("Unable to read backends dir: %v", err)
+	}
+	const oneHint = "Comma-separated list: landing, store, forum, cart, users, inbox, presence"
+	fmt.Println()
+	fmt.Printf("Updating features for all clients\n")
+	fmt.Printf("%s\n", oneHint)
+	values := prompt("Enabled features", "landing,store,forum,cart,users,inbox,presence", false)
+	values = normalizeFeatures(values, []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"})
+	if values == "" {
+		values = "landing,store,forum,cart,users,inbox,presence"
+	}
+
+	updated := 0
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		path := filepath.Join(backendsDir(), e.Name(), ".env")
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		if err := setEnvVal(path, "FEATURES_ENABLED", values); err != nil {
+			warn("Failed to update %s: %v", e.Name(), err)
+			continue
+		}
+		updated++
+	}
+	log("Updated %d clients with FEATURES_ENABLED=%s", updated, values)
+}
+
 // cmdStop stops a client's backend container.
 func cmdStop(name string) {
 	if !clientExists(name) {
@@ -395,11 +486,15 @@ func cmdBuild() {
 }
 
 // cmdComposeUp starts all infrastructure and enabled client backends.
-func cmdComposeUp(follow bool) {
+func cmdComposeUp(follow bool, build bool) {
 	loadSharedEnv()
 
-	// 1) Build backend image
-	ensureImage()
+	// 1) Optionally build backend image
+	if build {
+		cmdBuild()
+	} else {
+		ensureImage()
+	}
 
 	// 2) Start shared infrastructure (postgres + redis)
 	log("Starting shared infrastructure…")

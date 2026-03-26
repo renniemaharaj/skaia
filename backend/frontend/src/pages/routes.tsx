@@ -16,20 +16,32 @@ import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
-  { path: "store", element: <StorePage /> },
-  { path: "new-thread", element: <NewThreadPage /> },
-  { path: "edit-thread/:threadId", element: <EditThreadPage /> },
-  { path: "view-thread/:threadId", element: <ViewThreadPage /> },
-  { path: "forum", element: <ForumPage /> },
-  { path: "threads/categories/:categoryId", element: <CategoryThreadsPage /> },
-  { path: "cart", element: <CartPage /> },
-  { path: "users", element: <UserDiscovery /> },
-  { path: "users/:userId", element: <UserDiscovery /> },
-  { path: "inbox", element: <InboxPage /> },
+  { path: "store", element: <StorePage />, conditional: "store" },
+  { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
+  {
+    path: "edit-thread/:threadId",
+    element: <EditThreadPage />,
+    conditional: "forum",
+  },
+  {
+    path: "view-thread/:threadId",
+    element: <ViewThreadPage />,
+    conditional: "forum",
+  },
+  { path: "forum", element: <ForumPage />, conditional: "forum" },
+  {
+    path: "threads/categories/:categoryId",
+    element: <CategoryThreadsPage />,
+    conditional: "forum",
+  },
+  { path: "cart", element: <CartPage />, conditional: "store" },
+  { path: "users", element: <UserDiscovery />, conditional: "users" },
+  { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
+  { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta", element: <AdminMetaSettings /> },
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
-  { index: true, element: <Index /> },
+  { index: true, element: <Index />, conditional: "landing" },
   { path: "*", element: <NotFoundPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },

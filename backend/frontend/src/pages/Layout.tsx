@@ -11,6 +11,7 @@ import {
   isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
+import { featuresAtom } from "../atoms/config";
 import { pendingTpRouteAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { apiRequest } from "../utils/api";
@@ -44,7 +45,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     syncServerTime();
   }, []);
 
-  usePresence();
+  const features = useAtomValue(featuresAtom);
+
+  usePresence(features?.presence ?? true);
   useCursorTracking();
   const { subscribe } = useWebSocketSync();
   const cartCount = useAtomValue(cartItemCountAtom);
@@ -165,7 +168,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
       <main className="layout-main">{children}</main>
       <Footer />
-      <PresencePanel />
+      {(features?.presence ?? true) ? <PresencePanel /> : null}
       <CursorOverlay />
       <Toaster position="bottom-right" richColors closeButton />
     </div>

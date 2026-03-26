@@ -164,6 +164,28 @@ func clientComposeFile(name string) string {
 	return filepath.Join(backendsDir(), name, "compose.yml")
 }
 
+// setEnvVal updates or appends a key=value in .env while preserving other lines.
+func setEnvVal(file, key, value string) error {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	prefix := key + "="
+	updated := false
+	for i, line := range lines {
+		if strings.HasPrefix(line, prefix) {
+			lines[i] = prefix + value
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		lines = append(lines, prefix+value)
+	}
+	return os.WriteFile(file, []byte(strings.Join(lines, "\n")), 0644)
+}
+
 // clientDir returns the path to a client directory.
 func clientDir(name string) string {
 	return filepath.Join(backendsDir(), name)

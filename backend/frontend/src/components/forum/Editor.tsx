@@ -85,7 +85,11 @@ function Editor({ value, onChange }: EditorProps) {
           <RichTextEditor
             output="html"
             key={editorKey}
-            content={localContent}
+            content={
+              typeof localContent === "string"
+                ? localContent
+                : String(localContent ?? "")
+            }
             onChangeContent={onValueChange}
             extensions={extensions}
             dark={theme === "dark"}

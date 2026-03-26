@@ -20,7 +20,11 @@ interface Props {
 /** Parse the rich text HTML from section config. */
 function getContent(config: string): string {
   try {
-    return JSON.parse(config || "{}").content || "";
+    const parsed = JSON.parse(config || "{}");
+    const content = parsed.content;
+    if (typeof content === "string") return content;
+    if (content != null) return JSON.stringify(content);
+    return "";
   } catch {
     return "";
   }
