@@ -38,6 +38,69 @@ type SimpleResponse struct {
 	Status  string `json:"status"`
 }
 
+var sitemapPaths = []string{
+	"/",
+	"/login",
+	"/register",
+	"/store",
+	"/forum",
+	"/cart",
+	"/users",
+	"/inbox",
+}
+
+func getSitemapBaseURL() string {
+	if v := os.Getenv("SITEMAP_BASE_URL"); v != "" {
+		return strings.TrimRight(v, "/")
+	}
+
+	domains := strings.Fields(os.Getenv("DOMAINS"))
+	if len(domains) > 0 {
+		d := domains[0]
+		if !strings.HasPrefix(d, "http://") && !strings.HasPrefix(d, "https://") {
+			d = "https://" + d
+		}
+		return strings.TrimRight(d, "/")
+	}
+
+	return "http://localhost:8080"
+}
+
+func buildSitemapXML(baseURL string) string {
+	urlset := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+
+	for _, path := range sitemapPaths {
+		loc := baseURL + path
+		urlset += "  <url>\n"
+		urlset += "    <loc>" + loc + "</loc>\n"
+		urlset += "    <changefreq>daily</changefreq>\n"
+		urlset += "    <priority>0.7</priority>\n"
+		urlset += "  </url>\n"
+	}
+
+	urlset += "</urlset>\n"
+	return urlset
+}
+
+func writeSitemapResponse(w http.ResponseWriter, r *http.Request) {
+	client := chi.URLParam(r, "client")
+	configuredClient := os.Getenv("CLIENT_NAME")
+	if client != "" && configuredClient != "" && client != configuredClient {
+		http.NotFound(w, r)
+		return
+	}
+
+	baseURL := getSitemapBaseURL()
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	sitemap := buildSitemapXML(baseURL)
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(sitemap))
+}
+
 func envInt(key string, def int) int {
 	v := os.Getenv(key)
 	if v == "" {
@@ -250,6 +313,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
+
+	// ── Sitemap for SEO (per-client and default) ───────────────────────
+	r.Get("/sitemap.xml", writeSitemapResponse)
+	r.Get("/sitemap/{client}.xml", writeSitemapResponse)
 
 	// ── WebSocket at root (nginx proxies /ws directly) ─────────────────
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
