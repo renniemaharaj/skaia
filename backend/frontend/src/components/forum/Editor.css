@@ -12,9 +12,13 @@
   width: 900px;
   max-width: 100vw !important;
   margin: 0 auto !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .renderer-editor .ProseMirror {
+  box-shadow: none !important;
+  outline: none !important;
   /* min-width: 50rem; */
   padding: 0.5rem 0.75rem !important;
 }

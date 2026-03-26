@@ -16,11 +16,12 @@ Commands:
   stop <name>                                Stop a client backend
   remove <name>                              Remove a client (with confirmation)
   build                                      Build / rebuild the backend Docker image
-  compose up                                 Start everything (infra + all clients + nginx)
+  compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything
   nginx reload                               Regenerate nginx config & hot-reload
   db init <name>                             Create database & run migrations
   logs <name> [-f]                           View / tail client logs
+  wipe all                                   Remove all clients and shared data (postgres/redis)
 
   export <name> [-o <file.tar.gz>]           Export a single client to a portable archive
   import <file.tar.gz> [--name <n>] [--port <p>]  Import a client archive onto this node
@@ -94,7 +95,15 @@ func main() {
 		sub := requireArg(rest, "compose <up|down>")
 		switch sub {
 		case "up":
-			cmdComposeUp()
+			follow := false
+			if len(rest) > 1 {
+				if rest[1] == "--follow" || rest[1] == "--no-detach" {
+					follow = true
+				} else {
+					die("Unknown compose up option: %s", rest[1])
+				}
+			}
+			cmdComposeUp(follow)
 		case "down":
 			cmdComposeDown()
 		default:
@@ -163,6 +172,17 @@ func main() {
 			}
 		}
 		cmdExportNode(outFile)
+		archivePath := requireArg(rest, "import-node <file.tar.gz>")
+		cmdImportNode(archivePath)
+
+	case "wipe":
+		sub := requireArg(rest, "wipe <all>")
+		switch sub {
+		case "all":
+			cmdWipeAll()
+		default:
+			die("Unknown wipe subcommand: %s", sub)
+		}
 
 	case "import-node":
 		archivePath := requireArg(rest, "import-node <file.tar.gz>")

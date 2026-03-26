@@ -10,10 +10,86 @@ import {
   RefreshCw,
   Video,
   Palette,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Maximize2,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
+
+export type SectionLayout = "center" | "left" | "right" | "wide";
+
+function safeParseConfig(config: string): Record<string, any> {
+  try {
+    return JSON.parse(config || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function getSectionLayout(config: string): SectionLayout {
+  const parsed = safeParseConfig(config);
+  if (["left", "center", "right", "wide"].includes(parsed.layout)) {
+    return parsed.layout;
+  }
+  if (parsed.wide) return "wide";
+  return "center";
+}
+
+export function setSectionLayout(
+  config: string,
+  nextLayout: SectionLayout,
+): string {
+  const parsed = safeParseConfig(config);
+  const updated = { ...parsed, layout: nextLayout };
+  if ("wide" in updated) delete updated.wide;
+  return JSON.stringify(updated);
+}
+
+export const SectionLayoutControls = ({
+  layout,
+  onChange,
+}: {
+  layout: SectionLayout;
+  onChange: (layout: SectionLayout) => void;
+}) => (
+  <div className="section-layout-controls">
+    <button
+      className={`layout-control-btn${layout === "left" ? " active" : ""}`}
+      onClick={() => onChange("left")}
+      aria-pressed={layout === "left"}
+      title="Align left"
+    >
+      <AlignLeft size={14} />
+    </button>
+    <button
+      className={`layout-control-btn${layout === "center" ? " active" : ""}`}
+      onClick={() => onChange("center")}
+      aria-pressed={layout === "center"}
+      title="Align center"
+    >
+      <AlignCenter size={14} />
+    </button>
+    <button
+      className={`layout-control-btn${layout === "right" ? " active" : ""}`}
+      onClick={() => onChange("right")}
+      aria-pressed={layout === "right"}
+      title="Align right"
+    >
+      <AlignRight size={14} />
+    </button>
+    <button
+      className={`layout-control-btn${layout === "wide" ? " active" : ""}`}
+      onClick={() => onChange("wide")}
+      aria-pressed={layout === "wide"}
+      title="Wide"
+    >
+      <Maximize2 size={14} />
+    </button>
+  </div>
+);
 
 /** Inline-editable text — click pencil to edit, Enter/blur to save. */
 export const EditableText = ({
@@ -126,15 +202,22 @@ export const IconPicker = ({
 export const SectionToolbar = ({
   onDelete,
   label,
+  layout,
+  onLayoutChange,
   extra,
 }: {
   onDelete: () => void;
   label: string;
+  layout?: SectionLayout;
+  onLayoutChange?: (layout: SectionLayout) => void;
   extra?: React.ReactNode;
 }) => (
   <div className="landing-section-toolbar">
     <span className="landing-section-toolbar-label">{label}</span>
     <div className="landing-section-toolbar-actions">
+      {layout && onLayoutChange ? (
+        <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
+      ) : null}
       {extra}
       <button
         className="landing-section-toolbar-btn danger"

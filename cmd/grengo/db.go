@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // cmdDBInit creates a database and runs migrations for a client.
@@ -51,7 +52,11 @@ func cmdDBInit(name string) {
 		if err != nil {
 			die("Cannot read migration %s: %v", entry.Name(), err)
 		}
-		if err := dockerExecInput("skaia-postgres", data, "psql", "-U", env.PostgresUser, "-d", dbName); err != nil {
+
+		// Inject shared Postgres password from root .env, if template placeholder exists.
+		sql := strings.ReplaceAll(string(data), "{{PGPASSWORD}}", env.PostgresPassword)
+
+		if err := dockerExecInput("skaia-postgres", []byte(sql), "psql", "-U", env.PostgresUser, "-d", dbName); err != nil {
 			die("Migration %s failed: %v", entry.Name(), err)
 		}
 	}

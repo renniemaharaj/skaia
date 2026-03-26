@@ -4,6 +4,8 @@ import {
   SectionToolbar,
   AddItemButton,
   DeleteItemButton,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 interface Props {
@@ -33,6 +35,13 @@ export const CardGroupBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Card Group"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
       <div className="section-header">

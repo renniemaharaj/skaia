@@ -1109,6 +1109,90 @@
   font-size: 0.75rem;
 }
 
+/* Layout wrapper for all sections */
+.landing-section-layout {
+  position: relative;
+}
+
+.section-layout-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+}
+
+.layout-control-btn {
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.layout-control-btn {
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 2px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.layout-control-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.layout-control-btn.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 15%, var(--bg-color));
+  color: var(--primary-color);
+}
+
+.landing-section-layout-center > * {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.landing-section-layout-left > * {
+  max-width: 1200px !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.landing-section-layout-right > * {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.landing-section-layout-wide > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
 .landing-section-toolbar-label {
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -1635,6 +1719,30 @@
   margin: 0 auto;
   opacity: 0;
   animation: fadeIn 0.6s ease-out 0.3s forwards;
+}
+
+.richtext-block-wide {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.richtext-block-wide .richtext-block-editor {
+  border: none;
+  box-shadow: none;
+}
+
+.richtext-block-wide .renderer-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.richtext-block-wide .renderer-editor .ProseMirror {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0.5rem 0.75rem !important;
 }
 
 .richtext-block-editor {

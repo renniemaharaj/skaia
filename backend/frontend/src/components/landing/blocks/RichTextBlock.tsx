@@ -1,6 +1,10 @@
 import { lazy, Suspense, useState } from "react";
 import type { LandingSection } from "../types";
-import { SectionToolbar } from "../EditControls";
+import {
+  SectionToolbar,
+  getSectionLayout,
+  setSectionLayout,
+} from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the landing bundle small. */
 const Editor = lazy(() => import("../../forum/Editor"));
@@ -29,6 +33,7 @@ export const RichTextBlock = ({
   onDelete,
 }: Props) => {
   const content = getContent(section.config);
+  const layout = getSectionLayout(section.config);
   const [editing, setEditing] = useState(false);
 
   const saveContent = (html: string) => {
@@ -42,14 +47,23 @@ export const RichTextBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Rich Text"
+          layout={layout}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
           extra={
-            <button
-              className="landing-section-toolbar-btn"
-              onClick={() => setEditing(!editing)}
-              title={editing ? "Preview" : "Edit content"}
-            >
-              {editing ? "Preview" : "Edit"}
-            </button>
+            <>
+              <button
+                className="landing-section-toolbar-btn"
+                onClick={() => setEditing(!editing)}
+                title={editing ? "Preview" : "Edit content"}
+              >
+                {editing ? "Preview" : "Edit"}
+              </button>
+            </>
           }
         />
       )}

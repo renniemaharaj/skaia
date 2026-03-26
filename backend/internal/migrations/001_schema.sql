@@ -2,9 +2,9 @@
 
 -- Bootstrap application role
 DO $$ BEGIN
-  CREATE ROLE skaia_user WITH LOGIN PASSWORD 'skaia_password';
+  CREATE ROLE skaia_user WITH LOGIN PASSWORD '{{PGPASSWORD}}';
 EXCEPTION WHEN DUPLICATE_OBJECT THEN
-  ALTER ROLE skaia_user PASSWORD 'skaia_password';
+  ALTER ROLE skaia_user PASSWORD '{{PGPASSWORD}}';
 END $$;
 
 DO $$ BEGIN

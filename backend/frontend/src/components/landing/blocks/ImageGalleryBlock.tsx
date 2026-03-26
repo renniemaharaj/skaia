@@ -12,6 +12,8 @@ import {
   SectionToolbar,
   DeleteItemButton,
   ImagePickerButton,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 interface Album {
@@ -148,6 +150,13 @@ export const ImageGalleryBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Image Gallery"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
 

@@ -12,6 +12,7 @@ import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
 import { RichTextBlock } from "./blocks/RichTextBlock";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { getSectionLayout } from "./EditControls";
 
 interface BlockRendererProps {
   sections: LandingSection[];
@@ -68,17 +69,23 @@ export const BlockRenderer = ({
         .map((section) => {
           const Block = BLOCK_MAP[section.section_type];
           if (!Block) return null;
+          const layout = getSectionLayout(section.config);
+
           return (
-            <Block
+            <div
               key={section.id}
-              section={section}
-              canEdit={canEdit}
-              onUpdate={onUpdateSection}
-              onDelete={onDeleteSection}
-              onItemCreate={onCreateItem}
-              onItemUpdate={onUpdateItem}
-              onItemDelete={onDeleteItem}
-            />
+              className={`landing-section-layout landing-section-layout-${layout}`}
+            >
+              <Block
+                section={section}
+                canEdit={canEdit}
+                onUpdate={onUpdateSection}
+                onDelete={onDeleteSection}
+                onItemCreate={onCreateItem}
+                onItemUpdate={onUpdateItem}
+                onItemDelete={onDeleteItem}
+              />
+            </div>
           );
         })}
 

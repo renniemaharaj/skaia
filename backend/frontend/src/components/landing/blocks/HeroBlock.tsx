@@ -7,6 +7,8 @@ import {
   VideoPickerButton,
   ColorPickerButton,
   VariantCycler,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -159,6 +161,13 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
               <SectionToolbar
                 onDelete={() => onDelete(section.id)}
                 label="Hero"
+                layout={getSectionLayout(section.config)}
+                onLayoutChange={(nextLayout) =>
+                  onUpdate({
+                    ...section,
+                    config: setSectionLayout(section.config, nextLayout),
+                  })
+                }
                 extra={
                   <div className="hero-toolbar-row">
                     <VariantCycler

@@ -116,7 +116,7 @@ func cmdNew(args []string) {
 	dbName := prompt("Database name", name, false)
 
 	// Admin password
-	adminPassword := prompt("Admin password", "changeme", true)
+	adminPassword := prompt("Admin password", "changeme", false)
 
 	// Environment
 	environment := promptChoice("Environment", "production", []string{"production", "development"})
@@ -395,7 +395,7 @@ func cmdBuild() {
 }
 
 // cmdComposeUp starts all infrastructure and enabled client backends.
-func cmdComposeUp() {
+func cmdComposeUp(follow bool) {
 	loadSharedEnv()
 
 	// 1) Build backend image
@@ -455,6 +455,13 @@ func cmdComposeUp() {
 		die("Failed to start nginx: %v", err)
 	}
 	log("All services started (%d client(s))", started)
+
+	if follow {
+		log("Following logs (ctrl-c to stop)…")
+		if err := dockerComposeLogs(composeFile(), "--follow", "--tail", "100"); err != nil {
+			warn("Log follow ended with error: %v", err)
+		}
+	}
 }
 
 // cmdComposeDown stops all client backends and shared infrastructure.
@@ -476,6 +483,48 @@ func cmdComposeDown() {
 		die("Failed to stop shared infrastructure: %v", err)
 	}
 	log("All services stopped")
+}
+
+// cmdWipeAll stops everything and removes all clients, volumes and data.
+func cmdWipeAll() {
+	fmt.Printf("%sThis will irreversibly delete all clients, uploads, and shared service data (postgres/redis).%s\n", colorRed, colorReset)
+	fmt.Printf("%sType 'wipe all' to confirm: %s", colorYellow, colorReset)
+	if !confirmPrompt("wipe all") {
+		die("Aborted")
+	}
+
+	// Stop all containers and infrastructure.
+	cmdComposeDown()
+
+	// Remove all client directories under backends.
+	entries, err := os.ReadDir(backendsDir())
+	if err == nil {
+		for _, e := range entries {
+			if e.IsDir() {
+				path := filepath.Join(backendsDir(), e.Name())
+				if err := os.RemoveAll(path); err != nil {
+					warn("Failed to remove %s: %v", path, err)
+				}
+			}
+		}
+	}
+
+	// Remove shared data directories.
+	for _, d := range []string{"postgres_data", "redis_data"} {
+		path := filepath.Join(ProjectRoot(), d)
+		if err := os.RemoveAll(path); err != nil {
+			warn("Cannot remove %s as current user — retrying with sudo…", path)
+			cmd := exec.Command("sudo", "rm", "-rf", path)
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err2 := cmd.Run(); err2 != nil {
+				warn("Failed to remove %s: %v", path, err2)
+			}
+		}
+	}
+
+	log("Wipe complete. You can now run 'grengo new <name>' to create fresh clients.")
 }
 
 // cmdNginxReload regenerates the nginx config and hot-reloads it.

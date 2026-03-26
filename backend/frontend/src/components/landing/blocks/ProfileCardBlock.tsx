@@ -4,6 +4,8 @@ import {
   EditableText,
   SectionToolbar,
   ImagePickerButton,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 /** Parse section config for checklist items and links. */
@@ -102,6 +104,13 @@ export const ProfileCardBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Profile Card"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
 

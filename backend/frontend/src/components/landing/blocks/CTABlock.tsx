@@ -1,5 +1,10 @@
 import type { LandingSection } from "../types";
-import { EditableText, SectionToolbar } from "../EditControls";
+import {
+  EditableText,
+  SectionToolbar,
+  getSectionLayout,
+  setSectionLayout,
+} from "../EditControls";
 
 interface Props {
   section: LandingSection;
@@ -12,7 +17,17 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   return (
     <section className="cta">
       {canEdit && (
-        <SectionToolbar onDelete={() => onDelete(section.id)} label="CTA" />
+        <SectionToolbar
+          onDelete={() => onDelete(section.id)}
+          label="CTA"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
+        />
       )}
       <div className="cta-content">
         {canEdit ? (

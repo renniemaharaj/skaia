@@ -5,6 +5,8 @@ import {
   AddItemButton,
   DeleteItemButton,
   ImagePickerButton,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 interface Props {
@@ -34,6 +36,13 @@ export const EventHighlightsBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Event Highlights"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
 

@@ -6,6 +6,8 @@ import {
   AddItemButton,
   DeleteItemButton,
   IconPicker,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 interface Props {
@@ -35,6 +37,13 @@ export const StatCardsBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Stat Cards"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
       {(section.heading || canEdit) && (

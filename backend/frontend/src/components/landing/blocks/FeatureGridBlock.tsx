@@ -6,6 +6,8 @@ import {
   AddItemButton,
   DeleteItemButton,
   IconPicker,
+  getSectionLayout,
+  setSectionLayout,
 } from "../EditControls";
 
 interface Props {
@@ -35,6 +37,13 @@ export const FeatureGridBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Feature Grid"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
       <div className="section-header">

@@ -1,5 +1,10 @@
 import type { LandingSection } from "../types";
-import { SectionToolbar, IconPicker } from "../EditControls";
+import {
+  SectionToolbar,
+  IconPicker,
+  getSectionLayout,
+  setSectionLayout,
+} from "../EditControls";
 import { ICON_MAP } from "../iconMap";
 import { Pencil, Plus, Trash2, Check } from "lucide-react";
 import { useState } from "react";
@@ -137,6 +142,13 @@ export const SocialLinksBlock = ({
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
           label="Social Links"
+          layout={getSectionLayout(section.config)}
+          onLayoutChange={(nextLayout) =>
+            onUpdate({
+              ...section,
+              config: setSectionLayout(section.config, nextLayout),
+            })
+          }
         />
       )}
       <div className="social-links">
