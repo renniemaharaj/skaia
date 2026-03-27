@@ -12,6 +12,7 @@ type Repository interface {
 	ListSections() ([]*models.LandingSection, error)
 	GetSection(id int64) (*models.LandingSection, error)
 	CreateSection(s *models.LandingSection) error
+	ShiftSections(fromOrder int) error
 	UpdateSection(s *models.LandingSection) error
 	DeleteSection(id int64) error
 	ReorderSections(ids []int64) error

@@ -1329,6 +1329,13 @@
   background: color-mix(in srgb, var(--primary-color) 6%, transparent);
 }
 
+.landing-add-section-index {
+  margin-left: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .landing-add-section-menu {
   position: absolute;
   top: 100%;

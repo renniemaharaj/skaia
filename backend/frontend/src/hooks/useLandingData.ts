@@ -65,7 +65,15 @@ export function useLandingData(): UseLandingDataReturn {
         "/config/landing/sections",
         { method: "POST", body: JSON.stringify(s) },
       );
-      setSections((prev) => [...prev, created]);
+      setSections((prev) => {
+        const shifted = prev.map((sec) =>
+          sec.display_order >= created.display_order
+            ? { ...sec, display_order: sec.display_order + 1 }
+            : sec,
+        );
+        const merged = [...shifted, created];
+        return merged.sort((a, b) => a.display_order - b.display_order);
+      });
       toast.success("Section added");
     } catch {
       toast.error("Failed to create section");

@@ -60,20 +60,68 @@ export const BlockRenderer = ({
   onUpdateItem,
   onDeleteItem,
 }: BlockRendererProps) => {
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
+
+  const addSection = (type: SectionType, insertIndex: number) => {
+    onCreateSection({
+      display_order: insertIndex + 1,
+      section_type: type,
+      heading: SECTION_TYPE_LABELS[type] ?? type,
+      subheading: "",
+      config: "{}",
+      items: [],
+    });
+    setActiveAddIndex(null);
+  };
+
+  const renderAddSectionTrigger = (insertIndex: number) => (
+    <div className="landing-add-section" key={`add-section-${insertIndex}`}>
+      <button
+        className="landing-add-section-btn"
+        onClick={() =>
+          setActiveAddIndex((prev) =>
+            prev === insertIndex ? null : insertIndex,
+          )
+        }
+      >
+        <Plus size={18} /> Add Section
+        {/* <span className="landing-add-section-index">
+          sect#{insertIndex + 1}
+        </span> */}
+      </button>
+
+      {activeAddIndex === insertIndex && (
+        <div className="landing-add-section-menu">
+          {SECTION_TYPES.map((type: SectionType) => (
+            <button
+              key={type}
+              className="landing-add-section-menu-item"
+              onClick={() => addSection(type, insertIndex)}
+            >
+              {SECTION_TYPE_LABELS[type] ?? type}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const orderedSections = [...sections].sort(
+    (a, b) => a.display_order - b.display_order,
+  );
 
   return (
     <>
-      {sections
-        .sort((a, b) => a.display_order - b.display_order)
-        .map((section) => {
-          const Block = BLOCK_MAP[section.section_type];
-          if (!Block) return null;
-          const layout = getSectionLayout(section.config);
+      {canEdit && renderAddSectionTrigger(0)}
 
-          return (
+      {orderedSections.map((section, i) => {
+        const Block = BLOCK_MAP[section.section_type];
+        if (!Block) return null;
+        const layout = getSectionLayout(section.config);
+
+        return (
+          <div key={section.id}>
             <div
-              key={section.id}
               className={`landing-section-layout landing-section-layout-${layout}`}
             >
               <Block
@@ -86,42 +134,10 @@ export const BlockRenderer = ({
                 onItemDelete={onDeleteItem}
               />
             </div>
-          );
-        })}
-
-      {canEdit && (
-        <div className="landing-add-section">
-          <button
-            className="landing-add-section-btn"
-            onClick={() => setShowAddMenu(!showAddMenu)}
-          >
-            <Plus size={18} /> Add Section
-          </button>
-          {showAddMenu && (
-            <div className="landing-add-section-menu">
-              {SECTION_TYPES.map((type: SectionType) => (
-                <button
-                  key={type}
-                  className="landing-add-section-menu-item"
-                  onClick={() => {
-                    onCreateSection({
-                      display_order: sections.length + 1,
-                      section_type: type,
-                      heading: SECTION_TYPE_LABELS[type] ?? type,
-                      subheading: "",
-                      config: "{}",
-                      items: [],
-                    });
-                    setShowAddMenu(false);
-                  }}
-                >
-                  {SECTION_TYPE_LABELS[type] ?? type}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+            {canEdit && renderAddSectionTrigger(i + 1)}
+          </div>
+        );
+      })}
     </>
   );
 };

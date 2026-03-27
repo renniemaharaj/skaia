@@ -131,6 +131,14 @@ func (r *sqlRepository) DeleteSection(id int64) error {
 	return err
 }
 
+func (r *sqlRepository) ShiftSections(fromOrder int) error {
+	_, err := r.db.Exec(
+		`UPDATE landing_sections SET display_order = display_order + 1, updated_at=CURRENT_TIMESTAMP WHERE display_order >= $1`,
+		fromOrder,
+	)
+	return err
+}
+
 func (r *sqlRepository) ReorderSections(ids []int64) error {
 	tx, err := r.db.Begin()
 	if err != nil {

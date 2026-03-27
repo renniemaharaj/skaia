@@ -36,6 +36,26 @@ func (s *Service) CreateSection(sec *models.LandingSection) error {
 	if sec.Config == "" {
 		sec.Config = "{}"
 	}
+
+	// Ensure a sane order (1-based), and gracefully clamp overflow/underflow.
+	sections, err := s.repo.ListSections()
+	if err != nil {
+		return err
+	}
+
+	n := len(sections)
+	if sec.DisplayOrder < 1 {
+		sec.DisplayOrder = 1
+	}
+	if sec.DisplayOrder > n+1 {
+		sec.DisplayOrder = n + 1
+	}
+
+	// Shift existing sections down from the insertion point.
+	if err := s.repo.ShiftSections(sec.DisplayOrder); err != nil {
+		return err
+	}
+
 	return s.repo.CreateSection(sec)
 }
 
