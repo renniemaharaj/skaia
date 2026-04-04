@@ -88,6 +88,42 @@ func (s *Service) VerifyPasscode(p1, p2 string) bool {
 }
 
 // ---------------------------------------------------------------------------
+// Performance stats
+// ---------------------------------------------------------------------------
+
+// ContainerStats holds metrics for a single container.
+type ContainerStats struct {
+	Name     string  `json:"name"`
+	CPU      float64 `json:"cpu_percent"`
+	MemUsage string  `json:"mem_usage"`
+	MemLimit string  `json:"mem_limit"`
+	MemPct   float64 `json:"mem_percent"`
+	NetIO    string  `json:"net_io"`
+	BlockIO  string  `json:"block_io"`
+	PIDs     int     `json:"pids"`
+}
+
+// Stats retrieves Docker container stats from the grengo API.
+func (s *Service) Stats() ([]ContainerStats, error) {
+	resp, err := s.client.Get(s.apiURL + "/stats")
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, s.readAPIError(resp)
+	}
+	var stats []ContainerStats
+	if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+		return nil, fmt.Errorf("decode stats: %w", err)
+	}
+	if stats == nil {
+		stats = []ContainerStats{}
+	}
+	return stats, nil
+}
+
+// ---------------------------------------------------------------------------
 // Site listing
 // ---------------------------------------------------------------------------
 
@@ -277,6 +313,48 @@ func (s *Service) ComposeUp(build bool) error {
 // ComposeDown stops all client backends and shared infrastructure.
 func (s *Service) ComposeDown() error {
 	return s.execOK("compose", "down")
+}
+
+// ---------------------------------------------------------------------------
+// Env file management
+// ---------------------------------------------------------------------------
+
+// GetSiteEnv retrieves the raw .env file content for a site.
+func (s *Service) GetSiteEnv(name string) (string, error) {
+	resp, err := s.client.Get(fmt.Sprintf("%s/env/%s", s.apiURL, name))
+	if err != nil {
+		return "", fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", s.readAPIError(resp)
+	}
+	var result struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode env: %w", err)
+	}
+	return result.Content, nil
+}
+
+// UpdateSiteEnv overwrites the .env file for a site.
+func (s *Service) UpdateSiteEnv(name, content string) error {
+	body, _ := json.Marshal(map[string]string{"content": content})
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/env/%s", s.apiURL, name), bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return s.readAPIError(resp)
+	}
+	return nil
 }
 
 // ---------------------------------------------------------------------------
