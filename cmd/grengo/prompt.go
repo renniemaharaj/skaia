@@ -15,10 +15,23 @@ func initScanner() {
 	}
 }
 
+// nonInteractive returns true when GRENGO_NONINTERACTIVE is set, which causes
+// prompts to return their default value and confirmations to auto-accept.
+func nonInteractive() bool {
+	return os.Getenv("GRENGO_NONINTERACTIVE") != ""
+}
+
 // prompt asks the user for input with an optional default. If secret is true,
 // the input is still read from stdin (Go stdlib doesn't easily suppress echo
 // without cgo/term, so we keep it simple).
 func prompt(label, defaultVal string, secret bool) string {
+	if nonInteractive() {
+		if defaultVal != "" {
+			return defaultVal
+		}
+		// No default and non-interactive — can't proceed.
+		die("Cannot prompt for %q in non-interactive mode (no default)", label)
+	}
 	initScanner()
 	for {
 		if defaultVal != "" {
@@ -46,6 +59,9 @@ func prompt(label, defaultVal string, secret bool) string {
 
 // promptChoice asks the user to choose from a set of options.
 func promptChoice(label, defaultVal string, options []string) string {
+	if nonInteractive() {
+		return defaultVal
+	}
 	initScanner()
 	optsStr := strings.Join(options, "/")
 	for {
@@ -66,6 +82,9 @@ func promptChoice(label, defaultVal string, options []string) string {
 
 // confirmPrompt asks the user to type a specific string to confirm.
 func confirmPrompt(expected string) bool {
+	if nonInteractive() {
+		return true
+	}
 	initScanner()
 	fmt.Print("Type the client name to confirm: ")
 	scanner.Scan()

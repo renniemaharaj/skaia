@@ -1,0 +1,316 @@
+.grengo-dashboard {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.grengo-dashboard h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* ── Passcode gate ──────────────────────────────────────────────────────── */
+
+.grengo-gate {
+  max-width: 420px;
+  margin: 4rem auto;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+}
+
+.grengo-gate h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+  color: var(--text-primary);
+}
+
+.grengo-gate p {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #888);
+  margin-bottom: 1.25rem;
+}
+
+.grengo-gate label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.grengo-gate input {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.grengo-gate .error {
+  color: var(--error-color, #e74c3c);
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Toolbar ────────────────────────────────────────────────────────────── */
+
+.grengo-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+/* ── Sites table ────────────────────────────────────────────────────────── */
+
+.grengo-table-wrap {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+}
+
+.grengo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.grengo-table th,
+.grengo-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.grengo-table th {
+  background: var(--bg-color);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.grengo-table tr:last-child td {
+  border-bottom: none;
+}
+
+.grengo-table .badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-enabled {
+  background: #d4edda;
+  color: #155724;
+}
+.badge-disabled {
+  background: #fff3cd;
+  color: #856404;
+}
+.badge-running {
+  background: #cce5ff;
+  color: #004085;
+}
+.badge-stopped {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.grengo-table .domains {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+}
+
+.grengo-table .actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.grengo-table .actions button {
+  font-size: 0.75rem;
+}
+
+/* ── Create form ────────────────────────────────────────────────────────── */
+
+.grengo-create-form {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.grengo-create-form h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.grengo-create-form .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.grengo-create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.grengo-create-form input,
+.grengo-create-form select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.grengo-create-form .form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+/* ── Import form ────────────────────────────────────────────────────────── */
+
+.grengo-import-form {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.grengo-import-form h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.grengo-import-form .import-fields {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.grengo-import-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.grengo-import-form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+/* ── Buttons (shared) ───────────────────────────────────────────────────── */
+
+.grengo-dashboard .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.grengo-dashboard .btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.grengo-dashboard .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.grengo-dashboard .btn-primary {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+.grengo-dashboard .btn-primary:hover {
+  opacity: 0.9;
+}
+
+.grengo-dashboard .btn-danger {
+  color: var(--error-color, #e74c3c);
+  border-color: var(--error-color, #e74c3c);
+}
+
+.grengo-dashboard .btn-danger:hover {
+  background: var(--error-color, #e74c3c);
+  color: #fff;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────── */
+
+.grengo-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary, #888);
+  font-size: 0.9rem;
+}
+
+/* ── Lock button ────────────────────────────────────────────────────────── */
+
+.grengo-lock-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .grengo-create-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grengo-table {
+    font-size: 0.78rem;
+  }
+
+  .grengo-table th,
+  .grengo-table td {
+    padding: 0.4rem 0.5rem;
+  }
+}

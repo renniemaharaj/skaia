@@ -257,6 +257,8 @@ services:
       - .env
     volumes:
       - ./uploads:/app/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - skaia-network
     healthcheck:

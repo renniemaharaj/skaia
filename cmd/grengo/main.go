@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 const usageText = `grengo — Multi-tenant management CLI for Skaia
@@ -29,6 +30,15 @@ Commands:
   import <file.tar.gz> [--name <n>] [--port <p>]  Import a client archive onto this node
   export-node [-o <file.tar.gz>]             Export ALL clients as a single node archive
   import-node <file.tar.gz>                  Restore a full node archive onto this node
+
+  api start [--port <p>]                     Start the internal API server (default: 9100)
+  api stop                                   Stop the internal API server
+  api status                                 Check if the internal API server is running
+
+  passcode set [<p1> <p2>]                   Set the API passcode pair (enables remote management)
+  passcode verify [<p1> <p2>]                Verify a passcode pair against stored .pcode
+  passcode clear                             Remove the passcode (disables remote management)
+  passcode status                            Show whether a passcode is configured
 
 Examples:
   grengo new                           # fully interactive
@@ -216,6 +226,45 @@ func main() {
 	case "import-node":
 		archivePath := requireArg(rest, "import-node <file.tar.gz>")
 		cmdImportNode(archivePath)
+
+	case "api":
+		sub := requireArg(rest, "api <start|stop|status>")
+		switch sub {
+		case "start":
+			port := DefaultAPIPort
+			for i := 1; i < len(rest); i++ {
+				if rest[i] == "--port" && i+1 < len(rest) {
+					i++
+					p, err := strconv.Atoi(rest[i])
+					if err != nil {
+						die("Invalid port: %s", rest[i])
+					}
+					port = p
+				}
+			}
+			cmdAPIStart(port)
+		case "stop":
+			cmdAPIStop()
+		case "status":
+			cmdAPIStatus()
+		default:
+			die("Unknown api subcommand: %s", sub)
+		}
+
+	case "passcode":
+		sub := requireArg(rest, "passcode <set|verify|clear|status>")
+		switch sub {
+		case "set":
+			cmdPasscodeSet(rest[1:])
+		case "verify":
+			cmdPasscodeVerify(rest[1:])
+		case "clear":
+			cmdPasscodeClear()
+		case "status":
+			cmdPasscodeStatus()
+		default:
+			die("Unknown passcode subcommand: %s", sub)
+		}
 
 	case "help", "--help", "-h":
 		usage()

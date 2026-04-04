@@ -22,6 +22,7 @@ import (
 	"github.com/skaia/backend/internal/auth"
 	icfg "github.com/skaia/backend/internal/config"
 	iforum "github.com/skaia/backend/internal/forum"
+	igrengo "github.com/skaia/backend/internal/grengo"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
@@ -442,6 +443,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo)
 		ipage.NewHandler(pageSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		// Grengo multi-tenant management API.
+		grengoAPI := os.Getenv("GRENGO_API_URL")
+		if grengoAPI != "" {
+			grengoSvc := igrengo.NewService(grengoAPI)
+			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
+		}
 	})
 
 	// ── SSR: serve index.html with injected SEO head tags ──────────────

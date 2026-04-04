@@ -14,6 +14,7 @@ import UserDiscovery from "./users/index.tsx";
 import CategoryThreadsPage from "./threads/categories/index.tsx";
 import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
+import GrengoPage from "./admin/grengo.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
@@ -40,6 +41,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta", element: <AdminMetaSettings /> },
+  { path: "admin/grengo", element: <GrengoPage /> },
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
