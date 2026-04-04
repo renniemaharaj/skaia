@@ -1,0 +1,106 @@
+.grengo-session-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.grengo-session-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow);
+}
+
+.grengo-session-dialog h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.grengo-session-dialog p {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #888);
+}
+
+.grengo-session-dialog label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.grengo-session-dialog input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.grengo-session-error {
+  background: rgba(220, 38, 38, 0.15);
+  color: var(--error-color, #e74c3c);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.grengo-session-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.grengo-session-actions .btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.grengo-session-actions .btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.grengo-session-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.grengo-session-actions .btn-primary {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+.grengo-session-actions .btn-primary:hover {
+  opacity: 0.9;
+}

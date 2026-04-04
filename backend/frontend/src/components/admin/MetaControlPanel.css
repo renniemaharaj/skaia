@@ -1,7 +1,7 @@
 .meta-control-panel {
-  max-width: 640px;
+  width: 800px;
   margin: 2rem auto;
-  padding: 1.5rem;
+  padding: 2rem;
   background: var(--bg-secondary);
   border-radius: 12px;
   box-shadow: var(--shadow);

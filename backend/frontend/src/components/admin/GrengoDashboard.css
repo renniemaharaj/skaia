@@ -72,7 +72,8 @@
 .grengo-table-wrap {
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: auto;
+  max-height: 420px;
   background: var(--bg-secondary);
   box-shadow: var(--shadow);
 }
@@ -97,6 +98,9 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .grengo-table tr:last-child td {
@@ -288,6 +292,149 @@
   padding: 3rem 1rem;
   color: var(--text-secondary, #888);
   font-size: 0.9rem;
+}
+
+/* ── Env editor ─────────────────────────────────────────────────────────── */
+
+.grengo-env-editor {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.grengo-env-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.grengo-env-header h2 {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.grengo-env-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.grengo-env-unsaved {
+  font-size: 0.75rem;
+  color: var(--warning-color, #f39c12);
+  font-weight: 600;
+}
+
+/* ── Performance metrics ────────────────────────────────────────────────── */
+
+.grengo-stats {
+  margin-bottom: 1.5rem;
+}
+
+.grengo-stats h2 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.grengo-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.grengo-stat-card {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.grengo-stat-overview {
+  grid-column: 1 / -1;
+  background: var(--bg-color);
+  border-color: var(--primary-color);
+}
+
+.stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.stat-card-header strong {
+  font-size: 0.9rem;
+}
+
+.stat-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #888);
+}
+
+.stat-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #888);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-color);
+  margin-top: 0.15rem;
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.bar-ok {
+  background: #27ae60;
+}
+
+.bar-warning {
+  background: #f39c12;
+}
+
+.bar-danger {
+  background: var(--error-color, #e74c3c);
 }
 
 /* ── Lock button ────────────────────────────────────────────────────────── */

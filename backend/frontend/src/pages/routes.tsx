@@ -41,11 +41,13 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta", element: <AdminMetaSettings /> },
-  { path: "admin/grengo", element: <GrengoPage /> },
+  { path: "tmp/:sessionId", element: <GrengoPage /> },
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
   { path: "page/:slug", element: <PageBuilder /> },
+  { path: "privacy", element: <PageBuilder slug="privacy" /> },
+  { path: "tos", element: <PageBuilder slug="tos" /> },
   { path: "*", element: <NotFoundPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },

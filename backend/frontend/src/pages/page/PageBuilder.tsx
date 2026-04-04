@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { Settings } from "lucide-react";
 import type {
   LandingSection,
   LandingItem,
@@ -287,6 +288,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   return (
     <div className="landing-container">
+      {isEditable && !slug && (
+        <div className="page-admin-bar">
+          <Link to="/admin/meta" className="page-admin-btn">
+            <Settings size={16} />
+            Site Meta
+          </Link>
+        </div>
+      )}
       <BlockRenderer
         sections={sections}
         canEdit={isEditable}

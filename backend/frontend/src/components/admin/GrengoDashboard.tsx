@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
+import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -26,17 +28,30 @@ interface CreateSiteParams {
   features: string;
 }
 
+interface ContainerStats {
+  name: string;
+  cpu_percent: number;
+  mem_usage: string;
+  mem_limit: string;
+  mem_percent: number;
+  net_io: string;
+  block_io: string;
+  pids: number;
+}
+
 const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
+
+// Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
+const KEEPALIVE_MS = 2 * 60 * 1000;
 
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function GrengoDashboard() {
-  // Passcode state — stored in memory only.
-  const [p1, setP1] = useState("");
-  const [p2, setP2] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [authError, setAuthError] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const navigate = useNavigate();
+
+  // Session validation state.
+  const [sessionValid, setSessionValid] = useState<boolean | null>(null);
 
   // Dashboard state.
   const [sites, setSites] = useState<SiteInfo[]>([]);
@@ -50,58 +65,85 @@ export default function GrengoDashboard() {
   // Busy state per-site for actions.
   const [busy, setBusy] = useState<Record<string, boolean>>({});
 
-  // ── Passcode headers helper ──────────────────────────────────────────
+  // Performance metrics.
+  const [stats, setStats] = useState<ContainerStats[]>([]);
+  const [statsLoading, setStatsLoading] = useState(false);
 
-  const passcodeHeaders = useCallback(
-    (): Record<string, string> => ({
-      "X-Grengo-P1": p1,
-      "X-Grengo-P2": p2,
-    }),
-    [p1, p2],
-  );
+  // Env editor.
+  const [envSite, setEnvSite] = useState<string | null>(null);
+  const [envContent, setEnvContent] = useState("");
+  const [envDraft, setEnvDraft] = useState("");
+  const [envLoading, setEnvLoading] = useState(false);
+  const [envSaving, setEnvSaving] = useState(false);
+  const [envError, setEnvError] = useState("");
+
+  const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Session-scoped API helper ────────────────────────────────────────
+
+  const apiBase = `/grengo/s/${sessionId}`;
 
   const grengoRequest = useCallback(
     async <T,>(endpoint: string, opts: RequestInit = {}): Promise<T> => {
-      const headers = {
-        ...passcodeHeaders(),
-        ...(opts.headers as Record<string, string>),
-      };
-      return apiRequest<T>(endpoint, { ...opts, headers });
+      return apiRequest<T>(`${apiBase}${endpoint}`, opts);
     },
-    [passcodeHeaders],
+    [apiBase],
   );
 
-  // ── Auth ─────────────────────────────────────────────────────────────
+  // ── Session validation & keep-alive ──────────────────────────────────
 
-  const handleUnlock = async () => {
-    setAuthLoading(true);
-    setAuthError("");
-    try {
-      const res = await apiRequest<{ ok?: boolean; error?: string }>(
-        "/grengo/auth",
-        {
-          method: "POST",
-          body: JSON.stringify({ p1, p2 }),
-        },
-      );
-      if (!res || res.error) {
-        setAuthError(res?.error || "Unexpected server response");
-        return;
-      }
-      setUnlocked(true);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Authentication failed";
-      setAuthError(msg);
-    } finally {
-      setAuthLoading(false);
+  const validateSession = useCallback(async () => {
+    if (!sessionId) {
+      setSessionValid(false);
+      return false;
     }
-  };
+    try {
+      const res = await apiRequest<{ valid?: boolean }>(`${apiBase}/validate`);
+      if (res?.valid) {
+        setSessionValid(true);
+        return true;
+      }
+    } catch {
+      // session expired or invalid
+    }
+    setSessionValid(false);
+    return false;
+  }, [sessionId, apiBase]);
 
-  const handleLock = () => {
-    setUnlocked(false);
-    setP1("");
-    setP2("");
-    setSites([]);
+  // Validate on mount.
+  useEffect(() => {
+    validateSession();
+  }, [validateSession]);
+
+  // Redirect to home when session becomes invalid.
+  useEffect(() => {
+    if (sessionValid === false) {
+      navigate("/", { replace: true });
+    }
+  }, [sessionValid, navigate]);
+
+  // Keep-alive interval.
+  useEffect(() => {
+    if (sessionValid) {
+      keepAliveRef.current = setInterval(async () => {
+        const ok = await validateSession();
+        if (!ok) navigate("/", { replace: true });
+      }, KEEPALIVE_MS);
+    }
+    return () => {
+      if (keepAliveRef.current) clearInterval(keepAliveRef.current);
+    };
+  }, [sessionValid, validateSession, navigate]);
+
+  // ── Lock / end session ───────────────────────────────────────────────
+
+  const handleLock = async () => {
+    try {
+      await apiRequest(`${apiBase}`, { method: "DELETE" });
+    } catch {
+      // best-effort
+    }
+    navigate("/", { replace: true });
   };
 
   // ── Fetch sites ──────────────────────────────────────────────────────
@@ -110,7 +152,7 @@ export default function GrengoDashboard() {
     setLoading(true);
     setError("");
     try {
-      const data = await grengoRequest<SiteInfo[]>("/grengo/sites");
+      const data = await grengoRequest<SiteInfo[]>("/sites");
       setSites(Array.isArray(data) ? data : []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load sites");
@@ -120,8 +162,26 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   useEffect(() => {
-    if (unlocked) fetchSites();
-  }, [unlocked, fetchSites]);
+    if (sessionValid) fetchSites();
+  }, [sessionValid, fetchSites]);
+
+  // ── Fetch stats ──────────────────────────────────────────────────────
+
+  const fetchStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const data = await grengoRequest<ContainerStats[]>("/stats");
+      setStats(Array.isArray(data) ? data : []);
+    } catch {
+      // non-critical — silently fail
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [grengoRequest]);
+
+  useEffect(() => {
+    if (sessionValid) fetchStats();
+  }, [sessionValid, fetchStats]);
 
   // ── Site actions ─────────────────────────────────────────────────────
 
@@ -132,7 +192,7 @@ export default function GrengoDashboard() {
   ) => {
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      await grengoRequest(`/grengo/sites/${name}/${action}`, { method });
+      await grengoRequest(`/sites/${name}/${action}`, { method });
       await fetchSites();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Action failed");
@@ -145,7 +205,7 @@ export default function GrengoDashboard() {
     if (!confirm(`Permanently delete site "${name}" and all its data?`)) return;
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      await grengoRequest(`/grengo/sites/${name}`, { method: "DELETE" });
+      await grengoRequest(`/sites/${name}`, { method: "DELETE" });
       await fetchSites();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Delete failed");
@@ -158,9 +218,8 @@ export default function GrengoDashboard() {
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
       const token = localStorage.getItem("auth.accessToken");
-      const res = await fetch(`/api/grengo/sites/${name}/export`, {
+      const res = await fetch(`/api${apiBase}/sites/${name}/export`, {
         headers: {
-          ...passcodeHeaders(),
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
@@ -186,40 +245,57 @@ export default function GrengoDashboard() {
     }
   };
 
-  // ── Render: Passcode gate ────────────────────────────────────────────
+  // ── Env editor ───────────────────────────────────────────────────────
 
-  if (!unlocked) {
+  const openEnvEditor = async (name: string) => {
+    setEnvSite(name);
+    setEnvLoading(true);
+    setEnvError("");
+    try {
+      const data = await grengoRequest<{ content: string }>(
+        `/sites/${name}/env`,
+      );
+      setEnvContent(data.content);
+      setEnvDraft(data.content);
+    } catch (e: unknown) {
+      setEnvError(e instanceof Error ? e.message : "Failed to load .env");
+    } finally {
+      setEnvLoading(false);
+    }
+  };
+
+  const closeEnvEditor = () => {
+    setEnvSite(null);
+    setEnvContent("");
+    setEnvDraft("");
+    setEnvError("");
+  };
+
+  const saveEnv = async () => {
+    if (!envSite) return;
+    setEnvSaving(true);
+    setEnvError("");
+    try {
+      await grengoRequest(`/sites/${envSite}/env`, {
+        method: "PUT",
+        body: JSON.stringify({ content: envDraft }),
+      });
+      setEnvContent(envDraft);
+    } catch (e: unknown) {
+      setEnvError(e instanceof Error ? e.message : "Failed to save .env");
+    } finally {
+      setEnvSaving(false);
+    }
+  };
+
+  const envDirty = envDraft !== envContent;
+
+  // ── Render: Loading / validating ──────────────────────────────────────
+
+  if (sessionValid === null) {
     return (
       <div className="grengo-gate">
-        <h2>Grengo Dashboard</h2>
-        <p>Enter your server passcode to unlock remote management.</p>
-        {authError && <div className="error">{authError}</div>}
-        <label>
-          Passcode Part 1 (password)
-          <input
-            type="password"
-            value={p1}
-            onChange={(e) => setP1(e.target.value)}
-            autoFocus
-          />
-        </label>
-        <label>
-          Passcode Part 2 (salt)
-          <input
-            type="password"
-            value={p2}
-            onChange={(e) => setP2(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
-          />
-        </label>
-        <button
-          className="btn btn-primary"
-          onClick={handleUnlock}
-          disabled={authLoading || !p1 || !p2}
-          style={{ marginTop: "0.75rem", width: "100%" }}
-        >
-          {authLoading ? "Verifying…" : "Unlock"}
-        </button>
+        <p>Validating session…</p>
       </div>
     );
   }
@@ -232,7 +308,7 @@ export default function GrengoDashboard() {
 
       <div className="grengo-lock-bar">
         <button className="btn" onClick={handleLock}>
-          Lock
+          End Session
         </button>
       </div>
 
@@ -256,15 +332,22 @@ export default function GrengoDashboard() {
         >
           {showImport ? "Cancel" : "Import"}
         </button>
-        <button className="btn" onClick={fetchSites} disabled={loading}>
-          {loading ? "Refreshing…" : "Refresh"}
+        <button
+          className="btn"
+          onClick={() => {
+            fetchSites();
+            fetchStats();
+          }}
+          disabled={loading || statsLoading}
+        >
+          {loading || statsLoading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
       {/* Create form */}
       {showCreate && (
         <CreateSiteForm
-          passcodeHeaders={passcodeHeaders()}
+          apiBase={apiBase}
           onCreated={() => {
             setShowCreate(false);
             fetchSites();
@@ -275,7 +358,7 @@ export default function GrengoDashboard() {
       {/* Import form */}
       {showImport && (
         <ImportSiteForm
-          passcodeHeaders={passcodeHeaders()}
+          apiBase={apiBase}
           onImported={() => {
             setShowImport(false);
             fetchSites();
@@ -367,6 +450,13 @@ export default function GrengoDashboard() {
                     )}
                     <button
                       className="btn"
+                      onClick={() => openEnvEditor(site.name)}
+                      disabled={busy[site.name]}
+                    >
+                      Env
+                    </button>
+                    <button
+                      className="btn"
                       onClick={() => handleExport(site.name)}
                       disabled={busy[site.name]}
                     >
@@ -386,6 +476,155 @@ export default function GrengoDashboard() {
           </table>
         </div>
       )}
+
+      {/* Env Editor */}
+      {envSite && (
+        <div className="grengo-env-editor">
+          <div className="grengo-env-header">
+            <h2>.env — {envSite}</h2>
+            <div className="grengo-env-actions">
+              {envDirty && (
+                <span className="grengo-env-unsaved">unsaved changes</span>
+              )}
+              <button
+                className="btn btn-primary"
+                onClick={saveEnv}
+                disabled={envSaving || !envDirty}
+              >
+                {envSaving ? "Saving…" : "Save"}
+              </button>
+              <button className="btn" onClick={closeEnvEditor}>
+                Close
+              </button>
+            </div>
+          </div>
+          {envError && <div className="error">{envError}</div>}
+          {envLoading ? (
+            <div className="grengo-empty">Loading .env…</div>
+          ) : (
+            <MonacoEditor
+              height={360}
+              language="ini"
+              code={envContent}
+              onChange={setEnvDraft}
+              editable
+            />
+          )}
+        </div>
+      )}
+
+      {/* Performance Metrics */}
+      {stats.length > 0 && (
+        <div className="grengo-stats">
+          <h2>Performance Metrics</h2>
+          <div className="grengo-stats-cards">
+            <StatsOverview stats={stats} />
+            {stats.map((s) => (
+              <div className="grengo-stat-card" key={s.name}>
+                <div className="stat-card-header">
+                  <strong>{s.name}</strong>
+                </div>
+                <div className="stat-card-grid">
+                  <div className="stat-item">
+                    <span className="stat-label">CPU</span>
+                    <span className="stat-value">
+                      {s.cpu_percent.toFixed(1)}%
+                    </span>
+                    <div className="stat-bar">
+                      <div
+                        className={`stat-bar-fill ${barClass(s.cpu_percent)}`}
+                        style={{ width: `${Math.min(s.cpu_percent, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Memory</span>
+                    <span className="stat-value">
+                      {s.mem_usage} / {s.mem_limit}
+                    </span>
+                    <div className="stat-bar">
+                      <div
+                        className={`stat-bar-fill ${barClass(s.mem_percent)}`}
+                        style={{ width: `${Math.min(s.mem_percent, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Net I/O</span>
+                    <span className="stat-value">{s.net_io}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">Block I/O</span>
+                    <span className="stat-value">{s.block_io}</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-label">PIDs</span>
+                    <span className="stat-value">{s.pids}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {statsLoading && stats.length === 0 && (
+        <div className="grengo-empty">Loading metrics…</div>
+      )}
+    </div>
+  );
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function barClass(pct: number): string {
+  if (pct >= 80) return "bar-danger";
+  if (pct >= 50) return "bar-warning";
+  return "bar-ok";
+}
+
+function parseMemMB(s: string): number {
+  const m = s.match(/([\d.]+)\s*(GiB|MiB|KiB|GB|MB|KB)/i);
+  if (!m) return 0;
+  const val = parseFloat(m[1]);
+  const unit = m[2].toLowerCase();
+  if (unit === "gib" || unit === "gb") return val * 1024;
+  if (unit === "kib" || unit === "kb") return val / 1024;
+  return val; // MiB / MB
+}
+
+// ── Stats Overview ──────────────────────────────────────────────────────────
+
+function StatsOverview({ stats }: { stats: ContainerStats[] }) {
+  const totalCPU = stats.reduce((sum, s) => sum + s.cpu_percent, 0);
+  const totalMemMB = stats.reduce((sum, s) => sum + parseMemMB(s.mem_usage), 0);
+  const totalPIDs = stats.reduce((sum, s) => sum + s.pids, 0);
+
+  const formatMem = (mb: number) => {
+    if (mb >= 1024) return `${(mb / 1024).toFixed(2)} GiB`;
+    return `${mb.toFixed(1)} MiB`;
+  };
+
+  return (
+    <div className="grengo-stat-card grengo-stat-overview">
+      <div className="stat-card-header">
+        <strong>Totals</strong>
+        <span className="stat-count">{stats.length} containers</span>
+      </div>
+      <div className="stat-card-grid">
+        <div className="stat-item">
+          <span className="stat-label">CPU</span>
+          <span className="stat-value">{totalCPU.toFixed(1)}%</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">Memory</span>
+          <span className="stat-value">{formatMem(totalMemMB)}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">PIDs</span>
+          <span className="stat-value">{totalPIDs}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -393,10 +632,10 @@ export default function GrengoDashboard() {
 // ── Create Site Form ───────────────────────────────────────────────────────
 
 function CreateSiteForm({
-  passcodeHeaders,
+  apiBase,
   onCreated,
 }: {
-  passcodeHeaders: Record<string, string>;
+  apiBase: string;
   onCreated: () => void;
 }) {
   const [form, setForm] = useState<CreateSiteParams>({
@@ -421,9 +660,8 @@ function CreateSiteForm({
     setSaving(true);
     setError("");
     try {
-      await apiRequest("/grengo/sites", {
+      await apiRequest(`${apiBase}/sites`, {
         method: "POST",
-        headers: passcodeHeaders,
         body: JSON.stringify({
           ...form,
           domains: domainsText
@@ -534,10 +772,10 @@ function CreateSiteForm({
 // ── Import Site Form ───────────────────────────────────────────────────────
 
 function ImportSiteForm({
-  passcodeHeaders,
+  apiBase,
   onImported,
 }: {
-  passcodeHeaders: Record<string, string>;
+  apiBase: string;
   onImported: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -557,10 +795,9 @@ function ImportSiteForm({
       if (port) fd.append("port", port);
 
       const token = localStorage.getItem("auth.accessToken");
-      const res = await fetch("/api/grengo/import", {
+      const res = await fetch(`/api${apiBase}/import`, {
         method: "POST",
         headers: {
-          ...passcodeHeaders,
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: fd,

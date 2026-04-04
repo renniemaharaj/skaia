@@ -8,6 +8,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { useSiteConfig } from "./hooks/useSiteConfig";
 import SiteHead from "./components/SiteHead";
 import { useFeatures } from "./hooks/useFeatures";
+import GrengoSessionDialog from "./components/admin/GrengoSessionDialog";
 
 function SiteConfigLoader({ children }: { children: React.ReactNode }) {
   const { branding, seo } = useSiteConfig();
@@ -35,6 +36,7 @@ export default function App() {
                 </Routes>
               </ErrorBoundary>
             </Layout>
+            <GrengoSessionDialog />
           </SiteConfigLoader>
         </ThemeProvider>
       </Router>
