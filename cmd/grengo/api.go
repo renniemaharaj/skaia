@@ -58,6 +58,9 @@ func cmdAPIStart(port int) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", apiHealth)
 	mux.HandleFunc("GET /sites", apiListSites)
+	mux.HandleFunc("GET /stats", apiStats)
+	mux.HandleFunc("GET /env/{name}", apiGetEnv)
+	mux.HandleFunc("PUT /env/{name}", apiPutEnv)
 	mux.HandleFunc("POST /exec", apiExec)
 	mux.HandleFunc("GET /export/{name}", apiExportSite)
 	mux.HandleFunc("POST /import", apiImportSite)
@@ -231,6 +234,255 @@ func apiListSites(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiJSON(w, http.StatusOK, sites)
+}
+
+// containerStats holds metrics for a single container.
+type containerStats struct {
+	Name     string  `json:"name"`
+	CPU      float64 `json:"cpu_percent"`
+	MemUsage string  `json:"mem_usage"`
+	MemLimit string  `json:"mem_limit"`
+	MemPct   float64 `json:"mem_percent"`
+	NetIO    string  `json:"net_io"`
+	BlockIO  string  `json:"block_io"`
+	PIDs     int     `json:"pids"`
+}
+
+// apiGetEnv returns the raw .env file content for a site.
+func apiGetEnv(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		apiError(w, http.StatusBadRequest, "name required")
+		return
+	}
+
+	envFile := filepath.Join(backendsDir(), name, ".env")
+	data, err := os.ReadFile(envFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			apiError(w, http.StatusNotFound, fmt.Sprintf("site '%s' not found", name))
+			return
+		}
+		apiError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{"content": string(data)})
+}
+
+// apiPutEnv overwrites the .env file for a site.
+func apiPutEnv(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		apiError(w, http.StatusBadRequest, "name required")
+		return
+	}
+
+	envFile := filepath.Join(backendsDir(), name, ".env")
+	if _, err := os.Stat(envFile); os.IsNotExist(err) {
+		apiError(w, http.StatusNotFound, fmt.Sprintf("site '%s' not found", name))
+		return
+	}
+
+	var body struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		apiError(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+
+	if err := os.WriteFile(envFile, []byte(body.Content), 0644); err != nil {
+		apiError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// dockerAPIClient talks to the Docker Engine API via the Unix socket.
+var dockerAPIClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+			return net.Dial("unix", "/var/run/docker.sock")
+		},
+	},
+	Timeout: 10 * time.Second,
+}
+
+// dockerStatsJSON is the raw structure returned by GET /containers/{id}/stats?stream=false.
+type dockerStatsJSON struct {
+	Read     string `json:"read"`
+	CPUStats struct {
+		CPUUsage struct {
+			TotalUsage uint64 `json:"total_usage"`
+		} `json:"cpu_usage"`
+		SystemCPUUsage uint64 `json:"system_cpu_usage"`
+		OnlineCPUs     int    `json:"online_cpus"`
+	} `json:"cpu_stats"`
+	PrecpuStats struct {
+		CPUUsage struct {
+			TotalUsage uint64 `json:"total_usage"`
+		} `json:"cpu_usage"`
+		SystemCPUUsage uint64 `json:"system_cpu_usage"`
+	} `json:"precpu_stats"`
+	MemoryStats struct {
+		Usage uint64 `json:"usage"`
+		Limit uint64 `json:"limit"`
+		Stats struct {
+			Cache uint64 `json:"cache"`
+		} `json:"stats"`
+	} `json:"memory_stats"`
+	Networks map[string]struct {
+		RxBytes uint64 `json:"rx_bytes"`
+		TxBytes uint64 `json:"tx_bytes"`
+	} `json:"networks"`
+	BlkioStats struct {
+		IoServiceBytesRecursive []struct {
+			Op    string `json:"op"`
+			Value uint64 `json:"value"`
+		} `json:"io_service_bytes_recursive"`
+	} `json:"blkio_stats"`
+	PidsStats struct {
+		Current int `json:"current"`
+	} `json:"pids_stats"`
+}
+
+// fetchContainerStats fetches stats for one container via the Docker Engine API.
+func fetchContainerStats(name string) (*containerStats, error) {
+	url := fmt.Sprintf("http://localhost/containers/%s/stats?stream=false&one-shot=true", name)
+	resp, err := dockerAPIClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("docker API %d for %s", resp.StatusCode, name)
+	}
+
+	var raw dockerStatsJSON
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, err
+	}
+
+	// CPU %
+	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage - raw.PrecpuStats.CPUUsage.TotalUsage)
+	sysDelta := float64(raw.CPUStats.SystemCPUUsage - raw.PrecpuStats.SystemCPUUsage)
+	cpuPct := 0.0
+	if sysDelta > 0 && cpuDelta > 0 {
+		cpuPct = cpuDelta / sysDelta * float64(raw.CPUStats.OnlineCPUs) * 100.0
+	}
+
+	// Memory
+	memUsage := raw.MemoryStats.Usage - raw.MemoryStats.Stats.Cache
+	memLimit := raw.MemoryStats.Limit
+	memPct := 0.0
+	if memLimit > 0 {
+		memPct = float64(memUsage) / float64(memLimit) * 100.0
+	}
+
+	// Net I/O
+	var rxBytes, txBytes uint64
+	for _, iface := range raw.Networks {
+		rxBytes += iface.RxBytes
+		txBytes += iface.TxBytes
+	}
+
+	// Block I/O
+	var blkRead, blkWrite uint64
+	for _, entry := range raw.BlkioStats.IoServiceBytesRecursive {
+		switch entry.Op {
+		case "read", "Read":
+			blkRead += entry.Value
+		case "write", "Write":
+			blkWrite += entry.Value
+		}
+	}
+
+	return &containerStats{
+		Name:     name,
+		CPU:      cpuPct,
+		MemUsage: humanBytes(memUsage),
+		MemLimit: humanBytes(memLimit),
+		MemPct:   memPct,
+		NetIO:    fmt.Sprintf("%s / %s", humanBytes(rxBytes), humanBytes(txBytes)),
+		BlockIO:  fmt.Sprintf("%s / %s", humanBytes(blkRead), humanBytes(blkWrite)),
+		PIDs:     raw.PidsStats.Current,
+	}, nil
+}
+
+// humanBytes formats bytes into a human-readable string (KiB, MiB, GiB).
+func humanBytes(b uint64) string {
+	const (
+		kib = 1024
+		mib = kib * 1024
+		gib = mib * 1024
+	)
+	switch {
+	case b >= gib:
+		return fmt.Sprintf("%.2f GiB", float64(b)/float64(gib))
+	case b >= mib:
+		return fmt.Sprintf("%.1f MiB", float64(b)/float64(mib))
+	case b >= kib:
+		return fmt.Sprintf("%.1f KiB", float64(b)/float64(kib))
+	default:
+		return fmt.Sprintf("%d B", b)
+	}
+}
+
+// apiStats returns docker stats for all running grengo-managed containers.
+func apiStats(w http.ResponseWriter, r *http.Request) {
+	// Get running container names matching *-backend plus shared infra.
+	entries, _ := os.ReadDir(backendsDir())
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		ef := filepath.Join(backendsDir(), e.Name(), ".env")
+		if _, serr := os.Stat(ef); serr != nil {
+			continue
+		}
+		cname := envVal(ef, "CLIENT_NAME")
+		if cname != "" && clientRunning(cname) {
+			names = append(names, cname+"-backend")
+		}
+	}
+
+	// Also include shared infra containers (postgres, redis, nginx).
+	for _, infra := range []string{"skaia-postgres", "skaia-redis", "skaia-nginx"} {
+		if containerRunning(infra) {
+			names = append(names, infra)
+		}
+	}
+
+	if len(names) == 0 {
+		apiJSON(w, http.StatusOK, []containerStats{})
+		return
+	}
+
+	// Fetch stats concurrently via Docker Engine API (Unix socket).
+	type result struct {
+		stats *containerStats
+		err   error
+	}
+	ch := make(chan result, len(names))
+	for _, n := range names {
+		go func(name string) {
+			s, err := fetchContainerStats(name)
+			ch <- result{s, err}
+		}(n)
+	}
+
+	var stats []containerStats
+	for range names {
+		res := <-ch
+		if res.err == nil && res.stats != nil {
+			stats = append(stats, *res.stats)
+		}
+	}
+
+	apiJSON(w, http.StatusOK, stats)
 }
 
 // apiExec is the generic command executor.
