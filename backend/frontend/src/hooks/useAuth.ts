@@ -45,7 +45,6 @@ export const useAuth = () => {
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
-  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
   const setAuthLoading = useSetAtom(authLoadingAtom);
   const setAuthError = useSetAtom(authErrorAtom);
 
@@ -57,14 +56,12 @@ export const useAuth = () => {
     setCurrentUser(user);
     setAccessToken(accessToken);
     setRefreshToken(refreshToken);
-    setIsAuthenticated(true);
   };
 
   const clearAuthState = () => {
     setCurrentUser(null);
     setAccessToken(null);
     setRefreshToken(null);
-    setIsAuthenticated(false);
   };
 
   const login = useCallback(
@@ -89,7 +86,6 @@ export const useAuth = () => {
       setAccessToken,
       setRefreshToken,
       setCurrentUser,
-      setIsAuthenticated,
       setAuthLoading,
       setAuthError,
     ],
@@ -121,7 +117,6 @@ export const useAuth = () => {
       setAccessToken,
       setRefreshToken,
       setCurrentUser,
-      setIsAuthenticated,
       setAuthLoading,
       setAuthError,
     ],
@@ -129,7 +124,7 @@ export const useAuth = () => {
 
   const logout = useCallback(() => {
     clearAuthState();
-  }, [setCurrentUser, setAccessToken, setRefreshToken, setIsAuthenticated]);
+  }, [setCurrentUser, setAccessToken, setRefreshToken]);
 
   const refreshAccessToken = useCallback(
     async (rToken: string) => {
@@ -142,7 +137,7 @@ export const useAuth = () => {
         throw err;
       }
     },
-    [setAccessToken, setCurrentUser, setRefreshToken, setIsAuthenticated],
+    [setAccessToken, setCurrentUser, setRefreshToken],
   );
 
   return {

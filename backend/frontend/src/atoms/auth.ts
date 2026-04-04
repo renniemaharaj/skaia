@@ -59,9 +59,12 @@ export const refreshTokenAtom = customStorageAtom<string | null>(
 
 // Auth state - separate atoms for better granularity
 export const currentUserAtom = atomWithStorage<User | null>("auth.user", null);
-export const isAuthenticatedAtom = atomWithStorage<boolean>(
-  "auth.isAuthenticated",
-  false,
+
+// Derived from accessTokenAtom (synchronous localStorage read) so that
+// ProtectedRoute sees the correct value on the very first render after a
+// page reload — no async-hydration race condition.
+export const isAuthenticatedAtom = atom<boolean>(
+  (get) => get(accessTokenAtom) !== null,
 );
 export const authLoadingAtom = atom<boolean>(false);
 export const authErrorAtom = atom<string | null>(null);

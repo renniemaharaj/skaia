@@ -36,7 +36,6 @@ const testUser: User = {
 function makeStore(opts?: { authenticated?: boolean; user?: User }) {
   const store = createStore();
   if (opts?.authenticated) {
-    store.set(isAuthenticatedAtom, true);
     store.set(currentUserAtom, opts.user ?? testUser);
     store.set(accessTokenAtom, "test-jwt-token");
     store.set(refreshTokenAtom, "test-refresh-token");

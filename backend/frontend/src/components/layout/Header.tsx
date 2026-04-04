@@ -41,7 +41,6 @@ export const Header: React.FC<HeaderProps> = ({
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
-  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
   const inboxUnread = useAtomValue(inboxUnreadCountAtom);
 
   // Branding + edit permission
@@ -97,7 +96,6 @@ export const Header: React.FC<HeaderProps> = ({
       setAccessToken(null);
       setRefreshToken(null);
       setCurrentUser(null);
-      setIsAuthenticated(false);
       navigate("/");
       setMenuOpen(false);
     }

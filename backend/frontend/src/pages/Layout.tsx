@@ -8,7 +8,6 @@ import {
   accessTokenAtom,
   refreshTokenAtom,
   currentUserAtom,
-  isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
 import { featuresAtom } from "../atoms/config";
@@ -57,7 +56,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
-  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -103,7 +101,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         });
         if (profile) {
           setCurrentUser(profile);
-          setIsAuthenticated(true);
           // Subscribe to own user channel via the shared WS so real-time
           // session updates (permissions, roles, suspension) arrive.
           const id = Number(profile.id);
@@ -114,7 +111,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         setAccessToken(null);
         setRefreshToken(null);
         setCurrentUser(null);
-        setIsAuthenticated(false);
       }
     };
 
@@ -131,14 +127,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       setAccessToken(null);
       setRefreshToken(null);
       setCurrentUser(null);
-      setIsAuthenticated(false);
     };
 
     window.addEventListener("auth:unauthorized", handleUnauthorized);
     return () => {
       window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
-  }, [setAccessToken, setRefreshToken, setCurrentUser, setIsAuthenticated]);
+  }, [setAccessToken, setRefreshToken, setCurrentUser]);
 
   useEffect(() => {
     if (!isPending) {

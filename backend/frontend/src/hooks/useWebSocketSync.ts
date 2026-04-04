@@ -83,7 +83,6 @@ export const useWebSocketSync = () => {
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
-  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
   const wsUrl = useAtomValue(wsBaseUrlAtom);
   // Tracks all active subscriptions so they can be replayed on reconnect
   const subscriptionsRef = useRef<Set<string>>(new Set());
@@ -233,7 +232,6 @@ export const useWebSocketSync = () => {
                   setAccessToken(null);
                   setRefreshToken(null);
                   setCurrentUser(null);
-                  setIsAuthenticated(false);
                 }
               }
             }
@@ -783,7 +781,6 @@ export const useWebSocketSync = () => {
     setCurrentUser,
     setAccessToken,
     setRefreshToken,
-    setIsAuthenticated,
     setCategoryFeedThreads,
     setUserFeedThreads,
     setGlobalChatMessages,

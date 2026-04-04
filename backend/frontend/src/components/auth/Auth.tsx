@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSetAtom } from "jotai";
-import { Mail, Lock, User, AlertCircle, Loader, CheckCircle } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  Loader,
+  CheckCircle,
+} from "lucide-react";
 import {
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
-  isAuthenticatedAtom,
 } from "../../atoms/auth";
 import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
 import "./Auth.css";
@@ -35,7 +41,6 @@ export const Auth: React.FC<AuthPageProps> = ({
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
-  const setIsAuthenticated = useSetAtom(isAuthenticatedAtom);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,14 +84,13 @@ export const Auth: React.FC<AuthPageProps> = ({
       let data: AuthResponse;
       if (isLogin) {
         data = await loginUser(formData.email, formData.password);
-        
+
         // Store tokens in atoms (atomWithStorage handles localStorage automatically)
         setAccessToken(data.access_token);
         if (data.refresh_token) {
           setRefreshToken(data.refresh_token);
         }
         setCurrentUser(data.user);
-        setIsAuthenticated(true);
 
         // Call success callback
         if (onAuthSuccess) {
@@ -113,13 +117,13 @@ export const Auth: React.FC<AuthPageProps> = ({
           password: "",
           passwordConfirm: "",
         });
-        
+
         // Redirect to login page with success message
-        navigate("/login", { 
-          state: { 
+        navigate("/login", {
+          state: {
             message: "Account created successfully! Please log in.",
-            email: formData.email 
-          } 
+            email: formData.email,
+          },
         });
       }
     } catch (err) {
