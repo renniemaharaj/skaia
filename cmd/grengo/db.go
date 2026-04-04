@@ -82,6 +82,12 @@ func cmdMigrate(name string, rebuild bool) {
 	if !clientExists(name) {
 		die("Client '%s' not found", name)
 	}
+
+	// Sync env defaults — add any missing keys from the registry.
+	if n := syncEnvDefaults(name); n > 0 {
+		log("Added %d missing env var(s) to %s", n, clientEnvFile(name))
+	}
+
 	if !pgRunning() {
 		die("PostgreSQL is not running. Start infra first: grengo compose up")
 	}

@@ -8,7 +8,86 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
+
+// envDefaultEntry keeps insertion order for the defaults registry.
+type envDefaultEntry struct {
+	Key   string
+	Value string
+}
+
+// envDefaults is the authoritative list of env vars every client should have.
+// When `grengo migrate` runs it appends any that are missing with these values.
+// Keys already present in the .env are NEVER overwritten.
+//
+// To add a new env var: just add it here AND in the cmdNew template.
+var envDefaults = []envDefaultEntry{
+	// Redis
+	{"REDIS_URL", "redis://redis:6379"},
+	// Frontend SSR
+	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html"},
+	// Tuning
+	{"DB_MAX_OPEN_CONNS", "100"},
+	{"DB_MAX_IDLE_CONNS", "50"},
+	{"DB_CONN_MAX_LIFETIME_MIN", "30"},
+	{"DB_CONN_MAX_IDLE_TIME_MIN", "5"},
+	{"WS_MAX_CONNECTIONS", "100000"},
+	{"WS_MAX_WORKERS", "256"},
+	{"WS_SESSION_SIZE", "100"},
+	{"WS_CHAT_RING_SIZE", "80"},
+	{"WS_PRESENCE_INTERVAL_MS", "1000"},
+	{"HTTP_READ_TIMEOUT_SEC", "15"},
+	{"HTTP_WRITE_TIMEOUT_SEC", "15"},
+	{"HTTP_IDLE_TIMEOUT_SEC", "60"},
+	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30"},
+	// Grengo internal API
+	{"GRENGO_API_URL", "http://host.docker.internal:9100"},
+}
+
+// syncEnvDefaults reads a client's .env, appends any keys from envDefaults
+// that are missing, and writes the file back. Existing values are never touched.
+// Returns the number of keys added.
+func syncEnvDefaults(name string) int {
+	envFile := clientEnvFile(name)
+	existing := loadEnvMap(envFile)
+
+	var toAdd []envDefaultEntry
+	for _, d := range envDefaults {
+		if _, ok := existing[d.Key]; !ok {
+			toAdd = append(toAdd, d)
+		}
+	}
+
+	if len(toAdd) == 0 {
+		return 0
+	}
+
+	// Read original content so we can append cleanly.
+	raw, err := os.ReadFile(envFile)
+	if err != nil {
+		warn("Cannot read %s: %v", envFile, err)
+		return 0
+	}
+
+	content := string(raw)
+	// Make sure the existing content ends with a newline.
+	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+
+	content += fmt.Sprintf("\n# Defaults added by grengo migrate – %s\n", time.Now().Format(time.RFC3339))
+	for _, d := range toAdd {
+		content += fmt.Sprintf("%s=%s\n", d.Key, d.Value)
+	}
+
+	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
+		warn("Cannot write %s: %v", envFile, err)
+		return 0
+	}
+
+	return len(toAdd)
+}
 
 // envVal reads a single key from an .env file without sourcing the whole file.
 func envVal(file, key string) string {

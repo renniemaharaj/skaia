@@ -239,6 +239,9 @@ func cmdNew(args []string) {
 		"HTTP_WRITE_TIMEOUT_SEC=15",
 		"HTTP_IDLE_TIMEOUT_SEC=60",
 		"HTTP_SHUTDOWN_TIMEOUT_SEC=30",
+		"",
+		"# Grengo internal API",
+		"GRENGO_API_URL=http://host.docker.internal:9100",
 	}
 	if err := writeEnvFile(clientEnvFile(name), envLines); err != nil {
 		die("Cannot write .env: %v", err)
