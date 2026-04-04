@@ -131,6 +131,14 @@
   background: #f8d7da;
   color: #721c24;
 }
+.badge-armed {
+  background: #f8d7da;
+  color: #721c24;
+}
+.badge-disarmed {
+  background: #d4edda;
+  color: #155724;
+}
 
 .grengo-table .domains {
   font-size: 0.8rem;
@@ -283,6 +291,17 @@
 .grengo-dashboard .btn-danger:hover {
   background: var(--error-color, #e74c3c);
   color: #fff;
+}
+
+.grengo-dashboard .btn-warning {
+  color: #856404;
+  border-color: #ffc107;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.grengo-dashboard .btn-warning:hover {
+  background: #ffc107;
+  color: #212529;
 }
 
 /* ── Empty state ────────────────────────────────────────────────────────── */

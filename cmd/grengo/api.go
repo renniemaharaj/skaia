@@ -64,6 +64,8 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("POST /exec", apiExec)
 	mux.HandleFunc("GET /export/{name}", apiExportSite)
 	mux.HandleFunc("POST /import", apiImportSite)
+	mux.HandleFunc("POST /sites/{name}/arm", apiArmSite)
+	mux.HandleFunc("POST /sites/{name}/disarm", apiDisarmSite)
 	mux.HandleFunc("POST /verify-passcode", apiVerifyPasscode)
 	mux.HandleFunc("GET /passcode/status", apiPasscodeStatus)
 
@@ -177,6 +179,7 @@ type apiSiteInfo struct {
 	Port     string   `json:"port"`
 	Status   string   `json:"status"`
 	Running  bool     `json:"running"`
+	Armed    bool     `json:"armed"`
 	Domains  []string `json:"domains"`
 	DBName   string   `json:"db_name"`
 	Features string   `json:"features"`
@@ -217,6 +220,18 @@ func apiListSites(w http.ResponseWriter, r *http.Request) {
 
 		running := clientRunning(name)
 
+		// Check armed status: look for any .armed file inside the client's armed/ dir.
+		armedDir := filepath.Join(backendsDir(), e.Name(), "armed")
+		armed := false
+		if aEntries, aerr := os.ReadDir(armedDir); aerr == nil {
+			for _, ae := range aEntries {
+				if !ae.IsDir() {
+					armed = true
+					break
+				}
+			}
+		}
+
 		domains := []string{}
 		if domainsStr != "" {
 			domains = strings.Fields(domainsStr)
@@ -227,6 +242,7 @@ func apiListSites(w http.ResponseWriter, r *http.Request) {
 			Port:     port,
 			Status:   status,
 			Running:  running,
+			Armed:    armed,
 			Domains:  domains,
 			DBName:   dbName,
 			Features: features,
@@ -627,6 +643,60 @@ func apiImportSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// apiArmSite creates a .armed sentinel file in the site's armed/ directory.
+func apiArmSite(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		apiError(w, http.StatusBadRequest, "name required")
+		return
+	}
+	siteDir := filepath.Join(backendsDir(), name)
+	if _, err := os.Stat(siteDir); os.IsNotExist(err) {
+		apiError(w, http.StatusNotFound, fmt.Sprintf("site '%s' not found", name))
+		return
+	}
+
+	armedDir := filepath.Join(siteDir, "armed")
+	if err := os.MkdirAll(armedDir, 0755); err != nil {
+		apiError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	armedFile := filepath.Join(armedDir, name+".armed")
+	if err := os.WriteFile(armedFile, []byte(time.Now().UTC().Format(time.RFC3339)), 0644); err != nil {
+		apiError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Also write into the running container's armed/ dir (mounted at /app/armed).
+	// The site container reads from its own local armed/ directory.
+	// Since we volume-mount ./armed:/app/armed we've already written the file above.
+
+	apiJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": true})
+}
+
+// apiDisarmSite removes the .armed sentinel file for a site.
+func apiDisarmSite(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		apiError(w, http.StatusBadRequest, "name required")
+		return
+	}
+	siteDir := filepath.Join(backendsDir(), name)
+	if _, err := os.Stat(siteDir); os.IsNotExist(err) {
+		apiError(w, http.StatusNotFound, fmt.Sprintf("site '%s' not found", name))
+		return
+	}
+
+	armedDir := filepath.Join(siteDir, "armed")
+	armedFile := filepath.Join(armedDir, name+".armed")
+	if err := os.Remove(armedFile); err != nil && !os.IsNotExist(err) {
+		apiError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": false})
 }
 
 // apiVerifyPasscode checks a passcode pair against the stored .pcode file.

@@ -18,6 +18,7 @@ type SiteInfo struct {
 	Port     string   `json:"port"`
 	Status   string   `json:"status"`
 	Running  bool     `json:"running"`
+	Armed    bool     `json:"armed"`
 	Domains  []string `json:"domains"`
 	DBName   string   `json:"db_name"`
 	Features string   `json:"features"`
@@ -229,6 +230,32 @@ func (s *Service) EnableSite(name string) error { return s.execOK("enable", name
 
 // DisableSite disables a client and stops its backend via the grengo API.
 func (s *Service) DisableSite(name string) error { return s.execOK("disable", name) }
+
+// ArmSite arms a client via the grengo API.
+func (s *Service) ArmSite(name string) error {
+	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/arm", s.apiURL, name), "application/json", nil)
+	if err != nil {
+		return fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return s.readAPIError(resp)
+	}
+	return nil
+}
+
+// DisarmSite disarms a client via the grengo API.
+func (s *Service) DisarmSite(name string) error {
+	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/disarm", s.apiURL, name), "application/json", nil)
+	if err != nil {
+		return fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return s.readAPIError(resp)
+	}
+	return nil
+}
 
 // ---------------------------------------------------------------------------
 // Export / Import

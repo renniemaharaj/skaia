@@ -11,6 +11,7 @@ interface SiteInfo {
   port: string;
   status: string;
   running: boolean;
+  armed: boolean;
   domains: string[];
   db_name: string;
   features: string;
@@ -387,6 +388,7 @@ export default function GrengoDashboard() {
                 <th>Port</th>
                 <th>Status</th>
                 <th>Running</th>
+                <th>Armed</th>
                 <th>Domains</th>
                 <th>Actions</th>
               </tr>
@@ -410,6 +412,13 @@ export default function GrengoDashboard() {
                       className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
                     >
                       {site.running ? "running" : "stopped"}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
+                    >
+                      {site.armed ? "armed" : "disarmed"}
                     </span>
                   </td>
                   <td className="domains">{site.domains.join(", ")}</td>
@@ -446,6 +455,23 @@ export default function GrengoDashboard() {
                         disabled={busy[site.name]}
                       >
                         Enable
+                      </button>
+                    )}
+                    {site.armed ? (
+                      <button
+                        className="btn btn-warning"
+                        onClick={() => siteAction(site.name, "disarm")}
+                        disabled={busy[site.name]}
+                      >
+                        Disarm
+                      </button>
+                    ) : (
+                      <button
+                        className="btn"
+                        onClick={() => siteAction(site.name, "arm")}
+                        disabled={busy[site.name]}
+                      >
+                        Arm
                       </button>
                     )}
                     <button

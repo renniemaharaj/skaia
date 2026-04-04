@@ -104,6 +104,8 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 			sr.Post("/sites/{name}/stop", h.handleStopSite)
 			sr.Post("/sites/{name}/enable", h.handleEnableSite)
 			sr.Post("/sites/{name}/disable", h.handleDisableSite)
+			sr.Post("/sites/{name}/arm", h.handleArmSite)
+			sr.Post("/sites/{name}/disarm", h.handleDisarmSite)
 
 			sr.Get("/sites/{name}/export", h.handleExportSite)
 			sr.Post("/import", h.handleImportSite)
@@ -332,6 +334,24 @@ func (h *Handler) handleDisableSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (h *Handler) handleArmSite(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	if err := h.svc.ArmSite(name); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": true})
+}
+
+func (h *Handler) handleDisarmSite(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	if err := h.svc.DisarmSite(name); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": false})
 }
 
 func (h *Handler) handleExportSite(w http.ResponseWriter, r *http.Request) {

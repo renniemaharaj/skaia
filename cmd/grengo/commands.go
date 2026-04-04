@@ -257,6 +257,7 @@ services:
       - .env
     volumes:
       - ./uploads:/app/uploads
+      - ./armed:/app/armed
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

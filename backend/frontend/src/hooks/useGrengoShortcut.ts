@@ -6,6 +6,7 @@ import { isAuthenticatedAtom, currentUserAtom } from "../atoms/auth";
 /**
  * Ctrl+G (or Cmd+G on macOS) opens a passcode dialog.
  * On success the backend creates a temporary session and we navigate to /tmp/<uuid>.
+ * Also auto-opens when the site is armed (503 "service is armed" from API).
  * Only available to authenticated admins.
  */
 export function useGrengoShortcut() {
@@ -15,6 +16,7 @@ export function useGrengoShortcut() {
   const [showDialog, setShowDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [armed, setArmed] = useState(false);
   const p1Ref = useRef("");
   const p2Ref = useRef("");
 
@@ -33,6 +35,40 @@ export function useGrengoShortcut() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, [isAdmin]);
+
+  // Listen for site:armed events (dispatched by apiRequest on 503).
+  useEffect(() => {
+    const handler = () => {
+      setArmed(true);
+      if (isAdmin) {
+        setShowDialog(true);
+        setError("Site is armed — open a Grengo session to manage it.");
+      }
+    };
+    window.addEventListener("site:armed", handler);
+    return () => window.removeEventListener("site:armed", handler);
+  }, [isAdmin]);
+
+  // Check armed status on mount.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/armed-status")
+      .then((r) => r.json())
+      .then((data: { armed: boolean }) => {
+        if (cancelled) return;
+        if (data.armed) {
+          setArmed(true);
+          if (isAdmin) {
+            setShowDialog(true);
+            setError("Site is armed — open a Grengo session to manage it.");
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [isAdmin]);
 
   const createSession = async (p1: string, p2: string) => {
@@ -73,6 +109,7 @@ export function useGrengoShortcut() {
     showDialog,
     loading,
     error,
+    armed,
     createSession,
     closeDialog,
     p1Ref,

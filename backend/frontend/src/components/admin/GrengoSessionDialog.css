@@ -104,3 +104,39 @@
 .grengo-session-actions .btn-primary:hover {
   opacity: 0.9;
 }
+
+/* Maintenance overlay for non-admin users when site is armed */
+.grengo-maintenance-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.grengo-maintenance-card {
+  background: var(--bg-secondary, #1a1a2e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.grengo-maintenance-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  color: var(--text-primary, #fff);
+}
+
+.grengo-maintenance-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #999);
+  line-height: 1.5;
+}

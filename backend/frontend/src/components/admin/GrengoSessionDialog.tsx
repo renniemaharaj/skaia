@@ -1,18 +1,38 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
+import { useAtomValue } from "jotai";
+import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import "./GrengoSessionDialog.css";
 
 /**
  * Modal dialog triggered by Ctrl+G that prompts for the grengo passcode
  * and creates a temporary session on success.
+ * When the site is armed, auto-opens for admins and shows a maintenance
+ * overlay for non-admin visitors.
  * Render this once at the app root (inside Router).
  */
 export default function GrengoSessionDialog() {
-  const { showDialog, loading, error, createSession, closeDialog } =
+  const { showDialog, loading, error, armed, createSession, closeDialog } =
     useGrengoShortcut();
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const p1InputRef = useRef<HTMLInputElement>(null);
+
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const user = useAtomValue(currentUserAtom);
+  const isAdmin = isAuthenticated && user?.roles?.includes("admin");
+
+  // Show maintenance overlay for non-admin users when armed
+  const [showMaintenance, setShowMaintenance] = useState(false);
+  useEffect(() => {
+    const handler = () => {
+      if (!isAdmin) setShowMaintenance(true);
+    };
+    // Check on mount via armed prop
+    if (armed && !isAdmin) setShowMaintenance(true);
+    window.addEventListener("site:armed", handler);
+    return () => window.removeEventListener("site:armed", handler);
+  }, [armed, isAdmin]);
 
   const handleSubmit = useCallback(() => {
     if (p1 && p2) createSession(p1, p2);
@@ -23,6 +43,20 @@ export default function GrengoSessionDialog() {
     setP2("");
     closeDialog();
   };
+
+  if (showMaintenance) {
+    return (
+      <div className="grengo-maintenance-overlay">
+        <div className="grengo-maintenance-card">
+          <h2>Under Maintenance</h2>
+          <p>
+            This site is currently undergoing maintenance. Please check back
+            shortly.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!showDialog) return null;
 

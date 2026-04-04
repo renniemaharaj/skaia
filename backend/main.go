@@ -351,7 +351,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		if armedDir == "" {
 			armedDir = "armed"
 		}
-		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/health", "/api/time"}))
+		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
 
 		// Prevent Cloudflare (and browsers) from caching API responses.
 		api.Use(func(next http.Handler) http.Handler {
@@ -364,6 +364,11 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+		})
+
+		api.Get("/armed-status", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]bool{"armed": imw.IsArmed(armedDir)})
 		})
 
 		api.Post("/arm", func(w http.ResponseWriter, r *http.Request) {

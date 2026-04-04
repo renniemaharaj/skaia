@@ -73,6 +73,15 @@ export async function apiRequest<T>(
       // Use default error message
     }
 
+    // Handle 503 — site may be armed (maintenance mode)
+    if (
+      response.status === 503 &&
+      errorMessage.toLowerCase().includes("armed")
+    ) {
+      window.dispatchEvent(new CustomEvent("site:armed"));
+      throw new Error(errorMessage);
+    }
+
     // Handle 401 Unauthorized — attempt a token refresh before logging out
     if (response.status === 401) {
       const refreshToken = localStorage.getItem("auth.refreshToken");
