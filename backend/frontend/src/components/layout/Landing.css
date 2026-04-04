@@ -1193,6 +1193,24 @@
   margin: 0 !important;
 }
 
+.landing-section-move-btns {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.landing-section-move-btns .landing-section-toolbar-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.landing-section-move-btns .landing-section-toolbar-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .landing-section-toolbar-label {
   color: var(--text-secondary);
   text-transform: uppercase;

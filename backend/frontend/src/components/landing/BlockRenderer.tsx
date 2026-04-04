@@ -11,8 +11,8 @@ import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
 import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
 import { RichTextBlock } from "./blocks/RichTextBlock";
 import { Plus } from "lucide-react";
-import { useState } from "react";
-import { getSectionLayout } from "./EditControls";
+import { useCallback, useState } from "react";
+import { getSectionLayout, SectionMoveContext } from "./EditControls";
 
 interface BlockRendererProps {
   sections: LandingSection[];
@@ -23,6 +23,7 @@ interface BlockRendererProps {
   onCreateItem: (sectionId: number, item: Omit<LandingItem, "id">) => void;
   onUpdateItem: (item: LandingItem) => void;
   onDeleteItem: (id: number) => void;
+  onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
 }
 
 /** Maps section_type → block component. */
@@ -59,6 +60,7 @@ export const BlockRenderer = ({
   onCreateItem,
   onUpdateItem,
   onDeleteItem,
+  onMoveSection,
 }: BlockRendererProps) => {
   const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
 
@@ -74,6 +76,20 @@ export const BlockRenderer = ({
     setActiveAddIndex(null);
   };
 
+  const orderedSections = [...sections].sort(
+    (a, b) => a.display_order - b.display_order,
+  );
+
+  const handleMove = useCallback(
+    (sectionId: number, direction: "up" | "down") => {
+      const idx = orderedSections.findIndex((s) => s.id === sectionId);
+      const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (neighborIdx < 0 || neighborIdx >= orderedSections.length) return;
+      onMoveSection(sectionId, orderedSections[neighborIdx].id);
+    },
+    [orderedSections, onMoveSection],
+  );
+
   const renderAddSectionTrigger = (insertIndex: number) => (
     <div className="landing-add-section" key={`add-section-${insertIndex}`}>
       <button
@@ -85,9 +101,6 @@ export const BlockRenderer = ({
         }
       >
         <Plus size={18} /> Add Section
-        {/* <span className="landing-add-section-index">
-          sect#{insertIndex + 1}
-        </span> */}
       </button>
 
       {activeAddIndex === insertIndex && (
@@ -106,10 +119,6 @@ export const BlockRenderer = ({
     </div>
   );
 
-  const orderedSections = [...sections].sort(
-    (a, b) => a.display_order - b.display_order,
-  );
-
   return (
     <>
       {canEdit && renderAddSectionTrigger(0)}
@@ -118,9 +127,19 @@ export const BlockRenderer = ({
         const Block = BLOCK_MAP[section.section_type];
         if (!Block) return null;
         const layout = getSectionLayout(section.config);
+        const isFirst = i === 0;
+        const isLast = i === orderedSections.length - 1;
 
         return (
-          <div key={section.id}>
+          <SectionMoveContext.Provider
+            key={section.id}
+            value={{
+              onMoveUp: () => handleMove(section.id, "up"),
+              onMoveDown: () => handleMove(section.id, "down"),
+              canMoveUp: !isFirst,
+              canMoveDown: !isLast,
+            }}
+          >
             <div
               className={`landing-section-layout landing-section-layout-${layout}`}
             >
@@ -135,7 +154,7 @@ export const BlockRenderer = ({
               />
             </div>
             {canEdit && renderAddSectionTrigger(i + 1)}
-          </div>
+          </SectionMoveContext.Provider>
         );
       })}
     </>

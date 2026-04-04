@@ -168,6 +168,40 @@ export default function PageBuilder() {
     void savePageContent(ordered);
   };
 
+  const moveSectionWrapper = async (
+    sourceSectionId: number,
+    targetSectionId: number,
+  ) => {
+    const sorted = sortSections(sections);
+    const sourceIdx = sorted.findIndex((sec) => sec.id === sourceSectionId);
+    const targetIdx = sorted.findIndex((sec) => sec.id === targetSectionId);
+    if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return;
+
+    const next = [...sorted];
+    const [moving] = next.splice(sourceIdx, 1);
+    next.splice(targetIdx, 0, moving);
+
+    const normalized = next.map((section, idx) => ({
+      ...section,
+      display_order: idx + 1,
+    }));
+
+    setSections(normalized);
+
+    if (isPageFallback) {
+      await Promise.all(
+        normalized.map((section) =>
+          section.display_order !==
+          sections.find((prev) => prev.id === section.id)?.display_order
+            ? updateSection(section)
+            : Promise.resolve(),
+        ),
+      );
+    } else {
+      await savePageContent(normalized);
+    }
+  };
+
   if (loading || (slug === undefined && landingLoading)) {
     return (
       <div className="landing-container">
@@ -199,6 +233,7 @@ export default function PageBuilder() {
         onCreateItem={createItemWrapper}
         onUpdateItem={updateItemWrapper}
         onDeleteItem={deleteItemWrapper}
+        onMoveSection={moveSectionWrapper}
       />
     </div>
   );

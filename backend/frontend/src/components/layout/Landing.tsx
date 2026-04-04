@@ -42,6 +42,36 @@ export const Landing: React.FC = () => {
     );
   }
 
+  const moveSection = async (
+    sourceSectionId: number,
+    targetSectionId: number,
+  ) => {
+    const sorted = [...sections].sort(
+      (a, b) => a.display_order - b.display_order,
+    );
+    const sourceIdx = sorted.findIndex((sec) => sec.id === sourceSectionId);
+    const targetIdx = sorted.findIndex((sec) => sec.id === targetSectionId);
+    if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return;
+
+    const next = [...sorted];
+    const [moving] = next.splice(sourceIdx, 1);
+    next.splice(targetIdx, 0, moving);
+
+    const normalized = next.map((section, idx) => ({
+      ...section,
+      display_order: idx + 1,
+    }));
+
+    await Promise.all(
+      normalized.map((section) =>
+        section.display_order !==
+        sections.find((s) => s.id === section.id)?.display_order
+          ? updateSection(section)
+          : Promise.resolve(),
+      ),
+    );
+  };
+
   return (
     <div className="landing-container">
       <BlockRenderer
@@ -53,6 +83,7 @@ export const Landing: React.FC = () => {
         onCreateItem={createItem}
         onUpdateItem={updateItem}
         onDeleteItem={deleteItem}
+        onMoveSection={moveSection}
       />
     </div>
   );

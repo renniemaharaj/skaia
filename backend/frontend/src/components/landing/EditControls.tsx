@@ -5,6 +5,7 @@ import {
   Trash2,
   Plus,
   ChevronDown,
+  ChevronUp,
   ImageIcon,
   Loader2,
   RefreshCw,
@@ -15,11 +16,54 @@ import {
   AlignRight,
   Maximize2,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useContext, useState, createContext } from "react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 
 export type SectionLayout = "center" | "left" | "right" | "wide";
+
+export interface SectionMoveContextValue {
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+}
+
+export const SectionMoveContext = createContext<SectionMoveContextValue>({
+  canMoveUp: false,
+  canMoveDown: false,
+});
+
+export const SectionMoveButtons = () => {
+  const { onMoveUp, onMoveDown, canMoveUp, canMoveDown } =
+    useContext(SectionMoveContext);
+  if (!onMoveUp && !onMoveDown) return null;
+
+  return (
+    <span className="landing-section-move-btns">
+      <button
+        className="landing-section-toolbar-btn"
+        onClick={onMoveUp}
+        disabled={!canMoveUp}
+        title="Move section up"
+        aria-label="Move section up"
+        type="button"
+      >
+        <ChevronUp size={14} />
+      </button>
+      <button
+        className="landing-section-toolbar-btn"
+        onClick={onMoveDown}
+        disabled={!canMoveDown}
+        title="Move section down"
+        aria-label="Move section down"
+        type="button"
+      >
+        <ChevronDown size={14} />
+      </button>
+    </span>
+  );
+};
 
 function safeParseConfig(config: string): Record<string, any> {
   try {
@@ -215,6 +259,7 @@ export const SectionToolbar = ({
   <div className="landing-section-toolbar">
     <span className="landing-section-toolbar-label">{label}</span>
     <div className="landing-section-toolbar-actions">
+      <SectionMoveButtons />
       {layout && onLayoutChange ? (
         <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
       ) : null}
@@ -223,6 +268,7 @@ export const SectionToolbar = ({
         className="landing-section-toolbar-btn danger"
         onClick={onDelete}
         title="Remove section"
+        type="button"
       >
         <Trash2 size={14} />
       </button>
