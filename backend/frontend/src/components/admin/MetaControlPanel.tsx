@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
+import type { Branding } from "../landing/types";
 import "./MetaControlPanel.css";
 
 interface MetaConfigForm {
@@ -66,9 +67,12 @@ export default function MetaControlPanel({
           og_image,
         }),
       });
+      // Fetch the latest branding so we never overwrite fields
+      // changed elsewhere (e.g. header title edited inline).
+      const current = await apiRequest<Branding>("/config/branding");
       await apiRequest("/config/branding", {
         method: "PUT",
-        body: JSON.stringify({ favicon_url }),
+        body: JSON.stringify({ ...current, favicon_url }),
       });
       onUpdate?.({ ...form, og_image, favicon_url });
     } catch (err: any) {
