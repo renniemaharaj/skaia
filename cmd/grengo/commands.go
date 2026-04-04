@@ -145,8 +145,8 @@ func cmdNew(args []string) {
 	// Admin email
 	adminEmail := prompt("Admin email", "admin@localhost", false)
 
-	// Session timeout (minutes)
-	sessionTimeout := prompt("Session timeout (minutes)", "30", false)
+	// Session timeout (minutes) — default 1 month = 30d × 24h × 60m = 43200
+	sessionTimeout := prompt("Session timeout (minutes)", "43200", false)
 
 	// Environment
 	environment := promptChoice("Environment", "production", []string{"production", "development"})

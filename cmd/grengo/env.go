@@ -25,8 +25,17 @@ type envDefaultEntry struct {
 var envDefaults = []envDefaultEntry{
 	// Redis
 	{"REDIS_URL", "redis://redis:6379"},
+	// Auth
+	{"SESSION_TIMEOUT_MIN", "43200"}, // 1 month = 30d × 24h × 60m
+	{"ENVIRONMENT", "production"},
 	// Frontend SSR
 	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html"},
+	// Features
+	{"FEATURES_ENABLED", "landing,store,forum,cart,users,inbox,presence"},
+	// Payments
+	{"PAYMENT_PROVIDER", "demo"},
+	{"STRIPE_SECRET_KEY", ""},
+	{"STRIPE_WEBHOOK_SECRET", ""},
 	// Tuning
 	{"DB_MAX_OPEN_CONNS", "100"},
 	{"DB_MAX_IDLE_CONNS", "50"},
