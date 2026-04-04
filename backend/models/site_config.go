@@ -82,3 +82,15 @@ type SocialLink struct {
 	Icon string `json:"icon"`
 	URL  string `json:"url"`
 }
+
+// Page is a routable custom page with block-builder content stored as JSON.
+type Page struct {
+	ID          int64     `json:"id"`
+	Slug        string    `json:"slug"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	IsIndex     bool      `json:"is_index"`
+	Content     string    `json:"content"` // raw JSON array of sections
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}

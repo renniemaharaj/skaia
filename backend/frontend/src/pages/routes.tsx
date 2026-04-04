@@ -14,6 +14,7 @@ import UserDiscovery from "./users/index.tsx";
 import CategoryThreadsPage from "./threads/categories/index.tsx";
 import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
+import PageBuilder from "./page/PageBuilder.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage />, conditional: "store" },
@@ -42,6 +43,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 ];
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
+  { path: "page/:slug", element: <PageBuilder /> },
   { path: "*", element: <NotFoundPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },

@@ -142,6 +142,12 @@ func cmdNew(args []string) {
 	// Admin password
 	adminPassword := prompt("Admin password", "changeme", false)
 
+	// Admin email
+	adminEmail := prompt("Admin email", "admin@localhost", false)
+
+	// Session timeout (minutes)
+	sessionTimeout := prompt("Session timeout (minutes)", "30", false)
+
 	// Environment
 	environment := promptChoice("Environment", "production", []string{"production", "development"})
 
@@ -200,6 +206,8 @@ func cmdNew(args []string) {
 		"# Auth",
 		fmt.Sprintf("JWT_SECRET=%s", jwtSecret),
 		fmt.Sprintf("ADMIN_PASSWORD=%s", adminPassword),
+		fmt.Sprintf("ADMIN_EMAIL=%s", adminEmail),
+		fmt.Sprintf("SESSION_TIMEOUT_MIN=%s", sessionTimeout),
 		fmt.Sprintf("ENVIRONMENT=%s", environment),
 		"",
 		"# Domains & CORS",

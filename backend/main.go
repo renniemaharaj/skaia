@@ -25,6 +25,7 @@ import (
 	iinbox "github.com/skaia/backend/internal/inbox"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
+	ipage "github.com/skaia/backend/internal/page"
 	"github.com/skaia/backend/internal/ssr"
 	istore "github.com/skaia/backend/internal/store"
 	iupload "github.com/skaia/backend/internal/upload"
@@ -171,11 +172,21 @@ func seedAdminPassword(db *sql.DB) {
 		log.Printf("admin seed: hash failed: %v", err)
 		return
 	}
-	if _, err := db.Exec(`UPDATE users SET password_hash = $1 WHERE username = 'admin'`, hash); err != nil {
-		log.Printf("admin seed: update failed: %v", err)
-		return
+
+	email := os.Getenv("ADMIN_EMAIL")
+	if email != "" {
+		if _, err := db.Exec(`UPDATE users SET password_hash = $1, email = $2 WHERE username = 'admin'`, hash, email); err != nil {
+			log.Printf("admin seed: update failed: %v", err)
+			return
+		}
+		log.Println("admin seed: password and email updated")
+	} else {
+		if _, err := db.Exec(`UPDATE users SET password_hash = $1 WHERE username = 'admin'`, hash); err != nil {
+			log.Printf("admin seed: update failed: %v", err)
+			return
+		}
+		log.Println("admin seed: password updated")
 	}
-	log.Println("admin seed: password updated")
 }
 
 func validateArmHeaders(r *http.Request) (string, error) {
@@ -427,6 +438,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		iinbox.NewHandler(inboxSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		icfg.NewHandler(cfgSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		pageRepo := ipage.NewRepository(db)
+		pageSvc := ipage.NewService(pageRepo)
+		ipage.NewHandler(pageSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
 	})
 
 	// ── SSR: serve index.html with injected SEO head tags ──────────────

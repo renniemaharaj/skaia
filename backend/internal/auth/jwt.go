@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -21,6 +22,7 @@ type Claims struct {
 }
 
 var jwtSecret []byte
+var sessionTimeout time.Duration
 
 func init() {
 	secret := os.Getenv("JWT_SECRET")
@@ -28,16 +30,24 @@ func init() {
 		log.Fatal("JWT_SECRET is required")
 	}
 	jwtSecret = []byte(secret)
+
+	minutes := 30
+	if v := os.Getenv("SESSION_TIMEOUT_MIN"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			minutes = n
+		}
+	}
+	sessionTimeout = time.Duration(minutes) * time.Minute
 }
 
-// GenerateToken creates a JWT access token (15-minute expiration).
+// GenerateToken creates a JWT access token using the configured session timeout.
 func GenerateToken(userID int64, username, email, displayName string, roles []string) (string, error) {
-	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, []string{}, 15*time.Minute)
+	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, []string{}, sessionTimeout)
 }
 
 // GenerateTokenWithPermissions creates a JWT token including permissions.
 func GenerateTokenWithPermissions(userID int64, username, email, displayName string, roles, permissions []string) (string, error) {
-	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, permissions, 15*time.Minute)
+	return GenerateTokenWithExpiration(userID, username, email, displayName, roles, permissions, sessionTimeout)
 }
 
 // GenerateRefreshToken creates a JWT refresh token (7-day expiration).

@@ -21,6 +21,7 @@ Commands:
   compose down                               Stop everything
   nginx reload                               Regenerate nginx config & hot-reload
   db init <name>                             Create database & run migrations
+  migrate <name|all> [--rebuild]             Re-run migrations on existing database
   logs <name> [-f]                           View / tail client logs
   wipe all                                   Remove all clients and shared data (postgres/redis)
 
@@ -132,6 +133,20 @@ func main() {
 			cmdDBInit(name)
 		default:
 			die("Unknown db subcommand: %s", sub)
+		}
+
+	case "migrate":
+		target := requireArg(rest, "migrate <name|all> [--rebuild]")
+		rebuild := false
+		for _, arg := range rest[1:] {
+			if arg == "--rebuild" {
+				rebuild = true
+			}
+		}
+		if target == "all" {
+			cmdMigrateAll(rebuild)
+		} else {
+			cmdMigrate(target, rebuild)
 		}
 
 	case "logs":

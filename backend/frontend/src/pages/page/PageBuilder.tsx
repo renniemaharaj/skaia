@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import type {
   LandingSection,
@@ -6,12 +6,19 @@ import type {
 } from "../../components/landing/types";
 import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
+import type { PageBuilderPage } from "../../hooks/usePageData";
 import { LandingSkeleton } from "../../components/landing/LandingSkeleton";
 import { BlockRenderer } from "../../components/landing/BlockRenderer";
 
-export default function PageBuilder() {
-  const { slug } = useParams<{ slug?: string }>();
-  const { page, loading, error, refresh, isEditable, updatePage } =
+interface PageBuilderProps {
+  /** Optional slug to load. Falls back to the URL :slug param, then index. */
+  slug?: string;
+}
+
+export default function PageBuilder(props: PageBuilderProps = {}) {
+  const params = useParams<{ slug?: string }>();
+  const slug = props.slug ?? params.slug;
+  const { page, loading, error, refresh, isEditable, updatePage, createPage } =
     usePageData();
   const {
     sections: landingSections,
@@ -25,6 +32,32 @@ export default function PageBuilder() {
   } = useLandingData();
 
   const [sections, setSections] = useState<LandingSection[]>([]);
+
+  // Track whether the page needs to be created (404 + editable).
+  const isNewPage = !!(slug && error && isEditable);
+  const pageRef = useRef<PageBuilderPage | null>(page);
+  pageRef.current = page;
+
+  /**
+   * Ensure the page entity exists in the backend, creating it on the fly if
+   * we're on a 404 slug the user has permission to build.
+   */
+  const ensurePage = useCallback(
+    async (content: LandingSection[]): Promise<PageBuilderPage | null> => {
+      if (pageRef.current) return pageRef.current;
+      if (!slug) return null;
+      const created = await createPage({
+        slug,
+        title: slug,
+        description: "",
+        is_index: false,
+        content: JSON.stringify(content),
+      });
+      await refresh(slug);
+      return created;
+    },
+    [slug, createPage, refresh],
+  );
 
   useEffect(() => {
     if (page?.content) {
@@ -45,15 +78,22 @@ export default function PageBuilder() {
     refresh(slug);
   }, [refresh, slug]);
 
-  const isPageFallback = !page || !!error;
+  // Only fall back to the per-section landing API when we're on the index
+  // page and no page entity exists for it yet.  Custom-page slugs always use
+  // the page-content JSON approach (ensurePage will auto-create if needed).
+  const isPageFallback = (!page || !!error) && !slug;
 
   const sortSections = (secs: LandingSection[]) =>
     [...secs].sort((a, b) => a.display_order - b.display_order);
 
   const savePageContent = async (updatedSections: LandingSection[]) => {
-    if (!page || page.id == null) return;
+    // If the page doesn't exist yet, create it with the initial content.
+    if (!pageRef.current || pageRef.current.id == null) {
+      await ensurePage(updatedSections);
+      return;
+    }
     await updatePage({
-      ...page,
+      ...pageRef.current,
       content: JSON.stringify(updatedSections),
     });
   };
@@ -210,7 +250,7 @@ export default function PageBuilder() {
     );
   }
 
-  if (slug && error) {
+  if (slug && error && !isEditable) {
     return (
       <div className="landing-container">
         <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
@@ -222,11 +262,34 @@ export default function PageBuilder() {
     );
   }
 
+  if (isNewPage) {
+    return (
+      <div className="landing-container">
+        <div style={{ textAlign: "center", padding: "3rem 1rem 1rem" }}>
+          <p style={{ opacity: 0.6 }}>
+            This page doesn&apos;t exist yet. Start building to create it.
+          </p>
+        </div>
+        <BlockRenderer
+          sections={[]}
+          canEdit
+          onUpdateSection={updateSectionWrapper}
+          onDeleteSection={deleteSectionWrapper}
+          onCreateSection={createSectionWrapper}
+          onCreateItem={createItemWrapper}
+          onUpdateItem={updateItemWrapper}
+          onDeleteItem={deleteItemWrapper}
+          onMoveSection={moveSectionWrapper}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="landing-container">
       <BlockRenderer
         sections={sections}
-        canEdit={isEditable && !isPageFallback}
+        canEdit={isEditable}
         onUpdateSection={updateSectionWrapper}
         onDeleteSection={deleteSectionWrapper}
         onCreateSection={createSectionWrapper}
