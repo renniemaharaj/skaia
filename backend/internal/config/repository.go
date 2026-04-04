@@ -119,9 +119,9 @@ func (r *sqlRepository) CreateSection(s *models.LandingSection) error {
 func (r *sqlRepository) UpdateSection(s *models.LandingSection) error {
 	_, err := r.db.Exec(
 		`UPDATE landing_sections
-		 SET heading=$2, subheading=$3, config=$4::jsonb, updated_at=CURRENT_TIMESTAMP
+		 SET display_order=$2, heading=$3, subheading=$4, config=$5::jsonb, updated_at=CURRENT_TIMESTAMP
 		 WHERE id=$1`,
-		s.ID, s.Heading, s.Subheading, s.Config,
+		s.ID, s.DisplayOrder, s.Heading, s.Subheading, s.Config,
 	)
 	return err
 }

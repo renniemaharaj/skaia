@@ -27,6 +27,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     updateSection,
     createSection,
     deleteSection,
+    reorderSections,
     createItem,
     updateItem,
     deleteItem,
@@ -93,10 +94,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       await ensurePage(updatedSections);
       return;
     }
-    await updatePage({
+    const saved = await updatePage({
       ...pageRef.current,
       content: JSON.stringify(updatedSections),
     });
+    // Keep the ref in sync so subsequent saves don't use stale content.
+    if (saved) {
+      pageRef.current = saved;
+    }
   };
 
   const updateSectionWrapper = (s: LandingSection) => {
@@ -230,14 +235,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     setSections(normalized);
 
     if (isPageFallback) {
-      await Promise.all(
-        normalized.map((section) =>
-          section.display_order !==
-          sections.find((prev) => prev.id === section.id)?.display_order
-            ? updateSection(section)
-            : Promise.resolve(),
-        ),
-      );
+      // Use the atomic reorder endpoint instead of individual section updates
+      // so display_order is persisted in a single transaction.
+      await reorderSections(normalized.map((s) => s.id));
     } else {
       await savePageContent(normalized);
     }

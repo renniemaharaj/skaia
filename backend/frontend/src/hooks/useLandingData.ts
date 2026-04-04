@@ -11,6 +11,7 @@ interface UseLandingDataReturn {
   updateSection: (s: LandingSection) => Promise<void>;
   createSection: (s: Omit<LandingSection, "id">) => Promise<void>;
   deleteSection: (id: number) => Promise<void>;
+  reorderSections: (orderedIds: number[]) => Promise<void>;
   createItem: (
     sectionId: number,
     item: Omit<LandingItem, "id">,
@@ -151,6 +152,17 @@ export function useLandingData(): UseLandingDataReturn {
     }
   }, []);
 
+  const reorderSections = useCallback(async (orderedIds: number[]) => {
+    try {
+      await apiRequest("/config/landing/sections/reorder", {
+        method: "PUT",
+        body: JSON.stringify({ ids: orderedIds }),
+      });
+    } catch {
+      toast.error("Failed to reorder sections");
+    }
+  }, []);
+
   return {
     sections,
     loading,
@@ -159,6 +171,7 @@ export function useLandingData(): UseLandingDataReturn {
     updateSection,
     createSection,
     deleteSection,
+    reorderSections,
     createItem,
     updateItem,
     deleteItem,
