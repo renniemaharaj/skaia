@@ -281,7 +281,10 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="auth-buttons">
                 <button
                   className="btn btn-secondary"
-                  onClick={() => handleNavigation("/login")}
+                  onClick={() => {
+                    navigate("/login", { state: { from: location } });
+                    setMenuOpen(false);
+                  }}
                 >
                   Sign in
                 </button>
