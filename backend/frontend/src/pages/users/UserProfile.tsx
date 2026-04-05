@@ -18,6 +18,7 @@ import "./UserProfile.css";
 
 interface UserProfileProps {
   userIdOverride?: string;
+  hideUploads?: boolean;
   handleThreads?: (
     threadsPanelHandle: React.ReactElement,
   ) => React.ReactElement;
@@ -28,6 +29,7 @@ interface UserProfileProps {
 
 const UserProfile: React.FC<UserProfileProps> = ({
   userIdOverride,
+  hideUploads,
   handleThreads,
   handlePermissions,
 }) => {
@@ -146,10 +148,12 @@ const UserProfile: React.FC<UserProfileProps> = ({
           ? permissionPanel
           : null}
 
-      <UserUploads
-        userId={effectiveUserId}
-        displayName={user.display_name || user.username}
-      />
+      {!hideUploads && (
+        <UserUploads
+          userId={effectiveUserId}
+          displayName={user.display_name || user.username}
+        />
+      )}
 
       {handleThreads ? handleThreads(threadsPanel) : threadsPanel}
 

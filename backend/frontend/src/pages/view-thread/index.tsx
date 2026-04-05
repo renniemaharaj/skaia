@@ -126,6 +126,7 @@ const ViewThreadPage = () => {
         {/* <Hero height="350px" /> */}
         <UserProfile
           userIdOverride={String(currentThread.user_id)}
+          hideUploads
           handlePermissions={(): React.ReactElement => <></>}
           handleThreads={(): React.ReactElement => <></>}
         />
