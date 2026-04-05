@@ -83,7 +83,7 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 
 	var out []*CategoryWithThreads
 	for _, cat := range categories {
-		threads, err := h.svc.ListCategoryThreads(cat.ID, 2, 0)
+		threads, err := h.svc.ListCategoryThreads(cat.ID, 5, 0)
 		if err != nil {
 			threads = []*models.ForumThread{}
 		}
@@ -309,7 +309,7 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 	})
 	h.hub.PropagateForumThread(created.ID, created, "thread_created")
 
-	if recentThreads, err := h.svc.ListCategoryThreads(categoryID, 2, 0); err == nil && len(recentThreads) > 0 {
+	if recentThreads, err := h.svc.ListCategoryThreads(categoryID, 5, 0); err == nil && len(recentThreads) > 0 {
 		h.hub.PropagateForumCategories(categoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 	}
 
@@ -398,7 +398,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 
 	h.hub.PropagateForumThread(id, updated, "thread_updated")
 
-	if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 2, 0); err == nil && len(recentThreads) > 0 {
+	if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0); err == nil && len(recentThreads) > 0 {
 		h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 	}
 
@@ -477,7 +477,7 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		}),
 	})
 
-	recentThreads, _ := h.svc.ListCategoryThreads(thread.CategoryID, 2, 0)
+	recentThreads, _ := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0)
 	h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
 
 	// Notify thread author when their thread is deleted by someone else (admin)

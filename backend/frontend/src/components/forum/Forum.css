@@ -168,12 +168,50 @@
 .threads-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   border-top: 1px solid var(--border-color);
   padding-top: 16px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+.threads-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.threads-list-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.threads-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.threads-list-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
+
+.threads-see-more {
+  text-align: center;
+  padding: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--primary-color);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.threads-see-more:hover {
+  opacity: 0.75;
+  text-decoration: underline;
 }
 
 .thread-item {

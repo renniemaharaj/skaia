@@ -305,89 +305,104 @@ export const Forum: React.FC<ForumProps> = () => {
                 </div>
               ) : (forum.threads || []).length > 0 ? (
                 <div className="threads-list">
-                  {(forum.threads || []).slice(0, 2).map((thread) => {
-                    const isThreadOwner =
-                      currentUser != null &&
-                      thread.user_id != null &&
-                      String(currentUser.id) === String(thread.user_id);
-                    const canEditThread =
-                      isThreadOwner ||
-                      currentUser?.permissions?.includes("forum.thread-edit");
-                    const canDeleteThread =
-                      isThreadOwner ||
-                      currentUser?.permissions?.includes("forum.thread-delete");
+                  <div className="threads-list-scroll">
+                    {(forum.threads || []).slice(0, 5).map((thread) => {
+                      const isThreadOwner =
+                        currentUser != null &&
+                        thread.user_id != null &&
+                        String(currentUser.id) === String(thread.user_id);
+                      const canEditThread =
+                        isThreadOwner ||
+                        currentUser?.permissions?.includes("forum.thread-edit");
+                      const canDeleteThread =
+                        isThreadOwner ||
+                        currentUser?.permissions?.includes(
+                          "forum.thread-delete",
+                        );
 
-                    return (
-                      <div key={thread.id} className="thread-item">
-                        <div className="thread-title-wrapper">
-                          <div className="thread-title">{thread.title}</div>
-                          <div className="thread-actions">
-                            <button
-                              className="thread-action-btn view-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/view-thread/${thread.id}`);
-                              }}
-                              title="View"
-                            >
+                      return (
+                        <div
+                          key={thread.id}
+                          className="thread-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/view-thread/${thread.id}`);
+                          }}
+                        >
+                          <div className="thread-title-wrapper">
+                            <div className="thread-title">{thread.title}</div>
+                            <div className="thread-actions">
+                              <button
+                                className="thread-action-btn view-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/view-thread/${thread.id}`);
+                                }}
+                                title="View"
+                              >
+                                <Eye size={14} />
+                              </button>
+                              {canEditThread && (
+                                <button
+                                  className="thread-action-btn edit-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/edit-thread/${thread.id}`);
+                                  }}
+                                  title="Edit"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                              )}
+                              {canDeleteThread && (
+                                <button
+                                  className="thread-action-btn delete-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteThread(thread.id, forum.id);
+                                  }}
+                                  title="Delete"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="thread-meta">
+                            {thread.user_id && (
+                              <span
+                                className="thread-stat thread-author-stat"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <UserLink
+                                  userId={String(thread.user_id)}
+                                  displayName={thread.user_name}
+                                  variant="subtle"
+                                />
+                              </span>
+                            )}
+                            <span className="thread-stat">
                               <Eye size={14} />
-                            </button>
-                            {canEditThread && (
-                              <button
-                                className="thread-action-btn edit-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/edit-thread/${thread.id}`);
-                                }}
-                                title="Edit"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                            )}
-                            {canDeleteThread && (
-                              <button
-                                className="thread-action-btn delete-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteThread(thread.id, forum.id);
-                                }}
-                                title="Delete"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
+                              {thread.view_count} views
+                            </span>
+                            <span className="thread-stat">
+                              <MessageSquare size={14} />
+                              {thread.reply_count} replies
+                            </span>
                           </div>
                         </div>
-                        <div className="thread-meta">
-                          {thread.user_id && (
-                            <span
-                              className="thread-stat thread-author-stat"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <UserLink
-                                userId={String(thread.user_id)}
-                                displayName={thread.user_name}
-                                variant="subtle"
-                              />
-                            </span>
-                          )}
-                          <span className="thread-stat">
-                            <Eye size={14} />
-                            {thread.view_count} views
-                          </span>
-                          <span className="thread-stat">
-                            <MessageSquare size={14} />
-                            {thread.reply_count} replies
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {(forum.threads || []).length > 2 && (
-                    <div className="empty-threads">
-                      +{(forum.threads || []).length - 2} more threads
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="threads-see-more"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/threads/categories/${forum.id}`);
+                    }}
+                  >
+                    See more in {forum.name} &rarr;
+                  </div>
                 </div>
               ) : (
                 <div className="empty-threads">No threads yet</div>
