@@ -8,12 +8,12 @@
 
 /* TipTap Renderer Responsive Styling */
 .renderer-editor {
-  /* max-width: 90% !important; */
   width: 900px;
-  max-width: 100vw !important;
+  max-width: 100%;
   margin: 0 auto !important;
   box-shadow: none !important;
   outline: none !important;
+  box-sizing: border-box;
 }
 
 .renderer-editor .ProseMirror {
