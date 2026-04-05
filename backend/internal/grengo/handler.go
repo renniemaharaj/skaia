@@ -155,12 +155,12 @@ func (h *Handler) requireSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sid := chi.URLParam(r, "sessionId")
 		if sid == "" {
-			utils.WriteError(w, http.StatusUnauthorized, "session required")
+			utils.WriteError(w, http.StatusForbidden, "session required")
 			return
 		}
 		s := h.touchSession(sid)
 		if s == nil {
-			utils.WriteError(w, http.StatusUnauthorized, "session expired or invalid")
+			utils.WriteError(w, http.StatusForbidden, "session expired or invalid")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -240,7 +240,7 @@ func (h *Handler) handleValidateSession(w http.ResponseWriter, r *http.Request) 
 	sid := chi.URLParam(r, "sessionId")
 	s := h.touchSession(sid)
 	if s == nil {
-		utils.WriteError(w, http.StatusUnauthorized, "session expired or invalid")
+		utils.WriteError(w, http.StatusForbidden, "session expired or invalid")
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]any{

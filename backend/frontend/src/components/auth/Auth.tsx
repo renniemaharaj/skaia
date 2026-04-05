@@ -97,9 +97,13 @@ export const Auth: React.FC<AuthPageProps> = ({
           onAuthSuccess(data.access_token);
         }
 
-        // Redirect to previous page or home (but not to /register)
+        // Redirect to previous page or home (skip /register and grengo tmp
+        // sessions — those are one-time sessions that will have expired).
         const from = (location.state as any)?.from?.pathname;
-        const redirectTo = from && from !== "/register" ? from : "/";
+        const redirectTo =
+          from && from !== "/register" && !from.startsWith("/tmp/")
+            ? from
+            : "/";
         navigate(redirectTo);
       } else {
         // Registration
