@@ -1,8 +1,9 @@
 import "./ViewThreadComments.css";
-import { Send, ThumbsUp, Trash2 } from "lucide-react";
+import { ThumbsUp, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import UserAvatar from "../user/UserAvatar";
+import ComposerInput from "../input/Input";
 import {
   threadCommentsAtom,
   enrichedThreadCommentsAtom,
@@ -16,7 +17,6 @@ import { formatDate } from "../../utils/serverTime";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const comments = useAtomValue(enrichedThreadCommentsAtom);
@@ -82,37 +82,6 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [comments.length]);
-
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim() || !threadId || isSubmitting) return;
-
-    try {
-      setIsSubmitting(true);
-      const response = await apiRequest(`/forum/threads/${threadId}/comments`, {
-        method: "POST",
-        body: JSON.stringify({ content: commentText }),
-      });
-
-      if (response) {
-        // Comment will be added through WebSocket propagation
-        setCommentText("");
-      }
-    } catch (error) {
-      console.error("Error submitting comment:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Submit on Enter (without Shift)
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleCommentSubmit(e as unknown as React.FormEvent);
-    }
-    // Shift+Enter adds a new line (default behavior)
-  };
 
   const handleDeleteComment = useCallback(async (commentId: string) => {
     try {
@@ -268,34 +237,26 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
         "forum.thread-comment-new",
       ) && (
         <div className="comment-composer">
-          <form
-            className="comment-composer-form"
-            onSubmit={handleCommentSubmit}
-          >
-            <textarea
-              className="comment-composer-input"
-              placeholder="Write a comment… (Shift+Enter for new line)"
-              rows={1}
-              value={commentText}
-              onChange={(e) => {
-                setCommentText(e.target.value);
-                // Auto-grow
-                e.target.style.height = "auto";
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
-              }}
-              onKeyDown={handleKeyDown}
-              disabled={isSubmitting}
-            />
-            <button
-              type="submit"
-              className="comment-composer-send composer-send composer-send--large"
-              disabled={isSubmitting || !commentText.trim()}
-              title="Post comment"
-              aria-label="Send comment"
-            >
-              <Send size={18} />
-            </button>
-          </form>
+          <ComposerInput
+            handleSend={async (text) => {
+              if (!threadId || isSubmitting) return;
+              try {
+                setIsSubmitting(true);
+                await apiRequest(`/forum/threads/${threadId}/comments`, {
+                  method: "POST",
+                  body: JSON.stringify({ content: text }),
+                });
+              } catch (error) {
+                console.error("Error submitting comment:", error);
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            disabled={isSubmitting}
+            placeholder="Write a comment… (Shift+Enter for new line)"
+            minRows={1}
+            maxRows={5}
+          />
         </div>
       )}
     </div>

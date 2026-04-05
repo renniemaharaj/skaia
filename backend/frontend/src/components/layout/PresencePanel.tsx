@@ -10,7 +10,6 @@ import {
   Navigation,
   LocateFixed,
   MessageCircle,
-  Send,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../atoms/presence";
 import {
@@ -24,6 +23,7 @@ import {
 } from "../../atoms/chat";
 import { toast } from "sonner";
 import { formatLocalTime } from "../../utils/serverTime";
+import ComposerInput from "../input/Input";
 import "./PresencePanel.css";
 
 /**
@@ -43,7 +43,6 @@ const PresencePanel = () => {
   const [expanded, setExpanded] = useState(true);
   const [chatMode, setChatMode] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
-  const [chatInput, setChatInput] = useState("");
   const prevChatLenRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const rawUsers = useAtomValue(onlineUsersAtom);
@@ -148,13 +147,6 @@ const PresencePanel = () => {
       setChatUnread((n) => n + 1);
     }
   }, [chatMessages.length, chatMode]);
-
-  const sendChatMessage = () => {
-    const content = chatInput.trim();
-    if (!content || !socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "global:chat", payload: { content } }));
-    setChatInput("");
-  };
 
   // ───────────────────────────────────────────────────────────────
 
@@ -333,31 +325,22 @@ const PresencePanel = () => {
               ))}
               <div ref={chatEndRef} />
             </div>
-            <div className="pp-chat-input-row chat-composer">
-              <input
-                className="pp-chat-input composer-input"
-                type="text"
+            <div className="pp-chat-input-row">
+              <ComposerInput
+                handleSend={(msg) => {
+                  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+                  socket.send(
+                    JSON.stringify({
+                      type: "global:chat",
+                      payload: { content: msg },
+                    }),
+                  );
+                }}
                 placeholder="Say something…"
                 maxLength={500}
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                  }
-                }}
-                aria-label="Global chat message"
+                maxRows={3}
+                compact
               />
-              <button
-                className="pp-chat-send composer-send"
-                onClick={sendChatMessage}
-                disabled={!chatInput.trim()}
-                title="Send"
-                aria-label="Send global chat message"
-              >
-                <Send size={16} />
-              </button>
             </div>
           </>
         )}

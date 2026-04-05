@@ -1,0 +1,113 @@
+/* ── Composer input wrapper ──────────────────────────── */
+.composer-wrapper {
+  width: 100%;
+  border: 2px solid var(--border-color);
+  border-radius: 1rem;
+  background: var(--bg-color);
+  padding: 0.55rem 0.7rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.composer-wrapper--focused {
+  border-color: var(--primary-color);
+  box-shadow:
+    0 0 0 3px rgba(91, 158, 142, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Compact variant (global chat sidebar) */
+.composer-wrapper--compact {
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  border-width: 1px;
+}
+
+/* ── Inner layout ───────────────────────────────────── */
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* ── Textarea ───────────────────────────────────────── */
+.composer-textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  padding: 0.35rem 0.4rem;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.composer-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.55;
+}
+
+.composer-wrapper--compact .composer-textarea {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.3rem;
+}
+
+/* Hide scrollbar but keep scrolling */
+.composer-textarea::-webkit-scrollbar {
+  display: none;
+}
+.composer-textarea {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* ── Send button ────────────────────────────────────── */
+.composer-send-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition:
+    opacity 0.15s ease,
+    transform 0.1s ease;
+}
+
+.composer-send-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.composer-send-btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.composer-wrapper--compact .composer-send-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 8px;
+}
+
+/* ── Children slot (below the row) ──────────────────── */
+.composer-extra {
+  margin-top: 0.4rem;
+}
