@@ -1,24 +1,55 @@
+/* ── Mobile full-width wrapper ─────────────────────────────────── */
+.mobile-view-thread-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  padding: 0 0.5rem;
+}
+
+/* Desktop wrapper — wider than the default .modal */
+.view-thread-wrapper {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 32px;
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+  margin: auto;
+  box-sizing: border-box;
+}
+
 .view-thread-page {
   top: 0;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
-  /* flex-direction: row; */
   gap: 1rem;
-
-  /* padding-top: 2rem; */
   position: sticky;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.view-thread-page > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .view-thread-page-comments {
   width: 100%;
-  /* background-color: var(--bg-color); */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
   .view-thread-page {
     flex-direction: column;
-    /* padding: 1rem; */
+    padding: 0;
   }
 }

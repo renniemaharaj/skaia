@@ -90,7 +90,7 @@ const ViewThreadPage = () => {
 
   if (loading) {
     return (
-      <div className="modal" style={{ width: "100vw" }}>
+      <div className="modal">
         <div style={{ padding: "2rem", textAlign: "center" }}>
           <p>Loading thread...</p>
         </div>
@@ -100,7 +100,7 @@ const ViewThreadPage = () => {
 
   if (error || !currentThread) {
     return (
-      <div className="modal" style={{ width: "100vw" }}>
+      <div className="modal">
         <div style={{ padding: "2rem", textAlign: "center" }}>
           <p style={{ color: "var(--text-secondary)" }}>
             {error || "Thread not found"}
@@ -118,11 +118,17 @@ const ViewThreadPage = () => {
 
   return (
     <div
-      className={isMobile ? "mobile-view-thread-page" : "modal"}
-      style={{ width: "100vw" }}
+      className={isMobile ? "mobile-view-thread-page" : "view-thread-wrapper"}
       onClick={(e) => e.stopPropagation()}
     >
-      <div style={{ display: "flex", flexDirection: "column" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          maxWidth: "100%",
+          overflow: "hidden",
+        }}
+      >
         {/* <Hero height="350px" /> */}
         <UserProfile
           userIdOverride={String(currentThread.user_id)}
