@@ -191,6 +191,22 @@ func (r *sqlRepository) CreateItem(item *models.LandingItem) error {
 	).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 }
 
+func (r *sqlRepository) GetItem(id int64) (*models.LandingItem, error) {
+	it := &models.LandingItem{}
+	err := r.db.QueryRow(
+		`SELECT id, section_id, display_order, icon, heading, subheading,
+		        image_url, link_url, config::text, created_at, updated_at
+		 FROM landing_items WHERE id=$1`, id,
+	).Scan(&it.ID, &it.SectionID, &it.DisplayOrder,
+		&it.Icon, &it.Heading, &it.Subheading,
+		&it.ImageURL, &it.LinkURL, &it.Config,
+		&it.CreatedAt, &it.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return it, nil
+}
+
 func (r *sqlRepository) UpdateItem(item *models.LandingItem) error {
 	_, err := r.db.Exec(
 		`UPDATE landing_items

@@ -436,6 +436,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 		uploadHandler := iupload.NewHandler()
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)
+		iupload.MountUserUploads(api, imw.JWTAuthMiddleware, userSvc)
 
 		inotif.NewHandler(notifSvc).Mount(api, imw.JWTAuthMiddleware)
 

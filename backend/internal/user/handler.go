@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/lib/pq"
 	"github.com/skaia/backend/internal/auth"
+	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -678,12 +679,16 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldPhotoURL := u.PhotoURL
 	u.PhotoURL = fmt.Sprintf("/uploads/users/%d/photos/%s", userID, filename)
 	if _, err = h.svc.Update(u); err != nil {
 		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
+
+	// Remove old photo file.
+	go iupload.DeleteUploadFile(oldPhotoURL)
 
 	if h.hub != nil {
 		u.PasswordHash = ""
@@ -773,12 +778,17 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
+	oldPhotoURL := u.PhotoURL
 	u.PhotoURL = fmt.Sprintf("/uploads/users/%d/photos/%s", targetID, filename)
 	if _, err = h.svc.Update(u); err != nil {
 		os.Remove(filepath.Join(photoDir, filename)) //nolint:errcheck
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
+
+	// Remove old photo file.
+	go iupload.DeleteUploadFile(oldPhotoURL)
+
 	if h.hub != nil {
 		u.PasswordHash = ""
 		go h.hub.PropagateUser(targetID, map[string]interface{}{"user": u})
@@ -856,12 +866,16 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		utils.WriteError(w, http.StatusInternalServerError, "failed to load user")
 		return
 	}
+	oldBannerURL := u.BannerURL
 	u.BannerURL = fmt.Sprintf("/uploads/users/%d/banners/%s", userID, filename)
 	if _, err = h.svc.Update(u); err != nil {
 		os.Remove(filepath.Join(bannerDir, filename)) //nolint:errcheck
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update user")
 		return
 	}
+
+	// Remove old banner file.
+	go iupload.DeleteUploadFile(oldBannerURL)
 	if h.hub != nil {
 		u.PasswordHash = ""
 		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})

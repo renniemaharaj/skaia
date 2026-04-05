@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	ws "github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -444,11 +445,28 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Collect all upload URLs referenced in thread content + comments
+	// so the files can be removed from disk after the DB delete.
+	var uploadURLs []string
+	uploadURLs = append(uploadURLs, iupload.ExtractUploadURLs(thread.Content)...)
+	if comments, err := h.svc.ListThreadComments(id, 10000, 0); err == nil {
+		for _, c := range comments {
+			uploadURLs = append(uploadURLs, iupload.ExtractUploadURLs(c.Content)...)
+		}
+	}
+
 	if err := h.svc.DeleteThread(id); err != nil {
 		log.Printf("forum.deleteThread: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete thread")
 		return
 	}
+
+	// Remove orphaned upload files in the background.
+	go func() {
+		for _, u := range uploadURLs {
+			iupload.DeleteUploadFile(u)
+		}
+	}()
 
 	h.hub.PropagateForumThread(id, nil, "thread_deleted")
 	h.hub.Broadcast(&ws.Message{
@@ -734,12 +752,22 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Collect upload URLs from the comment content for cleanup.
+	commentUploadURLs := iupload.ExtractUploadURLs(comment.Content)
+
 	threadID := comment.ThreadID
 	if err := h.svc.DeleteComment(id); err != nil {
 		log.Printf("forum.deleteComment: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete comment")
 		return
 	}
+
+	// Remove orphaned upload files in the background.
+	go func() {
+		for _, u := range commentUploadURLs {
+			iupload.DeleteUploadFile(u)
+		}
+	}()
 
 	h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
 

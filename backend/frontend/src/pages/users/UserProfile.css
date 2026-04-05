@@ -429,6 +429,278 @@
   margin: 0;
 }
 
+/* ── User uploads section ─────────────────────────────────────────────────── */
+.up-uploads-section {
+  margin: 20px 24px 0;
+}
+
+.up-uploads-count {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #888);
+  background: var(--bg-tertiary, #f0f0f0);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.up-uploads-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 32px 0;
+  font-size: 13px;
+  color: var(--text-secondary, #888);
+}
+
+.up-uploads-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  padding: 24px 0;
+  font-size: 13px;
+  color: var(--error-color, #dc3545);
+  margin: 0;
+}
+
+/* Scrollable container */
+.up-uploads-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 10px;
+  background: var(--bg-secondary, #f9f9f9);
+  padding: 12px;
+}
+
+.up-uploads-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.up-uploads-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.up-uploads-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color, #ccc);
+  border-radius: 3px;
+}
+
+/* Image/video grid */
+.up-uploads-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.up-upload-card {
+  background: var(--bg-color, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 10px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    opacity 0.2s;
+}
+.up-upload-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.up-upload-selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(91, 158, 142, 0.25);
+}
+.up-upload-deleting {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Thumbnail */
+.up-upload-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bg-tertiary, #f0f0f0);
+}
+.up-upload-thumb img,
+.up-upload-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+.up-upload-thumb:hover img,
+.up-upload-thumb:hover video {
+  transform: scale(1.03);
+}
+
+.up-upload-type-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  text-transform: capitalize;
+}
+
+/* Info row */
+.up-upload-info {
+  padding: 8px 10px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.up-upload-filename {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.up-upload-meta {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+}
+
+/* Action buttons — uses .thread-action-btn from ThreadActions.css */
+.up-upload-card .thread-actions,
+.up-upload-file-row .thread-actions,
+.up-upload-lightbox-bar .thread-actions {
+  display: flex;
+  gap: 4px;
+  padding: 4px 10px 8px;
+  opacity: 1;
+}
+.up-upload-file-row .thread-actions,
+.up-upload-lightbox-bar .thread-actions {
+  padding: 0;
+}
+.thread-action-btn.copy-btn:hover {
+  color: var(--primary-color);
+  background-color: rgba(91, 158, 142, 0.1);
+}
+
+/* Files sub-heading */
+.up-uploads-subheading {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary, #888);
+  margin: 16px 0 8px;
+}
+
+/* File list rows */
+.up-uploads-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 10px;
+  background: var(--bg-secondary, #f9f9f9);
+  padding: 8px;
+}
+
+.up-upload-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg-color, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  transition:
+    border-color 0.12s,
+    opacity 0.2s;
+}
+.up-upload-file-row:hover {
+  border-color: var(--primary-color);
+}
+.up-upload-file-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary, #888);
+}
+.up-upload-file-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary-color);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.up-upload-file-name:hover {
+  text-decoration: underline;
+}
+.up-upload-file-meta {
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+}
+
+/* Lightbox */
+.up-upload-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 24px;
+  cursor: pointer;
+}
+.up-upload-lightbox-content {
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color, #fff);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+.up-upload-lightbox-content img {
+  max-width: 90vw;
+  max-height: calc(85vh - 48px);
+  object-fit: contain;
+  display: block;
+}
+.up-upload-lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-secondary, #f9f9f9);
+}
+.up-upload-lightbox-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 12px;
+}
+
 /* ── Spinner ──────────────────────────────────────────────────────────────── */
 .up-spinner {
   display: inline-block;
@@ -582,7 +854,8 @@
 @media (max-width: 640px) {
   .up-card,
   .up-manage-panel,
-  .up-threads-section {
+  .up-threads-section,
+  .up-uploads-section {
     margin-inline: 12px;
   }
   .up-banner {

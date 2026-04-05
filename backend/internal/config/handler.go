@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
@@ -303,11 +304,27 @@ func (h *Handler) deleteSection(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
+
+	// Fetch section items before deleting so we can clean up their image files.
+	section, _ := h.svc.GetSection(id)
+
 	if err := h.svc.DeleteSection(id); err != nil {
 		log.Printf("config.deleteSection: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
+
+	// Remove image files from any items within the deleted section.
+	if section != nil {
+		go func() {
+			for _, item := range section.Items {
+				if item.ImageURL != "" {
+					iupload.DeleteUploadFile(item.ImageURL)
+				}
+			}
+		}()
+	}
+
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -391,11 +408,21 @@ func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
+
+	// Fetch the item first so we can clean up its image file.
+	item, _ := h.svc.GetItem(id)
+
 	if err := h.svc.DeleteItem(id); err != nil {
 		log.Printf("config.deleteItem: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
+
+	// Remove the image file if it's a local upload.
+	if item != nil && item.ImageURL != "" {
+		go iupload.DeleteUploadFile(item.ImageURL)
+	}
+
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 

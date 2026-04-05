@@ -50,6 +50,9 @@ var envDefaults = []envDefaultEntry{
 	{"HTTP_WRITE_TIMEOUT_SEC", "15"},
 	{"HTTP_IDLE_TIMEOUT_SEC", "60"},
 	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30"},
+	// Upload limits
+	{"MAX_UPLOAD_PER_USER_MB", "500"},
+	{"MAX_UPLOAD_TOTAL_MB", "5000"},,
 	// Grengo internal API
 	{"GRENGO_API_URL", "http://host.docker.internal:9100"},
 }

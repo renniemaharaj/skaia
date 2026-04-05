@@ -80,6 +80,10 @@ func (s *Service) ListItems(sectionID int64) ([]*models.LandingItem, error) {
 	return s.repo.ListItems(sectionID)
 }
 
+func (s *Service) GetItem(id int64) (*models.LandingItem, error) {
+	return s.repo.GetItem(id)
+}
+
 func (s *Service) CreateItem(item *models.LandingItem) error {
 	if item.Config == "" {
 		item.Config = "{}"

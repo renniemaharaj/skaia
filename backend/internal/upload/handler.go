@@ -35,6 +35,84 @@ const (
 	MaxImgSize  = 10 * 1024 * 1024 // 10 MB (images / banners)
 )
 
+// Upload quota limits — read from environment (bytes).
+var (
+	MaxUploadPerUser int64 = 500 * 1024 * 1024  // MAX_UPLOAD_PER_USER_MB
+	MaxUploadTotal   int64 = 5000 * 1024 * 1024 // MAX_UPLOAD_TOTAL_MB
+)
+
+func init() {
+	if v := os.Getenv("MAX_UPLOAD_PER_USER_MB"); v != "" {
+		if mb, err := strconv.ParseInt(v, 10, 64); err == nil && mb > 0 {
+			MaxUploadPerUser = mb * 1024 * 1024
+		}
+	}
+	if v := os.Getenv("MAX_UPLOAD_TOTAL_MB"); v != "" {
+		if mb, err := strconv.ParseInt(v, 10, 64); err == nil && mb > 0 {
+			MaxUploadTotal = mb * 1024 * 1024
+		}
+	}
+}
+
+// DirSize returns the total size of all files under a directory (recursive).
+func DirSize(path string) (int64, error) {
+	var total int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		total += info.Size()
+		return nil
+	})
+	return total, err
+}
+
+// checkUserQuota returns an error string if the user would exceed their per-user quota.
+func checkUserQuota(userID int64) string {
+	if MaxUploadPerUser <= 0 {
+		return ""
+	}
+	dir := filepath.Join(UsersDir, strconv.FormatInt(userID, 10))
+	used, _ := DirSize(dir)
+	if used >= MaxUploadPerUser {
+		return fmt.Sprintf("upload quota exceeded (used %s of %s)",
+			humanSize(used), humanSize(MaxUploadPerUser))
+	}
+	return ""
+}
+
+// checkTotalQuota returns an error string if the backend-wide quota would be exceeded.
+func checkTotalQuota() string {
+	if MaxUploadTotal <= 0 {
+		return ""
+	}
+	used, _ := DirSize(UploadsDir)
+	if used >= MaxUploadTotal {
+		return fmt.Sprintf("backend storage limit reached (%s of %s)",
+			humanSize(used), humanSize(MaxUploadTotal))
+	}
+	return ""
+}
+
+// humanSize formats bytes as a human-readable string.
+func humanSize(b int64) string {
+	const (
+		kb = 1024
+		mb = kb * 1024
+		gb = mb * 1024
+	)
+	switch {
+	case b >= gb:
+		return fmt.Sprintf("%.1f GB", float64(b)/float64(gb))
+	case b >= mb:
+		return fmt.Sprintf("%.1f MB", float64(b)/float64(mb))
+	case b >= kb:
+		return fmt.Sprintf("%.1f KB", float64(b)/float64(kb))
+	default:
+		return fmt.Sprintf("%d B", b)
+	}
+}
+
 var (
 	AllowedImageTypes = []string{"image/jpeg", "image/png", "image/webp", "image/gif"}
 	AllowedVideoTypes = []string{"video/mp4", "video/webm", "video/ogg", "video/quicktime", "video/x-msvideo"}
@@ -95,6 +173,15 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if msg := checkUserQuota(userID); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := checkTotalQuota(); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+
 	if err := r.ParseMultipartForm(MaxImgSize); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
@@ -147,6 +234,15 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	if msg := checkUserQuota(userID); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := checkTotalQuota(); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
@@ -205,6 +301,15 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if msg := checkUserQuota(userID); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := checkTotalQuota(); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+
 	if err := r.ParseMultipartForm(MaxFileSize); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
@@ -257,6 +362,15 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	if msg := checkUserQuota(userID); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := checkTotalQuota(); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 

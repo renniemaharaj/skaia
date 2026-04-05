@@ -19,6 +19,7 @@ type Repository interface {
 
 	// Landing items
 	ListItems(sectionID int64) ([]*models.LandingItem, error)
+	GetItem(id int64) (*models.LandingItem, error)
 	CreateItem(item *models.LandingItem) error
 	UpdateItem(item *models.LandingItem) error
 	DeleteItem(id int64) error

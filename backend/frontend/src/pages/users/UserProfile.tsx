@@ -10,6 +10,7 @@ import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 import UserProfileCard from "./UserProfileCard";
 import UserManagePanel from "./UserManagePanel";
 import UserThreadsFeed from "./UserThreadsFeed";
+import UserUploads from "./UserUploads";
 import EditProfileDialog from "./EditProfileDialog";
 import SuspendDialog from "./SuspendDialog";
 
@@ -144,6 +145,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
         : canManage
           ? permissionPanel
           : null}
+
+      <UserUploads
+        userId={effectiveUserId}
+        displayName={user.display_name || user.username}
+      />
 
       {handleThreads ? handleThreads(threadsPanel) : threadsPanel}
 
