@@ -18,22 +18,10 @@ import GrengoPage from "./admin/grengo.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
-  { path: "store", element: <StorePage />, conditional: "store" },
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
   {
     path: "edit-thread/:threadId",
     element: <EditThreadPage />,
-    conditional: "forum",
-  },
-  {
-    path: "view-thread/:threadId",
-    element: <ViewThreadPage />,
-    conditional: "forum",
-  },
-  { path: "forum", element: <ForumPage />, conditional: "forum" },
-  {
-    path: "threads/categories/:categoryId",
-    element: <CategoryThreadsPage />,
     conditional: "forum",
   },
   { path: "cart", element: <CartPage />, conditional: "store" },
@@ -43,6 +31,23 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "admin/meta", element: <AdminMetaSettings /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },
 ];
+
+/** Routes accessible to both guests and authenticated users. */
+export const guestRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "store", element: <StorePage />, conditional: "store" },
+  { path: "forum", element: <ForumPage />, conditional: "forum" },
+  {
+    path: "view-thread/:threadId",
+    element: <ViewThreadPage />,
+    conditional: "forum",
+  },
+  {
+    path: "threads/categories/:categoryId",
+    element: <CategoryThreadsPage />,
+    conditional: "forum",
+  },
+];
+
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
   { path: "page/:slug", element: <PageBuilder /> },

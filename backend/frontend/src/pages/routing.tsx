@@ -1,7 +1,8 @@
 import { Route } from "react-router-dom";
 import Suspended from "./suspended";
-import { protectedRoutes, publicRoutes } from "./routes";
+import { protectedRoutes, publicRoutes, guestRoutes } from "./routes";
 import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import { GuestRoute } from "../components/auth/GuestRoute";
 import type { JSX } from "react";
 
 export interface Primitve {
@@ -58,6 +59,18 @@ export const protectedRoutesFunc = (
         element={
           <ProtectedRoute>{passThrough(route as CustomRoute)}</ProtectedRoute>
         }
+      />
+    ));
+};
+
+export const guestRoutesFunc = (features: Record<string, boolean> | null) => {
+  return guestRoutes
+    .filter((route) => featureAllowed(route.conditional, features))
+    .map((route, i) => (
+      <Route
+        key={`guest-${(route as CustomRoute).path || i}` + i}
+        path={(route as CustomRoute).path}
+        element={<GuestRoute>{passThrough(route as CustomRoute)}</GuestRoute>}
       />
     ));
 };

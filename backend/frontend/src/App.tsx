@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
-import { publicRoutesFunc, protectedRoutesFunc } from "./pages/routing";
+import {
+  publicRoutesFunc,
+  protectedRoutesFunc,
+  guestRoutesFunc,
+} from "./pages/routing";
 import { Layout } from "./pages/Layout";
 import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
@@ -32,6 +36,7 @@ export default function App() {
               <ErrorBoundary>
                 <Routes>
                   {publicRoutesFunc(features)}
+                  {guestRoutesFunc(features)}
                   {protectedRoutesFunc(features)}
                 </Routes>
               </ErrorBoundary>

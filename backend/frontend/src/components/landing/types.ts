@@ -75,6 +75,7 @@ export const SECTION_TYPES = [
   "event_highlights",
   "profile_card",
   "rich_text",
+  "code_editor",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -90,4 +91,5 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   event_highlights: "Event Highlights",
   profile_card: "Profile Card",
   rich_text: "Rich Text",
+  code_editor: "Code Editor",
 };

@@ -1839,6 +1839,226 @@
   }
 }
 
+/* ── Code Editor Block ────────────────────────────────────────────────── */
+
+.code-editor-block {
+  padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out 0.3s forwards;
+}
+
+.code-editor-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.code-editor-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.code-editor-control select,
+.code-editor-control input {
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary, var(--bg-color));
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.code-editor-control select:focus,
+.code-editor-control input:focus {
+  border-color: var(--primary-color);
+}
+
+.code-editor-file-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #1e1e1e;
+  border-radius: 12px 12px 0 0;
+  font-size: 0.85rem;
+  color: #999;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+}
+
+.code-editor-file-header-light {
+  background: #f3f3f3;
+  color: #666;
+}
+
+.code-editor-file-header-light .code-editor-filename {
+  color: #333;
+}
+
+.code-editor-file-header-light .code-editor-lang-badge {
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+}
+
+.code-editor-file-header-light .code-editor-action-btn {
+  color: #555;
+}
+
+.code-editor-file-header-light .code-editor-action-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #222;
+}
+
+.code-editor-file-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #555;
+}
+
+.code-editor-file-dot:nth-child(1) {
+  background: #ff5f56;
+}
+.code-editor-file-dot:nth-child(2) {
+  background: #ffbd2e;
+}
+.code-editor-file-dot:nth-child(3) {
+  background: #27c93f;
+}
+
+.code-editor-filename {
+  margin-left: 8px;
+  color: #ccc;
+}
+
+.code-editor-lang-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.code-editor-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.code-editor-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: inherit;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.code-editor-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Rendered preview (HTML / markdown) */
+.code-editor-rendered {
+  border: 1px solid var(--border-color);
+  border-radius: 0 0 12px 12px;
+  padding: 24px 32px;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.code-editor-rendered * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.code-editor-rendered img {
+  max-width: 100%;
+  height: auto;
+}
+
+.code-editor-rendered pre {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.code-editor-rendered table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.code-editor-block .monaco-editor {
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.code-editor-block .code-editor-file-header + * .monaco-editor {
+  border-radius: 0 0 12px 12px;
+}
+
+/* When there's no file header, round all corners */
+.code-editor-block > section > .monaco-editor,
+.code-editor-block
+  > div:not(.code-editor-file-header):first-of-type
+  .monaco-editor {
+  border-radius: 12px;
+}
+
+.code-editor-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: border-color 0.2s;
+}
+
+.code-editor-empty:hover {
+  border-color: var(--primary-color);
+}
+
+.code-editor-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .code-editor-block {
+    padding: 20px;
+  }
+  .code-editor-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .code-editor-rendered {
+    padding: 16px;
+  }
+}
+
 /* ── Color Picker / Swatch ────────────────────────────────────────────── */
 
 .landing-color-picker {

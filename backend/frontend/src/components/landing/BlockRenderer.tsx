@@ -10,6 +10,7 @@ import { CTABlock } from "./blocks/CTABlock";
 import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
 import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
 import { RichTextBlock } from "./blocks/RichTextBlock";
+import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 import { getSectionLayout, SectionMoveContext } from "./EditControls";
@@ -49,6 +50,7 @@ const BLOCK_MAP: Record<
   event_highlights: EventHighlightsBlock,
   profile_card: ProfileCardBlock as never,
   rich_text: RichTextBlock as never,
+  code_editor: CodeEditorBlock as never,
 };
 
 export const BlockRenderer = ({
