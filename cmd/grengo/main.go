@@ -211,8 +211,6 @@ func main() {
 			}
 		}
 		cmdExportNode(outFile)
-		archivePath := requireArg(rest, "import-node <file.tar.gz>")
-		cmdImportNode(archivePath)
 
 	case "wipe":
 		sub := requireArg(rest, "wipe <all>")

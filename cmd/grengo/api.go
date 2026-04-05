@@ -60,6 +60,7 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("GET /sites", apiListSites)
 	mux.HandleFunc("GET /stats", apiStats)
 	mux.HandleFunc("GET /storage", apiStorage)
+	mux.HandleFunc("GET /sysinfo", apiSysInfo)
 	mux.HandleFunc("GET /env/{name}", apiGetEnv)
 	mux.HandleFunc("PUT /env/{name}", apiPutEnv)
 	mux.HandleFunc("POST /exec", apiExec)
@@ -67,6 +68,10 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("POST /import", apiImportSite)
 	mux.HandleFunc("POST /sites/{name}/arm", apiArmSite)
 	mux.HandleFunc("POST /sites/{name}/disarm", apiDisarmSite)
+	mux.HandleFunc("POST /sites/{name}/migrate", apiMigrateSite)
+	mux.HandleFunc("POST /migrate-all", apiMigrateAll)
+	mux.HandleFunc("GET /export-node", apiExportNode)
+	mux.HandleFunc("POST /import-node", apiImportNode)
 	mux.HandleFunc("POST /verify-passcode", apiVerifyPasscode)
 	mux.HandleFunc("GET /passcode/status", apiPasscodeStatus)
 
@@ -773,6 +778,233 @@ func apiDisarmSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": false})
+}
+
+// apiSysInfo returns host CPU info, server time, and uptime.
+func apiSysInfo(w http.ResponseWriter, r *http.Request) {
+	info := map[string]any{
+		"server_time": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// CPU model
+	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "model name") {
+				parts := strings.SplitN(line, ":", 2)
+				if len(parts) == 2 {
+					info["cpu_model"] = strings.TrimSpace(parts[1])
+					break
+				}
+			}
+		}
+	}
+
+	// CPU count
+	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
+		count := 0
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "processor") {
+				count++
+			}
+		}
+		info["cpu_cores"] = count
+	}
+
+	// System uptime
+	if data, err := os.ReadFile("/proc/uptime"); err == nil {
+		parts := strings.Fields(string(data))
+		if len(parts) >= 1 {
+			if secs, err := strconv.ParseFloat(parts[0], 64); err == nil {
+				info["uptime_seconds"] = secs
+				d := time.Duration(secs * float64(time.Second))
+				days := int(d.Hours()) / 24
+				hours := int(d.Hours()) % 24
+				mins := int(d.Minutes()) % 60
+				info["uptime_human"] = fmt.Sprintf("%dd %dh %dm", days, hours, mins)
+			}
+		}
+	}
+
+	// Total system memory
+	if data, err := os.ReadFile("/proc/meminfo"); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "MemTotal:") {
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					if kb, err := strconv.ParseUint(parts[1], 10, 64); err == nil {
+						info["mem_total"] = humanBytes(kb * 1024)
+					}
+				}
+				break
+			}
+		}
+	}
+
+	// Load average
+	if data, err := os.ReadFile("/proc/loadavg"); err == nil {
+		parts := strings.Fields(string(data))
+		if len(parts) >= 3 {
+			info["load_avg"] = strings.Join(parts[:3], " ")
+		}
+	}
+
+	apiJSON(w, http.StatusOK, info)
+}
+
+// apiMigrateSite runs migrations for a single site.
+func apiMigrateSite(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		apiError(w, http.StatusBadRequest, "name required")
+		return
+	}
+
+	var body struct {
+		Rebuild bool `json:"rebuild"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"migrate", name}
+	if body.Rebuild {
+		args = append(args, "--rebuild")
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		apiError(w, http.StatusInternalServerError, "cannot determine executable path")
+		return
+	}
+
+	cmd := exec.Command(self, args...)
+	cmd.Dir = ProjectRoot()
+	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+	output, cmdErr := cmd.CombinedOutput()
+	exitCode := 0
+	if cmdErr != nil {
+		if exitErr, ok := cmdErr.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			apiError(w, http.StatusInternalServerError, cmdErr.Error())
+			return
+		}
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{
+		"ok":        exitCode == 0,
+		"output":    string(output),
+		"exit_code": exitCode,
+	})
+}
+
+// apiMigrateAll runs migrations for all sites.
+func apiMigrateAll(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Rebuild bool `json:"rebuild"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"migrate", "all"}
+	if body.Rebuild {
+		args = append(args, "--rebuild")
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		apiError(w, http.StatusInternalServerError, "cannot determine executable path")
+		return
+	}
+
+	cmd := exec.Command(self, args...)
+	cmd.Dir = ProjectRoot()
+	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+	output, cmdErr := cmd.CombinedOutput()
+	exitCode := 0
+	if cmdErr != nil {
+		if exitErr, ok := cmdErr.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			apiError(w, http.StatusInternalServerError, cmdErr.Error())
+			return
+		}
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{
+		"ok":        exitCode == 0,
+		"output":    string(output),
+		"exit_code": exitCode,
+	})
+}
+
+// apiExportNode exports all clients as a single node archive.
+func apiExportNode(w http.ResponseWriter, r *http.Request) {
+	outPath := filepath.Join(os.TempDir(), fmt.Sprintf("grengo-node-%s.tar.gz", time.Now().Format("20060102-150405")))
+	defer os.Remove(outPath)
+
+	self, _ := os.Executable()
+	cmd := exec.Command(self, "export-node", "-o", outPath)
+	cmd.Dir = ProjectRoot()
+	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		apiError(w, http.StatusInternalServerError, fmt.Sprintf("export-node failed: %s", string(output)))
+		return
+	}
+
+	f, err := os.Open(outPath)
+	if err != nil {
+		apiError(w, http.StatusInternalServerError, "cannot open node archive")
+		return
+	}
+	defer f.Close()
+
+	archiveName := filepath.Base(outPath)
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
+	io.Copy(w, f)
+}
+
+// apiImportNode accepts a multipart node archive upload and imports it.
+func apiImportNode(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		apiError(w, http.StatusBadRequest, "multipart form required (max 512MB)")
+		return
+	}
+
+	file, _, err := r.FormFile("archive")
+	if err != nil {
+		apiError(w, http.StatusBadRequest, "archive file required")
+		return
+	}
+	defer file.Close()
+
+	tmpFile, err := os.CreateTemp("", "grengo-import-node-*.tar.gz")
+	if err != nil {
+		apiError(w, http.StatusInternalServerError, "cannot create temp file")
+		return
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := io.Copy(tmpFile, file); err != nil {
+		tmpFile.Close()
+		apiError(w, http.StatusInternalServerError, "failed to save upload")
+		return
+	}
+	tmpFile.Close()
+
+	self, _ := os.Executable()
+	cmd := exec.Command(self, "import-node", tmpFile.Name())
+	cmd.Dir = ProjectRoot()
+	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+	output, cmdErr := cmd.CombinedOutput()
+	if cmdErr != nil {
+		apiError(w, http.StatusInternalServerError, fmt.Sprintf("import-node failed: %s", string(output)))
+		return
+	}
+
+	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // apiVerifyPasscode checks a passcode pair against the stored .pcode file.

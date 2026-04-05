@@ -381,6 +381,140 @@ func (s *Service) ComposeDown() error {
 }
 
 // ---------------------------------------------------------------------------
+// System info
+// ---------------------------------------------------------------------------
+
+// SysInfo holds server system information.
+type SysInfo struct {
+	ServerTime    string  `json:"server_time"`
+	CPUModel      string  `json:"cpu_model,omitempty"`
+	CPUCores      int     `json:"cpu_cores,omitempty"`
+	UptimeSeconds float64 `json:"uptime_seconds,omitempty"`
+	UptimeHuman   string  `json:"uptime_human,omitempty"`
+	MemTotal      string  `json:"mem_total,omitempty"`
+	LoadAvg       string  `json:"load_avg,omitempty"`
+}
+
+// GetSysInfo retrieves server system information from the grengo API.
+func (s *Service) GetSysInfo() (*SysInfo, error) {
+	resp, err := s.client.Get(s.apiURL + "/sysinfo")
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, s.readAPIError(resp)
+	}
+	var info SysInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, fmt.Errorf("decode sysinfo: %w", err)
+	}
+	return &info, nil
+}
+
+// ---------------------------------------------------------------------------
+// Migrations
+// ---------------------------------------------------------------------------
+
+// MigrateResult holds the output of a migration command.
+type MigrateResult struct {
+	OK       bool   `json:"ok"`
+	Output   string `json:"output"`
+	ExitCode int    `json:"exit_code"`
+}
+
+// MigrateSite runs migrations for a single site.
+func (s *Service) MigrateSite(name string, rebuild bool) (*MigrateResult, error) {
+	body, _ := json.Marshal(map[string]bool{"rebuild": rebuild})
+	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/migrate", s.apiURL, name), "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	var result MigrateResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode migrate: %w", err)
+	}
+	return &result, nil
+}
+
+// MigrateAll runs migrations for all sites.
+func (s *Service) MigrateAll(rebuild bool) (*MigrateResult, error) {
+	body, _ := json.Marshal(map[string]bool{"rebuild": rebuild})
+	resp, err := s.client.Post(s.apiURL+"/migrate-all", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	var result MigrateResult
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("decode migrate-all: %w", err)
+	}
+	return &result, nil
+}
+
+// ---------------------------------------------------------------------------
+// Node Export / Import
+// ---------------------------------------------------------------------------
+
+// ExportNode downloads the full node archive from the grengo API and returns a temp file path.
+func (s *Service) ExportNode() (string, error) {
+	resp, err := s.client.Get(s.apiURL + "/export-node")
+	if err != nil {
+		return "", fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", s.readAPIError(resp)
+	}
+
+	tmpFile, err := os.CreateTemp("", "grengo-node-export-*.tar.gz")
+	if err != nil {
+		return "", fmt.Errorf("create temp file: %w", err)
+	}
+	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
+		tmpFile.Close()
+		os.Remove(tmpFile.Name())
+		return "", fmt.Errorf("download node export: %w", err)
+	}
+	tmpFile.Close()
+	return tmpFile.Name(), nil
+}
+
+// ImportNode uploads a node archive to the grengo API for import.
+func (s *Service) ImportNode(archivePath string) error {
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return fmt.Errorf("open archive: %w", err)
+	}
+	defer f.Close()
+
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+
+	fw, err := w.CreateFormFile("archive", filepath.Base(archivePath))
+	if err != nil {
+		return fmt.Errorf("create form file: %w", err)
+	}
+	if _, err := io.Copy(fw, f); err != nil {
+		return fmt.Errorf("write form file: %w", err)
+	}
+	w.Close()
+
+	resp, err := s.client.Post(s.apiURL+"/import-node", w.FormDataContentType(), &buf)
+	if err != nil {
+		return fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return s.readAPIError(resp)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // Env file management
 // ---------------------------------------------------------------------------
 

@@ -568,4 +568,124 @@
   .grengo-table td {
     padding: 0.4rem 0.5rem;
   }
+
+  .grengo-sysinfo {
+    flex-direction: column;
+  }
+}
+
+/* ── System Info ────────────────────────────────────────────────────────── */
+
+.grengo-sysinfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  font-size: 0.82rem;
+}
+
+.sysinfo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.sysinfo-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #888);
+  font-weight: 600;
+}
+
+.sysinfo-value {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Compose Controls ───────────────────────────────────────────────────── */
+
+.grengo-compose {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.grengo-compose h3 {
+  font-size: 0.9rem;
+  margin: 0 0 0.65rem;
+  color: var(--text-primary);
+}
+
+.compose-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.compose-output {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Toolbar separator ──────────────────────────────────────────────────── */
+
+.toolbar-separator {
+  display: inline-block;
+  width: 1px;
+  height: 1.2rem;
+  background: var(--border-color);
+  margin: 0 0.15rem;
+}
+
+/* ── Per-site storage cell ──────────────────────────────────────────────── */
+
+.site-storage-cell {
+  min-width: 80px;
+}
+
+.site-storage-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.site-storage-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #888);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Migrate output inline ──────────────────────────────────────────────── */
+
+.migrate-output-inline {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  font-size: 0.72rem;
+  color: var(--text-secondary, #888);
+  white-space: pre-wrap;
+  word-break: break-word;
 }

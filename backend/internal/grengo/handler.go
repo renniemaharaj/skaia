@@ -115,6 +115,13 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 
 			sr.Get("/stats", h.handleStats)
 			sr.Get("/storage", h.handleStorage)
+			sr.Get("/sysinfo", h.handleSysInfo)
+
+			sr.Post("/sites/{name}/migrate", h.handleMigrateSite)
+			sr.Post("/migrate-all", h.handleMigrateAll)
+
+			sr.Get("/export-node", h.handleExportNode)
+			sr.Post("/import-node", h.handleImportNode)
 
 			sr.Post("/compose/up", h.handleComposeUp)
 			sr.Post("/compose/down", h.handleComposeDown)
@@ -426,6 +433,100 @@ func (h *Handler) handleStorage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, info)
+}
+
+func (h *Handler) handleSysInfo(w http.ResponseWriter, r *http.Request) {
+	info, err := h.svc.GetSysInfo()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, info)
+}
+
+func (h *Handler) handleMigrateSite(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	var body struct {
+		Rebuild bool `json:"rebuild"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	result, err := h.svc.MigrateSite(name, body.Rebuild)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) handleMigrateAll(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Rebuild bool `json:"rebuild"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	result, err := h.svc.MigrateAll(body.Rebuild)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) handleExportNode(w http.ResponseWriter, r *http.Request) {
+	archivePath, err := h.svc.ExportNode()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer os.Remove(archivePath)
+
+	f, err := os.Open(archivePath)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "cannot open node archive")
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(archivePath))
+	io.Copy(w, f)
+}
+
+func (h *Handler) handleImportNode(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(512 << 20); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "multipart form required (max 512MB)")
+		return
+	}
+
+	file, header, err := r.FormFile("archive")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "archive file required")
+		return
+	}
+	defer file.Close()
+
+	tmpDir := os.TempDir()
+	tmpFile, err := os.CreateTemp(tmpDir, "grengo-import-node-*.tar.gz")
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "cannot create temp file")
+		return
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	if _, err := io.Copy(tmpFile, file); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to save upload")
+		return
+	}
+	tmpFile.Close()
+
+	log.Printf("grengo: importing node archive %s", header.Filename)
+
+	if err := h.svc.ImportNode(tmpFile.Name()); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 func (h *Handler) handleComposeUp(w http.ResponseWriter, r *http.Request) {

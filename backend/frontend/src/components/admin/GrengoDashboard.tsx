@@ -55,6 +55,22 @@ interface StorageInfo {
   total_limit_human: string;
 }
 
+interface SysInfo {
+  server_time: string;
+  cpu_model?: string;
+  cpu_cores?: number;
+  uptime_seconds?: number;
+  uptime_human?: string;
+  mem_total?: string;
+  load_avg?: string;
+}
+
+interface MigrateResult {
+  ok: boolean;
+  output: string;
+  exit_code: number;
+}
+
 const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 
 // Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
@@ -87,6 +103,23 @@ export default function GrengoDashboard() {
 
   // Storage info.
   const [storage, setStorage] = useState<StorageInfo | null>(null);
+
+  // System info.
+  const [sysInfo, setSysInfo] = useState<SysInfo | null>(null);
+
+  // Compose / migrate state.
+  const [composeBusy, setComposeBusy] = useState(false);
+  const [composeOutput, setComposeOutput] = useState("");
+  const [migrateBusy, setMigrateBusy] = useState<Record<string, boolean>>({});
+  const [migrateOutput, setMigrateOutput] = useState<Record<string, string>>(
+    {},
+  );
+  const [migrateAllBusy, setMigrateAllBusy] = useState(false);
+  const [migrateAllOutput, setMigrateAllOutput] = useState("");
+
+  // Node export/import.
+  const [showImportNode, setShowImportNode] = useState(false);
+  const [nodeExportBusy, setNodeExportBusy] = useState(false);
 
   // Env editor.
   const [envSite, setEnvSite] = useState<string | null>(null);
@@ -217,6 +250,142 @@ export default function GrengoDashboard() {
     if (sessionValid) fetchStorage();
   }, [sessionValid, fetchStorage]);
 
+  // ── Fetch sysinfo ────────────────────────────────────────────────────
+
+  const fetchSysInfo = useCallback(async () => {
+    try {
+      const data = await grengoRequest<SysInfo>("/sysinfo");
+      setSysInfo(data ?? null);
+    } catch {
+      // non-critical
+    }
+  }, [grengoRequest]);
+
+  useEffect(() => {
+    if (sessionValid) fetchSysInfo();
+  }, [sessionValid, fetchSysInfo]);
+
+  // ── Compose actions ──────────────────────────────────────────────────
+
+  const handleComposeUp = async (build: boolean) => {
+    setComposeBusy(true);
+    setComposeOutput("");
+    try {
+      await grengoRequest("/compose/up", {
+        method: "POST",
+        body: JSON.stringify({ build }),
+      });
+      setComposeOutput(
+        build ? "compose up --build completed" : "compose up completed",
+      );
+      await fetchSites();
+      await fetchStats();
+    } catch (e: unknown) {
+      setComposeOutput(e instanceof Error ? e.message : "Compose up failed");
+    } finally {
+      setComposeBusy(false);
+    }
+  };
+
+  const handleComposeDown = async () => {
+    setComposeBusy(true);
+    setComposeOutput("");
+    try {
+      await grengoRequest("/compose/down", { method: "POST" });
+      setComposeOutput("compose down completed");
+      await fetchSites();
+      await fetchStats();
+    } catch (e: unknown) {
+      setComposeOutput(e instanceof Error ? e.message : "Compose down failed");
+    } finally {
+      setComposeBusy(false);
+    }
+  };
+
+  // ── Migrate actions ──────────────────────────────────────────────────
+
+  const handleMigrate = async (name: string, rebuild = false) => {
+    setMigrateBusy((prev) => ({ ...prev, [name]: true }));
+    setMigrateOutput((prev) => ({ ...prev, [name]: "" }));
+    try {
+      const result = await grengoRequest<MigrateResult>(
+        `/sites/${name}/migrate`,
+        {
+          method: "POST",
+          body: JSON.stringify({ rebuild }),
+        },
+      );
+      setMigrateOutput((prev) => ({
+        ...prev,
+        [name]: result.ok
+          ? "Migration completed successfully"
+          : `Migration failed (exit ${result.exit_code}):\n${result.output}`,
+      }));
+    } catch (e: unknown) {
+      setMigrateOutput((prev) => ({
+        ...prev,
+        [name]: e instanceof Error ? e.message : "Migration failed",
+      }));
+    } finally {
+      setMigrateBusy((prev) => ({ ...prev, [name]: false }));
+    }
+  };
+
+  const handleMigrateAll = async (rebuild = false) => {
+    setMigrateAllBusy(true);
+    setMigrateAllOutput("");
+    try {
+      const result = await grengoRequest<MigrateResult>("/migrate-all", {
+        method: "POST",
+        body: JSON.stringify({ rebuild }),
+      });
+      setMigrateAllOutput(
+        result.ok
+          ? "All migrations completed successfully"
+          : `Migration failed (exit ${result.exit_code}):\n${result.output}`,
+      );
+    } catch (e: unknown) {
+      setMigrateAllOutput(
+        e instanceof Error ? e.message : "Migrate all failed",
+      );
+    } finally {
+      setMigrateAllBusy(false);
+    }
+  };
+
+  // ── Node export / import ─────────────────────────────────────────────
+
+  const handleExportNode = async () => {
+    setNodeExportBusy(true);
+    try {
+      const token = localStorage.getItem("auth.accessToken");
+      const res = await fetch(`/api${apiBase}/export-node`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "Export failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      a.download = filenameMatch?.[1] || `grengo-node-export.tar.gz`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Node export failed");
+    } finally {
+      setNodeExportBusy(false);
+    }
+  };
+
   // ── Site actions ─────────────────────────────────────────────────────
 
   const siteAction = async (
@@ -340,6 +509,44 @@ export default function GrengoDashboard() {
     <div className="grengo-dashboard">
       <h1>Grengo Dashboard</h1>
 
+      {/* System Info Bar */}
+      {sysInfo && (
+        <div className="grengo-sysinfo">
+          <div className="sysinfo-item">
+            <span className="sysinfo-label">Server Time</span>
+            <span className="sysinfo-value">
+              {new Date(sysInfo.server_time).toLocaleString()}
+            </span>
+          </div>
+          {sysInfo.cpu_model && (
+            <div className="sysinfo-item">
+              <span className="sysinfo-label">CPU</span>
+              <span className="sysinfo-value">
+                {sysInfo.cpu_model} ({sysInfo.cpu_cores} cores)
+              </span>
+            </div>
+          )}
+          {sysInfo.mem_total && (
+            <div className="sysinfo-item">
+              <span className="sysinfo-label">Memory</span>
+              <span className="sysinfo-value">{sysInfo.mem_total}</span>
+            </div>
+          )}
+          {sysInfo.uptime_human && (
+            <div className="sysinfo-item">
+              <span className="sysinfo-label">Uptime</span>
+              <span className="sysinfo-value">{sysInfo.uptime_human}</span>
+            </div>
+          )}
+          {sysInfo.load_avg && (
+            <div className="sysinfo-item">
+              <span className="sysinfo-label">Load</span>
+              <span className="sysinfo-value">{sysInfo.load_avg}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grengo-lock-bar">
         <button className="btn" onClick={handleLock}>
           End Session
@@ -353,6 +560,7 @@ export default function GrengoDashboard() {
           onClick={() => {
             setShowCreate(!showCreate);
             setShowImport(false);
+            setShowImportNode(false);
           }}
         >
           {showCreate ? "Cancel" : "+ New Site"}
@@ -362,21 +570,82 @@ export default function GrengoDashboard() {
           onClick={() => {
             setShowImport(!showImport);
             setShowCreate(false);
+            setShowImportNode(false);
           }}
         >
-          {showImport ? "Cancel" : "Import"}
+          {showImport ? "Cancel" : "Import Site"}
         </button>
+        <span className="toolbar-separator" />
+        <button
+          className="btn"
+          onClick={handleExportNode}
+          disabled={nodeExportBusy}
+        >
+          {nodeExportBusy ? "Exporting…" : "Export Node"}
+        </button>
+        <button
+          className="btn"
+          onClick={() => {
+            setShowImportNode(!showImportNode);
+            setShowCreate(false);
+            setShowImport(false);
+          }}
+        >
+          {showImportNode ? "Cancel" : "Import Node"}
+        </button>
+        <span className="toolbar-separator" />
         <button
           className="btn"
           onClick={() => {
             fetchSites();
             fetchStats();
             fetchStorage();
+            fetchSysInfo();
           }}
           disabled={loading || statsLoading}
         >
           {loading || statsLoading ? "Refreshing…" : "Refresh"}
         </button>
+      </div>
+
+      {/* Compose Controls */}
+      <div className="grengo-compose">
+        <h3>Compose</h3>
+        <div className="compose-actions">
+          <button
+            className="btn btn-primary"
+            onClick={() => handleComposeUp(true)}
+            disabled={composeBusy}
+          >
+            {composeBusy ? "Running…" : "Up --build"}
+          </button>
+          <button
+            className="btn"
+            onClick={() => handleComposeUp(false)}
+            disabled={composeBusy}
+          >
+            Up
+          </button>
+          <button
+            className="btn btn-danger"
+            onClick={handleComposeDown}
+            disabled={composeBusy}
+          >
+            Down
+          </button>
+          <span className="toolbar-separator" />
+          <button
+            className="btn btn-warning"
+            onClick={() => handleMigrateAll(false)}
+            disabled={migrateAllBusy}
+          >
+            {migrateAllBusy ? "Migrating…" : "Migrate All"}
+          </button>
+        </div>
+        {composeOutput && <pre className="compose-output">{composeOutput}</pre>}
+        {migrateAllOutput && (
+          <pre className="compose-output">{migrateAllOutput}</pre>
+        )}
       </div>
 
       {/* Create form */}
@@ -396,6 +665,17 @@ export default function GrengoDashboard() {
           apiBase={apiBase}
           onImported={() => {
             setShowImport(false);
+            fetchSites();
+          }}
+        />
+      )}
+
+      {/* Import Node form */}
+      {showImportNode && (
+        <ImportNodeForm
+          apiBase={apiBase}
+          onImported={() => {
+            setShowImportNode(false);
             fetchSites();
           }}
         />
@@ -423,115 +703,156 @@ export default function GrengoDashboard() {
                 <th>Status</th>
                 <th>Running</th>
                 <th>Armed</th>
+                <th>Storage</th>
                 <th>Domains</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {sites.map((site) => (
-                <tr key={site.name}>
-                  <td>
-                    <strong>{site.name}</strong>
-                  </td>
-                  <td>{site.port}</td>
-                  <td>
-                    <span
-                      className={`badge ${site.status === "enabled" ? "badge-enabled" : "badge-disabled"}`}
-                    >
-                      {site.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
-                    >
-                      {site.running ? "running" : "stopped"}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
-                    >
-                      {site.armed ? "armed" : "disarmed"}
-                    </span>
-                  </td>
-                  <td className="domains">{site.domains.join(", ")}</td>
-                  <td className="actions">
-                    {site.running ? (
+              {sites.map((site) => {
+                const siteStorage = storage?.sites.find(
+                  (s) => s.name === site.name,
+                );
+                const sitePct =
+                  siteStorage && storage
+                    ? (siteStorage.used / storage.total_limit) * 100
+                    : 0;
+                return (
+                  <tr key={site.name}>
+                    <td>
+                      <strong>{site.name}</strong>
+                    </td>
+                    <td>{site.port}</td>
+                    <td>
+                      <span
+                        className={`badge ${site.status === "enabled" ? "badge-enabled" : "badge-disabled"}`}
+                      >
+                        {site.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
+                      >
+                        {site.running ? "running" : "stopped"}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
+                      >
+                        {site.armed ? "armed" : "disarmed"}
+                      </span>
+                    </td>
+                    <td className="site-storage-cell">
+                      {siteStorage ? (
+                        <div className="site-storage-mini">
+                          <span className="site-storage-text">
+                            {siteStorage.used_human}
+                          </span>
+                          <div className="stat-bar">
+                            <div
+                              className={`stat-bar-fill ${barClass(sitePct)}`}
+                              style={{
+                                width: `${Math.min(sitePct, 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="domains">{site.domains.join(", ")}</td>
+                    <td className="actions">
+                      {site.running ? (
+                        <button
+                          className="btn"
+                          onClick={() => siteAction(site.name, "stop")}
+                          disabled={busy[site.name]}
+                        >
+                          Stop
+                        </button>
+                      ) : (
+                        <button
+                          className="btn"
+                          onClick={() => siteAction(site.name, "start")}
+                          disabled={busy[site.name]}
+                        >
+                          Start
+                        </button>
+                      )}
+                      {site.status === "enabled" ? (
+                        <button
+                          className="btn"
+                          onClick={() => siteAction(site.name, "disable")}
+                          disabled={busy[site.name]}
+                        >
+                          Disable
+                        </button>
+                      ) : (
+                        <button
+                          className="btn"
+                          onClick={() => siteAction(site.name, "enable")}
+                          disabled={busy[site.name]}
+                        >
+                          Enable
+                        </button>
+                      )}
+                      {site.armed ? (
+                        <button
+                          className="btn btn-warning"
+                          onClick={() => siteAction(site.name, "disarm")}
+                          disabled={busy[site.name]}
+                        >
+                          Disarm
+                        </button>
+                      ) : (
+                        <button
+                          className="btn"
+                          onClick={() => siteAction(site.name, "arm")}
+                          disabled={busy[site.name]}
+                        >
+                          Arm
+                        </button>
+                      )}
                       <button
                         className="btn"
-                        onClick={() => siteAction(site.name, "stop")}
-                        disabled={busy[site.name]}
+                        onClick={() => handleMigrate(site.name)}
+                        disabled={busy[site.name] || migrateBusy[site.name]}
                       >
-                        Stop
+                        {migrateBusy[site.name] ? "Migrating…" : "Migrate"}
                       </button>
-                    ) : (
                       <button
                         className="btn"
-                        onClick={() => siteAction(site.name, "start")}
+                        onClick={() => openEnvEditor(site.name)}
                         disabled={busy[site.name]}
                       >
-                        Start
+                        Env
                       </button>
-                    )}
-                    {site.status === "enabled" ? (
                       <button
                         className="btn"
-                        onClick={() => siteAction(site.name, "disable")}
+                        onClick={() => handleExport(site.name)}
                         disabled={busy[site.name]}
                       >
-                        Disable
+                        Export
                       </button>
-                    ) : (
                       <button
-                        className="btn"
-                        onClick={() => siteAction(site.name, "enable")}
+                        className="btn btn-danger"
+                        onClick={() => handleDelete(site.name)}
                         disabled={busy[site.name]}
                       >
-                        Enable
+                        Delete
                       </button>
-                    )}
-                    {site.armed ? (
-                      <button
-                        className="btn btn-warning"
-                        onClick={() => siteAction(site.name, "disarm")}
-                        disabled={busy[site.name]}
-                      >
-                        Disarm
-                      </button>
-                    ) : (
-                      <button
-                        className="btn"
-                        onClick={() => siteAction(site.name, "arm")}
-                        disabled={busy[site.name]}
-                      >
-                        Arm
-                      </button>
-                    )}
-                    <button
-                      className="btn"
-                      onClick={() => openEnvEditor(site.name)}
-                      disabled={busy[site.name]}
-                    >
-                      Env
-                    </button>
-                    <button
-                      className="btn"
-                      onClick={() => handleExport(site.name)}
-                      disabled={busy[site.name]}
-                    >
-                      Export
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDelete(site.name)}
-                      disabled={busy[site.name]}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {migrateOutput[site.name] && (
+                        <div className="migrate-output-inline">
+                          {migrateOutput[site.name]}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -956,6 +1277,90 @@ function ImportSiteForm({
           disabled={importing || !file}
         >
           {importing ? "Importing…" : "Import"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Import Node Form ───────────────────────────────────────────────────────
+
+function ImportNodeForm({
+  apiBase,
+  onImported,
+}: {
+  apiBase: string;
+  onImported: () => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleImport = async () => {
+    if (!file) return;
+    if (
+      !confirm(
+        "Import a full node archive? This will add all clients from the archive.",
+      )
+    )
+      return;
+    setImporting(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("archive", file);
+
+      const token = localStorage.getItem("auth.accessToken");
+      const res = await fetch(`/api${apiBase}/import-node`, {
+        method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: fd,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || "Node import failed");
+      }
+      onImported();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Node import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <div className="grengo-import-form">
+      <h2>Import Node Archive</h2>
+      <p
+        style={{
+          fontSize: "0.85rem",
+          color: "var(--text-secondary)",
+          marginBottom: "0.75rem",
+        }}
+      >
+        Import a full node archive containing all clients, databases, and
+        uploads.
+      </p>
+      {error && <div className="error">{error}</div>}
+      <div className="import-fields">
+        <label>
+          Node archive (.tar.gz)
+          <input
+            type="file"
+            accept=".tar.gz,.tgz"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+      </div>
+      <div className="form-actions">
+        <button
+          className="btn btn-primary"
+          onClick={handleImport}
+          disabled={importing || !file}
+        >
+          {importing ? "Importing…" : "Import Node"}
         </button>
       </div>
     </div>
