@@ -30,6 +30,7 @@ type UserUpload struct {
 func MountUserUploads(r chi.Router, jwt func(http.Handler) http.Handler, authz utils.Authorizer) {
 	r.With(jwt).Get("/upload/user/{id}", listUserUploads(authz))
 	r.With(jwt).Delete("/upload/file", deleteUploadFile(authz))
+	r.With(jwt).Get("/upload/storage/{id}", getUserStorage())
 }
 
 // listUserUploads scans the filesystem for all uploads belonging to a user.
@@ -176,5 +177,25 @@ func extensionToMime(ext string) string {
 		return "application/pdf"
 	default:
 		return "application/octet-stream"
+	}
+}
+
+// getUserStorage returns upload quota usage for a user.
+func getUserStorage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, ok := utils.UserIDFromCtx(r)
+		if !ok {
+			utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
+		targetID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+			return
+		}
+
+		info := GetStorageInfo(targetID)
+		utils.WriteJSON(w, http.StatusOK, info)
 	}
 }

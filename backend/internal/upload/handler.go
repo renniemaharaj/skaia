@@ -67,8 +67,8 @@ func DirSize(path string) (int64, error) {
 	return total, err
 }
 
-// checkUserQuota returns an error string if the user would exceed their per-user quota.
-func checkUserQuota(userID int64) string {
+// CheckUserQuota returns an error string if the user would exceed their per-user quota.
+func CheckUserQuota(userID int64) string {
 	if MaxUploadPerUser <= 0 {
 		return ""
 	}
@@ -81,8 +81,8 @@ func checkUserQuota(userID int64) string {
 	return ""
 }
 
-// checkTotalQuota returns an error string if the backend-wide quota would be exceeded.
-func checkTotalQuota() string {
+// CheckTotalQuota returns an error string if the backend-wide quota would be exceeded.
+func CheckTotalQuota() string {
 	if MaxUploadTotal <= 0 {
 		return ""
 	}
@@ -92,6 +92,60 @@ func checkTotalQuota() string {
 			humanSize(used), humanSize(MaxUploadTotal))
 	}
 	return ""
+}
+
+// StorageInfo holds quota usage information.
+type StorageInfo struct {
+	UserUsed     int64   `json:"user_used"`
+	UserLimit    int64   `json:"user_limit"`
+	UserPercent  float64 `json:"user_percent"`
+	TotalUsed    int64   `json:"total_used"`
+	TotalLimit   int64   `json:"total_limit"`
+	TotalPercent float64 `json:"total_percent"`
+	UserHuman    string  `json:"user_used_human"`
+	UserLimitH   string  `json:"user_limit_human"`
+	TotalHuman   string  `json:"total_used_human"`
+	TotalLimitH  string  `json:"total_limit_human"`
+}
+
+// GetStorageInfo returns quota usage for a specific user and the total backend.
+func GetStorageInfo(userID int64) StorageInfo {
+	userDir := filepath.Join(UsersDir, strconv.FormatInt(userID, 10))
+	userUsed, _ := DirSize(userDir)
+	totalUsed, _ := DirSize(UploadsDir)
+
+	info := StorageInfo{
+		UserUsed:    userUsed,
+		UserLimit:   MaxUploadPerUser,
+		TotalUsed:   totalUsed,
+		TotalLimit:  MaxUploadTotal,
+		UserHuman:   humanSize(userUsed),
+		UserLimitH:  humanSize(MaxUploadPerUser),
+		TotalHuman:  humanSize(totalUsed),
+		TotalLimitH: humanSize(MaxUploadTotal),
+	}
+	if MaxUploadPerUser > 0 {
+		info.UserPercent = float64(userUsed) / float64(MaxUploadPerUser) * 100
+	}
+	if MaxUploadTotal > 0 {
+		info.TotalPercent = float64(totalUsed) / float64(MaxUploadTotal) * 100
+	}
+	return info
+}
+
+// GetTotalStorageInfo returns backend-wide storage usage (no user-specific data).
+func GetTotalStorageInfo() StorageInfo {
+	totalUsed, _ := DirSize(UploadsDir)
+	info := StorageInfo{
+		TotalUsed:   totalUsed,
+		TotalLimit:  MaxUploadTotal,
+		TotalHuman:  humanSize(totalUsed),
+		TotalLimitH: humanSize(MaxUploadTotal),
+	}
+	if MaxUploadTotal > 0 {
+		info.TotalPercent = float64(totalUsed) / float64(MaxUploadTotal) * 100
+	}
+	return info
 }
 
 // humanSize formats bytes as a human-readable string.
@@ -173,11 +227,11 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := checkUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := checkTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
@@ -237,11 +291,11 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := checkUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := checkTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
@@ -301,11 +355,11 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := checkUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := checkTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
@@ -365,11 +419,11 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := checkUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := checkTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}

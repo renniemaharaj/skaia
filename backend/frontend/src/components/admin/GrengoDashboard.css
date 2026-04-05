@@ -464,6 +464,95 @@
   margin-bottom: 0.75rem;
 }
 
+/* ── Storage ────────────────────────────────────────────────────────────── */
+
+.grengo-storage {
+  margin-top: 2rem;
+}
+
+.grengo-storage h2 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.grengo-storage-overview {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.storage-total {
+  margin-bottom: 1rem;
+}
+
+.storage-total-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.storage-total-value {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #888);
+}
+
+.storage-total-pct {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #888);
+}
+
+.storage-warning {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.storage-critical {
+  color: var(--error-color, #e74c3c);
+  font-weight: 700;
+}
+
+.storage-sites h3 {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.storage-site-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.storage-site-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: var(--bg-color);
+  font-size: 0.85rem;
+}
+
+.storage-site-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.storage-site-used {
+  color: var(--text-secondary, #888);
+  font-size: 0.8rem;
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {

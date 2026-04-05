@@ -59,6 +59,7 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("GET /health", apiHealth)
 	mux.HandleFunc("GET /sites", apiListSites)
 	mux.HandleFunc("GET /stats", apiStats)
+	mux.HandleFunc("GET /storage", apiStorage)
 	mux.HandleFunc("GET /env/{name}", apiGetEnv)
 	mux.HandleFunc("PUT /env/{name}", apiPutEnv)
 	mux.HandleFunc("POST /exec", apiExec)
@@ -499,6 +500,81 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiJSON(w, http.StatusOK, stats)
+}
+
+// storageInfo holds per-site and total upload storage metrics for the dashboard.
+type storageInfo struct {
+	Sites      []siteStorageInfo `json:"sites"`
+	TotalUsed  int64             `json:"total_used"`
+	TotalLimit int64             `json:"total_limit"`
+	TotalPct   float64           `json:"total_percent"`
+	TotalHuman string            `json:"total_used_human"`
+	LimitHuman string            `json:"total_limit_human"`
+}
+
+type siteStorageInfo struct {
+	Name      string `json:"name"`
+	Used      int64  `json:"used"`
+	UsedHuman string `json:"used_human"`
+}
+
+// apiStorage returns upload storage usage for all sites.
+func apiStorage(w http.ResponseWriter, r *http.Request) {
+	entries, _ := os.ReadDir(backendsDir())
+
+	var sites []siteStorageInfo
+	var grandTotal int64
+
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		ef := filepath.Join(backendsDir(), e.Name(), ".env")
+		if _, serr := os.Stat(ef); serr != nil {
+			continue
+		}
+
+		name := envVal(ef, "CLIENT_NAME")
+		uploadsDir := filepath.Join(backendsDir(), e.Name(), "uploads")
+
+		var used int64
+		_ = filepath.Walk(uploadsDir, func(_ string, info os.FileInfo, err error) error {
+			if err != nil || info.IsDir() {
+				return nil
+			}
+			used += info.Size()
+			return nil
+		})
+		grandTotal += used
+
+		sites = append(sites, siteStorageInfo{
+			Name:      name,
+			Used:      used,
+			UsedHuman: humanBytes(uint64(used)),
+		})
+	}
+
+	// Total upload limit: read from env or default 5 GB.
+	var totalLimit int64 = 5 * 1024 * 1024 * 1024 // 5 GB
+	if v := os.Getenv("MAX_UPLOAD_TOTAL_MB"); v != "" {
+		if mb, err := strconv.ParseInt(v, 10, 64); err == nil && mb > 0 {
+			totalLimit = mb * 1024 * 1024
+		}
+	}
+
+	totalPct := 0.0
+	if totalLimit > 0 {
+		totalPct = float64(grandTotal) / float64(totalLimit) * 100
+	}
+
+	apiJSON(w, http.StatusOK, storageInfo{
+		Sites:      sites,
+		TotalUsed:  grandTotal,
+		TotalLimit: totalLimit,
+		TotalPct:   totalPct,
+		TotalHuman: humanBytes(uint64(grandTotal)),
+		LimitHuman: humanBytes(uint64(totalLimit)),
+	})
 }
 
 // apiExec is the generic command executor.

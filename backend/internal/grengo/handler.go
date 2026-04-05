@@ -114,6 +114,7 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 			sr.Put("/sites/{name}/env", h.handleUpdateSiteEnv)
 
 			sr.Get("/stats", h.handleStats)
+			sr.Get("/storage", h.handleStorage)
 
 			sr.Post("/compose/up", h.handleComposeUp)
 			sr.Post("/compose/down", h.handleComposeDown)
@@ -416,6 +417,15 @@ func (h *Handler) handleStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, stats)
+}
+
+func (h *Handler) handleStorage(w http.ResponseWriter, r *http.Request) {
+	info, err := h.svc.Storage()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, info)
 }
 
 func (h *Handler) handleComposeUp(w http.ResponseWriter, r *http.Request) {

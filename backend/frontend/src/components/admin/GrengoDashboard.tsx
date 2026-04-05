@@ -40,6 +40,21 @@ interface ContainerStats {
   pids: number;
 }
 
+interface SiteStorageInfo {
+  name: string;
+  used: number;
+  used_human: string;
+}
+
+interface StorageInfo {
+  sites: SiteStorageInfo[];
+  total_used: number;
+  total_limit: number;
+  total_percent: number;
+  total_used_human: string;
+  total_limit_human: string;
+}
+
 const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 
 // Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
@@ -69,6 +84,9 @@ export default function GrengoDashboard() {
   // Performance metrics.
   const [stats, setStats] = useState<ContainerStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
+
+  // Storage info.
+  const [storage, setStorage] = useState<StorageInfo | null>(null);
 
   // Env editor.
   const [envSite, setEnvSite] = useState<string | null>(null);
@@ -183,6 +201,21 @@ export default function GrengoDashboard() {
   useEffect(() => {
     if (sessionValid) fetchStats();
   }, [sessionValid, fetchStats]);
+
+  // ── Fetch storage ────────────────────────────────────────────────────
+
+  const fetchStorage = useCallback(async () => {
+    try {
+      const data = await grengoRequest<StorageInfo>("/storage");
+      setStorage(data ?? null);
+    } catch {
+      // non-critical
+    }
+  }, [grengoRequest]);
+
+  useEffect(() => {
+    if (sessionValid) fetchStorage();
+  }, [sessionValid, fetchStorage]);
 
   // ── Site actions ─────────────────────────────────────────────────────
 
@@ -338,6 +371,7 @@ export default function GrengoDashboard() {
           onClick={() => {
             fetchSites();
             fetchStats();
+            fetchStorage();
           }}
           disabled={loading || statsLoading}
         >
@@ -536,6 +570,51 @@ export default function GrengoDashboard() {
               editable
             />
           )}
+        </div>
+      )}
+
+      {/* Storage Threshold */}
+      {storage && (
+        <div className="grengo-storage">
+          <h2>Storage</h2>
+          <div className="grengo-storage-overview">
+            <div className="storage-total">
+              <div className="storage-total-header">
+                <strong>Total Upload Storage</strong>
+                <span className="storage-total-value">
+                  {storage.total_used_human} / {storage.total_limit_human}
+                </span>
+              </div>
+              <div className="stat-bar">
+                <div
+                  className={`stat-bar-fill ${barClass(storage.total_percent)}`}
+                  style={{ width: `${Math.min(storage.total_percent, 100)}%` }}
+                />
+              </div>
+              <span className="storage-total-pct">
+                {storage.total_percent.toFixed(1)}% used
+                {storage.total_percent >= 80 && (
+                  <span className="storage-warning"> — approaching limit!</span>
+                )}
+                {storage.total_percent >= 95 && (
+                  <span className="storage-critical"> — critical!</span>
+                )}
+              </span>
+            </div>
+            {storage.sites.length > 0 && (
+              <div className="storage-sites">
+                <h3>Per Site</h3>
+                <div className="storage-site-list">
+                  {storage.sites.map((s) => (
+                    <div className="storage-site-row" key={s.name}>
+                      <span className="storage-site-name">{s.name}</span>
+                      <span className="storage-site-used">{s.used_human}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

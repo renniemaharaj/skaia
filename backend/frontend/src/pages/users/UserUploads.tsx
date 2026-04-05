@@ -23,6 +23,19 @@ interface UserUpload {
   created_at: string;
 }
 
+interface UserStorageInfo {
+  user_used: number;
+  user_limit: number;
+  user_percent: number;
+  total_used: number;
+  total_limit: number;
+  total_percent: number;
+  user_used_human: string;
+  user_limit_human: string;
+  total_used_human: string;
+  total_limit_human: string;
+}
+
 interface Props {
   userId: string | undefined;
   displayName: string;
@@ -42,6 +55,7 @@ const UserUploads = ({ userId, displayName }: Props) => {
   const [deletingSet, setDeletingSet] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [selectedUpload, setSelectedUpload] = useState<UserUpload | null>(null);
+  const [storageInfo, setStorageInfo] = useState<UserStorageInfo | null>(null);
 
   const fetchUploads = useCallback(async () => {
     if (!userId) return;
@@ -60,6 +74,23 @@ const UserUploads = ({ userId, displayName }: Props) => {
   useEffect(() => {
     fetchUploads();
   }, [fetchUploads]);
+
+  // Fetch storage info.
+  const fetchStorage = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const data = await apiRequest<UserStorageInfo>(
+        `/upload/storage/${userId}`,
+      );
+      setStorageInfo(data ?? null);
+    } catch {
+      // non-critical
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchStorage();
+  }, [fetchStorage]);
 
   const handleDelete = useCallback(
     async (url: string) => {
@@ -139,6 +170,39 @@ const UserUploads = ({ userId, displayName }: Props) => {
     }
   };
 
+  const storageBarClass = (pct: number) => {
+    if (pct >= 80) return "up-storage-bar-fill up-storage-danger";
+    if (pct >= 50) return "up-storage-bar-fill up-storage-warning";
+    return "up-storage-bar-fill up-storage-ok";
+  };
+
+  const StorageBar = () => {
+    if (!storageInfo || storageInfo.user_limit <= 0) return null;
+    return (
+      <div className="up-storage-info">
+        <div className="up-storage-header">
+          <span className="up-storage-label">Storage</span>
+          <span className="up-storage-value">
+            {storageInfo.user_used_human} / {storageInfo.user_limit_human}
+          </span>
+        </div>
+        <div className="up-storage-bar">
+          <div
+            className={storageBarClass(storageInfo.user_percent)}
+            style={{ width: `${Math.min(storageInfo.user_percent, 100)}%` }}
+          />
+        </div>
+        {storageInfo.user_percent >= 80 && (
+          <span className="up-storage-warning-text">
+            {storageInfo.user_percent >= 95
+              ? "Upload quota nearly full!"
+              : "Approaching upload limit"}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Filter to only show images/media by default
   const imageUploads = uploads.filter((u) => isImage(u) || isVideo(u));
   const fileUploads = uploads.filter((u) => !isImage(u) && !isVideo(u));
@@ -178,6 +242,7 @@ const UserUploads = ({ userId, displayName }: Props) => {
           <ImageIcon size={18} />
           Uploads by {displayName}
         </h2>
+        <StorageBar />
         <p className="up-empty-hint">No uploads yet</p>
       </div>
     );
@@ -190,6 +255,8 @@ const UserUploads = ({ userId, displayName }: Props) => {
         Uploads by {displayName}
         <span className="up-uploads-count">{uploads.length}</span>
       </h2>
+
+      <StorageBar />
 
       {/* Image/Video grid */}
       {imageUploads.length > 0 && (

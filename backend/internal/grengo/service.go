@@ -125,6 +125,44 @@ func (s *Service) Stats() ([]ContainerStats, error) {
 }
 
 // ---------------------------------------------------------------------------
+// Storage info
+// ---------------------------------------------------------------------------
+
+// SiteStorageInfo holds storage usage for a single site.
+type SiteStorageInfo struct {
+	Name      string `json:"name"`
+	Used      int64  `json:"used"`
+	UsedHuman string `json:"used_human"`
+}
+
+// StorageInfo holds upload storage metrics for all sites.
+type StorageInfo struct {
+	Sites      []SiteStorageInfo `json:"sites"`
+	TotalUsed  int64             `json:"total_used"`
+	TotalLimit int64             `json:"total_limit"`
+	TotalPct   float64           `json:"total_percent"`
+	TotalHuman string            `json:"total_used_human"`
+	LimitHuman string            `json:"total_limit_human"`
+}
+
+// Storage retrieves upload storage usage from the grengo API.
+func (s *Service) Storage() (*StorageInfo, error) {
+	resp, err := s.client.Get(s.apiURL + "/storage")
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, s.readAPIError(resp)
+	}
+	var info StorageInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, fmt.Errorf("decode storage: %w", err)
+	}
+	return &info, nil
+}
+
+// ---------------------------------------------------------------------------
 // Site listing
 // ---------------------------------------------------------------------------
 
