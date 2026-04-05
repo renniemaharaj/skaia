@@ -389,12 +389,29 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) searchUsers(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	if q == "" {
-		utils.WriteError(w, http.StatusBadRequest, "search query required")
-		return
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	limit := 50
+	offset := 0
+	if limitStr != "" {
+		if v, err := strconv.Atoi(limitStr); err == nil && v > 0 && v <= 100 {
+			limit = v
+		}
+	}
+	if offsetStr != "" {
+		if v, err := strconv.Atoi(offsetStr); err == nil && v >= 0 {
+			offset = v
+		}
 	}
 
-	users, err := h.svc.Search(q, 20, 0)
+	var users []*models.User
+	var err error
+	if q == "" {
+		users, err = h.svc.List(limit, offset)
+	} else {
+		users, err = h.svc.Search(q, limit, offset)
+	}
 	if err != nil {
 		log.Printf("user.Handler.searchUsers: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to search users")
