@@ -4,7 +4,6 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { forumCategoriesAtom } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
-import { SkeletonCard } from "../ui/SkeletonCard";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import "./Forum.css";
@@ -203,17 +202,41 @@ export const Forum: React.FC<ForumProps> = () => {
         />
 
         {/* Forum Categories */}
-        {forumsLoading ? (
-          <SkeletonCard count={3} variant="forumCategory" />
-        ) : (
-          forums.map((forum) => (
+        {(forumsLoading
+          ? Array.from({ length: 3 }, (_, i) => ({
+              id: `skeleton-${i}`,
+              name: "",
+              description: "",
+              thread_count: 0,
+              created_at: "",
+              updated_at: "",
+              threads: [],
+            }))
+          : forums
+        ).map((forum) => {
+          const loading = forumsLoading;
+
+          return (
             <div
               key={forum.id}
               className="forum-category-card"
-              onClick={() => navigate(`/threads/categories/${forum.id}`)}
+              onClick={
+                loading
+                  ? undefined
+                  : () => navigate(`/threads/categories/${forum.id}`)
+              }
+              style={loading ? { cursor: "default" } : undefined}
             >
+              {/* Header */}
               <div className="forum-category-header">
-                <h3 className="forum-category-title">{forum.name}</h3>
+                {loading ? (
+                  <div
+                    className="skeleton"
+                    style={{ width: "50%", height: 20, borderRadius: 4 }}
+                  />
+                ) : (
+                  <h3 className="forum-category-title">{forum.name}</h3>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -221,26 +244,66 @@ export const Forum: React.FC<ForumProps> = () => {
                     gap: "12px",
                   }}
                 >
-                  <span className="forum-threads-count">
-                    {(forum.threads || []).filter((t) => !t.is_locked).length}
-                  </span>
-                  {canDeleteCategory && (
-                    <button
-                      className="thread-action-btn delete-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCategory(forum.id);
-                      }}
-                      title="Delete category"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                  {loading ? (
+                    <div
+                      className="skeleton"
+                      style={{ width: 40, height: 18, borderRadius: 999 }}
+                    />
+                  ) : (
+                    <>
+                      <span className="forum-threads-count">
+                        {
+                          (forum.threads || []).filter((t) => !t.is_locked)
+                            .length
+                        }
+                      </span>
+                      {canDeleteCategory && (
+                        <button
+                          className="thread-action-btn delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(forum.id);
+                          }}
+                          title="Delete category"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
-              <p className="forum-category-description">{forum.description}</p>
 
-              {(forum.threads || []).length > 0 ? (
+              {/* Description */}
+              {loading ? (
+                <div
+                  className="skeleton"
+                  style={{
+                    width: "95%",
+                    height: 12,
+                    borderRadius: 4,
+                    marginBottom: 16,
+                  }}
+                />
+              ) : (
+                <p className="forum-category-description">
+                  {forum.description}
+                </p>
+              )}
+
+              {/* Threads */}
+              {loading ? (
+                <div className="threads-list">
+                  <div
+                    className="skeleton"
+                    style={{ width: "100%", flex: 1, borderRadius: 8 }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ width: "100%", flex: 1, borderRadius: 8 }}
+                  />
+                </div>
+              ) : (forum.threads || []).length > 0 ? (
                 <div className="threads-list">
                   {(forum.threads || []).slice(0, 2).map((thread) => {
                     const isThreadOwner =
@@ -330,8 +393,8 @@ export const Forum: React.FC<ForumProps> = () => {
                 <div className="empty-threads">No threads yet</div>
               )}
             </div>
-          ))
-        )}
+          );
+        })}
       </div>
     </div>
   );

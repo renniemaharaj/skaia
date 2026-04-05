@@ -5,7 +5,11 @@ type SkeletonVariant = "default" | "forumCategory";
 export const SkeletonCard: React.FC<{
   count?: number;
   variant?: SkeletonVariant;
-}> = ({ count = 1, variant = "default" }) => {
+  /** Force a specific height (px). Defaults to 300 for forumCategory. */
+  height?: number;
+}> = ({ count = 1, variant = "default", height }) => {
+  const cardHeight = height ?? (variant === "forumCategory" ? 300 : undefined);
+
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
@@ -14,6 +18,16 @@ export const SkeletonCard: React.FC<{
             className={`skeleton skeleton-card ${
               variant === "forumCategory" ? "skeleton-card-forum" : ""
             }`}
+            style={
+              cardHeight
+                ? {
+                    height: cardHeight,
+                    minHeight: cardHeight,
+                    maxHeight: cardHeight,
+                    boxSizing: "border-box",
+                  }
+                : undefined
+            }
           >
             {variant === "forumCategory" ? (
               <>
