@@ -304,13 +304,20 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 880px) {
   .forum-container {
     padding: 20px 0;
   }
 
   .forums-grid {
     grid-template-columns: 1fr;
+    width: 100%;
+    padding: 0 16px;
+    gap: 18px;
+  }
+
+  .forum-category-card {
+    width: 100%;
   }
 
   .modal {
