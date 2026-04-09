@@ -4,40 +4,32 @@
   padding: 0;
 }
 
-.guest-sandbox-trigger {
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  z-index: 999;
+.guest-sandbox {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 999px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-size: 0.72rem;
-  font-weight: 700;
-  box-shadow: var(--shadow);
 }
 
-.guest-sandbox-trigger.active {
-  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-primary));
+.guest-sandbox-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.guest-sandbox-btn.active {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
   border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
-.guest-sandbox-trigger-label {
-  white-space: nowrap;
-  font-size: 0.7rem;
-  letter-spacing: 0.02em;
-}
-
-.guest-sandbox-switch {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 18px;
+.guest-sandbox-btn:not(.active) {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
 }
 
 .guest-sandbox-switch input {

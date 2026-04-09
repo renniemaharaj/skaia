@@ -298,30 +298,31 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   return (
     <div className="landing-container">
-      {isEditable && !slug && (
+      {(!slug || isEditable) && (
         <div className="page-admin-bar">
-          <Link to="/admin/meta" className="page-admin-btn">
-            <Settings size={16} />
-            Site Meta
-          </Link>
-        </div>
-      )}
-      {!isEditable && (
-        <div
-          className={`guest-sandbox-trigger${
-            guestSandboxEnabled ? " guest-sandbox active" : ""
-          }`}
-          title="Toggle guest sandbox mode"
-        >
-          <span className="guest-sandbox-trigger-label">Guest sandbox</span>
-          <label className="guest-sandbox-switch">
-            <input
-              type="checkbox"
-              checked={guestSandboxEnabled}
-              onChange={(event) => setGuestSandboxEnabled(event.target.checked)}
-            />
-            <span className="guest-sandbox-slider" />
-          </label>
+          {isEditable && !slug && (
+            <Link to="/admin/meta" className="page-admin-btn">
+              <Settings size={16} />
+              Site Meta
+            </Link>
+          )}
+          {!isEditable && !slug && (
+            <div
+              className={`guest-sandbox${guestSandboxEnabled ? " active" : ""}`}
+            >
+              <button
+                type="button"
+                className={`page-admin-btn guest-sandbox-btn${
+                  guestSandboxEnabled ? " active" : ""
+                }`}
+                onClick={() => setGuestSandboxEnabled((current) => !current)}
+                title="Toggle guest sandbox mode"
+              >
+                <Settings size={16} />
+                Sandbox
+              </button>
+            </div>
+          )}
         </div>
       )}
       <BlockRenderer
