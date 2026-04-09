@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Check, Plus, Trash2 } from "lucide-react";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { hasPermissionAtom } from "../../atoms/auth";
 import { footerConfigAtom } from "../../atoms/config";
 import { brandingAtom } from "../../atoms/config";
@@ -37,7 +38,8 @@ const DEFAULTS: FooterConfig = {
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const hasPermission = useAtomValue(hasPermissionAtom);
-  const canEdit = hasPermission("home.manage");
+  const guestSandboxDetected = useGuestSandboxMode();
+  const canEdit = hasPermission("home.manage") || guestSandboxDetected;
   const footerConfig = useAtomValue(footerConfigAtom);
   const setFooter = useSetAtom(footerConfigAtom);
   const branding = useAtomValue(brandingAtom);

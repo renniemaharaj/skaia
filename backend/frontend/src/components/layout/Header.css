@@ -30,6 +30,17 @@
   cursor: pointer;
 }
 
+.guest-sandbox-badge {
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+  color: var(--primary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.75rem;
+}
+
 .logo-img {
   height: 40px;
   width: auto;

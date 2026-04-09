@@ -2,6 +2,7 @@ import { ShoppingCart, Moon, Sun, Menu, X, LogOut, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import {
   isAuthenticatedAtom,
   currentUserAtom,
@@ -45,10 +46,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Branding + edit permission
   const hasPermission = useAtomValue(hasPermissionAtom);
-  const canEdit = hasPermission("home.manage");
   const branding = useAtomValue(brandingAtom);
   const setBranding = useSetAtom(brandingAtom);
   const features = useAtomValue(featuresAtom);
+  const guestSandboxDetected = useGuestSandboxMode();
+  const canEdit = hasPermission("home.manage") || guestSandboxDetected;
 
   const routeAllowed = (feature?: string) => {
     if (!feature) return true;
@@ -179,10 +181,16 @@ export const Header: React.FC<HeaderProps> = ({
         {canEdit ? (
           <div className="logo" tabIndex={-1}>
             {logoContent}
+            {guestSandboxDetected && (
+              <span className="guest-sandbox-badge">Guest sandbox active</span>
+            )}
           </div>
         ) : (
           <Link to="/" className="logo" tabIndex={-1}>
             {logoContent}
+            {guestSandboxDetected && (
+              <span className="guest-sandbox-badge">Guest sandbox active</span>
+            )}
           </Link>
         )}
 

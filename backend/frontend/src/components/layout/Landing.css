@@ -1,6 +1,94 @@
 .landing-container {
+  position: relative;
   min-height: 100vh;
   padding: 0;
+}
+
+.guest-sandbox-trigger {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 999;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.guest-sandbox-trigger.active {
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-primary));
+  border-color: var(--primary-color);
+}
+
+.guest-sandbox-trigger-label {
+  white-space: nowrap;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.guest-sandbox-switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 18px;
+}
+
+.guest-sandbox-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.guest-sandbox-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--border-color);
+  transition: background 0.2s ease;
+}
+
+.guest-sandbox-slider::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--bg-color);
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-hover);
+}
+
+.guest-sandbox-switch input:checked + .guest-sandbox-slider {
+  background: var(--primary-color);
+}
+
+.guest-sandbox-switch input:checked + .guest-sandbox-slider::before {
+  transform: translateX(14px);
+}
+
+.guest-sandbox-watermark {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 999;
+  padding: 0.85rem 1rem;
+  border-radius: 999px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  max-width: 22rem;
+  text-align: right;
 }
 
 /* ── Page admin bar (visible to editors on index) ───────────────────────── */

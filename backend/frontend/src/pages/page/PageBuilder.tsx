@@ -7,6 +7,7 @@ import type {
 } from "../../components/landing/types";
 import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
 import { LandingSkeleton } from "../../components/landing/LandingSkeleton";
 import { BlockRenderer } from "../../components/landing/BlockRenderer";
@@ -33,10 +34,19 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     deleteItem,
   } = useLandingData();
 
-  const [sections, setSections] = useState<LandingSection[]>([]);
+  const guestSandboxDetected = useGuestSandboxMode();
+  const [guestSandboxEnabled, setGuestSandboxEnabled] =
+    useState(guestSandboxDetected);
+  useEffect(() => {
+    setGuestSandboxEnabled(guestSandboxDetected);
+  }, [guestSandboxDetected]);
 
-  // Track whether the page needs to be created (404 + editable).
-  const isNewPage = !!(slug && error && isEditable);
+  const [sections, setSections] = useState<LandingSection[]>([]);
+  const guestSandboxMode = isEditable || guestSandboxEnabled;
+  const canEdit = guestSandboxMode;
+
+  // Track whether the page needs to be created (404 + editable or sandbox enabled).
+  const isNewPage = !!(slug && error && guestSandboxMode);
   const pageRef = useRef<PageBuilderPage | null>(page);
   pageRef.current = page;
 
@@ -251,7 +261,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     );
   }
 
-  if (slug && error && !isEditable) {
+  if (slug && error && !canEdit) {
     return (
       <div className="landing-container">
         <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
@@ -296,9 +306,27 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           </Link>
         </div>
       )}
+      {!isEditable && (
+        <div
+          className={`guest-sandbox-trigger${
+            guestSandboxEnabled ? " guest-sandbox active" : ""
+          }`}
+          title="Toggle guest sandbox mode"
+        >
+          <span className="guest-sandbox-trigger-label">Guest sandbox</span>
+          <label className="guest-sandbox-switch">
+            <input
+              type="checkbox"
+              checked={guestSandboxEnabled}
+              onChange={(event) => setGuestSandboxEnabled(event.target.checked)}
+            />
+            <span className="guest-sandbox-slider" />
+          </label>
+        </div>
+      )}
       <BlockRenderer
         sections={sections}
-        canEdit={isEditable}
+        canEdit={canEdit}
         onUpdateSection={updateSectionWrapper}
         onDeleteSection={deleteSectionWrapper}
         onCreateSection={createSectionWrapper}
@@ -307,6 +335,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         onDeleteItem={deleteItemWrapper}
         onMoveSection={moveSectionWrapper}
       />
+      {guestSandboxEnabled && (
+        <div className="guest-sandbox guest-sandbox-watermark">
+          Site is in guest sandbox mode for you, most things will fail, but you
+          can play around and explore!
+        </div>
+      )}
     </div>
   );
 }
