@@ -38,8 +38,8 @@ const DEFAULTS: FooterConfig = {
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const hasPermission = useAtomValue(hasPermissionAtom);
-  const guestSandboxDetected = useGuestSandboxMode();
-  const canEdit = hasPermission("home.manage") || guestSandboxDetected;
+  const [guestSandboxMode] = useGuestSandboxMode();
+  const canEdit = hasPermission("home.manage") || guestSandboxMode;
   const footerConfig = useAtomValue(footerConfigAtom);
   const setFooter = useSetAtom(footerConfigAtom);
   const branding = useAtomValue(brandingAtom);

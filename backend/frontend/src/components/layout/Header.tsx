@@ -49,8 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
   const branding = useAtomValue(brandingAtom);
   const setBranding = useSetAtom(brandingAtom);
   const features = useAtomValue(featuresAtom);
-  const guestSandboxDetected = useGuestSandboxMode();
-  const canEdit = hasPermission("home.manage") || guestSandboxDetected;
+  const [guestSandboxMode] = useGuestSandboxMode();
+  const canEdit = hasPermission("home.manage") || guestSandboxMode;
 
   const routeAllowed = (feature?: string) => {
     if (!feature) return true;
@@ -181,14 +181,14 @@ export const Header: React.FC<HeaderProps> = ({
         {canEdit ? (
           <div className="logo" tabIndex={-1}>
             {logoContent}
-            {guestSandboxDetected && (
+            {guestSandboxMode && (
               <span className="guest-sandbox-badge">Guest sandbox active</span>
             )}
           </div>
         ) : (
           <Link to="/" className="logo" tabIndex={-1}>
             {logoContent}
-            {guestSandboxDetected && (
+            {guestSandboxMode && (
               <span className="guest-sandbox-badge">Guest sandbox active</span>
             )}
           </Link>

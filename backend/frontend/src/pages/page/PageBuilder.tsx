@@ -34,13 +34,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     deleteItem,
   } = useLandingData();
 
-  const guestSandboxDetected = useGuestSandboxMode();
-  const [guestSandboxEnabled, setGuestSandboxEnabled] =
-    useState(guestSandboxDetected);
-  useEffect(() => {
-    setGuestSandboxEnabled(guestSandboxDetected);
-  }, [guestSandboxDetected]);
-
+  const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
@@ -315,7 +309,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                 className={`page-admin-btn guest-sandbox-btn${
                   guestSandboxEnabled ? " active" : ""
                 }`}
-                onClick={() => setGuestSandboxEnabled((current) => !current)}
+                onClick={() =>
+                  setGuestSandboxEnabled(
+                    (current: boolean) => !(current as boolean),
+                  )
+                }
                 title="Toggle guest sandbox mode"
               >
                 <Settings size={16} />
@@ -336,12 +334,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         onDeleteItem={deleteItemWrapper}
         onMoveSection={moveSectionWrapper}
       />
-      {guestSandboxEnabled && (
-        <div className="guest-sandbox guest-sandbox-watermark">
-          Site is in guest sandbox mode for you, most things will fail, but you
-          can play around and explore!
-        </div>
-      )}
     </div>
   );
 }

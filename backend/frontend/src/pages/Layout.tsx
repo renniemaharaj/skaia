@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
+import { Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
 import { usePresence } from "../hooks/usePresence";
 import { useCursorTracking } from "../hooks/useCursorTracking";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
+import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
 import PresencePanel from "../components/layout/PresencePanel";
 import CursorOverlay from "../components/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
@@ -45,6 +47,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, []);
 
   const features = useAtomValue(featuresAtom);
+  const [guestSandboxMode] = useGuestSandboxMode();
 
   usePresence(features?.presence ?? true);
   useCursorTracking();
@@ -156,6 +159,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="layout">
+      {guestSandboxMode && (
+        <div className="layout-guest-sandbox-banner">
+          <Info size={16} className="layout-guest-sandbox-icon" />
+          <span>
+            Site is in guest sandbox mode for you, most things will fail, but
+            you can still explore the page editor.
+          </span>
+        </div>
+      )}
       <Header
         cartCount={cartCount}
         isDarkMode={isDarkMode}

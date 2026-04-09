@@ -1,42 +1,16 @@
-import { useEffect, useState } from "react";
+import { useAtom } from "jotai";
+import type { Dispatch, SetStateAction } from "react";
+import { guestSandboxAtom } from "../atoms/guestSandbox";
 
 /**
- * Detect guest sandbox mode via the presence of a DOM div with class
- * `guest-sandbox`.
+ * Hook for guest sandbox mode state.
  *
- * The hook uses MutationObserver so removing the div will immediately
- * switch sandbox mode off.
+ * This uses shared atom state instead of DOM observation to reduce frontend
+ * load and keep sandbox mode consistent across components.
  */
-export function useGuestSandboxMode(): boolean {
-  const [guestSandboxMode, setGuestSandboxMode] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      Boolean(document.querySelector<HTMLDivElement>("div.guest-sandbox")),
-  );
-
-  useEffect(() => {
-    const selector = "div.guest-sandbox";
-
-    const checkSandbox = () => {
-      const node = document.querySelector<HTMLDivElement>(selector);
-      setGuestSandboxMode(Boolean(node));
-    };
-
-    checkSandbox();
-
-    const observer = new MutationObserver(() => {
-      checkSandbox();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true,
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  return guestSandboxMode;
+export function useGuestSandboxMode(): [
+  boolean,
+  Dispatch<SetStateAction<boolean>>,
+] {
+  return useAtom(guestSandboxAtom);
 }
