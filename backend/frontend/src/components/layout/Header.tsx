@@ -181,16 +181,10 @@ export const Header: React.FC<HeaderProps> = ({
         {canEdit ? (
           <div className="logo" tabIndex={-1}>
             {logoContent}
-            {guestSandboxMode && (
-              <span className="guest-sandbox-badge">Guest sandbox active</span>
-            )}
           </div>
         ) : (
           <Link to="/" className="logo" tabIndex={-1}>
             {logoContent}
-            {guestSandboxMode && (
-              <span className="guest-sandbox-badge">Guest sandbox active</span>
-            )}
           </Link>
         )}
 
