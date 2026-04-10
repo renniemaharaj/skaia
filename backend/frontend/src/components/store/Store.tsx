@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ShoppingCart, Package, Plus, Edit2, Trash2, Tag } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+
 import {
   currentUserAtom,
   isAuthenticatedAtom,
@@ -44,19 +46,22 @@ export const Store: React.FC = () => {
 
   const { subscribe } = useWebSocketSync();
 
+  const [guestSandboxMode] = useGuestSandboxMode();
+
   // ── Permissions ───────────────────────────────────────────────────────────
   const canCreateProduct =
-    currentUser?.permissions?.includes("store.product-new");
+    currentUser?.permissions?.includes("store.product-new") || guestSandboxMode;
   const canEditProduct =
-    currentUser?.permissions?.includes("store.product-edit");
-  const canDeleteProduct = currentUser?.permissions?.includes(
-    "store.product-delete",
-  );
-  const canManageCategories = currentUser?.permissions?.includes(
-    "store.manageCategories",
-  );
-  const canCreateCategory = canManageCategories;
-  const canDeleteCategory = canManageCategories;
+    currentUser?.permissions?.includes("store.product-edit") ||
+    guestSandboxMode;
+  const canDeleteProduct =
+    currentUser?.permissions?.includes("store.product-delete") ||
+    guestSandboxMode;
+  const canManageCategories =
+    currentUser?.permissions?.includes("store.manageCategories") ||
+    guestSandboxMode;
+  const canCreateCategory = canManageCategories || guestSandboxMode;
+  const canDeleteCategory = canManageCategories || guestSandboxMode;
 
   // ── Load catalog ──────────────────────────────────────────────────────────
   const loadCatalog = useCallback(async () => {

@@ -22,18 +22,29 @@ export interface IndexRoute extends Primitve {
 const passThrough = (route: CustomRoute) =>
   route.suspended ? <Suspended /> : route.element;
 
+const SANDBOX_ENABLED_FEATURES = new Set(["store", "forum", "users"]);
+
 const featureAllowed = (
   conditional: string | undefined,
   features: Record<string, boolean> | null,
+  guestSandboxMode = false,
 ): boolean => {
   if (!conditional) return true;
+  if (guestSandboxMode && SANDBOX_ENABLED_FEATURES.has(conditional)) {
+    return true;
+  }
   if (!features) return true; // fallback while loading
   return !!features[conditional];
 };
 
-export const publicRoutesFunc = (features: Record<string, boolean> | null) => {
+export const publicRoutesFunc = (
+  features: Record<string, boolean> | null,
+  guestSandboxMode = false,
+) => {
   return publicRoutes
-    .filter((route) => featureAllowed(route.conditional, features))
+    .filter((route) =>
+      featureAllowed(route.conditional, features, guestSandboxMode),
+    )
     .map((route, i) =>
       "index" in route ? (
         <Route key={`public-index` + i} index element={route.element} />
@@ -49,9 +60,12 @@ export const publicRoutesFunc = (features: Record<string, boolean> | null) => {
 
 export const protectedRoutesFunc = (
   features: Record<string, boolean> | null,
+  guestSandboxMode = false,
 ) => {
   return protectedRoutes
-    .filter((route) => featureAllowed(route.conditional, features))
+    .filter((route) =>
+      featureAllowed(route.conditional, features, guestSandboxMode),
+    )
     .map((route, i) => (
       <Route
         key={`private-${(route as CustomRoute).path || i}` + i}
@@ -63,9 +77,14 @@ export const protectedRoutesFunc = (
     ));
 };
 
-export const guestRoutesFunc = (features: Record<string, boolean> | null) => {
+export const guestRoutesFunc = (
+  features: Record<string, boolean> | null,
+  guestSandboxMode = false,
+) => {
   return guestRoutes
-    .filter((route) => featureAllowed(route.conditional, features))
+    .filter((route) =>
+      featureAllowed(route.conditional, features, guestSandboxMode),
+    )
     .map((route, i) => (
       <Route
         key={`guest-${(route as CustomRoute).path || i}` + i}

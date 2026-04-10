@@ -54,6 +54,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   const routeAllowed = (feature?: string) => {
     if (!feature) return true;
+    if (guestSandboxMode && ["store", "forum", "users"].includes(feature)) {
+      return true;
+    }
     if (!features) return true;
     return !!features[feature];
   };

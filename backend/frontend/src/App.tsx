@@ -12,6 +12,7 @@ import ErrorBoundary from "./ErrorBoundary";
 import { useSiteConfig } from "./hooks/useSiteConfig";
 import SiteHead from "./components/SiteHead";
 import { useFeatures } from "./hooks/useFeatures";
+import { useGuestSandboxMode } from "./hooks/useGuestSandboxMode";
 import GrengoSessionDialog from "./components/admin/GrengoSessionDialog";
 
 function SiteConfigLoader({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ function SiteConfigLoader({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const features = useFeatures();
+  const [guestSandboxMode] = useGuestSandboxMode();
 
   return (
     <CartProvider>
@@ -35,9 +37,9 @@ export default function App() {
             <Layout>
               <ErrorBoundary>
                 <Routes>
-                  {publicRoutesFunc(features)}
-                  {guestRoutesFunc(features)}
-                  {protectedRoutesFunc(features)}
+                  {publicRoutesFunc(features, guestSandboxMode)}
+                  {guestRoutesFunc(features, guestSandboxMode)}
+                  {protectedRoutesFunc(features, guestSandboxMode)}
                 </Routes>
               </ErrorBoundary>
             </Layout>

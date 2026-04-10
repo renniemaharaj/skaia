@@ -6,6 +6,8 @@ import { forumCategoriesAtom } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+
 import "./Forum.css";
 import "../ui/FeatureCard.css";
 import "./NewThread.css";
@@ -34,6 +36,8 @@ export const Forum: React.FC<ForumProps> = () => {
 
   // Setup WebSocket synchronization for forum updates
   const { subscribe } = useWebSocketSync();
+
+  const [guestSandboxMode] = useGuestSandboxMode();
 
   // Load forums from API
   const loadForums = useCallback(async () => {
@@ -90,10 +94,11 @@ export const Forum: React.FC<ForumProps> = () => {
   };
 
   const canCreateCategory =
-    currentUser?.permissions?.includes("forum.category-new");
-  const canDeleteCategory = currentUser?.permissions?.includes(
-    "forum.category-delete",
-  );
+    currentUser?.permissions?.includes("forum.category-new") ||
+    guestSandboxMode;
+  const canDeleteCategory =
+    currentUser?.permissions?.includes("forum.category-delete") ||
+    guestSandboxMode;
 
   // Debug logging
   useEffect(() => {
