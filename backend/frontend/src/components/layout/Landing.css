@@ -218,9 +218,47 @@
 
 .hero-opacity-slider input[type="range"] {
   width: 80px;
-  height: 4px;
+  height: 16px;
   accent-color: var(--primary-color);
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border-radius: 2px;
+  margin: 0;
+  padding: 0;
+}
+
+.hero-opacity-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+.hero-opacity-slider input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.hero-opacity-slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.hero-opacity-slider input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
 }
 
 /* ── Hero Video Navigation ────────────────────────────────────────────── */
@@ -1235,14 +1273,9 @@
   padding: 4px 10px;
   margin-bottom: 8px;
   font-size: 0.75rem;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   gap: 8px;
   min-width: 0;
-}
-
-.landing-section-toolbar > * {
-  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 /* Layout wrapper for all sections */
@@ -1449,6 +1482,7 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 /* Add section */
