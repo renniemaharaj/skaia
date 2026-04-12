@@ -75,7 +75,7 @@ export const StatCardsBlock = ({
         {items.map((item) => {
           const Icon = ICON_MAP[item.icon];
           return (
-            <div key={item.id} className="stat-card">
+            <div key={item.id} className="card card--interactive stat-card">
               {canEdit && (
                 <DeleteItemButton onClick={() => onItemDelete(item.id)} />
               )}

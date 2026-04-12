@@ -1,0 +1,216 @@
+# Backend Specification
+
+## Architecture
+
+Go 1.24 server using chi/v5 router. Follows a strict **handler → service → repository** pattern with constructor-based dependency injection. No ORM — all database access is raw SQL via `lib/pq`.
+
+## Package Layout
+
+```
+backend/
+├── main.go                    # Entry: router setup, middleware wiring, server start
+├── database/db.go             # PostgreSQL + Redis client initialization
+├── models/
+│   ├── models.go              # Shared data types (User, Thread, Product, Order, etc.)
+│   └── site_config.go         # SiteConfig types (branding, SEO, footer, features)
+└── internal/
+    ├── auth/                  # JWT (HS256), bcrypt passwords, context helpers
+    ├── middleware/             # CORS, JWT auth, optional auth, RBAC, rate limit, armed guard
+    ├── user/                  # User CRUD, roles, permissions, suspension, Redis cache
+    ├── forum/                 # Categories, threads, comments, likes, Redis cache
+    ├── store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
+    ├── inbox/                 # 1-to-1 conversations + messages
+    ├── notification/          # Per-user notifications (typed, routed, real-time)
+    ├── config/                # site_config CRUD (branding, SEO, footer, features)
+    ├── page/                  # CMS pages (slug-based, JSONB block content)
+    ├── upload/                # Image/video/file/banner uploads (user-isolated dirs)
+    ├── ws/                    # WebSocket hub, presence, chat ring, cursor broadcast
+    ├── ssr/                   # index.html rewriting with SEO head tags
+    ├── grengo/                # Admin dashboard API proxy
+    ├── migrations/            # SQL schema (001), seed data (002), CMS schema (003)
+    ├── integration/           # Integration test suite
+    └── testutil/              # Test helpers (DB setup)
+```
+
+## Handler → Service → Repository Pattern
+
+### Handlers (`handler.go`)
+
+- Receive `http.Request`, decode JSON body, validate required fields
+- Extract auth context via `auth.UserFromContext(r.Context())`
+- Call service methods, write JSON response or error
+- Never contain business logic or SQL
+
+### Services (`service.go`)
+
+- Contain all business logic
+- Orchestrate repository calls
+- Manage Redis cache (read-through with 5-min TTL, invalidate on writes)
+- Dispatch WebSocket events via hub
+- Return domain errors, not HTTP errors
+
+### Repositories (`repository.go`)
+
+- Execute raw SQL against PostgreSQL
+- Accept `context.Context` as first parameter
+- Return models or `error`
+- No caching, no business logic
+
+### Interfaces (`interface.go`)
+
+- Define service and repository contracts per domain
+- Enable test mocking
+
+## Middleware Stack
+
+All routes use composable chi middleware:
+
+| Middleware     | Behavior                                                               |
+| -------------- | ---------------------------------------------------------------------- |
+| CORS           | Origin allowlist from `DOMAINS` env — no wildcards                     |
+| JWT Auth       | Validates `Authorization: Bearer <token>`, injects claims into context |
+| Optional JWT   | Enriches context when token present, doesn't block anonymous           |
+| Permission     | Checks specific permission or admin role                               |
+| Rate Limit     | 100 req/min general, 10 req/min auth (per IP via `httprate`)           |
+| Armed Guard    | Blocks API traffic when tenant is in maintenance mode                  |
+| Request Logger | Logs method, host, path, status, bytes, duration; redacts tokens       |
+| X-Backend      | Identifies which tenant handled the request                            |
+| Cache-Control  | `no-store` on all API responses                                        |
+
+## Authentication & Authorization
+
+- JWT access tokens: HS256, configurable TTL via `SESSION_TIMEOUT_MIN` (default 30)
+- Refresh tokens: 7-day lifetime, stored in `user_sessions`
+- Passwords: bcrypt cost 12, enforced 8–72 character length
+- 4 default roles: admin, member, moderator, banned
+- 18 granular permissions across forum, store, user management, presence, CMS
+- Permissions resolve from role assignments + direct per-user grants
+- Admin role implicitly holds all permissions
+- Role/permission changes push new JWTs to affected users via WebSocket
+
+## Database
+
+PostgreSQL 16 with per-tenant databases on a shared instance.
+
+### Connection Pool
+
+- `DB_MAX_OPEN_CONNS`: 100
+- `DB_MAX_IDLE_CONNS`: 50
+- `DB_CONN_MAX_LIFETIME_MIN`: 30
+
+### Migration Strategy
+
+Idempotent SQL files in `internal/migrations/`:
+
+- `001_schema.sql` — all tables with `IF NOT EXISTS`
+- `002_seed.sql` — default roles, permissions, admin user
+- `003_pages.sql` — CMS page schema
+
+Prices stored as `BIGINT` cents. Timestamps are `TIMESTAMPTZ` with `DEFAULT NOW()`.
+
+### Key Tables
+
+- `users`, `user_sessions`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
+- `forum_categories`, `forum_threads`, `thread_comments`, `thread_likes`, `thread_comment_likes`
+- `products`, `store_categories`, `cart_items`, `orders`, `order_items`, `payments`, `subscription_plans`, `subscriptions`
+- `inbox_conversations`, `inbox_messages`, `notifications`
+- `site_config`, `landing_sections`, `landing_items`, `pages`
+
+## Cache Layer
+
+Redis 7, namespaced per tenant (e.g. `home:user:42`, `writer:forum:thread:7`).
+
+- Read-through cache with 5-minute TTL
+- Automatic invalidation on writes
+- Used for: users, threads, products, site config
+- All cache operations are best-effort — cache misses fall through to DB
+
+## WebSocket Hub
+
+Single event loop dispatching to a bounded worker pool (default 256 goroutines).
+
+| Feature                | Detail                                                       |
+| ---------------------- | ------------------------------------------------------------ |
+| Resource subscriptions | Key-based pub/sub (e.g. `thread:42`) with targeted updates   |
+| Presence               | Debounced broadcasts of online users + current routes        |
+| Global chat            | Ring buffer (80 messages) with history replay on connect     |
+| Cursor sharing         | Real-time mouse position relay to same-route users           |
+| Teleport               | Admin can navigate any connected user to a route             |
+| Permission push        | Role/permission changes push new JWT to affected connections |
+| Targeted delivery      | `SendToUser(userID, msg)` reaches all concurrent connections |
+
+Configurable: `WS_MAX_CONNECTIONS` (100K), `WS_MAX_WORKERS` (256), `WS_CHAT_RING_SIZE` (80), `WS_PRESENCE_INTERVAL_MS` (1000).
+
+## Payments
+
+Pluggable provider interface:
+
+- `DemoPaymentProvider` — simulates transactions locally (configurable failure rate)
+- `StripePaymentProvider` — PaymentIntents, Checkout Sessions, Customers, Subscriptions (Stripe API v82)
+
+Set via `PAYMENT_PROVIDER` env (`demo` or `stripe`).
+
+## File Uploads
+
+- Per-user isolated directories: `uploads/users/{userID}/{type}/`
+- Image: JPEG, PNG, WebP, GIF ≤ 10 MB with dimension validation
+- Video: MP4, WebM, OGG, MOV ≤ 50 MB
+- Directory-traversal protection (`..` rejection)
+- nginx serves uploads with 30-day cache TTL
+
+## SSR / SEO
+
+`internal/ssr/` rewrites `index.html` at serve time, injecting:
+
+- `<title>`, `<meta name="description">`, OG tags, favicon
+- Values sourced from `site_config` table
+- Dynamic sitemap at `/sitemap.xml`
+
+## Testing
+
+### Unit Tests
+
+- Go test files alongside source (`*_test.go`)
+- Repository tests use `testutil/db.go` for isolated DB setup
+- Service tests mock repository interfaces
+
+### Integration Tests
+
+- `internal/integration/` — full HTTP test suite
+- Covers: user registration/auth, forum CRUD, store checkout, uploads
+- Uses real DB + Redis instances
+
+### Frontend Tests
+
+- Vitest + Testing Library
+- Run via `npm test` in `backend/frontend/`
+
+## API Routes
+
+All under `/api/`. JWT-protected unless noted.
+
+- `GET /health` — health check (no auth)
+- `GET /time` — server UTC time (no auth)
+- `GET /ws` — WebSocket (token via query param)
+- `/auth/*` — register, login, refresh, logout
+- `/users/*` — CRUD, roles, permissions, suspension
+- `/forum/*` — categories, threads, comments, likes
+- `/store/*` — products, cart, checkout, orders, subscriptions
+- `/inbox/*` — conversations, messages, unread count
+- `/notifications/*` — list, read, delete
+- `/config/*` — branding, SEO, footer, features, landing, pages
+- `/upload/*` — image, video, file, banner
+
+## Security Checklist
+
+- bcrypt cost 12 for passwords
+- HS256 JWT with env-sourced secret
+- CORS explicit origin allowlist (no wildcards)
+- Rate limiting per IP
+- RBAC on all protected endpoints
+- MIME type allowlist for uploads
+- Path traversal guards on file serving
+- Token redaction in logs
+- `Cache-Control: no-store` on API responses
+- Non-root container user (`appuser`)
+- Configurable DB connection pool limits

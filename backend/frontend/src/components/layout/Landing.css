@@ -384,9 +384,6 @@
 .stat-card {
   position: relative;
   background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -419,8 +416,6 @@
 }
 
 .stat-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-hover);
   transform: translateY(-4px);
 }
 

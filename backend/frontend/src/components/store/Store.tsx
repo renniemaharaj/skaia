@@ -264,7 +264,10 @@ export const Store: React.FC = () => {
         ) : products.length > 0 ? (
           <div className="products-grid">
             {products.map((product) => (
-              <div key={product.id} className="product-card">
+              <div
+                key={product.id}
+                className="card card--interactive card--store product-card"
+              >
                 {product.image_url ? (
                   <div className="product-image">
                     <img
@@ -351,7 +354,7 @@ export const Store: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="empty-state">
+          <div className="card empty-state">
             <Package size={48} />
             <h3>No items available</h3>
             <p>

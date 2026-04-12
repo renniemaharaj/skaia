@@ -497,7 +497,7 @@ export default function GrengoDashboard() {
 
   if (sessionValid === null) {
     return (
-      <div className="grengo-gate">
+      <div className="card grengo-gate">
         <p>Validating session…</p>
       </div>
     );
@@ -694,7 +694,7 @@ export default function GrengoDashboard() {
           No sites yet. Create one or import an archive.
         </div>
       ) : (
-        <div className="grengo-table-wrap">
+        <div className="card grengo-table-wrap">
           <table className="grengo-table">
             <thead>
               <tr>
@@ -946,7 +946,7 @@ export default function GrengoDashboard() {
           <div className="grengo-stats-cards">
             <StatsOverview stats={stats} />
             {stats.map((s) => (
-              <div className="grengo-stat-card" key={s.name}>
+              <div className="card grengo-stat-card" key={s.name}>
                 <div className="stat-card-header">
                   <strong>{s.name}</strong>
                 </div>
@@ -1032,7 +1032,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   };
 
   return (
-    <div className="grengo-stat-card grengo-stat-overview">
+    <div className="card grengo-stat-card grengo-stat-overview">
       <div className="stat-card-header">
         <strong>Totals</strong>
         <span className="stat-count">{stats.length} containers</span>
@@ -1105,7 +1105,7 @@ function CreateSiteForm({
   };
 
   return (
-    <div className="grengo-create-form">
+    <div className="card grengo-create-form">
       <h2>Create New Site</h2>
       {error && <div className="error">{error}</div>}
       <div className="form-grid">
@@ -1241,7 +1241,7 @@ function ImportSiteForm({
   };
 
   return (
-    <div className="grengo-import-form">
+    <div className="card grengo-import-form">
       <h2>Import Site</h2>
       {error && <div className="error">{error}</div>}
       <div className="import-fields">
@@ -1331,7 +1331,7 @@ function ImportNodeForm({
   };
 
   return (
-    <div className="grengo-import-form">
+    <div className="card grengo-import-form">
       <h2>Import Node Archive</h2>
       <p
         style={{

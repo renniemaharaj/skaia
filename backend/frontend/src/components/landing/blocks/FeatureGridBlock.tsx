@@ -71,7 +71,7 @@ export const FeatureGridBlock = ({
         {items.map((item) => {
           const Icon = ICON_MAP[item.icon];
           return (
-            <div key={item.id} className="feature-card">
+            <div key={item.id} className="card card--interactive feature-card">
               {canEdit && (
                 <DeleteItemButton onClick={() => onItemDelete(item.id)} />
               )}

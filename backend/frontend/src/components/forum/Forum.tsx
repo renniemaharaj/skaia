@@ -112,7 +112,7 @@ export const Forum: React.FC<ForumProps> = () => {
       <div className="forums-grid">
         {/* New Thread & Create Category Card */}
         {isAuthenticated && (
-          <div className="new-thread-card feature-card">
+          <div className="card card--interactive new-thread-card feature-card">
             <div className="new-thread-content">
               <div style={{ display: "flex", gap: "12px", width: "100%" }}>
                 {/* Start Discussion */}
@@ -224,7 +224,7 @@ export const Forum: React.FC<ForumProps> = () => {
           return (
             <div
               key={forum.id}
-              className="forum-category-card"
+              className="card card--interactive forum-category-card"
               onClick={
                 loading
                   ? undefined

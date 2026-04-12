@@ -42,12 +42,6 @@
 }
 
 .forum-category-card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
   height: 300px;
   display: flex;
   flex-direction: column;
@@ -55,8 +49,6 @@
 }
 
 .forum-category-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-hover);
   transform: translateY(-6px);
 }
 
@@ -76,17 +68,9 @@
 
 /* New Thread Card */
 .new-thread-card {
-  /* background: linear-gradient(
-    135deg,
-    var(--skaia-green-primary) 0%,
-    rgba(202, 255, 237, 0.6) 100%
-  ); */
   background-color: rgba(202, 255, 237, 0.05);
   border: 2px dashed var(--skaia-green-primary);
-  border-radius: 12px;
-  padding: 40px 24px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
