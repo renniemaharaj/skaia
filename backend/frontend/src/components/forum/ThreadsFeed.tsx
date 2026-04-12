@@ -51,7 +51,7 @@ const ThreadsFeed = ({
           <Link
             key={t.id}
             to={`/view-thread/${t.id}`}
-            className="threads-feed-card"
+            className="card card--interactive card--compact threads-feed-card"
           >
             <div className="threads-feed-title">{t.title}</div>
             <p className="threads-feed-excerpt">

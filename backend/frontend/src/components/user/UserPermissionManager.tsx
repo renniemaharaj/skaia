@@ -197,7 +197,10 @@ const UserPermissionManager: React.FC = () => {
       {searchResults.length > 0 && (
         <div className="upm-results">
           {searchResults.map((user) => (
-            <div key={user.id} className="upm-user-card">
+            <div
+              key={user.id}
+              className="card card--interactive card--compact upm-user-card"
+            >
               <div className="upm-user-info">
                 <div className="upm-user-name">
                   {user.display_name || user.username}
@@ -234,7 +237,10 @@ const UserPermissionManager: React.FC = () => {
           className="upm-dialog-overlay"
           onClick={() => setShowDialog(false)}
         >
-          <div className="upm-dialog" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="upm-dialog card card--outlined"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="upm-dialog-header">
               <div>
                 <h3>{selectedUser.display_name || selectedUser.username}</h3>

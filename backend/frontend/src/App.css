@@ -62,10 +62,10 @@
 }
 
 .cart-item {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -74,7 +74,7 @@
 
 .cart-item:hover {
   border-color: var(--primary-color);
-  box-shadow: var(--shadow);
+  box-shadow: var(--card-shadow);
 }
 
 .cart-item-info h3 {
@@ -115,10 +115,10 @@
 }
 
 .cart-summary {
-  background-color: var(--bg-secondary);
+  background-color: var(--card-bg);
   border: 2px solid var(--primary-color);
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
   text-align: right;
   max-width: 400px;
   margin-left: auto;
@@ -137,9 +137,9 @@
 .empty-cart {
   text-align: center;
   padding: 60px 20px;
-  background-color: var(--bg-secondary);
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
+  background-color: var(--card-bg);
+  border: 2px dashed var(--card-border);
+  border-radius: var(--card-radius);
 }
 
 .empty-cart p {

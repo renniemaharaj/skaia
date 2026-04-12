@@ -37,10 +37,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
 }
 
 .cart-item-info {
@@ -76,10 +72,6 @@
 }
 
 .cart-summary {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
   height: fit-content;
   position: sticky;
   top: 100px;
@@ -101,10 +93,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4rem 2rem;
-  background: var(--bg-secondary);
   border: 2px dashed var(--border-color);
-  border-radius: 12px;
 }
 
 .empty-cart-icon {

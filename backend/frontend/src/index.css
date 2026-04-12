@@ -13,6 +13,21 @@
   --border-color: #e0e0e0;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* Shared card and panel tokens */
+  --card-bg: var(--bg-secondary);
+  --card-border: var(--border-color);
+  --card-radius: 16px;
+  --card-padding: 1.5rem;
+  --card-shadow: var(--shadow);
+  --card-shadow-hover: var(--shadow-hover);
+  --card-hover-bg: rgba(255, 255, 255, 0.9);
+  --section-bg: var(--bg-tertiary);
+  --section-gap: 1.5rem;
+  --section-padding: 1.5rem;
+  --panel-border: var(--border-color);
+  --panel-heading-color: var(--text-primary);
+
   --skeleton-color: #e0e0e0;
   --skeleton-shine: #f0f0f0;
 
@@ -49,6 +64,21 @@ html[data-theme="dark"] {
   --border-color: #333333;
   --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.4);
+
+  /* Shared card and panel tokens */
+  --card-bg: var(--bg-secondary);
+  --card-border: var(--border-color);
+  --card-radius: 16px;
+  --card-padding: 1.5rem;
+  --card-shadow: var(--shadow);
+  --card-shadow-hover: var(--shadow-hover);
+  --card-hover-bg: rgba(255, 255, 255, 0.04);
+  --section-bg: var(--bg-secondary);
+  --section-gap: 1.5rem;
+  --section-padding: 1.5rem;
+  --panel-border: var(--border-color);
+  --panel-heading-color: var(--text-primary);
+
   --skeleton-color: #2a2a2a;
   --skeleton-shine: #333333;
 
@@ -228,16 +258,95 @@ div#root {
 
 /* Cards */
 .card {
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px;
-  transition: all 0.3s ease;
+  display: block;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
+.card--interactive {
+  cursor: pointer;
+}
+
+.card--interactive:hover,
 .card:hover {
+  box-shadow: var(--card-shadow-hover);
+  background: var(--card-hover-bg);
   border-color: var(--primary-color);
-  box-shadow: var(--shadow-hover);
+  transform: translateY(-1px);
+}
+
+.card--outlined {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+  box-shadow: none;
+}
+
+.card--flat {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.card__header,
+.card__body,
+.card__footer {
+  display: block;
+}
+
+.card__header {
+  margin-bottom: 1rem;
+  color: var(--panel-heading-color);
+}
+
+.card__footer {
+  margin-top: 1rem;
+}
+
+.card--compact {
+  padding: calc(var(--card-padding) * 0.65);
+}
+
+.card--section {
+  background: var(--section-bg);
+}
+
+.card--forum {
+  border-color: var(--primary-color);
+}
+
+.card--store {
+  border-color: var(--primary-dark);
+}
+
+.card--highlight {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px rgba(91, 158, 142, 0.12);
+}
+
+.section {
+  display: block;
+  background: var(--section-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--card-radius);
+  padding: var(--section-padding);
+  gap: var(--section-gap);
+}
+
+.section__header {
+  margin-bottom: 1rem;
+  color: var(--panel-heading-color);
+}
+
+.section__content {
+  display: block;
 }
 
 .card-product {

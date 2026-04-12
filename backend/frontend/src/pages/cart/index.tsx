@@ -105,7 +105,10 @@ export const CartPage = () => {
                 product?.name ?? `Product #${item.product_id}`;
               const displayPrice = product?.price ?? 0;
               return (
-                <div key={item.product_id} className="cart-item">
+                <div
+                  key={item.product_id}
+                  className="card card--store cart-item"
+                >
                   <div className="cart-item-info">
                     <h3>{displayName}</h3>
                     <p>${displayPrice.toFixed(2)}</p>
@@ -131,7 +134,7 @@ export const CartPage = () => {
               );
             })}
           </div>
-          <div className="cart-summary">
+          <div className="card card--outlined cart-summary">
             <h3>Total: ${cartTotal.toFixed(2)}</h3>
             <button
               className="btn btn-primary"
@@ -162,7 +165,7 @@ export const CartPage = () => {
           </div>
         </div>
       ) : (
-        <div className="empty-cart">
+        <div className="card card--outlined empty-cart">
           <ShoppingCart size={64} className="empty-cart-icon" />
           <h2>Your cart is empty</h2>
           <p>
