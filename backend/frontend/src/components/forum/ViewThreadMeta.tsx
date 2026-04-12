@@ -249,10 +249,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   return (
     <div className="view-thread-meta-container">
       {metaCards.map((card) => (
-        <div
-          key={card.id}
-          className="card card--forum richtext-outline-1 view-thread-meta-card"
-        >
+        <div key={card.id} className="view-thread-meta-card">
           {card.content}
         </div>
       ))}
