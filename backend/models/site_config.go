@@ -91,6 +91,28 @@ type Page struct {
 	Description string    `json:"description"`
 	IsIndex     bool      `json:"is_index"`
 	Content     string    `json:"content"` // raw JSON array of sections
+	OwnerID     *int64    `json:"owner_id,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
+
+	// Enriched fields (not stored directly in pages table)
+	Owner   *PageUser   `json:"owner,omitempty"`
+	Editors []*PageUser `json:"editors,omitempty"`
+}
+
+// PageUser is a lightweight user representation for page ownership/editor lists.
+type PageUser struct {
+	ID          int64  `json:"id"`
+	Username    string `json:"username"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+}
+
+// PageEditor is a junction row granting edit access to a user on a page.
+type PageEditor struct {
+	ID        int64     `json:"id"`
+	PageID    int64     `json:"page_id"`
+	UserID    int64     `json:"user_id"`
+	GrantedBy *int64    `json:"granted_by,omitempty"`
+	GrantedAt time.Time `json:"granted_at"`
 }

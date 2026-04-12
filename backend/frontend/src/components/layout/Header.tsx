@@ -1,5 +1,17 @@
-import { ShoppingCart, Moon, Sun, Menu, X, LogOut, Mail } from "lucide-react";
-import { useState } from "react";
+import {
+  ShoppingCart,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  LogOut,
+  Mail,
+  Volume,
+  Volume1,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
@@ -19,6 +31,12 @@ import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
+import {
+  isSoundEnabled,
+  setSoundEnabled,
+  getSoundVolume,
+  setSoundVolume,
+} from "../../utils/sound";
 import type { Branding } from "../landing/types";
 
 interface HeaderProps {
@@ -33,8 +51,24 @@ export const Header: React.FC<HeaderProps> = ({
   // onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+  const [volume, setVolume] = useState(() => getSoundVolume());
+  const [volumeOpen, setVolumeOpen] = useState(false);
+  const volumeRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Close volume slider on outside click
+  useEffect(() => {
+    if (!volumeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
+        setVolumeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [volumeOpen]);
 
   // Use Jotai atoms for auth state
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -249,6 +283,58 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             {isAuthenticated && user ? (
               <div className="user-menu">
+                <div className="header-volume-wrap" ref={volumeRef}>
+                  <button
+                    className="header-sound-toggle"
+                    title={soundOn ? "Mute sounds" : "Unmute sounds"}
+                    onClick={() => {
+                      if (soundOn) {
+                        setSoundEnabled(false);
+                        setSoundOn(false);
+                      } else {
+                        const restored = volume > 0 ? volume : 0.7;
+                        setSoundVolume(restored);
+                        setVolume(restored);
+                        setSoundOn(true);
+                      }
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setVolumeOpen((v) => !v);
+                    }}
+                  >
+                    {!soundOn || volume === 0 ? (
+                      <VolumeX size={20} />
+                    ) : volume < 0.33 ? (
+                      <Volume size={20} />
+                    ) : volume < 0.66 ? (
+                      <Volume1 size={20} />
+                    ) : (
+                      <Volume2 size={20} />
+                    )}
+                  </button>
+                  {volumeOpen && (
+                    <div className="header-volume-dropdown">
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        value={volume}
+                        className="header-volume-slider"
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          setVolume(v);
+                          setSoundVolume(v);
+                          setSoundOn(v > 0);
+                        }}
+                      />
+                      <span className="header-volume-label">
+                        {Math.round(volume * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <NotificationBell />
                 {routeAllowed("inbox") && (
                   <Link

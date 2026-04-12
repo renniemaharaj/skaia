@@ -1,0 +1,133 @@
+.page-ownership {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.page-ownership__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.page-ownership__header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.page-ownership__label {
+  flex: 1;
+}
+
+.page-ownership__user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+}
+
+.page-ownership__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+
+.page-ownership__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.page-ownership__name {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.page-ownership__actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.page-ownership__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+
+.page-ownership__btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.page-ownership__btn--danger:hover {
+  color: var(--error-color);
+}
+
+.page-ownership__btn--subtle:hover {
+  color: var(--primary-color);
+}
+
+.page-ownership__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.page-ownership__add-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.page-ownership__add-btn--inline {
+  padding: 0.125rem;
+  border: none;
+}
+
+.page-ownership__empty {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.page-ownership__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.page-ownership__picker {
+  margin-top: 0.25rem;
+}

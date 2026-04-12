@@ -11,4 +11,14 @@ type Repository interface {
 	Update(p *models.Page) error
 	Delete(id int64) error
 	List() ([]*models.Page, error)
+
+	// Ownership & editors
+	SetOwner(pageID, ownerID int64) error
+	ClearOwner(pageID int64) error
+	AddEditor(pageID, userID, grantedBy int64) error
+	RemoveEditor(pageID, userID int64) error
+	GetEditors(pageID int64) ([]*models.PageUser, error)
+	GetOwner(pageID int64) (*models.PageUser, error)
+	IsEditor(pageID, userID int64) (bool, error)
+	ListWithOwnership() ([]*models.Page, error)
 }

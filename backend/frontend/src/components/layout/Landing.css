@@ -1873,13 +1873,23 @@
 
 .richtext-block-viewer {
   width: 100%;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.richtext-block-viewer .renderer-editor {
+  width: 100% !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .richtext-block-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
   border: 2px dashed var(--border-color);
   border-radius: 12px;
   cursor: pointer;

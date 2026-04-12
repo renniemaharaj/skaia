@@ -1,7 +1,14 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
-import { hasPermissionAtom } from "../atoms/auth";
+import { hasPermissionAtom, currentUserAtom } from "../atoms/auth";
 import { apiRequest } from "../utils/api";
+
+export interface PageUser {
+  id: number;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+}
 
 export interface PageBuilderPage {
   id: number;
@@ -10,6 +17,9 @@ export interface PageBuilderPage {
   description: string;
   is_index: boolean;
   content: string; // JSON string of landing sections
+  owner_id?: number | null;
+  owner?: PageUser | null;
+  editors?: PageUser[];
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +29,8 @@ interface UsePageDataReturn {
   loading: boolean;
   error: string;
   isEditable: boolean;
+  isAdmin: boolean;
+  isOwner: boolean;
   refresh: (slug?: string) => Promise<void>;
   createPage: (
     page: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">,
@@ -31,11 +43,22 @@ interface UsePageDataReturn {
 
 export function usePageData(): UsePageDataReturn {
   const hasPermission = useAtomValue(hasPermissionAtom);
-  const isEditable = hasPermission("home.manage");
+  const currentUser = useAtomValue(currentUserAtom);
+  const isAdmin = hasPermission("home.manage");
 
   const [page, setPage] = useState<PageBuilderPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const isOwner = !!(
+    page?.owner_id &&
+    currentUser &&
+    Number(page.owner_id) === Number(currentUser.id)
+  );
+  const isEditor = !!page?.editors?.some(
+    (e) => currentUser && Number(e.id) === Number(currentUser.id),
+  );
+  const isEditable = isAdmin || isOwner || isEditor;
 
   const refresh = useCallback(async (slug?: string) => {
     setLoading(true);
@@ -89,6 +112,8 @@ export function usePageData(): UsePageDataReturn {
     loading,
     error,
     isEditable,
+    isAdmin,
+    isOwner,
     refresh,
     createPage,
     updatePage,

@@ -38,6 +38,11 @@ import {
   notificationsAtom,
   type AppNotification,
 } from "../atoms/notifications";
+import {
+  playNotificationSound,
+  playMessageSound,
+  playChatSound,
+} from "../utils/sound";
 
 import {
   productsAtom,
@@ -589,8 +594,13 @@ export const useWebSocketSync = () => {
 
           // ── Global chat ──────────────────────────────────────────────────
           if (message.type === "global:chat") {
+            const chatMsg = payload as GlobalChatMessage;
+            // Play sound only for messages from other users
+            if (String(chatMsg.user_id) !== String(currentUserIdRef.current)) {
+              playChatSound();
+            }
             setGlobalChatMessages((prev) => {
-              const msgs = [...prev, payload as GlobalChatMessage];
+              const msgs = [...prev, chatMsg];
               return msgs.slice(-80);
             });
           }
@@ -638,6 +648,7 @@ export const useWebSocketSync = () => {
             // Direct push to recipient — no subscription required.
             // Bump global badge and update the sidebar so the conversation
             // list stays current even when no specific chat is open.
+            playMessageSound();
             const inboxMsgConvId = String(
               (payload as any)?.conversation_id ?? "",
             );
@@ -733,6 +744,7 @@ export const useWebSocketSync = () => {
           if (message.type === "notification") {
             const notif = payload as AppNotification;
             setNotifications((prev) => [notif, ...prev]);
+            playNotificationSound();
             toast(notif.message, {
               duration: 6000,
               action: notif.route

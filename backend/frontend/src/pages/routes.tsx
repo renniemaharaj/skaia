@@ -16,6 +16,7 @@ import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
 import GrengoPage from "./admin/grengo.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
+import CustomPages from "./custom-pages/CustomPages.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -50,6 +51,7 @@ export const guestRoutes: (CustomRoute | IndexRoute)[] = [
 
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
+  { path: "pages", element: <CustomPages /> },
   { path: "page/:slug", element: <PageBuilder /> },
   { path: "privacy", element: <PageBuilder slug="privacy" /> },
   { path: "tos", element: <PageBuilder slug="tos" /> },

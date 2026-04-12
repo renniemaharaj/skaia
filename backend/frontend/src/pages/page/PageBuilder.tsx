@@ -11,6 +11,7 @@ import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
 import { LandingSkeleton } from "../../components/landing/LandingSkeleton";
 import { BlockRenderer } from "../../components/landing/BlockRenderer";
+import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
 
 interface PageBuilderProps {
   /** Optional slug to load. Falls back to the URL :slug param, then index. */
@@ -20,8 +21,17 @@ interface PageBuilderProps {
 export default function PageBuilder(props: PageBuilderProps = {}) {
   const params = useParams<{ slug?: string }>();
   const slug = props.slug ?? params.slug;
-  const { page, loading, error, refresh, isEditable, updatePage, createPage } =
-    usePageData();
+  const {
+    page,
+    loading,
+    error,
+    refresh,
+    isEditable,
+    isAdmin,
+    isOwner,
+    updatePage,
+    createPage,
+  } = usePageData();
   const {
     sections: landingSections,
     loading: landingLoading,
@@ -334,6 +344,19 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         onDeleteItem={deleteItemWrapper}
         onMoveSection={moveSectionWrapper}
       />
+      {page &&
+        page.id &&
+        (isAdmin ||
+          isOwner ||
+          page.owner ||
+          (page.editors && page.editors.length > 0)) && (
+          <PageOwnershipPanel
+            pageId={page.id}
+            owner={page.owner ?? null}
+            editors={page.editors ?? []}
+            onUpdate={() => refresh(slug)}
+          />
+        )}
     </div>
   );
 }
