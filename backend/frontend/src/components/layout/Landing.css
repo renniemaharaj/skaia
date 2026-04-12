@@ -1235,6 +1235,14 @@
   padding: 4px 10px;
   margin-bottom: 8px;
   font-size: 0.75rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.landing-section-toolbar > * {
+  flex-shrink: 0;
 }
 
 /* Layout wrapper for all sections */
