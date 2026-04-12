@@ -245,7 +245,9 @@ const PresencePanel = () => {
   };
 
   return (
-    <div className="presence-panel">
+    <div
+      className={`presence-panel${expanded ? " presence-panel--expanded" : ""}`}
+    >
       {/* Control bar: mode tabs + expand toggle */}
       <div className="pp-controls">
         <div className="pp-tabs">
