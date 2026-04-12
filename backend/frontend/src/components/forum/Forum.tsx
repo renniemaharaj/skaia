@@ -318,12 +318,16 @@ export const Forum: React.FC<ForumProps> = () => {
                         String(currentUser.id) === String(thread.user_id);
                       const canEditThread =
                         isThreadOwner ||
-                        currentUser?.permissions?.includes("forum.thread-edit");
+                        currentUser?.permissions?.includes(
+                          "forum.thread-edit",
+                        ) ||
+                        guestSandboxMode;
                       const canDeleteThread =
                         isThreadOwner ||
                         currentUser?.permissions?.includes(
                           "forum.thread-delete",
-                        );
+                        ) ||
+                        guestSandboxMode;
 
                       return (
                         <div

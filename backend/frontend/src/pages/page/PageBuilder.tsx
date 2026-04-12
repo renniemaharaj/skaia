@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Settings, Users } from "lucide-react";
 import type {
   LandingSection,
   LandingItem,
@@ -46,8 +46,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
+  const [showOwnership, setShowOwnership] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
+  // Toolbar visible to admins and owners only — editors can edit inline but don't see the bar
+  const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
+  const showOwnershipBtn = showToolbar && page?.id && slug;
 
   // Track whether the page needs to be created (404 + editable or sandbox enabled).
   const isNewPage = !!(slug && error && guestSandboxMode);
@@ -302,15 +306,26 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   return (
     <div className="landing-container">
-      {(!slug || isEditable) && (
+      {showToolbar && (
         <div className="page-admin-bar">
-          {isEditable && !slug && (
+          {showOwnershipBtn && (
+            <button
+              type="button"
+              className={`page-admin-btn${showOwnership ? " active" : ""}`}
+              onClick={() => setShowOwnership((v) => !v)}
+              title="Manage page ownership"
+            >
+              <Users size={16} />
+              Manage
+            </button>
+          )}
+          {isAdmin && !slug && (
             <Link to="/admin/meta" className="page-admin-btn">
               <Settings size={16} />
               Site Meta
             </Link>
           )}
-          {!isEditable && !slug && (
+          {!isEditable && (
             <div
               className={`guest-sandbox${guestSandboxEnabled ? " active" : ""}`}
             >
@@ -333,6 +348,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           )}
         </div>
       )}
+      {showOwnership && showOwnershipBtn && (
+        <div className="page-admin-bar page-admin-bar--panel">
+          <PageOwnershipPanel
+            pageId={page.id}
+            owner={page.owner ?? null}
+            editors={page.editors ?? []}
+            onUpdate={() => refresh(slug)}
+          />
+        </div>
+      )}
       <BlockRenderer
         sections={sections}
         canEdit={canEdit}
@@ -344,19 +369,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         onDeleteItem={deleteItemWrapper}
         onMoveSection={moveSectionWrapper}
       />
-      {page &&
-        page.id &&
-        (isAdmin ||
-          isOwner ||
-          page.owner ||
-          (page.editors && page.editors.length > 0)) && (
-          <PageOwnershipPanel
-            pageId={page.id}
-            owner={page.owner ?? null}
-            editors={page.editors ?? []}
-            onUpdate={() => refresh(slug)}
-          />
-        )}
     </div>
   );
 }

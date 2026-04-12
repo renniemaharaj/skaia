@@ -199,3 +199,48 @@ src/
 ├── pages/                 # Route-level page components
 └── utils/                 # API client, helpers
 ```
+
+## Extended Patterns
+
+### Feed Pages (Pages, Forum Categories)
+
+Feed-style listing pages follow a consistent layout pattern:
+
+- **No heading text or icons** — the page content speaks for itself
+- **Max-width `1400px`**, horizontally padded `40px`, vertically padded `40px 0`
+- **Grid**: `repeat(auto-fill, minmax(320px, 1fr))` with `24px` gap
+- **Cards**: Use `.card .card--interactive` base, fixed `height: 300px`, `overflow: hidden`
+- **Toolbar**: Positioned at the top as a horizontal bar (search, filters, counts) — never a centered header block
+- **Search input**: Inline in toolbar, `var(--bg-secondary)` background, `1px solid var(--border-color)` border, `8px` radius
+
+Reference: `pages/custom-pages/CustomPages.tsx` + `CustomPages.css`
+
+### Stat Cards Override
+
+Stat cards (`.stat-card`) intentionally override the `.card` base to remove visual chrome so they don't compete with primary content:
+
+```css
+.stat-card {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+/* .stat-card:hover {
+} */
+```
+
+Use `unset` (not `none`) to fully clear inherited `.card` properties.
+
+### Page Admin Bar
+
+The `.page-admin-bar` renders at the **top** of every editable page as a right-aligned toolbar handle. It contains admin/owner actions (Site Meta link, Sandbox toggle, ownership panel). Editors see inline editing controls but NOT the admin bar.
+
+### Guest Sandbox Mode
+
+When `guestSandboxMode` is active, ALL components should show their edit/management controls (toolbars, CRUD buttons, inline editors). The backend acts as the authorization boundary — frontend sandbox mode is purely for UI exploration. Components that check sandbox:
+
+- `PageBuilder` — `canEdit = isEditable || guestSandboxEnabled`
+- `Header` / `Footer` — `canEdit = hasPermission("home.manage") || guestSandboxMode`
+- `Store` — product/category CRUD permissions OR `guestSandboxMode`
+- `Forum` — category CRUD, thread edit/delete OR `guestSandboxMode`
+- `BlockRenderer` + all blocks — `canEdit` prop

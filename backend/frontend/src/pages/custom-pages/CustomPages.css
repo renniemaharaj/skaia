@@ -1,27 +1,22 @@
 .custom-pages {
-  max-width: 960px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 40px 0;
 }
 
-.custom-pages__header {
-  margin-bottom: 1.5rem;
-}
-
-.custom-pages__title {
+.custom-pages__toolbar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 0.25rem;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto 24px;
+  padding: 0 40px;
 }
 
-.custom-pages__subtitle {
+.custom-pages__count {
   color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .custom-pages__status {
@@ -40,10 +35,39 @@
   color: var(--text-secondary);
 }
 
+.custom-pages__search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.custom-pages__search input {
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  outline: none;
+  width: 100%;
+}
+
+.custom-pages__search svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
 .custom-pages__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--section-gap, 1.25rem);
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
 }
 
 /* ── Page card ─────────────────────────────────────────────── */
@@ -55,6 +79,8 @@
   text-decoration: none;
   color: inherit;
   position: relative;
+  height: 300px;
+  overflow: hidden;
 }
 
 .cp-card__top {

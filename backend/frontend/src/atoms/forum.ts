@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { currentUserAtom } from "./auth";
+import { guestSandboxAtom } from "./guestSandbox";
 
 export interface ThreadComment {
   id: string;
@@ -89,13 +90,14 @@ export const activeUserFeedIdAtom = atom<string | null>(null);
 export const threadPermissionsAtom = atom((get) => {
   const user = get(currentUserAtom);
   const thread = get(currentThreadAtom);
+  const sandbox = get(guestSandboxAtom);
   if (!user || !thread) {
     return {
-      canEdit: false,
-      canDelete: false,
-      canLikeComments: false,
-      canDeleteThreadComment: false,
-      canLikeThreads: false,
+      canEdit: sandbox,
+      canDelete: sandbox,
+      canLikeComments: sandbox,
+      canDeleteThreadComment: sandbox,
+      canLikeThreads: sandbox,
     };
   }
   const isAdmin = (user.roles ?? []).includes("admin");
@@ -103,11 +105,13 @@ export const threadPermissionsAtom = atom((get) => {
   const isOwner = String(user.id) === String(thread.user_id);
 
   return {
-    canEdit: isOwner || isAdmin || perms.includes("forum.thread-edit"),
-    canDelete: isOwner || isAdmin || perms.includes("forum.thread-delete"),
+    canEdit:
+      isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
+    canDelete:
+      isOwner || isAdmin || perms.includes("forum.thread-delete") || sandbox,
     canLikeComments: true,
     canDeleteThreadComment:
-      isAdmin || perms.includes("forum.thread-comment-delete"),
+      isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,
     canLikeThreads: true,
   };
 });
@@ -116,7 +120,15 @@ export const threadPermissionsAtom = atom((get) => {
 export const enrichedThreadCommentsAtom = atom((get) => {
   const user = get(currentUserAtom);
   const comments = get(threadCommentsAtom);
-  if (!user) return comments;
+  const sandbox = get(guestSandboxAtom);
+  if (!user) {
+    return comments.map((c) => ({
+      ...c,
+      can_edit: sandbox,
+      can_delete: sandbox,
+      can_like_comments: sandbox,
+    }));
+  }
   const isAdmin = (user.roles ?? []).includes("admin");
   const perms = user.permissions ?? [];
   return comments.map((c) => {
@@ -124,9 +136,15 @@ export const enrichedThreadCommentsAtom = atom((get) => {
     return {
       ...c,
       can_edit:
-        isOwner || isAdmin || perms.includes("forum.thread-comment-delete"),
+        isOwner ||
+        isAdmin ||
+        perms.includes("forum.thread-comment-delete") ||
+        sandbox,
       can_delete:
-        isOwner || isAdmin || perms.includes("forum.thread-comment-delete"),
+        isOwner ||
+        isAdmin ||
+        perms.includes("forum.thread-comment-delete") ||
+        sandbox,
       can_like_comments: true,
     };
   });

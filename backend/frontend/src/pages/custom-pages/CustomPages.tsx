@@ -53,17 +53,8 @@ export default function CustomPages() {
 
   return (
     <div className="custom-pages">
-      <div className="custom-pages__header">
-        <div className="custom-pages__header-left">
-          <h1 className="custom-pages__title">
-            <FileText size={22} />
-            Custom Pages
-          </h1>
-          <p className="custom-pages__subtitle">
-            Browse community-created pages
-          </p>
-        </div>
-        {pages.length > 0 && (
+      {pages.length > 0 && (
+        <div className="custom-pages__toolbar">
           <div className="custom-pages__search">
             <Search size={16} />
             <input
@@ -73,74 +64,74 @@ export default function CustomPages() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-        )}
-      </div>
+          {search && (
+            <span className="custom-pages__count">
+              {filtered.length} {filtered.length === 1 ? "page" : "pages"}
+              {` matching "${search}"`}
+            </span>
+          )}
+        </div>
+      )}
 
       {loading && <p className="custom-pages__status">Loading pages…</p>}
 
       {!loading && pages.length === 0 && (
-        <div className="custom-pages__empty card">
+        <div className="custom-pages__empty">
           <FileText size={32} />
           <p>No custom pages yet.</p>
         </div>
       )}
 
       {!loading && pages.length > 0 && (
-        <>
-          <p className="custom-pages__count">
-            {filtered.length} {filtered.length === 1 ? "page" : "pages"}
-            {search && ` matching "${search}"`}
-          </p>
-          <div className="custom-pages__grid">
-            {filtered.map((page) => (
-              <Link
-                key={page.id}
-                to={page.is_index ? "/" : `/page/${page.slug}`}
-                className="cp-card card card--interactive"
-              >
-                <div className="cp-card__top">
-                  <h3 className="cp-card__title">{page.title || page.slug}</h3>
-                  <ExternalLink size={14} className="cp-card__link-icon" />
-                </div>
+        <div className="custom-pages__grid">
+          {filtered.map((page) => (
+            <Link
+              key={page.id}
+              to={page.is_index ? "/" : `/page/${page.slug}`}
+              className="cp-card card card--interactive"
+            >
+              <div className="cp-card__top">
+                <h3 className="cp-card__title">{page.title || page.slug}</h3>
+                <ExternalLink size={14} className="cp-card__link-icon" />
+              </div>
 
-                {page.description && (
-                  <p className="cp-card__desc">{page.description}</p>
+              {page.description && (
+                <p className="cp-card__desc">{page.description}</p>
+              )}
+
+              <div className="cp-card__meta">
+                {page.owner && (
+                  <div className="cp-card__meta-row">
+                    <Crown size={12} />
+                    <UserChip user={page.owner} />
+                  </div>
                 )}
-
-                <div className="cp-card__meta">
-                  {page.owner && (
-                    <div className="cp-card__meta-row">
-                      <Crown size={12} />
-                      <UserChip user={page.owner} />
-                    </div>
-                  )}
-                  {page.editors && page.editors.length > 0 && (
-                    <div className="cp-card__meta-row">
-                      <Users size={12} />
-                      <span className="cp-card__editors">
-                        {page.editors.slice(0, 3).map((e) => (
-                          <UserChip key={e.id} user={e} />
-                        ))}
-                        {page.editors.length > 3 && (
-                          <span className="cp-card__more">
-                            +{page.editors.length - 3}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  <span className="cp-card__time">
-                    Updated {relativeTimeAgo(page.updated_at)}
-                  </span>
-                </div>
-
-                {page.is_index && (
-                  <span className="cp-card__badge">Homepage</span>
+                {page.editors && page.editors.length > 0 && (
+                  <div className="cp-card__meta-row">
+                    <Users size={12} />
+                    <span className="cp-card__editors">
+                      {page.editors.slice(0, 3).map((e) => (
+                        <UserChip key={e.id} user={e} />
+                      ))}
+                      {page.editors.length > 3 && (
+                        <span className="cp-card__more">
+                          +{page.editors.length - 3}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 )}
-              </Link>
-            ))}
-          </div>
-        </>
+                <span className="cp-card__time">
+                  Updated {relativeTimeAgo(page.updated_at)}
+                </span>
+              </div>
+
+              {page.is_index && (
+                <span className="cp-card__badge">Homepage</span>
+              )}
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );
