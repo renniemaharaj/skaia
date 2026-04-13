@@ -1,8 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { Link, useSearchParams } from "react-router-dom";
-import { UserCog2Icon, Plus, InboxIcon, Search, X } from "lucide-react";
+import {
+  UserCog2Icon,
+  Plus,
+  InboxIcon,
+  Search,
+  X,
+  Smile,
+  Paperclip,
+  Trash2,
+  Ban,
+  MoreVertical,
+  FileIcon,
+} from "lucide-react";
 import { toast } from "sonner";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 import {
   inboxConversationsAtom,
   inboxMessagesAtom,
@@ -54,6 +68,11 @@ const InboxPage = () => {
   const isAtBottomRef = useRef(true);
   const prevCountRef = useRef(0);
   const subscribedConvsRef = useRef<Set<number>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   // Keep the inbox flush with the remaining viewport height
   useEffect(() => {
@@ -257,15 +276,30 @@ const InboxPage = () => {
     }
   };
 
-  const startDmWithUser = async (userId: number) => {
+  const startDmWithUser = async (user: User) => {
     try {
       const conv = await apiRequest<InboxConversation>("/inbox/conversations", {
         method: "POST",
-        body: JSON.stringify({ target_user_id: userId }),
+        body: JSON.stringify({ target_user_id: Number(user.id) }),
       });
       if (conv) {
+        // Ensure other_user is populated even if backend didn't return it
+        if (!conv.other_user) {
+          conv.other_user = {
+            id: String(user.id),
+            username: user.username,
+            display_name: user.display_name || user.username,
+            avatar_url: user.avatar_url,
+          };
+        }
         setConversations((prev) => {
-          if (prev.some((c) => c.id === conv.id)) return prev;
+          const existing = prev.find((c) => c.id === conv.id);
+          if (existing) {
+            // Update existing conversation with enriched other_user
+            return prev.map((c) =>
+              c.id === conv.id ? { ...c, other_user: conv.other_user } : c,
+            );
+          }
           return [conv, ...prev];
         });
         setActiveId(conv.id);
@@ -359,6 +393,115 @@ const InboxPage = () => {
 
   const activeConv = conversations.find((c) => c.id === activeId);
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeId) return;
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Determine upload endpoint based on file type
+      let endpoint = "/upload/file";
+      if (file.type.startsWith("image/")) endpoint = "/upload/image";
+      else if (file.type.startsWith("video/")) endpoint = "/upload/video";
+
+      const uploadRes = await apiRequest<{ url: string }>(endpoint, {
+        method: "POST",
+        body: formData,
+      });
+      if (!uploadRes?.url) {
+        toast.error("Upload failed");
+        return;
+      }
+
+      // Determine message type from mime
+      let messageType = "file";
+      if (file.type.startsWith("image/")) messageType = "image";
+      else if (file.type.startsWith("video/")) messageType = "video";
+      else if (file.type.startsWith("audio/")) messageType = "audio";
+
+      const sentMsg = await apiRequest<InboxMessage>(
+        `/inbox/conversations/${activeId}/messages`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            content: file.name,
+            message_type: messageType,
+            attachment_url: uploadRes.url,
+            attachment_name: file.name,
+            attachment_size: file.size,
+            attachment_mime: file.type,
+          }),
+        },
+      );
+      if (sentMsg) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === sentMsg.id)) return prev;
+          return [...prev, sentMsg];
+        });
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeId
+              ? { ...c, last_message: sentMsg, updated_at: sentMsg.created_at }
+              : c,
+          ),
+        );
+      }
+    } catch {
+      toast.error("Failed to upload file");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!activeId) return;
+    if (!confirm("Delete this conversation and all messages?")) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}`, {
+        method: "DELETE",
+      });
+      setConversations((prev) => prev.filter((c) => c.id !== activeId));
+      setActiveId(null);
+      setMessages([]);
+      toast.success("Conversation deleted");
+    } catch {
+      toast.error("Failed to delete conversation");
+    }
+    setShowChatMenu(false);
+  };
+
+  const handleBlockUser = async () => {
+    const otherUserId = activeConv?.other_user?.id;
+    if (!otherUserId) return;
+    if (
+      !confirm(
+        `Block ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
+      )
+    )
+      return;
+    try {
+      await apiRequest(`/inbox/block/${otherUserId}`, { method: "POST" });
+      toast.success("User blocked");
+    } catch {
+      toast.error("Failed to block user");
+    }
+    setShowChatMenu(false);
+  };
+
+  const handleEmojiSelect = (emoji: { native: string }) => {
+    // We need to insert the emoji into the Input component
+    // Since Input manages its own state, we'll use the handleSend approach
+    // by dispatching a custom event or using a ref. For simplicity, we'll
+    // append to a message draft ref.
+    setEmojiToInsert(emoji.native);
+    setShowEmojiPicker(false);
+  };
+
+  const [emojiToInsert, setEmojiToInsert] = useState<string | null>(null);
+
   const inboxPageClass = isMobile
     ? `inbox-page inbox-page--mobile-${mobileView}`
     : "inbox-page";
@@ -434,7 +577,7 @@ const InboxPage = () => {
                   <button
                     key={user.id}
                     className="inbox-conv-row inbox-search-result-row"
-                    onClick={() => startDmWithUser(Number(user.id))}
+                    onClick={() => startDmWithUser(user)}
                   >
                     <span className="inbox-conv-avatar">
                       {user.avatar_url ? (
@@ -555,6 +698,25 @@ const InboxPage = () => {
                 ) : (
                   <span className="inbox-chat-username">Conversation</span>
                 )}
+                <div className="inbox-chat-actions">
+                  <button
+                    className="inbox-action-btn"
+                    onClick={() => setShowChatMenu((v) => !v)}
+                    title="More options"
+                  >
+                    <MoreVertical size={16} />
+                  </button>
+                  {showChatMenu && (
+                    <div className="inbox-chat-menu">
+                      <button onClick={handleDeleteConversation}>
+                        <Trash2 size={14} /> Delete conversation
+                      </button>
+                      <button onClick={handleBlockUser}>
+                        <Ban size={14} /> Block user
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Messages */}
@@ -587,7 +749,62 @@ const InboxPage = () => {
                             {m.sender_name}
                           </span>
                         )}
-                        <p className="inbox-msg-content">{m.content}</p>
+                        {/* Attachment rendering */}
+                        {m.attachment_url && m.message_type === "image" && (
+                          <a
+                            href={m.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={m.attachment_url}
+                              alt={m.attachment_name || "image"}
+                              className="inbox-msg-image"
+                            />
+                          </a>
+                        )}
+                        {m.attachment_url && m.message_type === "video" && (
+                          <video
+                            src={m.attachment_url}
+                            controls
+                            className="inbox-msg-video"
+                          />
+                        )}
+                        {m.attachment_url && m.message_type === "audio" && (
+                          <audio
+                            src={m.attachment_url}
+                            controls
+                            className="inbox-msg-audio"
+                          />
+                        )}
+                        {m.attachment_url && m.message_type === "file" && (
+                          <a
+                            href={m.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inbox-msg-file"
+                          >
+                            <FileIcon size={16} />
+                            <span>{m.attachment_name || "Download file"}</span>
+                            {m.attachment_size ? (
+                              <span className="inbox-msg-file-size">
+                                {(m.attachment_size / 1024).toFixed(0)} KB
+                              </span>
+                            ) : null}
+                          </a>
+                        )}
+                        {m.content &&
+                          (!m.message_type || m.message_type === "text") && (
+                            <p className="inbox-msg-content">{m.content}</p>
+                          )}
+                        {m.content &&
+                          m.message_type &&
+                          m.message_type !== "text" &&
+                          m.content !== m.attachment_name && (
+                            <p className="inbox-msg-content inbox-msg-caption">
+                              {m.content}
+                            </p>
+                          )}
                         <span
                           className="inbox-msg-time"
                           title={formatFullDateTime(m.created_at)}
@@ -602,48 +819,90 @@ const InboxPage = () => {
 
               {/* Input */}
               <div className="inbox-input-row">
-                <Input
-                  handleSend={async (msg) => {
-                    if (!msg.trim() || !activeId || sending) return;
-                    setSending(true);
-                    try {
-                      const sentMsg = await apiRequest<InboxMessage>(
-                        `/inbox/conversations/${activeId}/messages`,
-                        {
-                          method: "POST",
-                          body: JSON.stringify({ content: msg }),
-                        },
-                      );
-                      if (sentMsg) {
-                        setMessages((prev) => {
-                          if (prev.some((m) => m.id === sentMsg.id))
-                            return prev;
-                          return [...prev, sentMsg];
-                        });
-                        setConversations((prev) =>
-                          prev.map((c) =>
-                            c.id === activeId
-                              ? {
-                                  ...c,
-                                  last_message: sentMsg,
-                                  updated_at: sentMsg.created_at,
-                                }
-                              : c,
-                          ),
+                <div className="inbox-input-toolbar">
+                  <button
+                    className="inbox-toolbar-btn"
+                    onClick={() => setShowEmojiPicker((v) => !v)}
+                    title="Emoji"
+                    type="button"
+                  >
+                    <Smile size={18} />
+                  </button>
+                  <button
+                    className="inbox-toolbar-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Attach file"
+                    type="button"
+                    disabled={uploadingFile}
+                  >
+                    <Paperclip size={18} />
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="inbox-file-input"
+                    onChange={handleFileUpload}
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar,.gif"
+                  />
+                </div>
+                <div className="inbox-input-field">
+                  {showEmojiPicker && (
+                    <div className="inbox-emoji-picker">
+                      <Picker
+                        data={data}
+                        onEmojiSelect={handleEmojiSelect}
+                        theme="dark"
+                        previewPosition="none"
+                        skinTonePosition="none"
+                      />
+                    </div>
+                  )}
+                  <Input
+                    className="inbox-chat-input"
+                    handleSend={async (msg) => {
+                      if (!msg.trim() || !activeId || sending) return;
+                      setSending(true);
+                      try {
+                        const sentMsg = await apiRequest<InboxMessage>(
+                          `/inbox/conversations/${activeId}/messages`,
+                          {
+                            method: "POST",
+                            body: JSON.stringify({ content: msg }),
+                          },
                         );
+                        if (sentMsg) {
+                          setMessages((prev) => {
+                            if (prev.some((m) => m.id === sentMsg.id))
+                              return prev;
+                            return [...prev, sentMsg];
+                          });
+                          setConversations((prev) =>
+                            prev.map((c) =>
+                              c.id === activeId
+                                ? {
+                                    ...c,
+                                    last_message: sentMsg,
+                                    updated_at: sentMsg.created_at,
+                                  }
+                                : c,
+                            ),
+                          );
+                        }
+                      } catch (err) {
+                        console.error("Failed to send message:", err);
+                      } finally {
+                        setSending(false);
                       }
-                    } catch (err) {
-                      console.error("Failed to send message:", err);
-                    } finally {
-                      setSending(false);
-                    }
-                  }}
-                  disabled={sending}
-                  placeholder="Write a message…"
-                  maxRows={4}
-                  maxLength={2000}
-                  compact
-                />
+                    }}
+                    disabled={sending}
+                    placeholder="Write a message…"
+                    maxRows={4}
+                    maxLength={2000}
+                    compact
+                    insertText={emojiToInsert}
+                    onInsertTextConsumed={() => setEmojiToInsert(null)}
+                  />
+                </div>
               </div>
             </>
           )}

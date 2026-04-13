@@ -10,6 +10,7 @@ type Repository interface {
 	GetConversationBetween(user1ID, user2ID int64) (*models.InboxConversation, error)
 	GetOrCreateConversation(user1ID, user2ID int64) (*models.InboxConversation, error)
 	ListConversations(userID int64) ([]*models.InboxConversation, error)
+	DeleteConversation(id int64) error
 
 	// Messages
 	GetMessage(id int64) (*models.InboxMessage, error)
@@ -19,4 +20,11 @@ type Repository interface {
 	MarkConversationRead(conversationID, userID int64) error
 	UnreadTotal(userID int64) (int, error)
 	UnreadCount(conversationID, userID int64) (int, error)
+
+	// Blocks
+	BlockUser(blockerID, blockedID int64) error
+	UnblockUser(blockerID, blockedID int64) error
+	IsBlocked(blockerID, blockedID int64) (bool, error)
+	IsBlockedEither(userA, userB int64) (bool, error)
+	ListBlockedUsers(blockerID int64) ([]int64, error)
 }

@@ -31,10 +31,15 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/conversations/{id}/messages", h.listMessages)
 		r.Post("/conversations/{id}/messages", h.sendMessage)
 		r.Put("/conversations/{id}/read", h.markRead)
+		r.Delete("/conversations/{id}", h.deleteConversation)
 		// Message deletion
 		r.Delete("/messages/{id}", h.deleteMessage)
 		// Unread total badge
 		r.Get("/unread", h.unreadTotal)
+		// Blocks
+		r.Post("/block/{id}", h.blockUser)
+		r.Delete("/block/{id}", h.unblockUser)
+		r.Get("/blocked", h.listBlockedUsers)
 	})
 }
 
@@ -90,6 +95,10 @@ func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	conv, err := h.svc.GetOrStartConversation(userID, targetID)
 	if err != nil {
+		if err == errBlocked {
+			utils.WriteError(w, http.StatusForbidden, "this user is blocked or has blocked you")
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -146,16 +155,42 @@ func (h *Handler) sendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Content string `json:"content"`
+		Content        string `json:"content"`
+		MessageType    string `json:"message_type"`
+		AttachmentURL  string `json:"attachment_url"`
+		AttachmentName string `json:"attachment_name"`
+		AttachmentSize int64  `json:"attachment_size"`
+		AttachmentMime string `json:"attachment_mime"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Content == "" {
-		utils.WriteError(w, http.StatusBadRequest, "content required")
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	msg, err := h.svc.SendMessage(body.Content, id, userID)
+	if body.Content == "" && body.AttachmentURL == "" {
+		utils.WriteError(w, http.StatusBadRequest, "content or attachment required")
+		return
+	}
+	msgType := body.MessageType
+	if msgType == "" {
+		msgType = "text"
+	}
+	msg, err := h.svc.SendMessage(&models.InboxMessage{
+		ConversationID: id,
+		SenderID:       userID,
+		Content:        body.Content,
+		MessageType:    msgType,
+		AttachmentURL:  body.AttachmentURL,
+		AttachmentName: body.AttachmentName,
+		AttachmentSize: body.AttachmentSize,
+		AttachmentMime: body.AttachmentMime,
+	})
 	if err != nil {
 		if err == errForbidden {
 			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if err == errBlocked {
+			utils.WriteError(w, http.StatusForbidden, "this user is blocked or has blocked you")
 			return
 		}
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -216,4 +251,79 @@ func (h *Handler) unreadTotal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]int{"count": count})
+}
+
+func (h *Handler) deleteConversation(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.svc.DeleteConversation(id, userID); err != nil {
+		if err == errForbidden {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *Handler) blockUser(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.svc.BlockUser(userID, targetID); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *Handler) unblockUser(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.svc.UnblockUser(userID, targetID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *Handler) listBlockedUsers(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	users, err := h.svc.ListBlockedUsers(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if users == nil {
+		users = []*models.User{}
+	}
+	utils.WriteJSON(w, http.StatusOK, users)
 }

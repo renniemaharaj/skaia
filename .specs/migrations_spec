@@ -1,0 +1,41 @@
+# Migration Spec
+
+## Policy: In-Place Schema Updates
+
+**DO NOT create new migration files for every feature or change.**
+
+All schema changes MUST be applied by editing the existing migration files directly:
+
+- **`001_schema.sql`** — All table definitions, indexes, and constraints
+- **`002_seed.sql`** — All seed data (roles, permissions, default config, etc.)
+- **`003_pages.sql`** — Page-related seed data
+
+### Rationale
+
+This project uses `grengo migrate all` to apply migrations across all site databases. The migration runner executes all `*.sql` files in sorted order. Since migrations are **not versioned or tracked** (no migration history table), they must be **idempotent** — using `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, etc.
+
+Because migrations are idempotent re-runs of the full schema, there is no reason to create incremental migration files. Adding new files creates unnecessary clutter and ordering confusion.
+
+### How to Make Changes
+
+1. **New table** — Add the `CREATE TABLE IF NOT EXISTS` statement to `001_schema.sql` in the appropriate section.
+2. **Alter existing table** — Modify the `CREATE TABLE` statement directly in `001_schema.sql`. Since we use `IF NOT EXISTS`, existing tables won't be recreated, so also add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statement after the CREATE for existing deployments.
+3. **New seed data** — Add to `002_seed.sql` using `ON CONFLICT DO NOTHING` or `INSERT ... ON CONFLICT DO UPDATE`.
+4. **New indexes** — Add `CREATE INDEX IF NOT EXISTS` to `001_schema.sql`.
+
+### Running Migrations
+
+```bash
+grengo migrate all    # Migrate all site databases
+grengo migrate <name> # Migrate a specific site database
+```
+
+### Example: Adding a Column to an Existing Table
+
+```sql
+-- In 001_schema.sql, update the CREATE TABLE to include the new column,
+-- then add this after the CREATE TABLE block:
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) NOT NULL DEFAULT 'text';
+```
+
+This ensures both fresh installs and existing deployments get the column.

@@ -89,9 +89,14 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 	m := &models.InboxMessage{}
 	err := r.db.QueryRow(
-		`SELECT id, conversation_id, sender_id, content, is_read, created_at, updated_at
+		`SELECT id, conversation_id, sender_id, content, message_type,
+		        COALESCE(attachment_url,''), COALESCE(attachment_name,''),
+		        COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
+		        is_read, created_at, updated_at
 		 FROM inbox_messages WHERE id = $1`, id,
-	).Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.IsRead, &m.CreatedAt, &m.UpdatedAt)
+	).Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.MessageType,
+		&m.AttachmentURL, &m.AttachmentName, &m.AttachmentSize, &m.AttachmentMime,
+		&m.IsRead, &m.CreatedAt, &m.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("message not found")
 	}
@@ -100,7 +105,10 @@ func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 
 func (r *sqlRepository) ListMessages(conversationID int64, limit, offset int) ([]*models.InboxMessage, error) {
 	rows, err := r.db.Query(
-		`SELECT id, conversation_id, sender_id, content, is_read, created_at, updated_at
+		`SELECT id, conversation_id, sender_id, content, message_type,
+		        COALESCE(attachment_url,''), COALESCE(attachment_name,''),
+		        COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
+		        is_read, created_at, updated_at
 		 FROM inbox_messages
 		 WHERE conversation_id = $1
 		 ORDER BY created_at DESC
@@ -115,7 +123,9 @@ func (r *sqlRepository) ListMessages(conversationID int64, limit, offset int) ([
 	var out []*models.InboxMessage
 	for rows.Next() {
 		m := &models.InboxMessage{}
-		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.IsRead, &m.CreatedAt, &m.UpdatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.MessageType,
+			&m.AttachmentURL, &m.AttachmentName, &m.AttachmentSize, &m.AttachmentMime,
+			&m.IsRead, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -124,12 +134,22 @@ func (r *sqlRepository) ListMessages(conversationID int64, limit, offset int) ([
 }
 
 func (r *sqlRepository) CreateMessage(msg *models.InboxMessage) (*models.InboxMessage, error) {
+	if msg.MessageType == "" {
+		msg.MessageType = "text"
+	}
 	err := r.db.QueryRow(
-		`INSERT INTO inbox_messages (conversation_id, sender_id, content)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, conversation_id, sender_id, content, is_read, created_at, updated_at`,
-		msg.ConversationID, msg.SenderID, msg.Content,
-	).Scan(&msg.ID, &msg.ConversationID, &msg.SenderID, &msg.Content, &msg.IsRead, &msg.CreatedAt, &msg.UpdatedAt)
+		`INSERT INTO inbox_messages (conversation_id, sender_id, content, message_type, attachment_url, attachment_name, attachment_size, attachment_mime)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		 RETURNING id, conversation_id, sender_id, content, message_type,
+		           COALESCE(attachment_url,''), COALESCE(attachment_name,''),
+		           COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
+		           is_read, created_at, updated_at`,
+		msg.ConversationID, msg.SenderID, msg.Content, msg.MessageType,
+		nullIfEmpty(msg.AttachmentURL), nullIfEmpty(msg.AttachmentName),
+		nullIfZero(msg.AttachmentSize), nullIfEmpty(msg.AttachmentMime),
+	).Scan(&msg.ID, &msg.ConversationID, &msg.SenderID, &msg.Content, &msg.MessageType,
+		&msg.AttachmentURL, &msg.AttachmentName, &msg.AttachmentSize, &msg.AttachmentMime,
+		&msg.IsRead, &msg.CreatedAt, &msg.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +159,20 @@ func (r *sqlRepository) CreateMessage(msg *models.InboxMessage) (*models.InboxMe
 		msg.ConversationID,
 	)
 	return msg, nil
+}
+
+func nullIfEmpty(s string) interface{} {
+	if s == "" {
+		return nil
+	}
+	return s
+}
+
+func nullIfZero(n int64) interface{} {
+	if n == 0 {
+		return nil
+	}
+	return n
 }
 
 func (r *sqlRepository) DeleteMessage(id, senderID int64) error {
@@ -189,4 +223,77 @@ func (r *sqlRepository) UnreadCount(conversationID, userID int64) (int, error) {
 		conversationID, userID,
 	).Scan(&count)
 	return count, err
+}
+
+func (r *sqlRepository) DeleteConversation(id int64) error {
+	res, err := r.db.Exec(`DELETE FROM inbox_conversations WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return errors.New("conversation not found")
+	}
+	return nil
+}
+
+// Blocks
+
+func (r *sqlRepository) BlockUser(blockerID, blockedID int64) error {
+	_, err := r.db.Exec(
+		`INSERT INTO user_blocks (blocker_id, blocked_id)
+		 VALUES ($1, $2)
+		 ON CONFLICT (blocker_id, blocked_id) DO NOTHING`,
+		blockerID, blockedID,
+	)
+	return err
+}
+
+func (r *sqlRepository) UnblockUser(blockerID, blockedID int64) error {
+	_, err := r.db.Exec(
+		`DELETE FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2`,
+		blockerID, blockedID,
+	)
+	return err
+}
+
+func (r *sqlRepository) IsBlocked(blockerID, blockedID int64) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2)`,
+		blockerID, blockedID,
+	).Scan(&exists)
+	return exists, err
+}
+
+func (r *sqlRepository) IsBlockedEither(userA, userB int64) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS(
+			SELECT 1 FROM user_blocks
+			WHERE (blocker_id = $1 AND blocked_id = $2)
+			   OR (blocker_id = $2 AND blocked_id = $1)
+		)`,
+		userA, userB,
+	).Scan(&exists)
+	return exists, err
+}
+
+func (r *sqlRepository) ListBlockedUsers(blockerID int64) ([]int64, error) {
+	rows, err := r.db.Query(
+		`SELECT blocked_id FROM user_blocks WHERE blocker_id = $1 ORDER BY created_at DESC`,
+		blockerID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }

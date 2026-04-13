@@ -215,35 +215,35 @@ type CheckoutResponse struct {
 
 // SubscriptionPlan defines a recurring billing plan. PriceCents is per interval.
 type SubscriptionPlan struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description"`
-	PriceCents      int64     `json:"price_cents"`
-	Currency        string    `json:"currency"`
-	IntervalUnit    string    `json:"interval_unit"`
-	IntervalCount   int       `json:"interval_count"`
-	TrialDays       int       `json:"trial_days"`
-	StripePriceID   string    `json:"stripe_price_id,omitempty"`
-	IsActive        bool      `json:"is_active"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description"`
+	PriceCents    int64     `json:"price_cents"`
+	Currency      string    `json:"currency"`
+	IntervalUnit  string    `json:"interval_unit"`
+	IntervalCount int       `json:"interval_count"`
+	TrialDays     int       `json:"trial_days"`
+	StripePriceID string    `json:"stripe_price_id,omitempty"`
+	IsActive      bool      `json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // Subscription tracks a user's active subscription to a plan.
 type Subscription struct {
-	ID                   int64      `json:"id"`
-	UserID               int64      `json:"user_id"`
-	PlanID               int64      `json:"plan_id"`
-	Provider             string     `json:"provider"`
-	ProviderSubscriptionID string   `json:"provider_subscription_id,omitempty"`
-	ProviderCustomerID   string     `json:"provider_customer_id,omitempty"`
-	Status               string     `json:"status"`
-	CurrentPeriodStart   time.Time  `json:"current_period_start"`
-	CurrentPeriodEnd     time.Time  `json:"current_period_end"`
-	CancelAtPeriodEnd    bool       `json:"cancel_at_period_end"`
-	CancelledAt          *time.Time `json:"cancelled_at,omitempty"`
-	CreatedAt            time.Time  `json:"created_at"`
-	UpdatedAt            time.Time  `json:"updated_at"`
+	ID                     int64      `json:"id"`
+	UserID                 int64      `json:"user_id"`
+	PlanID                 int64      `json:"plan_id"`
+	Provider               string     `json:"provider"`
+	ProviderSubscriptionID string     `json:"provider_subscription_id,omitempty"`
+	ProviderCustomerID     string     `json:"provider_customer_id,omitempty"`
+	Status                 string     `json:"status"`
+	CurrentPeriodStart     time.Time  `json:"current_period_start"`
+	CurrentPeriodEnd       time.Time  `json:"current_period_end"`
+	CancelAtPeriodEnd      bool       `json:"cancel_at_period_end"`
+	CancelledAt            *time.Time `json:"cancelled_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at"`
 }
 
 // InboxConversation represents a private conversation between two users.
@@ -267,6 +267,11 @@ type InboxMessage struct {
 	SenderName     string    `json:"sender_name,omitempty"`
 	SenderAvatar   string    `json:"sender_avatar,omitempty"`
 	Content        string    `json:"content"`
+	MessageType    string    `json:"message_type"`
+	AttachmentURL  string    `json:"attachment_url,omitempty"`
+	AttachmentName string    `json:"attachment_name,omitempty"`
+	AttachmentSize int64     `json:"attachment_size,omitempty"`
+	AttachmentMime string    `json:"attachment_mime,omitempty"`
 	IsRead         bool      `json:"is_read"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
@@ -295,5 +300,13 @@ type Notification struct {
 	Message   string    `json:"message"`
 	Route     string    `json:"route,omitempty"`
 	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// UserBlock represents a user blocking another user.
+type UserBlock struct {
+	ID        int64     `json:"id"`
+	BlockerID int64     `json:"blocker_id"`
+	BlockedID int64     `json:"blocked_id"`
 	CreatedAt time.Time `json:"created_at"`
 }

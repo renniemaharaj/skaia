@@ -7,6 +7,11 @@ export interface InboxMessage {
   sender_name: string;
   sender_avatar: string;
   content: string;
+  message_type: string;
+  attachment_url?: string;
+  attachment_name?: string;
+  attachment_size?: number;
+  attachment_mime?: string;
   is_read: boolean;
   created_at: string;
   updated_at: string;

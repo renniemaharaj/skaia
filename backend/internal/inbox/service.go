@@ -9,6 +9,7 @@ import (
 )
 
 var errForbidden = errors.New("forbidden")
+var errBlocked = errors.New("blocked")
 
 // Service coordinates inbox repository access and real-time delivery.
 type Service struct {
@@ -30,7 +31,30 @@ func NewService(repo Repository, hub *ws.Hub, userSvc UserGetter) *Service {
 
 // GetOrStartConversation returns or creates a conversation between the two users.
 func (s *Service) GetOrStartConversation(user1ID, user2ID int64) (*models.InboxConversation, error) {
-	return s.repo.GetOrCreateConversation(user1ID, user2ID)
+	blocked, err := s.repo.IsBlockedEither(user1ID, user2ID)
+	if err != nil {
+		return nil, err
+	}
+	if blocked {
+		return nil, errBlocked
+	}
+	conv, err := s.repo.GetOrCreateConversation(user1ID, user2ID)
+	if err != nil {
+		return nil, err
+	}
+	// Enrich the other user so the frontend has display info immediately.
+	otherID := user2ID
+	if conv.User1ID != user1ID {
+		otherID = user1ID
+	}
+	// user1ID is always the caller here
+	if otherID == user1ID {
+		otherID = user2ID
+	}
+	if u, err := s.userSvc.GetByID(otherID); err == nil {
+		conv.OtherUser = u
+	}
+	return conv, nil
 }
 
 // FindUserByUsername looks up a user by username.
@@ -105,38 +129,41 @@ func (s *Service) ListMessages(conversationID, callerID, limit, offset int64) ([
 }
 
 // SendMessage creates a message and propagates it to conversation subscribers.
-func (s *Service) SendMessage(content string, conversationID, senderID int64) (*models.InboxMessage, error) {
-	c, err := s.repo.GetConversation(conversationID)
+func (s *Service) SendMessage(msg *models.InboxMessage) (*models.InboxMessage, error) {
+	c, err := s.repo.GetConversation(msg.ConversationID)
 	if err != nil {
 		return nil, err
 	}
-	if c.User1ID != senderID && c.User2ID != senderID {
+	if c.User1ID != msg.SenderID && c.User2ID != msg.SenderID {
 		return nil, errForbidden
 	}
 
-	msg := &models.InboxMessage{
-		ConversationID: conversationID,
-		SenderID:       senderID,
-		Content:        content,
+	blocked, err := s.repo.IsBlockedEither(c.User1ID, c.User2ID)
+	if err != nil {
+		return nil, err
 	}
+	if blocked {
+		return nil, errBlocked
+	}
+
 	created, err := s.repo.CreateMessage(msg)
 	if err != nil {
 		return nil, err
 	}
 
 	// Enrich sender
-	if u, err := s.userSvc.GetByID(senderID); err == nil {
+	if u, err := s.userSvc.GetByID(msg.SenderID); err == nil {
 		created.SenderName = u.DisplayName
 		created.SenderAvatar = u.AvatarURL
 	}
 
 	// Push to conversation subscribers (both parties if they have the conversation open)
-	s.hub.PropagateInboxConversation(conversationID, created, "message_created")
+	s.hub.PropagateInboxConversation(msg.ConversationID, created, "message_created")
 
 	// Also push a direct inbox notification to the recipient so they see
 	// the unread badge even when the conversation isn't open.
 	recipientID := c.User2ID
-	if c.User2ID == senderID {
+	if c.User2ID == msg.SenderID {
 		recipientID = c.User1ID
 	}
 	if payload, err2 := json.Marshal(created); err2 == nil {
@@ -167,4 +194,49 @@ func (s *Service) MarkRead(conversationID, callerID int64) error {
 // UnreadTotal returns the total unread message count across all conversations.
 func (s *Service) UnreadTotal(userID int64) (int, error) {
 	return s.repo.UnreadTotal(userID)
+}
+
+// DeleteConversation deletes a conversation and all its messages.
+func (s *Service) DeleteConversation(conversationID, callerID int64) error {
+	c, err := s.repo.GetConversation(conversationID)
+	if err != nil {
+		return err
+	}
+	if c.User1ID != callerID && c.User2ID != callerID {
+		return errForbidden
+	}
+	return s.repo.DeleteConversation(conversationID)
+}
+
+// BlockUser blocks a user and returns an error if already blocked.
+func (s *Service) BlockUser(blockerID, blockedID int64) error {
+	if blockerID == blockedID {
+		return errors.New("cannot block yourself")
+	}
+	return s.repo.BlockUser(blockerID, blockedID)
+}
+
+// UnblockUser removes a block.
+func (s *Service) UnblockUser(blockerID, blockedID int64) error {
+	return s.repo.UnblockUser(blockerID, blockedID)
+}
+
+// IsBlocked checks if blocker has blocked blocked.
+func (s *Service) IsBlocked(blockerID, blockedID int64) (bool, error) {
+	return s.repo.IsBlocked(blockerID, blockedID)
+}
+
+// ListBlockedUsers returns the IDs of users this user has blocked, enriched with user details.
+func (s *Service) ListBlockedUsers(blockerID int64) ([]*models.User, error) {
+	ids, err := s.repo.ListBlockedUsers(blockerID)
+	if err != nil {
+		return nil, err
+	}
+	var users []*models.User
+	for _, id := range ids {
+		if u, err := s.userSvc.GetByID(id); err == nil {
+			users = append(users, u)
+		}
+	}
+	return users, nil
 }

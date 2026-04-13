@@ -270,12 +270,35 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
     conversation_id BIGINT NOT NULL REFERENCES inbox_conversations(id) ON DELETE CASCADE,
     sender_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content         TEXT   NOT NULL,
+    message_type    VARCHAR(20) NOT NULL DEFAULT 'text',
+    attachment_url  TEXT,
+    attachment_name TEXT,
+    attachment_size BIGINT,
+    attachment_mime TEXT,
     is_read         BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_conversation ON inbox_messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_sender       ON inbox_messages(sender_id);
+
+-- Backfill for existing deployments: add new columns to inbox_messages
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS message_type    VARCHAR(20) NOT NULL DEFAULT 'text';
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS attachment_url  TEXT;
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS attachment_size BIGINT;
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
+
+-- User blocks
+CREATE TABLE IF NOT EXISTS user_blocks (
+    id         BIGSERIAL PRIMARY KEY,
+    blocker_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(blocker_id, blocked_id)
+);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocker ON user_blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS idx_user_blocks_blocked ON user_blocks(blocked_id);
 
 -- Notifications
 CREATE TABLE IF NOT EXISTS notifications (
@@ -327,3 +350,37 @@ CREATE TABLE IF NOT EXISTS landing_items (
     updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_landing_items_section ON landing_items(section_id, display_order);
+
+-- ── Custom pages (block-builder content) ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pages (
+    id          BIGSERIAL    PRIMARY KEY,
+    slug        VARCHAR(120) NOT NULL UNIQUE,
+    title       VARCHAR(255) NOT NULL DEFAULT '',
+    description TEXT         NOT NULL DEFAULT '',
+    is_index    BOOLEAN      NOT NULL DEFAULT FALSE,
+    content     JSONB        NOT NULL DEFAULT '[]',
+    owner_id    BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Ensure at most one page can be the index (homepage).
+CREATE UNIQUE INDEX IF NOT EXISTS pages_is_index_unique
+    ON pages (is_index) WHERE is_index = TRUE;
+
+-- For existing databases: add owner_id if missing.
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_pages_owner ON pages(owner_id);
+
+-- Editors junction table: grants edit access to users on specific pages.
+CREATE TABLE IF NOT EXISTS page_editors (
+    id         BIGSERIAL PRIMARY KEY,
+    page_id    BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    granted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (page_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_page_editors_page ON page_editors(page_id);
+CREATE INDEX IF NOT EXISTS idx_page_editors_user ON page_editors(user_id);

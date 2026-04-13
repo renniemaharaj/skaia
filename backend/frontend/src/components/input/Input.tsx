@@ -21,6 +21,10 @@ interface InputProps {
   maxLength?: number;
   /** Compact mode for tight spaces like chat sidebars. */
   compact?: boolean;
+  /** Text to insert at cursor position (consumed on change). */
+  insertText?: string | null;
+  /** Called after insertText is consumed so parent can clear. */
+  onInsertTextConsumed?: () => void;
 }
 
 const Input: React.FC<InputProps> = ({
@@ -34,6 +38,8 @@ const Input: React.FC<InputProps> = ({
   maxRows = 6,
   maxLength,
   compact = false,
+  insertText,
+  onInsertTextConsumed,
 }) => {
   const [message, setMessage] = useState("");
   const [inputFocus, setInputFocus] = useState(false);
@@ -78,6 +84,15 @@ const Input: React.FC<InputProps> = ({
       shallowWrapperRef?.removeEventListener("touchstart", handleFocus);
     };
   }, []);
+
+  // Insert text at cursor (e.g. emoji)
+  useEffect(() => {
+    if (insertText && insertText.length > 0) {
+      setMessage((prev) => prev + insertText);
+      onInsertTextConsumed?.();
+      textAreaRef.current?.focus();
+    }
+  }, [insertText]);
 
   const wrapperClasses = [
     "composer-wrapper",
