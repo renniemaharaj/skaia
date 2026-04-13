@@ -7,6 +7,10 @@ import {
   ImagePickerButton,
   getSectionLayout,
   setSectionLayout,
+  getSectionMargins,
+  setSectionMargins,
+  getSectionAnimation,
+  setSectionAnimation,
 } from "../EditControls";
 
 interface Props {
@@ -41,6 +45,20 @@ export const EventHighlightsBlock = ({
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
+            })
+          }
+          margins={getSectionMargins(section.config)}
+          onMarginsChange={(m) =>
+            onUpdate({
+              ...section,
+              config: setSectionMargins(section.config, m),
+            })
+          }
+          animation={getSectionAnimation(section.config)}
+          onAnimationChange={(a) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimation(section.config, a),
             })
           }
         />

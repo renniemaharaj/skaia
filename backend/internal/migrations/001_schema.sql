@@ -384,3 +384,49 @@ CREATE TABLE IF NOT EXISTS page_editors (
 
 CREATE INDEX IF NOT EXISTS idx_page_editors_page ON page_editors(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_editors_user ON page_editors(user_id);
+
+-- ── Page engagement: views, likes, comments ─────────────────────────────────
+
+-- Track unique page views per user (or anonymous via session)
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS page_views (
+    id         BIGSERIAL PRIMARY KEY,
+    page_id    BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    viewed_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_page_views_page ON page_views(page_id);
+CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id);
+
+-- Page likes (one per user)
+CREATE TABLE IF NOT EXISTS page_likes (
+    id         BIGSERIAL PRIMARY KEY,
+    page_id    BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(page_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_page_likes_page ON page_likes(page_id);
+CREATE INDEX IF NOT EXISTS idx_page_likes_user ON page_likes(user_id);
+
+-- Page comments
+CREATE TABLE IF NOT EXISTS page_comments (
+    id         BIGSERIAL PRIMARY KEY,
+    page_id    BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content    TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_page_comments_page ON page_comments(page_id);
+CREATE INDEX IF NOT EXISTS idx_page_comments_user ON page_comments(user_id);
+
+-- Page comment likes
+CREATE TABLE IF NOT EXISTS page_comment_likes (
+    id                BIGSERIAL PRIMARY KEY,
+    page_comment_id   BIGINT NOT NULL REFERENCES page_comments(id) ON DELETE CASCADE,
+    user_id           BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(page_comment_id, user_id)
+);

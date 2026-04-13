@@ -457,7 +457,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo)
-		ipage.NewHandler(pageSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware)
+		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

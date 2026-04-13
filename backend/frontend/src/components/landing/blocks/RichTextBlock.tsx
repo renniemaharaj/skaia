@@ -4,6 +4,10 @@ import {
   SectionToolbar,
   getSectionLayout,
   setSectionLayout,
+  getSectionMargins,
+  setSectionMargins,
+  getSectionAnimation,
+  setSectionAnimation,
 } from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the landing bundle small. */
@@ -56,6 +60,20 @@ export const RichTextBlock = ({
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
+            })
+          }
+          margins={getSectionMargins(section.config)}
+          onMarginsChange={(m) =>
+            onUpdate({
+              ...section,
+              config: setSectionMargins(section.config, m),
+            })
+          }
+          animation={getSectionAnimation(section.config)}
+          onAnimationChange={(a) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimation(section.config, a),
             })
           }
           extra={

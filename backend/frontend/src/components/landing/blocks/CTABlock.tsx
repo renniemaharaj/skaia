@@ -4,6 +4,12 @@ import {
   SectionToolbar,
   getSectionLayout,
   setSectionLayout,
+  getSectionMargins,
+  setSectionMargins,
+  getSectionAnimation,
+  setSectionAnimation,
+  getSectionBgColor,
+  setSectionBgColor,
 } from "../EditControls";
 
 interface Props {
@@ -25,6 +31,27 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
+            })
+          }
+          margins={getSectionMargins(section.config)}
+          onMarginsChange={(m) =>
+            onUpdate({
+              ...section,
+              config: setSectionMargins(section.config, m),
+            })
+          }
+          animation={getSectionAnimation(section.config)}
+          onAnimationChange={(a) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimation(section.config, a),
+            })
+          }
+          bgColor={getSectionBgColor(section.config)}
+          onBgColorChange={(c) =>
+            onUpdate({
+              ...section,
+              config: setSectionBgColor(section.config, c),
             })
           }
         />

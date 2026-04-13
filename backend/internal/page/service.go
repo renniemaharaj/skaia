@@ -112,3 +112,81 @@ func (s *Service) CanEdit(pageID, userID int64, isAdmin bool) bool {
 	isEd, _ := s.repo.IsEditor(pageID, userID)
 	return isEd
 }
+
+// ── Engagement ──────────────────────────────────────────────────────────────
+
+func (s *Service) RecordView(pageID int64, userID *int64) error {
+	return s.repo.RecordView(pageID, userID)
+}
+
+func (s *Service) LikePage(pageID, userID int64) (int64, error) {
+	return s.repo.LikePage(pageID, userID)
+}
+
+func (s *Service) UnlikePage(pageID, userID int64) (int64, error) {
+	return s.repo.UnlikePage(pageID, userID)
+}
+
+func (s *Service) IsPageLikedByUser(pageID, userID int64) (bool, error) {
+	return s.repo.IsPageLikedByUser(pageID, userID)
+}
+
+func (s *Service) GetPageLikeCount(pageID int64) (int, error) {
+	return s.repo.GetPageLikeCount(pageID)
+}
+
+func (s *Service) GetPageCommentCount(pageID int64) (int, error) {
+	return s.repo.GetPageCommentCount(pageID)
+}
+
+// EnrichPageEngagement populates Likes, IsLiked, CommentCount on a page for the given user.
+func (s *Service) EnrichPageEngagement(p *models.Page, userID *int64) {
+	if p == nil {
+		return
+	}
+	if likes, err := s.repo.GetPageLikeCount(p.ID); err == nil {
+		p.Likes = likes
+	}
+	if cc, err := s.repo.GetPageCommentCount(p.ID); err == nil {
+		p.CommentCount = cc
+	}
+	if userID != nil {
+		if liked, err := s.repo.IsPageLikedByUser(p.ID, *userID); err == nil {
+			p.IsLiked = liked
+		}
+	}
+}
+
+// ── Comments ────────────────────────────────────────────────────────────────
+
+func (s *Service) CreateComment(c *models.PageComment) (*models.PageComment, error) {
+	return s.repo.CreateComment(c)
+}
+
+func (s *Service) GetComment(id int64) (*models.PageComment, error) {
+	return s.repo.GetComment(id)
+}
+
+func (s *Service) ListComments(pageID int64, limit, offset int) ([]*models.PageComment, error) {
+	return s.repo.ListComments(pageID, limit, offset)
+}
+
+func (s *Service) UpdateComment(c *models.PageComment) error {
+	return s.repo.UpdateComment(c)
+}
+
+func (s *Service) DeleteComment(id int64) error {
+	return s.repo.DeleteComment(id)
+}
+
+func (s *Service) LikeComment(commentID, userID int64) (int64, error) {
+	return s.repo.LikeComment(commentID, userID)
+}
+
+func (s *Service) UnlikeComment(commentID, userID int64) (int64, error) {
+	return s.repo.UnlikeComment(commentID, userID)
+}
+
+func (s *Service) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
+	return s.repo.IsCommentLikedByUser(commentID, userID)
+}

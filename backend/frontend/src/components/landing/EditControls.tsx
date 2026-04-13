@@ -92,6 +92,73 @@ export function setSectionLayout(
   return JSON.stringify(updated);
 }
 
+// ── Margin helpers ──────────────────────────────────────────────────────────
+
+export interface SectionMargins {
+  marginTop: number;
+  marginBottom: number;
+  paddingLeft: number;
+  paddingRight: number;
+}
+
+export function getSectionMargins(config: string): SectionMargins {
+  const parsed = safeParseConfig(config);
+  return {
+    marginTop: parsed.marginTop ?? 0,
+    marginBottom: parsed.marginBottom ?? 0,
+    paddingLeft: parsed.paddingLeft ?? 0,
+    paddingRight: parsed.paddingRight ?? 0,
+  };
+}
+
+export function setSectionMargins(
+  config: string,
+  margins: Partial<SectionMargins>,
+): string {
+  const parsed = safeParseConfig(config);
+  return JSON.stringify({ ...parsed, ...margins });
+}
+
+// ── Animation helpers ───────────────────────────────────────────────────────
+
+export const SECTION_ANIMATIONS = [
+  "none",
+  "fade-in",
+  "slide-up",
+  "slide-left",
+  "slide-right",
+  "zoom-in",
+  "bounce",
+] as const;
+
+export type SectionAnimation = (typeof SECTION_ANIMATIONS)[number];
+
+export function getSectionAnimation(config: string): SectionAnimation {
+  const parsed = safeParseConfig(config);
+  if (SECTION_ANIMATIONS.includes(parsed.animation)) return parsed.animation;
+  return "none";
+}
+
+export function setSectionAnimation(
+  config: string,
+  animation: SectionAnimation,
+): string {
+  const parsed = safeParseConfig(config);
+  return JSON.stringify({ ...parsed, animation });
+}
+
+// ── Background color helpers ────────────────────────────────────────────────
+
+export function getSectionBgColor(config: string): string {
+  const parsed = safeParseConfig(config);
+  return parsed.bg_color ?? "";
+}
+
+export function setSectionBgColor(config: string, color: string): string {
+  const parsed = safeParseConfig(config);
+  return JSON.stringify({ ...parsed, bg_color: color });
+}
+
 export const SectionLayoutControls = ({
   layout,
   onChange,
@@ -132,6 +199,81 @@ export const SectionLayoutControls = ({
     >
       <Maximize2 size={14} />
     </button>
+  </div>
+);
+
+/** Controls for section top/bottom margins and left/right padding. */
+export const SectionSpacingControls = ({
+  margins,
+  onChange,
+}: {
+  margins: SectionMargins;
+  onChange: (m: Partial<SectionMargins>) => void;
+}) => (
+  <div className="section-spacing-controls">
+    <label>T</label>
+    <input
+      type="number"
+      value={margins.marginTop}
+      onChange={(e) => onChange({ marginTop: Number(e.target.value) })}
+      title="Margin top (px)"
+      min={0}
+      max={200}
+      step={4}
+    />
+    <label>B</label>
+    <input
+      type="number"
+      value={margins.marginBottom}
+      onChange={(e) => onChange({ marginBottom: Number(e.target.value) })}
+      title="Margin bottom (px)"
+      min={0}
+      max={200}
+      step={4}
+    />
+    <label>L</label>
+    <input
+      type="number"
+      value={margins.paddingLeft}
+      onChange={(e) => onChange({ paddingLeft: Number(e.target.value) })}
+      title="Padding left (px)"
+      min={0}
+      max={200}
+      step={4}
+    />
+    <label>R</label>
+    <input
+      type="number"
+      value={margins.paddingRight}
+      onChange={(e) => onChange({ paddingRight: Number(e.target.value) })}
+      title="Padding right (px)"
+      min={0}
+      max={200}
+      step={4}
+    />
+  </div>
+);
+
+/** Animation style selector for sections. */
+export const SectionAnimationControl = ({
+  animation,
+  onChange,
+}: {
+  animation: SectionAnimation;
+  onChange: (a: SectionAnimation) => void;
+}) => (
+  <div className="section-animation-control">
+    <select
+      value={animation}
+      onChange={(e) => onChange(e.target.value as SectionAnimation)}
+      title="Section animation"
+    >
+      {SECTION_ANIMATIONS.map((a) => (
+        <option key={a} value={a}>
+          {a === "none" ? "No animation" : a.replace(/-/g, " ")}
+        </option>
+      ))}
+    </select>
   </div>
 );
 
@@ -248,12 +390,24 @@ export const SectionToolbar = ({
   label,
   layout,
   onLayoutChange,
+  margins,
+  onMarginsChange,
+  animation,
+  onAnimationChange,
+  bgColor,
+  onBgColorChange,
   extra,
 }: {
   onDelete: () => void;
   label: string;
   layout?: SectionLayout;
   onLayoutChange?: (layout: SectionLayout) => void;
+  margins?: SectionMargins;
+  onMarginsChange?: (m: Partial<SectionMargins>) => void;
+  animation?: SectionAnimation;
+  onAnimationChange?: (a: SectionAnimation) => void;
+  bgColor?: string;
+  onBgColorChange?: (c: string) => void;
   extra?: React.ReactNode;
 }) => (
   <div className="landing-section-toolbar">
@@ -262,6 +416,22 @@ export const SectionToolbar = ({
       <SectionMoveButtons />
       {layout && onLayoutChange ? (
         <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
+      ) : null}
+      {margins && onMarginsChange ? (
+        <SectionSpacingControls margins={margins} onChange={onMarginsChange} />
+      ) : null}
+      {animation !== undefined && onAnimationChange ? (
+        <SectionAnimationControl
+          animation={animation}
+          onChange={onAnimationChange}
+        />
+      ) : null}
+      {bgColor !== undefined && onBgColorChange ? (
+        <ColorPickerButton
+          value={bgColor}
+          onChange={onBgColorChange}
+          title="Section color"
+        />
       ) : null}
       {extra}
       <button

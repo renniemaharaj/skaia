@@ -258,6 +258,13 @@ export const Header: React.FC<HeaderProps> = ({
                 Forum
               </Link>
             )}
+            <Link
+              to="/pages"
+              className={isActive("/pages")}
+              onClick={() => setMenuOpen(false)}
+            >
+              Pages
+            </Link>
           </div>
 
           <div className="user-section">

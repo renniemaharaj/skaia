@@ -18,10 +18,10 @@ func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), created_at, updated_at
 		 FROM pages WHERE slug = $1`, slug,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -36,10 +36,10 @@ func (r *sqlRepository) GetIndex() (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), created_at, updated_at
 		 FROM pages WHERE is_index = TRUE LIMIT 1`,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +54,10 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), created_at, updated_at
 		 FROM pages WHERE id = $1`, id,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 func (r *sqlRepository) List() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), created_at, updated_at
 		 FROM pages ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 		p := &models.Page{}
 		var ownerID sql.NullInt64
 		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
-			&p.IsIndex, &p.Content, &ownerID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if ownerID.Valid {
@@ -190,8 +190,10 @@ func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT p.id, p.slug, p.title, p.description, p.is_index, p.content::text,
-		        p.owner_id, p.created_at, p.updated_at,
-		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, '')
+		        p.owner_id, COALESCE(p.view_count, 0), p.created_at, p.updated_at,
+		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''),
+		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id),
+		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id)
 		 FROM pages p
 		 LEFT JOIN users u ON u.id = p.owner_id
 		 ORDER BY p.updated_at DESC`)
@@ -207,8 +209,9 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		var oID sql.NullInt64
 		var oUsername, oDisplayName, oAvatar sql.NullString
 		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
-			&p.IsIndex, &p.Content, &ownerID, &p.CreatedAt, &p.UpdatedAt,
-			&oID, &oUsername, &oDisplayName, &oAvatar); err != nil {
+			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt,
+			&oID, &oUsername, &oDisplayName, &oAvatar,
+			&p.Likes, &p.CommentCount); err != nil {
 			return nil, err
 		}
 		if ownerID.Valid {
@@ -225,4 +228,157 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		pages = append(pages, p)
 	}
 	return pages, rows.Err()
+}
+
+// ── engagement: views, likes, comments ──────────────────────────────────────
+
+func (r *sqlRepository) RecordView(pageID int64, userID *int64) error {
+	var uid sql.NullInt64
+	if userID != nil {
+		uid = sql.NullInt64{Int64: *userID, Valid: true}
+	}
+	_, err := r.db.Exec(
+		`INSERT INTO page_views (page_id, user_id) VALUES ($1, $2)`, pageID, uid)
+	if err != nil {
+		return err
+	}
+	_, err = r.db.Exec(
+		`UPDATE pages SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1`, pageID)
+	return err
+}
+
+func (r *sqlRepository) LikePage(pageID, userID int64) (int64, error) {
+	_, err := r.db.Exec(
+		`INSERT INTO page_likes (page_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, pageID, userID)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) UnlikePage(pageID, userID int64) (int64, error) {
+	_, err := r.db.Exec(
+		`DELETE FROM page_likes WHERE page_id = $1 AND user_id = $2`, pageID, userID)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) IsPageLikedByUser(pageID, userID int64) (bool, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_likes WHERE page_id = $1 AND user_id = $2`, pageID, userID).Scan(&count)
+	return count > 0, err
+}
+
+func (r *sqlRepository) GetPageLikeCount(pageID int64) (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) GetPageCommentCount(pageID int64) (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM page_comments WHERE page_id = $1`, pageID).Scan(&count)
+	return count, err
+}
+
+// ── page comments ───────────────────────────────────────────────────────────
+
+func (r *sqlRepository) CreateComment(c *models.PageComment) (*models.PageComment, error) {
+	err := r.db.QueryRow(
+		`INSERT INTO page_comments (page_id, user_id, content) VALUES ($1, $2, $3)
+		 RETURNING id, created_at, updated_at`,
+		c.PageID, c.UserID, c.Content,
+	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
+	return c, err
+}
+
+func (r *sqlRepository) GetComment(id int64) (*models.PageComment, error) {
+	c := &models.PageComment{}
+	err := r.db.QueryRow(
+		`SELECT c.id, c.page_id, c.user_id, c.content, c.created_at, c.updated_at,
+		        u.username, COALESCE(u.avatar_url, '')
+		 FROM page_comments c JOIN users u ON u.id = c.user_id
+		 WHERE c.id = $1`, id,
+	).Scan(&c.ID, &c.PageID, &c.UserID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
+		&c.AuthorName, &c.AuthorAvatar)
+	return c, err
+}
+
+func (r *sqlRepository) ListComments(pageID int64, limit, offset int) ([]*models.PageComment, error) {
+	rows, err := r.db.Query(
+		`SELECT c.id, c.page_id, c.user_id, c.content, c.created_at, c.updated_at,
+		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, ''),
+		        (SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = c.id)
+		 FROM page_comments c JOIN users u ON u.id = c.user_id
+		 WHERE c.page_id = $1
+		 ORDER BY c.created_at ASC
+		 LIMIT $2 OFFSET $3`, pageID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []*models.PageComment
+	for rows.Next() {
+		c := &models.PageComment{}
+		if err := rows.Scan(&c.ID, &c.PageID, &c.UserID, &c.Content,
+			&c.CreatedAt, &c.UpdatedAt, &c.AuthorName, &c.AuthorName, &c.AuthorAvatar,
+			&c.Likes); err != nil {
+			return nil, err
+		}
+		comments = append(comments, c)
+	}
+	return comments, rows.Err()
+}
+
+func (r *sqlRepository) UpdateComment(c *models.PageComment) error {
+	_, err := r.db.Exec(
+		`UPDATE page_comments SET content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		c.ID, c.Content)
+	return err
+}
+
+func (r *sqlRepository) DeleteComment(id int64) error {
+	_, err := r.db.Exec(`DELETE FROM page_comments WHERE id = $1`, id)
+	return err
+}
+
+func (r *sqlRepository) LikeComment(commentID, userID int64) (int64, error) {
+	_, err := r.db.Exec(
+		`INSERT INTO page_comment_likes (page_comment_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		commentID, userID)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1`, commentID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) UnlikeComment(commentID, userID int64) (int64, error) {
+	_, err := r.db.Exec(
+		`DELETE FROM page_comment_likes WHERE page_comment_id = $1 AND user_id = $2`,
+		commentID, userID)
+	if err != nil {
+		return 0, err
+	}
+	var count int64
+	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1`, commentID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1 AND user_id = $2`,
+		commentID, userID).Scan(&count)
+	return count > 0, err
 }

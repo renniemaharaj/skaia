@@ -92,12 +92,33 @@ type Page struct {
 	IsIndex     bool      `json:"is_index"`
 	Content     string    `json:"content"` // raw JSON array of sections
 	OwnerID     *int64    `json:"owner_id,omitempty"`
+	ViewCount   int       `json:"view_count"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 
 	// Enriched fields (not stored directly in pages table)
-	Owner   *PageUser   `json:"owner,omitempty"`
-	Editors []*PageUser `json:"editors,omitempty"`
+	Owner        *PageUser   `json:"owner,omitempty"`
+	Editors      []*PageUser `json:"editors,omitempty"`
+	Likes        int         `json:"likes"`
+	IsLiked      bool        `json:"is_liked,omitempty"`
+	CommentCount int         `json:"comment_count"`
+}
+
+// PageComment represents a comment on a custom page.
+type PageComment struct {
+	ID           int64     `json:"id"`
+	PageID       int64     `json:"page_id"`
+	UserID       int64     `json:"user_id"`
+	Content      string    `json:"content"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	AuthorName   string    `json:"author_name,omitempty"`
+	AuthorRoles  []string  `json:"author_roles,omitempty"`
+	AuthorAvatar string    `json:"author_avatar,omitempty"`
+	Likes        int       `json:"likes,omitempty"`
+	IsLiked      bool      `json:"is_liked,omitempty"`
+	CanEdit      bool      `json:"can_edit,omitempty"`
+	CanDelete    bool      `json:"can_delete,omitempty"`
 }
 
 // PageUser is a lightweight user representation for page ownership/editor lists.

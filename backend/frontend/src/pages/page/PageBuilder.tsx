@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Settings, Users } from "lucide-react";
+import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
+import { useAtomValue } from "jotai";
 import type {
   LandingSection,
   LandingItem,
@@ -9,9 +10,13 @@ import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
+import { isAuthenticatedAtom } from "../../atoms/auth";
 import { LandingSkeleton } from "../../components/landing/LandingSkeleton";
 import { BlockRenderer } from "../../components/landing/BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
+import PageComments from "../../components/page/PageComments";
+import { apiRequest } from "../../utils/api";
+import { toast } from "sonner";
 
 interface PageBuilderProps {
   /** Optional slug to load. Falls back to the URL :slug param, then index. */
@@ -53,6 +58,72 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showOwnershipBtn = showToolbar && page?.id && slug;
 
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+
+  // Landing page selector state
+  const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
+  const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
+  const [pageIsLiked, setPageIsLiked] = useState(false);
+  const [pageLikes, setPageLikes] = useState(0);
+
+  // Sync engagement state from page
+  useEffect(() => {
+    if (page) {
+      setPageIsLiked(page.is_liked ?? false);
+      setPageLikes(page.likes ?? 0);
+    }
+  }, [page]);
+
+  // Record page view
+  useEffect(() => {
+    if (page?.slug) {
+      apiRequest(`/config/pages/${page.slug}/view`, { method: "POST" }).catch(
+        () => {},
+      );
+    }
+  }, [page?.slug]);
+
+  // Load all pages for landing selector
+  useEffect(() => {
+    if (isAdmin && showToolbar) {
+      apiRequest<PageBuilderPage[]>("/config/pages/list")
+        .then((data) => setAllPages(data ?? []))
+        .catch(() => {});
+    }
+  }, [isAdmin, showToolbar]);
+
+  const handleSetLandingPage = async (selectedSlug: string) => {
+    try {
+      await apiRequest("/config/pages/landing-page", {
+        method: "PUT",
+        body: JSON.stringify({ slug: selectedSlug }),
+      });
+      toast.success(
+        selectedSlug
+          ? `Landing page set to "${selectedSlug}"`
+          : "Landing page reset to default",
+      );
+      setLandingDropdownOpen(false);
+    } catch {
+      toast.error("Failed to set landing page");
+    }
+  };
+
+  const handleLikePage = async () => {
+    if (!page?.id || !isAuthenticated) return;
+    const wasLiked = pageIsLiked;
+    setPageIsLiked(!wasLiked);
+    setPageLikes((prev) => prev + (wasLiked ? -1 : 1));
+    try {
+      await apiRequest(`/config/pages/${page.id}/like`, {
+        method: wasLiked ? "DELETE" : "POST",
+      });
+    } catch {
+      setPageIsLiked(wasLiked);
+      setPageLikes((prev) => prev + (wasLiked ? 1 : -1));
+    }
+  };
+
   // Track whether the page needs to be created (404 + editable or sandbox enabled).
   const isNewPage = !!(slug && error && guestSandboxMode);
   const pageRef = useRef<PageBuilderPage | null>(page);
@@ -72,6 +143,10 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         description: "",
         is_index: false,
         content: JSON.stringify(content),
+        view_count: 0,
+        likes: 0,
+        is_liked: false,
+        comment_count: 0,
       });
       await refresh(slug);
       return created;
@@ -324,6 +399,38 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               Manage
             </button>
           )}
+          {isAdmin && showOwnershipBtn && (
+            <div className="page-admin-dropdown-wrap">
+              <button
+                type="button"
+                className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
+                onClick={() => setLandingDropdownOpen((v) => !v)}
+                title="Set as landing page"
+              >
+                Landing Page
+                <ChevronDown size={14} />
+              </button>
+              {landingDropdownOpen && (
+                <div className="page-admin-dropdown">
+                  <button
+                    className="page-admin-dropdown-item"
+                    onClick={() => handleSetLandingPage("")}
+                  >
+                    Default (index)
+                  </button>
+                  {allPages.map((p) => (
+                    <button
+                      key={p.id}
+                      className="page-admin-dropdown-item"
+                      onClick={() => handleSetLandingPage(p.slug)}
+                    >
+                      {p.title || p.slug}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {isAdmin && !slug && (
             <Link to="/admin/meta" className="page-admin-btn">
               <Settings size={16} />
@@ -363,6 +470,28 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           />
         </div>
       )}
+
+      {/* Engagement stats bar */}
+      {page?.id && (
+        <div className="page-engagement-bar">
+          <span className="page-engagement-stat">
+            <Eye size={14} /> {page.view_count ?? 0} views
+          </span>
+          <button
+            className={`page-engagement-like${pageIsLiked ? " liked" : ""}`}
+            onClick={handleLikePage}
+            disabled={!isAuthenticated}
+            title={isAuthenticated ? "Like this page" : "Sign in to like"}
+          >
+            <ThumbsUp size={14} />
+            {pageLikes > 0 && <span>{pageLikes}</span>}
+          </button>
+          <span className="page-engagement-stat">
+            {page.comment_count ?? 0} comments
+          </span>
+        </div>
+      )}
+
       <BlockRenderer
         sections={sections}
         canEdit={canEdit}
@@ -374,6 +503,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         onDeleteItem={deleteItemWrapper}
         onMoveSection={moveSectionWrapper}
       />
+
+      {/* Comments section */}
+      {page?.id && page?.slug && (
+        <PageComments pageId={page.id} pageSlug={page.slug} />
+      )}
     </div>
   );
 }

@@ -13,7 +13,13 @@ import { RichTextBlock } from "./blocks/RichTextBlock";
 import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
-import { getSectionLayout, SectionMoveContext } from "./EditControls";
+import {
+  getSectionLayout,
+  getSectionMargins,
+  getSectionAnimation,
+  getSectionBgColor,
+  SectionMoveContext,
+} from "./EditControls";
 
 interface BlockRendererProps {
   sections: LandingSection[];
@@ -129,8 +135,25 @@ export const BlockRenderer = ({
         const Block = BLOCK_MAP[section.section_type];
         if (!Block) return null;
         const layout = getSectionLayout(section.config);
+        const margins = getSectionMargins(section.config);
+        const animation = getSectionAnimation(section.config);
+        const bgColor = getSectionBgColor(section.config);
         const isFirst = i === 0;
         const isLast = i === orderedSections.length - 1;
+
+        const sectionStyle: React.CSSProperties = {
+          ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
+          ...(margins.marginBottom
+            ? { marginBottom: `${margins.marginBottom}px` }
+            : {}),
+          ...(margins.paddingLeft
+            ? { paddingLeft: `${margins.paddingLeft}px` }
+            : {}),
+          ...(margins.paddingRight
+            ? { paddingRight: `${margins.paddingRight}px` }
+            : {}),
+          ...(bgColor ? { backgroundColor: bgColor } : {}),
+        };
 
         return (
           <SectionMoveContext.Provider
@@ -144,6 +167,8 @@ export const BlockRenderer = ({
           >
             <div
               className={`landing-section-layout landing-section-layout-${layout}`}
+              style={sectionStyle}
+              data-animation={animation !== "none" ? animation : undefined}
             >
               <Block
                 section={section}
