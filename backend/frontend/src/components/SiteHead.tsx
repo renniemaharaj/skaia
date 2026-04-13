@@ -10,14 +10,22 @@ export default function SiteHead({
 }) {
   if (!seo && !branding) return null;
 
+  const title = branding?.header_title || branding?.site_name || "";
+  const subtitle = branding?.header_subtitle || "";
+  const pageTitle = title
+    ? subtitle
+      ? `${title} – ${subtitle}`
+      : title
+    : undefined;
+
   return (
     <Helmet>
-      {seo?.title && <title>{seo.title}</title>}
+      {pageTitle && <title>{pageTitle}</title>}
       {seo?.description && (
         <meta name="description" content={seo.description} />
       )}
       {seo?.og_image && <meta property="og:image" content={seo.og_image} />}
-      {branding?.favicon_url && <link rel="icon" href={branding.favicon_url} />}
+      {branding?.logo_url && <link rel="icon" href={branding.logo_url} />}
     </Helmet>
   );
 }

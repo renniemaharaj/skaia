@@ -63,9 +63,11 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 			titleTag = "<title>" + htmlEscape(title) + "</title>"
 		}
 
-		// Description from tagline.
+		// Description from SEO config, fallback to branding tagline if absent.
 		descTag := ""
-		if tagline != "" {
+		if seo.Description != "" {
+			descTag = "<meta name=\"description\" content=\"" + htmlEscape(seo.Description) + "\">"
+		} else if tagline != "" {
 			descTag = "<meta name=\"description\" content=\"" + htmlEscape(tagline) + "\">"
 		}
 
@@ -77,8 +79,8 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 		}
 
 		faviconTag := ""
-		if branding.FaviconURL != "" {
-			faviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(branding.FaviconURL) + "\">"
+		if branding.LogoURL != "" {
+			faviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(branding.LogoURL) + "\">"
 		}
 
 		out := string(data)

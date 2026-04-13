@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
-import type { Branding } from "../landing/types";
 import "./MetaControlPanel.css";
 
 interface MetaConfigForm {
-  title: string;
   description: string;
   og_image: string;
-  favicon_url: string;
 }
 
 export default function MetaControlPanel({
@@ -19,7 +16,6 @@ export default function MetaControlPanel({
 }) {
   const [form, setForm] = useState<MetaConfigForm>(initialConfig);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
-  const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,19 +25,14 @@ export default function MetaControlPanel({
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleFile = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    type: "og" | "favicon",
-  ) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    if (type === "og") setOgImageFile(file);
-    else setFaviconFile(file);
+    setOgImageFile(file);
   };
 
   async function uploadFile(file: File): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
-    // backend provides a generic image upload endpoint: /upload/image
     const endpoint = "/upload/image";
     const res = await apiRequest<{ url: string }>(endpoint, {
       method: "POST",
@@ -56,25 +47,15 @@ export default function MetaControlPanel({
     setError(null);
     try {
       let og_image = form.og_image;
-      let favicon_url = form.favicon_url;
       if (ogImageFile) og_image = await uploadFile(ogImageFile);
-      if (faviconFile) favicon_url = await uploadFile(faviconFile);
       await apiRequest("/config/seo", {
         method: "PUT",
         body: JSON.stringify({
-          title: form.title,
           description: form.description,
           og_image,
         }),
       });
-      // Fetch the latest branding so we never overwrite fields
-      // changed elsewhere (e.g. header title edited inline).
-      const current = await apiRequest<Branding>("/config/branding");
-      await apiRequest("/config/branding", {
-        method: "PUT",
-        body: JSON.stringify({ ...current, favicon_url }),
-      });
-      onUpdate?.({ ...form, og_image, favicon_url });
+      onUpdate?.({ ...form, og_image });
     } catch (err: any) {
       setError(err.message || "Failed to save");
     } finally {
@@ -85,15 +66,6 @@ export default function MetaControlPanel({
   return (
     <form className="meta-control-panel" onSubmit={handleSubmit}>
       <h2>Site Meta Settings</h2>
-      <label>
-        Title
-        <input
-          name="title"
-          value={form.title}
-          onChange={handleInput}
-          required
-        />
-      </label>
       <label>
         Description
         <textarea
@@ -112,26 +84,7 @@ export default function MetaControlPanel({
           onChange={handleInput}
           placeholder="Image URL or upload below"
         />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => handleFile(e, "og")}
-        />
-      </label>
-      <label>
-        Favicon
-        <input
-          type="text"
-          name="favicon_url"
-          value={form.favicon_url}
-          onChange={handleInput}
-          placeholder="Favicon URL or upload below"
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => handleFile(e, "favicon")}
-        />
+        <input type="file" accept="image/*" onChange={handleFile} />
       </label>
       {error && <div className="error">{error}</div>}
       <div className="actions">

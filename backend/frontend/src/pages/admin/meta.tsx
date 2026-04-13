@@ -10,10 +10,9 @@ export function AdminMetaSettings() {
   return (
     <MetaControlPanel
       initialConfig={{
-        title: seo.title,
-        description: seo.description,
+        description:
+          seo.description || branding.tagline || branding.header_subtitle || "",
         og_image: seo.og_image,
-        favicon_url: branding.favicon_url,
       }}
       onUpdate={() => window.location.reload()}
     />
