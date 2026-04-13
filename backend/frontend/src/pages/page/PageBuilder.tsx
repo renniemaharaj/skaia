@@ -66,6 +66,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
 
+  const landingPageLabel = page
+    ? page.is_index
+      ? "Default (index)"
+      : page.title || page.slug
+    : "Landing Page";
+
   // Sync engagement state from page
   useEffect(() => {
     if (page) {
@@ -422,7 +428,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                 onClick={() => setLandingDropdownOpen((v) => !v)}
                 title="Set landing page"
               >
-                Landing Page
+                {landingPageLabel}
                 <ChevronDown size={14} />
               </button>
               {landingDropdownOpen && (
