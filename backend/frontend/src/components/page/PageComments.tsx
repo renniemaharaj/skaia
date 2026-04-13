@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
-import { ThumbsUp, Trash2, Send } from "lucide-react";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
-import { relativeTimeAgo } from "../../utils/serverTime";
 import { toast } from "sonner";
-import "./PageComments.css";
+import CommentSection from "../comments/CommentSection";
 
 interface PageComment {
   id: number;
@@ -30,7 +28,6 @@ interface Props {
 export default function PageComments({ pageId, pageSlug }: Props) {
   const [comments, setComments] = useState<PageComment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
@@ -67,15 +64,15 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     return () => window.removeEventListener("page:live:event", handler);
   }, [pageId, loadComments]);
 
-  const handleSubmit = async () => {
-    if (!draft.trim() || submitting) return;
+  const handleSubmit = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || submitting) return;
     setSubmitting(true);
     try {
       await apiRequest(`/config/pages/${pageId}/comments`, {
         method: "POST",
-        body: JSON.stringify({ content: draft.trim() }),
+        body: JSON.stringify({ content: trimmed }),
       });
-      setDraft("");
       loadComments();
     } catch {
       toast.error("Failed to post comment");
@@ -84,8 +81,12 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     }
   };
 
-  const handleLike = async (comment: PageComment) => {
-    const method = comment.is_liked ? "DELETE" : "POST";
+  const handleLike = async (comment: {
+    id: number | string;
+    is_liked?: boolean;
+  }) => {
+    const isLiked = Boolean(comment.is_liked);
+    const method = isLiked ? "DELETE" : "POST";
     const optimistic = comments.map((c) =>
       c.id === comment.id
         ? {
@@ -117,84 +118,33 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     }
   };
 
+  const formattedComments = comments.map((comment) => ({
+    id: comment.id,
+    author_id: comment.user_id,
+    author_name: comment.author_name,
+    author_avatar: comment.author_avatar,
+    content: comment.content,
+    created_at: comment.created_at,
+    likes: comment.likes,
+    is_liked: comment.is_liked,
+    can_delete: comment.can_delete,
+  }));
+
   return (
     <div className="page-comments">
-      <h3 className="page-comments__title">
-        Comments {comments.length > 0 && `(${comments.length})`}
-      </h3>
-
-      {isAuthenticated && (
-        <div className="page-comments__composer">
-          <textarea
-            className="page-comments__input"
-            placeholder="Write a comment…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-            }}
-            rows={2}
-          />
-          <button
-            className="page-comments__submit"
-            onClick={handleSubmit}
-            disabled={!draft.trim() || submitting}
-          >
-            <Send size={14} />
-            Post
-          </button>
-        </div>
-      )}
-
-      {loading && <p className="page-comments__status">Loading…</p>}
-
-      {!loading && comments.length === 0 && (
-        <p className="page-comments__status">No comments yet.</p>
-      )}
-
-      <div className="page-comments__list">
-        {comments.map((c) => (
-          <div key={c.id} className="page-comment">
-            <div className="page-comment__header">
-              {c.author_avatar ? (
-                <img
-                  src={c.author_avatar}
-                  alt={c.author_name}
-                  className="page-comment__avatar"
-                />
-              ) : (
-                <div className="page-comment__avatar page-comment__avatar--placeholder">
-                  {(c.author_name || "?")[0].toUpperCase()}
-                </div>
-              )}
-              <span className="page-comment__author">{c.author_name}</span>
-              <span className="page-comment__time">
-                {relativeTimeAgo(c.created_at)}
-              </span>
-            </div>
-            <p className="page-comment__content">{c.content}</p>
-            <div className="page-comment__actions">
-              {isAuthenticated && (
-                <button
-                  className={`page-comment__like-btn${c.is_liked ? " liked" : ""}`}
-                  onClick={() => handleLike(c)}
-                >
-                  <ThumbsUp size={13} />
-                  {c.likes > 0 && <span>{c.likes}</span>}
-                </button>
-              )}
-              {c.can_delete && (
-                <button
-                  className="page-comment__delete-btn"
-                  onClick={() => handleDelete(c.id)}
-                >
-                  <Trash2 size={13} />
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      <CommentSection
+        title="Comments"
+        comments={formattedComments}
+        isLoading={loading}
+        canComment={isAuthenticated}
+        onSubmit={handleSubmit}
+        onLike={handleLike}
+        onDelete={(comment) => handleDelete(Number(comment.id))}
+        currentUserId={isAuthenticated ? "signed-in" : null}
+        noCommentsText="No comments yet."
+        placeholder="Write a comment… (Shift+Enter for new line)"
+        disabled={submitting}
+      />
     </div>
   );
 }

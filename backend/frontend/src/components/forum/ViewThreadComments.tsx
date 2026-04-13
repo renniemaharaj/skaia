@@ -1,9 +1,5 @@
-import "./ViewThreadComments.css";
-import { ThumbsUp, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import UserAvatar from "../user/UserAvatar";
-import ComposerInput from "../input/Input";
 import {
   threadCommentsAtom,
   enrichedThreadCommentsAtom,
@@ -12,8 +8,7 @@ import { type ThreadComment } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { currentUserAtom } from "../../atoms/auth";
-import UserLink from "../user/UserLink";
-import { formatDate } from "../../utils/serverTime";
+import CommentSection from "../comments/CommentSection";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,124 +137,40 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     [setComments],
   );
 
-  const formatTimestamp = (dateStr: string) => formatDate(dateStr);
-
   return (
-    <div className="view-thread-comments">
-      <div className="comments-header">
-        <h3>Comments</h3>
-        <span className="comments-count">{comments.length}</span>
-      </div>
-
-      {/* Scrollable feed — newest messages at bottom */}
-      <div className="comments-feed" ref={feedRef} onScroll={handleScroll}>
-        {isLoading ? (
-          <div className="comments-feed-empty">Loading comments…</div>
-        ) : comments.length === 0 ? (
-          <div className="comments-feed-empty">
-            No comments yet. Be the first!
-          </div>
-        ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="comment-card">
-              <div className="comment-avatar">
-                <UserAvatar
-                  src={comment.author_avatar || undefined}
-                  alt={comment.author_name || "Comment author"}
-                  size={32}
-                  initials={comment.author_name?.[0]?.toUpperCase()}
-                />
-              </div>
-
-              <div className="comment-body">
-                <div className="comment-meta">
-                  <UserLink
-                    userId={comment.author_id || comment.user_id}
-                    displayName={comment.author_name}
-                    variant="subtle"
-                    className="comment-author-link"
-                  />
-                  {comment.author_roles && comment.author_roles.length > 0 && (
-                    <span className="comment-role">
-                      {comment.author_roles.join(", ")}
-                    </span>
-                  )}
-                  <span className="comment-date">
-                    {formatTimestamp(comment.created_at)}
-                  </span>
-                  {comment.is_edited && (
-                    <span className="comment-edited">(edited)</span>
-                  )}
-                </div>
-
-                <div className="comment-content">{comment.content}</div>
-
-                <div className="comment-actions">
-                  {/* Like button */}
-                  {currentUser && (
-                    <button
-                      className={`thread-action-btn like-btn${comment.is_liked ? " liked" : ""}`}
-                      onClick={() =>
-                        handleLikeComment(comment.id, comment.is_liked)
-                      }
-                      title={comment.is_liked ? "Unlike" : "Like"}
-                    >
-                      <ThumbsUp
-                        size={14}
-                        fill={comment.is_liked ? "currentColor" : "none"}
-                      />
-                      {comment.likes > 0 && <span>{comment.likes}</span>}
-                    </button>
-                  )}
-
-                  {/* Delete */}
-                  {(currentUser?.id === comment.user_id ||
-                    comment.can_delete ||
-                    currentUser?.permissions?.includes(
-                      "forum.thread-comment-delete",
-                    )) && (
-                    <button
-                      className="thread-action-btn delete-btn"
-                      onClick={() => handleDeleteComment(comment.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {(currentUser?.permissions ?? []).includes(
+    <CommentSection
+      title="Comments"
+      comments={comments}
+      isLoading={isLoading}
+      canComment={(currentUser?.permissions ?? []).includes(
         "forum.thread-comment-new",
-      ) && (
-        <div className="comment-composer">
-          <ComposerInput
-            handleSend={async (text) => {
-              if (!threadId || isSubmitting) return;
-              try {
-                setIsSubmitting(true);
-                await apiRequest(`/forum/threads/${threadId}/comments`, {
-                  method: "POST",
-                  body: JSON.stringify({ content: text }),
-                });
-              } catch (error) {
-                console.error("Error submitting comment:", error);
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-            disabled={isSubmitting}
-            placeholder="Write a comment… (Shift+Enter for new line)"
-            minRows={1}
-            maxRows={5}
-          />
-        </div>
       )}
-    </div>
+      onSubmit={async (text) => {
+        if (!threadId || isSubmitting) return;
+        try {
+          setIsSubmitting(true);
+          await apiRequest(`/forum/threads/${threadId}/comments`, {
+            method: "POST",
+            body: JSON.stringify({ content: text }),
+          });
+        } catch (error) {
+          console.error("Error submitting comment:", error);
+        } finally {
+          setIsSubmitting(false);
+        }
+      }}
+      onLike={(comment) =>
+        void handleLikeComment(String(comment.id), comment.is_liked ?? false)
+      }
+      onDelete={(comment) => void handleDeleteComment(String(comment.id))}
+      currentUserId={currentUser?.id}
+      noCommentsText="No comments yet. Be the first!"
+      placeholder="Write a comment… (Shift+Enter for new line)"
+      rootClassName="view-thread-comments"
+      commentsFeedRef={feedRef}
+      onCommentsScroll={handleScroll}
+      disabled={isSubmitting}
+    />
   );
 };
 
