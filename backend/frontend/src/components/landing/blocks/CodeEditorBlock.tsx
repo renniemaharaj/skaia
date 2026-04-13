@@ -1,5 +1,13 @@
-import { lazy, Suspense, useState, useCallback, useMemo } from "react";
+import {
+  lazy,
+  Suspense,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import type { LandingSection } from "../types";
+import { usePageBuilderContext } from "../PageBuilderContext";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -137,14 +145,40 @@ export const CodeEditorBlock = ({
   const cfg = parseConfig(section.config);
   const layout = getSectionLayout(section.config);
   const [editing, setEditing] = useState(false);
+  const { enterEdit, leaveEdit } = usePageBuilderContext();
+  // Hold saves in PageBuilder while this editor is active.
+  useEffect(() => {
+    if (!editing) return;
+    enterEdit();
+    return () => leaveEdit();
+    // enterEdit/leaveEdit are stable useCallback refs — safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
   const { theme } = useThemeContext();
 
+  // Local state for the fields being edited. Only syncs from props when the
+  // editor is not active, so that live section re-renders (e.g. a color picker
+  // on a neighbouring block) never discard the user's in-progress code.
+  const [localCode, setLocalCode] = useState(() => cfg.code);
+  const [localLanguage, setLocalLanguage] = useState(() => cfg.language);
+  const [localFilename, setLocalFilename] = useState(() => cfg.filename);
+
+  useEffect(() => {
+    if (!editing) {
+      const c = parseConfig(section.config);
+      setLocalCode(c.code);
+      setLocalLanguage(c.language);
+      setLocalFilename(c.filename);
+    }
+  }, [section.config, editing]);
+
   /** When the language is renderable, we show rendered content by default in preview. */
-  const isRenderable = RENDERABLE_LANGUAGES.has(cfg.language);
+  const isRenderable = RENDERABLE_LANGUAGES.has(localLanguage);
   const [showRendered, setShowRendered] = useState(true);
 
   const handleCodeChange = useCallback(
     (value: string) => {
+      setLocalCode(value);
       onUpdate({
         ...section,
         config: updateConfig(section.config, { code: value }),
@@ -154,6 +188,7 @@ export const CodeEditorBlock = ({
   );
 
   const handleLanguageChange = (lang: string) => {
+    setLocalLanguage(lang);
     onUpdate({
       ...section,
       config: updateConfig(section.config, { language: lang }),
@@ -161,24 +196,25 @@ export const CodeEditorBlock = ({
   };
 
   const handleFilenameChange = (filename: string) => {
+    setLocalFilename(filename);
     onUpdate({
       ...section,
       config: updateConfig(section.config, { filename }),
     });
   };
 
-  const lineCount = (cfg.code || "").split("\n").length;
+  const lineCount = (localCode || "").split("\n").length;
   const editorHeight = Math.max(150, Math.min(lineCount * 20 + 40, 600));
 
   /** HTML for renderable preview (markdown→html or raw html). */
   const renderedHtml = useMemo(() => {
-    if (!isRenderable || !cfg.code) return "";
-    if (cfg.language === "markdown") return markdownToHtml(cfg.code);
-    return cfg.code; // html
-  }, [isRenderable, cfg.code, cfg.language]);
+    if (!isRenderable || !localCode) return "";
+    if (localLanguage === "markdown") return markdownToHtml(localCode);
+    return localCode; // html
+  }, [isRenderable, localCode, localLanguage]);
 
   const showingRenderedPreview =
-    isRenderable && showRendered && !editing && !!cfg.code;
+    isRenderable && showRendered && !editing && !!localCode;
 
   return (
     <section className="code-editor-block">
@@ -216,7 +252,7 @@ export const CodeEditorBlock = ({
               >
                 {editing ? "Preview" : "Edit"}
               </button>
-              {isRenderable && !editing && cfg.code && (
+              {isRenderable && !editing && localCode && (
                 <button
                   className="landing-section-toolbar-btn"
                   onClick={() => setShowRendered((v) => !v)}
@@ -236,7 +272,7 @@ export const CodeEditorBlock = ({
           <label className="code-editor-control">
             <span>Language</span>
             <select
-              value={cfg.language}
+              value={localLanguage}
               onChange={(e) => handleLanguageChange(e.target.value)}
             >
               {DEFAULT_LANGUAGES.map((lang) => (
@@ -251,7 +287,7 @@ export const CodeEditorBlock = ({
             <span>Filename</span>
             <input
               type="text"
-              value={cfg.filename}
+              value={localFilename}
               onChange={(e) => handleFilenameChange(e.target.value)}
               placeholder="e.g. main.ts"
             />
@@ -260,25 +296,25 @@ export const CodeEditorBlock = ({
       )}
 
       {/* File header — show when not editing (guest or admin preview) */}
-      {!editing && cfg.code && (
+      {!editing && localCode && (
         <div
           className={`code-editor-file-header ${theme === "dark" ? "" : "code-editor-file-header-light"}`}
         >
           <span className="code-editor-file-dot" />
           <span className="code-editor-file-dot" />
           <span className="code-editor-file-dot" />
-          {cfg.filename && (
+          {localFilename && (
             <span className="code-editor-filename">
               <FileCode size={13} style={{ marginRight: 4, opacity: 0.7 }} />
-              {cfg.filename}
+              {localFilename}
             </span>
           )}
-          {cfg.language && (
-            <span className="code-editor-lang-badge">{cfg.language}</span>
+          {localLanguage && (
+            <span className="code-editor-lang-badge">{localLanguage}</span>
           )}
           {/* Guest action buttons */}
           <span className="code-editor-actions">
-            {isRenderable && !canEdit && cfg.code && (
+            {isRenderable && !canEdit && localCode && (
               <button
                 className="code-editor-action-btn"
                 onClick={() => setShowRendered((v) => !v)}
@@ -289,14 +325,14 @@ export const CodeEditorBlock = ({
             )}
             <button
               className="code-editor-action-btn"
-              onClick={() => handleCopy(cfg.code)}
+              onClick={() => handleCopy(localCode)}
               title="Copy code"
             >
               <Copy size={14} />
             </button>
             <button
               className="code-editor-action-btn"
-              onClick={() => handleDownload(cfg.code, cfg.filename)}
+              onClick={() => handleDownload(localCode, localFilename)}
               title="Download file"
             >
               <Download size={14} />
@@ -316,8 +352,8 @@ export const CodeEditorBlock = ({
         {canEdit && editing ? (
           <MonacoEditor
             height={editorHeight}
-            language={cfg.language}
-            code={cfg.code}
+            language={localLanguage}
+            code={localCode}
             onChange={handleCodeChange}
             editable
           />
@@ -325,11 +361,11 @@ export const CodeEditorBlock = ({
           <div className="code-editor-rendered">
             <ViewThread content={renderedHtml} />
           </div>
-        ) : cfg.code ? (
+        ) : localCode ? (
           <MonacoEditor
             height={editorHeight}
-            language={cfg.language}
-            code={cfg.code}
+            language={localLanguage}
+            code={localCode}
             editable={false}
           />
         ) : canEdit ? (

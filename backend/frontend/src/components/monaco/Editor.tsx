@@ -22,8 +22,16 @@ const MonacoEditor = ({
   const [codeContent, setCodeContent] = useState(code);
   const ignoreChangeRef = useRef(false);
 
+  const isFocusedRef = useRef(false);
+
   const onEditorMount = (editor: editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
+    editor.onDidFocusEditorText(() => {
+      isFocusedRef.current = true;
+    });
+    editor.onDidBlurEditorText(() => {
+      isFocusedRef.current = false;
+    });
     editor.focus();
     setEditorValue(codeContent);
   };
@@ -43,8 +51,7 @@ const MonacoEditor = ({
   }, [codeContent, setEditorValueCallback]);
 
   useEffect(() => {
-    if (!editorRef.current) console.log("Editor not mounted yet");
-    setCodeContent(code);
+    if (!isFocusedRef.current) setCodeContent(code);
   }, [code]);
 
   const debounceClearIgnoreChange = useRef(

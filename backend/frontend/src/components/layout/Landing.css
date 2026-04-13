@@ -2524,3 +2524,67 @@
     transform: translateY(0);
   }
 }
+
+/* ── Save status pill ─────────────────────────────────────────────────────── */
+.page-save-bar {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 10000;
+  pointer-events: none;
+  background: var(--color-bg-elevated, #1e1e2e);
+  color: var(--color-text-primary, #cdd6f4);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  animation: page-save-bar-fadein 0.18s ease;
+}
+
+.page-save-bar-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: page-save-bar-pulse 1.2s ease-in-out infinite;
+}
+
+.page-save-bar-spin {
+  animation: page-save-bar-spin 0.9s linear infinite;
+}
+
+@keyframes page-save-bar-fadein {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes page-save-bar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes page-save-bar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

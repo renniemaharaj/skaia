@@ -2,6 +2,7 @@ import type { LandingSection } from "../types";
 import {
   EditableText,
   SectionToolbar,
+  ColorPickerButton,
   getSectionLayout,
   setSectionLayout,
   getSectionMargins,
@@ -20,8 +21,11 @@ interface Props {
 }
 
 export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+  const sectionBgColor = getSectionBgColor(section.config);
+  const ctaStyle = sectionBgColor ? { background: sectionBgColor } : undefined;
+
   return (
-    <section className="cta">
+    <section className="cta" style={ctaStyle}>
       {canEdit && (
         <SectionToolbar
           onDelete={() => onDelete(section.id)}
@@ -47,12 +51,17 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
               config: setSectionAnimation(section.config, a),
             })
           }
-          bgColor={getSectionBgColor(section.config)}
-          onBgColorChange={(c) =>
-            onUpdate({
-              ...section,
-              config: setSectionBgColor(section.config, c),
-            })
+          extra={
+            <ColorPickerButton
+              value={sectionBgColor}
+              onChange={(c: string) =>
+                onUpdate({
+                  ...section,
+                  config: setSectionBgColor(section.config, c),
+                })
+              }
+              title="Primary color"
+            />
           }
         />
       )}

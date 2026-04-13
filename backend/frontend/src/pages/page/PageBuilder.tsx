@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
 import { useAtomValue } from "jotai";
+import {
+  PageBuilderContext,
+  type SaveStatus,
+} from "../../components/landing/PageBuilderContext";
+import { SaveStatusBar } from "../../components/landing/SaveStatusBar";
 import type {
   LandingSection,
   LandingItem,
@@ -37,6 +42,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     updatePage,
     createPage,
   } = usePageData();
+  const [editingCount, setEditingCount] = useState(0);
+
   const {
     sections: landingSections,
     loading: landingLoading,
@@ -47,7 +54,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     createItem,
     updateItem,
     deleteItem,
-  } = useLandingData();
+  } = useLandingData(editingCount > 0);
 
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
@@ -104,7 +111,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         method: "PUT",
         body: JSON.stringify({ slug: selectedSlug }),
       });
-      await refresh();
       toast.success(
         selectedSlug
           ? `Landing page set to "${selectedSlug}"`
@@ -162,6 +168,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   useEffect(() => {
+    // Don't overwrite sections while there are unsaved pending changes —
+    // a live websocket event from another user would otherwise clobber
+    // the editor's in-progress work.
+    if (pendingSectionsRef.current !== null) return;
+
     if (slug && !page && error) {
       setSections([]);
       return;
@@ -189,7 +200,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     const handler = (e: Event) => {
       const action =
         (e as CustomEvent<{ action?: string }>).detail?.action ?? "";
-      if (action === "landing_page_updated" && !slug) {
+      // Suppress live page reloads while the user is actively editing — they
+      // would reset the editor and discard in-progress work.
+      if (
+        action === "landing_page_updated" &&
+        !slug &&
+        editingCountRef.current === 0
+      ) {
         refresh();
       }
     };
@@ -207,21 +224,137 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const sortSections = (secs: LandingSection[]) =>
     [...secs].sort((a, b) => a.display_order - b.display_order);
 
-  const savePageContent = async (updatedSections: LandingSection[]) => {
-    // If the page doesn't exist yet, create it with the initial content.
-    if (!pageRef.current || pageRef.current.id == null) {
-      await ensurePage(updatedSections);
-      return;
+  // ── Adaptive BBR save pipeline ─────────────────────────────────────────
+  // Changes are batched with an adaptive delay (800 ms base, grows by 200 ms
+  // per rapid successive change up to 3500 ms).  When any component signals
+  // edit mode (rich text, code editor, color picker) the timer is held and
+  // restarted 800 ms after the last editor is released.
+
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const editingCountRef = useRef(0);
+  const pendingSectionsRef = useRef<LandingSection[] | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const changeCountRef = useRef(0);
+  const lastChangeTimeRef = useRef(0);
+
+  const savePageContent = useCallback(
+    async (updatedSections: LandingSection[]) => {
+      if (!pageRef.current || pageRef.current.id == null) {
+        await ensurePage(updatedSections);
+        return;
+      }
+      const saved = await updatePage({
+        ...pageRef.current,
+        content: JSON.stringify(updatedSections),
+      });
+      if (saved) pageRef.current = saved;
+    },
+    [ensurePage, updatePage],
+  );
+
+  // Stable ref so timer callbacks always call the latest version.
+  const savePageContentRef = useRef(savePageContent);
+  useEffect(() => {
+    savePageContentRef.current = savePageContent;
+  }, [savePageContent]);
+
+  const runSave = useCallback(async () => {
+    const sections = pendingSectionsRef.current;
+    if (!sections) return;
+    pendingSectionsRef.current = null;
+    setSaveStatus("saving");
+    try {
+      await savePageContentRef.current(sections);
+      setSaveStatus("saved");
+      setTimeout(
+        () => setSaveStatus((s) => (s === "saved" ? "idle" : s)),
+        2000,
+      );
+    } catch {
+      setSaveStatus("error");
+      setTimeout(
+        () => setSaveStatus((s) => (s === "error" ? "idle" : s)),
+        3000,
+      );
     }
-    const saved = await updatePage({
-      ...pageRef.current,
-      content: JSON.stringify(updatedSections),
-    });
-    // Keep the ref in sync so subsequent saves don't use stale content.
-    if (saved) {
-      pageRef.current = saved;
+  }, []);
+
+  const enterEdit = useCallback(() => {
+    editingCountRef.current++;
+    setEditingCount((c) => c + 1);
+    // Cancel any pending timer — hold saves until editing stops.
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
     }
-  };
+  }, []);
+
+  const leaveEdit = useCallback(() => {
+    editingCountRef.current = Math.max(0, editingCountRef.current - 1);
+    setEditingCount((c) => Math.max(0, c - 1));
+    // Once the last editor is released, flush pending save after brief pause.
+    if (editingCountRef.current === 0 && pendingSectionsRef.current) {
+      saveTimerRef.current = setTimeout(() => void runSave(), 800);
+    }
+  }, [runSave]);
+
+  /** Schedule a debounced save with adaptive backoff for rapid-fire changes. */
+  const scheduleSave = useCallback(
+    (sections: LandingSection[]) => {
+      pendingSectionsRef.current = sections;
+      setSaveStatus("pending");
+      if (editingCountRef.current > 0) return; // hold while editing
+
+      const now = Date.now();
+      const rapid = now - lastChangeTimeRef.current < 1200;
+      lastChangeTimeRef.current = now;
+      changeCountRef.current = rapid
+        ? Math.min(changeCountRef.current + 1, 10)
+        : 0;
+      const delay = Math.min(800 + changeCountRef.current * 200, 3500);
+
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        changeCountRef.current = 0;
+        void runSave();
+      }, delay);
+    },
+    [runSave],
+  );
+
+  /** Immediate save for discrete structural actions (create / delete / move). */
+  const immediateSave = useCallback(async (sections: LandingSection[]) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    pendingSectionsRef.current = null;
+    setSaveStatus("saving");
+    try {
+      await savePageContentRef.current(sections);
+      setSaveStatus("saved");
+      setTimeout(
+        () => setSaveStatus((s) => (s === "saved" ? "idle" : s)),
+        2000,
+      );
+    } catch {
+      setSaveStatus("error");
+      setTimeout(
+        () => setSaveStatus((s) => (s === "error" ? "idle" : s)),
+        3000,
+      );
+    }
+  }, []);
+
+  // Flush any pending save when the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (pendingSectionsRef.current) {
+        void savePageContentRef.current(pendingSectionsRef.current);
+      }
+    };
+  }, []);
 
   const updateSectionWrapper = (s: LandingSection) => {
     if (isPageFallback) {
@@ -231,7 +364,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     const updated = sections.map((sec) => (sec.id === s.id ? s : sec));
     const ordered = sortSections(updated);
     setSections(ordered);
-    void savePageContent(ordered);
+    scheduleSave(ordered);
   };
 
   const createSectionWrapper = (s: Omit<LandingSection, "id">) => {
@@ -262,7 +395,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     }));
 
     setSections(normalized);
-    void savePageContent(normalized);
+    void immediateSave(normalized);
   };
 
   const deleteSectionWrapper = (id: number) => {
@@ -273,7 +406,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     const updated = sections.filter((section) => section.id !== id);
     const ordered = sortSections(updated);
     setSections(ordered);
-    void savePageContent(ordered);
+    void immediateSave(ordered);
   };
 
   const createItemWrapper = (
@@ -296,7 +429,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     });
     const ordered = sortSections(updated);
     setSections(ordered);
-    void savePageContent(ordered);
+    void immediateSave(ordered);
   };
 
   const updateItemWrapper = (item: LandingItem) => {
@@ -313,7 +446,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     });
     const ordered = sortSections(updated);
     setSections(ordered);
-    void savePageContent(ordered);
+    scheduleSave(ordered);
   };
 
   const deleteItemWrapper = (id: number) => {
@@ -330,7 +463,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     });
     const ordered = sortSections(updated);
     setSections(ordered);
-    void savePageContent(ordered);
+    void immediateSave(ordered);
   };
 
   const moveSectionWrapper = async (
@@ -358,7 +491,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       // so display_order is persisted in a single transaction.
       await reorderSections(normalized.map((s) => s.id));
     } else {
-      await savePageContent(normalized);
+      await immediateSave(normalized);
     }
   };
 
@@ -382,17 +515,146 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     );
   }
 
+  const contextValue = { editingCount, enterEdit, leaveEdit, saveStatus };
+
   if (isNewPage) {
     return (
-      <div className="landing-container">
-        <div style={{ textAlign: "center", padding: "3rem 1rem 1rem" }}>
-          <p style={{ opacity: 0.6 }}>
-            This page doesn&apos;t exist yet. Start building to create it.
-          </p>
+      <PageBuilderContext.Provider value={contextValue}>
+        <div className="landing-container">
+          <div style={{ textAlign: "center", padding: "3rem 1rem 1rem" }}>
+            <p style={{ opacity: 0.6 }}>
+              This page doesn&apos;t exist yet. Start building to create it.
+            </p>
+          </div>
+          <BlockRenderer
+            sections={[]}
+            canEdit
+            onUpdateSection={updateSectionWrapper}
+            onDeleteSection={deleteSectionWrapper}
+            onCreateSection={createSectionWrapper}
+            onCreateItem={createItemWrapper}
+            onUpdateItem={updateItemWrapper}
+            onDeleteItem={deleteItemWrapper}
+            onMoveSection={moveSectionWrapper}
+          />
+          <SaveStatusBar />
         </div>
+      </PageBuilderContext.Provider>
+    );
+  }
+
+  return (
+    <PageBuilderContext.Provider value={contextValue}>
+      <div className="landing-container">
+        {showToolbar && (
+          <div className="page-admin-bar">
+            {showOwnershipBtn && (
+              <button
+                type="button"
+                className={`page-admin-btn${showOwnership ? " active" : ""}`}
+                onClick={() => setShowOwnership((v) => !v)}
+                title="Manage page ownership"
+              >
+                <Users size={16} />
+                Manage
+              </button>
+            )}
+            {isAdmin && !slug && (
+              <div className="page-admin-dropdown-wrap">
+                <button
+                  type="button"
+                  className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
+                  onClick={() => setLandingDropdownOpen((v) => !v)}
+                  title="Set landing page"
+                >
+                  {landingPageLabel}
+                  <ChevronDown size={14} />
+                </button>
+                {landingDropdownOpen && (
+                  <div className="page-admin-dropdown">
+                    <button
+                      className="page-admin-dropdown-item"
+                      onClick={() => handleSetLandingPage("")}
+                    >
+                      Default (index)
+                    </button>
+                    {allPages.map((p) => (
+                      <button
+                        key={p.id}
+                        className="page-admin-dropdown-item"
+                        onClick={() => handleSetLandingPage(p.slug)}
+                      >
+                        {p.title || p.slug}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {isAdmin && !slug && (
+              <Link to="/admin/meta" className="page-admin-btn">
+                <Settings size={16} />
+                Site Meta
+              </Link>
+            )}
+            {!isEditable && (
+              <div
+                className={`guest-sandbox${guestSandboxEnabled ? " active" : ""}`}
+              >
+                <button
+                  type="button"
+                  className={`page-admin-btn guest-sandbox-btn${
+                    guestSandboxEnabled ? " active" : ""
+                  }`}
+                  onClick={() =>
+                    setGuestSandboxEnabled(
+                      (current: boolean) => !(current as boolean),
+                    )
+                  }
+                  title="Toggle guest sandbox mode"
+                >
+                  <Settings size={16} />
+                  Sandbox
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {showOwnership && showOwnershipBtn && (
+          <div className="page-admin-bar page-admin-bar--panel">
+            <PageOwnershipPanel
+              pageId={page.id}
+              owner={page.owner ?? null}
+              editors={page.editors ?? []}
+              onUpdate={() => refresh(slug)}
+            />
+          </div>
+        )}
+
+        {/* Engagement stats bar */}
+        {page?.id && (
+          <div className="page-engagement-bar">
+            <span className="page-engagement-stat">
+              <Eye size={14} /> {page.view_count ?? 0} views
+            </span>
+            <button
+              className={`page-engagement-like${pageIsLiked ? " liked" : ""}`}
+              onClick={handleLikePage}
+              disabled={!isAuthenticated}
+              title={isAuthenticated ? "Like this page" : "Sign in to like"}
+            >
+              <ThumbsUp size={14} />
+              {pageLikes > 0 && <span>{pageLikes}</span>}
+            </button>
+            <span className="page-engagement-stat">
+              {page.comment_count ?? 0} comments
+            </span>
+          </div>
+        )}
+
         <BlockRenderer
-          sections={[]}
-          canEdit
+          sections={sections}
+          canEdit={canEdit}
           onUpdateSection={updateSectionWrapper}
           onDeleteSection={deleteSectionWrapper}
           onCreateSection={createSectionWrapper}
@@ -401,134 +663,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           onDeleteItem={deleteItemWrapper}
           onMoveSection={moveSectionWrapper}
         />
+
+        {/* Comments section */}
+        {page?.id && page?.slug && (
+          <PageComments pageId={page.id} pageSlug={page.slug} />
+        )}
+        <SaveStatusBar />
       </div>
-    );
-  }
-
-  return (
-    <div className="landing-container">
-      {showToolbar && (
-        <div className="page-admin-bar">
-          {showOwnershipBtn && (
-            <button
-              type="button"
-              className={`page-admin-btn${showOwnership ? " active" : ""}`}
-              onClick={() => setShowOwnership((v) => !v)}
-              title="Manage page ownership"
-            >
-              <Users size={16} />
-              Manage
-            </button>
-          )}
-          {isAdmin && !slug && (
-            <div className="page-admin-dropdown-wrap">
-              <button
-                type="button"
-                className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
-                onClick={() => setLandingDropdownOpen((v) => !v)}
-                title="Set landing page"
-              >
-                {landingPageLabel}
-                <ChevronDown size={14} />
-              </button>
-              {landingDropdownOpen && (
-                <div className="page-admin-dropdown">
-                  <button
-                    className="page-admin-dropdown-item"
-                    onClick={() => handleSetLandingPage("")}
-                  >
-                    Default (index)
-                  </button>
-                  {allPages.map((p) => (
-                    <button
-                      key={p.id}
-                      className="page-admin-dropdown-item"
-                      onClick={() => handleSetLandingPage(p.slug)}
-                    >
-                      {p.title || p.slug}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          {isAdmin && !slug && (
-            <Link to="/admin/meta" className="page-admin-btn">
-              <Settings size={16} />
-              Site Meta
-            </Link>
-          )}
-          {!isEditable && (
-            <div
-              className={`guest-sandbox${guestSandboxEnabled ? " active" : ""}`}
-            >
-              <button
-                type="button"
-                className={`page-admin-btn guest-sandbox-btn${
-                  guestSandboxEnabled ? " active" : ""
-                }`}
-                onClick={() =>
-                  setGuestSandboxEnabled(
-                    (current: boolean) => !(current as boolean),
-                  )
-                }
-                title="Toggle guest sandbox mode"
-              >
-                <Settings size={16} />
-                Sandbox
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {showOwnership && showOwnershipBtn && (
-        <div className="page-admin-bar page-admin-bar--panel">
-          <PageOwnershipPanel
-            pageId={page.id}
-            owner={page.owner ?? null}
-            editors={page.editors ?? []}
-            onUpdate={() => refresh(slug)}
-          />
-        </div>
-      )}
-
-      {/* Engagement stats bar */}
-      {page?.id && (
-        <div className="page-engagement-bar">
-          <span className="page-engagement-stat">
-            <Eye size={14} /> {page.view_count ?? 0} views
-          </span>
-          <button
-            className={`page-engagement-like${pageIsLiked ? " liked" : ""}`}
-            onClick={handleLikePage}
-            disabled={!isAuthenticated}
-            title={isAuthenticated ? "Like this page" : "Sign in to like"}
-          >
-            <ThumbsUp size={14} />
-            {pageLikes > 0 && <span>{pageLikes}</span>}
-          </button>
-          <span className="page-engagement-stat">
-            {page.comment_count ?? 0} comments
-          </span>
-        </div>
-      )}
-
-      <BlockRenderer
-        sections={sections}
-        canEdit={canEdit}
-        onUpdateSection={updateSectionWrapper}
-        onDeleteSection={deleteSectionWrapper}
-        onCreateSection={createSectionWrapper}
-        onCreateItem={createItemWrapper}
-        onUpdateItem={updateItemWrapper}
-        onDeleteItem={deleteItemWrapper}
-        onMoveSection={moveSectionWrapper}
-      />
-
-      {/* Comments section */}
-      {page?.id && page?.slug && (
-        <PageComments pageId={page.id} pageSlug={page.slug} />
-      )}
-    </div>
+    </PageBuilderContext.Provider>
   );
 }

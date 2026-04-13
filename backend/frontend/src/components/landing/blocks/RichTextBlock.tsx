@@ -1,5 +1,6 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import type { LandingSection } from "../types";
+import { usePageBuilderContext } from "../PageBuilderContext";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -40,11 +41,29 @@ export const RichTextBlock = ({
   onUpdate,
   onDelete,
 }: Props) => {
-  const content = getContent(section.config);
-  const layout = getSectionLayout(section.config);
   const [editing, setEditing] = useState(false);
+  const { enterEdit, leaveEdit } = usePageBuilderContext();
+  // Hold saves in PageBuilder while this editor is active.
+  useEffect(() => {
+    if (!editing) return;
+    enterEdit();
+    return () => leaveEdit();
+    // enterEdit/leaveEdit are stable useCallback refs — safe to omit from deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing]);
+  // Derive content from props only when not editing; local state insulates the
+  // editor from parent re-renders (e.g. color slider on another block).
+  const [localContent, setLocalContent] = useState(() =>
+    getContent(section.config),
+  );
+  useEffect(() => {
+    if (!editing) setLocalContent(getContent(section.config));
+  }, [section.config, editing]);
+
+  const layout = getSectionLayout(section.config);
 
   const saveContent = (html: string) => {
+    setLocalContent(html);
     const c = JSON.parse(section.config || "{}");
     onUpdate({ ...section, config: JSON.stringify({ ...c, content: html }) });
   };
@@ -100,11 +119,11 @@ export const RichTextBlock = ({
       >
         {canEdit && editing ? (
           <div className="richtext-block-editor">
-            <Editor value={content} onChange={saveContent} />
+            <Editor value={localContent} onChange={saveContent} />
           </div>
-        ) : content ? (
+        ) : localContent ? (
           <div className="richtext-block-viewer">
-            <ViewThread content={content} />
+            <ViewThread content={localContent} />
           </div>
         ) : canEdit ? (
           <div

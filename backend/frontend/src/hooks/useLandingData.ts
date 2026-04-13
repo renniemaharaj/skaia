@@ -20,7 +20,9 @@ interface UseLandingDataReturn {
   deleteItem: (id: number) => Promise<void>;
 }
 
-export function useLandingData(): UseLandingDataReturn {
+export function useLandingData(
+  suppressLiveRefresh = false,
+): UseLandingDataReturn {
   const [sections, setSections] = useState<LandingSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,11 +51,12 @@ export function useLandingData(): UseLandingDataReturn {
     const handler = (e: Event) => {
       const action =
         (e as CustomEvent<{ action?: string }>).detail?.action ?? "";
+      if (suppressLiveRefresh) return;
       if (action.startsWith("landing_")) fetchSections();
     };
     window.addEventListener("config:live:event", handler);
     return () => window.removeEventListener("config:live:event", handler);
-  }, [fetchSections]);
+  }, [fetchSections, suppressLiveRefresh]);
 
   const updateSection = useCallback(async (s: LandingSection) => {
     try {

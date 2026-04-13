@@ -18,6 +18,8 @@ import {
   Check,
 } from "lucide-react";
 import { useRef, useContext, useEffect, useState, createContext } from "react";
+import { debounce } from "lodash";
+import { usePageBuilderContext } from "./PageBuilderContext";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 
@@ -716,6 +718,15 @@ export const ColorPickerButton = ({
   title?: string;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [localValue, setLocalValue] = useState(value);
+  const isActiveRef = useRef(false);
+  const debouncedOnChange = useRef(debounce((c: string) => onChange(c), 150));
+  const { enterEdit, leaveEdit } = usePageBuilderContext();
+
+  // Keep the swatch in sync with external prop when not actively picking
+  useEffect(() => {
+    if (!isActiveRef.current) setLocalValue(value);
+  }, [value]);
 
   return (
     <button
@@ -730,13 +741,25 @@ export const ColorPickerButton = ({
       <Palette size={14} />
       <span
         className="landing-color-swatch"
-        style={{ backgroundColor: value || "rgba(0,0,0,0.5)" }}
+        style={{ backgroundColor: localValue || "rgba(0,0,0,0.5)" }}
       />
       <input
         ref={inputRef}
         type="color"
-        value={value || "#000000"}
-        onChange={(e) => onChange(e.target.value)}
+        value={localValue || "#000000"}
+        onFocus={() => {
+          isActiveRef.current = true;
+          enterEdit();
+        }}
+        onBlur={() => {
+          isActiveRef.current = false;
+          debouncedOnChange.current.flush();
+          leaveEdit();
+        }}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          debouncedOnChange.current(e.target.value);
+        }}
         style={{
           position: "absolute",
           opacity: 0,
