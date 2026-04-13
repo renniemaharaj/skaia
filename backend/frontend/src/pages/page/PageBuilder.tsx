@@ -98,6 +98,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         method: "PUT",
         body: JSON.stringify({ slug: selectedSlug }),
       });
+      await refresh();
       toast.success(
         selectedSlug
           ? `Landing page set to "${selectedSlug}"`
@@ -178,10 +179,24 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     refresh(slug);
   }, [refresh, slug]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const action =
+        (e as CustomEvent<{ action?: string }>).detail?.action ?? "";
+      if (action === "landing_page_updated" && !slug) {
+        refresh();
+      }
+    };
+    window.addEventListener("config:live:event", handler);
+    return () => window.removeEventListener("config:live:event", handler);
+  }, [refresh, slug]);
+
   // Only fall back to the per-section landing API when we're on the index
-  // page and no page entity exists for it yet.  Custom-page slugs always use
-  // the page-content JSON approach (ensurePage will auto-create if needed).
-  const isPageFallback = (!page || !!error) && !slug;
+  // page and no page entity exists for it yet, or the index page has no
+  // page content. Custom-page slugs always use the page-content JSON approach
+  // (ensurePage will auto-create if needed).
+  const isPageFallback =
+    (!page || !!error || (!slug && !page?.content)) && !slug;
 
   const sortSections = (secs: LandingSection[]) =>
     [...secs].sort((a, b) => a.display_order - b.display_order);

@@ -25,12 +25,15 @@ func (r *sqlRepository) GetConfig(key string) (*models.SiteConfig, error) {
 }
 
 func (r *sqlRepository) UpsertConfig(key, valueJSON string) error {
-	_, err := r.db.Exec(
-		`INSERT INTO site_config (key, value, updated_at)
+	query := `INSERT INTO site_config (key, value, updated_at)
 		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
-		 ON CONFLICT (key) DO UPDATE SET value = site_config.value || $2::jsonb, updated_at=CURRENT_TIMESTAMP`,
-		key, valueJSON,
-	)
+		 ON CONFLICT (key) DO UPDATE SET value = site_config.value || $2::jsonb, updated_at=CURRENT_TIMESTAMP`
+	if key == "landing_page_slug" {
+		query = `INSERT INTO site_config (key, value, updated_at)
+		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
+		 ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at=CURRENT_TIMESTAMP`
+	}
+	_, err := r.db.Exec(query, key, valueJSON)
 	return err
 }
 
