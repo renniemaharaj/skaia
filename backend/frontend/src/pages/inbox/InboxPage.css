@@ -328,11 +328,32 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  text-decoration: none;
-  color: var(--text-primary);
   width: 100%;
   min-width: 0;
   margin-top: 2px;
+}
+
+.inbox-chat-user-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+  /* width: 100%; */
+  min-width: 0;
+}
+
+.inbox-block-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(91, 158, 142, 0.08);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1;
+  margin-left: auto;
 }
 
 .inbox-chat-avatar {
@@ -620,13 +641,13 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 180px;
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 190px;
   z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
 }
 
 .inbox-chat-menu button {
@@ -642,8 +663,12 @@
   border-radius: 4px;
   font-size: 0.85rem;
 }
-.inbox-chat-menu button:hover {
+.inbox-chat-menu button:hover:not(:disabled) {
   background: var(--bg-tertiary);
+}
+.inbox-chat-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Input toolbar (emoji, file upload) ───── */
@@ -674,6 +699,17 @@
 
 .inbox-file-input {
   display: none;
+}
+
+.inbox-block-banner {
+  margin: 0 16px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  line-height: 1.4;
 }
 
 .inbox-emoji-picker {

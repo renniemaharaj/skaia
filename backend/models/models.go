@@ -254,9 +254,11 @@ type InboxConversation struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	// Enriched fields resolved at the service layer
-	OtherUser   *User         `json:"other_user,omitempty"`
-	LastMessage *InboxMessage `json:"last_message,omitempty"`
-	UnreadCount int           `json:"unread_count,omitempty"`
+	OtherUser            *User         `json:"other_user,omitempty"`
+	LastMessage          *InboxMessage `json:"last_message,omitempty"`
+	UnreadCount          int           `json:"unread_count,omitempty"`
+	BlockedByCurrentUser bool          `json:"blocked_by_current_user,omitempty"`
+	BlockedByOtherUser   bool          `json:"blocked_by_other_user,omitempty"`
 }
 
 // InboxMessage is a single message in a private conversation.

@@ -54,6 +54,9 @@ func (s *Service) GetOrStartConversation(user1ID, user2ID int64) (*models.InboxC
 	if u, err := s.userSvc.GetByID(otherID); err == nil {
 		conv.OtherUser = u
 	}
+	if err := s.populateBlockState(conv, user1ID); err == nil {
+		return conv, nil
+	}
 	return conv, nil
 }
 
@@ -71,6 +74,7 @@ func (s *Service) GetConversation(id, callerID int64) (*models.InboxConversation
 	if c.User1ID != callerID && c.User2ID != callerID {
 		return nil, errForbidden
 	}
+	_ = s.populateBlockState(c, callerID)
 	return c, nil
 }
 
@@ -100,6 +104,7 @@ func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, 
 		if count, err := s.repo.UnreadCount(c.ID, userID); err == nil {
 			c.UnreadCount = count
 		}
+		_ = s.populateBlockState(c, userID)
 	}
 	return convs, nil
 }
@@ -206,6 +211,24 @@ func (s *Service) DeleteConversation(conversationID, callerID int64) error {
 		return errForbidden
 	}
 	return s.repo.DeleteConversation(conversationID)
+}
+
+func (s *Service) populateBlockState(c *models.InboxConversation, callerID int64) error {
+	otherID := c.User2ID
+	if c.User1ID != callerID {
+		otherID = c.User1ID
+	}
+	blockedByCurrentUser, err := s.repo.IsBlocked(callerID, otherID)
+	if err != nil {
+		return err
+	}
+	blockedByOtherUser, err := s.repo.IsBlocked(otherID, callerID)
+	if err != nil {
+		return err
+	}
+	c.BlockedByCurrentUser = blockedByCurrentUser
+	c.BlockedByOtherUser = blockedByOtherUser
+	return nil
 }
 
 // BlockUser blocks a user and returns an error if already blocked.

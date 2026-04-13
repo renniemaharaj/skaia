@@ -13,6 +13,7 @@ import {
   Ban,
   MoreVertical,
   FileIcon,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import Picker from "@emoji-mart/react";
@@ -392,6 +393,9 @@ const InboxPage = () => {
   }, [loadMoreUsers]);
 
   const activeConv = conversations.find((c) => c.id === activeId);
+  const blockedByCurrentUser = activeConv?.blocked_by_current_user ?? false;
+  const blockedByOtherUser = activeConv?.blocked_by_other_user ?? false;
+  const isBlocked = blockedByCurrentUser || blockedByOtherUser;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -485,8 +489,42 @@ const InboxPage = () => {
     try {
       await apiRequest(`/inbox/block/${otherUserId}`, { method: "POST" });
       toast.success("User blocked");
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeId
+            ? {
+                ...c,
+                blocked_by_current_user: true,
+                blocked_by_other_user: false,
+              }
+            : c,
+        ),
+      );
     } catch {
       toast.error("Failed to block user");
+    }
+    setShowChatMenu(false);
+  };
+
+  const handleUnblockUser = async () => {
+    const otherUserId = activeConv?.other_user?.id;
+    if (!otherUserId) return;
+    if (
+      !confirm(
+        `Unblock ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
+      )
+    )
+      return;
+    try {
+      await apiRequest(`/inbox/block/${otherUserId}`, { method: "DELETE" });
+      toast.success("User unblocked");
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeId ? { ...c, blocked_by_current_user: false } : c,
+        ),
+      );
+    } catch {
+      toast.error("Failed to unblock user");
     }
     setShowChatMenu(false);
   };
@@ -679,22 +717,32 @@ const InboxPage = () => {
                   </button>
                 )}
                 {activeConv?.other_user ? (
-                  <Link
-                    to={`/users/${activeConv.other_user.id}`}
-                    className="inbox-chat-user"
-                  >
-                    <span className="inbox-chat-avatar">
-                      {activeConv.other_user.avatar_url ? (
-                        <img src={activeConv.other_user.avatar_url} alt="" />
-                      ) : (
-                        <UserCog2Icon size={18} />
-                      )}
-                    </span>
-                    <span className="inbox-chat-username">
-                      {activeConv.other_user.display_name ||
-                        activeConv.other_user.username}
-                    </span>
-                  </Link>
+                  <div className="inbox-chat-user">
+                    <Link
+                      to={`/users/${activeConv.other_user.id}`}
+                      className="inbox-chat-user-link"
+                    >
+                      <span className="inbox-chat-avatar">
+                        {activeConv.other_user.avatar_url ? (
+                          <img src={activeConv.other_user.avatar_url} alt="" />
+                        ) : (
+                          <UserCog2Icon size={18} />
+                        )}
+                      </span>
+                      <span className="inbox-chat-username">
+                        {activeConv.other_user.display_name ||
+                          activeConv.other_user.username}
+                      </span>
+                    </Link>
+                    {isBlocked && (
+                      <span className="inbox-block-status">
+                        <Info size={14} />
+                        {blockedByCurrentUser
+                          ? "You blocked this user"
+                          : "Blocked by user"}
+                      </span>
+                    )}
+                  </div>
                 ) : (
                   <span className="inbox-chat-username">Conversation</span>
                 )}
@@ -711,14 +759,23 @@ const InboxPage = () => {
                       <button onClick={handleDeleteConversation}>
                         <Trash2 size={14} /> Delete conversation
                       </button>
-                      <button onClick={handleBlockUser}>
-                        <Ban size={14} /> Block user
-                      </button>
+                      {blockedByCurrentUser ? (
+                        <button onClick={handleUnblockUser}>
+                          <Ban size={14} /> Unblock user
+                        </button>
+                      ) : blockedByOtherUser ? (
+                        <button disabled>
+                          <Ban size={14} /> Blocked by user
+                        </button>
+                      ) : (
+                        <button onClick={handleBlockUser}>
+                          <Ban size={14} /> Block user
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-
               {/* Messages */}
               <div className="inbox-feed" ref={feedRef} onScroll={handleScroll}>
                 {loadingMsgs && (
@@ -825,6 +882,7 @@ const InboxPage = () => {
                     onClick={() => setShowEmojiPicker((v) => !v)}
                     title="Emoji"
                     type="button"
+                    disabled={isBlocked}
                   >
                     <Smile size={18} />
                   </button>
@@ -833,7 +891,7 @@ const InboxPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach file"
                     type="button"
-                    disabled={uploadingFile}
+                    disabled={uploadingFile || isBlocked}
                   >
                     <Paperclip size={18} />
                   </button>

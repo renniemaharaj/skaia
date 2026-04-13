@@ -31,6 +31,8 @@ export interface InboxConversation {
   };
   last_message?: InboxMessage;
   unread_count: number;
+  blocked_by_current_user?: boolean;
+  blocked_by_other_user?: boolean;
 }
 
 /** All conversations for the current user. */
