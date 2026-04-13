@@ -15,8 +15,9 @@ import {
   AlignCenter,
   AlignRight,
   Maximize2,
+  Check,
 } from "lucide-react";
-import { useRef, useContext, useState, createContext } from "react";
+import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 
@@ -209,50 +210,108 @@ export const SectionSpacingControls = ({
 }: {
   margins: SectionMargins;
   onChange: (m: Partial<SectionMargins>) => void;
-}) => (
-  <div className="section-spacing-controls">
-    <label>T</label>
-    <input
-      type="number"
-      value={margins.marginTop}
-      onChange={(e) => onChange({ marginTop: Number(e.target.value) })}
-      title="Margin top (px)"
-      min={0}
-      max={200}
-      step={4}
-    />
-    <label>B</label>
-    <input
-      type="number"
-      value={margins.marginBottom}
-      onChange={(e) => onChange({ marginBottom: Number(e.target.value) })}
-      title="Margin bottom (px)"
-      min={0}
-      max={200}
-      step={4}
-    />
-    <label>L</label>
-    <input
-      type="number"
-      value={margins.paddingLeft}
-      onChange={(e) => onChange({ paddingLeft: Number(e.target.value) })}
-      title="Padding left (px)"
-      min={0}
-      max={200}
-      step={4}
-    />
-    <label>R</label>
-    <input
-      type="number"
-      value={margins.paddingRight}
-      onChange={(e) => onChange({ paddingRight: Number(e.target.value) })}
-      title="Padding right (px)"
-      min={0}
-      max={200}
-      step={4}
-    />
-  </div>
-);
+}) => {
+  const [draftMargins, setDraftMargins] = useState<SectionMargins>(margins);
+
+  useEffect(() => {
+    setDraftMargins(margins);
+  }, [margins]);
+
+  const changed =
+    draftMargins.marginTop !== margins.marginTop ||
+    draftMargins.marginBottom !== margins.marginBottom ||
+    draftMargins.paddingLeft !== margins.paddingLeft ||
+    draftMargins.paddingRight !== margins.paddingRight;
+
+  return (
+    <div className="section-spacing-capture">
+      <div className="section-spacing-group">
+        <span className="section-spacing-pair">
+          <label>T</label>
+          <input
+            type="number"
+            value={draftMargins.marginTop}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginTop: Number(e.target.value),
+              }))
+            }
+            title="Margin top (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+        <span className="section-spacing-pair">
+          <label>B</label>
+          <input
+            type="number"
+            value={draftMargins.marginBottom}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginBottom: Number(e.target.value),
+              }))
+            }
+            title="Margin bottom (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+      </div>
+      <div className="section-spacing-group">
+        <span className="section-spacing-pair">
+          <label>L</label>
+          <input
+            type="number"
+            value={draftMargins.paddingLeft}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                paddingLeft: Number(e.target.value),
+              }))
+            }
+            title="Padding left (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+        <span className="section-spacing-pair">
+          <label>R</label>
+          <input
+            type="number"
+            value={draftMargins.paddingRight}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                paddingRight: Number(e.target.value),
+              }))
+            }
+            title="Padding right (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+      </div>
+      <button
+        type="button"
+        className={`landing-action-btn section-spacing-capture-btn${
+          changed ? " dirty" : ""
+        }`}
+        onClick={() => onChange(draftMargins)}
+        disabled={!changed}
+        title="Apply spacing"
+        aria-label="Apply spacing"
+      >
+        <Check size={13} />
+      </button>
+    </div>
+  );
+};
 
 /** Animation style selector for sections. */
 export const SectionAnimationControl = ({

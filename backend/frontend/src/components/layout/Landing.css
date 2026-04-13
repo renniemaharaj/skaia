@@ -2317,28 +2317,92 @@
 
 /* ── Section margins & spacing controls ──────────────────────────────────── */
 
-.section-spacing-controls {
-  display: flex;
+.section-spacing-capture {
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-right: 6px;
+  gap: 3px;
 }
 
-.section-spacing-controls label {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.section-spacing-controls select,
-.section-spacing-controls input[type="number"] {
-  width: 56px;
-  padding: 2px 4px;
-  font-size: 0.7rem;
+/* Each TB / LR pill-group */
+.section-spacing-group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 22px;
+  background: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  background: var(--bg-color);
+  overflow: hidden;
+}
+
+/* Each label+input pair inside a group */
+.section-spacing-pair {
+  display: inline-flex;
+  align-items: center;
+}
+
+.section-spacing-pair + .section-spacing-pair {
+  border-left: 1px solid var(--border-color);
+}
+
+.section-spacing-pair label {
+  padding: 0 3px 0 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: default;
+}
+
+.section-spacing-pair input[type="number"] {
+  width: 36px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  border: none;
+  background: transparent !important;
+  background-color: transparent !important;
   color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  text-align: center;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.section-spacing-pair input[type="number"]::-webkit-inner-spin-button,
+.section-spacing-pair input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: auto;
+  height: auto;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.section-spacing-pair input[type="number"]:focus {
+  background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-color));
+}
+
+/* States for the sync button — inherits landing-action-btn base */
+.section-spacing-capture-btn.dirty {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.section-spacing-capture-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 /* ── Section animation selector ──────────────────────────────────────────── */

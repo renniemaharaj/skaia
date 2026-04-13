@@ -399,13 +399,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               Manage
             </button>
           )}
-          {isAdmin && showOwnershipBtn && (
+          {isAdmin && !slug && (
             <div className="page-admin-dropdown-wrap">
               <button
                 type="button"
                 className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
                 onClick={() => setLandingDropdownOpen((v) => !v)}
-                title="Set as landing page"
+                title="Set landing page"
               >
                 Landing Page
                 <ChevronDown size={14} />
