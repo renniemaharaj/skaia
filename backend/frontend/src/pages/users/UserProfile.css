@@ -199,6 +199,7 @@
     opacity 0.15s,
     transform 0.1s;
 }
+
 .up-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -297,7 +298,8 @@
 
 .up-checkbox-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -330,15 +332,16 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--text-primary, #1a1a1a);
-  flex: 1;
+  flex: 1 1 100%;
+  min-width: 0;
 }
 .up-checkbox-desc {
   font-size: 11px;
   color: var(--text-secondary, #999);
-  max-width: 200px;
+  max-width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 /* ── Threads section ──────────────────────────────────────────────────────── */
@@ -946,5 +949,12 @@
   .up-actions {
     flex-direction: row;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .up-btn {
+    flex: 1 1 160px;
+    min-width: 0;
+    white-space: normal;
   }
 }
