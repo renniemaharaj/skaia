@@ -75,6 +75,14 @@ const UserUploads = ({ userId, displayName }: Props) => {
     fetchUploads();
   }, [fetchUploads]);
 
+  useEffect(() => {
+    const handler = () => {
+      fetchUploads();
+    };
+    window.addEventListener("user:uploads:changed", handler);
+    return () => window.removeEventListener("user:uploads:changed", handler);
+  }, [fetchUploads]);
+
   // Fetch storage info.
   const fetchStorage = useCallback(async () => {
     if (!userId) return;

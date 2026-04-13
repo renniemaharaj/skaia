@@ -45,6 +45,16 @@ export function useLandingData(): UseLandingDataReturn {
     fetchSections();
   }, [fetchSections]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const action =
+        (e as CustomEvent<{ action?: string }>).detail?.action ?? "";
+      if (action.startsWith("landing_")) fetchSections();
+    };
+    window.addEventListener("config:live:event", handler);
+    return () => window.removeEventListener("config:live:event", handler);
+  }, [fetchSections]);
+
   const updateSection = useCallback(async (s: LandingSection) => {
     try {
       await apiRequest(`/config/landing/sections/${s.id}`, {

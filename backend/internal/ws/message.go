@@ -10,25 +10,30 @@ import (
 type MessageType string
 
 const (
-	StoreSync         MessageType = "store:sync"
-	StoreUpdate       MessageType = "store:update"
-	ForumSync         MessageType = "forum:sync"
-	ForumUpdate       MessageType = "forum:update"
-	UserUpdate        MessageType = "user:update"
-	UserJoin          MessageType = "user:join"
-	UserLeave         MessageType = "user:leave"
-	Subscribe         MessageType = "subscribe"
-	Unsubscribe       MessageType = "unsubscribe"
-	Ping              MessageType = "ping"
-	Presence          MessageType = "presence"            // client → server: announce route
-	PresenceSync      MessageType = "presence:update"     // server → client: online list
-	Tp                MessageType = "tp"                  // client → server → target: teleport request
-	GlobalChat        MessageType = "global:chat"         // bidirectional: send / receive global chat
-	GlobalChatHistory MessageType = "global:chat:history" // server → client on connect: recent history
-	InboxUpdate       MessageType = "inbox:update"        // server → subscribed clients: conversation changed
-	InboxMsg          MessageType = "inbox:message"       // server → recipient: unread badge ping
-	NotificationMsg   MessageType = "notification"        // server → client: user notification
-	Cursor            MessageType = "cursor:update"       // client → server → same-route clients: cursor position
+	StoreSync          MessageType = "store:sync"
+	StoreUpdate        MessageType = "store:update"
+	ForumSync          MessageType = "forum:sync"
+	ForumUpdate        MessageType = "forum:update"
+	UserUpdate         MessageType = "user:update"
+	UserJoin           MessageType = "user:join"
+	UserLeave          MessageType = "user:leave"
+	Subscribe          MessageType = "subscribe"
+	Unsubscribe        MessageType = "unsubscribe"
+	Ping               MessageType = "ping"
+	Presence           MessageType = "presence"            // client → server: announce route
+	PresenceSync       MessageType = "presence:update"     // server → client: online list
+	Tp                 MessageType = "tp"                  // client → server → target: teleport request
+	GlobalChat         MessageType = "global:chat"         // bidirectional: send / receive global chat
+	GlobalChatHistory  MessageType = "global:chat:history" // server → client on connect: recent history
+	InboxUpdate        MessageType = "inbox:update"        // server → subscribed clients: conversation changed
+	InboxMsg           MessageType = "inbox:message"       // server → recipient: unread badge ping
+	NotificationMsg    MessageType = "notification"        // server → client: incoming user notification
+	NotificationUpdate MessageType = "notification:update" // server → client: notification read/deleted
+	NotificationSync   MessageType = "notification:sync"   // server → client on connect: notification bootstrap
+	CartUpdate         MessageType = "cart:update"         // server → client: user's cart changed
+	ConfigUpdate       MessageType = "config:update"       // server → all: branding/seo/footer/landing changed
+	PageUpdate         MessageType = "page:update"         // server → all: CMS page created/updated/deleted
+	Cursor             MessageType = "cursor:update"       // client → server → same-route clients: cursor position
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.

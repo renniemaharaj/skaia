@@ -1,7 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
+import {
+  currentUserAtom,
+  isAuthenticatedAtom,
+  socketAtom,
+} from "../../atoms/auth";
 import { forumCategoriesAtom } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
@@ -73,6 +77,18 @@ export const Forum: React.FC<ForumProps> = () => {
   useEffect(() => {
     loadForums();
   }, [loadForums]);
+
+  // Re-fetch on WS reconnect so stale category state is cleared after a
+  // server restart or sleep/wake cycle (same guard pattern as Store.tsx).
+  const socket = useAtomValue(socketAtom);
+  const socketMounted = useRef(false);
+  useEffect(() => {
+    if (!socketMounted.current) {
+      socketMounted.current = true;
+      return;
+    }
+    if (socket) loadForums();
+  }, [socket, loadForums]);
 
   const handleDeleteCategory = async (categoryId: string) => {
     try {

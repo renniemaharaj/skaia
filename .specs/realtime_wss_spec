@@ -1,0 +1,399 @@
+# Real-Time WebSocket Specification
+
+## Overview
+
+All mutable UI data in Skaia flows through a single, unified real-time model:
+**subscribe → receive push → update atom → render**.
+
+A single singleton WebSocket connection is opened per browser context on app
+load (established inside `useWebSocketSync`). The connection authenticates via
+`?token=<JWT>` in the URL query string and is automatically reconnected with
+exponential backoff (3 s fixed). All subscriptions are tracked in a module-level
+`Set` and replayed verbatim on every reconnect.
+
+The principle: **no data point the UI depends on should require a manual page
+refresh or a polling timer.** Every domain resource has a WebSocket projection
+that covers its full lifecycle: created → updated → deleted.
+
+---
+
+## Delivery Modes
+
+There are three distinct delivery strategies, selected per event by the backend:
+
+### 1. Resource Subscription (targeted, opt-in)
+
+The client explicitly subscribes to a named resource key. The backend maintains
+a reverse index `key → []Client`. Events are only delivered to subscribed
+clients. Subscriptions are sent immediately on resource load and replayed on
+reconnect.
+
+```
+client → server:  { type: "subscribe",   payload: { resource_type: "thread", resource_id: 42 } }
+client → server:  { type: "unsubscribe", payload: { resource_type: "thread", resource_id: 42 } }
+server → client:  { type: "forum:update", payload: { action: "thread_updated", id: 42, data: {...} } }
+```
+
+**Subscribe on mount, unsubscribe on unmount.** Resource subscriptions are the
+correct pattern for any entity the user is actively viewing (thread, category,
+conversation, user profile, store product, page).
+
+### 2. Broadcast (server-initiated, all clients)
+
+The server calls `hub.Broadcast(msg)` which fans out to every connected client
+regardless of subscriptions. Used for catalog-level changes that affect all
+users.
+
+Used by: store catalog (products + categories created/updated/deleted), forum
+category creation/deletion as a fallback, site config changes, CMS page
+mutations that affect public-facing content.
+
+### 3. Direct Push (server-initiated, targeted by user ID)
+
+The server calls `hub.SendToUser(userID, msg)` (or `hub.PropagateUser` which
+keys on `user:{userID}` subscriptions). Reaches all concurrent sessions for
+that user without any subscription from the client. Used for events that are
+private to a single user.
+
+Used by: notifications, inbox badge, purchase outcomes, permission changes,
+cart sync.
+
+---
+
+## Resource Key Taxonomy
+
+Every subscribable resource has a canonical key format: `<resource_type>:<id>`.
+
+| Resource type        | Example key            | Domain                             |
+| -------------------- | ---------------------- | ---------------------------------- |
+| `forum_category`     | `forum_category:5`     | Forum — category list + threads    |
+| `thread`             | `thread:42`            | Forum — single thread + comments   |
+| `user`               | `user:17`              | User profile (viewed by others)    |
+| `inbox_conversation` | `inbox_conversation:3` | Inbox — messages in a conversation |
+| `store_product`      | `store_product:8`      | Store — single product detail      |
+| `store_category`     | `store_category:2`     | Store — per-category updates       |
+| `page`               | `page:slug`            | CMS — custom page content          |
+
+Resources that use broadcast (no subscription required):
+
+| Scope           | Events included                                                         |
+| --------------- | ----------------------------------------------------------------------- |
+| Store catalog   | `product_created`, `product_updated`, `product_deleted`                 |
+|                 | `category_created`, `category_updated`, `category_deleted`              |
+| Site config     | `branding_updated`, `seo_updated`, `footer_updated`, `features_updated` |
+| CMS pages       | `page_created`, `page_updated`, `page_deleted`                          |
+| Forum broadcast | `thread_created`, `thread_deleted` (live feed fallback path)            |
+
+Resources that use direct push (server → user, no subscription):
+
+| Message type                        | Trigger                                |
+| ----------------------------------- | -------------------------------------- |
+| `notification`                      | Any notification event for this user   |
+| `inbox:message`                     | New DM received (badge + sidebar ping) |
+| `store:update` (cart actions)       | `cart_updated` after any cart mutation |
+| `user:update` (permissions_changed) | JWT + role/permission refresh          |
+
+---
+
+## Full Message Type Registry
+
+All messages are JSON frames:
+`{ type: string, payload: string (JSON-encoded) }`
+
+### Client → Server
+
+| `type`          | Payload fields                 | Purpose                       |
+| --------------- | ------------------------------ | ----------------------------- |
+| `subscribe`     | `resource_type`, `resource_id` | Subscribe to resource key     |
+| `unsubscribe`   | `resource_type`, `resource_id` | Unsubscribe from resource key |
+| `ping`          | —                              | Heartbeat keepalive (30 s)    |
+| `presence`      | `route`, `user_name`, `avatar` | Announce current route        |
+| `global:chat`   | `content`                      | Send global chat message      |
+| `cursor:update` | `x` (float64), `y` (float64)   | Broadcast cursor position     |
+| `tp`            | `target_user_id`, `route`      | Admin teleport command        |
+
+### Server → Client
+
+| `type`                | Payload                                           | Delivery mode         |
+| --------------------- | ------------------------------------------------- | --------------------- |
+| `forum:update`        | `{ action, id, data }` — see Forum Actions        | subscription          |
+| `store:update`        | `{ action, data }` — see Store Actions            | broadcast / direct    |
+| `user:update`         | `{ action, data }` — see User Actions             | subscription / direct |
+| `config:update`       | `{ action, data }` — see Config Actions           | broadcast             |
+| `page:update`         | `{ action, data }` — see Page Actions             | broadcast             |
+| `inbox:update`        | `{ action, data: InboxMessage }`                  | subscription          |
+| `inbox:message`       | `{ conversation_id, ... }` (InboxMessage summary) | direct push           |
+| `notification`        | full `AppNotification` object                     | direct push           |
+| `presence:update`     | `{ users: PresenceUser[] }`                       | broadcast             |
+| `cursor:update`       | `{ user_id, user_name, avatar, x, y }`            | same-route relay      |
+| `global:chat`         | single `GlobalChatMessage`                        | broadcast             |
+| `global:chat:history` | `{ messages: GlobalChatMessage[] }`               | direct (on connect)   |
+| `tp`                  | `{ route }`                                       | direct push           |
+
+---
+
+## Action Registries
+
+### Forum Actions (`forum:update`)
+
+| `action`                   | `id`        | `data`                                | Sub key                              |
+| -------------------------- | ----------- | ------------------------------------- | ------------------------------------ |
+| `category_created`         | category id | ForumCategory                         | broadcast                            |
+| `category_updated`         | category id | ForumCategory (partial)               | `forum_category:{id}`                |
+| `category_deleted`         | category id | —                                     | `forum_category:{id}` + broadcast    |
+| `category_threads_updated` | category id | `{ threads: ForumThread[] }`          | `forum_category:{id}`                |
+| `thread_created`           | thread id   | ForumThread                           | broadcast + `forum_category:{catId}` |
+| `thread_updated`           | thread id   | ForumThread (partial)                 | `thread:{id}`                        |
+| `thread_deleted`           | thread id   | —                                     | `thread:{id}` + broadcast            |
+| `thread_liked`             | thread id   | `{ thread_id, user_id, likes }`       | `thread:{id}`                        |
+| `thread_unliked`           | thread id   | `{ thread_id, user_id, likes }`       | `thread:{id}`                        |
+| `comment_created`          | thread id   | `{ new_comment: ThreadComment }`      | `thread:{id}`                        |
+| `comment_updated`          | thread id   | `{ comment_id, content, updated_at }` | `thread:{id}`                        |
+| `comment_deleted`          | thread id   | `{ comment_id }`                      | `thread:{id}`                        |
+| `comment_liked`            | thread id   | `{ comment_id, user_id, likes }`      | `thread:{id}`                        |
+| `comment_unliked`          | thread id   | `{ comment_id, user_id, likes }`      | `thread:{id}`                        |
+
+### Store Actions (`store:update`)
+
+| `action`           | `data`                  | Delivery                       |
+| ------------------ | ----------------------- | ------------------------------ |
+| `category_created` | StoreCategory           | broadcast                      |
+| `category_updated` | StoreCategory           | broadcast                      |
+| `category_deleted` | `{ id }`                | broadcast                      |
+| `product_created`  | Product                 | broadcast                      |
+| `product_updated`  | Product                 | broadcast                      |
+| `product_deleted`  | `{ id }`                | broadcast                      |
+| `cart_updated`     | `{ items: CartItem[] }` | direct push to owner's user ID |
+| `purchase_success` | CheckoutResponse        | direct push to buyer           |
+| `purchase_failure` | CheckoutResponse        | direct push to buyer           |
+
+### User Actions (`user:update`)
+
+| `action`              | `data`                                  | Delivery                 |
+| --------------------- | --------------------------------------- | ------------------------ |
+| `user_updated`        | `{ user: User }`                        | `user:{id}` subscription |
+| `permissions_changed` | `{ id, roles, permissions, new_token }` | direct push to that user |
+
+### Config Actions (`config:update`)
+
+| `action`           | `data`       | Delivery  |
+| ------------------ | ------------ | --------- |
+| `branding_updated` | Branding     | broadcast |
+| `seo_updated`      | SEOConfig    | broadcast |
+| `footer_updated`   | FooterConfig | broadcast |
+| `features_updated` | `string[]`   | broadcast |
+
+### Page Actions (`page:update`)
+
+| `action`          | `data`             | Delivery  |
+| ----------------- | ------------------ | --------- |
+| `page_created`    | PageBuilderPage    | broadcast |
+| `page_updated`    | PageBuilderPage    | broadcast |
+| `page_deleted`    | `{ id, slug }`     | broadcast |
+| `landing_updated` | `LandingSection[]` | broadcast |
+
+### Notification Actions
+
+Notifications arrive as raw `AppNotification` objects via the `notification`
+message type. Read/delete state is synchronized via a `notification:sync`
+message on auth connection and `notification:read` for individual or bulk
+read/delete events during a session.
+
+| Message type        | Payload                       | Delivery                 |
+| ------------------- | ----------------------------- | ------------------------ |
+| `notification`      | AppNotification               | direct push              |
+| `notification:sync` | `{ unread_count: number }`    | direct push (on connect) |
+| `notification:read` | `{ action, id? }` — see below | direct push              |
+
+`notification:read` actions:
+
+- `read` — `{ id }` — single notification marked read
+- `deleted` — `{ id }` — single notification deleted
+- `all_read` — no id — all notifications marked read
+- `all_deleted` — no id — all notifications deleted
+
+---
+
+## Frontend Hook Contract (`useWebSocketSync`)
+
+The hook is a module-level singleton. It is mounted once in `Layout.tsx` and
+shared by all page-level consumers.
+
+### Exported API
+
+```typescript
+const { subscribe, unsubscribe } = useWebSocketSync();
+```
+
+`subscribe(resourceType: string, resourceId: number | string): void`
+
+- Tracks subscription in `subscriptionsRef` (Set)
+- Sends `{ type: "subscribe", payload: { resource_type, resource_id } }` if socket is open
+- If socket is not yet OPEN, the key is queued — replayed on `ws.onopen`
+- Idempotent: safe to call multiple times for the same key
+
+`unsubscribe(resourceType: string, resourceId: number | string): void`
+
+- Removes from `subscriptionsRef`
+- Sends `{ type: "unsubscribe", ... }` if socket is open
+- Call in cleanup (`useEffect` return) when leaving a page
+
+### Message Handler → Atom Map
+
+| WS message type       | Action                                    | Atom mutated                                                     |
+| --------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| `forum:update`        | `category_created`                        | `forumCategoriesAtom` (append)                                   |
+| `forum:update`        | `category_updated`                        | `forumCategoriesAtom` (map update)                               |
+| `forum:update`        | `category_deleted`                        | `forumCategoriesAtom` (filter)                                   |
+| `forum:update`        | `category_threads_updated`                | `forumCategoriesAtom` (embed threads)                            |
+| `forum:update`        | `thread_created`                          | `categoryFeedThreadsAtom`, `userFeedThreadsAtom`                 |
+| `forum:update`        | `thread_updated`                          | `currentThreadAtom`, both feed atoms                             |
+| `forum:update`        | `thread_deleted`                          | `currentThreadAtom` (null), both feed atoms                      |
+| `forum:update`        | `thread_liked/unliked`                    | `currentThreadAtom`                                              |
+| `forum:update`        | `comment_created`                         | `threadCommentsAtom` (append + toast)                            |
+| `forum:update`        | `comment_updated`                         | `threadCommentsAtom` (map update)                                |
+| `forum:update`        | `comment_deleted`                         | `threadCommentsAtom` (filter)                                    |
+| `forum:update`        | `comment_liked/unliked`                   | `threadCommentsAtom` (map update)                                |
+| `store:update`        | `category_created/updated/deleted`        | `productCategoriesAtom`                                          |
+| `store:update`        | `product_created/updated/deleted`         | `productsAtom`                                                   |
+| `store:update`        | `cart_updated`                            | `storeCartItemsAtom`                                             |
+| `store:update`        | `purchase_success/failure`                | `storeCartItemsAtom` (clear) + toast                             |
+| `user:update`         | `user_updated`                            | `currentUserAtom` (if self) + `user:profile:updated` CustomEvent |
+| `user:update`         | `permissions_changed`                     | `currentUserAtom` + `accessTokenAtom`                            |
+| `config:update`       | `branding_updated`                        | `brandingAtom`                                                   |
+| `config:update`       | `seo_updated`                             | `seoAtom` (see note)                                             |
+| `config:update`       | `footer_updated`                          | `footerConfigAtom`                                               |
+| `config:update`       | `features_updated`                        | `featuresAtom`                                                   |
+| `page:update`         | `page_updated`                            | fires `page:live:updated` CustomEvent                            |
+| `page:update`         | `page_deleted`                            | fires `page:live:deleted` CustomEvent                            |
+| `page:update`         | `landing_updated`                         | fires `landing:live:updated` CustomEvent                         |
+| `inbox:update`        | `message_created`                         | `inboxMessagesAtom`, `inboxConversationsAtom`                    |
+| `inbox:message`       | (any)                                     | `inboxUnreadCountAtom`, `inboxConversationsAtom`                 |
+| `notification`        | (any)                                     | `notificationsAtom` (prepend) + toast + sound                    |
+| `notification:sync`   | —                                         | sets initial unread count on connect                             |
+| `notification:read`   | `read`/`deleted`/`all_read`/`all_deleted` | `notificationsAtom` mutations                                    |
+| `presence:update`     | —                                         | `onlineUsersAtom`                                                |
+| `cursor:update`       | —                                         | `cursorPositionsAtom`                                            |
+| `global:chat`         | —                                         | `globalChatMessagesAtom`                                         |
+| `global:chat:history` | —                                         | `globalChatMessagesAtom` (replace)                               |
+| `tp`                  | —                                         | `pendingTpRouteAtom`                                             |
+
+---
+
+## Backend Hub API
+
+All hub interaction in service/handler code goes through these methods on `*ws.Hub`:
+
+| Method                                             | Delivery mode                    | Use for                                     |
+| -------------------------------------------------- | -------------------------------- | ------------------------------------------- |
+| `hub.Broadcast(msg)`                               | all clients                      | Store catalog, site config, page edits      |
+| `hub.PropagateUser(userID, data)`                  | `user:{id}` subs                 | User profile mutations                      |
+| `hub.PropagateForumCategories(id, data, action)`   | `forum_category:{id}`            | Category mutations                          |
+| `hub.PropagateForumThread(id, data, action)`       | `thread:{id}`                    | Thread + comment mutations                  |
+| `hub.PropagateInboxConversation(id, data, action)` | `inbox_conversation:{id}`        | DM messages                                 |
+| `hub.PropagateStoreProduct(id, data, action)`      | `store_product:{id}`             | (reserved; use Broadcast for catalog)       |
+| `hub.BroadcastStoreCatalog(data, action)`          | all clients                      | Store CRUD events (all uses today)          |
+| `hub.SendToUser(userID, msg)`                      | direct (all sessions for userID) | Notifications, cart sync, purchase outcomes |
+| `hub.PropagateToAll(resourceType, data, action)`   | all matching-prefix subs         | Bulk subscription fan-out                   |
+
+`hub.SendToUser` must be implemented if not already present. Signature:
+
+```go
+func (h *Hub) SendToUser(userID int64, msg *Message)
+```
+
+Iterates `h.clients`, matches `c.UserID == userID`, enqueues `msg` to `c.Send`.
+
+---
+
+## Subscription Lifecycle Rules
+
+### Component Pattern (subscribe-on-load)
+
+```typescript
+useEffect(() => {
+  if (!resourceId) return;
+  // 1. Load data via REST
+  const data = await apiRequest(`/resource/${resourceId}`);
+  setAtom(data);
+  // 2. Subscribe so mutations arrive via WS
+  subscribe("resource_type", resourceId);
+  return () => {
+    // 3. Unsubscribe on unmount
+    unsubscribe("resource_type", resourceId);
+  };
+}, [resourceId]);
+```
+
+### Frontend Must Never Poll
+
+No `setInterval`, `setTimeout`-based re-fetch, or periodic `apiRequest` for
+any data that has a WS projection. REST is used exclusively for:
+
+1. Initial page load (the first fetch before the subscription is live)
+2. Auth flows (token refresh, login, register)
+3. Mutations (POST, PUT, DELETE) — these trigger the backend to propagate via WS
+4. Lazy one-off reads (e.g. opening a settings panel that rarely changes)
+
+The WS message handler then merges the mutation result back into the atom
+without any re-fetch. This means DOM updates happen in O(1) — no round-trip.
+
+---
+
+## Reconnect Invariants
+
+1. The reconnect timer fires after 3 s on any `onclose` or `onerror`.
+2. On `ws.onopen`, the full `subscriptionsRef` Set is replayed so no
+   subscription is silently lost.
+3. Auth state changes (login/logout) close and re-open the socket so the
+   new JWT is used on the next connection. Permission-only token refreshes
+   do NOT disconnect — the token is patched in-place via atom update only.
+4. Components that hold stale REST-loaded data across reconnects MUST add a
+   `socketAtom` dependency useEffect that re-runs the initial load when the
+   `socket` value changes (same guard as `Store.tsx`):
+
+```typescript
+const socket = useAtomValue(socketAtom);
+const socketMounted = useRef(false);
+useEffect(() => {
+  if (!socketMounted.current) {
+    socketMounted.current = true;
+    return;
+  }
+  if (socket) loadData(); // re-fetch on reconnect
+}, [socket, loadData]);
+```
+
+---
+
+## Atom Ownership Rules
+
+One atom per logical data domain. The WS handler in `useWebSocketSync` is the
+**sole writer** for WS-pushed data. Components call mutations via REST, which
+triggers the backend to push the canonical updated state via WS, which in turn
+updates the atom. This creates a single write path:
+
+```
+user action → REST mutation → backend → WS push → atom update → render
+```
+
+Optimistic updates (local atom flip before REST confirms) are permitted for
+like/unlike and other user-idempotent toggles. They MUST be reverted on REST
+failure and will be corrected by the subsequent WS propagation anyway.
+
+Components read atoms via `useAtomValue`. They never directly set atoms from
+REST responses except on initial load (before the subscription is live).
+
+---
+
+## Security
+
+- Unauthenticated connections are allowed (guest presence, global chat, store
+  catalog reads). Subscriptions to user-private resources (inbox, user profile)
+  are validated server-side — the hub's hub_clients.go `handleSubscribe` must
+  check ownership before adding the subscription.
+- Tokens are passed in URL query (`?token=`). Access tokens are short-lived
+  (default 30 min). The WS connection is not re-authenticated mid-session;
+  permission updates arrive via `user:update` /`permissions_changed` push.
+- Rate limiting on the WS endpoint is enforced at the HTTP upgrade level by
+  the existing rate limiter middleware before the upgrade completes.

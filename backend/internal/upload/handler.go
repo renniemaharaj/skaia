@@ -25,6 +25,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/ws"
 )
 
 // Directory layout
@@ -181,12 +182,14 @@ type UploadResponse struct {
 }
 
 // Handler owns the upload and static-serve HTTP endpoints.
-type Handler struct{}
+type Handler struct {
+	hub *ws.Hub
+}
 
 // NewHandler creates a Handler and ensures the base user-uploads directory exists.
-func NewHandler() *Handler {
+func NewHandler(hub *ws.Hub) *Handler {
 	os.MkdirAll(UsersDir, 0755)
-	return &Handler{}
+	return &Handler{hub: hub}
 }
 
 // Mount registers all upload routes on r.
@@ -279,6 +282,7 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(UploadResponse{URL: url, Filename: filename, Size: size, Type: ct})
+	h.hub.PropagateUser(userID, map[string]interface{}{"action": "uploads_changed"})
 }
 
 // uploadVideo handles editor video uploads (MP4, WEBM, OGG, ≤50 MB).
@@ -343,6 +347,7 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(UploadResponse{URL: url, Filename: filename, Size: size, Type: ct})
+	h.hub.PropagateUser(userID, map[string]interface{}{"action": "uploads_changed"})
 }
 
 // uploadFile handles generic editor file/attachment uploads (≤50 MB).
@@ -405,6 +410,7 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(UploadResponse{URL: url, Filename: filename, Size: size, Type: ct})
+	h.hub.PropagateUser(userID, map[string]interface{}{"action": "uploads_changed"})
 }
 
 // uploadBanner handles thread-banner image uploads.
@@ -483,6 +489,7 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 		Size:     size,
 		Type:     ct,
 	})
+	h.hub.PropagateUser(userID, map[string]interface{}{"action": "uploads_changed"})
 }
 
 // Internal helpers

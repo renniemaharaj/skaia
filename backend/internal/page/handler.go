@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
@@ -16,11 +17,12 @@ import (
 type Handler struct {
 	svc     *Service
 	userSvc *iuser.Service
+	hub     *ws.Hub
 }
 
 // NewHandler creates a page Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc}
+func NewHandler(svc *Service, userSvc *iuser.Service, hub *ws.Hub) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, hub: hub}
 }
 
 // Mount registers page routes under /config/pages.
@@ -138,6 +140,7 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, p)
+	h.hub.BroadcastPage("page_created", p)
 }
 
 func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
@@ -165,8 +168,10 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	if updated != nil {
 		h.svc.EnrichPage(updated)
 		utils.WriteJSON(w, http.StatusOK, updated)
+		h.hub.BroadcastPage("page_updated", updated)
 	} else {
 		utils.WriteJSON(w, http.StatusOK, p)
+		h.hub.BroadcastPage("page_updated", p)
 	}
 }
 
@@ -186,6 +191,7 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	h.hub.BroadcastPage("page_deleted", map[string]interface{}{"id": id})
 }
 
 // ── browse (public feed of custom pages) ────────────────────────────────────
@@ -256,6 +262,7 @@ func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 	if page != nil {
 		h.svc.EnrichPage(page)
 		utils.WriteJSON(w, http.StatusOK, page)
+		h.hub.BroadcastPage("page_updated", page)
 	} else {
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
@@ -277,6 +284,7 @@ func (h *Handler) clearOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "owner_id": nil})
 }
 
 func (h *Handler) addEditor(w http.ResponseWriter, r *http.Request) {
@@ -318,6 +326,7 @@ func (h *Handler) addEditor(w http.ResponseWriter, r *http.Request) {
 		editors = []*models.PageUser{}
 	}
 	utils.WriteJSON(w, http.StatusOK, editors)
+	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
 }
 
 func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
@@ -357,4 +366,5 @@ func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
 		editors = []*models.PageUser{}
 	}
 	utils.WriteJSON(w, http.StatusOK, editors)
+	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
 }

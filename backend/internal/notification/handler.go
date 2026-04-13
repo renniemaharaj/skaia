@@ -6,17 +6,19 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
 // Handler exposes notification HTTP endpoints.
 type Handler struct {
 	svc *Service
+	hub *ws.Hub
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, hub *ws.Hub) *Handler {
+	return &Handler{svc: svc, hub: hub}
 }
 
 // Mount registers notification routes on r.
@@ -91,6 +93,7 @@ func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	h.hub.PushNotificationRead(userID, "notification_read", id)
 }
 
 func (h *Handler) markAllRead(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +107,7 @@ func (h *Handler) markAllRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	h.hub.PushNotificationRead(userID, "notification_all_read", 0)
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +126,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	h.hub.PushNotificationRead(userID, "notification_deleted", id)
 }
 
 func (h *Handler) deleteAll(w http.ResponseWriter, r *http.Request) {
@@ -135,4 +140,5 @@ func (h *Handler) deleteAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	h.hub.PushNotificationRead(userID, "notification_all_deleted", 0)
 }

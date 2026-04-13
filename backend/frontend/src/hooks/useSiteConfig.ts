@@ -6,7 +6,7 @@ import type {
   FooterConfig,
 } from "../components/landing/types";
 import { apiRequest } from "../utils/api";
-import { brandingAtom, footerConfigAtom } from "../atoms/config";
+import { brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
 
 /**
  * Fetches branding, SEO, and footer config from the API and dynamically updates
@@ -19,6 +19,7 @@ export function useSiteConfig() {
   const [seo, setSeo] = useState<SEOConfig | null>(null);
   const setBrandingAtom = useSetAtom(brandingAtom);
   const setFooterAtom = useSetAtom(footerConfigAtom);
+  const setSeoAtom = useSetAtom(seoAtom);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -32,6 +33,7 @@ export function useSiteConfig() {
         setSeo(s);
         setBrandingAtom(b);
         setFooterAtom(f);
+        setSeoAtom(s);
 
         // We intentionally do not mutate the document head here.
         // A dedicated React component (using react-helmet-async) consumes
@@ -42,7 +44,7 @@ export function useSiteConfig() {
     };
 
     loadConfig();
-  }, [setBrandingAtom, setFooterAtom]);
+  }, [setBrandingAtom, setFooterAtom, setSeoAtom]);
 
   return { branding, seo };
 }

@@ -53,3 +53,21 @@ func (h *Hub) sendChatHistory(client *Client) {
 	default:
 	}
 }
+
+// sendNotificationBootstrap delivers the user's recent notifications to a
+// freshly-connected authenticated client. A no-op for guests or when no fetcher is set.
+func (h *Hub) sendNotificationBootstrap(client *Client) {
+	if client.UserID == 0 || h.NotificationFetcher == nil {
+		return
+	}
+	data := h.NotificationFetcher(client.UserID)
+	if data == nil {
+		return
+	}
+	payload, _ := json.Marshal(data)
+	msg := &Message{Type: NotificationSync, Payload: payload}
+	select {
+	case client.Send <- msg:
+	default:
+	}
+}

@@ -25,6 +25,16 @@ export default function CustomPages() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      apiRequest<PageBuilderPage[]>("/config/pages/browse")
+        .then((data) => setPages(data ?? []))
+        .catch(() => {});
+    };
+    window.addEventListener("page:live:event", handler);
+    return () => window.removeEventListener("page:live:event", handler);
+  }, []);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return pages;
     const q = search.toLowerCase();

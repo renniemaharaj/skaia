@@ -108,6 +108,11 @@ func (r *sessionChatRing) history() []GlobalChatMessage {
 type Hub struct {
 	cfg HubConfig
 
+	// NotificationFetcher, when set, is called on every authenticated client
+	// connect to deliver a bootstrap notification payload.  Set once at startup
+	// before the first connection arrives.
+	NotificationFetcher func(userID int64) interface{}
+
 	// channels
 	clients         map[*Client]bool
 	broadcast       chan *Message
@@ -208,6 +213,7 @@ func (h *Hub) Run() {
 			h.dispatch(func() {
 				h.handleRegister(client)
 				h.sendChatHistory(client)
+				h.sendNotificationBootstrap(client)
 				h.markPresenceDirty()
 			})
 		case client := <-h.unregister:

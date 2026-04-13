@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { hasPermissionAtom, currentUserAtom } from "../atoms/auth";
 import { apiRequest } from "../utils/api";
 
@@ -49,6 +49,7 @@ export function usePageData(): UsePageDataReturn {
   const [page, setPage] = useState<PageBuilderPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const currentSlugRef = useRef<string | null>(null);
 
   const isOwner = !!(
     page?.owner_id &&
@@ -67,6 +68,7 @@ export function usePageData(): UsePageDataReturn {
       const endpoint = slug ? `/config/pages/${slug}` : "/config/pages/index";
       const currentPage = await apiRequest<PageBuilderPage>(endpoint);
       setPage(currentPage);
+      currentSlugRef.current = currentPage?.slug ?? null;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load page";
       setPage(null);
@@ -106,6 +108,25 @@ export function usePageData(): UsePageDataReturn {
       method: "DELETE",
     });
   }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { action, data } = (
+        e as CustomEvent<{ action: string; data?: any }>
+      ).detail;
+      const slug = currentSlugRef.current;
+      if (!slug) return;
+      if (
+        (action === "page_updated" &&
+          (data?.slug === slug || data?.id === page?.id)) ||
+        (action === "page_deleted" && data?.id === page?.id)
+      ) {
+        refresh(slug);
+      }
+    };
+    window.addEventListener("page:live:event", handler);
+    return () => window.removeEventListener("page:live:event", handler);
+  }, [page?.id, refresh]);
 
   return {
     page,

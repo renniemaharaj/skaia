@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/ws"
 )
 
 // UserUpload represents a single upload returned to the frontend.
@@ -27,9 +28,9 @@ type UserUpload struct {
 // MountUserUploads registers user-upload management routes.
 // These are separate from the core upload routes because they need the
 // Authorizer for permission checks.
-func MountUserUploads(r chi.Router, jwt func(http.Handler) http.Handler, authz utils.Authorizer) {
+func MountUserUploads(r chi.Router, jwt func(http.Handler) http.Handler, authz utils.Authorizer, hub *ws.Hub) {
 	r.With(jwt).Get("/upload/user/{id}", listUserUploads(authz))
-	r.With(jwt).Delete("/upload/file", deleteUploadFile(authz))
+	r.With(jwt).Delete("/upload/file", deleteUploadFile(authz, hub))
 	r.With(jwt).Get("/upload/storage/{id}", getUserStorage())
 }
 
@@ -99,7 +100,7 @@ func listUserUploads(authz utils.Authorizer) http.HandlerFunc {
 }
 
 // deleteUploadFile deletes a single upload file. Body: {"url": "/uploads/users/…"}
-func deleteUploadFile(authz utils.Authorizer) http.HandlerFunc {
+func deleteUploadFile(authz utils.Authorizer, hub *ws.Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callerID, ok := utils.UserIDFromCtx(r)
 		if !ok {
@@ -152,6 +153,7 @@ func deleteUploadFile(authz utils.Authorizer) http.HandlerFunc {
 			return
 		}
 
+		hub.PropagateUser(ownerID, map[string]interface{}{"action": "uploads_changed"})
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 	}
 }

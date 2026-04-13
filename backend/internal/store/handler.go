@@ -463,6 +463,9 @@ func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, item)
+	if items, err := h.svc.GetUserCart(userID); err == nil {
+		h.hub.PushCartUpdate(userID, items)
+	}
 }
 
 func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
@@ -485,6 +488,9 @@ func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, item)
+	if items, err := h.svc.GetUserCart(userID); err == nil {
+		h.hub.PushCartUpdate(userID, items)
+	}
 }
 
 func (h *Handler) removeFromCart(w http.ResponseWriter, r *http.Request) {
@@ -505,6 +511,9 @@ func (h *Handler) removeFromCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "removed"})
+	if items, err := h.svc.GetUserCart(userID); err == nil {
+		h.hub.PushCartUpdate(userID, items)
+	}
 }
 
 func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
@@ -518,6 +527,7 @@ func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "cleared"})
+	h.hub.PushCartUpdate(userID, []*models.CartItem{})
 }
 
 // Order handlers

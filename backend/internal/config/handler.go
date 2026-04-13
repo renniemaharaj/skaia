@@ -12,6 +12,7 @@ import (
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
 )
 
@@ -83,11 +84,12 @@ func (h *Handler) getFeature(w http.ResponseWriter, r *http.Request) {
 type Handler struct {
 	svc     *Service
 	userSvc *iuser.Service
+	hub     *ws.Hub
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc}
+func NewHandler(svc *Service, userSvc *iuser.Service, hub *ws.Hub) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, hub: hub}
 }
 
 // Mount registers routes.
@@ -181,6 +183,7 @@ func (h *Handler) updateBranding(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
+	h.hub.BroadcastConfig("branding_updated", body)
 }
 
 func (h *Handler) updateSEO(w http.ResponseWriter, r *http.Request) {
@@ -200,6 +203,7 @@ func (h *Handler) updateSEO(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
+	h.hub.BroadcastConfig("seo_updated", body)
 }
 
 func (h *Handler) getFooter(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +237,7 @@ func (h *Handler) updateFooter(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
+	h.hub.BroadcastConfig("footer_updated", body)
 }
 
 // ── landing page ────────────────────────────────────────────────────────────
@@ -263,6 +268,7 @@ func (h *Handler) createSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, s)
+	h.hub.BroadcastConfig("landing_section_created", s)
 }
 
 func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
@@ -289,8 +295,10 @@ func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
 	updated, _ := h.svc.GetSection(id)
 	if updated != nil {
 		utils.WriteJSON(w, http.StatusOK, updated)
+		h.hub.BroadcastConfig("landing_section_updated", updated)
 	} else {
 		utils.WriteJSON(w, http.StatusOK, s)
+		h.hub.BroadcastConfig("landing_section_updated", s)
 	}
 }
 
@@ -326,6 +334,7 @@ func (h *Handler) deleteSection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	h.hub.BroadcastConfig("landing_section_deleted", map[string]interface{}{"id": id})
 }
 
 func (h *Handler) reorderSections(w http.ResponseWriter, r *http.Request) {
@@ -346,6 +355,7 @@ func (h *Handler) reorderSections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	h.hub.BroadcastConfig("landing_reordered", map[string]interface{}{"ids": body.IDs})
 }
 
 // ── items ───────────────────────────────────────────────────────────────────
@@ -372,6 +382,7 @@ func (h *Handler) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, item)
+	h.hub.BroadcastConfig("landing_item_created", item)
 }
 
 func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
@@ -396,6 +407,7 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, item)
+	h.hub.BroadcastConfig("landing_item_updated", item)
 }
 
 func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
@@ -424,6 +436,7 @@ func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	h.hub.BroadcastConfig("landing_item_deleted", map[string]interface{}{"id": id})
 }
 
 func (h *Handler) reorderItems(w http.ResponseWriter, r *http.Request) {
@@ -449,4 +462,5 @@ func (h *Handler) reorderItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	h.hub.BroadcastConfig("landing_items_reordered", map[string]interface{}{"section_id": secID, "ids": body.IDs})
 }

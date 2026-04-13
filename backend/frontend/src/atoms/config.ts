@@ -1,5 +1,9 @@
 import { atom } from "jotai";
-import type { Branding, FooterConfig } from "../components/landing/types";
+import type {
+  Branding,
+  SEOConfig,
+  FooterConfig,
+} from "../components/landing/types";
 
 export const apiBaseUrlAtom = atom("/api");
 
@@ -12,3 +16,4 @@ export const featuresAtom = atom<FeatureMap | null>(null);
 
 export const brandingAtom = atom<Branding | null>(null);
 export const footerConfigAtom = atom<FooterConfig | null>(null);
+export const seoAtom = atom<SEOConfig | null>(null);

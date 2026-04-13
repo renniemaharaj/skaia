@@ -342,6 +342,15 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 	notifRepo := inotif.NewRepository(db)
 	notifSvc := inotif.NewService(notifRepo, hub)
 
+	// Bootstrap notification delivery on WS connect.
+	hub.NotificationFetcher = func(userID int64) interface{} {
+		notifs, err := notifSvc.List(userID, 50, 0)
+		if err != nil || len(notifs) == 0 {
+			return nil
+		}
+		return map[string]interface{}{"notifications": notifs}
+	}
+
 	cfgRepo := icfg.NewRepository(db)
 	cfgSvc := icfg.NewService(cfgRepo)
 
@@ -434,21 +443,21 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		istore.NewHandler(storeSvc, hub, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
-		uploadHandler := iupload.NewHandler()
+		uploadHandler := iupload.NewHandler(hub)
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)
-		iupload.MountUserUploads(api, imw.JWTAuthMiddleware, userSvc)
+		iupload.MountUserUploads(api, imw.JWTAuthMiddleware, userSvc, hub)
 
-		inotif.NewHandler(notifSvc).Mount(api, imw.JWTAuthMiddleware)
+		inotif.NewHandler(notifSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 		iinbox.NewHandler(inboxSvc).Mount(api, imw.JWTAuthMiddleware)
 
-		icfg.NewHandler(cfgSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+		icfg.NewHandler(cfgSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo)
-		ipage.NewHandler(pageSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+		ipage.NewHandler(pageSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

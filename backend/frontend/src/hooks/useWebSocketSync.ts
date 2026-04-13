@@ -20,7 +20,12 @@ import {
   isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
-import { wsBaseUrlAtom } from "../atoms/config";
+import {
+  wsBaseUrlAtom,
+  brandingAtom,
+  footerConfigAtom,
+  seoAtom,
+} from "../atoms/config";
 import {
   onlineUsersAtom,
   pendingTpRouteAtom,
@@ -50,6 +55,7 @@ import {
   storeCartItemsAtom,
   type Product,
   type StoreCategory,
+  type CartItem,
   type CheckoutResponse,
 } from "../atoms/store";
 
@@ -124,6 +130,10 @@ export const useWebSocketSync = () => {
 
   // ── Notifications ────────────────────────────────────────────────────────
   const setNotifications = useSetAtom(notificationsAtom);
+  // ── Site config ──────────────────────────────────────────────────────────
+  const setBrandingWs = useSetAtom(brandingAtom);
+  const setFooterWs = useSetAtom(footerConfigAtom);
+  const setSeoWs = useSetAtom(seoAtom);
 
   // ── Store ─────────────────────────────────────────────────────────────────
   const setProducts = useSetAtom(productsAtom);
@@ -239,6 +249,19 @@ export const useWebSocketSync = () => {
                   setCurrentUser(null);
                 }
               }
+            }
+
+            // ── Uploads changed — notify the profile uploads tab ──────────
+            if (
+              userAction === "user_updated" &&
+              (userData as any)?.action === "uploads_changed"
+            ) {
+              const { id } = payload as { id?: number };
+              window.dispatchEvent(
+                new CustomEvent("user:uploads:changed", {
+                  detail: { userId: String(id ?? 0) },
+                }),
+              );
             }
           }
 
@@ -757,6 +780,87 @@ export const useWebSocketSync = () => {
                 : undefined,
             });
           }
+
+          // ── Notification bootstrap (on connect) ───────────────────────────
+          if (message.type === "notification:sync") {
+            const { notifications: notifs } = payload as {
+              notifications?: AppNotification[];
+            };
+            if (Array.isArray(notifs) && notifs.length > 0) {
+              // Only seed the atom when the bell hasn't loaded yet to avoid
+              // overwriting a user-navigated paginated view.
+              setNotifications((prev) => (prev.length === 0 ? notifs : prev));
+            }
+          }
+
+          // ── Notification read / delete sync ───────────────────────────────
+          if (message.type === "notification:update") {
+            const { action: na, id: nid } = payload as {
+              action: string;
+              id?: number;
+            };
+            if (na === "notification_read" && nid) {
+              setNotifications((prev) =>
+                prev.map((n) =>
+                  String(n.id) === String(nid) ? { ...n, is_read: true } : n,
+                ),
+              );
+            }
+            if (na === "notification_all_read") {
+              setNotifications((prev) =>
+                prev.map((n) => ({ ...n, is_read: true })),
+              );
+            }
+            if (na === "notification_deleted" && nid) {
+              setNotifications((prev) =>
+                prev.filter((n) => String(n.id) !== String(nid)),
+              );
+            }
+            if (na === "notification_all_deleted") {
+              setNotifications([]);
+            }
+          }
+
+          // ── Cart ──────────────────────────────────────────────────────────
+          if (message.type === "cart:update") {
+            const { data: cartData } = payload as {
+              action: string;
+              data?: CartItem[];
+            };
+            if (Array.isArray(cartData)) {
+              setStoreCartItems(cartData);
+            }
+          }
+
+          // ── Site config ───────────────────────────────────────────────────
+          if (message.type === "config:update") {
+            const { action: ca, data: cd } = payload as {
+              action: string;
+              data?: any;
+            };
+            if (ca === "branding_updated" && cd) setBrandingWs(cd);
+            if (ca === "seo_updated" && cd) setSeoWs(cd);
+            if (ca === "footer_updated" && cd) setFooterWs(cd);
+            // Landing section/item changes — let landing components re-fetch
+            window.dispatchEvent(
+              new CustomEvent("config:live:event", {
+                detail: { action: ca, data: cd },
+              }),
+            );
+          }
+
+          // ── CMS pages ─────────────────────────────────────────────────────
+          if (message.type === "page:update") {
+            const { action: pa, data: pd } = payload as {
+              action: string;
+              data?: any;
+            };
+            window.dispatchEvent(
+              new CustomEvent("page:live:event", {
+                detail: { action: pa, data: pd },
+              }),
+            );
+          }
         } catch (error) {
           console.error("Error processing WebSocket message:", error);
         }
@@ -804,6 +908,9 @@ export const useWebSocketSync = () => {
     setStoreCategories,
     setStoreCartItems,
     setCursorPositions,
+    setBrandingWs,
+    setFooterWs,
+    setSeoWs,
     wsUrl,
   ]);
 

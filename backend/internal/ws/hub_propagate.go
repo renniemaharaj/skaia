@@ -46,6 +46,43 @@ func (h *Hub) BroadcastStoreCatalog(data interface{}, action string) {
 	h.Broadcast(msg)
 }
 
+// PushCartUpdate sends the current cart item list to every connection owned by userID.
+func (h *Hub) PushCartUpdate(userID int64, items interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "cart_updated",
+		"data":   items,
+	})
+	h.SendToUser(userID, &Message{Type: CartUpdate, Payload: payload})
+}
+
+// BroadcastConfig sends a site-configuration change to every connected client.
+func (h *Hub) BroadcastConfig(action string, data interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.Broadcast(&Message{Type: ConfigUpdate, Payload: payload})
+}
+
+// BroadcastPage sends a CMS page change to every connected client.
+func (h *Hub) BroadcastPage(action string, data interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.Broadcast(&Message{Type: PageUpdate, Payload: payload})
+}
+
+// PushNotificationRead notifies the user's connections that a notification has been
+// read or deleted. Use notifID=0 for bulk actions (mark-all-read, delete-all).
+func (h *Hub) PushNotificationRead(userID int64, action string, notifID int64) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"id":     notifID,
+	})
+	h.SendToUser(userID, &Message{Type: NotificationUpdate, Payload: payload})
+}
+
 // PropagateToAll sends a message to every client subscribed to any key that
 // starts with resourceType (e.g. "store" matches "store:1", "store:2").
 func (h *Hub) PropagateToAll(resourceType string, data interface{}, action string) {
