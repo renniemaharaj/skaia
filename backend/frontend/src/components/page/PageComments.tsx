@@ -36,7 +36,8 @@ export default function PageComments({ pageId, pageSlug }: Props) {
       const data = await apiRequest<PageComment[]>(
         `/config/pages/${pageSlug}/comments`,
       );
-      setComments(data ?? []);
+      // Normalize likes to 0 (omitempty drops the field when 0, causing NaN on optimistic updates)
+      setComments((data ?? []).map((c) => ({ ...c, likes: c.likes ?? 0 })));
     } catch {
       // ignore
     } finally {

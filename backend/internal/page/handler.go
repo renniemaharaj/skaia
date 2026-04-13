@@ -28,14 +28,14 @@ func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service
 }
 
 // Mount registers page routes under /config/pages.
-func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
 	r.Route("/config/pages", func(r chi.Router) {
 		// Public reads
 		r.Get("/index", h.getIndex)
 		r.Get("/list", h.listPages)
 		r.Get("/browse", h.browsePages)
 		r.Get("/{slug}", h.getBySlug)
-		r.Get("/{slug}/comments", h.listComments)
+		r.With(optJWT).Get("/{slug}/comments", h.listComments)
 		r.Post("/{slug}/view", h.recordView)
 
 		// Protected writes
