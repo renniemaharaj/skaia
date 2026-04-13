@@ -80,6 +80,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   useEffect(() => {
+    if (slug && !page && error) {
+      setSections([]);
+      return;
+    }
+
     if (page?.content) {
       try {
         const parsed = JSON.parse(page.content);
@@ -92,7 +97,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }
     }
     setSections(sortSections(landingSections));
-  }, [page?.content, landingSections]);
+  }, [slug, page, page?.content, landingSections, error]);
 
   useEffect(() => {
     refresh(slug);
