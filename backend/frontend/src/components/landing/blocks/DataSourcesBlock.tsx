@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import type { LandingSection, DataSource } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
 import { ImageCardGrid } from "./ImageCardGrid";
@@ -13,7 +14,7 @@ import {
   setSectionAnimation,
 } from "../EditControls";
 import { apiRequest } from "../../../utils/api";
-import { Plus, Pencil, Trash2, Database } from "lucide-react";
+import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 const MonacoEditor = lazy(() => import("../../monaco/Editor"));
@@ -34,6 +35,10 @@ export const DataSourcesBlock = ({
   const layout = getSectionLayout(section.config);
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
+
+  const isAuthError = (message: string) =>
+    /unauthorized|authentication|login required|401/i.test(message);
 
   // Editing state
   const [editingDS, setEditingDS] = useState<DataSource | null>(null);
@@ -51,10 +56,15 @@ export const DataSourcesBlock = ({
   }, [editingDS]);
 
   const fetchDataSources = useCallback(async () => {
+    setAuthError(false);
     try {
       const list = await apiRequest<DataSource[]>("/config/datasources");
       setDataSources(list ?? []);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isAuthError(msg)) {
+        setAuthError(true);
+      }
       console.error("Failed to load data sources", err);
     } finally {
       setLoading(false);
@@ -113,7 +123,11 @@ export const DataSourcesBlock = ({
       }
       setEditingDS(null);
       fetchDataSources();
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isAuthError(msg)) {
+        setAuthError(true);
+      }
       toast.error("Failed to save data source");
       console.error(err);
     } finally {
@@ -127,7 +141,11 @@ export const DataSourcesBlock = ({
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");
       fetchDataSources();
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isAuthError(msg)) {
+        setAuthError(true);
+      }
       toast.error("Failed to delete data source");
       console.error(err);
     }
@@ -240,71 +258,89 @@ export const DataSourcesBlock = ({
         </div>
       )}
 
-      {/* Data sources table */}
-      {loading ? (
-        <div
-          className="skeleton-bar"
-          style={{ height: 100, borderRadius: 8 }}
-        />
-      ) : dataSources.length === 0 ? (
-        <p className="data-sources-empty">
-          No data sources yet. Create one to get started.
-        </p>
-      ) : (
-        <>
-          <table className="data-sources-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Updated</th>
-                {canEdit && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {dataSources.map((ds) => (
-                <tr key={ds.id}>
-                  <td className="data-sources-id">{ds.id}</td>
-                  <td className="data-sources-name">{ds.name}</td>
-                  <td className="data-sources-desc">{ds.description || "—"}</td>
-                  <td className="data-sources-date">
-                    {new Date(ds.updated_at).toLocaleDateString()}
-                  </td>
-                  {canEdit && (
-                    <td className="data-sources-actions">
-                      <button
-                        className="data-sources-action-btn"
-                        onClick={() => startEdit(ds)}
-                        title="Edit"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        className="data-sources-action-btn data-sources-action-danger"
-                        onClick={() => handleDelete(ds.id)}
-                        title="Delete"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  )}
+      <div className="data-sources-frame">
+        {/* Data sources table */}
+        {loading ? (
+          <div
+            className="skeleton-bar"
+            style={{ height: 100, borderRadius: 8 }}
+          />
+        ) : dataSources.length === 0 ? (
+          <p className="data-sources-empty">
+            No data sources yet. Create one to get started.
+          </p>
+        ) : (
+          <>
+            <table className="data-sources-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Updated</th>
+                  {canEdit && <th>Actions</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="data-sources-card-preview">
-            <ImageCardGrid
-              items={dataSources.map((ds) => ({
-                heading: ds.name,
-                subheading: ds.description,
-                icon: <Database size={18} />,
-                width: "regular",
-              }))}
-            />
+              </thead>
+              <tbody>
+                {dataSources.map((ds) => (
+                  <tr key={ds.id}>
+                    <td className="data-sources-id">{ds.id}</td>
+                    <td className="data-sources-name">{ds.name}</td>
+                    <td className="data-sources-desc">
+                      {ds.description || "—"}
+                    </td>
+                    <td className="data-sources-date">
+                      {new Date(ds.updated_at).toLocaleDateString()}
+                    </td>
+                    {canEdit && (
+                      <td className="data-sources-actions">
+                        <button
+                          className="data-sources-action-btn"
+                          onClick={() => startEdit(ds)}
+                          title="Edit"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          className="data-sources-action-btn data-sources-action-danger"
+                          onClick={() => handleDelete(ds.id)}
+                          title="Delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="data-sources-card-preview">
+              <ImageCardGrid
+                items={dataSources.map((ds) => ({
+                  heading: ds.name,
+                  subheading: ds.description,
+                  icon: <Database size={18} />,
+                  width: "regular",
+                }))}
+              />
+            </div>
+          </>
+        )}
+        {authError && !loading && (
+          <div className="data-sources-protected">
+            <div className="data-sources-protected__content">
+              <AlertTriangle size={24} />
+              <div>
+                <strong>Protected content</strong>
+                <p>This data sources section requires a login to view.</p>
+                <Link to="/login" className="data-sources-protected__link">
+                  Sign in to continue
+                </Link>
+              </div>
+            </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
     </section>
   );
 };

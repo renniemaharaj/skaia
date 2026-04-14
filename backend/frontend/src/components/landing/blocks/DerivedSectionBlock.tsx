@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { LandingSection, LandingItem, DataSource } from "../types";
 import "./DerivedSectionBlock.css";
 import {
@@ -114,6 +115,7 @@ export const DerivedSectionBlock = ({
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [evaluatedItems, setEvaluatedItems] = useState<EvalItem[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [loadingDS, setLoadingDS] = useState(true);
 
@@ -126,14 +128,19 @@ export const DerivedSectionBlock = ({
   }, []);
 
   // Evaluate the selected data source
+  const isAuthError = (message: string) =>
+    /unauthorized|authentication|login required|401/i.test(message);
+
   const runEvaluation = useCallback(async () => {
     if (!cfg.datasource_id) {
       setEvaluatedItems([]);
       setEvalError(null);
+      setAuthError(false);
       return;
     }
     setEvaluating(true);
     setEvalError(null);
+    setAuthError(false);
     try {
       const ds = await apiRequest<DataSource>(
         `/config/datasources/${cfg.datasource_id}`,
@@ -143,9 +150,13 @@ export const DerivedSectionBlock = ({
       toast.success(`Evaluated "${ds.name}" — ${items.length} item(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setEvalError(msg);
+      const auth = isAuthError(msg);
+      setAuthError(auth);
+      setEvalError(auth ? null : msg);
       setEvaluatedItems([]);
-      toast.error("Evaluation failed: " + msg);
+      toast.error(
+        `Evaluation failed${auth ? ": authentication required" : ": " + msg}`,
+      );
     } finally {
       setEvaluating(false);
     }
@@ -264,87 +275,105 @@ export const DerivedSectionBlock = ({
         </div>
       )}
 
-      {/* Error display */}
-      {evalError && (
-        <div className="derived-section-error">
-          <AlertTriangle size={16} />
-          <span>{evalError}</span>
-        </div>
-      )}
-
-      {/* Loading state */}
-      {evaluating && (
-        <div className="derived-section-loading">
-          <Loader2 size={24} className="spin" />
-          <span>Evaluating data source…</span>
-        </div>
-      )}
-
-      {/* No data source selected */}
-      {!cfg.datasource_id && !canEdit && (
-        <div className="derived-section-empty">
-          <p>No data source configured.</p>
-        </div>
-      )}
-
-      {/* Rendered cards */}
-      {evaluatedItems.length > 0 && (
-        <div
-          className="derived-section-grid"
-          style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-        >
-          {evaluatedItems.map((item, i) => (
-            <div key={i} className="derived-section-card">
-              {item.image_url && (
-                <div className="derived-section-card-image">
-                  <img src={item.image_url} alt={item.heading ?? ""} />
-                </div>
-              )}
-              <div className="derived-section-card-body">
-                {item.icon && (
-                  <span className="derived-section-card-icon">{item.icon}</span>
-                )}
-                {item.heading && (
-                  <h3 className="derived-section-card-heading">
-                    {item.heading}
-                  </h3>
-                )}
-                {item.subheading && (
-                  <p className="derived-section-card-subheading">
-                    {item.subheading}
-                  </p>
-                )}
-              </div>
-              {item.link_url && (
-                <a
-                  href={item.link_url}
-                  className="derived-section-card-link"
-                  target={
-                    item.link_url.startsWith("http") ? "_blank" : undefined
-                  }
-                  rel={
-                    item.link_url.startsWith("http")
-                      ? "noopener noreferrer"
-                      : undefined
-                  }
-                >
-                  View →
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty result (after evaluation) */}
-      {!evaluating &&
-        !evalError &&
-        cfg.datasource_id &&
-        evaluatedItems.length === 0 && (
-          <div className="derived-section-empty">
-            <p>Data source returned no items.</p>
+      <div className="derived-section-frame">
+        {!authError && evalError && (
+          <div className="derived-section-error">
+            <AlertTriangle size={16} />
+            <span>{evalError}</span>
           </div>
         )}
+
+        {authError && (
+          <div className="derived-section-protected">
+            <div className="derived-section-protected__content">
+              <AlertTriangle size={24} />
+              <div>
+                <strong>Protected content</strong>
+                <p>This section requires authentication to view.</p>
+                <Link to="/login" className="derived-section-protected__link">
+                  Sign in to continue
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {evaluating && (
+          <div className="derived-section-loading">
+            <Loader2 size={24} className="spin" />
+            <span>Evaluating data source…</span>
+          </div>
+        )}
+
+        {/* No data source selected */}
+        {!cfg.datasource_id && !canEdit && (
+          <div className="derived-section-empty">
+            <p>No data source configured.</p>
+          </div>
+        )}
+
+        {/* Rendered cards */}
+        {!authError && evaluatedItems.length > 0 && (
+          <div
+            className="derived-section-grid"
+            style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+          >
+            {evaluatedItems.map((item, i) => (
+              <div key={i} className="derived-section-card">
+                {item.image_url && (
+                  <div className="derived-section-card-image">
+                    <img src={item.image_url} alt={item.heading ?? ""} />
+                  </div>
+                )}
+                <div className="derived-section-card-body">
+                  {item.icon && (
+                    <span className="derived-section-card-icon">
+                      {item.icon}
+                    </span>
+                  )}
+                  {item.heading && (
+                    <h3 className="derived-section-card-heading">
+                      {item.heading}
+                    </h3>
+                  )}
+                  {item.subheading && (
+                    <p className="derived-section-card-subheading">
+                      {item.subheading}
+                    </p>
+                  )}
+                </div>
+                {item.link_url && (
+                  <a
+                    href={item.link_url}
+                    className="derived-section-card-link"
+                    target={
+                      item.link_url.startsWith("http") ? "_blank" : undefined
+                    }
+                    rel={
+                      item.link_url.startsWith("http")
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
+                  >
+                    View →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty result (after evaluation) */}
+        {!evaluating &&
+          !authError &&
+          !evalError &&
+          cfg.datasource_id &&
+          evaluatedItems.length === 0 && (
+            <div className="derived-section-empty">
+              <p>Data source returned no items.</p>
+            </div>
+          )}
+      </div>
     </section>
   );
 };

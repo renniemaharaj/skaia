@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
 import type {
   LandingSection,
@@ -115,15 +116,26 @@ export const CustomSectionBlock = ({
   const [customSections, setCustomSections] = useState<CustomSection[]>([]);
   const [evaluatedItems, setEvaluatedItems] = useState<EvalItem[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [sectionType, setSectionType] = useState<PreviewType>("cards");
 
+  const isAuthError = (message: string) =>
+    /unauthorized|authentication|login required|401/i.test(message);
+
   // Load available custom sections
   useEffect(() => {
+    setAuthError(false);
     apiRequest<CustomSection[]>("/config/custom-sections")
       .then((list) => setCustomSections(list ?? []))
-      .catch(console.error)
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (isAuthError(msg)) {
+          setAuthError(true);
+        }
+        console.error(err);
+      })
       .finally(() => setLoadingList(false));
   }, []);
 
@@ -144,10 +156,12 @@ export const CustomSectionBlock = ({
     if (!selectedCS) {
       setEvaluatedItems([]);
       setEvalError(null);
+      setAuthError(false);
       return;
     }
     setEvaluating(true);
     setEvalError(null);
+    setAuthError(false);
     try {
       const ds = await apiRequest<DataSource>(
         `/config/datasources/${selectedCS.datasource_id}`,
@@ -157,9 +171,13 @@ export const CustomSectionBlock = ({
       toast.success(`"${selectedCS.name}" — ${items.length} item(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setEvalError(msg);
+      const auth = isAuthError(msg);
+      setAuthError(auth);
+      setEvalError(auth ? null : msg);
       setEvaluatedItems([]);
-      toast.error("Evaluation failed: " + msg);
+      toast.error(
+        "Evaluation failed" + (auth ? ": authentication required" : ": " + msg),
+      );
     } finally {
       setEvaluating(false);
     }
@@ -285,135 +303,155 @@ export const CustomSectionBlock = ({
         </div>
       )}
 
-      {/* Error display */}
-      {evalError && (
-        <div className="custom-section-error">
-          <AlertTriangle size={16} />
-          <span>{evalError}</span>
-        </div>
-      )}
-
-      {/* Loading state */}
-      {evaluating && (
-        <div className="custom-section-loading">
-          <Loader2 size={24} className="spin" />
-          <span>Evaluating…</span>
-        </div>
-      )}
-
-      {/* No section selected */}
-      {!cfg.custom_section_id && !canEdit && (
-        <div className="custom-section-empty">
-          <p>No custom section configured.</p>
-        </div>
-      )}
-
-      {/* Cards view */}
-      {evaluatedItems.length > 0 && sectionType === "cards" && (
-        <div
-          className="custom-section-grid"
-          style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-        >
-          {evaluatedItems.map((item, i) => (
-            <div key={i} className="custom-section-card">
-              {item.image_url && (
-                <div className="custom-section-card-image">
-                  <img src={item.image_url} alt={item.heading ?? ""} />
-                </div>
-              )}
-              <div className="custom-section-card-body">
-                {item.icon && (
-                  <span className="custom-section-card-icon">{item.icon}</span>
-                )}
-                {item.heading && (
-                  <h3 className="custom-section-card-heading">
-                    {item.heading}
-                  </h3>
-                )}
-                {item.subheading && (
-                  <p className="custom-section-card-subheading">
-                    {item.subheading}
-                  </p>
-                )}
-              </div>
-              {item.link_url && (
-                <a
-                  href={item.link_url}
-                  className="custom-section-card-link"
-                  target={
-                    item.link_url.startsWith("http") ? "_blank" : undefined
-                  }
-                  rel={
-                    item.link_url.startsWith("http")
-                      ? "noopener noreferrer"
-                      : undefined
-                  }
-                >
-                  View →
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Stat Cards view */}
-      {evaluatedItems.length > 0 && sectionType === "stat_cards" && (
-        <div
-          className="custom-section-stats-grid"
-          style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-        >
-          {evaluatedItems.map((item, i) => (
-            <div key={i} className="custom-section-stat">
-              {item.icon && (
-                <span className="custom-section-stat-icon">{item.icon}</span>
-              )}
-              <div className="custom-section-stat-value">
-                {item.heading ?? "—"}
-              </div>
-              <div className="custom-section-stat-label">
-                {item.subheading ?? ""}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Table view */}
-      {evaluatedItems.length > 0 && sectionType === "table" && (
-        <div className="custom-section-table-wrap">
-          <div className="custom-section-table-container">
-            <table className="custom-section-table">
-              <thead>
-                <tr>
-                  {tableColumns.map((col) => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {evaluatedItems.map((item, i) => (
-                  <tr key={i}>
-                    {tableColumns.map((col) => (
-                      <td key={col}>{formatCellValue(item[col])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty result */}
-      {!evaluating &&
-        !evalError &&
-        cfg.custom_section_id &&
-        evaluatedItems.length === 0 && (
-          <div className="custom-section-empty">
-            <p>Section returned no items.</p>
+      <div className="custom-section-frame">
+        {/* Error display */}
+        {!authError && evalError && (
+          <div className="custom-section-error">
+            <AlertTriangle size={16} />
+            <span>{evalError}</span>
           </div>
         )}
+
+        {authError && (
+          <div className="custom-section-protected">
+            <div className="custom-section-protected__content">
+              <AlertTriangle size={24} />
+              <div>
+                <strong>Protected content</strong>
+                <p>This section requires authentication to view.</p>
+                <Link to="/login" className="custom-section-protected__link">
+                  Sign in to continue
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading state */}
+        {evaluating && (
+          <div className="custom-section-loading">
+            <Loader2 size={24} className="spin" />
+            <span>Evaluating…</span>
+          </div>
+        )}
+
+        {/* No section selected */}
+        {!cfg.custom_section_id && !canEdit && (
+          <div className="custom-section-empty">
+            <p>No custom section configured.</p>
+          </div>
+        )}
+
+        {/* Cards view */}
+        {evaluatedItems.length > 0 && sectionType === "cards" && (
+          <div
+            className="custom-section-grid"
+            style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+          >
+            {evaluatedItems.map((item, i) => (
+              <div key={i} className="custom-section-card">
+                {item.image_url && (
+                  <div className="custom-section-card-image">
+                    <img src={item.image_url} alt={item.heading ?? ""} />
+                  </div>
+                )}
+                <div className="custom-section-card-body">
+                  {item.icon && (
+                    <span className="custom-section-card-icon">
+                      {item.icon}
+                    </span>
+                  )}
+                  {item.heading && (
+                    <h3 className="custom-section-card-heading">
+                      {item.heading}
+                    </h3>
+                  )}
+                  {item.subheading && (
+                    <p className="custom-section-card-subheading">
+                      {item.subheading}
+                    </p>
+                  )}
+                </div>
+                {item.link_url && (
+                  <a
+                    href={item.link_url}
+                    className="custom-section-card-link"
+                    target={
+                      item.link_url.startsWith("http") ? "_blank" : undefined
+                    }
+                    rel={
+                      item.link_url.startsWith("http")
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
+                  >
+                    View →
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stat Cards view */}
+        {evaluatedItems.length > 0 && sectionType === "stat_cards" && (
+          <div
+            className="custom-section-stats-grid"
+            style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+          >
+            {evaluatedItems.map((item, i) => (
+              <div key={i} className="custom-section-stat">
+                {item.icon && (
+                  <span className="custom-section-stat-icon">{item.icon}</span>
+                )}
+                <div className="custom-section-stat-value">
+                  {item.heading ?? "—"}
+                </div>
+                <div className="custom-section-stat-label">
+                  {item.subheading ?? ""}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Table view */}
+        {evaluatedItems.length > 0 && sectionType === "table" && (
+          <div className="custom-section-table-wrap">
+            <div className="custom-section-table-container">
+              <table className="custom-section-table">
+                <thead>
+                  <tr>
+                    {tableColumns.map((col) => (
+                      <th key={col}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {evaluatedItems.map((item, i) => (
+                    <tr key={i}>
+                      {tableColumns.map((col) => (
+                        <td key={col}>{formatCellValue(item[col])}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Empty result */}
+        {!evaluating &&
+          !authError &&
+          !evalError &&
+          cfg.custom_section_id &&
+          evaluatedItems.length === 0 && (
+            <div className="custom-section-empty">
+              <p>Section returned no items.</p>
+            </div>
+          )}
+      </div>
     </section>
   );
 };
