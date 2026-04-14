@@ -40,9 +40,16 @@ interface PresenceRowAction {
 }
 
 const PresencePanel = () => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(
+    typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
+  );
   const [chatMode, setChatMode] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [mobilePanelHeight, setMobilePanelHeight] = useState(
+    typeof window !== "undefined"
+      ? Math.round(window.visualViewport?.height ?? window.innerHeight)
+      : 0,
+  );
   const prevChatLenRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const rawUsers = useAtomValue(onlineUsersAtom);
@@ -148,6 +155,25 @@ const PresencePanel = () => {
     }
   }, [chatMessages.length, chatMode]);
 
+  // Ensure the mobile expanded panel resizes with the viewport
+  useEffect(() => {
+    const updateHeight = () => {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      setMobilePanelHeight(Math.round(height));
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("scroll", updateHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("scroll", updateHeight);
+    };
+  }, []);
+
   // ───────────────────────────────────────────────────────────────
 
   const UserRow = ({ u, dim }: { u: OnlineUser; dim?: boolean }) => {
@@ -244,9 +270,17 @@ const PresencePanel = () => {
     );
   };
 
+  const panelStyle =
+    expanded && mobilePanelHeight > 0
+      ? ({
+          "--presence-panel-height": `${mobilePanelHeight}px`,
+        } as React.CSSProperties)
+      : undefined;
+
   return (
     <div
       className={`presence-panel${expanded ? " presence-panel--expanded" : ""}`}
+      style={panelStyle}
     >
       {/* Control bar: mode tabs + expand toggle */}
       <div className="pp-controls">
