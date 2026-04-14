@@ -912,3 +912,310 @@
     padding: 12px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Preview type selector toolbar
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-preview__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.ds-preview__type-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.ds-preview__type-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ds-preview__type-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-color);
+}
+
+.ds-preview__type-tab--active {
+  color: var(--text-primary);
+  background: var(--bg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ds-preview__save-section-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: transparent;
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ds-preview__save-section-btn:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Save as custom section form
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-save-section {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.ds-save-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ds-save-section__body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ds-save-section__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ds-save-section__field label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ds-save-section__field input {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8125rem;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  transition: border-color 0.15s;
+}
+
+.ds-save-section__field input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.ds-save-section__info {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ds-save-section__info strong {
+  color: var(--text-primary);
+}
+
+.ds-save-section__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ds-save-section__cancel {
+  padding: 0.3rem 0.625rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ds-save-section__cancel:hover {
+  background: var(--bg-tertiary);
+}
+
+.ds-save-section__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.ds-save-section__submit:hover {
+  opacity: 0.9;
+}
+
+.ds-save-section__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Stat Cards preview
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-preview__stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.ds-preview-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.ds-preview-stat:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-hover);
+}
+
+.ds-preview-stat__icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ds-preview-stat__value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.ds-preview-stat__label {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Data Table preview
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-table-wrap {
+  padding: 12px;
+}
+
+.ds-table-container {
+  max-height: 480px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.ds-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ds-table th {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ds-table th:first-child {
+  border-radius: 10px 0 0 0;
+}
+
+.ds-table th:last-child {
+  border-radius: 0 10px 0 0;
+}
+
+.ds-table td {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.75rem;
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ds-table tbody tr:nth-child(even) {
+  background: var(--bg-tertiary);
+}
+
+.ds-table tbody tr:hover {
+  background: var(--card-hover-bg, rgba(91, 158, 142, 0.04));
+}

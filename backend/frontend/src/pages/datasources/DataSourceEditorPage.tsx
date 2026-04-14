@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  lazy,
+  Suspense,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,9 +18,22 @@ import {
   Code2,
   FileJson,
   Eye,
+  LayoutGrid,
+  BarChart3,
+  Table2,
+  Bookmark,
+  X,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
-import type { DataSource } from "../../components/landing/types";
+import type {
+  DataSource,
+  CustomSection,
+  PreviewType,
+} from "../../components/landing/types";
+import {
+  PREVIEW_TYPES,
+  PREVIEW_TYPE_LABELS,
+} from "../../components/landing/types";
 import { toast } from "sonner";
 import "./DataSources.css";
 
@@ -69,6 +89,24 @@ export default function DataSourceEditorPage() {
   // Active panel on the right
   type RightPanel = "preview" | "compiled" | "diagnostics";
   const [activePanel, setActivePanel] = useState<RightPanel>("preview");
+
+  // Preview section type
+  const [previewType, setPreviewType] = useState<PreviewType>("cards");
+
+  // Save as custom section
+  const [showSaveSection, setShowSaveSection] = useState(false);
+  const [sectionName, setSectionName] = useState("");
+  const [sectionDesc, setSectionDesc] = useState("");
+  const [savingSection, setSavingSection] = useState(false);
+
+  // Auto-detect table columns from preview items
+  const tableColumns = useMemo(() => {
+    const keys = new Set<string>();
+    previewItems.forEach((item) => {
+      Object.keys(item).forEach((k) => keys.add(k));
+    });
+    return Array.from(keys);
+  }, [previewItems]);
 
   const fetchDS = useCallback(async () => {
     if (isNew) return;
@@ -179,6 +217,40 @@ export default function DataSourceEditorPage() {
 
   const codeLineCount = code.split("\n").length;
   const editorHeight = Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
+
+  const formatCellValue = (val: unknown): string => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === "object") return JSON.stringify(val);
+    return String(val);
+  };
+
+  const handleSaveSection = async () => {
+    if (!sectionName.trim()) {
+      toast.error("Section name is required");
+      return;
+    }
+    setSavingSection(true);
+    try {
+      await apiRequest<CustomSection>("/config/custom-sections", {
+        method: "POST",
+        body: JSON.stringify({
+          name: sectionName,
+          description: sectionDesc,
+          datasource_id: Number(id),
+          section_type: previewType,
+          config: JSON.stringify({ columns: 3 }),
+        }),
+      });
+      toast.success(`Section "${sectionName}" saved`);
+      setShowSaveSection(false);
+      setSectionName("");
+      setSectionDesc("");
+    } catch {
+      toast.error("Failed to save section");
+    } finally {
+      setSavingSection(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -319,6 +391,94 @@ export default function DataSourceEditorPage() {
             {/* Preview */}
             {activePanel === "preview" && (
               <div className="ds-editor__preview">
+                {/* Preview type selector + save section */}
+                {previewItems.length > 0 && (
+                  <div className="ds-preview__toolbar">
+                    <div className="ds-preview__type-tabs">
+                      {PREVIEW_TYPES.map((type) => (
+                        <button
+                          key={type}
+                          className={`ds-preview__type-tab ${previewType === type ? "ds-preview__type-tab--active" : ""}`}
+                          onClick={() => setPreviewType(type)}
+                        >
+                          {type === "cards" && <LayoutGrid size={13} />}
+                          {type === "stat_cards" && <BarChart3 size={13} />}
+                          {type === "table" && <Table2 size={13} />}
+                          {PREVIEW_TYPE_LABELS[type]}
+                        </button>
+                      ))}
+                    </div>
+                    {!isNew && (
+                      <button
+                        className="ds-preview__save-section-btn"
+                        onClick={() => setShowSaveSection((v) => !v)}
+                      >
+                        <Bookmark size={13} /> Save as Section
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Save as section form */}
+                {showSaveSection && (
+                  <div className="ds-save-section">
+                    <div className="ds-save-section__header">
+                      <span>Save as Custom Section</span>
+                      <button
+                        className="icon-btn icon-btn--xs"
+                        onClick={() => setShowSaveSection(false)}
+                        title="Close"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="ds-save-section__body">
+                      <div className="ds-save-section__field">
+                        <label>Name</label>
+                        <input
+                          type="text"
+                          value={sectionName}
+                          onChange={(e) => setSectionName(e.target.value)}
+                          placeholder="e.g. Recent Threads Grid"
+                        />
+                      </div>
+                      <div className="ds-save-section__field">
+                        <label>Description</label>
+                        <input
+                          type="text"
+                          value={sectionDesc}
+                          onChange={(e) => setSectionDesc(e.target.value)}
+                          placeholder="Optional"
+                        />
+                      </div>
+                      <div className="ds-save-section__info">
+                        Type:{" "}
+                        <strong>{PREVIEW_TYPE_LABELS[previewType]}</strong>
+                      </div>
+                      <div className="ds-save-section__actions">
+                        <button
+                          className="ds-save-section__cancel"
+                          onClick={() => setShowSaveSection(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="ds-save-section__submit"
+                          onClick={handleSaveSection}
+                          disabled={savingSection || !sectionName.trim()}
+                        >
+                          {savingSection ? (
+                            <Loader2 size={13} className="spin" />
+                          ) : (
+                            <Save size={13} />
+                          )}
+                          {savingSection ? "Saving…" : "Save Section"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {previewItems.length === 0 && !evalError && (
                   <div className="ds-editor__preview-empty">
                     <Play size={32} />
@@ -334,7 +494,9 @@ export default function DataSourceEditorPage() {
                     <pre>{evalError}</pre>
                   </div>
                 )}
-                {previewItems.length > 0 && (
+
+                {/* Cards view */}
+                {previewItems.length > 0 && previewType === "cards" && (
                   <div className="ds-editor__preview-grid">
                     {previewItems.map((item, i) => (
                       <div key={i} className="ds-preview-card">
@@ -370,6 +532,53 @@ export default function DataSourceEditorPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Stat Cards view */}
+                {previewItems.length > 0 && previewType === "stat_cards" && (
+                  <div className="ds-preview__stats-grid">
+                    {previewItems.map((item, i) => (
+                      <div key={i} className="ds-preview-stat">
+                        {item.icon && (
+                          <span className="ds-preview-stat__icon">
+                            {item.icon}
+                          </span>
+                        )}
+                        <div className="ds-preview-stat__value">
+                          {item.heading ?? "—"}
+                        </div>
+                        <div className="ds-preview-stat__label">
+                          {item.subheading ?? ""}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Table view */}
+                {previewItems.length > 0 && previewType === "table" && (
+                  <div className="ds-table-wrap">
+                    <div className="ds-table-container">
+                      <table className="ds-table">
+                        <thead>
+                          <tr>
+                            {tableColumns.map((col) => (
+                              <th key={col}>{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewItems.map((item, i) => (
+                            <tr key={i}>
+                              {tableColumns.map((col) => (
+                                <td key={col}>{formatCellValue(item[col])}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>

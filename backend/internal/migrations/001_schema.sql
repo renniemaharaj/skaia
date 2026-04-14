@@ -442,3 +442,18 @@ CREATE TABLE IF NOT EXISTS data_sources (
     updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_data_sources_created_by ON data_sources(created_by);
+
+-- ── Custom sections (reusable data-bound visualizations, like Superset charts) ──
+CREATE TABLE IF NOT EXISTS custom_sections (
+    id              BIGSERIAL    PRIMARY KEY,
+    name            VARCHAR(255) NOT NULL,
+    description     TEXT         NOT NULL DEFAULT '',
+    datasource_id   BIGINT       NOT NULL REFERENCES data_sources(id) ON DELETE CASCADE,
+    section_type    VARCHAR(50)  NOT NULL DEFAULT 'cards',
+    config          JSONB        NOT NULL DEFAULT '{}',
+    created_by      BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_custom_sections_datasource ON custom_sections(datasource_id);
+CREATE INDEX IF NOT EXISTS idx_custom_sections_created_by ON custom_sections(created_by);

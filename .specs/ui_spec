@@ -389,3 +389,62 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 
 - `1024px` — collapse split panes to single column, stack editor panels
 - `768px` — stack page header, single-column grid, hide secondary list columns, column meta fields
+
+---
+
+## Custom Sections (Superset Charts Equivalent)
+
+Custom sections pair a **data source** (TypeScript code) with a **visualization type** to create reusable, named data-bound components — analogous to Superset charts. Pages (via the page builder) act as dashboards.
+
+### Architecture
+
+- **Data source**: TypeScript code snippet → compiles to JS → evaluates to `EvalItem[]`
+- **Custom section**: `{ name, datasource_id, section_type, config }` — saved to `custom_sections` table
+- **Page builder block**: `custom_section` block type selects a saved custom section, evaluates its datasource, and renders using the stored visualization type
+
+### Preview Types
+
+| Type         | Class prefix                              | Rendering                                                 |
+| ------------ | ----------------------------------------- | --------------------------------------------------------- |
+| `cards`      | `ds-preview-card` / `custom-section-card` | Grid of cards with image, icon, heading, subheading, link |
+| `stat_cards` | `ds-preview-stat` / `custom-section-stat` | Metric cards: large value + label + optional icon         |
+| `table`      | `ds-table` / `custom-section-table`       | Scrollable data table with auto-detected columns          |
+
+### Data Table Design
+
+Tables follow the Superset data grid pattern:
+
+- **Container**: `max-height: 480px`, `overflow: auto`, `border-radius: 10px`, `border: 1px solid var(--border-color)`
+- **Header**: `position: sticky; top: 0`, `--bg-tertiary`, uppercase labels at `0.6875rem / 600`
+- **Cells**: mono font (`JetBrains Mono`), `0.75rem`, `max-width: 280px` with `text-overflow: ellipsis`
+- **Zebra**: even rows use `--bg-tertiary`
+- **Hover**: `--card-hover-bg`
+- **Columns**: Auto-detected from all keys across all `EvalItem` objects
+
+### Flow
+
+1. User writes data source code in the editor
+2. Runs it → previews results
+3. Switches between visualization types (Cards / Stats / Table)
+4. Clicks "Save as Section" → names it → saved to `custom_sections` table
+5. In page builder, adds a `custom_section` block → selects from saved sections → renders automatically
+
+### Component Map Addition
+
+| Component                     | Classes                                 | File                            |
+| ----------------------------- | --------------------------------------- | ------------------------------- |
+| Custom section (page builder) | `.custom-section-block` + type-specific | `blocks/CustomSectionBlock.tsx` |
+| Preview cards                 | `.ds-preview-card`                      | `DataSourceEditorPage.tsx`      |
+| Preview stats                 | `.ds-preview-stat`                      | `DataSourceEditorPage.tsx`      |
+| Preview table                 | `.ds-table`                             | `DataSourceEditorPage.tsx`      |
+
+### API Routes
+
+```
+/config/custom-sections
+  GET  /                    — list all (optional ?datasource_id= filter)
+  GET  /{id}                — get by ID
+  POST /                    — create (JWT + home.manage)
+  PUT  /{id}                — update (JWT + home.manage)
+  DELETE /{id}              — delete (JWT + home.manage)
+```

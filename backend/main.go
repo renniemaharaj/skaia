@@ -21,6 +21,7 @@ import (
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/internal/auth"
 	icfg "github.com/skaia/backend/internal/config"
+	ics "github.com/skaia/backend/internal/customsection"
 	ids "github.com/skaia/backend/internal/datasource"
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
@@ -463,6 +464,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
 		ids.NewHandler(dsSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		csRepo := ics.NewRepository(db)
+		csSvc := ics.NewService(csRepo)
+		ics.NewHandler(csSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

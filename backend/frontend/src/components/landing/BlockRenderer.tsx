@@ -13,6 +13,7 @@ import { RichTextBlock } from "./blocks/RichTextBlock";
 import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
 import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
+import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 import {
@@ -61,6 +62,7 @@ const BLOCK_MAP: Record<
   code_editor: CodeEditorBlock as never,
   data_sources: DataSourcesBlock as never,
   derived_section: DerivedSectionBlock as never,
+  custom_section: CustomSectionBlock as never,
 };
 
 export const BlockRenderer = ({

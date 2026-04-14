@@ -78,6 +78,7 @@ export const SECTION_TYPES = [
   "code_editor",
   "data_sources",
   "derived_section",
+  "custom_section",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -96,6 +97,7 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   code_editor: "Code Editor",
   data_sources: "Data Sources",
   derived_section: "Derived Section",
+  custom_section: "Custom Section",
 };
 
 /** Creator info returned with a data source. */
@@ -112,6 +114,30 @@ export interface DataSource {
   name: string;
   description: string;
   code: string;
+  created_by?: number;
+  creator?: DataSourceCreator;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Preview / visualization types for data sources. */
+export const PREVIEW_TYPES = ["cards", "stat_cards", "table"] as const;
+export type PreviewType = (typeof PREVIEW_TYPES)[number];
+
+export const PREVIEW_TYPE_LABELS: Record<PreviewType, string> = {
+  cards: "Cards",
+  stat_cards: "Stats",
+  table: "Table",
+};
+
+/** A saved custom section (reusable data-bound visualization). */
+export interface CustomSection {
+  id: number;
+  name: string;
+  description: string;
+  datasource_id: number;
+  section_type: PreviewType;
+  config: string;
   created_by?: number;
   creator?: DataSourceCreator;
   created_at: string;
