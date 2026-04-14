@@ -28,6 +28,9 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
+  Maximize2,
+  AlignCenterHorizontal,
+  MoveVertical,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type {
@@ -136,6 +139,10 @@ export default function DataSourceEditorPage() {
 
   type LayoutMode = "default" | "wide" | "center";
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("default");
+  const [heightMode, setHeightMode] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(
+    typeof window !== "undefined" ? window.innerHeight : 800,
+  );
 
   // Save as custom section
   const [showSaveSection, setShowSaveSection] = useState(false);
@@ -426,8 +433,16 @@ export default function DataSourceEditorPage() {
     }
   };
 
+  useEffect(() => {
+    const handleResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const codeLineCount = code.split("\n").length;
-  const editorHeight = Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
+  const editorHeight = heightMode
+    ? Math.max(400, Math.min(viewportHeight * 0.55, 700))
+    : Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
 
   // Issues tab badge
   const issuesBadgeCount =
@@ -499,25 +514,39 @@ export default function DataSourceEditorPage() {
           <div className="ds-editor__layout-controls">
             <button
               type="button"
-              className={`ds-editor__layout-btn ${layoutMode === "wide" ? "ds-editor__layout-btn--active" : ""}`}
+              aria-pressed={layoutMode === "wide"}
+              className={`icon-btn icon-btn--md ds-editor__layout-btn ${layoutMode === "wide" ? "icon-btn--active" : "icon-btn--subtle"}`}
               onClick={() =>
                 setLayoutMode((prev) => (prev === "wide" ? "default" : "wide"))
               }
               title="Wide focus mode"
+              aria-label="Wide focus mode"
             >
-              Wide
+              <Maximize2 size={16} />
             </button>
             <button
               type="button"
-              className={`ds-editor__layout-btn ${layoutMode === "center" ? "ds-editor__layout-btn--active" : ""}`}
+              aria-pressed={layoutMode === "center"}
+              className={`icon-btn icon-btn--md ds-editor__layout-btn ${layoutMode === "center" ? "icon-btn--active" : "icon-btn--subtle"}`}
               onClick={() =>
                 setLayoutMode((prev) =>
                   prev === "center" ? "default" : "center",
                 )
               }
               title="Centered focus mode"
+              aria-label="Centered focus mode"
             >
-              Center
+              <AlignCenterHorizontal size={16} />
+            </button>
+            <button
+              type="button"
+              aria-pressed={heightMode}
+              className={`icon-btn icon-btn--md ds-editor__layout-btn ${heightMode ? "icon-btn--active" : "icon-btn--subtle"}`}
+              onClick={() => setHeightMode((prev) => !prev)}
+              title="Proportional height mode"
+              aria-label="Proportional height mode"
+            >
+              <MoveVertical size={16} />
             </button>
           </div>
           <button

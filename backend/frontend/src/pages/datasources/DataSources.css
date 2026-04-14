@@ -452,30 +452,13 @@
 }
 
 .ds-editor__layout-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 56px;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
+  min-width: 0;
+  padding: 0;
+  border: none;
 }
 
 .ds-editor__layout-btn:hover {
-  color: var(--text-primary);
   background: var(--bg-secondary);
-}
-
-.ds-editor__layout-btn--active {
-  color: var(--primary-color);
-  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
-  border-color: var(--primary-color);
 }
 
 /* Top bar */
@@ -691,6 +674,14 @@
 
 .ds-editor__tab:hover {
   color: var(--text-primary);
+}
+
+.ds-editor__tab:focus,
+.ds-editor__tab:focus-visible,
+.ds-preview__type-tab:focus,
+.ds-preview__type-tab:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .ds-editor__tab--active {
