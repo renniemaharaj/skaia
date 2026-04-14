@@ -40,6 +40,27 @@
   scroll-behavior: smooth;
 }
 
+.comment-section .comments-feed-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.comment-section .comment-card.new-comment {
+  animation: comment-new-highlight 2.5s ease-out;
+}
+
+@keyframes comment-new-highlight {
+  0% {
+    background-color: rgba(255, 235, 179, 0.95);
+  }
+  20% {
+    background-color: rgba(255, 243, 205, 0.9);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 .comment-section .comments-feed::-webkit-scrollbar {
   width: 5px;
 }

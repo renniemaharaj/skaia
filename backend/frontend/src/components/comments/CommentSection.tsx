@@ -1,5 +1,5 @@
 import { ThumbsUp, Trash2 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, type RefObject } from "react";
 import ComposerInput from "../input/Input";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
@@ -33,7 +33,9 @@ interface CommentSectionProps {
   noCommentsText?: string;
   placeholder?: string;
   rootClassName?: string;
-  commentsFeedRef?: React.RefObject<HTMLDivElement | null>;
+  commentsFeedRef?: RefObject<HTMLDivElement | null>;
+  topSentinelRef?: RefObject<HTMLDivElement | null>;
+  highlightedCommentId?: string | number | null;
   onCommentsScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
   showCount?: boolean;
   disabled?: boolean;
@@ -52,6 +54,8 @@ const CommentSection = ({
   placeholder = "Write a comment…",
   rootClassName = "",
   commentsFeedRef,
+  topSentinelRef,
+  highlightedCommentId,
   onCommentsScroll,
   showCount = true,
   disabled = false,
@@ -75,6 +79,7 @@ const CommentSection = ({
         ref={commentsFeedRef}
         onScroll={onCommentsScroll}
       >
+        <div ref={topSentinelRef} className="comments-feed-sentinel" />
         {isLoading ? (
           <div className="comments-feed-empty">Loading comments…</div>
         ) : !hasComments ? (
@@ -84,7 +89,14 @@ const CommentSection = ({
             const authorDisplay =
               comment.author_name || comment.author_username || "Unknown";
             return (
-              <div key={comment.id} className="comment-card">
+              <div
+                key={comment.id}
+                className={`comment-card${
+                  String(comment.id) === String(highlightedCommentId)
+                    ? " new-comment"
+                    : ""
+                }`}
+              >
                 <div className="comment-avatar">
                   <UserAvatar
                     src={comment.author_avatar || undefined}

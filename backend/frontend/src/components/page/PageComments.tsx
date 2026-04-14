@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 import CommentSection from "../comments/CommentSection";
+import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 
 interface PageComment {
   id: number;
@@ -27,54 +28,75 @@ interface Props {
 
 export default function PageComments({ pageId, pageSlug }: Props) {
   const [comments, setComments] = useState<PageComment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
-  const loadComments = useCallback(async () => {
-    try {
-      const data = await apiRequest<PageComment[]>(
-        `/config/pages/${pageSlug}/comments`,
+  const {
+    feedRef,
+    sentinelRef,
+    handleScroll,
+    isLoading,
+    appendComment,
+    highlightedCommentId,
+  } = useCommentsFeed<PageComment>({
+    comments,
+    setComments,
+    loadPage: async (offset) => {
+      const response = await apiRequest<PageComment[]>(
+        `/config/pages/${pageSlug}/comments?limit=50&offset=${offset}`,
       );
-      // Normalize likes to 0 (omitempty drops the field when 0, causing NaN on optimistic updates)
-      setComments((data ?? []).map((c) => ({ ...c, likes: c.likes ?? 0 })));
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSlug]);
-
-  useEffect(() => {
-    loadComments();
-  }, [loadComments]);
+      return response ?? [];
+    },
+    deps: [pageSlug],
+    getId: (comment) => String(comment.id),
+    limit: 50,
+  });
 
   useEffect(() => {
     const handler = (e: Event) => {
       const { action, data } = (
         e as CustomEvent<{ action: string; data?: any }>
       ).detail;
-      if (
-        (action === "page_comment_created" && data?.page_id === pageId) ||
-        (action === "page_comment_deleted" && data?.page_id === pageId)
-      ) {
-        loadComments();
+      if (data?.page_id !== pageId) return;
+
+      if (action === "page_comment_created") {
+        appendComment({
+          ...data,
+          likes: data.likes ?? 0,
+          can_delete: data.can_delete ?? false,
+          can_edit: data.can_edit ?? false,
+          is_liked: data.is_liked ?? false,
+        });
+      }
+      if (action === "page_comment_deleted") {
+        setComments((prev) => prev.filter((c) => c.id !== data.id));
       }
     };
     window.addEventListener("page:live:event", handler);
     return () => window.removeEventListener("page:live:event", handler);
-  }, [pageId, loadComments]);
+  }, [pageId, appendComment, setComments]);
 
   const handleSubmit = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || submitting) return;
     setSubmitting(true);
     try {
-      await apiRequest(`/config/pages/${pageId}/comments`, {
-        method: "POST",
-        body: JSON.stringify({ content: trimmed }),
-      });
-      loadComments();
+      const created = await apiRequest<PageComment>(
+        `/config/pages/${pageId}/comments`,
+        {
+          method: "POST",
+          body: JSON.stringify({ content: trimmed }),
+        },
+      );
+      if (created?.id != null) {
+        appendComment({
+          ...created,
+          likes: created.likes ?? 0,
+          can_delete: created.can_delete ?? false,
+          can_edit: created.can_edit ?? false,
+          is_liked: created.is_liked ?? false,
+        });
+      }
     } catch {
       toast.error("Failed to post comment");
     } finally {
@@ -108,6 +130,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
   };
 
   const handleDelete = async (commentId: number) => {
+    const previousComments = comments;
     setComments((prev) => prev.filter((c) => c.id !== commentId));
     try {
       await apiRequest(`/config/pages/comments/${commentId}`, {
@@ -115,7 +138,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
       });
     } catch {
       toast.error("Failed to delete comment");
-      loadComments();
+      setComments(previousComments);
     }
   };
 
@@ -136,7 +159,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
       <CommentSection
         title="Comments"
         comments={formattedComments}
-        isLoading={loading}
+        isLoading={isLoading}
         canComment={isAuthenticated}
         onSubmit={handleSubmit}
         onLike={handleLike}
@@ -144,6 +167,10 @@ export default function PageComments({ pageId, pageSlug }: Props) {
         currentUserId={isAuthenticated ? "signed-in" : null}
         noCommentsText="No comments yet."
         placeholder="Write a comment… (Shift+Enter for new line)"
+        commentsFeedRef={feedRef}
+        topSentinelRef={sentinelRef}
+        highlightedCommentId={highlightedCommentId}
+        onCommentsScroll={handleScroll}
         disabled={submitting}
       />
     </div>
