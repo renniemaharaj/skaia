@@ -247,6 +247,16 @@ export default function DataSourceEditorPage() {
           hdrs[key] = val;
         });
         entry.headers = hdrs;
+        if (!resp.ok) {
+          const clone = resp.clone();
+          let bodyText = "";
+          try {
+            bodyText = await clone.text();
+          } catch {
+            bodyText = "";
+          }
+          entry.error = `HTTP ${resp.status} ${resp.statusText}${bodyText ? `: ${bodyText}` : ""}`;
+        }
         entry.duration = Math.round(performance.now() - t0);
         fetchLog.push(entry);
         return resp;
@@ -683,6 +693,154 @@ export default function DataSourceEditorPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {runStats && (
+                  <div className="ds-run-summary">
+                    <div className="ds-run-summary__header">
+                      <span className="ds-run-summary__title">Run Summary</span>
+                      <span
+                        className={`ds-run-summary__status ds-run-summary__status--${
+                          runStats.exitReason === "success"
+                            ? "success"
+                            : runStats.exitReason === "timeout"
+                              ? "timeout"
+                              : "error"
+                        }`}
+                      >
+                        {runStats.exitReason === "success" ? (
+                          <CheckCircle2 size={11} />
+                        ) : (
+                          <AlertTriangle size={11} />
+                        )}
+                        {EXIT_REASON_LABELS[runStats.exitReason]}
+                      </span>
+                    </div>
+                    <div className="ds-run-summary__stats">
+                      <span className="ds-run-stat">
+                        <Clock size={11} />
+                        <strong>{runStats.duration}</strong>ms
+                      </span>
+                      {runStats.totalItems > 0 && (
+                        <span className="ds-run-stat">
+                          <Filter size={11} />
+                          <strong>{runStats.validItems}</strong>/
+                          {runStats.totalItems} valid
+                          {runStats.skippedItems > 0 && (
+                            <>
+                              {" "}
+                              (
+                              <strong style={{ color: "#f59e0b" }}>
+                                {runStats.skippedItems}
+                              </strong>{" "}
+                              skipped)
+                            </>
+                          )}
+                        </span>
+                      )}
+                      <span className="ds-run-stat">
+                        <Globe size={11} />
+                        <strong>{runStats.fetchLog.length}</strong> outbound
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {runStats && runStats.fetchLog.length > 0 && (
+                  <div className="ds-fetch-log">
+                    <div className="ds-fetch-log__title">Outbound Requests</div>
+                    {runStats.fetchLog.map((entry, i) => {
+                      const expanded = expandedFetch.has(i);
+                      const statusOk =
+                        entry.status !== undefined &&
+                        entry.status >= 200 &&
+                        entry.status < 300;
+                      const statusWarn =
+                        entry.status !== undefined &&
+                        entry.status >= 300 &&
+                        entry.status < 400;
+                      return (
+                        <div key={i} className="ds-fetch-entry">
+                          <div
+                            className="ds-fetch-entry__row"
+                            onClick={() =>
+                              setExpandedFetch((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(i)) next.delete(i);
+                                else next.add(i);
+                                return next;
+                              })
+                            }
+                          >
+                            <span className="ds-fetch-entry__method">
+                              {entry.method}
+                            </span>
+                            <span
+                              className="ds-fetch-entry__url"
+                              title={entry.url}
+                            >
+                              {entry.url}
+                            </span>
+                            {entry.status !== undefined ? (
+                              <span
+                                className={`ds-fetch-entry__status ${
+                                  statusOk
+                                    ? "ds-fetch-entry__status--ok"
+                                    : statusWarn
+                                      ? "ds-fetch-entry__status--warn"
+                                      : "ds-fetch-entry__status--error"
+                                }`}
+                              >
+                                {entry.status} {entry.statusText}
+                              </span>
+                            ) : entry.error ? (
+                              <span className="ds-fetch-entry__status ds-fetch-entry__status--error">
+                                Error
+                              </span>
+                            ) : null}
+                            {entry.duration !== undefined && (
+                              <span className="ds-fetch-entry__duration">
+                                {entry.duration}ms
+                              </span>
+                            )}
+                            {expanded ? (
+                              <ChevronDown
+                                size={13}
+                                style={{
+                                  flexShrink: 0,
+                                  color: "var(--text-secondary)",
+                                }}
+                              />
+                            ) : (
+                              <ChevronRight
+                                size={13}
+                                style={{
+                                  flexShrink: 0,
+                                  color: "var(--text-secondary)",
+                                }}
+                              />
+                            )}
+                          </div>
+                          {expanded &&
+                            entry.headers &&
+                            Object.keys(entry.headers).length > 0 && (
+                              <div className="ds-fetch-entry__headers">
+                                {Object.entries(entry.headers).map(([k, v]) => (
+                                  <div key={k}>
+                                    <strong>{k}:</strong> {v}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          {expanded && entry.error && (
+                            <div className="ds-fetch-entry__error">
+                              {entry.error}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
