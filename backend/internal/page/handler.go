@@ -31,10 +31,10 @@ func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
 	r.Route("/config/pages", func(r chi.Router) {
 		// Public reads
-		r.Get("/index", h.getIndex)
+		r.With(optJWT).Get("/index", h.getIndex)
 		r.Get("/list", h.listPages)
-		r.Get("/browse", h.browsePages)
-		r.Get("/{slug}", h.getBySlug)
+		r.With(optJWT).Get("/browse", h.browsePages)
+		r.With(optJWT).Get("/{slug}", h.getBySlug)
 		r.With(optJWT).Get("/{slug}/comments", h.listComments)
 		r.Post("/{slug}/view", h.recordView)
 
@@ -93,6 +93,33 @@ func (h *Handler) canEditPage(r *http.Request, pageID int64) bool {
 	}
 	return h.svc.CanEdit(pageID, uid, h.isAdmin(r))
 }
+func (h *Handler) canDeletePage(r *http.Request, pageID int64) bool {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		return false
+	}
+	if h.isAdmin(r) {
+		return true
+	}
+	if has, _ := h.userSvc.HasPermission(uid, "home.page-delete"); has {
+		return true
+	}
+	return h.svc.CanDelete(pageID, uid, h.isAdmin(r))
+}
+
+func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok || p == nil {
+		return false
+	}
+	if h.isAdmin(r) {
+		return true
+	}
+	if has, _ := h.userSvc.HasPermission(uid, "home.page-delete"); has {
+		return true
+	}
+	return p.OwnerID != nil && *p.OwnerID == uid
+}
 
 // ── handlers ────────────────────────────────────────────────────────────────
 
@@ -106,6 +133,7 @@ func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 				h.svc.EnrichPage(p)
 				uid, _ := utils.UserIDFromCtx(r)
 				h.svc.EnrichPageEngagement(p, uidPtr(uid))
+				p.CanDelete = h.canDeletePageForPage(r, p)
 				utils.WriteJSON(w, http.StatusOK, p)
 				return
 			}
@@ -120,6 +148,7 @@ func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 	h.svc.EnrichPage(p)
 	uid, _ := utils.UserIDFromCtx(r)
 	h.svc.EnrichPageEngagement(p, uidPtr(uid))
+	p.CanDelete = h.canDeletePageForPage(r, p)
 	utils.WriteJSON(w, http.StatusOK, p)
 }
 
@@ -145,6 +174,7 @@ func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
 	h.svc.EnrichPage(p)
 	uid, _ := utils.UserIDFromCtx(r)
 	h.svc.EnrichPageEngagement(p, uidPtr(uid))
+	p.CanDelete = h.canDeletePageForPage(r, p)
 	utils.WriteJSON(w, http.StatusOK, p)
 }
 
@@ -217,13 +247,13 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	id, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if !h.canDeletePage(r, id) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 	if err := h.svc.Delete(id); err != nil {
@@ -255,6 +285,7 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 		if p.Editors == nil {
 			p.Editors = []*models.PageUser{}
 		}
+		p.CanDelete = h.canDeletePageForPage(r, p)
 	}
 	utils.WriteJSON(w, http.StatusOK, pages)
 }

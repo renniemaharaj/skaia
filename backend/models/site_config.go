@@ -111,6 +111,7 @@ type Page struct {
 	Likes        int         `json:"likes"`
 	IsLiked      bool        `json:"is_liked,omitempty"`
 	CommentCount int         `json:"comment_count"`
+	CanDelete    bool        `json:"can_delete,omitempty"`
 }
 
 // PageComment represents a comment on a custom page.

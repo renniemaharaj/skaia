@@ -264,6 +264,40 @@
   margin-top: 0.125rem;
 }
 
+.cp-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cp-card__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cp-card__top-left {
+  min-width: 0;
+  flex: 1;
+}
+
+.cp-list__col--action {
+  width: 3rem;
+  text-align: center;
+}
+
+.cp-delete-btn {
+  min-width: 0;
+  padding: 0.45rem;
+  border-radius: 9999px;
+  color: var(--text-danger);
+}
+
+.cp-delete-btn:hover {
+  background: var(--bg-secondary);
+}
+
 .cp-card:hover .cp-card__link-icon {
   opacity: 1;
 }

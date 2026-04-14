@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
 import { useAtomValue } from "jotai";
 import {
@@ -43,7 +43,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     isOwner,
     updatePage,
     createPage,
+    deletePage,
   } = usePageData();
+  const navigate = useNavigate();
   const [editingCount, setEditingCount] = useState(0);
 
   const {
@@ -63,6 +65,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [showOwnership, setShowOwnership] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
+  const canDelete =
+    !!page?.can_delete || (page?.id != null && (isAdmin || isOwner));
   // Toolbar visible to admins and owners only — editors can edit inline but don't see the bar
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showOwnershipBtn = showToolbar && page?.id && slug;
@@ -138,6 +142,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setPageLikes((prev) => prev + (wasLiked ? 1 : -1));
     }
   };
+
+  const handleDeletePage = useCallback(async () => {
+    if (!page?.id) return;
+    if (!window.confirm("Delete this page? This cannot be undone.")) return;
+    try {
+      await deletePage(page.id);
+      toast.success("Page deleted");
+      navigate("/pages");
+    } catch {
+      toast.error("Failed to delete page");
+    }
+  }, [deletePage, navigate, page?.id]);
 
   // Track whether the page needs to be created (404 + editable or sandbox enabled).
   const isNewPage = !!(slug && error && guestSandboxMode);
@@ -559,6 +575,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               >
                 <Users size={16} />
                 Manage
+              </button>
+            )}
+            {canDelete && page?.id && (
+              <button
+                type="button"
+                className="page-admin-btn page-admin-btn--danger"
+                onClick={handleDeletePage}
+                title="Delete this page"
+              >
+                Delete
               </button>
             )}
             {isAdmin && !slug && (

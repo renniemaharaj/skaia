@@ -24,6 +24,7 @@ export interface PageBuilderPage {
   likes: number;
   is_liked: boolean;
   comment_count: number;
+  can_delete?: boolean;
   created_at: string;
   updated_at: string;
 }

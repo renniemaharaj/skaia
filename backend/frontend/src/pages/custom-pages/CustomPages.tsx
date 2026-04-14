@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   FileText,
@@ -9,7 +15,9 @@ import {
   Search,
   LayoutGrid,
   List,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
@@ -121,6 +129,32 @@ export default function CustomPages() {
     );
   };
 
+  const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
+
+  const handleDeletePage = useCallback(
+    async (event: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!page.id || !page.can_delete) return;
+      if (!window.confirm(`Delete custom page "${page.title || page.slug}"?`)) {
+        return;
+      }
+      setDeletingPageId(page.id);
+      try {
+        await apiRequest(`/config/pages/${page.id}`, {
+          method: "DELETE",
+        });
+        setPages((prev) => prev.filter((p) => p.id !== page.id));
+        toast.success("Page deleted");
+      } catch {
+        toast.error("Failed to delete page");
+      } finally {
+        setDeletingPageId(null);
+      }
+    },
+    [],
+  );
+
   return (
     <div className="custom-pages">
       <div className="custom-pages__header">
@@ -193,8 +227,23 @@ export default function CustomPages() {
               className="cp-card card card--interactive"
             >
               <div className="cp-card__top">
-                <h3 className="cp-card__title">{page.title || page.slug}</h3>
-                <ExternalLink size={14} className="cp-card__link-icon" />
+                <div className="cp-card__top-left">
+                  <h3 className="cp-card__title">{page.title || page.slug}</h3>
+                </div>
+                <div className="cp-card__top-actions">
+                  {page.can_delete && (
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--subtle cp-delete-btn"
+                      onClick={(event) => handleDeletePage(event, page)}
+                      disabled={deletingPageId === page.id}
+                      title="Delete page"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ExternalLink size={14} className="cp-card__link-icon" />
+                </div>
               </div>
 
               {page.description && (
@@ -245,6 +294,7 @@ export default function CustomPages() {
             <span className="cp-list__col">Description</span>
             <span className="cp-list__col">Owner</span>
             <span className="cp-list__col">Updated</span>
+            <span className="cp-list__col cp-list__col--action">Action</span>
           </div>
           {filtered.map((page) => (
             <Link
@@ -272,6 +322,21 @@ export default function CustomPages() {
               </span>
               <span className="cp-list__col cp-list__col--updated">
                 {relativeTimeAgo(page.updated_at)}
+              </span>
+              <span className="cp-list__col cp-list__col--action">
+                {page.can_delete ? (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--subtle cp-delete-btn"
+                    onClick={(event) => handleDeletePage(event, page)}
+                    disabled={deletingPageId === page.id}
+                    title="Delete page"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                ) : (
+                  <span className="cp-list__none">—</span>
+                )}
               </span>
             </Link>
           ))}

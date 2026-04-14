@@ -113,6 +113,18 @@ func (s *Service) CanEdit(pageID, userID int64, isAdmin bool) bool {
 	return isEd
 }
 
+// CanDelete returns true if the user can delete the page (admin or owner).
+func (s *Service) CanDelete(pageID, userID int64, isAdmin bool) bool {
+	if isAdmin {
+		return true
+	}
+	page, err := s.repo.GetByID(pageID)
+	if err != nil {
+		return false
+	}
+	return page.OwnerID != nil && *page.OwnerID == userID
+}
+
 // ── Engagement ──────────────────────────────────────────────────────────────
 
 func (s *Service) RecordView(pageID int64, userID *int64) error {
