@@ -737,10 +737,11 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
-  padding: 12px 0 4px;
+  padding: 12px 12px 4px 0;
   max-height: 560px;
   overflow-y: auto;
   align-content: start;
+  box-sizing: border-box;
 }
 
 .ds-preview-card {
