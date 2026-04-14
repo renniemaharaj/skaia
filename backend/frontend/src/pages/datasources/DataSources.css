@@ -434,6 +434,50 @@
   min-height: 600px;
 }
 
+.ds-editor-page--wide {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 16px 16px 0;
+}
+
+.ds-editor-page--center {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ds-editor__layout-controls {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.ds-editor__layout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ds-editor__layout-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.ds-editor__layout-btn--active {
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  border-color: var(--primary-color);
+}
+
 /* Top bar */
 .ds-editor__topbar {
   display: flex;
@@ -907,6 +951,22 @@
 
   .ds-editor__topbar {
     flex-wrap: wrap;
+  }
+
+  .ds-editor__topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .ds-editor__layout-controls {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .ds-editor__layout-btn {
+    flex: 1;
   }
 
   .ds-editor-page {

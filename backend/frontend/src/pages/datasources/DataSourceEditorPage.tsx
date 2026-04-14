@@ -134,6 +134,9 @@ export default function DataSourceEditorPage() {
   // Preview section type
   const [previewType, setPreviewType] = useState<PreviewType>("cards");
 
+  type LayoutMode = "default" | "wide" | "center";
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("default");
+
   // Save as custom section
   const [showSaveSection, setShowSaveSection] = useState(false);
   const [sectionName, setSectionName] = useState("");
@@ -481,7 +484,9 @@ export default function DataSourceEditorPage() {
   }
 
   return (
-    <div className="ds-editor-page">
+    <div
+      className={`ds-editor-page ${layoutMode !== "default" ? `ds-editor-page--${layoutMode}` : ""}`}
+    >
       {/* Top bar */}
       <div className="ds-editor__topbar">
         <button
@@ -491,6 +496,30 @@ export default function DataSourceEditorPage() {
           <ArrowLeft size={16} /> Data Sources
         </button>
         <div className="ds-editor__topbar-actions">
+          <div className="ds-editor__layout-controls">
+            <button
+              type="button"
+              className={`ds-editor__layout-btn ${layoutMode === "wide" ? "ds-editor__layout-btn--active" : ""}`}
+              onClick={() =>
+                setLayoutMode((prev) => (prev === "wide" ? "default" : "wide"))
+              }
+              title="Wide focus mode"
+            >
+              Wide
+            </button>
+            <button
+              type="button"
+              className={`ds-editor__layout-btn ${layoutMode === "center" ? "ds-editor__layout-btn--active" : ""}`}
+              onClick={() =>
+                setLayoutMode((prev) =>
+                  prev === "center" ? "default" : "center",
+                )
+              }
+              title="Centered focus mode"
+            >
+              Center
+            </button>
+          </div>
           <button
             className="ds-editor__run-btn"
             onClick={handleRun}
