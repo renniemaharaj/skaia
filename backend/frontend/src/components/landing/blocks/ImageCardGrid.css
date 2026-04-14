@@ -1,0 +1,117 @@
+.image-card-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.image-card-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  grid-column: span 4;
+}
+
+.image-card-item--narrow {
+  grid-column: span 3;
+}
+
+.image-card-item--regular {
+  grid-column: span 4;
+}
+
+.image-card-item--wide {
+  grid-column: span 6;
+}
+
+.image-card-item--halfway {
+  grid-column: span 8;
+}
+
+.image-card-item--full {
+  grid-column: 1 / -1;
+}
+
+.image-card-image {
+  background: var(--bg-tertiary);
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--text-secondary);
+}
+
+.image-card-placeholder-text {
+  font-size: 1rem;
+  opacity: 0.75;
+}
+
+.image-card-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.image-card-icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-secondary);
+}
+
+.image-card-heading {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.image-card-subheading {
+  margin: 0;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.image-card-link {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .image-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .image-card-item--narrow,
+  .image-card-item--regular,
+  .image-card-item--wide,
+  .image-card-item--full {
+    grid-column: auto;
+  }
+}

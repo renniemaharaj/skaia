@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import type { LandingSection, DataSource } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import { ImageCardGrid } from "./ImageCardGrid";
 import "./DataSourcesBlock.css";
 import {
   SectionToolbar,
@@ -250,47 +251,59 @@ export const DataSourcesBlock = ({
           No data sources yet. Create one to get started.
         </p>
       ) : (
-        <table className="data-sources-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Updated</th>
-              {canEdit && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {dataSources.map((ds) => (
-              <tr key={ds.id}>
-                <td className="data-sources-id">{ds.id}</td>
-                <td className="data-sources-name">{ds.name}</td>
-                <td className="data-sources-desc">{ds.description || "—"}</td>
-                <td className="data-sources-date">
-                  {new Date(ds.updated_at).toLocaleDateString()}
-                </td>
-                {canEdit && (
-                  <td className="data-sources-actions">
-                    <button
-                      className="data-sources-action-btn"
-                      onClick={() => startEdit(ds)}
-                      title="Edit"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      className="data-sources-action-btn data-sources-action-danger"
-                      onClick={() => handleDelete(ds.id)}
-                      title="Delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                )}
+        <>
+          <table className="data-sources-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Updated</th>
+                {canEdit && <th>Actions</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {dataSources.map((ds) => (
+                <tr key={ds.id}>
+                  <td className="data-sources-id">{ds.id}</td>
+                  <td className="data-sources-name">{ds.name}</td>
+                  <td className="data-sources-desc">{ds.description || "—"}</td>
+                  <td className="data-sources-date">
+                    {new Date(ds.updated_at).toLocaleDateString()}
+                  </td>
+                  {canEdit && (
+                    <td className="data-sources-actions">
+                      <button
+                        className="data-sources-action-btn"
+                        onClick={() => startEdit(ds)}
+                        title="Edit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className="data-sources-action-btn data-sources-action-danger"
+                        onClick={() => handleDelete(ds.id)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="data-sources-card-preview">
+            <ImageCardGrid
+              items={dataSources.map((ds) => ({
+                heading: ds.name,
+                subheading: ds.description,
+                icon: <Database size={18} />,
+                width: "regular",
+              }))}
+            />
+          </div>
+        </>
       )}
     </section>
   );

@@ -204,6 +204,10 @@
   background: var(--bg-secondary);
 }
 
+.data-sources-card-preview {
+  margin-top: 1.5rem;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {

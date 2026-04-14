@@ -38,6 +38,7 @@ import type {
   CustomSection,
   PreviewType,
 } from "../../components/landing/types";
+import { ImageCardGrid } from "../../components/landing/blocks/ImageCardGrid";
 import {
   PREVIEW_TYPES,
   PREVIEW_TYPE_LABELS,
@@ -920,42 +921,16 @@ export default function DataSourceEditorPage() {
 
                 {/* Cards view */}
                 {previewItems.length > 0 && previewType === "cards" && (
-                  <div className="ds-editor__preview-grid">
-                    {previewItems.map((item, i) => (
-                      <div key={i} className="ds-preview-card">
-                        {item.image_url && (
-                          <div className="ds-preview-card__image">
-                            <img
-                              src={item.image_url}
-                              alt={item.heading ?? ""}
-                            />
-                          </div>
-                        )}
-                        <div className="ds-preview-card__body">
-                          {item.icon && (
-                            <span className="ds-preview-card__icon">
-                              {item.icon}
-                            </span>
-                          )}
-                          {item.heading && (
-                            <h4 className="ds-preview-card__heading">
-                              {item.heading}
-                            </h4>
-                          )}
-                          {item.subheading && (
-                            <p className="ds-preview-card__subheading">
-                              {item.subheading}
-                            </p>
-                          )}
-                          {item.link_url && (
-                            <span className="ds-preview-card__link">
-                              {item.link_url}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ImageCardGrid
+                    items={previewItems.map((item) => ({
+                      heading: item.heading,
+                      subheading: item.subheading,
+                      image_url: item.image_url,
+                      icon: item.icon,
+                      link_url: item.link_url,
+                      width: "regular",
+                    }))}
+                  />
                 )}
 
                 {/* Stat Cards view */}

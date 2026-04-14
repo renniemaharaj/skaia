@@ -8,6 +8,7 @@ import {
   Pencil,
   Maximize2,
   Minimize2,
+  AlignCenterHorizontal,
 } from "lucide-react";
 import type { LandingSection, LandingItem } from "../types";
 import {
@@ -28,7 +29,7 @@ interface Album {
   label: string;
 }
 
-type CardWidth = "narrow" | "regular" | "wide" | "full";
+type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
 
 const CARD_WIDTH_OPTIONS: Array<{
   key: CardWidth;
@@ -38,6 +39,11 @@ const CARD_WIDTH_OPTIONS: Array<{
   { key: "narrow", title: "Narrow card", icon: <Minimize2 size={14} /> },
   { key: "regular", title: "Regular card", icon: <LayoutGrid size={14} /> },
   { key: "wide", title: "Wide card", icon: <RectangleHorizontal size={14} /> },
+  {
+    key: "halfway",
+    title: "Halfway card",
+    icon: <AlignCenterHorizontal size={14} />,
+  },
   { key: "full", title: "Full width", icon: <Maximize2 size={14} /> },
 ];
 
@@ -66,6 +72,7 @@ function getItemMeta(
         width === "narrow" ||
         width === "regular" ||
         width === "wide" ||
+        width === "halfway" ||
         width === "full"
           ? width
           : c.wide
@@ -101,6 +108,7 @@ function getSectionCardWidth(config: string): CardWidth {
       c.default_card_width === "narrow" ||
       c.default_card_width === "regular" ||
       c.default_card_width === "wide" ||
+      c.default_card_width === "halfway" ||
       c.default_card_width === "full"
     ) {
       return c.default_card_width;
