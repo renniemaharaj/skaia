@@ -7,6 +7,14 @@
 }
 
 /* TipTap Renderer Responsive Styling */
+.reactjs-tiptap-editor .richtext-shadow,
+.richtext-dialog-content .richtext-shadow,
+.richtext-shadow {
+  box-shadow: none !important;
+  --richtext-shadow: none !important;
+  --richtext-shadow-colored: none !important;
+}
+
 .renderer-editor {
   width: 900px;
   max-width: 100%;

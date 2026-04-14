@@ -136,7 +136,7 @@ export default function CustomPages() {
       event.preventDefault();
       event.stopPropagation();
       if (!page.id || !page.can_delete) return;
-      if (!window.confirm(`Delete custom page "${page.title || page.slug}"?`)) {
+      if (!window.confirm("Delete this page? This cannot be undone.")) {
         return;
       }
       setDeletingPageId(page.id);
@@ -234,7 +234,7 @@ export default function CustomPages() {
                   {page.can_delete && (
                     <button
                       type="button"
-                      className="icon-btn icon-btn--subtle cp-delete-btn"
+                      className="icon-btn icon-btn--sm icon-btn--danger cp-delete-btn"
                       onClick={(event) => handleDeletePage(event, page)}
                       disabled={deletingPageId === page.id}
                       title="Delete page"
@@ -327,7 +327,7 @@ export default function CustomPages() {
                 {page.can_delete ? (
                   <button
                     type="button"
-                    className="icon-btn icon-btn--subtle cp-delete-btn"
+                    className="icon-btn icon-btn--sm icon-btn--danger cp-delete-btn"
                     onClick={(event) => handleDeletePage(event, page)}
                     disabled={deletingPageId === page.id}
                     title="Delete page"
