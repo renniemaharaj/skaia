@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FileText,
@@ -7,16 +7,39 @@ import {
   UserCog2Icon,
   ExternalLink,
   Search,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
+import type { LandingSection } from "../../components/landing/types";
+import { BlockRenderer } from "../../components/landing/BlockRenderer";
 import "./CustomPages.css";
+
+const parsePageSections = (content: string) => {
+  try {
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) return parsed as LandingSection[];
+  } catch {
+    // ignore invalid content
+  }
+  return [];
+};
+
+const noop = () => {};
+
+type ViewMode = "grid" | "list";
 
 export default function CustomPages() {
   const [pages, setPages] = useState<PageBuilderPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    return (
+      (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
+    );
+  });
 
   useEffect(() => {
     apiRequest<PageBuilderPage[]>("/config/pages/browse")
@@ -35,6 +58,10 @@ export default function CustomPages() {
     return () => window.removeEventListener("page:live:event", handler);
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("custom-pages-view-mode", viewMode);
+  }, [viewMode]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return pages;
     const q = search.toLowerCase();
@@ -45,6 +72,10 @@ export default function CustomPages() {
         (p.description ?? "").toLowerCase().includes(q),
     );
   }, [pages, search]);
+
+  const toggleView = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+  }, []);
 
   const UserChip = ({ user }: { user: PageUser }) => (
     <span className="cp-user-chip">
@@ -61,8 +92,64 @@ export default function CustomPages() {
     </span>
   );
 
+  const PageThumb = ({ page }: { page: PageBuilderPage }) => {
+    const sections = useMemo(
+      () => parsePageSections(page.content),
+      [page.content],
+    );
+
+    return (
+      <div className="cp-card__thumb" data-custom-page-preview>
+        {sections.length > 0 ? (
+          <div className="cp-card__thumb-inner">
+            <BlockRenderer
+              sections={sections}
+              canEdit={false}
+              onUpdateSection={noop}
+              onDeleteSection={noop}
+              onCreateSection={noop}
+              onCreateItem={noop}
+              onUpdateItem={noop}
+              onDeleteItem={noop}
+              onMoveSection={noop}
+            />
+          </div>
+        ) : (
+          <div className="cp-card__thumb-empty">No preview</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="custom-pages">
+      <div className="custom-pages__header">
+        <div className="custom-pages__header-left">
+          <h1 className="custom-pages__title">Custom Pages</h1>
+          <p className="custom-pages__subtitle">
+            Browse, search, and preview your custom page content.
+          </p>
+        </div>
+        <div className="custom-pages__header-actions">
+          <div className="custom-pages__view-toggle">
+            <button
+              className={`icon-btn icon-btn--lg cp-view-btn ${viewMode === "grid" ? "icon-btn--active" : "icon-btn--subtle"}`}
+              onClick={() => toggleView("grid")}
+              title="Grid view"
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              className={`icon-btn icon-btn--lg cp-view-btn ${viewMode === "list" ? "icon-btn--active" : "icon-btn--subtle"}`}
+              onClick={() => toggleView("list")}
+              title="List view"
+            >
+              <List size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {pages.length > 0 && (
         <div className="custom-pages__toolbar">
           <div className="custom-pages__search">
@@ -74,12 +161,10 @@ export default function CustomPages() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          {search && (
-            <span className="custom-pages__count">
-              {filtered.length} {filtered.length === 1 ? "page" : "pages"}
-              {` matching "${search}"`}
-            </span>
-          )}
+          <span className="custom-pages__count">
+            {filtered.length} custom page{filtered.length !== 1 ? "s" : ""}
+            {search && ` matching "${search}"`}
+          </span>
         </div>
       )}
 
@@ -92,7 +177,14 @@ export default function CustomPages() {
         </div>
       )}
 
-      {!loading && pages.length > 0 && (
+      {!loading && pages.length > 0 && filtered.length === 0 && (
+        <div className="custom-pages__empty">
+          <FileText size={32} />
+          <p>No pages match your search.</p>
+        </div>
+      )}
+
+      {!loading && filtered.length > 0 && viewMode === "grid" && (
         <div className="custom-pages__grid">
           {filtered.map((page) => (
             <Link
@@ -108,6 +200,8 @@ export default function CustomPages() {
               {page.description && (
                 <p className="cp-card__desc">{page.description}</p>
               )}
+
+              <PageThumb page={page} />
 
               <div className="cp-card__meta">
                 {page.owner && (
@@ -139,6 +233,46 @@ export default function CustomPages() {
               {page.is_index && (
                 <span className="cp-card__badge">Homepage</span>
               )}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {!loading && filtered.length > 0 && viewMode === "list" && (
+        <div className="custom-pages__list">
+          <div className="cp-list__header">
+            <span className="cp-list__col">Page</span>
+            <span className="cp-list__col">Description</span>
+            <span className="cp-list__col">Owner</span>
+            <span className="cp-list__col">Updated</span>
+          </div>
+          {filtered.map((page) => (
+            <Link
+              key={page.id}
+              to={page.is_index ? "/" : `/page/${page.slug}`}
+              className="cp-list__row"
+            >
+              <span className="cp-list__col cp-list__col--name">
+                <span className="cp-list__name">{page.title || page.slug}</span>
+                {page.is_index && (
+                  <span className="cp-card__badge cp-card__badge--inline">
+                    Homepage
+                  </span>
+                )}
+              </span>
+              <span className="cp-list__col cp-list__col--desc">
+                {page.description || "—"}
+              </span>
+              <span className="cp-list__col cp-list__col--owner">
+                {page.owner ? (
+                  <UserChip user={page.owner} />
+                ) : (
+                  <span className="cp-list__none">—</span>
+                )}
+              </span>
+              <span className="cp-list__col cp-list__col--updated">
+                {relativeTimeAgo(page.updated_at)}
+              </span>
             </Link>
           ))}
         </div>
