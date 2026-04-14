@@ -27,6 +27,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 30px;
+  align-items: stretch;
+}
+
+.info-card,
+.community-info .pb-add-item-btn {
+  min-height: 320px;
 }
 
 .info-card {
