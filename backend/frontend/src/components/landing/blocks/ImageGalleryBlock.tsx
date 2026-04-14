@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import "./ImageGalleryBlock.css";
 import {
   Plus,
   Trash2,
@@ -284,10 +285,10 @@ export const ImageGalleryBlock = ({
                     onUploaded={(url) =>
                       onItemUpdate({ ...item, image_url: url })
                     }
-                    className="landing-action-btn-abs"
+                    className="pb-action-btn-abs"
                   />
                   <button
-                    className="landing-action-btn gallery-toggle-wide"
+                    className="pb-action-btn gallery-toggle-wide"
                     onClick={() => toggleWide(item)}
                     title="Switch to card layout"
                   >
@@ -328,10 +329,10 @@ export const ImageGalleryBlock = ({
                   onUploaded={(url) =>
                     onItemUpdate({ ...item, image_url: url })
                   }
-                  className="landing-action-btn-abs"
+                  className="pb-action-btn-abs"
                 />
                 <button
-                  className="landing-action-btn gallery-toggle-wide"
+                  className="pb-action-btn gallery-toggle-wide"
                   onClick={() => toggleWide(item)}
                   title="Switch to wide layout"
                 >

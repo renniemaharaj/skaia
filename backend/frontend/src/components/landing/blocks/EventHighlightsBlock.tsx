@@ -1,4 +1,5 @@
 import type { LandingSection, LandingItem } from "../types";
+import "./EventHighlightsBlock.css";
 import {
   EditableText,
   SectionToolbar,
@@ -96,7 +97,7 @@ export const EventHighlightsBlock = ({
                     onUploaded={(url) =>
                       onItemUpdate({ ...item, image_url: url })
                     }
-                    className="landing-action-btn-abs"
+                    className="pb-action-btn-abs"
                   />
                   <DeleteItemButton onClick={() => onItemDelete(item.id)} />
                 </>

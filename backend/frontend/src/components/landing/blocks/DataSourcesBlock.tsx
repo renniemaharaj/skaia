@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import type { LandingSection, DataSource } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import "./DataSourcesBlock.css";
 import {
   SectionToolbar,
   getSectionLayout,

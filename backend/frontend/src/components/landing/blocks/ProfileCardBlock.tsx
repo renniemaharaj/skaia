@@ -1,5 +1,6 @@
 import { Check, Plus, Trash2, ExternalLink } from "lucide-react";
 import type { LandingSection, LandingItem } from "../types";
+import "./ProfileCardBlock.css";
 import {
   EditableText,
   SectionToolbar,
@@ -163,7 +164,7 @@ export const ProfileCardBlock = ({
             {canEdit && (
               <ImagePickerButton
                 onUploaded={(url) => updateConfig({ banner_url: url })}
-                className="landing-action-btn-abs"
+                className="pb-action-btn-abs"
               />
             )}
             {/* Avatar overlapping bottom of banner */}

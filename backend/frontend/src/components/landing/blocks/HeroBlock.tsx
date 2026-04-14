@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LandingSection } from "../types";
+import "./HeroBlock.css";
 import {
   EditableText,
   SectionToolbar,

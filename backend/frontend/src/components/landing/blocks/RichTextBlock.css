@@ -1,0 +1,82 @@
+/* ── Rich Text Block ──────────────────────────────────────────────────── */
+
+.richtext-block {
+  padding: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out 0.3s forwards;
+}
+
+.richtext-block-wide {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
+.richtext-block-wide .richtext-block-editor {
+  border: none;
+  box-shadow: none;
+}
+
+.richtext-block-wide .renderer-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.richtext-block-wide .renderer-editor .ProseMirror {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.richtext-block-editor {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.richtext-block-viewer {
+  width: 100%;
+  border: none;
+  box-shadow: none;
+  outline: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.richtext-block-viewer .renderer-editor {
+  width: 100% !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.richtext-block-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: border-color 0.2s;
+}
+
+.richtext-block-empty:hover {
+  border-color: var(--primary-color);
+}
+
+.richtext-block-empty p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .richtext-block {
+    padding: 20px;
+  }
+}

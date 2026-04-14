@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { LandingSection } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import "./CodeEditorBlock.css";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -246,7 +247,7 @@ export const CodeEditorBlock = ({
           extra={
             <>
               <button
-                className="landing-section-toolbar-btn"
+                className="pb-section-toolbar-btn"
                 onClick={() => setEditing(!editing)}
                 title={editing ? "Preview" : "Edit code"}
               >
@@ -254,7 +255,7 @@ export const CodeEditorBlock = ({
               </button>
               {isRenderable && !editing && localCode && (
                 <button
-                  className="landing-section-toolbar-btn"
+                  className="pb-section-toolbar-btn"
                   onClick={() => setShowRendered((v) => !v)}
                   title={showRendered ? "Show source" : "Render content"}
                 >

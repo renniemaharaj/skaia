@@ -1,4 +1,5 @@
 import type { LandingSection, LandingItem } from "../types";
+import "./CardGroupBlock.css";
 import {
   EditableText,
   SectionToolbar,

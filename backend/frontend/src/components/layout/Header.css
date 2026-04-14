@@ -457,6 +457,51 @@
   display: contents;
 }
 
+/* ── "New" / attention nav link ────────────────────────────────── */
+
+.header-new-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  color: var(--primary-color) !important;
+  font-weight: 600 !important;
+}
+
+.header-new-link::after {
+  /* override default nav underline — use badge instead */
+  display: none !important;
+}
+
+.header-new-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 7px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  animation: header-new-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes header-new-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+}
+
 /* ── Mobile Menu Variant 2: Fullscreen overlay ───────────────────── */
 
 @media (max-width: 768px) {

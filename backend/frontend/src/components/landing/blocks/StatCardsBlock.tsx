@@ -1,5 +1,6 @@
 import type { LandingSection, LandingItem } from "../types";
 import { ICON_MAP } from "../iconMap";
+import "./StatCardsBlock.css";
 import {
   EditableText,
   SectionToolbar,

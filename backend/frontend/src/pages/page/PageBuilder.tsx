@@ -22,6 +22,8 @@ import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
 import PageComments from "../../components/page/PageComments";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
+import "../../components/layout/Landing.css";
+import "../../components/ui/FeatureCard.css";
 
 interface PageBuilderProps {
   /** Optional slug to load. Falls back to the URL :slug param, then index. */
@@ -497,7 +499,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   if (loading || (slug === undefined && landingLoading)) {
     return (
-      <div className="landing-container">
+      <div className="pb-container">
         <LandingSkeleton />
       </div>
     );
@@ -505,7 +507,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   if (slug && error && !canEdit) {
     return (
-      <div className="landing-container">
+      <div className="pb-container">
         <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
           <p style={{ color: "var(--color-danger, #e74c3c)" }}>
             Page not found: {error}
@@ -520,7 +522,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   if (isNewPage) {
     return (
       <PageBuilderContext.Provider value={contextValue}>
-        <div className="landing-container">
+        <div className="pb-container">
           <div style={{ textAlign: "center", padding: "3rem 1rem 1rem" }}>
             <p style={{ opacity: 0.6 }}>
               This page doesn&apos;t exist yet. Start building to create it.
@@ -545,7 +547,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   return (
     <PageBuilderContext.Provider value={contextValue}>
-      <div className="landing-container">
+      <div className="pb-container">
         {showToolbar && (
           <div className="page-admin-bar">
             {showOwnershipBtn && (

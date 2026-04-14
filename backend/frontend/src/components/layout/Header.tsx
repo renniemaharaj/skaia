@@ -10,6 +10,7 @@ import {
   Volume1,
   Volume2,
   VolumeX,
+  Sparkles,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -264,6 +265,15 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setMenuOpen(false)}
             >
               Pages
+            </Link>
+            <Link
+              to="/datasources"
+              className={`header-new-link ${isActive("/datasources")}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Sparkles size={14} />
+              Data Sources
+              <span className="header-new-badge">New</span>
             </Link>
           </div>
 

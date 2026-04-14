@@ -1,0 +1,828 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Page Builder Core — infrastructure styles for the section-based editor.
+   Imported by PageBuilder.tsx + BlockRenderer.tsx.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Variant Cycler ───────────────────────────────────────────────────── */
+
+.pb-variant-cycler {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.pb-variant-cycler:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+/* ── Shared section header (used by feature_grid, card_group, etc.) ─── */
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ── Edit controls ────────────────────────────────────────────────────── */
+
+.pb-inline-input {
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  color: inherit;
+  font: inherit;
+  padding: 2px 6px;
+  border-radius: 4px;
+  width: 100%;
+  outline: none;
+}
+
+.pb-inline-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+.pb-edit-btn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  opacity: 0;
+  margin-left: 4px;
+  padding: 2px;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+
+*:hover > .pb-edit-btn,
+.pb-edit-btn:focus {
+  opacity: 1;
+}
+
+/* ── Icon picker ──────────────────────────────────────────────────────── */
+
+.pb-icon-picker {
+  position: relative;
+  display: inline-block;
+}
+
+.pb-icon-picker-trigger {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pb-icon-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.pb-icon-picker-item {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pb-icon-picker-item:hover,
+.pb-icon-picker-item.active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ── Section toolbar ──────────────────────────────────────────────────── */
+
+.pb-section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.pb-section-toolbar-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.pb-section-toolbar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.pb-section-toolbar-btn.danger:hover {
+  color: var(--error-color);
+  background: var(--error-bg);
+}
+
+.pb-section-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Layout wrapper for all sections ──────────────────────────────────── */
+
+.pb-section-layout {
+  position: relative;
+}
+
+.section-layout-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+}
+
+.layout-control-btn {
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.layout-control-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.layout-control-btn.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 15%, var(--bg-color));
+  color: var(--primary-color);
+}
+
+.pb-section-layout-center > * {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.pb-section-layout-left > * {
+  max-width: 1200px !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+.pb-section-layout-right > * {
+  max-width: 1200px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.pb-section-layout-wide > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* ── Section move buttons ─────────────────────────────────────────────── */
+
+.pb-section-move-btns {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 4px;
+}
+
+.pb-section-move-btns .pb-section-toolbar-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.pb-section-move-btns .pb-section-toolbar-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Add / delete item buttons ────────────────────────────────────────── */
+
+.pb-add-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 120px;
+  padding: 24px 20px;
+  background: transparent;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.pb-add-item-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+}
+
+.pb-delete-item-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: color-mix(in srgb, var(--bg-color) 80%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 5px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--error-color);
+  z-index: 5;
+  transition: background 0.15s;
+}
+
+.pb-delete-item-btn:hover {
+  background: var(--error-bg);
+}
+
+/* ── Generic action button (image picker, etc.) ───────────────────────── */
+
+.pb-action-btn {
+  background: color-mix(in srgb, var(--bg-color) 80%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 5px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  z-index: 5;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.pb-action-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.pb-action-btn-abs {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+
+/* ── Add section ──────────────────────────────────────────────────────── */
+
+.pb-add-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 0;
+  position: relative;
+}
+
+.pb-add-section-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 28px;
+  background: transparent;
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.pb-add-section-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+}
+
+.pb-add-section-index {
+  margin-left: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.pb-add-section-menu {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  overflow: hidden;
+  z-index: 50;
+  min-width: 200px;
+}
+
+.pb-add-section-menu-item {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.pb-add-section-menu-item:hover {
+  background: color-mix(in srgb, var(--primary-color) 15%, transparent);
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
+
+@keyframes pb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: pb-spin 1s linear infinite;
+}
+
+/* ── Page builder skeleton ────────────────────────────────────────────── */
+
+.skeleton-pb-hero {
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--skeleton-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.skeleton-pb-section {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.skeleton-pb-cards {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.skeleton-pb-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: var(--skeleton-color);
+  width: 280px;
+}
+
+.skeleton-pb-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: var(--skeleton-color);
+  width: 220px;
+}
+
+.skeleton-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-circle-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+.skeleton-bar {
+  display: block;
+}
+
+.skeleton-pb-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.skeleton-gallery-item {
+  height: 200px;
+  border-radius: 12px;
+}
+
+.skeleton-pb-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.skeleton-pb-feature {
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: var(--skeleton-color);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .skeleton-pb-gallery,
+  .skeleton-pb-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Color Picker / Swatch ────────────────────────────────────────────── */
+
+.pb-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pb-color-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+}
+
+/* ── Section margins & spacing controls ──────────────────────────────── */
+
+.section-spacing-capture {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.section-spacing-group {
+  display: inline-flex;
+  align-items: stretch;
+  height: 22px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.section-spacing-pair {
+  display: inline-flex;
+  align-items: center;
+}
+
+.section-spacing-pair + .section-spacing-pair {
+  border-left: 1px solid var(--border-color);
+}
+
+.section-spacing-pair label {
+  padding: 0 3px 0 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: default;
+}
+
+.section-spacing-pair input[type="number"] {
+  width: 36px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  border: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  text-align: center;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.section-spacing-pair input[type="number"]::-webkit-inner-spin-button,
+.section-spacing-pair input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: auto;
+  height: auto;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.section-spacing-pair input[type="number"]:focus {
+  background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-color));
+}
+
+.section-spacing-capture-btn.dirty {
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.section-spacing-capture-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Section animation selector ──────────────────────────────────────── */
+
+.section-animation-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.section-animation-control select {
+  height: 28px;
+  margin-top: 0.77rem;
+  line-height: 28px;
+  padding: 0 10px;
+  font-size: 0.7rem;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* ── Section animation classes ───────────────────────────────────────── */
+
+.pb-section-layout[data-animation="fade-in"] {
+  animation: sectionFadeIn 0.6s ease-out both;
+}
+
+.pb-section-layout[data-animation="slide-up"] {
+  animation: sectionSlideUp 0.6s ease-out both;
+}
+
+.pb-section-layout[data-animation="slide-left"] {
+  animation: sectionSlideLeft 0.6s ease-out both;
+}
+
+.pb-section-layout[data-animation="slide-right"] {
+  animation: sectionSlideRight 0.6s ease-out both;
+}
+
+.pb-section-layout[data-animation="zoom-in"] {
+  animation: sectionZoomIn 0.5s ease-out both;
+}
+
+.pb-section-layout[data-animation="bounce"] {
+  animation: sectionBounce 0.8s ease-out both;
+}
+
+@keyframes sectionFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sectionSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sectionSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sectionSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes sectionZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sectionBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-8px);
+  }
+  80% {
+    transform: translateY(4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ── Save status pill ─────────────────────────────────────────────────── */
+
+.page-save-bar {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  z-index: 10000;
+  pointer-events: none;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-hover);
+  animation: page-save-bar-fadein 0.18s ease;
+}
+
+.page-save-bar-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: page-save-bar-pulse 1.2s ease-in-out infinite;
+}
+
+.page-save-bar-spin {
+  animation: page-save-bar-spin 0.9s linear infinite;
+}
+
+@keyframes page-save-bar-fadein {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes page-save-bar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+@keyframes page-save-bar-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Responsive overrides for shared section header ───────────────────── */
+
+@media (max-width: 768px) {
+  .section-header h2 {
+    font-size: 1.8rem;
+    letter-spacing: 0;
+  }
+
+  .section-header p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-header h2 {
+    font-size: 1.5rem;
+  }
+}

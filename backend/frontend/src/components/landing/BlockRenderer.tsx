@@ -1,5 +1,6 @@
 import type { LandingSection, LandingItem, SectionType } from "./types";
 import { SECTION_TYPE_LABELS, SECTION_TYPES } from "./types";
+import "./page-builder-core.css";
 import { HeroBlock } from "./blocks/HeroBlock";
 import { CardGroupBlock } from "./blocks/CardGroupBlock";
 import { StatCardsBlock } from "./blocks/StatCardsBlock";
@@ -105,9 +106,9 @@ export const BlockRenderer = ({
   );
 
   const renderAddSectionTrigger = (insertIndex: number) => (
-    <div className="landing-add-section" key={`add-section-${insertIndex}`}>
+    <div className="pb-add-section" key={`add-section-${insertIndex}`}>
       <button
-        className="landing-add-section-btn"
+        className="pb-add-section-btn"
         onClick={() =>
           setActiveAddIndex((prev) =>
             prev === insertIndex ? null : insertIndex,
@@ -118,11 +119,11 @@ export const BlockRenderer = ({
       </button>
 
       {activeAddIndex === insertIndex && (
-        <div className="landing-add-section-menu">
+        <div className="pb-add-section-menu">
           {SECTION_TYPES.map((type: SectionType) => (
             <button
               key={type}
-              className="landing-add-section-menu-item"
+              className="pb-add-section-menu-item"
               onClick={() => addSection(type, insertIndex)}
             >
               {SECTION_TYPE_LABELS[type] ?? type}
@@ -172,7 +173,7 @@ export const BlockRenderer = ({
             }}
           >
             <div
-              className={`landing-section-layout landing-section-layout-${layout}`}
+              className={`pb-section-layout pb-section-layout-${layout}`}
               style={sectionStyle}
               data-animation={animation !== "none" ? animation : undefined}
             >

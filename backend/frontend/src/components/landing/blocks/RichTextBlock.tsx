@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect } from "react";
 import type { LandingSection } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import "./RichTextBlock.css";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -98,7 +99,7 @@ export const RichTextBlock = ({
           extra={
             <>
               <button
-                className="landing-section-toolbar-btn"
+                className="pb-section-toolbar-btn"
                 onClick={() => setEditing(!editing)}
                 title={editing ? "Preview" : "Edit content"}
               >

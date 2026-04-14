@@ -1,4 +1,5 @@
 import type { LandingSection } from "../types";
+import "./SocialLinksBlock.css";
 import {
   SectionToolbar,
   IconPicker,

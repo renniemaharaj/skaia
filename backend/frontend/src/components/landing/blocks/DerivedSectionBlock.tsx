@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LandingSection, LandingItem, DataSource } from "../types";
+import "./DerivedSectionBlock.css";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -207,7 +208,7 @@ export const DerivedSectionBlock = ({
           }
           extra={
             <button
-              className="landing-section-toolbar-btn"
+              className="pb-section-toolbar-btn"
               onClick={runEvaluation}
               disabled={evaluating || !cfg.datasource_id}
               title="Re-evaluate data source"

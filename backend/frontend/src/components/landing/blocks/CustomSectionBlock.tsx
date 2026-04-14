@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import "./CustomSectionBlock.css";
 import type {
   LandingSection,
   LandingItem,
@@ -226,7 +227,7 @@ export const CustomSectionBlock = ({
           }
           extra={
             <button
-              className="landing-section-toolbar-btn"
+              className="pb-section-toolbar-btn"
               onClick={runEvaluation}
               disabled={evaluating || !cfg.custom_section_id}
               title="Re-evaluate"

@@ -1,4 +1,5 @@
 import type { LandingSection } from "../types";
+import "./CTABlock.css";
 import {
   EditableText,
   SectionToolbar,

@@ -1,5 +1,6 @@
 import { ICON_MAP, ICON_NAMES } from "./iconMap";
 import type { LandingItem } from "./types";
+import "./page-builder-core.css";
 import {
   Pencil,
   Trash2,
@@ -43,9 +44,9 @@ export const SectionMoveButtons = () => {
   if (!onMoveUp && !onMoveDown) return null;
 
   return (
-    <span className="landing-section-move-btns">
+    <span className="pb-section-move-btns">
       <button
-        className="landing-section-toolbar-btn"
+        className="pb-section-toolbar-btn"
         onClick={onMoveUp}
         disabled={!canMoveUp}
         title="Move section up"
@@ -55,7 +56,7 @@ export const SectionMoveButtons = () => {
         <ChevronUp size={14} />
       </button>
       <button
-        className="landing-section-toolbar-btn"
+        className="pb-section-toolbar-btn"
         onClick={onMoveDown}
         disabled={!canMoveDown}
         title="Move section down"
@@ -301,7 +302,7 @@ export const SectionSpacingControls = ({
       </div>
       <button
         type="button"
-        className={`landing-action-btn section-spacing-capture-btn${
+        className={`pb-action-btn section-spacing-capture-btn${
           changed ? " dirty" : ""
         }`}
         onClick={() => onChange(draftMargins)}
@@ -358,7 +359,7 @@ export const EditableText = ({
   if (editing) {
     return (
       <input
-        className="landing-inline-input"
+        className="pb-inline-input"
         autoFocus
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -386,7 +387,7 @@ export const EditableText = ({
     <Tag className={className} style={{ cursor: "pointer" }}>
       {value || <em style={{ opacity: 0.4 }}>{placeholder}</em>}
       <button
-        className="landing-edit-btn"
+        className="pb-edit-btn"
         onClick={(e) => {
           e.stopPropagation();
           setDraft(value);
@@ -413,22 +414,22 @@ export const IconPicker = ({
   const Icon = ICON_MAP[current];
 
   return (
-    <div className="landing-icon-picker">
+    <div className="pb-icon-picker">
       <button
-        className="landing-icon-picker-trigger"
+        className="pb-icon-picker-trigger"
         onClick={() => setOpen(!open)}
         title="Change icon"
       >
         {Icon ? <Icon size={20} /> : <ChevronDown size={16} />}
       </button>
       {open && (
-        <div className="landing-icon-picker-dropdown">
+        <div className="pb-icon-picker-dropdown">
           {ICON_NAMES.map((name) => {
             const Ic = ICON_MAP[name];
             return (
               <button
                 key={name}
-                className={`landing-icon-picker-item${name === current ? " active" : ""}`}
+                className={`pb-icon-picker-item${name === current ? " active" : ""}`}
                 onClick={() => {
                   onPick(name);
                   setOpen(false);
@@ -471,9 +472,9 @@ export const SectionToolbar = ({
   onBgColorChange?: (c: string) => void;
   extra?: React.ReactNode;
 }) => (
-  <div className="landing-section-toolbar">
-    <span className="landing-section-toolbar-label">{label}</span>
-    <div className="landing-section-toolbar-actions">
+  <div className="pb-section-toolbar">
+    <span className="pb-section-toolbar-label">{label}</span>
+    <div className="pb-section-toolbar-actions">
       <SectionMoveButtons />
       {layout && onLayoutChange ? (
         <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
@@ -496,7 +497,7 @@ export const SectionToolbar = ({
       ) : null}
       {extra}
       <button
-        className="landing-section-toolbar-btn danger"
+        className="pb-section-toolbar-btn danger"
         onClick={onDelete}
         title="Remove section"
         type="button"
@@ -515,7 +516,7 @@ export const AddItemButton = ({
   onClick: () => void;
   label?: string;
 }) => (
-  <button className="landing-add-item-btn" onClick={onClick}>
+  <button className="pb-add-item-btn" onClick={onClick}>
     <Plus size={16} /> {label}
   </button>
 );
@@ -523,7 +524,7 @@ export const AddItemButton = ({
 /** Delete-item button overlaid on a card. */
 export const DeleteItemButton = ({ onClick }: { onClick: () => void }) => (
   <button
-    className="landing-delete-item-btn"
+    className="pb-delete-item-btn"
     onClick={(e) => {
       e.stopPropagation();
       onClick();
@@ -598,7 +599,7 @@ export const ImagePickerButton = ({
   return (
     <>
       <button
-        className={`landing-action-btn ${className}`}
+        className={`pb-action-btn ${className}`}
         onClick={(e) => {
           e.stopPropagation();
           if (!uploading) inputRef.current?.click();
@@ -677,7 +678,7 @@ export const VideoPickerButton = ({
   return (
     <>
       <button
-        className={`landing-action-btn ${className}`}
+        className={`pb-action-btn ${className}`}
         onClick={(e) => {
           e.stopPropagation();
           if (!uploading) inputRef.current?.click();
@@ -730,7 +731,7 @@ export const ColorPickerButton = ({
 
   return (
     <button
-      className={`landing-action-btn landing-color-picker ${className}`}
+      className={`pb-action-btn pb-color-picker ${className}`}
       onClick={(e) => {
         e.stopPropagation();
         inputRef.current?.click();
@@ -740,7 +741,7 @@ export const ColorPickerButton = ({
     >
       <Palette size={14} />
       <span
-        className="landing-color-swatch"
+        className="pb-color-swatch"
         style={{ backgroundColor: localValue || "rgba(0,0,0,0.5)" }}
       />
       <input
@@ -785,7 +786,7 @@ export const VariantCycler = ({
   label: string;
 }) => (
   <button
-    className="landing-variant-cycler"
+    className="pb-variant-cycler"
     onClick={(e) => {
       e.stopPropagation();
       e.preventDefault();
