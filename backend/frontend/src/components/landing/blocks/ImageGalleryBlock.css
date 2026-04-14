@@ -312,6 +312,10 @@
   grid-column: span 4;
 }
 
+.gallery-card-item--halfway {
+  grid-column: span 8;
+}
+
 .gallery-card-item--wide {
   grid-column: span 6;
 }

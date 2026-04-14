@@ -174,7 +174,10 @@ export const ImageGalleryBlock = ({
   const wideItems = filtered.filter((it) => it.meta.width === "wide");
   const fullItems = filtered.filter((it) => it.meta.width === "full");
   const cardItems = filtered.filter(
-    (it) => it.meta.width === "narrow" || it.meta.width === "regular",
+    (it) =>
+      it.meta.width === "narrow" ||
+      it.meta.width === "regular" ||
+      it.meta.width === "halfway",
   );
 
   // Album management helpers
