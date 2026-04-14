@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import "./ImageGalleryBlock.css";
 import {
   Plus,
   Trash2,
-  Columns3,
+  LayoutGrid,
   RectangleHorizontal,
   Pencil,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import type { LandingSection, LandingItem } from "../types";
 import {
@@ -26,6 +28,19 @@ interface Album {
   label: string;
 }
 
+type CardWidth = "narrow" | "regular" | "wide" | "full";
+
+const CARD_WIDTH_OPTIONS: Array<{
+  key: CardWidth;
+  title: string;
+  icon: ReactNode;
+}> = [
+  { key: "narrow", title: "Narrow card", icon: <Minimize2 size={14} /> },
+  { key: "regular", title: "Regular card", icon: <LayoutGrid size={14} /> },
+  { key: "wide", title: "Wide card", icon: <RectangleHorizontal size={14} /> },
+  { key: "full", title: "Full width", icon: <Maximize2 size={14} /> },
+];
+
 /** Parse section config for album definitions. */
 function getAlbums(config: string): Album[] {
   try {
@@ -38,18 +53,33 @@ function getAlbums(config: string): Album[] {
 }
 
 /** Parse item config for album key and wide flag. */
-function getItemMeta(config: string): { album: string; wide: boolean } {
+function getItemMeta(
+  config: string,
+  defaultWidth: CardWidth = "regular",
+): { album: string; width: CardWidth } {
   try {
     const c = JSON.parse(config || "{}");
-    return { album: c.album || "all", wide: !!c.wide };
+    const width = c.width;
+    return {
+      album: c.album || "all",
+      width:
+        width === "narrow" ||
+        width === "regular" ||
+        width === "wide" ||
+        width === "full"
+          ? width
+          : c.wide
+            ? "wide"
+            : defaultWidth,
+    };
   } catch {
-    return { album: "all", wide: false };
+    return { album: "all", width: defaultWidth };
   }
 }
 
 function setItemMeta(
   config: string,
-  updates: Partial<{ album: string; wide: boolean }>,
+  updates: Partial<{ album: string; width: CardWidth }>,
 ): string {
   let c: Record<string, unknown> = {};
   try {
@@ -57,7 +87,39 @@ function setItemMeta(
   } catch {
     /* ignore */
   }
-  return JSON.stringify({ ...c, ...updates });
+  const updated = { ...c, ...updates };
+  if ("width" in updates && "wide" in updated) {
+    delete updated.wide;
+  }
+  return JSON.stringify(updated);
+}
+
+function getSectionCardWidth(config: string): CardWidth {
+  try {
+    const c = JSON.parse(config || "{}");
+    if (
+      c.default_card_width === "narrow" ||
+      c.default_card_width === "regular" ||
+      c.default_card_width === "wide" ||
+      c.default_card_width === "full"
+    ) {
+      return c.default_card_width;
+    }
+    if (c.wide) return "wide";
+  } catch {
+    /* ignore */
+  }
+  return "regular";
+}
+
+function setSectionCardWidth(config: string, width: CardWidth): string {
+  let c: Record<string, unknown> = {};
+  try {
+    c = JSON.parse(config || "{}");
+  } catch {
+    /* ignore */
+  }
+  return JSON.stringify({ ...c, default_card_width: width });
 }
 
 interface Props {
@@ -84,15 +146,28 @@ export const ImageGalleryBlock = ({
   const [activeAlbum, setActiveAlbum] = useState("all");
   const [editingAlbum, setEditingAlbum] = useState<string | null>(null);
   const [albumDraft, setAlbumDraft] = useState("");
+  const defaultCardWidth = getSectionCardWidth(section.config);
 
-  // Filter items by active album
+  // Filter items by active album and preserve card width metadata.
+  const itemsWithMeta = useMemo(
+    () =>
+      items.map((item) => ({
+        item,
+        meta: getItemMeta(item.config, defaultCardWidth),
+      })),
+    [items, defaultCardWidth],
+  );
+
   const filtered = useMemo(() => {
-    if (activeAlbum === "all") return items;
-    return items.filter((it) => getItemMeta(it.config).album === activeAlbum);
-  }, [items, activeAlbum]);
+    if (activeAlbum === "all") return itemsWithMeta;
+    return itemsWithMeta.filter((it) => it.meta.album === activeAlbum);
+  }, [itemsWithMeta, activeAlbum]);
 
-  const wideItems = filtered.filter((it) => getItemMeta(it.config).wide);
-  const cardItems = filtered.filter((it) => !getItemMeta(it.config).wide);
+  const wideItems = filtered.filter((it) => it.meta.width === "wide");
+  const fullItems = filtered.filter((it) => it.meta.width === "full");
+  const cardItems = filtered.filter(
+    (it) => it.meta.width === "narrow" || it.meta.width === "regular",
+  );
 
   // Album management helpers
   const updateAlbums = (next: Album[]) => {
@@ -136,16 +211,15 @@ export const ImageGalleryBlock = ({
       link_url: "",
       config: JSON.stringify({
         album: activeAlbum === "all" ? "all" : activeAlbum,
-        wide: false,
+        width: defaultCardWidth,
       }),
     });
   };
 
-  const toggleWide = (item: LandingItem) => {
-    const meta = getItemMeta(item.config);
+  const setItemWidth = (item: LandingItem, width: CardWidth) => {
     onItemUpdate({
       ...item,
-      config: setItemMeta(item.config, { wide: !meta.wide }),
+      config: setItemMeta(item.config, { width }),
     });
   };
 
@@ -175,6 +249,28 @@ export const ImageGalleryBlock = ({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
+          }
+          extra={
+            <div className="gallery-default-width-controls">
+              {CARD_WIDTH_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`gallery-default-width-btn icon-btn icon-btn--sm icon-btn--ghost${
+                    defaultCardWidth === option.key ? " icon-btn--active" : ""
+                  }`}
+                  title={`Default ${option.title}`}
+                  onClick={() =>
+                    onUpdate({
+                      ...section,
+                      config: setSectionCardWidth(section.config, option.key),
+                    })
+                  }
+                >
+                  {option.icon}
+                </button>
+              ))}
+            </div>
           }
         />
       )}
@@ -277,8 +373,8 @@ export const ImageGalleryBlock = ({
       {/* Wide images (full-width row) */}
       {wideItems.length > 0 && (
         <div className="gallery-wide-row">
-          {wideItems.map((item) => (
-            <div key={item.id} className="gallery-wide-item">
+          {wideItems.map(({ item, meta }) => (
+            <div key={item.id} className="gallery-wide-item gallery-width-wide">
               {canEdit && (
                 <>
                   <ImagePickerButton
@@ -287,14 +383,78 @@ export const ImageGalleryBlock = ({
                     }
                     className="pb-action-btn-abs"
                   />
-                  <button
-                    className="pb-action-btn gallery-toggle-wide"
-                    onClick={() => toggleWide(item)}
-                    title="Switch to card layout"
-                  >
-                    <Columns3 size={14} />
-                  </button>
-                  <DeleteItemButton onClick={() => onItemDelete(item.id)} />
+                  <div className="gallery-action-group">
+                    <div className="gallery-width-controls">
+                      {CARD_WIDTH_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          className={`gallery-width-btn icon-btn icon-btn--sm icon-btn--ghost${
+                            meta.width === option.key ? " icon-btn--active" : ""
+                          }`}
+                          title={option.title}
+                          onClick={() => setItemWidth(item, option.key)}
+                        >
+                          {option.icon}
+                        </button>
+                      ))}
+                    </div>
+                    <DeleteItemButton onClick={() => onItemDelete(item.id)} />
+                  </div>
+                </>
+              )}
+              <img
+                src={item.image_url || "/placeholder.webp"}
+                alt={item.heading}
+              />
+              {item.heading && (
+                <div className="gallery-wide-overlay">
+                  {canEdit ? (
+                    <EditableText
+                      value={item.heading}
+                      onSave={(v) => onItemUpdate({ ...item, heading: v })}
+                      tag="h3"
+                    />
+                  ) : (
+                    <h3>{item.heading}</h3>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {fullItems.length > 0 && (
+        <div className="gallery-full-row">
+          {fullItems.map(({ item, meta }) => (
+            <div key={item.id} className="gallery-wide-item gallery-width-full">
+              {canEdit && (
+                <>
+                  <ImagePickerButton
+                    onUploaded={(url) =>
+                      onItemUpdate({ ...item, image_url: url })
+                    }
+                    className="pb-action-btn-abs"
+                  />
+                  <div className="gallery-action-group">
+                    <div className="gallery-width-controls">
+                      {CARD_WIDTH_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          className={`gallery-width-btn icon-btn icon-btn--sm icon-btn--ghost${
+                            meta.width === option.key ? " icon-btn--active" : ""
+                          }`}
+                          title={option.title}
+                          onClick={() => setItemWidth(item, option.key)}
+                        >
+                          {option.icon}
+                        </button>
+                      ))}
+                    </div>
+                    <DeleteItemButton onClick={() => onItemDelete(item.id)} />
+                  </div>
                 </>
               )}
               <img
@@ -321,8 +481,11 @@ export const ImageGalleryBlock = ({
 
       {/* Card images (grid) */}
       <div className="gallery-card-grid">
-        {cardItems.map((item) => (
-          <div key={item.id} className="gallery-card-item">
+        {cardItems.map(({ item, meta }) => (
+          <div
+            key={item.id}
+            className={`gallery-card-item gallery-card-item--${meta.width}`}
+          >
             {canEdit && (
               <>
                 <ImagePickerButton
@@ -331,14 +494,24 @@ export const ImageGalleryBlock = ({
                   }
                   className="pb-action-btn-abs"
                 />
-                <button
-                  className="pb-action-btn gallery-toggle-wide"
-                  onClick={() => toggleWide(item)}
-                  title="Switch to wide layout"
-                >
-                  <RectangleHorizontal size={14} />
-                </button>
-                <DeleteItemButton onClick={() => onItemDelete(item.id)} />
+                <div className="gallery-action-group">
+                  <div className="gallery-width-controls">
+                    {CARD_WIDTH_OPTIONS.map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        className={`gallery-width-btn icon-btn icon-btn--sm icon-btn--ghost${
+                          meta.width === option.key ? " icon-btn--active" : ""
+                        }`}
+                        title={option.title}
+                        onClick={() => setItemWidth(item, option.key)}
+                      >
+                        {option.icon}
+                      </button>
+                    ))}
+                  </div>
+                  <DeleteItemButton onClick={() => onItemDelete(item.id)} />
+                </div>
               </>
             )}
             <img

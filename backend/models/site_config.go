@@ -37,6 +37,15 @@ type LandingItem struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type LandingItemCardWidth string
+
+const (
+	LandingItemCardWidthNarrow  LandingItemCardWidth = "narrow"
+	LandingItemCardWidthRegular LandingItemCardWidth = "regular"
+	LandingItemCardWidthWide    LandingItemCardWidth = "wide"
+	LandingItemCardWidthFull    LandingItemCardWidth = "full"
+)
+
 // Branding holds site identity fetched from site_config.
 type Branding struct {
 	SiteName       string `json:"site_name"`

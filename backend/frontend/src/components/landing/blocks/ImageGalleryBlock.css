@@ -165,12 +165,84 @@
   background: var(--error-bg);
 }
 
+.gallery-default-width-controls,
+.gallery-width-controls {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.gallery-action-group {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gallery-action-group .pb-delete-item-btn {
+  position: static;
+  top: auto;
+  right: auto;
+  margin: 0;
+}
+
+.gallery-default-width-btn,
+.gallery-width-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.gallery-default-width-btn.active,
+.gallery-width-btn.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 15%, var(--bg-secondary));
+  color: var(--primary-color);
+}
+
+.gallery-default-width-btn:hover,
+.gallery-width-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.gallery-width-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
 /* Wide images (full-width banners) */
 .gallery-wide-row {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  align-items: center;
+}
+
+.gallery-width-wide {
+  width: min(60%, 980px);
+  max-width: 100%;
+}
+
+.gallery-width-full {
+  width: 100%;
+  height: 340px;
 }
 
 .gallery-wide-item {
@@ -179,6 +251,13 @@
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
+}
+
+.gallery-full-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .gallery-wide-item img {
@@ -211,7 +290,7 @@
 /* Card images (grid) */
 .gallery-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
@@ -222,6 +301,23 @@
   overflow: hidden;
   cursor: pointer;
   border: 1px solid var(--border-color);
+  grid-column: span 4;
+}
+
+.gallery-card-item--narrow {
+  grid-column: span 3;
+}
+
+.gallery-card-item--regular {
+  grid-column: span 4;
+}
+
+.gallery-card-item--wide {
+  grid-column: span 6;
+}
+
+.gallery-card-item--full {
+  grid-column: 1 / -1;
 }
 
 .gallery-card-item img {
