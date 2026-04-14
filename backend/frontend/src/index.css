@@ -6,7 +6,9 @@
   --skaia-green-primary: #caffed;
   --secondary-color: #f5f5f5;
   --bg-color: #ffffff;
+  --bg-color-rgb: 255, 255, 255;
   --bg-secondary: #f9f9f9;
+  --bg-secondary-rgb: 249, 249, 249;
   --bg-tertiary: #f0f0f0;
   --text-primary: #1a1a1a;
   --text-secondary: #666666;
@@ -27,6 +29,10 @@
   --section-padding: 1.5rem;
   --panel-border: var(--border-color);
   --panel-heading-color: var(--text-primary);
+
+  --color-bg-elevated: rgba(255, 255, 255, 0.96);
+  --color-text-primary: var(--text-primary);
+  --color-border: rgba(0, 0, 0, 0.08);
 
   --skeleton-color: #e0e0e0;
   --skeleton-shine: #f0f0f0;
@@ -57,7 +63,9 @@ html[data-theme="dark"] {
   --skaia-green-primary: #caffed;
   --secondary-color: #1a1a1a;
   --bg-color: #0f0f0f;
+  --bg-color-rgb: 15, 15, 15;
   --bg-secondary: #1a1a1a;
+  --bg-secondary-rgb: 26, 26, 26;
   --bg-tertiary: #252525;
   --text-primary: #ffffff;
   --text-secondary: #b0b0b0;
@@ -78,6 +86,10 @@ html[data-theme="dark"] {
   --section-padding: 1.5rem;
   --panel-border: var(--border-color);
   --panel-heading-color: var(--text-primary);
+
+  --color-bg-elevated: rgba(17, 20, 25, 0.92);
+  --color-text-primary: var(--text-primary);
+  --color-border: rgba(255, 255, 255, 0.1);
 
   --skeleton-color: #2a2a2a;
   --skeleton-shine: #333333;

@@ -45,6 +45,9 @@ const PresencePanel = () => {
   );
   const [chatMode, setChatMode] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth <= 720,
+  );
   const [mobilePanelHeight, setMobilePanelHeight] = useState(
     typeof window !== "undefined"
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
@@ -160,6 +163,7 @@ const PresencePanel = () => {
     const updateHeight = () => {
       const height = window.visualViewport?.height ?? window.innerHeight;
       setMobilePanelHeight(Math.round(height));
+      setIsMobile(window.innerWidth <= 720);
     };
 
     updateHeight();
@@ -173,6 +177,17 @@ const PresencePanel = () => {
       window.visualViewport?.removeEventListener("scroll", updateHeight);
     };
   }, []);
+
+  useEffect(() => {
+    if (!expanded || !isMobile) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [expanded, isMobile]);
 
   // ───────────────────────────────────────────────────────────────
 
