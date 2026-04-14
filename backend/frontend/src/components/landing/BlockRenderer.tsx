@@ -11,6 +11,8 @@ import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
 import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
 import { RichTextBlock } from "./blocks/RichTextBlock";
 import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
+import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
+import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 import {
@@ -57,6 +59,8 @@ const BLOCK_MAP: Record<
   profile_card: ProfileCardBlock as never,
   rich_text: RichTextBlock as never,
   code_editor: CodeEditorBlock as never,
+  data_sources: DataSourcesBlock as never,
+  derived_section: DerivedSectionBlock as never,
 };
 
 export const BlockRenderer = ({

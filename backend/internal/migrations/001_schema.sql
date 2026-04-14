@@ -430,3 +430,15 @@ CREATE TABLE IF NOT EXISTS page_comment_likes (
     created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(page_comment_id, user_id)
 );
+
+-- ── Data sources (evaluable code snippets for derived page sections) ────────
+CREATE TABLE IF NOT EXISTS data_sources (
+    id          BIGSERIAL    PRIMARY KEY,
+    name        VARCHAR(255) NOT NULL,
+    description TEXT         NOT NULL DEFAULT '',
+    code        TEXT         NOT NULL DEFAULT '',
+    created_by  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_data_sources_created_by ON data_sources(created_by);

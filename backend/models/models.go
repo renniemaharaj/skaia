@@ -305,6 +305,18 @@ type Notification struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// DataSource holds a named TypeScript code snippet that can be evaluated
+// to produce a JSON array of items for derived page sections.
+type DataSource struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Code        string    `json:"code"`
+	CreatedBy   *int64    `json:"created_by,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 // UserBlock represents a user blocking another user.
 type UserBlock struct {
 	ID        int64     `json:"id"`

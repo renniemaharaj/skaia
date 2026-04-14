@@ -1,0 +1,8 @@
+{
+  "name": "tsrunner",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "typescript": "^5.7.0"
+  }
+}

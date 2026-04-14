@@ -20,10 +20,16 @@ RUN npm ci && npm run build
 WORKDIR /app
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o backend .
 
+# install tsrunner dependencies (TypeScript compiler for data sources)
+WORKDIR /app/internal/datasource/tsrunner
+RUN npm ci --omit=dev
+
+WORKDIR /app
+
 # Runtime stage
 FROM alpine:3.21
 
-RUN apk --no-cache add ca-certificates su-exec && \
+RUN apk --no-cache add ca-certificates su-exec nodejs && \
     adduser -D -h /app appuser
 
 WORKDIR /app

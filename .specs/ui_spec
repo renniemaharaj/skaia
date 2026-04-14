@@ -244,3 +244,148 @@ When `guestSandboxMode` is active, ALL components should show their edit/managem
 - `Store` — product/category CRUD permissions OR `guestSandboxMode`
 - `Forum` — category CRUD, thread edit/delete OR `guestSandboxMode`
 - `BlockRenderer` + all blocks — `canEdit` prop
+
+---
+
+## Icon Buttons — `.icon-btn` System
+
+### Root cause of the padding issue
+
+The bare `button` selector in `index.css:468` sets `padding: 0.6em 1.2em` and
+`border: 1px solid transparent` on ALL `<button>` elements. This is a Vite/React
+template default that was never scoped. It makes text buttons look good out of
+the box, but icon-only buttons overflow or become invisible inside fixed-size
+containers because the large padding pushes the icon content outside the box.
+
+**DO NOT remove the global reset** — many existing text buttons rely on it.
+Instead, always apply `.icon-btn` on icon-only `<button>` elements. The class
+lives in `index.css` and resets `padding: 0`, `border: none`, `background: transparent`.
+
+### Usage (global utility in index.css)
+
+```html
+<!-- Size + variant modifiers compose freely -->
+<button className="icon-btn icon-btn--sm icon-btn--danger" title="Delete">
+  <Trash2 size="{14}" />
+</button>
+
+<button
+  className="icon-btn icon-btn--md icon-btn--outlined icon-btn--danger"
+  title="Delete"
+>
+  <Trash2 size="{14}" />
+</button>
+
+<button className="icon-btn icon-btn--lg icon-btn--active">
+  <LayoutGrid size="{16}" />
+</button>
+```
+
+### Size modifiers
+
+| Modifier       | Size  | Use case                             |
+| -------------- | ----- | ------------------------------------ |
+| `icon-btn--xs` | 20×20 | Tiny inline actions (presence panel) |
+| `icon-btn--sm` | 28×28 | Card/row actions (default choice)    |
+| `icon-btn--md` | 32×32 | Toolbar actions                      |
+| `icon-btn--lg` | 36×36 | Header actions, toggle groups        |
+
+### Variant modifiers
+
+| Modifier             | Style                                                   |
+| -------------------- | ------------------------------------------------------- |
+| `icon-btn--ghost`    | Transparent bg (default)                                |
+| `icon-btn--subtle`   | `--bg-secondary` bg                                     |
+| `icon-btn--outlined` | Transparent bg + `--border-color` border                |
+| `icon-btn--danger`   | Hover: `--error-bg` + `--error-color`                   |
+| `icon-btn--primary`  | Hover: `--primary-color` bg + white text                |
+| `icon-btn--active`   | Solid `--primary-color` bg + white (for selected state) |
+
+### Legacy patterns (existing code, don't refactor unless touching)
+
+- `.pp-action-btn` (PresencePanel) — manual `padding: 0; width: 20px`
+- `.thread-action-btn` (Forum) — `padding: 4px 6px` (includes text label)
+- `.btn-admin-icon` (Store) — `padding: 6px` with `--bg-tertiary` bg
+- `.up-icon-btn` / `.inbox-action-btn` — `padding: 4px`
+  These all predate `.icon-btn`; new code should use the global utility.
+
+---
+
+## Button Hierarchy
+
+| Level            | Class                                    | Appearance                   | Use                   |
+| ---------------- | ---------------------------------------- | ---------------------------- | --------------------- |
+| Primary action   | `.ds-page__create-btn` or `.btn-primary` | Solid `--primary-color`      | One per page max      |
+| Secondary action | `.ds-editor__run-btn`                    | Solid green (#22c55e)        | Run/execute           |
+| Tertiary action  | `.ds-editor__back-btn`                   | Outlined, `--text-secondary` | Navigation            |
+| Icon action      | `.icon-btn` + modifiers                  | See above                    | Toolbars, cards, rows |
+
+Text buttons (with labels) keep the global `button` padding. Always add:
+
+- `display: inline-flex; align-items: center; gap: 0.375rem` for icon+text buttons
+
+---
+
+## Card Design
+
+- Base: `.card .card--interactive` from index.css
+- Fixed heights for grid cards to prevent layout shift (e.g., `height: 240px`)
+- Overflow: `overflow: hidden` on fixed-height cards
+- Preview panels: `max-height` + `overflow-y: auto` for scrollable content inside cards
+- Code preview snippets: `font-family: "JetBrains Mono", monospace; font-size: 0.6875rem`
+- Meta rows at bottom: `margin-top: auto; border-top: 1px solid var(--border-color)`
+
+---
+
+## Professional Superset-like Design Patterns
+
+### Page layout
+
+- **Page header**: Title + subtitle left, action buttons right (flex, space-between)
+- **Toolbar**: Search input (border-radius: 8px, focus → primary-color) + count + view toggle
+- **Grid/List toggle**: Paired `.icon-btn` in border-group container (first/last radius override)
+- Max width: `1400px` for list pages, `1600px` for editor pages
+
+### Data tables / List view
+
+- Grid-based rows (`display: grid`) with fixed column template
+- Header row: `--bg-tertiary`, uppercase labels, 0.6875rem
+- Row hover: `background: var(--bg-secondary)`
+- Column overflow: `text-overflow: ellipsis; white-space: nowrap`
+
+### Split-pane editor
+
+- `grid-template-columns: 1fr 1fr`, collapse at 1024px
+- Each pane: border, border-radius: 10px, `--bg-secondary` background
+- Panel header: `--bg-tertiary`, icon + label + line count
+
+### Tab bar
+
+- Bottom-border active indicator: `border-bottom: 2px solid var(--primary-color)`
+- Tab badges: pill counts (min-width: 18px, border-radius: 9px)
+
+### Micro-patterns
+
+- **Creator chips**: Avatar (18px circle) + name in pill with `border-radius: 12px`
+- **Skeleton loading**: Shimmer gradient animation on `--bg-secondary` → `--bg-tertiary`
+- **Error display**: `--error-bg` background, `--error-color` text, left border accent
+- **Empty states**: Centered icon + heading + subtext + optional CTA button
+
+---
+
+## Typography
+
+- Page title: `1.5rem / 700`
+- Subtitle: `0.8125rem` in `--text-secondary`
+- Card title: `0.9375rem / 600`
+- Body text: `0.8125rem`
+- Small meta: `0.75rem` / `0.6875rem`
+- Labels: `0.6875rem / 600 / uppercase / letter-spacing: 0.04em`
+- Mono code: `"JetBrains Mono", "Fira Code", "Consolas", monospace`
+
+---
+
+## Responsive Breakpoints
+
+- `1024px` — collapse split panes to single column, stack editor panels
+- `768px` — stack page header, single-column grid, hide secondary list columns, column meta fields

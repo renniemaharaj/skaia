@@ -17,6 +17,8 @@ import { AdminMetaSettings } from "./admin/meta.tsx";
 import GrengoPage from "./admin/grengo.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
 import CustomPages from "./custom-pages/CustomPages.tsx";
+import DataSourcesPage from "./datasources/DataSourcesPage.tsx";
+import DataSourceEditorPage from "./datasources/DataSourceEditorPage.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -30,6 +32,8 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta", element: <AdminMetaSettings /> },
+  { path: "datasources", element: <DataSourcesPage /> },
+  { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },
 ];
 

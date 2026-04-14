@@ -76,6 +76,8 @@ export const SECTION_TYPES = [
   "profile_card",
   "rich_text",
   "code_editor",
+  "data_sources",
+  "derived_section",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -92,4 +94,26 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   profile_card: "Profile Card",
   rich_text: "Rich Text",
   code_editor: "Code Editor",
+  data_sources: "Data Sources",
+  derived_section: "Derived Section",
 };
+
+/** Creator info returned with a data source. */
+export interface DataSourceCreator {
+  id: number;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+}
+
+/** A data source stored in the backend. */
+export interface DataSource {
+  id: number;
+  name: string;
+  description: string;
+  code: string;
+  created_by?: number;
+  creator?: DataSourceCreator;
+  created_at: string;
+  updated_at: string;
+}

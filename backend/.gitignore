@@ -30,3 +30,6 @@ dist/
 bin/
 uploads/*
 !uploads/**/.gitkeep
+
+# tsrunner dependencies (installed at deploy time)
+internal/datasource/tsrunner/node_modules/

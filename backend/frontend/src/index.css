@@ -486,3 +486,92 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/*
+ * Icon-only button utility.
+ *
+ * The bare `button` selector above sets padding: 0.6em 1.2em for text buttons.
+ * Icon-only buttons MUST reset that padding or their content overflows / is
+ * invisible inside fixed-size containers. Apply `.icon-btn` to any <button>
+ * that contains only an icon (no text label).
+ *
+ * Sizes (add as modifier):
+ *   .icon-btn--xs   20×20   tiny inline actions (presence panel)
+ *   .icon-btn--sm   28×28   card / row actions (default)
+ *   .icon-btn--md   32×32   toolbar actions
+ *   .icon-btn--lg   36×36   prominent toggle / header actions
+ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.icon-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: transparent;
+}
+
+/* Sizes */
+.icon-btn--xs {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+.icon-btn--sm {
+  width: 28px;
+  height: 28px;
+}
+.icon-btn--md {
+  width: 32px;
+  height: 32px;
+}
+.icon-btn--lg {
+  width: 36px;
+  height: 36px;
+}
+
+/* Variants */
+.icon-btn--ghost {
+  background: transparent;
+}
+.icon-btn--subtle {
+  background: var(--bg-secondary);
+}
+.icon-btn--outlined {
+  background: transparent;
+  border: 1px solid var(--border-color);
+}
+
+.icon-btn--danger:hover {
+  background: var(--error-bg);
+  color: var(--error-color);
+}
+.icon-btn--primary:hover {
+  background: var(--primary-color);
+  color: var(--text-primary);
+}
+
+/* Active / selected state (e.g. view toggle) */
+.icon-btn--active {
+  background: var(--primary-color);
+  color: var(--text-primary);
+}
+.icon-btn--active:hover {
+  background: var(--primary-color);
+  color: var(--text-primary);
+  opacity: 0.9;
+}
