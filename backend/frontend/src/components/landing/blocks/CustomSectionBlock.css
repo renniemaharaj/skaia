@@ -74,6 +74,9 @@
 .custom-section-grid {
   display: grid;
   gap: 1rem;
+  max-height: 560px;
+  overflow: auto;
+  align-content: start;
 }
 
 .custom-section-card {
@@ -147,6 +150,9 @@
 .custom-section-stats-grid {
   display: grid;
   gap: 1rem;
+  max-height: 560px;
+  overflow: auto;
+  align-content: start;
 }
 
 .custom-section-stat {

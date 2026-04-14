@@ -702,7 +702,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
-  max-height: 100%;
+  max-height: 560px;
   overflow-y: auto;
   align-content: start;
 }
@@ -1105,6 +1105,9 @@
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
   padding: 16px;
+  max-height: 560px;
+  overflow: auto;
+  align-content: start;
 }
 
 .ds-preview-stat {

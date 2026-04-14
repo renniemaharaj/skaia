@@ -73,6 +73,9 @@
 .derived-section-grid {
   display: grid;
   gap: 1rem;
+  max-height: 560px;
+  overflow: auto;
+  align-content: start;
 }
 
 .derived-section-card {
