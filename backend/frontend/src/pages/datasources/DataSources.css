@@ -702,6 +702,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
+  padding: 12px 0 4px;
   max-height: 560px;
   overflow-y: auto;
   align-content: start;
@@ -733,7 +734,7 @@
 }
 
 .ds-preview-card__body {
-  padding: 0.625rem 0.75rem;
+  padding: 0.875rem 1rem;
 }
 
 .ds-preview-card__icon {
@@ -925,6 +926,8 @@
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-tertiary);
+  /* Pull flush with the panel-content padding edges */
+  margin: -0.75rem -0.75rem 0;
 }
 
 .ds-preview__type-tabs {
@@ -989,6 +992,8 @@
 .ds-save-section {
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
+  /* Flush with panel-content edges, same as toolbar */
+  margin: 0 -0.75rem;
 }
 
 .ds-save-section__header {
@@ -1221,4 +1226,190 @@
 
 .ds-table tbody tr:hover {
   background: var(--card-hover-bg, rgba(91, 158, 142, 0.04));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Run Summary
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-run-summary {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.ds-run-summary__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.ds-run-summary__title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.ds-run-summary__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 10px;
+}
+
+.ds-run-summary__status--success {
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 12%, transparent);
+}
+
+.ds-run-summary__status--error {
+  color: #ef4444;
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.ds-run-summary__status--timeout {
+  color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+}
+
+.ds-run-summary__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.ds-run-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.ds-run-stat strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Fetch Log
+   ═══════════════════════════════════════════════════════════════ */
+
+.ds-fetch-log {
+  margin-bottom: 0.625rem;
+}
+
+.ds-fetch-log__title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.375rem;
+  padding: 0 0.125rem;
+}
+
+.ds-fetch-entry {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.375rem;
+  background: var(--bg-color);
+}
+
+.ds-fetch-entry__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  min-width: 0;
+}
+
+.ds-fetch-entry__row:hover {
+  background: var(--bg-tertiary);
+}
+
+.ds-fetch-entry__method {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.625rem;
+  font-weight: 700;
+  min-width: 34px;
+  text-align: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.ds-fetch-entry__url {
+  flex: 1;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.6875rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.ds-fetch-entry__status {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ds-fetch-entry__status--ok {
+  color: #16a34a;
+}
+
+.ds-fetch-entry__status--warn {
+  color: #f59e0b;
+}
+
+.ds-fetch-entry__status--error {
+  color: #ef4444;
+}
+
+.ds-fetch-entry__duration {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ds-fetch-entry__headers {
+  padding: 0.5rem 0.625rem;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.625rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ds-fetch-entry__headers strong {
+  color: var(--text-primary);
+}
+
+.ds-fetch-entry__error {
+  padding: 0.375rem 0.625rem;
+  background: color-mix(in srgb, #ef4444 8%, var(--bg-secondary));
+  border-top: 1px solid color-mix(in srgb, #ef4444 20%, var(--border-color));
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.625rem;
+  color: #ef4444;
 }

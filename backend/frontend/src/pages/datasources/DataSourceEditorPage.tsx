@@ -23,6 +23,11 @@ import {
   Table2,
   Bookmark,
   X,
+  Clock,
+  Globe,
+  ChevronDown,
+  ChevronRight,
+  Filter,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type {
@@ -58,6 +63,40 @@ interface EvalItem {
   [key: string]: unknown;
 }
 
+interface FetchLogEntry {
+  url: string;
+  method: string;
+  status?: number;
+  statusText?: string;
+  headers?: Record<string, string>;
+  duration?: number;
+  error?: string;
+}
+
+interface RunStats {
+  duration: number;
+  exitReason:
+    | "success"
+    | "compile_error"
+    | "runtime_error"
+    | "invalid_return"
+    | "timeout";
+  totalItems: number;
+  validItems: number;
+  skippedItems: number;
+  fetchLog: FetchLogEntry[];
+}
+
+const EVAL_TIMEOUT_MS = 15_000;
+
+const EXIT_REASON_LABELS: Record<RunStats["exitReason"], string> = {
+  success: "Success",
+  compile_error: "Compile Error",
+  runtime_error: "Runtime Error",
+  invalid_return: "Invalid Return",
+  timeout: "Timeout",
+};
+
 const DEFAULT_CODE = `// Return an array of items:
 // { heading, subheading, icon?, image_url?, link_url? }
 
@@ -85,6 +124,8 @@ export default function DataSourceEditorPage() {
   );
   const [previewItems, setPreviewItems] = useState<EvalItem[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
+  const [runStats, setRunStats] = useState<RunStats | null>(null);
+  const [expandedFetch, setExpandedFetch] = useState<Set<number>>(new Set());
 
   // Active panel on the right
   type RightPanel = "preview" | "compiled" | "diagnostics";
@@ -174,6 +215,48 @@ export default function DataSourceEditorPage() {
     setPreviewItems([]);
     setCompiledJS(null);
     setDiagnostics([]);
+    setRunStats(null);
+    setExpandedFetch(new Set());
+
+    const startedAt = performance.now();
+    const fetchLog: FetchLogEntry[] = [];
+
+    // Tracked fetch — logs every outbound request including status + headers
+    const trackedFetch = async (
+      input: string | Request | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : (input as Request).url;
+      const method = (
+        init?.method ??
+        (input instanceof Request ? (input as Request).method : "GET")
+      ).toUpperCase();
+      const entry: FetchLogEntry = { url, method };
+      const t0 = performance.now();
+      try {
+        const resp = await fetch(input as RequestInfo, init);
+        entry.status = resp.status;
+        entry.statusText = resp.statusText;
+        const hdrs: Record<string, string> = {};
+        resp.headers.forEach((val, key) => {
+          hdrs[key] = val;
+        });
+        entry.headers = hdrs;
+        entry.duration = Math.round(performance.now() - t0);
+        fetchLog.push(entry);
+        return resp;
+      } catch (e) {
+        entry.error = e instanceof Error ? e.message : String(e);
+        entry.duration = Math.round(performance.now() - t0);
+        fetchLog.push(entry);
+        throw e;
+      }
+    };
 
     try {
       const result = await apiRequest<CompileResult>(
@@ -185,6 +268,14 @@ export default function DataSourceEditorPage() {
 
       const errors = (result.diagnostics ?? []).filter((d) => d.category === 1);
       if (errors.length > 0) {
+        setRunStats({
+          duration: Math.round(performance.now() - startedAt),
+          exitReason: "compile_error",
+          totalItems: 0,
+          validItems: 0,
+          skippedItems: 0,
+          fetchLog,
+        });
         setEvalError(
           errors.map((d) => `Line ${d.line}: ${d.message}`).join("\n"),
         );
@@ -192,22 +283,129 @@ export default function DataSourceEditorPage() {
         return;
       }
 
-      // Evaluate compiled JS
+      // Evaluate compiled JS with timeout and intercepted fetch
       const fn = new Function(
         "fetch",
         `"use strict"; return (async () => { ${result.js} })();`,
       );
-      const items = await fn(fetch.bind(globalThis));
-      if (!Array.isArray(items)) {
-        setEvalError("Code must return an array");
+      let rawItems: unknown;
+      try {
+        rawItems = await Promise.race([
+          fn(trackedFetch),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `Execution timed out after ${EVAL_TIMEOUT_MS / 1000}s`,
+                  ),
+                ),
+              EVAL_TIMEOUT_MS,
+            ),
+          ),
+        ]);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setRunStats({
+          duration: Math.round(performance.now() - startedAt),
+          exitReason: msg.includes("timed out") ? "timeout" : "runtime_error",
+          totalItems: 0,
+          validItems: 0,
+          skippedItems: 0,
+          fetchLog,
+        });
+        setEvalError(msg);
         setActivePanel("diagnostics");
         return;
       }
-      setPreviewItems(items as EvalItem[]);
+
+      if (!Array.isArray(rawItems)) {
+        setRunStats({
+          duration: Math.round(performance.now() - startedAt),
+          exitReason: "invalid_return",
+          totalItems: 0,
+          validItems: 0,
+          skippedItems: 0,
+          fetchLog,
+        });
+        setEvalError("Code must return an array of objects");
+        setActivePanel("diagnostics");
+        return;
+      }
+
+      // Per-item validation and sanitization — skip bad entries, never throw
+      const sanitized: EvalItem[] = [];
+      let skippedItems = 0;
+      for (const raw of rawItems as unknown[]) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+          skippedItems++;
+          continue;
+        }
+        const obj = raw as Record<string, unknown>;
+        // Coerce heading from heading | title | name
+        const heading =
+          (typeof obj.heading === "string" && obj.heading.trim()) ||
+          (typeof obj.title === "string" && obj.title.trim()) ||
+          (typeof obj.name === "string" && obj.name.trim()) ||
+          null;
+        // Coerce subheading from subheading | description | subtitle
+        const subheading =
+          (typeof obj.subheading === "string" && obj.subheading.trim()) ||
+          (typeof obj.description === "string" && obj.description.trim()) ||
+          (typeof obj.subtitle === "string" && obj.subtitle.trim()) ||
+          null;
+        if (!heading || !subheading) {
+          skippedItems++;
+          continue;
+        }
+        sanitized.push({
+          heading,
+          subheading,
+          icon: typeof obj.icon === "string" ? obj.icon : undefined,
+          image_url:
+            typeof obj.image_url === "string"
+              ? obj.image_url
+              : typeof obj.image === "string"
+                ? obj.image
+                : undefined,
+          link_url:
+            typeof obj.link_url === "string"
+              ? obj.link_url
+              : typeof obj.url === "string"
+                ? obj.url
+                : typeof obj.link === "string"
+                  ? obj.link
+                  : undefined,
+        });
+      }
+
+      setRunStats({
+        duration: Math.round(performance.now() - startedAt),
+        exitReason: "success",
+        totalItems: (rawItems as unknown[]).length,
+        validItems: sanitized.length,
+        skippedItems,
+        fetchLog,
+      });
+      setPreviewItems(sanitized);
       setActivePanel("preview");
-      toast.success(`${items.length} item(s) returned`);
+      if (skippedItems > 0) {
+        toast.warning(
+          `${sanitized.length} item(s) returned — ${skippedItems} skipped (missing heading/subheading)`,
+        );
+      } else {
+        toast.success(`${sanitized.length} item(s) returned`);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      setRunStats({
+        duration: Math.round(performance.now() - startedAt),
+        exitReason: "runtime_error",
+        totalItems: 0,
+        validItems: 0,
+        skippedItems: 0,
+        fetchLog,
+      });
       setEvalError(msg);
       setActivePanel("diagnostics");
     } finally {
@@ -217,6 +415,15 @@ export default function DataSourceEditorPage() {
 
   const codeLineCount = code.split("\n").length;
   const editorHeight = Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
+
+  // Issues tab badge
+  const issuesBadgeCount =
+    diagnostics.filter((d) => d.category === 1).length +
+    (runStats?.skippedItems ?? 0);
+  const hasIssues =
+    issuesBadgeCount > 0 ||
+    !!evalError ||
+    (runStats != null && runStats.exitReason !== "success");
 
   const formatCellValue = (val: unknown): string => {
     if (val === null || val === undefined) return "";
@@ -379,9 +586,9 @@ export default function DataSourceEditorPage() {
               onClick={() => setActivePanel("diagnostics")}
             >
               <AlertTriangle size={13} /> Issues
-              {diagnostics.length > 0 && (
+              {hasIssues && (
                 <span className="ds-editor__tab-badge ds-editor__tab-badge--warn">
-                  {diagnostics.length}
+                  {issuesBadgeCount || "!"}
                 </span>
               )}
             </button>
@@ -603,18 +810,173 @@ export default function DataSourceEditorPage() {
             {/* Diagnostics */}
             {activePanel === "diagnostics" && (
               <div className="ds-editor__diagnostics">
-                {diagnostics.length === 0 && !evalError && (
+                {/* Empty state — only before first run */}
+                {!runStats && diagnostics.length === 0 && !evalError && (
                   <div className="ds-editor__preview-empty">
                     <CheckCircle2 size={32} />
                     <p>No issues. Run the data source to check for errors.</p>
                   </div>
                 )}
+
+                {/* Run Summary */}
+                {runStats && (
+                  <div className="ds-run-summary">
+                    <div className="ds-run-summary__header">
+                      <span className="ds-run-summary__title">Run Summary</span>
+                      <span
+                        className={`ds-run-summary__status ds-run-summary__status--${
+                          runStats.exitReason === "success"
+                            ? "success"
+                            : runStats.exitReason === "timeout"
+                              ? "timeout"
+                              : "error"
+                        }`}
+                      >
+                        {runStats.exitReason === "success" ? (
+                          <CheckCircle2 size={11} />
+                        ) : (
+                          <AlertTriangle size={11} />
+                        )}
+                        {EXIT_REASON_LABELS[runStats.exitReason]}
+                      </span>
+                    </div>
+                    <div className="ds-run-summary__stats">
+                      <span className="ds-run-stat">
+                        <Clock size={11} />
+                        <strong>{runStats.duration}</strong>ms
+                      </span>
+                      {runStats.totalItems > 0 && (
+                        <span className="ds-run-stat">
+                          <Filter size={11} />
+                          <strong>{runStats.validItems}</strong>/
+                          {runStats.totalItems} valid
+                          {runStats.skippedItems > 0 && (
+                            <>
+                              {" "}
+                              (
+                              <strong style={{ color: "#f59e0b" }}>
+                                {runStats.skippedItems}
+                              </strong>{" "}
+                              skipped)
+                            </>
+                          )}
+                        </span>
+                      )}
+                      <span className="ds-run-stat">
+                        <Globe size={11} />
+                        <strong>{runStats.fetchLog.length}</strong> outbound
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fetch Log */}
+                {runStats && runStats.fetchLog.length > 0 && (
+                  <div className="ds-fetch-log">
+                    <div className="ds-fetch-log__title">Outbound Requests</div>
+                    {runStats.fetchLog.map((entry, i) => {
+                      const expanded = expandedFetch.has(i);
+                      const statusOk =
+                        entry.status !== undefined &&
+                        entry.status >= 200 &&
+                        entry.status < 300;
+                      const statusWarn =
+                        entry.status !== undefined &&
+                        entry.status >= 300 &&
+                        entry.status < 400;
+                      return (
+                        <div key={i} className="ds-fetch-entry">
+                          <div
+                            className="ds-fetch-entry__row"
+                            onClick={() =>
+                              setExpandedFetch((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(i)) next.delete(i);
+                                else next.add(i);
+                                return next;
+                              })
+                            }
+                          >
+                            <span className="ds-fetch-entry__method">
+                              {entry.method}
+                            </span>
+                            <span
+                              className="ds-fetch-entry__url"
+                              title={entry.url}
+                            >
+                              {entry.url}
+                            </span>
+                            {entry.status !== undefined ? (
+                              <span
+                                className={`ds-fetch-entry__status ${
+                                  statusOk
+                                    ? "ds-fetch-entry__status--ok"
+                                    : statusWarn
+                                      ? "ds-fetch-entry__status--warn"
+                                      : "ds-fetch-entry__status--error"
+                                }`}
+                              >
+                                {entry.status} {entry.statusText}
+                              </span>
+                            ) : entry.error ? (
+                              <span className="ds-fetch-entry__status ds-fetch-entry__status--error">
+                                Error
+                              </span>
+                            ) : null}
+                            {entry.duration !== undefined && (
+                              <span className="ds-fetch-entry__duration">
+                                {entry.duration}ms
+                              </span>
+                            )}
+                            {expanded ? (
+                              <ChevronDown
+                                size={13}
+                                style={{
+                                  flexShrink: 0,
+                                  color: "var(--text-secondary)",
+                                }}
+                              />
+                            ) : (
+                              <ChevronRight
+                                size={13}
+                                style={{
+                                  flexShrink: 0,
+                                  color: "var(--text-secondary)",
+                                }}
+                              />
+                            )}
+                          </div>
+                          {expanded &&
+                            entry.headers &&
+                            Object.keys(entry.headers).length > 0 && (
+                              <div className="ds-fetch-entry__headers">
+                                {Object.entries(entry.headers).map(([k, v]) => (
+                                  <div key={k}>
+                                    <strong>{k}:</strong> {v}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          {expanded && entry.error && (
+                            <div className="ds-fetch-entry__error">
+                              {entry.error}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Error */}
                 {evalError && (
                   <div className="ds-editor__error">
                     <AlertTriangle size={16} />
                     <pre>{evalError}</pre>
                   </div>
                 )}
+
+                {/* TypeScript Diagnostics */}
                 {diagnostics.map((d, i) => (
                   <div
                     key={i}
