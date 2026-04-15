@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
-import { Header } from "../components/layout/Header";
-import { Footer } from "../components/layout/Footer";
+import { Header } from "./page/layout/Header";
+import { Footer } from "./page/layout/Footer";
 import { Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
@@ -21,8 +21,8 @@ import { usePresence } from "../hooks/usePresence";
 import { useCursorTracking } from "../hooks/useCursorTracking";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
-import PresencePanel from "../components/layout/PresencePanel";
-import CursorOverlay from "../components/layout/CursorOverlay";
+import PresencePanel from "./page/layout/PresencePanel";
+import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
 import { syncServerTime } from "../utils/serverTime";
 

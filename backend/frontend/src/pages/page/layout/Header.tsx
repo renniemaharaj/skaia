@@ -14,30 +14,30 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import {
   isAuthenticatedAtom,
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
   hasPermissionAtom,
-} from "../../atoms/auth";
-import { inboxUnreadCountAtom } from "../../atoms/inbox";
-import { brandingAtom, featuresAtom } from "../../atoms/config";
-import { apiRequest } from "../../utils/api";
-import { EditableText, ImagePickerButton } from "../../pages/page/EditControls";
-import UserLink from "../user/UserLink";
-import NotificationBell from "../notifications/NotificationBell";
+} from "../../../atoms/auth";
+import { inboxUnreadCountAtom } from "../../../atoms/inbox";
+import { brandingAtom, featuresAtom } from "../../../atoms/config";
+import { apiRequest } from "../../../utils/api";
+import { EditableText, ImagePickerButton } from "../EditControls";
+import UserLink from "../../../components/user/UserLink";
+import NotificationBell from "../../../components/notifications/NotificationBell";
 import "./Header.css";
-import { useThemeContext } from "../../hooks/theme/useThemeContext";
+import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
 import {
   isSoundEnabled,
   setSoundEnabled,
   getSoundVolume,
   setSoundVolume,
-} from "../../utils/sound";
-import type { Branding } from "../../pages/page/types";
+} from "../../../utils/sound";
+import type { Branding } from "../types";
 
 interface HeaderProps {
   cartCount: number;

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { cursorPositionsAtom } from "../../atoms/presence";
+import { cursorPositionsAtom } from "../../../atoms/presence";
 import "./CursorOverlay.css";
 
 const CURSOR_EXPIRY_MS = 4000;

@@ -16,7 +16,7 @@ import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
 import GrengoPage from "./admin/grengo.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
-import CustomPages from "./custom-pages/CustomPages.tsx";
+import CustomPages from "./page/CustomPages.tsx";
 import DataSourcesPage from "./datasources/DataSourcesPage.tsx";
 import DataSourceEditorPage from "./datasources/DataSourceEditorPage.tsx";
 import ActivityPage from "./activity/index.tsx";

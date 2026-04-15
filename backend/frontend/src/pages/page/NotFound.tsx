@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Home, AlertCircle } from "lucide-react";
-import "../styles/NotFound.css";
+import "../../styles/NotFound.css";
 
 export const NotFound: React.FC = () => {
   return (

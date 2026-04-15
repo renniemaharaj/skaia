@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import { Header } from "../components/layout/Header";
-import { Footer } from "../components/layout/Footer";
+import { Header } from "./layout/Header";
+import { Footer } from "./layout/Footer";
 import { useState, useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
-import { wsBaseUrlAtom } from "../atoms/config";
-import { usePresence } from "../hooks/usePresence";
+import { wsBaseUrlAtom } from "../../atoms/config";
+import { usePresence } from "../../hooks/usePresence";
 export const RootLayout: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");

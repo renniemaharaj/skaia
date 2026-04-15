@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Lock, Home } from "lucide-react";
 import { useAtomValue } from "jotai";
-import { isAuthenticatedAtom } from "../atoms/auth";
-import "../styles/NotFound.css";
+import { isAuthenticatedAtom } from "../../atoms/auth";
+import "../../styles/NotFound.css";
 
 export const Unauthorized: React.FC = () => {
   const navigate = useNavigate();

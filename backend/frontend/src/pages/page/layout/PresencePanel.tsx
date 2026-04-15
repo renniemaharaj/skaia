@@ -11,19 +11,19 @@ import {
   LocateFixed,
   MessageCircle,
 } from "lucide-react";
-import { onlineUsersAtom, type OnlineUser } from "../../atoms/presence";
+import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
 import {
   currentUserAtom,
   socketAtom,
   hasPermissionAtom,
-} from "../../atoms/auth";
+} from "../../../atoms/auth";
 import {
   globalChatMessagesAtom,
   type GlobalChatMessage,
-} from "../../atoms/chat";
+} from "../../../atoms/chat";
 import { toast } from "sonner";
-import { formatLocalTime } from "../../utils/serverTime";
-import ComposerInput from "../input/Input";
+import { formatLocalTime } from "../../../utils/serverTime";
+import ComposerInput from "../../../components/input/Input";
 import "./PresencePanel.css";
 
 /**

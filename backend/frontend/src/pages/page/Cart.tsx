@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Trash2 } from "lucide-react";
-import "../styles/Cart.css";
+import "../../styles/Cart.css";
 
 interface CartItem {
   id: string;
