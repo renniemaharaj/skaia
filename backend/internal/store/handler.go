@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	ievents "github.com/skaia/backend/internal/events"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -15,14 +16,15 @@ import (
 
 // Handler exposes all store HTTP endpoints.
 type Handler struct {
-	svc   *Service
-	hub   *ws.Hub
-	authz utils.Authorizer
+	svc        *Service
+	hub        *ws.Hub
+	authz      utils.Authorizer
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub, authz utils.Authorizer) *Handler {
-	return &Handler{svc: svc, hub: hub, authz: authz}
+func NewHandler(svc *Service, hub *ws.Hub, authz utils.Authorizer, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, hub: hub, authz: authz, dispatcher: dispatcher}
 }
 
 // Mount registers all store routes on r.
@@ -135,9 +137,19 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create category")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(cat, "category_created")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActStoreCategoryCreated,
+		Resource:   ievents.ResStoreCategory,
+		ResourceID: cat.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": cat.Name},
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(cat, "category_created")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusCreated, cat)
 }
 
@@ -174,9 +186,19 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update category")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(cat, "category_updated")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActStoreCategoryUpdated,
+		Resource:   ievents.ResStoreCategory,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": cat.Name},
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(cat, "category_updated")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, cat)
 }
 
@@ -198,9 +220,18 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "category_deleted")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActStoreCategoryDeleted,
+		Resource:   ievents.ResStoreCategory,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "category_deleted")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -316,9 +347,19 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create product")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(p, "product_created")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActProductCreated,
+		Resource:   ievents.ResProduct,
+		ResourceID: p.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": p.Name, "price": p.Price},
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(p, "product_created")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusCreated, p)
 }
 
@@ -393,9 +434,19 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update product")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(updated, "product_updated")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActProductUpdated,
+		Resource:   ievents.ResProduct,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": updated.Name},
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(updated, "product_updated")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -417,9 +468,18 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete product")
 		return
 	}
-	if h.hub != nil {
-		h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "product_deleted")
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActProductDeleted,
+		Resource:   ievents.ResProduct,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.BroadcastStoreCatalog(map[string]int64{"id": id}, "product_deleted")
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -463,9 +523,19 @@ func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, item)
-	if items, err := h.svc.GetUserCart(userID); err == nil {
-		h.hub.PushCartUpdate(userID, items)
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCartItemAdded,
+		Resource:   ievents.ResProduct,
+		ResourceID: req.ProductID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"quantity": req.Quantity},
+		Fn: func() {
+			if items, err := h.svc.GetUserCart(userID); err == nil {
+				h.hub.PushCartUpdate(userID, items)
+			}
+		},
+	})
 }
 
 func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
@@ -488,9 +558,19 @@ func (h *Handler) updateCartItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, item)
-	if items, err := h.svc.GetUserCart(userID); err == nil {
-		h.hub.PushCartUpdate(userID, items)
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCartItemUpdated,
+		Resource:   ievents.ResProduct,
+		ResourceID: req.ProductID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"quantity": req.Quantity},
+		Fn: func() {
+			if items, err := h.svc.GetUserCart(userID); err == nil {
+				h.hub.PushCartUpdate(userID, items)
+			}
+		},
+	})
 }
 
 func (h *Handler) removeFromCart(w http.ResponseWriter, r *http.Request) {
@@ -511,9 +591,18 @@ func (h *Handler) removeFromCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "removed"})
-	if items, err := h.svc.GetUserCart(userID); err == nil {
-		h.hub.PushCartUpdate(userID, items)
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCartItemRemoved,
+		Resource:   ievents.ResProduct,
+		ResourceID: req.ProductID,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			if items, err := h.svc.GetUserCart(userID); err == nil {
+				h.hub.PushCartUpdate(userID, items)
+			}
+		},
+	})
 }
 
 func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
@@ -527,7 +616,14 @@ func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "cleared"})
-	h.hub.PushCartUpdate(userID, []*models.CartItem{})
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActCartCleared,
+		IP:       ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.PushCartUpdate(userID, []*models.CartItem{})
+		},
+	})
 }
 
 // Order handlers
@@ -591,6 +687,14 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = h.svc.ClearCart(userID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActOrderCreated,
+		Resource:   ievents.ResOrder,
+		ResourceID: order.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"total": total, "items": len(items)},
+	})
 	utils.WriteJSON(w, http.StatusCreated, order)
 }
 
@@ -666,6 +770,14 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update order status")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActOrderStatusUpdated,
+		Resource:   ievents.ResOrder,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"status": req.Status},
+	})
 	utils.WriteJSON(w, http.StatusOK, order)
 }
 
@@ -695,13 +807,22 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Notify only the purchasing user of the outcome via WebSocket
-	if h.hub != nil {
-		action := "purchase_success"
-		if resp.Status == "failed" {
-			action = "purchase_failure"
-		}
-		h.hub.SendToUser(userID, buildStoreMsg(action, resp))
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActCheckout,
+		Resource: ievents.ResOrder,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"status": resp.Status, "currency": req.Currency},
+		Fn: func() {
+			if h.hub != nil {
+				action := "purchase_success"
+				if resp.Status == "failed" {
+					action = "purchase_failure"
+				}
+				h.hub.SendToUser(userID, buildStoreMsg(action, resp))
+			}
+		},
+	})
 
 	httpStatus := http.StatusCreated
 	if resp.Status == "failed" {
@@ -781,6 +902,14 @@ func (h *Handler) createPlan(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create plan")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPlanCreated,
+		Resource:   ievents.ResPlan,
+		ResourceID: plan.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": plan.Name},
+	})
 	utils.WriteJSON(w, http.StatusCreated, plan)
 }
 
@@ -850,6 +979,14 @@ func (h *Handler) updatePlan(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update plan")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPlanUpdated,
+		Resource:   ievents.ResPlan,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": updated.Name},
+	})
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -871,6 +1008,13 @@ func (h *Handler) deletePlan(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete plan")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPlanDeleted,
+		Resource:   ievents.ResPlan,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -896,6 +1040,14 @@ func (h *Handler) subscribe(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSubscriptionCreated,
+		Resource:   ievents.ResSubscription,
+		ResourceID: sub.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"plan_id": req.PlanID},
+	})
 	utils.WriteJSON(w, http.StatusCreated, sub)
 }
 
@@ -956,6 +1108,14 @@ func (h *Handler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSubscriptionCancelled,
+		Resource:   ievents.ResSubscription,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"at_period_end": req.AtPeriodEnd},
+	})
 	utils.WriteJSON(w, http.StatusOK, sub)
 }
 

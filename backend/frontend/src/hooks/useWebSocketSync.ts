@@ -43,6 +43,7 @@ import {
   notificationsAtom,
   type AppNotification,
 } from "../atoms/notifications";
+import { activityEventsAtom, type ActivityEvent } from "../atoms/events";
 import {
   playNotificationSound,
   playMessageSound,
@@ -139,6 +140,9 @@ export const useWebSocketSync = () => {
   const setProducts = useSetAtom(productsAtom);
   const setStoreCategories = useSetAtom(productCategoriesAtom);
   const setStoreCartItems = useSetAtom(storeCartItemsAtom);
+
+  // ── Activity events ───────────────────────────────────────────────────────
+  const setActivityEvents = useSetAtom(activityEventsAtom);
 
   // read token so the WS connection is authenticated server-side
   const accessToken = useAtomValue(accessTokenAtom);
@@ -861,6 +865,20 @@ export const useWebSocketSync = () => {
               }),
             );
           }
+
+          // ── Activity events ───────────────────────────────────────────────
+          if (message.type === "events:update") {
+            const { data: evtData } = payload as {
+              action: string;
+              data?: ActivityEvent;
+            };
+            if (evtData) {
+              setActivityEvents((prev) => {
+                if (prev.some((e) => e.id === evtData.id)) return prev;
+                return [...prev, evtData];
+              });
+            }
+          }
         } catch (error) {
           console.error("Error processing WebSocket message:", error);
         }
@@ -908,6 +926,7 @@ export const useWebSocketSync = () => {
     setStoreCategories,
     setStoreCartItems,
     setCursorPositions,
+    setActivityEvents,
     setBrandingWs,
     setFooterWs,
     setSeoWs,

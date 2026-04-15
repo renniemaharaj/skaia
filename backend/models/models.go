@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -337,4 +338,18 @@ type UserBlock struct {
 	BlockerID int64     `json:"blocker_id"`
 	BlockedID int64     `json:"blocked_id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// Event represents an audit log entry for any user or system activity.
+type Event struct {
+	ID         int64           `json:"id"`
+	UserID     *int64          `json:"user_id,omitempty"`
+	Username   string          `json:"username,omitempty"`
+	AvatarURL  string          `json:"avatar_url,omitempty"`
+	Activity   string          `json:"activity"`
+	Resource   string          `json:"resource,omitempty"`
+	ResourceID *int64          `json:"resource_id,omitempty"`
+	Meta       json.RawMessage `json:"meta,omitempty"`
+	IP         string          `json:"-"`
+	CreatedAt  time.Time       `json:"created_at"`
 }

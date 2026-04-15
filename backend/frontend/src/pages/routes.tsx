@@ -19,6 +19,7 @@ import PageBuilder from "./page/PageBuilder.tsx";
 import CustomPages from "./custom-pages/CustomPages.tsx";
 import DataSourcesPage from "./datasources/DataSourcesPage.tsx";
 import DataSourceEditorPage from "./datasources/DataSourceEditorPage.tsx";
+import ActivityPage from "./activity/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -35,6 +36,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },
+  { path: "activity", element: <ActivityPage /> },
 ];
 
 /** Routes accessible to both guests and authenticated users. */

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	ievents "github.com/skaia/backend/internal/events"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
@@ -82,14 +83,15 @@ func (h *Handler) getFeature(w http.ResponseWriter, r *http.Request) {
 
 // Handler serves site-configuration and landing-page endpoints.
 type Handler struct {
-	svc     *Service
-	userSvc *iuser.Service
-	hub     *ws.Hub
+	svc        *Service
+	userSvc    *iuser.Service
+	hub        *ws.Hub
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service, hub *ws.Hub) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc, hub: hub}
+func NewHandler(svc *Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, hub: hub, dispatcher: dispatcher}
 }
 
 // Mount registers routes.
@@ -183,7 +185,16 @@ func (h *Handler) updateBranding(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
-	h.hub.BroadcastConfig("branding_updated", body)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActBrandingUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.BroadcastConfig("branding_updated", body)
+		},
+	})
 }
 
 func (h *Handler) updateSEO(w http.ResponseWriter, r *http.Request) {
@@ -203,7 +214,16 @@ func (h *Handler) updateSEO(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
-	h.hub.BroadcastConfig("seo_updated", body)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActSEOUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.BroadcastConfig("seo_updated", body)
+		},
+	})
 }
 
 func (h *Handler) getFooter(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +257,16 @@ func (h *Handler) updateFooter(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
-	h.hub.BroadcastConfig("footer_updated", body)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActFooterUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.BroadcastConfig("footer_updated", body)
+		},
+	})
 }
 
 // ── landing page ────────────────────────────────────────────────────────────
@@ -268,7 +297,18 @@ func (h *Handler) createSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, s)
-	h.hub.BroadcastConfig("landing_section_created", s)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSectionCreated,
+		Resource:   ievents.ResConfig,
+		ResourceID: s.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"section_type": s.SectionType},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_section_created", s)
+		},
+	})
 }
 
 func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
@@ -293,12 +333,31 @@ func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updated, _ := h.svc.GetSection(id)
+	userID, _ := utils.UserIDFromCtx(r)
 	if updated != nil {
 		utils.WriteJSON(w, http.StatusOK, updated)
-		h.hub.BroadcastConfig("landing_section_updated", updated)
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     userID,
+			Activity:   ievents.ActSectionUpdated,
+			Resource:   ievents.ResConfig,
+			ResourceID: id,
+			IP:         ievents.ClientIP(r),
+			Fn: func() {
+				h.hub.BroadcastConfig("landing_section_updated", updated)
+			},
+		})
 	} else {
 		utils.WriteJSON(w, http.StatusOK, s)
-		h.hub.BroadcastConfig("landing_section_updated", s)
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     userID,
+			Activity:   ievents.ActSectionUpdated,
+			Resource:   ievents.ResConfig,
+			ResourceID: id,
+			IP:         ievents.ClientIP(r),
+			Fn: func() {
+				h.hub.BroadcastConfig("landing_section_updated", s)
+			},
+		})
 	}
 }
 
@@ -322,19 +381,25 @@ func (h *Handler) deleteSection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove image files from any items within the deleted section.
-	if section != nil {
-		go func() {
-			for _, item := range section.Items {
-				if item.ImageURL != "" {
-					iupload.DeleteUploadFile(item.ImageURL)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSectionDeleted,
+		Resource:   ievents.ResConfig,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			if section != nil {
+				for _, item := range section.Items {
+					if item.ImageURL != "" {
+						iupload.DeleteUploadFile(item.ImageURL)
+					}
 				}
 			}
-		}()
-	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	h.hub.BroadcastConfig("landing_section_deleted", map[string]interface{}{"id": id})
+			h.hub.BroadcastConfig("landing_section_deleted", map[string]interface{}{"id": id})
+		},
+	})
 }
 
 func (h *Handler) reorderSections(w http.ResponseWriter, r *http.Request) {
@@ -355,7 +420,17 @@ func (h *Handler) reorderSections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	h.hub.BroadcastConfig("landing_reordered", map[string]interface{}{"ids": body.IDs})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActSectionUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"action": "reorder"},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_reordered", map[string]interface{}{"ids": body.IDs})
+		},
+	})
 }
 
 // ── items ───────────────────────────────────────────────────────────────────
@@ -382,7 +457,18 @@ func (h *Handler) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, item)
-	h.hub.BroadcastConfig("landing_item_created", item)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSectionUpdated,
+		Resource:   ievents.ResConfig,
+		ResourceID: secID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "item_created", "item_id": item.ID},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_item_created", item)
+		},
+	})
 }
 
 func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
@@ -407,7 +493,18 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, item)
-	h.hub.BroadcastConfig("landing_item_updated", item)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSectionUpdated,
+		Resource:   ievents.ResConfig,
+		ResourceID: item.SectionID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "item_updated", "item_id": id},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_item_updated", item)
+		},
+	})
 }
 
 func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
@@ -430,13 +527,21 @@ func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove the image file if it's a local upload.
-	if item != nil && item.ImageURL != "" {
-		go iupload.DeleteUploadFile(item.ImageURL)
-	}
-
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	h.hub.BroadcastConfig("landing_item_deleted", map[string]interface{}{"id": id})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActSectionUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"action": "item_deleted", "item_id": id},
+		Fn: func() {
+			if item != nil && item.ImageURL != "" {
+				iupload.DeleteUploadFile(item.ImageURL)
+			}
+			h.hub.BroadcastConfig("landing_item_deleted", map[string]interface{}{"id": id})
+		},
+	})
 }
 
 func (h *Handler) reorderItems(w http.ResponseWriter, r *http.Request) {
@@ -462,5 +567,16 @@ func (h *Handler) reorderItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	h.hub.BroadcastConfig("landing_items_reordered", map[string]interface{}{"section_id": secID, "ids": body.IDs})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActSectionUpdated,
+		Resource:   ievents.ResConfig,
+		ResourceID: secID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "items_reordered"},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_items_reordered", map[string]interface{}{"section_id": secID, "ids": body.IDs})
+		},
+	})
 }

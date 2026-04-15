@@ -34,6 +34,7 @@ const (
 	ConfigUpdate       MessageType = "config:update"       // server → all: branding/seo/footer/landing changed
 	PageUpdate         MessageType = "page:update"         // server → all: CMS page created/updated/deleted
 	Cursor             MessageType = "cursor:update"       // client → server → same-route clients: cursor position
+	EventsUpdate       MessageType = "events:update"       // server → admin clients: new audit event
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.

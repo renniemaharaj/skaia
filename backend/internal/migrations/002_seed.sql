@@ -107,12 +107,13 @@ END $$;
 -- Home/manage permission and default site config seed
 INSERT INTO permissions (name, category, description) VALUES
     ('home.manage', 'home', 'Edit landing page sections, branding, and site config'),
-    ('home.page-delete', 'home', 'Delete custom pages')
+    ('home.page-delete', 'home', 'Delete custom pages'),
+    ('events.view', 'events', 'View the events audit log')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'admin' AND p.name IN ('home.manage', 'home.page-delete')
+WHERE r.name = 'admin' AND p.name IN ('home.manage', 'home.page-delete', 'events.view')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO site_config (key, value) VALUES

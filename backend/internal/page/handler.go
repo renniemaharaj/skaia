@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	iconfig "github.com/skaia/backend/internal/config"
+	ievents "github.com/skaia/backend/internal/events"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -16,15 +17,16 @@ import (
 
 // Handler serves custom-page endpoints.
 type Handler struct {
-	svc       *Service
-	configSvc *iconfig.Service
-	userSvc   *iuser.Service
-	hub       *ws.Hub
+	svc        *Service
+	configSvc  *iconfig.Service
+	userSvc    *iuser.Service
+	hub        *ws.Hub
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler creates a page Handler.
-func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service, hub *ws.Hub) *Handler {
-	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub}
+func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher}
 }
 
 // Mount registers page routes under /config/pages.
@@ -211,7 +213,18 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, p)
-	h.hub.BroadcastPage("page_created", p)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPageCreated,
+		Resource:   ievents.ResPage,
+		ResourceID: p.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"slug": p.Slug},
+		Fn: func() {
+			h.hub.BroadcastPage("page_created", p)
+		},
+	})
 }
 
 func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
@@ -236,13 +249,32 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	updated, _ := h.svc.GetByID(id)
+	userID, _ := utils.UserIDFromCtx(r)
 	if updated != nil {
 		h.svc.EnrichPage(updated)
 		utils.WriteJSON(w, http.StatusOK, updated)
-		h.hub.BroadcastPage("page_updated", updated)
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     userID,
+			Activity:   ievents.ActPageUpdated,
+			Resource:   ievents.ResPage,
+			ResourceID: id,
+			IP:         ievents.ClientIP(r),
+			Fn: func() {
+				h.hub.BroadcastPage("page_updated", updated)
+			},
+		})
 	} else {
 		utils.WriteJSON(w, http.StatusOK, p)
-		h.hub.BroadcastPage("page_updated", p)
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     userID,
+			Activity:   ievents.ActPageUpdated,
+			Resource:   ievents.ResPage,
+			ResourceID: id,
+			IP:         ievents.ClientIP(r),
+			Fn: func() {
+				h.hub.BroadcastPage("page_updated", p)
+			},
+		})
 	}
 }
 
@@ -262,7 +294,17 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	h.hub.BroadcastPage("page_deleted", map[string]interface{}{"id": id})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPageDeleted,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.BroadcastPage("page_deleted", map[string]interface{}{"id": id})
+		},
+	})
 }
 
 // ── browse (public feed of custom pages) ────────────────────────────────────
@@ -331,10 +373,21 @@ func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, _ := h.svc.GetByID(id)
+	userID, _ := utils.UserIDFromCtx(r)
 	if page != nil {
 		h.svc.EnrichPage(page)
 		utils.WriteJSON(w, http.StatusOK, page)
-		h.hub.BroadcastPage("page_updated", page)
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     userID,
+			Activity:   ievents.ActPageUpdated,
+			Resource:   ievents.ResPage,
+			ResourceID: id,
+			IP:         ievents.ClientIP(r),
+			Meta:       map[string]interface{}{"action": "set_owner", "new_owner": body.UserID},
+			Fn: func() {
+				h.hub.BroadcastPage("page_updated", page)
+			},
+		})
 	} else {
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
@@ -356,7 +409,18 @@ func (h *Handler) clearOwner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "owner_id": nil})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPageUpdated,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "clear_owner"},
+		Fn: func() {
+			h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "owner_id": nil})
+		},
+	})
 }
 
 func (h *Handler) addEditor(w http.ResponseWriter, r *http.Request) {
@@ -398,7 +462,17 @@ func (h *Handler) addEditor(w http.ResponseWriter, r *http.Request) {
 		editors = []*models.PageUser{}
 	}
 	utils.WriteJSON(w, http.StatusOK, editors)
-	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageUpdated,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "add_editor", "editor_id": body.UserID},
+		Fn: func() {
+			h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
+		},
+	})
 }
 
 func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
@@ -438,7 +512,17 @@ func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
 		editors = []*models.PageUser{}
 	}
 	utils.WriteJSON(w, http.StatusOK, editors)
-	h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageUpdated,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "remove_editor", "editor_id": editorID},
+		Fn: func() {
+			h.hub.BroadcastPage("page_updated", map[string]interface{}{"id": id, "editors": editors})
+		},
+	})
 }
 
 // ── engagement handlers ─────────────────────────────────────────────────────
@@ -476,6 +560,14 @@ func (h *Handler) likePage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageLiked,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"likes": count},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": true})
 }
 
@@ -496,6 +588,14 @@ func (h *Handler) unlikePage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageUnliked,
+		Resource:   ievents.ResPage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"likes": count},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": false})
 }
 
@@ -569,7 +669,17 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		created = full
 	}
 	utils.WriteJSON(w, http.StatusCreated, created)
-	h.hub.BroadcastPage("page_comment_created", created)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCommentCreated,
+		Resource:   ievents.ResPageComment,
+		ResourceID: created.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"page_id": id},
+		Fn: func() {
+			h.hub.BroadcastPage("page_comment_created", created)
+		},
+	})
 }
 
 func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
@@ -605,6 +715,14 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCommentUpdated,
+		Resource:   ievents.ResPageComment,
+		ResourceID: commentID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"page_id": existing.PageID},
+	})
 	utils.WriteJSON(w, http.StatusOK, existing)
 }
 
@@ -634,7 +752,17 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	h.hub.BroadcastPage("page_comment_deleted", map[string]interface{}{"id": commentID, "page_id": existing.PageID})
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCommentDeleted,
+		Resource:   ievents.ResPageComment,
+		ResourceID: commentID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"page_id": existing.PageID},
+		Fn: func() {
+			h.hub.BroadcastPage("page_comment_deleted", map[string]interface{}{"id": commentID, "page_id": existing.PageID})
+		},
+	})
 }
 
 func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
@@ -653,6 +781,14 @@ func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCommentCreated,
+		Resource:   ievents.ResPageComment,
+		ResourceID: commentID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "liked", "likes": count},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": true})
 }
 
@@ -672,6 +808,14 @@ func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCommentDeleted,
+		Resource:   ievents.ResPageComment,
+		ResourceID: commentID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "unliked", "likes": count},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": false})
 }
 
@@ -696,5 +840,15 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "slug": body.Slug})
-	h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActPageUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": body.Slug},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
+		},
+	})
 }

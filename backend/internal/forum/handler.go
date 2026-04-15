@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	ievents "github.com/skaia/backend/internal/events"
 	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	ws "github.com/skaia/backend/internal/ws"
@@ -21,15 +22,16 @@ type NotifSender interface {
 
 // Handler exposes all forum HTTP endpoints.
 type Handler struct {
-	svc      *Service
-	hub      *ws.Hub
-	notifSvc NotifSender
-	authz    utils.Authorizer
+	svc        *Service
+	hub        *ws.Hub
+	notifSvc   NotifSender
+	authz      utils.Authorizer
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Authorizer) *Handler {
-	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz}
+func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Authorizer, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz, dispatcher: dispatcher}
 }
 
 // Mount registers all forum routes on r.
@@ -155,12 +157,22 @@ func (h *Handler) createCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.Broadcast(&ws.Message{
-		Type: ws.ForumUpdate,
-		Payload: marshalPayload(map[string]interface{}{
-			"action": "category_created",
-			"data":   created,
-		}),
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCategoryCreated,
+		Resource:   ievents.ResForumCategory,
+		ResourceID: created.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": created.Name},
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "category_created",
+					"data":   created,
+				}),
+			})
+		},
 	})
 	utils.WriteJSON(w, http.StatusCreated, created)
 }
@@ -187,12 +199,21 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.Broadcast(&ws.Message{
-		Type: ws.ForumUpdate,
-		Payload: marshalPayload(map[string]interface{}{
-			"action": "category_deleted",
-			"id":     id,
-		}),
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCategoryDeleted,
+		Resource:   ievents.ResForumCategory,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "category_deleted",
+					"id":     id,
+				}),
+			})
+		},
 	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
@@ -300,18 +321,27 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.Broadcast(&ws.Message{
-		Type: ws.ForumUpdate,
-		Payload: marshalPayload(map[string]interface{}{
-			"action": "thread_created",
-			"data":   created,
-		}),
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadCreated,
+		Resource:   ievents.ResForum,
+		ResourceID: created.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"title": created.Title, "category_id": categoryID},
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "thread_created",
+					"data":   created,
+				}),
+			})
+			h.hub.PropagateForumThread(created.ID, created, "thread_created")
+			if recentThreads, err := h.svc.ListCategoryThreads(categoryID, 5, 0); err == nil && len(recentThreads) > 0 {
+				h.hub.PropagateForumCategories(categoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+			}
+		},
 	})
-	h.hub.PropagateForumThread(created.ID, created, "thread_created")
-
-	if recentThreads, err := h.svc.ListCategoryThreads(categoryID, 5, 0); err == nil && len(recentThreads) > 0 {
-		h.hub.PropagateForumCategories(categoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
-	}
 
 	utils.WriteJSON(w, http.StatusCreated, created)
 }
@@ -396,26 +426,28 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(id, updated, "thread_updated")
-
-	if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0); err == nil && len(recentThreads) > 0 {
-		h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
-	}
-
-	// Notify thread author when their thread is edited by someone else (admin)
-	if h.notifSvc != nil && thread.UserID != userID {
-		threadOwner := thread.UserID
-		tid := id
-		title := thread.Title
-		go func() {
-			_, _ = h.notifSvc.Send(
-				threadOwner,
-				"thread_edited",
-				fmt.Sprintf("Your thread \"%.60s\" was edited by a moderator", title),
-				"/view-thread/"+strconv.FormatInt(tid, 10),
-			)
-		}()
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadUpdated,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"title": thread.Title},
+		Fn: func() {
+			h.hub.PropagateForumThread(id, updated, "thread_updated")
+			if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0); err == nil && len(recentThreads) > 0 {
+				h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+			}
+			if h.notifSvc != nil && thread.UserID != userID {
+				_, _ = h.notifSvc.Send(
+					thread.UserID,
+					"thread_edited",
+					fmt.Sprintf("Your thread \"%.60s\" was edited by a moderator", thread.Title),
+					"/view-thread/"+strconv.FormatInt(id, 10),
+				)
+			}
+		},
+	})
 
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
@@ -461,38 +493,37 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove orphaned upload files in the background.
-	go func() {
-		for _, u := range uploadURLs {
-			iupload.DeleteUploadFile(u)
-		}
-	}()
-
-	h.hub.PropagateForumThread(id, nil, "thread_deleted")
-	h.hub.Broadcast(&ws.Message{
-		Type: ws.ForumUpdate,
-		Payload: marshalPayload(map[string]interface{}{
-			"action": "thread_deleted",
-			"id":     id,
-		}),
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadDeleted,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"title": thread.Title, "category_id": thread.CategoryID},
+		Fn: func() {
+			for _, u := range uploadURLs {
+				iupload.DeleteUploadFile(u)
+			}
+			h.hub.PropagateForumThread(id, nil, "thread_deleted")
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "thread_deleted",
+					"id":     id,
+				}),
+			})
+			recentThreads, _ := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0)
+			h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+			if h.notifSvc != nil && thread.UserID != userID {
+				_, _ = h.notifSvc.Send(
+					thread.UserID,
+					"thread_deleted",
+					fmt.Sprintf("Your thread \"%.60s\" was removed by a moderator", thread.Title),
+					"/forum",
+				)
+			}
+		},
 	})
-
-	recentThreads, _ := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0)
-	h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
-
-	// Notify thread author when their thread is deleted by someone else (admin)
-	if h.notifSvc != nil && thread.UserID != userID {
-		threadOwner := thread.UserID
-		title := thread.Title
-		go func() {
-			_, _ = h.notifSvc.Send(
-				threadOwner,
-				"thread_deleted",
-				fmt.Sprintf("Your thread \"%.60s\" was removed by a moderator", title),
-				"/forum",
-			)
-		}()
-	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
@@ -523,21 +554,26 @@ func (h *Handler) likeThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(id, map[string]interface{}{
-		"thread_id": id, "likes": count, "user_id": userID,
-	}, "thread_liked")
-
-	// Notify the thread author (skip if liking own thread)
-	if h.notifSvc != nil && thread.UserID != userID {
-		go func() {
-			_, _ = h.notifSvc.Send(
-				thread.UserID,
-				"thread_liked",
-				fmt.Sprintf("Someone liked your thread: %s", thread.Title),
-				"/view-thread/"+strconv.FormatInt(id, 10),
-			)
-		}()
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadLiked,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.PropagateForumThread(id, map[string]interface{}{
+				"thread_id": id, "likes": count, "user_id": userID,
+			}, "thread_liked")
+			if h.notifSvc != nil && thread.UserID != userID {
+				_, _ = h.notifSvc.Send(
+					thread.UserID,
+					"thread_liked",
+					fmt.Sprintf("Someone liked your thread: %s", thread.Title),
+					"/view-thread/"+strconv.FormatInt(id, 10),
+				)
+			}
+		},
+	})
 
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
@@ -567,9 +603,18 @@ func (h *Handler) unlikeThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(id, map[string]interface{}{
-		"thread_id": id, "likes": count, "user_id": userID,
-	}, "thread_unliked")
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadUnliked,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.PropagateForumThread(id, map[string]interface{}{
+				"thread_id": id, "likes": count, "user_id": userID,
+			}, "thread_unliked")
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
 }
 
@@ -660,24 +705,27 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		created = enriched
 	}
 
-	h.hub.PropagateForumThread(id, map[string]interface{}{"new_comment": created}, "comment_created")
-
-	// Notify thread author that someone commented (skip if author commented on own thread)
-	if h.notifSvc != nil {
-		if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != userID {
-			tid := id
-			threadOwner := thread.UserID
-			threadTitle := thread.Title
-			go func() {
-				_, _ = h.notifSvc.Send(
-					threadOwner,
-					"comment_on_thread",
-					fmt.Sprintf("Someone commented on your thread: %s", threadTitle),
-					"/view-thread/"+strconv.FormatInt(tid, 10),
-				)
-			}()
-		}
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCommentCreated,
+		Resource:   ievents.ResForumComment,
+		ResourceID: created.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"thread_id": id},
+		Fn: func() {
+			h.hub.PropagateForumThread(id, map[string]interface{}{"new_comment": created}, "comment_created")
+			if h.notifSvc != nil {
+				if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != userID {
+					_, _ = h.notifSvc.Send(
+						thread.UserID,
+						"comment_on_thread",
+						fmt.Sprintf("Someone commented on your thread: %s", thread.Title),
+						"/view-thread/"+strconv.FormatInt(id, 10),
+					)
+				}
+			}
+		},
+	})
 
 	utils.WriteJSON(w, http.StatusCreated, created)
 }
@@ -723,7 +771,17 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(updated.ThreadID, map[string]interface{}{"comment": updated}, "comment_updated")
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCommentUpdated,
+		Resource:   ievents.ResForumComment,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"thread_id": updated.ThreadID},
+		Fn: func() {
+			h.hub.PropagateForumThread(updated.ThreadID, map[string]interface{}{"comment": updated}, "comment_updated")
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -762,28 +820,28 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove orphaned upload files in the background.
-	go func() {
-		for _, u := range commentUploadURLs {
-			iupload.DeleteUploadFile(u)
-		}
-	}()
-
-	h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
-
-	// Notify comment author when someone else (admin) deleted their comment
-	if h.notifSvc != nil && comment.AuthorID != userID {
-		commentOwner := comment.AuthorID
-		tid := threadID
-		go func() {
-			_, _ = h.notifSvc.Send(
-				commentOwner,
-				"comment_deleted",
-				"Your comment was removed by a moderator",
-				"/view-thread/"+strconv.FormatInt(tid, 10),
-			)
-		}()
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCommentDeleted,
+		Resource:   ievents.ResForumComment,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"thread_id": threadID},
+		Fn: func() {
+			for _, u := range commentUploadURLs {
+				iupload.DeleteUploadFile(u)
+			}
+			h.hub.PropagateForumThread(threadID, map[string]interface{}{"comment_id": id}, "comment_deleted")
+			if h.notifSvc != nil && comment.AuthorID != userID {
+				_, _ = h.notifSvc.Send(
+					comment.AuthorID,
+					"comment_deleted",
+					"Your comment was removed by a moderator",
+					"/view-thread/"+strconv.FormatInt(threadID, 10),
+				)
+			}
+		},
+	})
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
@@ -814,22 +872,27 @@ func (h *Handler) likeComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
-		"comment_id": id, "likes": count, "user_id": userID,
-	}, "comment_liked")
-
-	// Notify the comment author (skip if liking own comment)
-	if h.notifSvc != nil && comment.AuthorID != userID {
-		tid := comment.ThreadID
-		go func() {
-			_, _ = h.notifSvc.Send(
-				comment.AuthorID,
-				"comment_liked",
-				"Someone liked your comment",
-				"/view-thread/"+strconv.FormatInt(tid, 10),
-			)
-		}()
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCommentLiked,
+		Resource:   ievents.ResForumComment,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"thread_id": comment.ThreadID, "likes": count},
+		Fn: func() {
+			h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
+				"comment_id": id, "likes": count, "user_id": userID,
+			}, "comment_liked")
+			if h.notifSvc != nil && comment.AuthorID != userID {
+				_, _ = h.notifSvc.Send(
+					comment.AuthorID,
+					"comment_liked",
+					"Someone liked your comment",
+					"/view-thread/"+strconv.FormatInt(comment.ThreadID, 10),
+				)
+			}
+		},
+	})
 
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "liked", "likes": count})
 }
@@ -860,9 +923,19 @@ func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
-		"comment_id": id, "likes": count, "user_id": userID,
-	}, "comment_unliked")
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCommentUnliked,
+		Resource:   ievents.ResForumComment,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"thread_id": comment.ThreadID, "likes": count},
+		Fn: func() {
+			h.hub.PropagateForumThread(comment.ThreadID, map[string]interface{}{
+				"comment_id": id, "likes": count, "user_id": userID,
+			}, "comment_unliked")
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
 }
 

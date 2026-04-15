@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/lib/pq"
 	"github.com/skaia/backend/internal/auth"
+	ievents "github.com/skaia/backend/internal/events"
 	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -40,14 +41,15 @@ func userContentDir(userID int64, subdir string) (string, error) {
 
 // Handler owns the HTTP layer for the user domain.
 type Handler struct {
-	svc *Service
-	hub *ws.Hub
+	svc        *Service
+	hub        *ws.Hub
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler returns a Handler backed by the given Service and WebSocket Hub.
-func NewHandler(svc *Service, hub *ws.Hub) *Handler {
+func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher) *Handler {
 	os.MkdirAll(usersDir, 0755) //nolint:errcheck
-	return &Handler{svc: svc, hub: hub}
+	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher}
 }
 
 // propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
@@ -198,6 +200,14 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("auth: registered %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     user.ID,
+		Activity:   ievents.ActUserRegistered,
+		Resource:   ievents.ResUser,
+		ResourceID: user.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"username": user.Username},
+	})
 	utils.WriteJSON(w, http.StatusCreated, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -233,6 +243,13 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("auth: login %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     user.ID,
+		Activity:   ievents.ActUserLoggedIn,
+		Resource:   ievents.ResUser,
+		ResourceID: user.ID,
+		IP:         ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: "",
@@ -265,6 +282,12 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("auth: logout (id=%d)", userID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActUserLoggedOut,
+		Resource: ievents.ResUser,
+		IP:       ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "logged out successfully",
 		"status":  "success",
@@ -378,17 +401,23 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updated.PasswordHash = ""
-	if h.hub != nil {
-		// Subscription-based: anyone viewing this profile receives the update
-		go h.hub.PropagateUser(id, map[string]interface{}{"user": updated})
-		// Direct push: the profile owner always gets their own update
-		// even without a subscription (updates currentUserAtom in place)
-		payload, _ := json.Marshal(map[string]interface{}{
-			"action": "user_updated",
-			"data":   map[string]interface{}{"user": updated},
-		})
-		go h.hub.SendToUser(id, &ws.Message{Type: ws.UserUpdate, Payload: payload})
-	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActUserUpdated,
+		Resource:   ievents.ResUser,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Fn: func() {
+			if h.hub != nil {
+				h.hub.PropagateUser(id, map[string]interface{}{"user": updated})
+				payload, _ := json.Marshal(map[string]interface{}{
+					"action": "user_updated",
+					"data":   map[string]interface{}{"user": updated},
+				})
+				h.hub.SendToUser(id, &ws.Message{Type: ws.UserUpdate, Payload: payload})
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, updated)
 }
 
@@ -471,8 +500,18 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagatePermissions(targetID)
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPermissionAdded,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"permission": req.Permission},
+		Fn: func() {
+			h.propagatePermissions(targetID)
+			h.propagateUserSession(targetID)
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission added"})
 }
 
@@ -499,8 +538,18 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagatePermissions(targetID)
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPermissionRemoved,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"permission": permName},
+		Fn: func() {
+			h.propagatePermissions(targetID)
+			h.propagateUserSession(targetID)
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed"})
 }
 
@@ -544,8 +593,18 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagatePermissions(targetID)
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActRoleAdded,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"role": req.Role},
+		Fn: func() {
+			h.propagatePermissions(targetID)
+			h.propagateUserSession(targetID)
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "role added"})
 }
 
@@ -576,8 +635,18 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagatePermissions(targetID)
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActRoleRemoved,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"role": roleName},
+		Fn: func() {
+			h.propagatePermissions(targetID)
+			h.propagateUserSession(targetID)
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "role removed"})
 }
 
@@ -608,7 +677,15 @@ func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActUserSuspended,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"reason": req.Reason},
+		Fn:         func() { h.propagateUserSession(targetID) },
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "user suspended"})
 }
 
@@ -634,7 +711,14 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go h.propagateUserSession(targetID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActUserUnsuspended,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Fn:         func() { h.propagateUserSession(targetID) },
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "user unsuspended"})
 }
 

@@ -23,6 +23,7 @@ import (
 	icfg "github.com/skaia/backend/internal/config"
 	ics "github.com/skaia/backend/internal/customsection"
 	ids "github.com/skaia/backend/internal/datasource"
+	ievents "github.com/skaia/backend/internal/events"
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
 	iinbox "github.com/skaia/backend/internal/inbox"
@@ -129,6 +130,12 @@ func main() {
 	hub := ws.NewHub()
 	go hub.Run()
 
+	dispatcher := ievents.NewDispatcher(database.DB)
+	dispatcher.OnPersist = func(event map[string]interface{}) {
+		hub.BroadcastEvent(event)
+	}
+	dispatcher.Start()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -136,7 +143,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           buildRouter(database.DB, hub),
+		Handler:           buildRouter(database.DB, hub, dispatcher),
 		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 15)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 15)) * time.Second,
@@ -161,6 +168,7 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced shutdown: %v", err)
 	}
+	dispatcher.Stop()
 	log.Println("server stopped")
 }
 
@@ -225,7 +233,7 @@ func removeArmedFile(armedDir, clientID string) error {
 	return os.Remove(filePath)
 }
 
-func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
+func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.Handler {
 	rdb := database.NewRedisClient()
 
 	userRepo := iuser.NewRepository(db)
@@ -441,9 +449,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 			ws.HandleConnection(w, r, hub)
 		})
 
-		iuser.NewHandler(userSvc, hub).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-		istore.NewHandler(storeSvc, hub, userSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		iuser.NewHandler(userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		uploadHandler := iupload.NewHandler(hub)
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)
@@ -453,13 +461,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
-		iinbox.NewHandler(inboxSvc).Mount(api, imw.JWTAuthMiddleware)
+		iinbox.NewHandler(inboxSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
-		icfg.NewHandler(cfgSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware)
+		icfg.NewHandler(cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo)
-		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
@@ -468,6 +476,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub) http.Handler {
 		csRepo := ics.NewRepository(db)
 		csSvc := ics.NewService(csRepo)
 		ics.NewHandler(csSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		// Events log admin API.
+		eventsRepo := ievents.NewRepository(db)
+		ievents.NewHandler(eventsRepo, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

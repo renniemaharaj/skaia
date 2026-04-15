@@ -457,3 +457,19 @@ CREATE TABLE IF NOT EXISTS custom_sections (
 );
 CREATE INDEX IF NOT EXISTS idx_custom_sections_datasource ON custom_sections(datasource_id);
 CREATE INDEX IF NOT EXISTS idx_custom_sections_created_by ON custom_sections(created_by);
+
+-- ── Events (audit log for all user / system activity) ───────────────────────
+CREATE TABLE IF NOT EXISTS events (
+    id          BIGSERIAL    PRIMARY KEY,
+    user_id     BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    activity    VARCHAR(100) NOT NULL,
+    resource    VARCHAR(100) NOT NULL DEFAULT '',
+    resource_id BIGINT,
+    meta        JSONB        NOT NULL DEFAULT '{}',
+    ip          VARCHAR(45)  NOT NULL DEFAULT '',
+    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_events_user_id    ON events(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_activity   ON events(activity);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_events_resource   ON events(resource, resource_id);

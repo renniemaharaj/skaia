@@ -273,6 +273,15 @@ export const Header: React.FC<HeaderProps> = ({
               Data Sources
               <span className="header-new-badge">New</span>
             </Link>
+            {isAuthenticated && hasPermission("events.view") && (
+              <Link
+                to="/activity"
+                className={isActive("/activity")}
+                onClick={() => setMenuOpen(false)}
+              >
+                Activity
+              </Link>
+            )}
           </div>
 
           <div className="user-section">

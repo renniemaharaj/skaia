@@ -6,18 +6,20 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	ievents "github.com/skaia/backend/internal/events"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
 
 // Handler exposes inbox HTTP endpoints.
 type Handler struct {
-	svc *Service
+	svc        *Service
+	dispatcher *ievents.Dispatcher
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, dispatcher: dispatcher}
 }
 
 // Mount registers inbox routes on r.
@@ -197,6 +199,14 @@ func (h *Handler) sendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, msg)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActMessageSent,
+		Resource:   ievents.ResMessage,
+		ResourceID: msg.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"conversation_id": id, "type": msgType},
+	})
 }
 
 func (h *Handler) markRead(w http.ResponseWriter, r *http.Request) {
@@ -236,6 +246,13 @@ func (h *Handler) deleteMessage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusNotFound, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActMessageDeleted,
+		Resource:   ievents.ResMessage,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -272,6 +289,14 @@ func (h *Handler) deleteConversation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActMessageDeleted,
+		Resource:   ievents.ResConversation,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"action": "conversation_deleted"},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -290,6 +315,13 @@ func (h *Handler) blockUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActUserBlocked,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -308,6 +340,13 @@ func (h *Handler) unblockUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActUserUnblocked,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 

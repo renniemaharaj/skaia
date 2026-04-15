@@ -73,6 +73,15 @@ func (h *Hub) BroadcastPage(action string, data interface{}) {
 	h.Broadcast(&Message{Type: PageUpdate, Payload: payload})
 }
 
+// BroadcastEvent sends a new audit event to every connected client.
+func (h *Hub) BroadcastEvent(data interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "event_created",
+		"data":   data,
+	})
+	h.Broadcast(&Message{Type: EventsUpdate, Payload: payload})
+}
+
 // PushNotificationRead notifies the user's connections that a notification has been
 // read or deleted. Use notifID=0 for bulk actions (mark-all-read, delete-all).
 func (h *Hub) PushNotificationRead(userID int64, action string, notifID int64) {
