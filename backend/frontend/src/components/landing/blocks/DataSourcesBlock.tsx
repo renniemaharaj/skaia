@@ -186,11 +186,23 @@ export const DataSourcesBlock = ({
 
       <div className="data-sources-header">
         <h2>
-          <Database
-            size={20}
-            style={{ marginRight: 8, verticalAlign: "middle" }}
-          />
-          {section.heading || "Data Sources"}
+          {editingDS ? (
+            <>
+              <Database
+                size={20}
+                style={{ marginRight: 8, verticalAlign: "middle" }}
+              />
+              {section.heading || "Data Sources"}
+            </>
+          ) : (
+            <Link to="/datasources" className="data-sources-heading-link">
+              <Database
+                size={20}
+                style={{ marginRight: 8, verticalAlign: "middle" }}
+              />
+              {section.heading || "Data Sources"}
+            </Link>
+          )}
         </h2>
         {canEdit && !editingDS && (
           <button className="data-sources-add-btn" onClick={startNew}>
@@ -299,14 +311,20 @@ export const DataSourcesBlock = ({
                           onClick={() => startEdit(ds)}
                           title="Edit"
                         >
-                          <Pencil size={14} />
+                          <Pencil
+                            size={14}
+                            className="data-sources-action-icon"
+                          />
                         </button>
                         <button
                           className="data-sources-action-btn data-sources-action-danger"
                           onClick={() => handleDelete(ds.id)}
                           title="Delete"
                         >
-                          <Trash2 size={14} />
+                          <Trash2
+                            size={14}
+                            className="data-sources-action-icon"
+                          />
                         </button>
                       </td>
                     )}

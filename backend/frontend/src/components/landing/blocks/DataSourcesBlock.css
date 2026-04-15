@@ -103,10 +103,29 @@
   color: inherit;
   cursor: pointer;
   transition: background 0.15s;
+  padding: 0;
 }
 
 .data-sources-action-btn:hover {
   background: var(--bg-secondary);
+}
+
+.data-sources-action-btn svg,
+.data-sources-action-icon {
+  padding: 0;
+  display: block;
+}
+
+.data-sources-heading-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.data-sources-heading-link:hover {
+  color: var(--primary-color);
 }
 
 .data-sources-action-danger:hover {
