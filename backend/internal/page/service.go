@@ -1,15 +1,26 @@
 package page
 
-import "github.com/skaia/backend/models"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/skaia/backend/models"
+)
+
+// InboxSender is the minimal interface the page service needs to send an inbox message.
+type InboxSender interface {
+	SendSystemMessage(senderID, recipientID int64, content, messageType string) error
+}
 
 // Service wraps the page repository with business logic.
 type Service struct {
-	repo Repository
+	repo     Repository
+	inboxSvc InboxSender
 }
 
 // NewService creates a new page Service.
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, inboxSvc InboxSender) *Service {
+	return &Service{repo: repo, inboxSvc: inboxSvc}
 }
 
 func (s *Service) GetBySlug(slug string) (*models.Page, error) {
@@ -43,7 +54,18 @@ func (s *Service) Update(p *models.Page) error {
 }
 
 func (s *Service) Delete(id int64) error {
-	return s.repo.Delete(id)
+	// Look up the page owner so we can decrement their allocation.
+	p, err := s.repo.GetByID(id)
+	if err != nil {
+		return s.repo.Delete(id)
+	}
+	if err := s.repo.Delete(id); err != nil {
+		return err
+	}
+	if p.OwnerID != nil && *p.OwnerID > 0 {
+		_ = s.repo.DecrementUsed(*p.OwnerID)
+	}
+	return nil
 }
 
 // ── Ownership & editors ─────────────────────────────────────────────────────
@@ -201,4 +223,92 @@ func (s *Service) UnlikeComment(commentID, userID int64) (int64, error) {
 
 func (s *Service) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
 	return s.repo.IsCommentLikedByUser(commentID, userID)
+}
+
+// ── Page allocations ────────────────────────────────────────────────────────
+
+func (s *Service) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
+	return s.repo.GetAllocation(userID)
+}
+
+func (s *Service) UpsertAllocation(userID, maxPages int64) error {
+	return s.repo.UpsertAllocation(userID, maxPages)
+}
+
+func (s *Service) ListAllocations() ([]*models.UserPageAllocation, error) {
+	return s.repo.ListAllocations()
+}
+
+func (s *Service) DeleteAllocation(userID int64) error {
+	return s.repo.DeleteAllocation(userID)
+}
+
+// ClaimPage creates a new page for a user, consuming one allocation slot.
+// Admins bypass allocation checks entirely and never consume a slot.
+func (s *Service) ClaimPage(userID int64, slug string, isAdmin bool) (*models.Page, error) {
+	if !isAdmin {
+		alloc, err := s.repo.GetAllocation(userID)
+		if err != nil {
+			return nil, fmt.Errorf("no page allocation found — you have not been granted any custom pages")
+		}
+		if alloc.UsedPages >= alloc.MaxPages {
+			return nil, fmt.Errorf("page limit reached (%d/%d)", alloc.UsedPages, alloc.MaxPages)
+		}
+	}
+
+	p := &models.Page{
+		Slug:    slug,
+		Title:   "",
+		Content: "[]",
+		OwnerID: &userID,
+	}
+	if err := s.repo.Create(p); err != nil {
+		return nil, err
+	}
+	if err := s.repo.SetOwner(p.ID, userID); err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		if err := s.repo.IncrementUsed(userID); err != nil {
+			return nil, err
+		}
+	}
+	return p, nil
+}
+
+// SendPageCreatedInbox sends an inbox DM from the noreply system user
+// to the page owner with a rich-text card about their new page.
+func (s *Service) SendPageCreatedInbox(ownerID int64, page *models.Page) {
+	if s.inboxSvc == nil {
+		return
+	}
+	noreplyID, err := s.repo.GetNoreplyUserID()
+	if err != nil {
+		return
+	}
+	title := page.Title
+	if title == "" {
+		title = page.Slug
+	}
+	route := "/page/" + page.Slug
+	cardJSON, _ := json.Marshal(map[string]string{
+		"title":       title,
+		"description": page.Description,
+		"slug":        page.Slug,
+		"route":       route,
+	})
+	_ = s.inboxSvc.SendSystemMessage(noreplyID, ownerID, string(cardJSON), "page_card")
+}
+
+// ReconcileUsedCount re-syncs used_pages with the actual COUNT of owned pages.
+func (s *Service) ReconcileUsedCount(userID int64) error {
+	actual, err := s.repo.CountOwnedPages(userID)
+	if err != nil {
+		return err
+	}
+	_, allocErr := s.repo.GetAllocation(userID)
+	if allocErr != nil {
+		return nil
+	}
+	return s.repo.SetUsedPages(userID, actual)
 }

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	iconfig "github.com/skaia/backend/internal/config"
 	ievents "github.com/skaia/backend/internal/events"
 	iuser "github.com/skaia/backend/internal/user"
@@ -44,6 +45,8 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.Group(func(r chi.Router) {
 			r.Use(jwt)
 			r.Post("/", h.createPage)
+			r.Post("/claim", h.claimPage)
+			r.Get("/my-allocation", h.getMyAllocation)
 			r.Put("/{id}", h.updatePage)
 			r.Delete("/{id}", h.deletePage)
 
@@ -64,6 +67,11 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 
 			// Landing page config
 			r.Put("/landing-page", h.setLandingPage)
+
+			// Admin: page allocation management
+			r.Get("/allocations", h.listAllocations)
+			r.Put("/allocations/{userId}", h.upsertAllocation)
+			r.Delete("/allocations/{userId}", h.deleteAllocation)
 		})
 	})
 }
@@ -851,4 +859,139 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
 		},
 	})
+}
+
+// ── page allocation: user-facing ────────────────────────────────────────────
+
+func (h *Handler) getMyAllocation(w http.ResponseWriter, r *http.Request) {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	isAdm := h.isAdmin(r)
+	alloc, err := h.svc.GetAllocation(uid)
+	if err != nil {
+		if isAdm {
+			// Admins always have unlimited pages
+			utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+				"max_pages": 999, "used_pages": 0, "has_allocation": true, "is_admin": true,
+			})
+			return
+		}
+		// Auto-provision default allocation of 5 for normal users
+		_ = h.svc.UpsertAllocation(uid, 5)
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+			"max_pages": 5, "used_pages": 0, "has_allocation": true,
+		})
+		return
+	}
+	if isAdm {
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+			"max_pages": alloc.MaxPages, "used_pages": alloc.UsedPages, "has_allocation": true, "is_admin": true,
+		})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"max_pages": alloc.MaxPages, "used_pages": alloc.UsedPages, "has_allocation": true,
+	})
+}
+
+func (h *Handler) claimPage(w http.ResponseWriter, r *http.Request) {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	slug := uuid.New().String()
+	page, err := h.svc.ClaimPage(uid, slug, h.isAdmin(r))
+	if err != nil {
+		log.Printf("page.claimPage: %v", err)
+		utils.WriteError(w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	h.svc.EnrichPage(page)
+	utils.WriteJSON(w, http.StatusCreated, page)
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     uid,
+		Activity:   ievents.ActPageCreated,
+		Resource:   ievents.ResPage,
+		ResourceID: page.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"slug": page.Slug, "claimed": true},
+		Fn: func() {
+			h.hub.BroadcastPage("page_created", page)
+			h.svc.SendPageCreatedInbox(uid, page)
+		},
+	})
+}
+
+// ── page allocation: admin management ───────────────────────────────────────
+
+func (h *Handler) listAllocations(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	allocs, err := h.svc.ListAllocations()
+	if err != nil {
+		log.Printf("page.listAllocations: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to list allocations")
+		return
+	}
+	if allocs == nil {
+		allocs = []*models.UserPageAllocation{}
+	}
+	utils.WriteJSON(w, http.StatusOK, allocs)
+}
+
+func (h *Handler) upsertAllocation(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid userId")
+		return
+	}
+	var body struct {
+		MaxPages int64 `json:"max_pages"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	if body.MaxPages < 0 {
+		utils.WriteError(w, http.StatusBadRequest, "max_pages must be >= 0")
+		return
+	}
+	if err := h.svc.UpsertAllocation(targetID, body.MaxPages); err != nil {
+		log.Printf("page.upsertAllocation: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed")
+		return
+	}
+	alloc, _ := h.svc.GetAllocation(targetID)
+	utils.WriteJSON(w, http.StatusOK, alloc)
+}
+
+func (h *Handler) deleteAllocation(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid userId")
+		return
+	}
+	if err := h.svc.DeleteAllocation(targetID); err != nil {
+		log.Printf("page.deleteAllocation: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }

@@ -458,6 +458,20 @@ CREATE TABLE IF NOT EXISTS custom_sections (
 CREATE INDEX IF NOT EXISTS idx_custom_sections_datasource ON custom_sections(datasource_id);
 CREATE INDEX IF NOT EXISTS idx_custom_sections_created_by ON custom_sections(created_by);
 
+-- ── User page allocations (per-user custom page quotas) ─────────────────────
+CREATE TABLE IF NOT EXISTS user_page_allocations (
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT   NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    max_pages  INT      NOT NULL DEFAULT 5,
+    used_pages INT      NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_page_alloc_user ON user_page_allocations(user_id);
+
+ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS max_pages  INT NOT NULL DEFAULT 5;
+ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS used_pages INT NOT NULL DEFAULT 0;
+
 -- ── Events (audit log for all user / system activity) ───────────────────────
 CREATE TABLE IF NOT EXISTS events (
     id          BIGSERIAL    PRIMARY KEY,

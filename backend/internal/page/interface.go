@@ -39,4 +39,15 @@ type Repository interface {
 	LikeComment(commentID, userID int64) (int64, error)
 	UnlikeComment(commentID, userID int64) (int64, error)
 	IsCommentLikedByUser(commentID, userID int64) (bool, error)
+
+	// Page allocations
+	GetAllocation(userID int64) (*models.UserPageAllocation, error)
+	UpsertAllocation(userID, maxPages int64) error
+	IncrementUsed(userID int64) error
+	DecrementUsed(userID int64) error
+	ListAllocations() ([]*models.UserPageAllocation, error)
+	DeleteAllocation(userID int64) error
+	SetUsedPages(userID int64, count int) error
+	CountOwnedPages(userID int64) (int, error)
+	GetNoreplyUserID() (int64, error)
 }

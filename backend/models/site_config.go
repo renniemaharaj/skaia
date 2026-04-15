@@ -147,3 +147,18 @@ type PageEditor struct {
 	GrantedBy *int64    `json:"granted_by,omitempty"`
 	GrantedAt time.Time `json:"granted_at"`
 }
+
+// UserPageAllocation tracks how many custom pages a user is allowed to own.
+type UserPageAllocation struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	MaxPages  int       `json:"max_pages"`
+	UsedPages int       `json:"used_pages"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Enriched fields (not stored)
+	Username    string `json:"username,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	AvatarURL   string `json:"avatar_url,omitempty"`
+}

@@ -263,3 +263,39 @@ func (s *Service) ListBlockedUsers(blockerID int64) ([]*models.User, error) {
 	}
 	return users, nil
 }
+
+// SendSystemMessage creates a conversation between senderID (system/noreply) and
+// recipientID, then inserts a message. It skips block checks since the sender is
+// a system account. The message is propagated in real-time.
+func (s *Service) SendSystemMessage(senderID, recipientID int64, content, messageType string) error {
+	if messageType == "" {
+		messageType = "text"
+	}
+	conv, err := s.repo.GetOrCreateConversation(senderID, recipientID)
+	if err != nil {
+		return err
+	}
+	msg, err := s.repo.CreateMessage(&models.InboxMessage{
+		ConversationID: conv.ID,
+		SenderID:       senderID,
+		Content:        content,
+		MessageType:    messageType,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Enrich sender for real-time delivery
+	if u, err := s.userSvc.GetByID(senderID); err == nil {
+		msg.SenderName = u.DisplayName
+		msg.SenderAvatar = u.AvatarURL
+	}
+
+	s.hub.PropagateInboxConversation(conv.ID, msg, "message_created")
+
+	if payload, err2 := json.Marshal(msg); err2 == nil {
+		notifMsg := &ws.Message{Type: ws.InboxMsg, Payload: payload}
+		s.hub.SendToUser(recipientID, notifMsg)
+	}
+	return nil
+}

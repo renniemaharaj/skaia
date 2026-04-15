@@ -382,3 +382,94 @@ func (r *sqlRepository) IsCommentLikedByUser(commentID, userID int64) (bool, err
 		commentID, userID).Scan(&count)
 	return count > 0, err
 }
+
+// ── page allocations ────────────────────────────────────────────────────────
+
+func (r *sqlRepository) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
+	a := &models.UserPageAllocation{}
+	err := r.db.QueryRow(
+		`SELECT a.id, a.user_id, a.max_pages, a.used_pages, a.created_at, a.updated_at,
+		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, '')
+		 FROM user_page_allocations a
+		 JOIN users u ON u.id = a.user_id
+		 WHERE a.user_id = $1`, userID,
+	).Scan(&a.ID, &a.UserID, &a.MaxPages, &a.UsedPages, &a.CreatedAt, &a.UpdatedAt,
+		&a.Username, &a.DisplayName, &a.AvatarURL)
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+func (r *sqlRepository) UpsertAllocation(userID, maxPages int64) error {
+	_, err := r.db.Exec(
+		`INSERT INTO user_page_allocations (user_id, max_pages, updated_at)
+		 VALUES ($1, $2, CURRENT_TIMESTAMP)
+		 ON CONFLICT (user_id) DO UPDATE
+		   SET max_pages = $2, updated_at = CURRENT_TIMESTAMP`,
+		userID, maxPages)
+	return err
+}
+
+func (r *sqlRepository) IncrementUsed(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE user_page_allocations
+		 SET used_pages = used_pages + 1, updated_at = CURRENT_TIMESTAMP
+		 WHERE user_id = $1`, userID)
+	return err
+}
+
+func (r *sqlRepository) DecrementUsed(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE user_page_allocations
+		 SET used_pages = GREATEST(used_pages - 1, 0), updated_at = CURRENT_TIMESTAMP
+		 WHERE user_id = $1`, userID)
+	return err
+}
+
+func (r *sqlRepository) ListAllocations() ([]*models.UserPageAllocation, error) {
+	rows, err := r.db.Query(
+		`SELECT a.id, a.user_id, a.max_pages, a.used_pages, a.created_at, a.updated_at,
+		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, '')
+		 FROM user_page_allocations a
+		 JOIN users u ON u.id = a.user_id
+		 ORDER BY a.updated_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*models.UserPageAllocation
+	for rows.Next() {
+		a := &models.UserPageAllocation{}
+		if err := rows.Scan(&a.ID, &a.UserID, &a.MaxPages, &a.UsedPages,
+			&a.CreatedAt, &a.UpdatedAt, &a.Username, &a.DisplayName, &a.AvatarURL); err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+func (r *sqlRepository) DeleteAllocation(userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM user_page_allocations WHERE user_id = $1`, userID)
+	return err
+}
+
+func (r *sqlRepository) SetUsedPages(userID int64, count int) error {
+	_, err := r.db.Exec(
+		`UPDATE user_page_allocations SET used_pages = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+		userID, count)
+	return err
+}
+
+func (r *sqlRepository) CountOwnedPages(userID int64) (int, error) {
+	var count int
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM pages WHERE owner_id = $1`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *sqlRepository) GetNoreplyUserID() (int64, error) {
+	var id int64
+	err := r.db.QueryRow(`SELECT id FROM users WHERE username = 'noreply' LIMIT 1`).Scan(&id)
+	return id, err
+}

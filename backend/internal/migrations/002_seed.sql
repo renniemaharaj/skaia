@@ -146,3 +146,13 @@ INSERT INTO site_config (key, value) VALUES
         "social_links": []
     }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
+
+-- ── System "noreply" user for automated inbox messages ──────────────────────
+INSERT INTO users (username, email, password_hash, display_name, bio,
+                   avatar_url, banner_url, photo_url,
+                   is_suspended, created_at, updated_at)
+SELECT 'noreply', 'noreply@system.local',
+       '$2a$12$000000000000000000000uGhostyLocked0000000000000000000',
+       'System', 'Automated system notifications — this account cannot be messaged.',
+       '', '', '', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'noreply');

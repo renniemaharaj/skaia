@@ -466,7 +466,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.H
 		icfg.NewHandler(cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
 		pageRepo := ipage.NewRepository(db)
-		pageSvc := ipage.NewService(pageRepo)
+		pageSvc := ipage.NewService(pageRepo, inboxSvc)
 		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		dsRepo := ids.NewRepository(db)
