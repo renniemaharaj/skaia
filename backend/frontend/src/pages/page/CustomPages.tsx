@@ -5,7 +5,7 @@ import {
   useState,
   type MouseEvent,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FileText,
   Crown,
@@ -16,8 +16,11 @@ import {
   LayoutGrid,
   List,
   Trash2,
+  Plus,
 } from "lucide-react";
+import { useAtomValue } from "jotai";
 import { toast } from "sonner";
+import { currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
@@ -39,10 +42,21 @@ const noop = () => {};
 
 type ViewMode = "grid" | "list";
 
+interface Allocation {
+  max_pages: number;
+  used_pages: number;
+  has_allocation?: boolean;
+  is_admin?: boolean;
+}
+
 export default function CustomPages() {
+  const currentUser = useAtomValue(currentUserAtom);
+  const navigate = useNavigate();
   const [pages, setPages] = useState<PageBuilderPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [allocation, setAllocation] = useState<Allocation | null>(null);
+  const [claiming, setClaiming] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (
       (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
@@ -69,6 +83,33 @@ export default function CustomPages() {
   useEffect(() => {
     localStorage.setItem("custom-pages-view-mode", viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    apiRequest<Allocation>("/config/pages/my-allocation")
+      .then((data) => setAllocation(data))
+      .catch(() => {});
+  }, [currentUser]);
+
+  const handleClaimPage = useCallback(async () => {
+    setClaiming(true);
+    try {
+      const page = await apiRequest<PageBuilderPage>("/config/pages/claim", {
+        method: "POST",
+      });
+      toast.success("Page created!");
+      navigate(`/page/${page.slug}`);
+    } catch {
+      toast.error("Failed to create page");
+    } finally {
+      setClaiming(false);
+    }
+  }, [navigate]);
+
+  const canClaim =
+    !!currentUser &&
+    !!allocation &&
+    (allocation.is_admin || allocation.used_pages < allocation.max_pages);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return pages;
@@ -145,6 +186,10 @@ export default function CustomPages() {
           method: "DELETE",
         });
         setPages((prev) => prev.filter((p) => p.id !== page.id));
+        // Refresh allocation count after deletion
+        apiRequest<Allocation>("/config/pages/my-allocation")
+          .then((data) => setAllocation(data))
+          .catch(() => {});
         toast.success("Page deleted");
       } catch {
         toast.error("Failed to delete page");
@@ -165,6 +210,21 @@ export default function CustomPages() {
           </p>
         </div>
         <div className="custom-pages__header-actions">
+          {canClaim && (
+            <button
+              className="btn btn-primary cp-new-page-btn"
+              onClick={handleClaimPage}
+              disabled={claiming}
+            >
+              <Plus size={16} />
+              {claiming ? "Creating…" : "New Page"}
+            </button>
+          )}
+          {currentUser && allocation && !allocation.is_admin && (
+            <span className="cp-allocation-badge">
+              {allocation.used_pages}/{allocation.max_pages} pages
+            </span>
+          )}
           <div className="custom-pages__view-toggle">
             <button
               className={`icon-btn icon-btn--lg cp-view-btn ${viewMode === "grid" ? "icon-btn--active" : "icon-btn--subtle"}`}

@@ -14,6 +14,7 @@ import {
   MoreVertical,
   FileIcon,
   Info,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import Picker from "@emoji-mart/react";
@@ -850,6 +851,42 @@ const InboxPage = () => {
                             ) : null}
                           </a>
                         )}
+                        {m.message_type === "page_card" &&
+                          (() => {
+                            try {
+                              const card = JSON.parse(m.content);
+                              return (
+                                <Link
+                                  to={card.route || `/page/${card.slug}`}
+                                  className="inbox-page-card"
+                                >
+                                  <div className="inbox-page-card__icon">
+                                    <FileText size={20} />
+                                  </div>
+                                  <div className="inbox-page-card__body">
+                                    <span className="inbox-page-card__label">
+                                      New page created
+                                    </span>
+                                    <span className="inbox-page-card__title">
+                                      {card.title || card.slug}
+                                    </span>
+                                    {card.description && (
+                                      <span className="inbox-page-card__desc">
+                                        {card.description}
+                                      </span>
+                                    )}
+                                    <span className="inbox-page-card__link">
+                                      Open your page →
+                                    </span>
+                                  </div>
+                                </Link>
+                              );
+                            } catch {
+                              return (
+                                <p className="inbox-msg-content">{m.content}</p>
+                              );
+                            }
+                          })()}
                         {m.content &&
                           (!m.message_type || m.message_type === "text") && (
                             <p className="inbox-msg-content">{m.content}</p>

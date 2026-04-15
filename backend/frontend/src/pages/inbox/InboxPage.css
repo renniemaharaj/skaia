@@ -88,7 +88,8 @@
 
 .inbox-search-input-wrapper:focus-within {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 10%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .inbox-search-icon {
@@ -652,7 +653,8 @@
   padding: 6px;
   min-width: 190px;
   z-index: 100;
-  box-shadow: 0 18px 40px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  box-shadow: 0 18px 40px
+    color-mix(in srgb, var(--text-primary) 12%, transparent);
 }
 
 .inbox-chat-menu button {
@@ -770,4 +772,79 @@
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-top: 2px;
+}
+
+/* ── Page card (system DM) ─────────────────────────────────── */
+
+.inbox-page-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  text-decoration: none;
+  color: inherit;
+  max-width: 320px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.inbox-page-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.inbox-page-card__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-tertiary));
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inbox-page-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.inbox-page-card__label {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.inbox-page-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-page-card__desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.inbox-page-card__link {
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-top: 0.25rem;
 }

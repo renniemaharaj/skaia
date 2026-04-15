@@ -345,7 +345,8 @@
   background: var(--card-bg, var(--bg-secondary));
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  box-shadow: 0 4px 16px
+    color-mix(in srgb, var(--text-primary) 12%, transparent);
   z-index: 200;
   white-space: nowrap;
 }
@@ -431,6 +432,10 @@
 .header-inbox-btn:hover {
   background: var(--bg-tertiary);
   color: var(--primary-color);
+}
+
+.header-inbox-btn--unread {
+  color: var(--success-color, #22c55e);
 }
 
 .header-inbox-badge {

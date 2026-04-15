@@ -363,7 +363,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {routeAllowed("inbox") && (
                   <Link
                     to="/inbox"
-                    className="header-inbox-btn"
+                    className={`header-inbox-btn${inboxUnread > 0 ? " header-inbox-btn--unread" : ""}`}
                     title="Messages"
                     onClick={() => setMenuOpen(false)}
                   >

@@ -40,6 +40,26 @@
   gap: 0.75rem;
 }
 
+.cp-new-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  text-transform: none;
+  letter-spacing: normal;
+  border-radius: 8px;
+}
+
+.cp-allocation-badge {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  padding: 0.25rem 0.625rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
 .custom-pages__view-toggle {
   display: flex;
   border: 1px solid var(--border-color);
