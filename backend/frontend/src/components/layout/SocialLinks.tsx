@@ -1,8 +1,8 @@
 import { Pencil, Plus, Trash2, Check } from "lucide-react";
 import { useState } from "react";
-import type { FooterSocialLink } from "../landing/types";
-import { ICON_MAP } from "../landing/iconMap";
-import { IconPicker } from "../landing/EditControls";
+import type { FooterSocialLink } from "../../pages/page/types";
+import { ICON_MAP } from "../../pages/page/iconMap";
+import { IconPicker } from "../../pages/page/EditControls";
 
 interface Props {
   links: FooterSocialLink[];

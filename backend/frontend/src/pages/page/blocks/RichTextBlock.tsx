@@ -13,8 +13,8 @@ import {
 } from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the landing bundle small. */
-const Editor = lazy(() => import("../../forum/Editor"));
-const ViewThread = lazy(() => import("../../forum/ViewThread"));
+const Editor = lazy(() => import("../../../components/forum/Editor"));
+const ViewThread = lazy(() => import("../../../components/forum/ViewThread"));
 
 interface Props {
   section: LandingSection;

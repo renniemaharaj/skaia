@@ -17,7 +17,7 @@ import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-const MonacoEditor = lazy(() => import("../../monaco/Editor"));
+const MonacoEditor = lazy(() => import("../../../components/monaco/Editor"));
 
 interface Props {
   section: LandingSection;

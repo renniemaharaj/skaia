@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import type { Branding, SEOConfig } from "./landing/types";
+import type { Branding, SEOConfig } from "../pages/page/types";
 
 export default function SiteHead({
   seo,

@@ -5,12 +5,12 @@ import { hasPermissionAtom } from "../../atoms/auth";
 import { footerConfigAtom } from "../../atoms/config";
 import { brandingAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
-import { EditableText, VariantCycler } from "../landing/EditControls";
+import { EditableText, VariantCycler } from "../../pages/page/EditControls";
 import type {
   FooterConfig,
   FooterLink,
   FooterSocialLink,
-} from "../landing/types";
+} from "../../pages/page/types";
 import { toast } from "sonner";
 import "./Footer.css";
 import SocialLinks from "./SocialLinks";

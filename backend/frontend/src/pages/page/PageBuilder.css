@@ -1,25 +1,25 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   Landing Page — styles specific to the landing/index page shell.
-   Page builder infrastructure lives in ../landing/page-builder-core.css.
-   Block styles live in ../landing/blocks/<Block>.css.
+   Page Builder — styles for the page builder shell.
+   Core infrastructure lives in ./page-builder-core.css.
+   Block styles live in ./blocks/<Block>.css.
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Page builder core + all block styles ─────────────────────────────── */
-@import "../landing/page-builder-core.css";
-@import "../landing/blocks/HeroBlock.css";
-@import "../landing/blocks/StatCardsBlock.css";
-@import "../landing/blocks/SocialLinksBlock.css";
-@import "../landing/blocks/ImageGalleryBlock.css";
-@import "../landing/blocks/FeatureGridBlock.css";
-@import "../landing/blocks/CTABlock.css";
-@import "../landing/blocks/CardGroupBlock.css";
-@import "../landing/blocks/EventHighlightsBlock.css";
-@import "../landing/blocks/ProfileCardBlock.css";
-@import "../landing/blocks/RichTextBlock.css";
-@import "../landing/blocks/CodeEditorBlock.css";
-@import "../landing/blocks/DataSourcesBlock.css";
-@import "../landing/blocks/DerivedSectionBlock.css";
-@import "../landing/blocks/CustomSectionBlock.css";
+@import "./page-builder-core.css";
+@import "./blocks/HeroBlock.css";
+@import "./blocks/StatCardsBlock.css";
+@import "./blocks/SocialLinksBlock.css";
+@import "./blocks/ImageGalleryBlock.css";
+@import "./blocks/FeatureGridBlock.css";
+@import "./blocks/CTABlock.css";
+@import "./blocks/CardGroupBlock.css";
+@import "./blocks/EventHighlightsBlock.css";
+@import "./blocks/ProfileCardBlock.css";
+@import "./blocks/RichTextBlock.css";
+@import "./blocks/CodeEditorBlock.css";
+@import "./blocks/DataSourcesBlock.css";
+@import "./blocks/DerivedSectionBlock.css";
+@import "./blocks/CustomSectionBlock.css";
 
 /* ── Landing container ────────────────────────────────────────────────── */
 

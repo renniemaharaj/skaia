@@ -1,5 +1,5 @@
-import { Landing } from "../../components/layout/Landing";
+import PageBuilder from "../page/PageBuilder";
 
 export default function Index() {
-  return <Landing />;
+  return <PageBuilder />;
 }

@@ -38,11 +38,11 @@ import type {
   CustomSection,
   PreviewType,
   LandingSection,
-} from "../../components/landing/types";
-import { ImageCardGrid } from "../../components/landing/blocks/ImageCardGrid";
-import { FeatureGridBlock } from "../../components/landing/blocks/FeatureGridBlock";
-import { StatCardsBlock } from "../../components/landing/blocks/StatCardsBlock";
-import { PREVIEW_TYPES } from "../../components/landing/types";
+} from "../page/types";
+import { ImageCardGrid } from "../page/blocks/ImageCardGrid";
+import { FeatureGridBlock } from "../page/blocks/FeatureGridBlock";
+import { StatCardsBlock } from "../page/blocks/StatCardsBlock";
+import { PREVIEW_TYPES } from "../page/types";
 import { toast } from "sonner";
 import "./DataSources.css";
 

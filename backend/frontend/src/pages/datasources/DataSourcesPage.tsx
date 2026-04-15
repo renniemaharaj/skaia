@@ -14,10 +14,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
-import type {
-  DataSource,
-  DataSourceCreator,
-} from "../../components/landing/types";
+import type { DataSource, DataSourceCreator } from "../page/types";
 import { toast } from "sonner";
 import "./DataSources.css";
 

@@ -25,7 +25,7 @@ import {
 import { inboxUnreadCountAtom } from "../../atoms/inbox";
 import { brandingAtom, featuresAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
-import { EditableText, ImagePickerButton } from "../landing/EditControls";
+import { EditableText, ImagePickerButton } from "../../pages/page/EditControls";
 import UserLink from "../user/UserLink";
 import NotificationBell from "../notifications/NotificationBell";
 import "./Header.css";
@@ -37,7 +37,7 @@ import {
   getSoundVolume,
   setSoundVolume,
 } from "../../utils/sound";
-import type { Branding } from "../landing/types";
+import type { Branding } from "../../pages/page/types";
 
 interface HeaderProps {
   cartCount: number;

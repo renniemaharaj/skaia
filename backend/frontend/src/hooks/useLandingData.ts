@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import type { LandingItem, LandingSection } from "../components/landing/types";
+import type { LandingItem, LandingSection } from "../pages/page/types";
 import { apiRequest } from "../utils/api";
 
 interface UseLandingDataReturn {

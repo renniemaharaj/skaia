@@ -2,27 +2,21 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
 import { useAtomValue } from "jotai";
-import {
-  PageBuilderContext,
-  type SaveStatus,
-} from "../../components/landing/PageBuilderContext";
-import { SaveStatusBar } from "../../components/landing/SaveStatusBar";
-import type {
-  LandingSection,
-  LandingItem,
-} from "../../components/landing/types";
+import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
+import { SaveStatusBar } from "./SaveStatusBar";
+import type { LandingSection, LandingItem } from "./types";
 import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
 import { isAuthenticatedAtom } from "../../atoms/auth";
-import { LandingSkeleton } from "../../components/landing/LandingSkeleton";
-import { BlockRenderer } from "../../components/landing/BlockRenderer";
+import { LandingSkeleton } from "./LandingSkeleton";
+import { BlockRenderer } from "./BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
 import PageComments from "../../components/page/PageComments";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
-import "../../components/layout/Landing.css";
+import "./PageBuilder.css";
 import "../../components/ui/FeatureCard.css";
 
 interface PageBuilderProps {

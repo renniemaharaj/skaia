@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
-import type { LandingSection } from "../../components/landing/types";
-import { BlockRenderer } from "../../components/landing/BlockRenderer";
+import type { LandingSection } from "../page/types";
+import { BlockRenderer } from "../page/BlockRenderer";
 import "./CustomPages.css";
 
 const parsePageSections = (content: string) => {
