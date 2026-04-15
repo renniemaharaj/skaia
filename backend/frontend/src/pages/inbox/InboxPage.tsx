@@ -613,30 +613,11 @@ const InboxPage = () => {
                   <p className="inbox-empty">No users found.</p>
                 )}
                 {searchResults.map((user) => (
-                  <button
+                  <UserSearchResult
                     key={user.id}
-                    className="inbox-conv-row inbox-search-result-row"
-                    onClick={() => startDmWithUser(user)}
-                  >
-                    <span className="inbox-conv-avatar">
-                      {user.avatar_url ? (
-                        <img
-                          src={user.avatar_url}
-                          alt={user.display_name || user.username}
-                        />
-                      ) : (
-                        <UserCog2Icon size={18} />
-                      )}
-                    </span>
-                    <span className="inbox-conv-info">
-                      <span className="inbox-conv-name">
-                        {user.display_name || user.username}
-                      </span>
-                      <span className="inbox-conv-preview">
-                        @{user.username}
-                      </span>
-                    </span>
-                  </button>
+                    user={user}
+                    onSelect={() => startDmWithUser(user)}
+                  />
                 ))}
                 {searchLoadingMore && (
                   <p className="inbox-loading">Loading more…</p>
@@ -646,53 +627,18 @@ const InboxPage = () => {
 
             {/* Existing conversations (dimmed when search is active) */}
             <div className={showNewDm ? "inbox-convs-dimmed" : ""}>
-              {conversations.map((c) => {
-                const other = c.other_user;
-                const isActive = c.id === activeId;
-                return (
-                  <button
-                    key={c.id}
-                    className={`inbox-conv-row${isActive ? " inbox-conv-row--active" : ""}${c.unread_count > 0 ? " inbox-conv-row--unread" : ""}`}
-                    onClick={() => {
-                      setActiveId(c.id);
-                      if (isMobile) setMobileView("chat");
-                    }}
-                  >
-                    <span className="inbox-conv-avatar">
-                      {other?.avatar_url ? (
-                        <img
-                          src={other.avatar_url}
-                          alt={other.display_name || other.username}
-                        />
-                      ) : (
-                        <UserCog2Icon size={18} />
-                      )}
-                    </span>
-                    <span className="inbox-conv-info">
-                      <span className="inbox-conv-name">
-                        {other?.display_name || other?.username || "Unknown"}
-                      </span>
-                      {c.last_message && (
-                        <span className="inbox-conv-preview">
-                          {c.last_message.content.slice(0, 50)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="inbox-conv-meta">
-                      {c.last_message && (
-                        <span className="inbox-conv-time">
-                          {relativeTime(c.last_message.created_at)}
-                        </span>
-                      )}
-                      {c.unread_count > 0 && c.id !== activeId && (
-                        <span className="inbox-unread-badge">
-                          {c.unread_count}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
+              {conversations.map((c) => (
+                <ConversationRow
+                  key={c.id}
+                  c={c}
+                  activeId={activeId}
+                  isMobile={isMobile}
+                  onSelect={() => {
+                    setActiveId(c.id);
+                    if (isMobile) setMobileView("chat");
+                  }}
+                />
+              ))}
             </div>
           </div>
         </aside>
@@ -707,76 +653,19 @@ const InboxPage = () => {
           ) : (
             <>
               {/* Conversation header */}
-              <div className="inbox-chat-header">
-                {isMobile && (
-                  <button
-                    className="inbox-back-btn"
-                    onClick={() => setMobileView("list")}
-                    title="Back to conversations"
-                  >
-                    ←
-                  </button>
-                )}
-                {activeConv?.other_user ? (
-                  <div className="inbox-chat-user">
-                    <Link
-                      to={`/users/${activeConv.other_user.id}`}
-                      className="inbox-chat-user-link"
-                    >
-                      <span className="inbox-chat-avatar">
-                        {activeConv.other_user.avatar_url ? (
-                          <img src={activeConv.other_user.avatar_url} alt="" />
-                        ) : (
-                          <UserCog2Icon size={18} />
-                        )}
-                      </span>
-                      <span className="inbox-chat-username">
-                        {activeConv.other_user.display_name ||
-                          activeConv.other_user.username}
-                      </span>
-                    </Link>
-                    {isBlocked && (
-                      <span className="inbox-block-status">
-                        <Info size={14} />
-                        {blockedByCurrentUser
-                          ? "You blocked this user"
-                          : "Blocked by user"}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="inbox-chat-username">Conversation</span>
-                )}
-                <div className="inbox-chat-actions">
-                  <button
-                    className="inbox-action-btn"
-                    onClick={() => setShowChatMenu((v) => !v)}
-                    title="More options"
-                  >
-                    <MoreVertical size={16} />
-                  </button>
-                  {showChatMenu && (
-                    <div className="inbox-chat-menu">
-                      <button onClick={handleDeleteConversation}>
-                        <Trash2 size={14} /> Delete conversation
-                      </button>
-                      {blockedByCurrentUser ? (
-                        <button onClick={handleUnblockUser}>
-                          <Ban size={14} /> Unblock user
-                        </button>
-                      ) : blockedByOtherUser ? (
-                        <button disabled>
-                          <Ban size={14} /> Blocked by user
-                        </button>
-                      ) : (
-                        <button onClick={handleBlockUser}>
-                          <Ban size={14} /> Block user
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <InboxChatHeader
+                isMobile={isMobile}
+                onMobileBack={() => setMobileView("list")}
+                activeConv={activeConv}
+                isBlocked={isBlocked}
+                blockedByCurrentUser={blockedByCurrentUser}
+                blockedByOtherUser={blockedByOtherUser}
+                showChatMenu={showChatMenu}
+                onToggleChatMenu={() => setShowChatMenu((v) => !v)}
+                onDelete={handleDeleteConversation}
+                onBlock={handleBlockUser}
+                onUnblock={handleUnblockUser}
+              />
               {/* Messages */}
               <div className="inbox-feed" ref={feedRef} onScroll={handleScroll}>
                 {loadingMsgs && (
@@ -785,130 +674,13 @@ const InboxPage = () => {
                 {!loadingMsgs && messages.length === 0 && (
                   <p className="inbox-empty">No messages yet. Say hello!</p>
                 )}
-                {messages.map((m) => {
-                  const isMe = String(m.sender_id) === String(currentUser?.id);
-                  return (
-                    <div
-                      key={m.id}
-                      className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}
-                    >
-                      {!isMe && (
-                        <span className="inbox-msg-avatar">
-                          {m.sender_avatar ? (
-                            <img src={m.sender_avatar} alt={m.sender_name} />
-                          ) : (
-                            <UserCog2Icon size={16} />
-                          )}
-                        </span>
-                      )}
-                      <div className="inbox-msg-body">
-                        {!isMe && (
-                          <span className="inbox-msg-author">
-                            {m.sender_name}
-                          </span>
-                        )}
-                        {/* Attachment rendering */}
-                        {m.attachment_url && m.message_type === "image" && (
-                          <a
-                            href={m.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={m.attachment_url}
-                              alt={m.attachment_name || "image"}
-                              className="inbox-msg-image"
-                            />
-                          </a>
-                        )}
-                        {m.attachment_url && m.message_type === "video" && (
-                          <video
-                            src={m.attachment_url}
-                            controls
-                            className="inbox-msg-video"
-                          />
-                        )}
-                        {m.attachment_url && m.message_type === "audio" && (
-                          <audio
-                            src={m.attachment_url}
-                            controls
-                            className="inbox-msg-audio"
-                          />
-                        )}
-                        {m.attachment_url && m.message_type === "file" && (
-                          <a
-                            href={m.attachment_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inbox-msg-file"
-                          >
-                            <FileIcon size={16} />
-                            <span>{m.attachment_name || "Download file"}</span>
-                            {m.attachment_size ? (
-                              <span className="inbox-msg-file-size">
-                                {(m.attachment_size / 1024).toFixed(0)} KB
-                              </span>
-                            ) : null}
-                          </a>
-                        )}
-                        {m.message_type === "page_card" &&
-                          (() => {
-                            try {
-                              const card = JSON.parse(m.content);
-                              return (
-                                <Link
-                                  to={card.route || `/page/${card.slug}`}
-                                  className="inbox-page-card"
-                                >
-                                  <div className="inbox-page-card__icon">
-                                    <FileText size={20} />
-                                  </div>
-                                  <div className="inbox-page-card__body">
-                                    <span className="inbox-page-card__label">
-                                      New page created
-                                    </span>
-                                    <span className="inbox-page-card__title">
-                                      {card.title || card.slug}
-                                    </span>
-                                    {card.description && (
-                                      <span className="inbox-page-card__desc">
-                                        {card.description}
-                                      </span>
-                                    )}
-                                    <span className="inbox-page-card__link">
-                                      Open your page →
-                                    </span>
-                                  </div>
-                                </Link>
-                              );
-                            } catch {
-                              return (
-                                <p className="inbox-msg-content">{m.content}</p>
-                              );
-                            }
-                          })()}
-                        {m.content &&
-                          (!m.message_type || m.message_type === "text") && (
-                            <p className="inbox-msg-content">{m.content}</p>
-                          )}
-                        {m.content &&
-                          m.message_type &&
-                          m.message_type !== "text" &&
-                          m.content !== m.attachment_name && (
-                            <p className="inbox-msg-content inbox-msg-caption">
-                              {m.content}
-                            </p>
-                          )}
-                        <span
-                          className="inbox-msg-time"
-                          title={formatFullDateTime(m.created_at)}
-                        >
-                          {formatLocalTime(m.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                {messages.map((m) => (
+                  <MessageBubble
+                    key={m.id}
+                    m={m}
+                    currentUserId={currentUser?.id}
+                  />
+                ))}
               </div>
 
               {/* Input */}
@@ -1008,3 +780,294 @@ const InboxPage = () => {
 };
 
 export default InboxPage;
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function UserSearchResult({
+  user,
+  onSelect,
+}: {
+  user: User;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      className="inbox-conv-row inbox-search-result-row"
+      onClick={onSelect}
+    >
+      <span className="inbox-conv-avatar">
+        {user.avatar_url ? (
+          <img src={user.avatar_url} alt={user.display_name || user.username} />
+        ) : (
+          <UserCog2Icon size={18} />
+        )}
+      </span>
+      <span className="inbox-conv-info">
+        <span className="inbox-conv-name">
+          {user.display_name || user.username}
+        </span>
+        <span className="inbox-conv-preview">@{user.username}</span>
+      </span>
+    </button>
+  );
+}
+
+function ConversationRow({
+  c,
+  activeId,
+  isMobile: _isMobile,
+  onSelect,
+}: {
+  c: InboxConversation;
+  activeId: string | null;
+  isMobile: boolean;
+  onSelect: () => void;
+}) {
+  const other = c.other_user;
+  const isActive = c.id === activeId;
+  return (
+    <button
+      className={`inbox-conv-row${
+        isActive ? " inbox-conv-row--active" : ""
+      }${c.unread_count > 0 ? " inbox-conv-row--unread" : ""}`}
+      onClick={onSelect}
+    >
+      <span className="inbox-conv-avatar">
+        {other?.avatar_url ? (
+          <img
+            src={other.avatar_url}
+            alt={other.display_name || other.username}
+          />
+        ) : (
+          <UserCog2Icon size={18} />
+        )}
+      </span>
+      <span className="inbox-conv-info">
+        <span className="inbox-conv-name">
+          {other?.display_name || other?.username || "Unknown"}
+        </span>
+        {c.last_message && (
+          <span className="inbox-conv-preview">
+            {c.last_message.content.slice(0, 50)}
+          </span>
+        )}
+      </span>
+      <span className="inbox-conv-meta">
+        {c.last_message && (
+          <span className="inbox-conv-time">
+            {relativeTime(c.last_message.created_at)}
+          </span>
+        )}
+        {c.unread_count > 0 && c.id !== activeId && (
+          <span className="inbox-unread-badge">{c.unread_count}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function InboxChatHeader({
+  isMobile,
+  onMobileBack,
+  activeConv,
+  isBlocked,
+  blockedByCurrentUser,
+  blockedByOtherUser,
+  showChatMenu,
+  onToggleChatMenu,
+  onDelete,
+  onBlock,
+  onUnblock,
+}: {
+  isMobile: boolean;
+  onMobileBack: () => void;
+  activeConv: InboxConversation | undefined;
+  isBlocked: boolean;
+  blockedByCurrentUser: boolean;
+  blockedByOtherUser: boolean;
+  showChatMenu: boolean;
+  onToggleChatMenu: () => void;
+  onDelete: () => void;
+  onBlock: () => void;
+  onUnblock: () => void;
+}) {
+  return (
+    <div className="inbox-chat-header">
+      {isMobile && (
+        <button
+          className="inbox-back-btn"
+          onClick={onMobileBack}
+          title="Back to conversations"
+        >
+          ←
+        </button>
+      )}
+      {activeConv?.other_user ? (
+        <div className="inbox-chat-user">
+          <Link
+            to={`/users/${activeConv.other_user.id}`}
+            className="inbox-chat-user-link"
+          >
+            <span className="inbox-chat-avatar">
+              {activeConv.other_user.avatar_url ? (
+                <img src={activeConv.other_user.avatar_url} alt="" />
+              ) : (
+                <UserCog2Icon size={18} />
+              )}
+            </span>
+            <span className="inbox-chat-username">
+              {activeConv.other_user.display_name ||
+                activeConv.other_user.username}
+            </span>
+          </Link>
+          {isBlocked && (
+            <span className="inbox-block-status">
+              <Info size={14} />
+              {blockedByCurrentUser
+                ? "You blocked this user"
+                : "Blocked by user"}
+            </span>
+          )}
+        </div>
+      ) : (
+        <span className="inbox-chat-username">Conversation</span>
+      )}
+      <div className="inbox-chat-actions">
+        <button
+          className="inbox-action-btn"
+          onClick={onToggleChatMenu}
+          title="More options"
+        >
+          <MoreVertical size={16} />
+        </button>
+        {showChatMenu && (
+          <div className="inbox-chat-menu">
+            <button onClick={onDelete}>
+              <Trash2 size={14} /> Delete conversation
+            </button>
+            {blockedByCurrentUser ? (
+              <button onClick={onUnblock}>
+                <Ban size={14} /> Unblock user
+              </button>
+            ) : blockedByOtherUser ? (
+              <button disabled>
+                <Ban size={14} /> Blocked by user
+              </button>
+            ) : (
+              <button onClick={onBlock}>
+                <Ban size={14} /> Block user
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MessageBubble({
+  m,
+  currentUserId,
+}: {
+  m: InboxMessage;
+  currentUserId: string | undefined;
+}) {
+  const isMe = String(m.sender_id) === String(currentUserId);
+  return (
+    <div className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}>
+      {!isMe && (
+        <span className="inbox-msg-avatar">
+          {m.sender_avatar ? (
+            <img src={m.sender_avatar} alt={m.sender_name} />
+          ) : (
+            <UserCog2Icon size={16} />
+          )}
+        </span>
+      )}
+      <div className="inbox-msg-body">
+        {!isMe && <span className="inbox-msg-author">{m.sender_name}</span>}
+        {/* Attachment rendering */}
+        {m.attachment_url && m.message_type === "image" && (
+          <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={m.attachment_url}
+              alt={m.attachment_name || "image"}
+              className="inbox-msg-image"
+            />
+          </a>
+        )}
+        {m.attachment_url && m.message_type === "video" && (
+          <video src={m.attachment_url} controls className="inbox-msg-video" />
+        )}
+        {m.attachment_url && m.message_type === "audio" && (
+          <audio src={m.attachment_url} controls className="inbox-msg-audio" />
+        )}
+        {m.attachment_url && m.message_type === "file" && (
+          <a
+            href={m.attachment_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inbox-msg-file"
+          >
+            <FileIcon size={16} />
+            <span>{m.attachment_name || "Download file"}</span>
+            {m.attachment_size ? (
+              <span className="inbox-msg-file-size">
+                {(m.attachment_size / 1024).toFixed(0)} KB
+              </span>
+            ) : null}
+          </a>
+        )}
+        {m.message_type === "page_card" &&
+          (() => {
+            try {
+              const card = JSON.parse(m.content);
+              return (
+                <Link
+                  to={card.route || `/page/${card.slug}`}
+                  className="inbox-page-card"
+                >
+                  <div className="inbox-page-card__icon">
+                    <FileText size={20} />
+                  </div>
+                  <div className="inbox-page-card__body">
+                    <span className="inbox-page-card__label">
+                      New page created
+                    </span>
+                    <span className="inbox-page-card__title">
+                      {card.title || card.slug}
+                    </span>
+                    {card.description && (
+                      <span className="inbox-page-card__desc">
+                        {card.description}
+                      </span>
+                    )}
+                    <span className="inbox-page-card__link">
+                      Open your page →
+                    </span>
+                  </div>
+                </Link>
+              );
+            } catch {
+              return <p className="inbox-msg-content">{m.content}</p>;
+            }
+          })()}
+        {m.content && (!m.message_type || m.message_type === "text") && (
+          <p className="inbox-msg-content">{m.content}</p>
+        )}
+        {m.content &&
+          m.message_type &&
+          m.message_type !== "text" &&
+          m.content !== m.attachment_name && (
+            <p className="inbox-msg-content inbox-msg-caption">{m.content}</p>
+          )}
+        <span
+          className="inbox-msg-time"
+          title={formatFullDateTime(m.created_at)}
+        >
+          {formatLocalTime(m.created_at)}
+        </span>
+      </div>
+    </div>
+  );
+}

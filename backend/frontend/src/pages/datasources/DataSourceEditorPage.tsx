@@ -724,221 +724,34 @@ export default function DataSourceEditorPage() {
 
                 {/* Save as section form */}
                 {showSaveSection && (
-                  <div className="ds-save-section">
-                    <div className="ds-save-section__header">
-                      <span>Save as Custom Section</span>
-                      <button
-                        className="icon-btn icon-btn--xs"
-                        onClick={() => setShowSaveSection(false)}
-                        title="Close"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <div className="ds-save-section__body">
-                      <div className="ds-save-section__field">
-                        <label>Name</label>
-                        <input
-                          type="text"
-                          value={sectionName}
-                          onChange={(e) => setSectionName(e.target.value)}
-                          placeholder="e.g. Recent Threads Grid"
-                        />
-                      </div>
-                      <div className="ds-save-section__field">
-                        <label>Description</label>
-                        <input
-                          type="text"
-                          value={sectionDesc}
-                          onChange={(e) => setSectionDesc(e.target.value)}
-                          placeholder="Optional"
-                        />
-                      </div>
-                      <div className="ds-save-section__info">
-                        Type:{" "}
-                        <strong>
-                          {DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}
-                        </strong>
-                      </div>
-                      {!PREVIEW_TYPES.includes(previewType as PreviewType) && (
-                        <div className="ds-preview__note ds-preview__note--warn">
-                          This preview type cannot be saved as a custom section.
-                        </div>
-                      )}
-                      <div className="ds-save-section__actions">
-                        <button
-                          className="ds-save-section__cancel"
-                          onClick={() => setShowSaveSection(false)}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="ds-save-section__submit"
-                          onClick={handleSaveSection}
-                          disabled={
-                            savingSection ||
-                            !sectionName.trim() ||
-                            !PREVIEW_TYPES.includes(previewType as PreviewType)
-                          }
-                        >
-                          {savingSection ? (
-                            <Loader2 size={13} className="spin" />
-                          ) : (
-                            <Save size={13} />
-                          )}
-                          {savingSection ? "Saving…" : "Save Section"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <SaveAsSectionForm
+                    sectionName={sectionName}
+                    sectionDesc={sectionDesc}
+                    onSectionNameChange={setSectionName}
+                    onSectionDescChange={setSectionDesc}
+                    previewType={previewType}
+                    onClose={() => setShowSaveSection(false)}
+                    onSubmit={handleSaveSection}
+                    saving={savingSection}
+                    isNew={isNew}
+                  />
                 )}
 
-                {runStats && (
-                  <div className="ds-run-summary">
-                    <div className="ds-run-summary__header">
-                      <span className="ds-run-summary__title">Run Summary</span>
-                      <span
-                        className={`ds-run-summary__status ds-run-summary__status--${
-                          runStats.exitReason === "success"
-                            ? "success"
-                            : runStats.exitReason === "timeout"
-                              ? "timeout"
-                              : "error"
-                        }`}
-                      >
-                        {runStats.exitReason === "success" ? (
-                          <CheckCircle2 size={11} />
-                        ) : (
-                          <AlertTriangle size={11} />
-                        )}
-                        {EXIT_REASON_LABELS[runStats.exitReason]}
-                      </span>
-                    </div>
-                    <div className="ds-run-summary__stats">
-                      <span className="ds-run-stat">
-                        <Clock size={11} />
-                        <strong>{runStats.duration}</strong>ms
-                      </span>
-                      {runStats.totalItems > 0 && (
-                        <span className="ds-run-stat">
-                          <Filter size={11} />
-                          <strong>{runStats.validItems}</strong>/
-                          {runStats.totalItems} valid
-                          {runStats.skippedItems > 0 && (
-                            <>
-                              {" "}
-                              (
-                              <strong style={{ color: "#f59e0b" }}>
-                                {runStats.skippedItems}
-                              </strong>{" "}
-                              skipped)
-                            </>
-                          )}
-                        </span>
-                      )}
-                      <span className="ds-run-stat">
-                        <Globe size={11} />
-                        <strong>{runStats.fetchLog.length}</strong> outbound
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {runStats && <RunSummaryCard runStats={runStats} />}
 
                 {runStats && runStats.fetchLog.length > 0 && (
-                  <div className="ds-fetch-log">
-                    <div className="ds-fetch-log__title">Outbound Requests</div>
-                    {runStats.fetchLog.map((entry, i) => {
-                      const expanded = expandedFetch.has(i);
-                      const statusOk =
-                        entry.status !== undefined &&
-                        entry.status >= 200 &&
-                        entry.status < 300;
-                      const statusWarn =
-                        entry.status !== undefined &&
-                        entry.status >= 300 &&
-                        entry.status < 400;
-                      return (
-                        <div key={i} className="ds-fetch-entry">
-                          <div
-                            className="ds-fetch-entry__row"
-                            onClick={() =>
-                              setExpandedFetch((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(i)) next.delete(i);
-                                else next.add(i);
-                                return next;
-                              })
-                            }
-                          >
-                            <span className="ds-fetch-entry__method">
-                              {entry.method}
-                            </span>
-                            <span
-                              className="ds-fetch-entry__url"
-                              title={entry.url}
-                            >
-                              {entry.url}
-                            </span>
-                            {entry.status !== undefined ? (
-                              <span
-                                className={`ds-fetch-entry__status ${
-                                  statusOk
-                                    ? "ds-fetch-entry__status--ok"
-                                    : statusWarn
-                                      ? "ds-fetch-entry__status--warn"
-                                      : "ds-fetch-entry__status--error"
-                                }`}
-                              >
-                                {entry.status} {entry.statusText}
-                              </span>
-                            ) : entry.error ? (
-                              <span className="ds-fetch-entry__status ds-fetch-entry__status--error">
-                                Error
-                              </span>
-                            ) : null}
-                            {entry.duration !== undefined && (
-                              <span className="ds-fetch-entry__duration">
-                                {entry.duration}ms
-                              </span>
-                            )}
-                            {expanded ? (
-                              <ChevronDown
-                                size={13}
-                                style={{
-                                  flexShrink: 0,
-                                  color: "var(--text-secondary)",
-                                }}
-                              />
-                            ) : (
-                              <ChevronRight
-                                size={13}
-                                style={{
-                                  flexShrink: 0,
-                                  color: "var(--text-secondary)",
-                                }}
-                              />
-                            )}
-                          </div>
-                          {expanded &&
-                            entry.headers &&
-                            Object.keys(entry.headers).length > 0 && (
-                              <div className="ds-fetch-entry__headers">
-                                {Object.entries(entry.headers).map(([k, v]) => (
-                                  <div key={k}>
-                                    <strong>{k}:</strong> {v}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          {expanded && entry.error && (
-                            <div className="ds-fetch-entry__error">
-                              {entry.error}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <FetchLogPanel
+                    fetchLog={runStats.fetchLog}
+                    expandedFetch={expandedFetch}
+                    onToggle={(i) =>
+                      setExpandedFetch((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i);
+                        else next.add(i);
+                        return next;
+                      })
+                    }
+                  />
                 )}
 
                 {previewItems.length === 0 && !evalError && (
@@ -1107,153 +920,22 @@ export default function DataSourceEditorPage() {
                 )}
 
                 {/* Run Summary */}
-                {runStats && (
-                  <div className="ds-run-summary">
-                    <div className="ds-run-summary__header">
-                      <span className="ds-run-summary__title">Run Summary</span>
-                      <span
-                        className={`ds-run-summary__status ds-run-summary__status--${
-                          runStats.exitReason === "success"
-                            ? "success"
-                            : runStats.exitReason === "timeout"
-                              ? "timeout"
-                              : "error"
-                        }`}
-                      >
-                        {runStats.exitReason === "success" ? (
-                          <CheckCircle2 size={11} />
-                        ) : (
-                          <AlertTriangle size={11} />
-                        )}
-                        {EXIT_REASON_LABELS[runStats.exitReason]}
-                      </span>
-                    </div>
-                    <div className="ds-run-summary__stats">
-                      <span className="ds-run-stat">
-                        <Clock size={11} />
-                        <strong>{runStats.duration}</strong>ms
-                      </span>
-                      {runStats.totalItems > 0 && (
-                        <span className="ds-run-stat">
-                          <Filter size={11} />
-                          <strong>{runStats.validItems}</strong>/
-                          {runStats.totalItems} valid
-                          {runStats.skippedItems > 0 && (
-                            <>
-                              {" "}
-                              (
-                              <strong style={{ color: "#f59e0b" }}>
-                                {runStats.skippedItems}
-                              </strong>{" "}
-                              skipped)
-                            </>
-                          )}
-                        </span>
-                      )}
-                      <span className="ds-run-stat">
-                        <Globe size={11} />
-                        <strong>{runStats.fetchLog.length}</strong> outbound
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {runStats && <RunSummaryCard runStats={runStats} />}
 
                 {/* Fetch Log */}
                 {runStats && runStats.fetchLog.length > 0 && (
-                  <div className="ds-fetch-log">
-                    <div className="ds-fetch-log__title">Outbound Requests</div>
-                    {runStats.fetchLog.map((entry, i) => {
-                      const expanded = expandedFetch.has(i);
-                      const statusOk =
-                        entry.status !== undefined &&
-                        entry.status >= 200 &&
-                        entry.status < 300;
-                      const statusWarn =
-                        entry.status !== undefined &&
-                        entry.status >= 300 &&
-                        entry.status < 400;
-                      return (
-                        <div key={i} className="ds-fetch-entry">
-                          <div
-                            className="ds-fetch-entry__row"
-                            onClick={() =>
-                              setExpandedFetch((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(i)) next.delete(i);
-                                else next.add(i);
-                                return next;
-                              })
-                            }
-                          >
-                            <span className="ds-fetch-entry__method">
-                              {entry.method}
-                            </span>
-                            <span
-                              className="ds-fetch-entry__url"
-                              title={entry.url}
-                            >
-                              {entry.url}
-                            </span>
-                            {entry.status !== undefined ? (
-                              <span
-                                className={`ds-fetch-entry__status ${
-                                  statusOk
-                                    ? "ds-fetch-entry__status--ok"
-                                    : statusWarn
-                                      ? "ds-fetch-entry__status--warn"
-                                      : "ds-fetch-entry__status--error"
-                                }`}
-                              >
-                                {entry.status} {entry.statusText}
-                              </span>
-                            ) : entry.error ? (
-                              <span className="ds-fetch-entry__status ds-fetch-entry__status--error">
-                                Error
-                              </span>
-                            ) : null}
-                            {entry.duration !== undefined && (
-                              <span className="ds-fetch-entry__duration">
-                                {entry.duration}ms
-                              </span>
-                            )}
-                            {expanded ? (
-                              <ChevronDown
-                                size={13}
-                                style={{
-                                  flexShrink: 0,
-                                  color: "var(--text-secondary)",
-                                }}
-                              />
-                            ) : (
-                              <ChevronRight
-                                size={13}
-                                style={{
-                                  flexShrink: 0,
-                                  color: "var(--text-secondary)",
-                                }}
-                              />
-                            )}
-                          </div>
-                          {expanded &&
-                            entry.headers &&
-                            Object.keys(entry.headers).length > 0 && (
-                              <div className="ds-fetch-entry__headers">
-                                {Object.entries(entry.headers).map(([k, v]) => (
-                                  <div key={k}>
-                                    <strong>{k}:</strong> {v}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          {expanded && entry.error && (
-                            <div className="ds-fetch-entry__error">
-                              {entry.error}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <FetchLogPanel
+                    fetchLog={runStats.fetchLog}
+                    expandedFetch={expandedFetch}
+                    onToggle={(i) =>
+                      setExpandedFetch((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(i)) next.delete(i);
+                        else next.add(i);
+                        return next;
+                      })
+                    }
+                  />
                 )}
 
                 {/* Error */}
@@ -1279,6 +961,230 @@ export default function DataSourceEditorPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function RunSummaryCard({ runStats }: { runStats: RunStats }) {
+  return (
+    <div className="ds-run-summary">
+      <div className="ds-run-summary__header">
+        <span className="ds-run-summary__title">Run Summary</span>
+        <span
+          className={`ds-run-summary__status ds-run-summary__status--${
+            runStats.exitReason === "success"
+              ? "success"
+              : runStats.exitReason === "timeout"
+                ? "timeout"
+                : "error"
+          }`}
+        >
+          {runStats.exitReason === "success" ? (
+            <CheckCircle2 size={11} />
+          ) : (
+            <AlertTriangle size={11} />
+          )}
+          {EXIT_REASON_LABELS[runStats.exitReason]}
+        </span>
+      </div>
+      <div className="ds-run-summary__stats">
+        <span className="ds-run-stat">
+          <Clock size={11} />
+          <strong>{runStats.duration}</strong>ms
+        </span>
+        {runStats.totalItems > 0 && (
+          <span className="ds-run-stat">
+            <Filter size={11} />
+            <strong>{runStats.validItems}</strong>/{runStats.totalItems} valid
+            {runStats.skippedItems > 0 && (
+              <>
+                {" "}
+                (
+                <strong style={{ color: "#f59e0b" }}>
+                  {runStats.skippedItems}
+                </strong>{" "}
+                skipped)
+              </>
+            )}
+          </span>
+        )}
+        <span className="ds-run-stat">
+          <Globe size={11} />
+          <strong>{runStats.fetchLog.length}</strong> outbound
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function FetchLogPanel({
+  fetchLog,
+  expandedFetch,
+  onToggle,
+}: {
+  fetchLog: FetchLogEntry[];
+  expandedFetch: Set<number>;
+  onToggle: (i: number) => void;
+}) {
+  return (
+    <div className="ds-fetch-log">
+      <div className="ds-fetch-log__title">Outbound Requests</div>
+      {fetchLog.map((entry, i) => {
+        const expanded = expandedFetch.has(i);
+        const statusOk =
+          entry.status !== undefined &&
+          entry.status >= 200 &&
+          entry.status < 300;
+        const statusWarn =
+          entry.status !== undefined &&
+          entry.status >= 300 &&
+          entry.status < 400;
+        return (
+          <div key={i} className="ds-fetch-entry">
+            <div className="ds-fetch-entry__row" onClick={() => onToggle(i)}>
+              <span className="ds-fetch-entry__method">{entry.method}</span>
+              <span className="ds-fetch-entry__url" title={entry.url}>
+                {entry.url}
+              </span>
+              {entry.status !== undefined ? (
+                <span
+                  className={`ds-fetch-entry__status ${
+                    statusOk
+                      ? "ds-fetch-entry__status--ok"
+                      : statusWarn
+                        ? "ds-fetch-entry__status--warn"
+                        : "ds-fetch-entry__status--error"
+                  }`}
+                >
+                  {entry.status} {entry.statusText}
+                </span>
+              ) : entry.error ? (
+                <span className="ds-fetch-entry__status ds-fetch-entry__status--error">
+                  Error
+                </span>
+              ) : null}
+              {entry.duration !== undefined && (
+                <span className="ds-fetch-entry__duration">
+                  {entry.duration}ms
+                </span>
+              )}
+              {expanded ? (
+                <ChevronDown
+                  size={13}
+                  style={{ flexShrink: 0, color: "var(--text-secondary)" }}
+                />
+              ) : (
+                <ChevronRight
+                  size={13}
+                  style={{ flexShrink: 0, color: "var(--text-secondary)" }}
+                />
+              )}
+            </div>
+            {expanded &&
+              entry.headers &&
+              Object.keys(entry.headers).length > 0 && (
+                <div className="ds-fetch-entry__headers">
+                  {Object.entries(entry.headers).map(([k, v]) => (
+                    <div key={k}>
+                      <strong>{k}:</strong> {v}
+                    </div>
+                  ))}
+                </div>
+              )}
+            {expanded && entry.error && (
+              <div className="ds-fetch-entry__error">{entry.error}</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SaveAsSectionForm({
+  sectionName,
+  sectionDesc,
+  onSectionNameChange,
+  onSectionDescChange,
+  previewType,
+  onClose,
+  onSubmit,
+  saving,
+  isNew: _isNew,
+}: {
+  sectionName: string;
+  sectionDesc: string;
+  onSectionNameChange: (v: string) => void;
+  onSectionDescChange: (v: string) => void;
+  previewType: DataSourcePreviewType;
+  onClose: () => void;
+  onSubmit: () => void;
+  saving: boolean;
+  isNew: boolean;
+}) {
+  return (
+    <div className="ds-save-section">
+      <div className="ds-save-section__header">
+        <span>Save as Custom Section</span>
+        <button
+          className="icon-btn icon-btn--xs"
+          onClick={onClose}
+          title="Close"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="ds-save-section__body">
+        <div className="ds-save-section__field">
+          <label>Name</label>
+          <input
+            type="text"
+            value={sectionName}
+            onChange={(e) => onSectionNameChange(e.target.value)}
+            placeholder="e.g. Recent Threads Grid"
+          />
+        </div>
+        <div className="ds-save-section__field">
+          <label>Description</label>
+          <input
+            type="text"
+            value={sectionDesc}
+            onChange={(e) => onSectionDescChange(e.target.value)}
+            placeholder="Optional"
+          />
+        </div>
+        <div className="ds-save-section__info">
+          Type: <strong>{DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}</strong>
+        </div>
+        {!PREVIEW_TYPES.includes(previewType as PreviewType) && (
+          <div className="ds-preview__note ds-preview__note--warn">
+            This preview type cannot be saved as a custom section.
+          </div>
+        )}
+        <div className="ds-save-section__actions">
+          <button className="ds-save-section__cancel" onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            className="ds-save-section__submit"
+            onClick={onSubmit}
+            disabled={
+              saving ||
+              !sectionName.trim() ||
+              !PREVIEW_TYPES.includes(previewType as PreviewType)
+            }
+          >
+            {saving ? (
+              <Loader2 size={13} className="spin" />
+            ) : (
+              <Save size={13} />
+            )}
+            {saving ? "Saving…" : "Save Section"}
+          </button>
         </div>
       </div>
     </div>

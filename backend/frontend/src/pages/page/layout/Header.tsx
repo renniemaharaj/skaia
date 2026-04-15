@@ -52,38 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   // onDarkModeToggle,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
-  const [volume, setVolume] = useState(() => getSoundVolume());
-  const [volumeOpen, setVolumeOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const volumeRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Close volume slider on outside click
-  useEffect(() => {
-    if (!volumeOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
-        setVolumeOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [volumeOpen]);
-
-  // Close "More" dropdown on outside click
-  useEffect(() => {
-    if (!moreOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [moreOpen]);
 
   // Use Jotai atoms for auth state
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -158,6 +128,18 @@ export const Header: React.FC<HeaderProps> = ({
   const isActive = (path: string) => {
     return location.pathname === path ? "active" : "";
   };
+
+  const navItems = [
+    routeAllowed("landing") && { to: "/", label: "Home" },
+    routeAllowed("store") && { to: "/store", label: "Store" },
+    routeAllowed("forum") && { to: "/forum", label: "Forum" },
+    { to: "/pages", label: "Pages" },
+    { to: "/datasources", label: "Data Sources", isNew: true },
+    isAuthenticated &&
+      hasPermission("events.view") && { to: "/activity", label: "Activity" },
+  ].filter(
+    (item): item is { to: string; label: string; isNew?: boolean } => !!item,
+  );
 
   const logoContent = loading ? (
     <>
@@ -246,94 +228,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         <nav className={`nav ${menuOpen ? "open" : ""}`}>
           <div className="nav-section">
-            {(() => {
-              const MAX_VISIBLE = 3;
-              const allItems = [
-                routeAllowed("landing") && {
-                  to: "/",
-                  label: "Home",
-                },
-                routeAllowed("store") && {
-                  to: "/store",
-                  label: "Store",
-                },
-                routeAllowed("forum") && {
-                  to: "/forum",
-                  label: "Forum",
-                },
-                {
-                  to: "/pages",
-                  label: "Pages",
-                },
-                {
-                  to: "/datasources",
-                  label: "Data Sources",
-                  isNew: true,
-                },
-                isAuthenticated &&
-                  hasPermission("events.view") && {
-                    to: "/activity",
-                    label: "Activity",
-                  },
-              ].filter(
-                (
-                  item,
-                ): item is { to: string; label: string; isNew?: boolean } =>
-                  !!item,
-              );
-
-              const visibleItems = allItems.slice(0, MAX_VISIBLE);
-              const overflowItems = allItems.slice(MAX_VISIBLE);
-
-              return (
-                <>
-                  {visibleItems.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className={`${item.isNew ? "header-new-link " : ""}${isActive(item.to)}`}
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {item.label}
-                      {item.isNew && (
-                        <span className="header-new-badge">New</span>
-                      )}
-                    </Link>
-                  ))}
-                  {overflowItems.length > 0 && (
-                    <div className="header-more-wrap" ref={moreRef}>
-                      <button
-                        className="icon-btn icon-btn--sm header-more-btn"
-                        title="More"
-                        onClick={() => setMoreOpen((v) => !v)}
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                      {moreOpen && (
-                        <div className="header-more-dropdown">
-                          {overflowItems.map((item) => (
-                            <Link
-                              key={item.to}
-                              to={item.to}
-                              className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
-                              onClick={() => {
-                                setMoreOpen(false);
-                                setMenuOpen(false);
-                              }}
-                            >
-                              {item.label}
-                              {item.isNew && (
-                                <span className="header-new-badge">New</span>
-                              )}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            <HeaderNavLinks
+              allItems={navItems}
+              isActive={isActive}
+              setMenuOpen={setMenuOpen}
+            />
           </div>
 
           <div className="user-section">
@@ -358,90 +257,13 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
             {isAuthenticated && user ? (
-              <div className="user-menu">
-                <div className="header-volume-wrap" ref={volumeRef}>
-                  <button
-                    className="header-sound-toggle"
-                    title={soundOn ? "Mute sounds" : "Unmute sounds"}
-                    onClick={() => {
-                      if (soundOn) {
-                        setSoundEnabled(false);
-                        setSoundOn(false);
-                      } else {
-                        const restored = volume > 0 ? volume : 0.7;
-                        setSoundVolume(restored);
-                        setVolume(restored);
-                        setSoundOn(true);
-                      }
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setVolumeOpen((v) => !v);
-                    }}
-                  >
-                    {!soundOn || volume === 0 ? (
-                      <VolumeX size={20} />
-                    ) : volume < 0.33 ? (
-                      <Volume size={20} />
-                    ) : volume < 0.66 ? (
-                      <Volume1 size={20} />
-                    ) : (
-                      <Volume2 size={20} />
-                    )}
-                  </button>
-                  {volumeOpen && (
-                    <div className="header-volume-dropdown">
-                      <input
-                        type="range"
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        value={volume}
-                        className="header-volume-slider"
-                        onChange={(e) => {
-                          const v = parseFloat(e.target.value);
-                          setVolume(v);
-                          setSoundVolume(v);
-                          setSoundOn(v > 0);
-                        }}
-                      />
-                      <span className="header-volume-label">
-                        {Math.round(volume * 100)}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <NotificationBell />
-                {routeAllowed("inbox") && (
-                  <Link
-                    to="/inbox"
-                    className={`header-inbox-btn${inboxUnread > 0 ? " header-inbox-btn--unread" : ""}`}
-                    title="Messages"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    <Mail size={20} />
-                    {inboxUnread > 0 && (
-                      <span className="header-inbox-badge">
-                        {inboxUnread > 99 ? "99+" : inboxUnread}
-                      </span>
-                    )}
-                  </Link>
-                )}
-                <UserLink
-                  userId={user.id}
-                  username={user.username}
-                  displayName={user.display_name}
-                  variant="subtle"
-                  className="user-link-header"
-                />
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleLogout}
-                  title="Logout"
-                >
-                  <LogOut size={20} />
-                </button>
-              </div>
+              <HeaderUserMenu
+                user={user}
+                inboxUnread={inboxUnread}
+                routeAllowed={routeAllowed}
+                setMenuOpen={setMenuOpen}
+                handleLogout={handleLogout}
+              />
             ) : (
               <div className="auth-buttons">
                 <button
@@ -461,3 +283,206 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
+// ── HeaderNavLinks ────────────────────────────────────────────────────────────
+
+const MAX_NAV_VISIBLE = 3;
+
+function HeaderNavLinks({
+  allItems,
+  isActive,
+  setMenuOpen,
+}: {
+  allItems: { to: string; label: string; isNew?: boolean }[];
+  isActive: (path: string) => string;
+  setMenuOpen: (v: boolean) => void;
+}) {
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [moreOpen]);
+
+  const visibleItems = allItems.slice(0, MAX_NAV_VISIBLE);
+  const overflowItems = allItems.slice(MAX_NAV_VISIBLE);
+
+  return (
+    <>
+      {visibleItems.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to}
+          className={`${item.isNew ? "header-new-link " : ""}${isActive(item.to)}`}
+          onClick={() => setMenuOpen(false)}
+        >
+          {item.label}
+          {item.isNew && <span className="header-new-badge">New</span>}
+        </Link>
+      ))}
+      {overflowItems.length > 0 && (
+        <div className="header-more-wrap" ref={moreRef}>
+          <button
+            className="icon-btn icon-btn--sm header-more-btn"
+            title="More"
+            onClick={() => setMoreOpen((v) => !v)}
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {moreOpen && (
+            <div className="header-more-dropdown">
+              {overflowItems.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
+                  onClick={() => {
+                    setMoreOpen(false);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {item.label}
+                  {item.isNew && <span className="header-new-badge">New</span>}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── SoundControl ──────────────────────────────────────────────────────────────
+
+function SoundControl() {
+  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
+  const [volume, setVolume] = useState(() => getSoundVolume());
+  const [volumeOpen, setVolumeOpen] = useState(false);
+  const volumeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!volumeOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
+        setVolumeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [volumeOpen]);
+
+  return (
+    <div className="header-volume-wrap" ref={volumeRef}>
+      <button
+        className="header-sound-toggle"
+        title={soundOn ? "Mute sounds" : "Unmute sounds"}
+        onClick={() => {
+          if (soundOn) {
+            setSoundEnabled(false);
+            setSoundOn(false);
+          } else {
+            const restored = volume > 0 ? volume : 0.7;
+            setSoundVolume(restored);
+            setVolume(restored);
+            setSoundOn(true);
+          }
+        }}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setVolumeOpen((v) => !v);
+        }}
+      >
+        {!soundOn || volume === 0 ? (
+          <VolumeX size={20} />
+        ) : volume < 0.33 ? (
+          <Volume size={20} />
+        ) : volume < 0.66 ? (
+          <Volume1 size={20} />
+        ) : (
+          <Volume2 size={20} />
+        )}
+      </button>
+      {volumeOpen && (
+        <div className="header-volume-dropdown">
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.01}
+            value={volume}
+            className="header-volume-slider"
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              setVolume(v);
+              setSoundVolume(v);
+              setSoundOn(v > 0);
+            }}
+          />
+          <span className="header-volume-label">
+            {Math.round(volume * 100)}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── HeaderUserMenu ────────────────────────────────────────────────────────────
+
+function HeaderUserMenu({
+  user,
+  inboxUnread,
+  routeAllowed,
+  setMenuOpen,
+  handleLogout,
+}: {
+  user: { id: string; username: string; display_name?: string };
+  inboxUnread: number;
+  routeAllowed: (feature?: string) => boolean;
+  setMenuOpen: (v: boolean) => void;
+  handleLogout: () => void;
+}) {
+  return (
+    <div className="user-menu">
+      <SoundControl />
+      <NotificationBell />
+      {routeAllowed("inbox") && (
+        <Link
+          to="/inbox"
+          className={`header-inbox-btn${inboxUnread > 0 ? " header-inbox-btn--unread" : ""}`}
+          title="Messages"
+          onClick={() => setMenuOpen(false)}
+        >
+          <Mail size={20} />
+          {inboxUnread > 0 && (
+            <span className="header-inbox-badge">
+              {inboxUnread > 99 ? "99+" : inboxUnread}
+            </span>
+          )}
+        </Link>
+      )}
+      <UserLink
+        userId={user.id}
+        username={user.username}
+        displayName={user.display_name}
+        variant="subtle"
+        className="user-link-header"
+      />
+      <button
+        className="btn btn-secondary"
+        onClick={handleLogout}
+        title="Logout"
+      >
+        <LogOut size={20} />
+      </button>
+    </div>
+  );
+}

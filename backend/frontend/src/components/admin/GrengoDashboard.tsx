@@ -509,43 +509,7 @@ export default function GrengoDashboard() {
     <div className="grengo-dashboard">
       <h1>Grengo Dashboard</h1>
 
-      {/* System Info Bar */}
-      {sysInfo && (
-        <div className="grengo-sysinfo">
-          <div className="sysinfo-item">
-            <span className="sysinfo-label">Server Time</span>
-            <span className="sysinfo-value">
-              {new Date(sysInfo.server_time).toLocaleString()}
-            </span>
-          </div>
-          {sysInfo.cpu_model && (
-            <div className="sysinfo-item">
-              <span className="sysinfo-label">CPU</span>
-              <span className="sysinfo-value">
-                {sysInfo.cpu_model} ({sysInfo.cpu_cores} cores)
-              </span>
-            </div>
-          )}
-          {sysInfo.mem_total && (
-            <div className="sysinfo-item">
-              <span className="sysinfo-label">Memory</span>
-              <span className="sysinfo-value">{sysInfo.mem_total}</span>
-            </div>
-          )}
-          {sysInfo.uptime_human && (
-            <div className="sysinfo-item">
-              <span className="sysinfo-label">Uptime</span>
-              <span className="sysinfo-value">{sysInfo.uptime_human}</span>
-            </div>
-          )}
-          {sysInfo.load_avg && (
-            <div className="sysinfo-item">
-              <span className="sysinfo-label">Load</span>
-              <span className="sysinfo-value">{sysInfo.load_avg}</span>
-            </div>
-          )}
-        </div>
-      )}
+      {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
 
       <div className="grengo-lock-bar">
         <button className="btn" onClick={handleLock}>
@@ -688,315 +652,450 @@ export default function GrengoDashboard() {
         </div>
       )}
 
-      {/* Sites table */}
-      {(sites?.length ?? 0) === 0 && !loading ? (
-        <div className="grengo-empty">
-          No sites yet. Create one or import an archive.
-        </div>
-      ) : (
-        <div className="card grengo-table-wrap">
-          <table className="grengo-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Port</th>
-                <th>Status</th>
-                <th>Running</th>
-                <th>Armed</th>
-                <th>Storage</th>
-                <th>Domains</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sites.map((site) => {
-                const siteStorage = storage?.sites.find(
-                  (s) => s.name === site.name,
-                );
-                const sitePct =
-                  siteStorage && storage
-                    ? (siteStorage.used / storage.total_limit) * 100
-                    : 0;
-                return (
-                  <tr key={site.name}>
-                    <td>
-                      <strong>{site.name}</strong>
-                    </td>
-                    <td>{site.port}</td>
-                    <td>
-                      <span
-                        className={`badge ${site.status === "enabled" ? "badge-enabled" : "badge-disabled"}`}
-                      >
-                        {site.status}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
-                      >
-                        {site.running ? "running" : "stopped"}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
-                      >
-                        {site.armed ? "armed" : "disarmed"}
-                      </span>
-                    </td>
-                    <td className="site-storage-cell">
-                      {siteStorage ? (
-                        <div className="site-storage-mini">
-                          <span className="site-storage-text">
-                            {siteStorage.used_human}
-                          </span>
-                          <div className="stat-bar">
-                            <div
-                              className={`stat-bar-fill ${barClass(sitePct)}`}
-                              style={{
-                                width: `${Math.min(sitePct, 100)}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="domains">{site.domains.join(", ")}</td>
-                    <td className="actions">
-                      {site.running ? (
-                        <button
-                          className="btn"
-                          onClick={() => siteAction(site.name, "stop")}
-                          disabled={busy[site.name]}
-                        >
-                          Stop
-                        </button>
-                      ) : (
-                        <button
-                          className="btn"
-                          onClick={() => siteAction(site.name, "start")}
-                          disabled={busy[site.name]}
-                        >
-                          Start
-                        </button>
-                      )}
-                      {site.status === "enabled" ? (
-                        <button
-                          className="btn"
-                          onClick={() => siteAction(site.name, "disable")}
-                          disabled={busy[site.name]}
-                        >
-                          Disable
-                        </button>
-                      ) : (
-                        <button
-                          className="btn"
-                          onClick={() => siteAction(site.name, "enable")}
-                          disabled={busy[site.name]}
-                        >
-                          Enable
-                        </button>
-                      )}
-                      {site.armed ? (
-                        <button
-                          className="btn btn-warning"
-                          onClick={() => siteAction(site.name, "disarm")}
-                          disabled={busy[site.name]}
-                        >
-                          Disarm
-                        </button>
-                      ) : (
-                        <button
-                          className="btn"
-                          onClick={() => siteAction(site.name, "arm")}
-                          disabled={busy[site.name]}
-                        >
-                          Arm
-                        </button>
-                      )}
-                      <button
-                        className="btn"
-                        onClick={() => handleMigrate(site.name)}
-                        disabled={busy[site.name] || migrateBusy[site.name]}
-                      >
-                        {migrateBusy[site.name] ? "Migrating…" : "Migrate"}
-                      </button>
-                      <button
-                        className="btn"
-                        onClick={() => openEnvEditor(site.name)}
-                        disabled={busy[site.name]}
-                      >
-                        Env
-                      </button>
-                      <button
-                        className="btn"
-                        onClick={() => handleExport(site.name)}
-                        disabled={busy[site.name]}
-                      >
-                        Export
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() => handleDelete(site.name)}
-                        disabled={busy[site.name]}
-                      >
-                        Delete
-                      </button>
-                      {migrateOutput[site.name] && (
-                        <div className="migrate-output-inline">
-                          {migrateOutput[site.name]}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <SiteTable
+        sites={sites}
+        storage={storage}
+        loading={loading}
+        busy={busy}
+        migrateBusy={migrateBusy}
+        migrateOutput={migrateOutput}
+        onSiteAction={siteAction}
+        onMigrate={handleMigrate}
+        onEnvEdit={openEnvEditor}
+        onExport={handleExport}
+        onDelete={handleDelete}
+      />
 
       {/* Env Editor */}
       {envSite && (
-        <div className="grengo-env-editor">
-          <div className="grengo-env-header">
-            <h2>.env — {envSite}</h2>
-            <div className="grengo-env-actions">
-              {envDirty && (
-                <span className="grengo-env-unsaved">unsaved changes</span>
-              )}
-              <button
-                className="btn btn-primary"
-                onClick={saveEnv}
-                disabled={envSaving || !envDirty}
-              >
-                {envSaving ? "Saving…" : "Save"}
-              </button>
-              <button className="btn" onClick={closeEnvEditor}>
-                Close
-              </button>
-            </div>
-          </div>
-          {envError && <div className="error">{envError}</div>}
-          {envLoading ? (
-            <div className="grengo-empty">Loading .env…</div>
-          ) : (
-            <MonacoEditor
-              height={360}
-              language="ini"
-              code={envContent}
-              onChange={setEnvDraft}
-              editable
-            />
+        <EnvEditorPanel
+          envSite={envSite}
+          envContent={envContent}
+          envDirty={envDirty}
+          envLoading={envLoading}
+          envSaving={envSaving}
+          envError={envError}
+          onSave={saveEnv}
+          onClose={closeEnvEditor}
+          onDraftChange={setEnvDraft}
+        />
+      )}
+
+      {storage && <StoragePanel storage={storage} />}
+
+      <PerformanceMetrics stats={stats} statsLoading={statsLoading} />
+    </div>
+  );
+}
+
+// ── SysInfoBar ───────────────────────────────────────────────────────────────
+
+function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
+  return (
+    <div className="grengo-sysinfo">
+      <div className="sysinfo-item">
+        <span className="sysinfo-label">Server Time</span>
+        <span className="sysinfo-value">
+          {new Date(sysInfo.server_time).toLocaleString()}
+        </span>
+      </div>
+      {sysInfo.cpu_model && (
+        <div className="sysinfo-item">
+          <span className="sysinfo-label">CPU</span>
+          <span className="sysinfo-value">
+            {sysInfo.cpu_model} ({sysInfo.cpu_cores} cores)
+          </span>
+        </div>
+      )}
+      {sysInfo.mem_total && (
+        <div className="sysinfo-item">
+          <span className="sysinfo-label">Memory</span>
+          <span className="sysinfo-value">{sysInfo.mem_total}</span>
+        </div>
+      )}
+      {sysInfo.uptime_human && (
+        <div className="sysinfo-item">
+          <span className="sysinfo-label">Uptime</span>
+          <span className="sysinfo-value">{sysInfo.uptime_human}</span>
+        </div>
+      )}
+      {sysInfo.load_avg && (
+        <div className="sysinfo-item">
+          <span className="sysinfo-label">Load</span>
+          <span className="sysinfo-value">{sysInfo.load_avg}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SiteTable ─────────────────────────────────────────────────────────────────
+
+function SiteTable({
+  sites,
+  storage,
+  loading,
+  busy,
+  migrateBusy,
+  migrateOutput,
+  onSiteAction,
+  onMigrate,
+  onEnvEdit,
+  onExport,
+  onDelete,
+}: {
+  sites: SiteInfo[];
+  storage: StorageInfo | null;
+  loading: boolean;
+  busy: Record<string, boolean>;
+  migrateBusy: Record<string, boolean>;
+  migrateOutput: Record<string, string>;
+  onSiteAction: (name: string, action: string) => void;
+  onMigrate: (name: string) => void;
+  onEnvEdit: (name: string) => void;
+  onExport: (name: string) => void;
+  onDelete: (name: string) => void;
+}) {
+  if ((sites?.length ?? 0) === 0 && !loading) {
+    return (
+      <div className="grengo-empty">
+        No sites yet. Create one or import an archive.
+      </div>
+    );
+  }
+  return (
+    <div className="card grengo-table-wrap">
+      <table className="grengo-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Port</th>
+            <th>Status</th>
+            <th>Running</th>
+            <th>Armed</th>
+            <th>Storage</th>
+            <th>Domains</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sites.map((site) => {
+            const siteStorage = storage?.sites.find(
+              (s) => s.name === site.name,
+            );
+            const sitePct =
+              siteStorage && storage
+                ? (siteStorage.used / storage.total_limit) * 100
+                : 0;
+            return (
+              <tr key={site.name}>
+                <td>
+                  <strong>{site.name}</strong>
+                </td>
+                <td>{site.port}</td>
+                <td>
+                  <span
+                    className={`badge ${site.status === "enabled" ? "badge-enabled" : "badge-disabled"}`}
+                  >
+                    {site.status}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
+                  >
+                    {site.running ? "running" : "stopped"}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
+                  >
+                    {site.armed ? "armed" : "disarmed"}
+                  </span>
+                </td>
+                <td className="site-storage-cell">
+                  {siteStorage ? (
+                    <div className="site-storage-mini">
+                      <span className="site-storage-text">
+                        {siteStorage.used_human}
+                      </span>
+                      <div className="stat-bar">
+                        <div
+                          className={`stat-bar-fill ${barClass(sitePct)}`}
+                          style={{ width: `${Math.min(sitePct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="domains">{site.domains.join(", ")}</td>
+                <td className="actions">
+                  {site.running ? (
+                    <button
+                      className="btn"
+                      onClick={() => onSiteAction(site.name, "stop")}
+                      disabled={busy[site.name]}
+                    >
+                      Stop
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={() => onSiteAction(site.name, "start")}
+                      disabled={busy[site.name]}
+                    >
+                      Start
+                    </button>
+                  )}
+                  {site.status === "enabled" ? (
+                    <button
+                      className="btn"
+                      onClick={() => onSiteAction(site.name, "disable")}
+                      disabled={busy[site.name]}
+                    >
+                      Disable
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={() => onSiteAction(site.name, "enable")}
+                      disabled={busy[site.name]}
+                    >
+                      Enable
+                    </button>
+                  )}
+                  {site.armed ? (
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => onSiteAction(site.name, "disarm")}
+                      disabled={busy[site.name]}
+                    >
+                      Disarm
+                    </button>
+                  ) : (
+                    <button
+                      className="btn"
+                      onClick={() => onSiteAction(site.name, "arm")}
+                      disabled={busy[site.name]}
+                    >
+                      Arm
+                    </button>
+                  )}
+                  <button
+                    className="btn"
+                    onClick={() => onMigrate(site.name)}
+                    disabled={busy[site.name] || migrateBusy[site.name]}
+                  >
+                    {migrateBusy[site.name] ? "Migrating…" : "Migrate"}
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => onEnvEdit(site.name)}
+                    disabled={busy[site.name]}
+                  >
+                    Env
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => onExport(site.name)}
+                    disabled={busy[site.name]}
+                  >
+                    Export
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => onDelete(site.name)}
+                    disabled={busy[site.name]}
+                  >
+                    Delete
+                  </button>
+                  {migrateOutput[site.name] && (
+                    <div className="migrate-output-inline">
+                      {migrateOutput[site.name]}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── EnvEditorPanel ────────────────────────────────────────────────────────────
+
+function EnvEditorPanel({
+  envSite,
+  envContent,
+  envDirty,
+  envLoading,
+  envSaving,
+  envError,
+  onSave,
+  onClose,
+  onDraftChange,
+}: {
+  envSite: string;
+  envContent: string;
+  envDirty: boolean;
+  envLoading: boolean;
+  envSaving: boolean;
+  envError: string;
+  onSave: () => void;
+  onClose: () => void;
+  onDraftChange: (v: string) => void;
+}) {
+  return (
+    <div className="grengo-env-editor">
+      <div className="grengo-env-header">
+        <h2>.env — {envSite}</h2>
+        <div className="grengo-env-actions">
+          {envDirty && (
+            <span className="grengo-env-unsaved">unsaved changes</span>
           )}
+          <button
+            className="btn btn-primary"
+            onClick={onSave}
+            disabled={envSaving || !envDirty}
+          >
+            {envSaving ? "Saving…" : "Save"}
+          </button>
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
         </div>
+      </div>
+      {envError && <div className="error">{envError}</div>}
+      {envLoading ? (
+        <div className="grengo-empty">Loading .env…</div>
+      ) : (
+        <MonacoEditor
+          height={360}
+          language="ini"
+          code={envContent}
+          onChange={onDraftChange}
+          editable
+        />
       )}
+    </div>
+  );
+}
 
-      {/* Storage Threshold */}
-      {storage && (
-        <div className="grengo-storage">
-          <h2>Storage</h2>
-          <div className="grengo-storage-overview">
-            <div className="storage-total">
-              <div className="storage-total-header">
-                <strong>Total Upload Storage</strong>
-                <span className="storage-total-value">
-                  {storage.total_used_human} / {storage.total_limit_human}
-                </span>
-              </div>
-              <div className="stat-bar">
-                <div
-                  className={`stat-bar-fill ${barClass(storage.total_percent)}`}
-                  style={{ width: `${Math.min(storage.total_percent, 100)}%` }}
-                />
-              </div>
-              <span className="storage-total-pct">
-                {storage.total_percent.toFixed(1)}% used
-                {storage.total_percent >= 80 && (
-                  <span className="storage-warning"> — approaching limit!</span>
-                )}
-                {storage.total_percent >= 95 && (
-                  <span className="storage-critical"> — critical!</span>
-                )}
-              </span>
-            </div>
-            {storage.sites.length > 0 && (
-              <div className="storage-sites">
-                <h3>Per Site</h3>
-                <div className="storage-site-list">
-                  {storage.sites.map((s) => (
-                    <div className="storage-site-row" key={s.name}>
-                      <span className="storage-site-name">{s.name}</span>
-                      <span className="storage-site-used">{s.used_human}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+// ── StoragePanel ──────────────────────────────────────────────────────────────
+
+function StoragePanel({ storage }: { storage: StorageInfo }) {
+  return (
+    <div className="grengo-storage">
+      <h2>Storage</h2>
+      <div className="grengo-storage-overview">
+        <div className="storage-total">
+          <div className="storage-total-header">
+            <strong>Total Upload Storage</strong>
+            <span className="storage-total-value">
+              {storage.total_used_human} / {storage.total_limit_human}
+            </span>
+          </div>
+          <div className="stat-bar">
+            <div
+              className={`stat-bar-fill ${barClass(storage.total_percent)}`}
+              style={{ width: `${Math.min(storage.total_percent, 100)}%` }}
+            />
+          </div>
+          <span className="storage-total-pct">
+            {storage.total_percent.toFixed(1)}% used
+            {storage.total_percent >= 80 && (
+              <span className="storage-warning"> — approaching limit!</span>
             )}
-          </div>
+            {storage.total_percent >= 95 && (
+              <span className="storage-critical"> — critical!</span>
+            )}
+          </span>
         </div>
-      )}
-
-      {/* Performance Metrics */}
-      {stats.length > 0 && (
-        <div className="grengo-stats">
-          <h2>Performance Metrics</h2>
-          <div className="grengo-stats-cards">
-            <StatsOverview stats={stats} />
-            {stats.map((s) => (
-              <div className="card grengo-stat-card" key={s.name}>
-                <div className="stat-card-header">
-                  <strong>{s.name}</strong>
+        {storage.sites.length > 0 && (
+          <div className="storage-sites">
+            <h3>Per Site</h3>
+            <div className="storage-site-list">
+              {storage.sites.map((s) => (
+                <div className="storage-site-row" key={s.name}>
+                  <span className="storage-site-name">{s.name}</span>
+                  <span className="storage-site-used">{s.used_human}</span>
                 </div>
-                <div className="stat-card-grid">
-                  <div className="stat-item">
-                    <span className="stat-label">CPU</span>
-                    <span className="stat-value">
-                      {s.cpu_percent.toFixed(1)}%
-                    </span>
-                    <div className="stat-bar">
-                      <div
-                        className={`stat-bar-fill ${barClass(s.cpu_percent)}`}
-                        style={{ width: `${Math.min(s.cpu_percent, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Memory</span>
-                    <span className="stat-value">
-                      {s.mem_usage} / {s.mem_limit}
-                    </span>
-                    <div className="stat-bar">
-                      <div
-                        className={`stat-bar-fill ${barClass(s.mem_percent)}`}
-                        style={{ width: `${Math.min(s.mem_percent, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Net I/O</span>
-                    <span className="stat-value">{s.net_io}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Block I/O</span>
-                    <span className="stat-value">{s.block_io}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">PIDs</span>
-                    <span className="stat-value">{s.pids}</span>
-                  </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── PerformanceMetrics ────────────────────────────────────────────────────────
+
+function PerformanceMetrics({
+  stats,
+  statsLoading,
+}: {
+  stats: ContainerStats[];
+  statsLoading: boolean;
+}) {
+  if (statsLoading && stats.length === 0) {
+    return <div className="grengo-empty">Loading metrics…</div>;
+  }
+  if (stats.length === 0) return null;
+  return (
+    <div className="grengo-stats">
+      <h2>Performance Metrics</h2>
+      <div className="grengo-stats-cards">
+        <StatsOverview stats={stats} />
+        {stats.map((s) => (
+          <div className="card grengo-stat-card" key={s.name}>
+            <div className="stat-card-header">
+              <strong>{s.name}</strong>
+            </div>
+            <div className="stat-card-grid">
+              <div className="stat-item">
+                <span className="stat-label">CPU</span>
+                <span className="stat-value">{s.cpu_percent.toFixed(1)}%</span>
+                <div className="stat-bar">
+                  <div
+                    className={`stat-bar-fill ${barClass(s.cpu_percent)}`}
+                    style={{ width: `${Math.min(s.cpu_percent, 100)}%` }}
+                  />
                 </div>
               </div>
-            ))}
+              <div className="stat-item">
+                <span className="stat-label">Memory</span>
+                <span className="stat-value">
+                  {s.mem_usage} / {s.mem_limit}
+                </span>
+                <div className="stat-bar">
+                  <div
+                    className={`stat-bar-fill ${barClass(s.mem_percent)}`}
+                    style={{ width: `${Math.min(s.mem_percent, 100)}%` }}
+                  />
+                </div>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Net I/O</span>
+                <span className="stat-value">{s.net_io}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Block I/O</span>
+                <span className="stat-value">{s.block_io}</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">PIDs</span>
+                <span className="stat-value">{s.pids}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
-
-      {statsLoading && stats.length === 0 && (
-        <div className="grengo-empty">Loading metrics…</div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
