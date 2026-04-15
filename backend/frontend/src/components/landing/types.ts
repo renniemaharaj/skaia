@@ -130,6 +130,63 @@ export const PREVIEW_TYPE_LABELS: Record<PreviewType, string> = {
   table: "Table",
 };
 
+/* ── Column-mapped (fact-table) rendering ─────────────────────────────── */
+
+/** Section types that support datasource-driven rendering. */
+export const RENDERABLE_SECTION_TYPES = [
+  "card_group",
+  "feature_grid",
+  "stat_cards",
+  "event_highlights",
+  "image_cards",
+] as const;
+export type RenderableSectionType = (typeof RENDERABLE_SECTION_TYPES)[number];
+
+export const RENDERABLE_TYPE_LABELS: Record<RenderableSectionType, string> = {
+  card_group: "Card Group",
+  feature_grid: "Feature Grid",
+  stat_cards: "Stat Cards",
+  event_highlights: "Event Highlights",
+  image_cards: "Image Cards",
+};
+
+/** Fields on a LandingItem that a datasource column can be mapped to. */
+export const MAPPABLE_FIELDS = [
+  "heading",
+  "subheading",
+  "icon",
+  "image_url",
+  "link_url",
+] as const;
+export type MappableField = (typeof MAPPABLE_FIELDS)[number];
+
+export const MAPPABLE_FIELD_LABELS: Record<MappableField, string> = {
+  heading: "Heading",
+  subheading: "Subheading",
+  icon: "Icon",
+  image_url: "Image URL",
+  link_url: "Link URL",
+};
+
+/** Maps LandingItem field → datasource column name. */
+export type ColumnMap = Partial<Record<MappableField, string>>;
+
+/** Per-row overrides keyed by a stable row identifier. */
+export type RowOverrides = Record<
+  string,
+  Partial<Record<MappableField, string>>
+>;
+
+/** Configuration for a datasource-driven section. */
+export interface FactTableConfig {
+  datasource_id?: number;
+  render_as?: RenderableSectionType;
+  column_map?: ColumnMap;
+  row_overrides?: RowOverrides;
+  columns?: number;
+  row_key_column?: string; // which datasource column provides the stable row key
+}
+
 /** A saved custom section (reusable data-bound visualization). */
 export interface CustomSection {
   id: number;

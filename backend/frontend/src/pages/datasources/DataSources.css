@@ -1037,6 +1037,16 @@
   color: #fff;
 }
 
+.ds-preview__note {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.ds-preview__note--warn {
+  color: var(--error-color);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Save as custom section form
    ═══════════════════════════════════════════════════════════════ */

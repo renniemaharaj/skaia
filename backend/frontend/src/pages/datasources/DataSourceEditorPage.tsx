@@ -37,12 +37,12 @@ import type {
   DataSource,
   CustomSection,
   PreviewType,
+  LandingSection,
 } from "../../components/landing/types";
 import { ImageCardGrid } from "../../components/landing/blocks/ImageCardGrid";
-import {
-  PREVIEW_TYPES,
-  PREVIEW_TYPE_LABELS,
-} from "../../components/landing/types";
+import { FeatureGridBlock } from "../../components/landing/blocks/FeatureGridBlock";
+import { StatCardsBlock } from "../../components/landing/blocks/StatCardsBlock";
+import { PREVIEW_TYPES } from "../../components/landing/types";
 import { toast } from "sonner";
 import "./DataSources.css";
 
@@ -109,6 +109,22 @@ return [
 ];
 `;
 
+const DATASOURCE_PREVIEW_TYPES = [
+  ...PREVIEW_TYPES,
+  "feature",
+  "image",
+] as const;
+
+type DataSourcePreviewType = (typeof DATASOURCE_PREVIEW_TYPES)[number];
+
+const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
+  cards: "Cards",
+  stat_cards: "Stats",
+  table: "Table",
+  feature: "Feature Grid",
+  image: "Image Grid",
+};
+
 export default function DataSourceEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -136,7 +152,8 @@ export default function DataSourceEditorPage() {
   const [activePanel, setActivePanel] = useState<RightPanel>("preview");
 
   // Preview section type
-  const [previewType, setPreviewType] = useState<PreviewType>("cards");
+  const [previewType, setPreviewType] =
+    useState<DataSourcePreviewType>("cards");
 
   type LayoutMode = "default" | "wide" | "center";
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("default");
@@ -671,27 +688,37 @@ export default function DataSourceEditorPage() {
                 {previewItems.length > 0 && (
                   <div className="ds-preview__toolbar">
                     <div className="ds-preview__type-tabs">
-                      {PREVIEW_TYPES.map((type) => (
+                      {DATASOURCE_PREVIEW_TYPES.map((type) => (
                         <button
                           key={type}
                           className={`ds-preview__type-tab ${previewType === type ? "ds-preview__type-tab--active" : ""}`}
                           onClick={() => setPreviewType(type)}
                         >
                           {type === "cards" && <LayoutGrid size={13} />}
+                          {type === "feature" && <BarChart3 size={13} />}
+                          {type === "image" && <Table2 size={13} />}
                           {type === "stat_cards" && <BarChart3 size={13} />}
                           {type === "table" && <Table2 size={13} />}
-                          {PREVIEW_TYPE_LABELS[type]}
+                          {DATASOURCE_PREVIEW_TYPE_LABELS[type]}
                         </button>
                       ))}
                     </div>
-                    {!isNew && (
-                      <button
-                        className="ds-preview__save-section-btn"
-                        onClick={() => setShowSaveSection((v) => !v)}
-                      >
-                        <Bookmark size={13} /> Save as Section
-                      </button>
-                    )}
+                    {!isNew &&
+                      PREVIEW_TYPES.includes(previewType as PreviewType) && (
+                        <button
+                          className="ds-preview__save-section-btn"
+                          onClick={() => setShowSaveSection((v) => !v)}
+                        >
+                          <Bookmark size={13} /> Save as Section
+                        </button>
+                      )}
+                    {!isNew &&
+                      !PREVIEW_TYPES.includes(previewType as PreviewType) && (
+                        <div className="ds-preview__note">
+                          Save as section is only supported for Cards, Stats,
+                          and Table.
+                        </div>
+                      )}
                   </div>
                 )}
 
@@ -729,8 +756,15 @@ export default function DataSourceEditorPage() {
                       </div>
                       <div className="ds-save-section__info">
                         Type:{" "}
-                        <strong>{PREVIEW_TYPE_LABELS[previewType]}</strong>
+                        <strong>
+                          {DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}
+                        </strong>
                       </div>
+                      {!PREVIEW_TYPES.includes(previewType as PreviewType) && (
+                        <div className="ds-preview__note ds-preview__note--warn">
+                          This preview type cannot be saved as a custom section.
+                        </div>
+                      )}
                       <div className="ds-save-section__actions">
                         <button
                           className="ds-save-section__cancel"
@@ -741,7 +775,11 @@ export default function DataSourceEditorPage() {
                         <button
                           className="ds-save-section__submit"
                           onClick={handleSaveSection}
-                          disabled={savingSection || !sectionName.trim()}
+                          disabled={
+                            savingSection ||
+                            !sectionName.trim() ||
+                            !PREVIEW_TYPES.includes(previewType as PreviewType)
+                          }
                         >
                           {savingSection ? (
                             <Loader2 size={13} className="spin" />
@@ -933,25 +971,84 @@ export default function DataSourceEditorPage() {
                   />
                 )}
 
+                {/* Image grid view */}
+                {previewItems.length > 0 && previewType === "image" && (
+                  <ImageCardGrid
+                    items={previewItems.map((item) => ({
+                      heading: item.heading,
+                      subheading: item.subheading,
+                      image_url: item.image_url,
+                      icon: item.icon,
+                      link_url: item.link_url,
+                      width: "regular",
+                    }))}
+                  />
+                )}
+
+                {/* Feature grid view */}
+                {previewItems.length > 0 && previewType === "feature" && (
+                  <FeatureGridBlock
+                    section={
+                      {
+                        id: 0,
+                        display_order: 1,
+                        section_type: "feature_grid",
+                        heading: "",
+                        subheading: "",
+                        config: "{}",
+                        items: previewItems.map((item, index) => ({
+                          id: index + 1,
+                          section_id: 0,
+                          display_order: index + 1,
+                          icon: item.icon ?? "",
+                          heading: item.heading ?? "",
+                          subheading: item.subheading ?? "",
+                          image_url: item.image_url ?? "",
+                          link_url: item.link_url ?? "",
+                          config: "{}",
+                        })),
+                      } as LandingSection
+                    }
+                    canEdit={false}
+                    onUpdate={() => {}}
+                    onDelete={() => {}}
+                    onItemCreate={() => {}}
+                    onItemUpdate={() => {}}
+                    onItemDelete={() => {}}
+                  />
+                )}
+
                 {/* Stat Cards view */}
                 {previewItems.length > 0 && previewType === "stat_cards" && (
-                  <div className="ds-preview__stats-grid">
-                    {previewItems.map((item, i) => (
-                      <div key={i} className="ds-preview-stat">
-                        {item.icon && (
-                          <span className="ds-preview-stat__icon">
-                            {item.icon}
-                          </span>
-                        )}
-                        <div className="ds-preview-stat__value">
-                          {item.heading ?? "—"}
-                        </div>
-                        <div className="ds-preview-stat__label">
-                          {item.subheading ?? ""}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <StatCardsBlock
+                    section={
+                      {
+                        id: 0,
+                        display_order: 1,
+                        section_type: "stat_cards",
+                        heading: "",
+                        subheading: "",
+                        config: "{}",
+                        items: previewItems.map((item, index) => ({
+                          id: index + 1,
+                          section_id: 0,
+                          display_order: index + 1,
+                          icon: item.icon ?? "",
+                          heading: item.heading ?? "",
+                          subheading: item.subheading ?? "",
+                          image_url: item.image_url ?? "",
+                          link_url: item.link_url ?? "",
+                          config: "{}",
+                        })),
+                      } as LandingSection
+                    }
+                    canEdit={false}
+                    onUpdate={() => {}}
+                    onDelete={() => {}}
+                    onItemCreate={() => {}}
+                    onItemUpdate={() => {}}
+                    onItemDelete={() => {}}
+                  />
                 )}
 
                 {/* Table view */}

@@ -1,0 +1,164 @@
+/* ── Column Mapper ─────────────────────────────────────────────────────── */
+
+.column-mapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.column-mapper-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.column-mapper-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.column-mapper-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* ── Available columns (source) ───────────────────────────────────────── */
+
+.column-mapper-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.column-mapper-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-family: var(--font-mono, monospace);
+  cursor: grab;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.column-mapper-chip:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.column-mapper-chip.mapped {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+  opacity: 0.5;
+}
+
+.column-mapper-chip[draggable="true"] {
+  cursor: grab;
+}
+
+.column-mapper-chip[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+/* ── Target slots (card fields) ───────────────────────────────────────── */
+
+.column-mapper-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.column-mapper-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  min-height: 40px;
+  transition: all 0.15s;
+}
+
+.column-mapper-slot.drag-over {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+}
+
+.column-mapper-slot.filled {
+  border-style: solid;
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+}
+
+.column-mapper-slot-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 70px;
+}
+
+.column-mapper-slot-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.column-mapper-slot-value select {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+}
+
+.column-mapper-slot-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.column-mapper-slot-clear:hover {
+  color: var(--error-color);
+}
+
+/* ── Separator ────────────────────────────────────────────────────────── */
+
+.column-mapper-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .column-mapper-targets {
+    grid-template-columns: 1fr;
+  }
+}

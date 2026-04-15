@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { LandingSection, LandingItem, DataSource } from "../types";
+import type {
+  LandingSection,
+  LandingItem,
+  DataSource,
+  ColumnMap,
+  RenderableSectionType,
+  FactTableConfig,
+  MappableField,
+} from "../types";
+import { RENDERABLE_SECTION_TYPES, RENDERABLE_TYPE_LABELS } from "../types";
 import "./DerivedSectionBlock.css";
 import {
   SectionToolbar,
@@ -11,9 +20,20 @@ import {
   getSectionAnimation,
   setSectionAnimation,
 } from "../EditControls";
+import { ColumnMapper } from "../ColumnMapper";
+import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
+import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
 import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
+
+// Block components we delegate rendering to
+import { CardGroupBlock } from "./CardGroupBlock";
+import { FeatureGridBlock } from "./FeatureGridBlock";
+import { StatCardsBlock } from "./StatCardsBlock";
+import { EventHighlightsBlock } from "./EventHighlightsBlock";
+import { ImageCardGrid } from "./ImageCardGrid";
+import type { ImageCardItem } from "./ImageCardGrid";
 
 interface Props {
   section: LandingSection;
@@ -25,23 +45,7 @@ interface Props {
   onItemDelete: (id: number) => void;
 }
 
-interface DerivedConfig {
-  datasource_id?: number;
-  columns?: number;
-  layout?: string;
-  auto_refresh?: boolean;
-}
-
-interface EvalItem {
-  heading?: string;
-  subheading?: string;
-  icon?: string;
-  image_url?: string;
-  link_url?: string;
-  config?: string;
-}
-
-function parseConfig(config: string): DerivedConfig {
+function parseConfig(config: string): FactTableConfig {
   try {
     return JSON.parse(config || "{}");
   } catch {
@@ -49,7 +53,10 @@ function parseConfig(config: string): DerivedConfig {
   }
 }
 
-function updateConfig(config: string, updates: Partial<DerivedConfig>): string {
+function updateConfig(
+  config: string,
+  updates: Partial<FactTableConfig>,
+): string {
   try {
     const parsed = JSON.parse(config || "{}");
     return JSON.stringify({ ...parsed, ...updates });
@@ -68,19 +75,10 @@ interface CompileResult {
   }[];
 }
 
-/**
- * Compile TypeScript code via the backend, then evaluate the resulting JS.
- * The code should form the body of an async function that returns an array.
- * `fetch` is available in scope so the code can make API calls.
- */
-async function evaluateDataSource(code: string): Promise<EvalItem[]> {
-  // 1. Compile TS → JS via backend
+async function evaluateDataSource(code: string): Promise<RawRow[]> {
   const compileRes = await apiRequest<CompileResult>(
     "/config/datasources/compile",
-    {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    },
+    { method: "POST", body: JSON.stringify({ code }) },
   );
 
   const errors = (compileRes.diagnostics ?? []).filter((d) => d.category === 1);
@@ -90,7 +88,6 @@ async function evaluateDataSource(code: string): Promise<EvalItem[]> {
     );
   }
 
-  // 2. Evaluate the compiled JS
   const fn = new Function(
     "fetch",
     `"use strict"; return (async () => { ${compileRes.js} })();`,
@@ -100,7 +97,7 @@ async function evaluateDataSource(code: string): Promise<EvalItem[]> {
   if (!Array.isArray(result)) {
     throw new Error("Data source code must return an array");
   }
-  return result as EvalItem[];
+  return result as RawRow[];
 }
 
 export const DerivedSectionBlock = ({
@@ -113,7 +110,7 @@ export const DerivedSectionBlock = ({
   const cfg = parseConfig(section.config);
 
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
-  const [evaluatedItems, setEvaluatedItems] = useState<EvalItem[]>([]);
+  const [rawRows, setRawRows] = useState<RawRow[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
@@ -127,13 +124,12 @@ export const DerivedSectionBlock = ({
       .finally(() => setLoadingDS(false));
   }, []);
 
-  // Evaluate the selected data source
   const isAuthError = (message: string) =>
     /unauthorized|authentication|login required|401/i.test(message);
 
   const runEvaluation = useCallback(async () => {
     if (!cfg.datasource_id) {
-      setEvaluatedItems([]);
+      setRawRows([]);
       setEvalError(null);
       setAuthError(false);
       return;
@@ -145,15 +141,15 @@ export const DerivedSectionBlock = ({
       const ds = await apiRequest<DataSource>(
         `/config/datasources/${cfg.datasource_id}`,
       );
-      const items = await evaluateDataSource(ds.code);
-      setEvaluatedItems(items);
-      toast.success(`Evaluated "${ds.name}" — ${items.length} item(s)`);
+      const rows = await evaluateDataSource(ds.code);
+      setRawRows(rows);
+      toast.success(`Evaluated "${ds.name}" — ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       const auth = isAuthError(msg);
       setAuthError(auth);
       setEvalError(auth ? null : msg);
-      setEvaluatedItems([]);
+      setRawRows([]);
       toast.error(
         `Evaluation failed${auth ? ": authentication required" : ": " + msg}`,
       );
@@ -170,6 +166,83 @@ export const DerivedSectionBlock = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.datasource_id]);
 
+  // Detect available columns from raw rows
+  const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
+
+  // Build LandingItem[] from raw rows + column map + overrides
+  const mappedItems: LandingItem[] = useMemo(() => {
+    if (!cfg.column_map || rawRows.length === 0) return [];
+    return mapRowsToItems(
+      rawRows,
+      cfg.column_map,
+      section.id,
+      cfg.row_overrides,
+      cfg.row_key_column,
+    );
+  }, [
+    rawRows,
+    cfg.column_map,
+    cfg.row_overrides,
+    cfg.row_key_column,
+    section.id,
+  ]);
+
+  // Build a virtual section with the mapped items for the delegate block
+  const virtualSection: LandingSection = useMemo(
+    () => ({
+      ...section,
+      items: mappedItems,
+    }),
+    [section, mappedItems],
+  );
+
+  // Handle item updates from the delegate block → store as row overrides
+  const handleItemUpdate = useCallback(
+    (item: LandingItem) => {
+      // Identify which row this item came from using its synthetic index
+      const idx = -(item.id + 1); // reverse the -(index+1) encoding
+      if (idx < 0 || idx >= rawRows.length) return;
+
+      const key = rowKey(rawRows[idx], idx, cfg.row_key_column);
+      const currentOverrides = cfg.row_overrides ?? {};
+      const rowOverride = currentOverrides[key] ?? {};
+
+      // Diff the item against the mapped base to find what was changed
+      const baseItem = mappedItems.find((m) => m.id === item.id);
+      if (!baseItem) return;
+
+      const fields: MappableField[] = [
+        "heading",
+        "subheading",
+        "icon",
+        "image_url",
+        "link_url",
+      ];
+      const newOverride = { ...rowOverride };
+      for (const f of fields) {
+        if (item[f] !== baseItem[f]) {
+          newOverride[f] = item[f];
+        }
+      }
+
+      onUpdate({
+        ...section,
+        config: updateConfig(section.config, {
+          row_overrides: { ...currentOverrides, [key]: newOverride },
+        }),
+      });
+    },
+    [
+      rawRows,
+      cfg.row_key_column,
+      cfg.row_overrides,
+      mappedItems,
+      section,
+      onUpdate,
+    ],
+  );
+
+  // Config updaters
   const handleDatasourceChange = (dsId: number) => {
     onUpdate({
       ...section,
@@ -177,18 +250,106 @@ export const DerivedSectionBlock = ({
     });
   };
 
-  const handleColumnsChange = (cols: number) => {
+  const handleRenderAsChange = (renderAs: RenderableSectionType) => {
     onUpdate({
       ...section,
-      config: updateConfig(section.config, { columns: cols }),
+      config: updateConfig(section.config, { render_as: renderAs }),
     });
   };
 
-  const columns = cfg.columns ?? 3;
+  const handleColumnMapChange = (columnMap: ColumnMap) => {
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, { column_map: columnMap }),
+    });
+  };
+
+  const handleRowKeyColumnChange = (col: string) => {
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, {
+        row_key_column: col || undefined,
+      }),
+    });
+  };
+
   const selectedDS = useMemo(
     () => dataSources.find((d) => d.id === cfg.datasource_id),
     [dataSources, cfg.datasource_id],
   );
+
+  const renderAs = cfg.render_as ?? "card_group";
+
+  // Render the delegate block
+  const renderDelegateBlock = () => {
+    if (mappedItems.length === 0) return null;
+
+    // Noop handlers for create/delete (datasource-driven items aren't manually added/removed)
+    const noop = () => {};
+
+    switch (renderAs) {
+      case "card_group":
+        return (
+          <CardGroupBlock
+            section={virtualSection}
+            canEdit={canEdit}
+            onUpdate={onUpdate}
+            onDelete={() => {}}
+            onItemCreate={noop}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={noop}
+          />
+        );
+      case "feature_grid":
+        return (
+          <FeatureGridBlock
+            section={virtualSection}
+            canEdit={canEdit}
+            onUpdate={onUpdate}
+            onDelete={() => {}}
+            onItemCreate={noop}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={noop}
+          />
+        );
+      case "stat_cards":
+        return (
+          <StatCardsBlock
+            section={virtualSection}
+            canEdit={canEdit}
+            onUpdate={onUpdate}
+            onDelete={() => {}}
+            onItemCreate={noop}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={noop}
+          />
+        );
+      case "event_highlights":
+        return (
+          <EventHighlightsBlock
+            section={virtualSection}
+            canEdit={canEdit}
+            onUpdate={onUpdate}
+            onDelete={() => {}}
+            onItemCreate={noop}
+            onItemUpdate={handleItemUpdate}
+            onItemDelete={noop}
+          />
+        );
+      case "image_cards": {
+        const imageItems: ImageCardItem[] = mappedItems.map((item) => ({
+          heading: item.heading || undefined,
+          subheading: item.subheading || undefined,
+          image_url: item.image_url || undefined,
+          icon: item.icon || undefined,
+          link_url: item.link_url || undefined,
+        }));
+        return <ImageCardGrid items={imageItems} />;
+      }
+      default:
+        return null;
+    }
+  };
 
   return (
     <section className="derived-section-block">
@@ -254,18 +415,37 @@ export const DerivedSectionBlock = ({
           </label>
 
           <label className="derived-section-control">
-            <span>Columns</span>
+            <span>Render As</span>
             <select
-              value={columns}
-              onChange={(e) => handleColumnsChange(Number(e.target.value))}
+              value={renderAs}
+              onChange={(e) =>
+                handleRenderAsChange(e.target.value as RenderableSectionType)
+              }
             >
-              {[1, 2, 3, 4].map((n) => (
-                <option key={n} value={n}>
-                  {n}
+              {RENDERABLE_SECTION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {RENDERABLE_TYPE_LABELS[t]}
                 </option>
               ))}
             </select>
           </label>
+
+          {availableColumns.length > 0 && (
+            <label className="derived-section-control">
+              <span>Row Key</span>
+              <select
+                value={cfg.row_key_column ?? ""}
+                onChange={(e) => handleRowKeyColumnChange(e.target.value)}
+              >
+                <option value="">— index —</option>
+                {availableColumns.map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           {selectedDS && (
             <span className="derived-section-ds-info">
@@ -273,6 +453,15 @@ export const DerivedSectionBlock = ({
             </span>
           )}
         </div>
+      )}
+
+      {/* Column mapping UI */}
+      {canEdit && availableColumns.length > 0 && (
+        <ColumnMapper
+          availableColumns={availableColumns}
+          columnMap={cfg.column_map ?? {}}
+          onChange={handleColumnMapChange}
+        />
       )}
 
       <div className="derived-section-frame">
@@ -312,65 +501,32 @@ export const DerivedSectionBlock = ({
           </div>
         )}
 
-        {/* Rendered cards */}
-        {!authError && evaluatedItems.length > 0 && (
-          <div
-            className="derived-section-grid"
-            style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
-          >
-            {evaluatedItems.map((item, i) => (
-              <div key={i} className="derived-section-card">
-                {item.image_url && (
-                  <div className="derived-section-card-image">
-                    <img src={item.image_url} alt={item.heading ?? ""} />
-                  </div>
-                )}
-                <div className="derived-section-card-body">
-                  {item.icon && (
-                    <span className="derived-section-card-icon">
-                      {item.icon}
-                    </span>
-                  )}
-                  {item.heading && (
-                    <h3 className="derived-section-card-heading">
-                      {item.heading}
-                    </h3>
-                  )}
-                  {item.subheading && (
-                    <p className="derived-section-card-subheading">
-                      {item.subheading}
-                    </p>
-                  )}
-                </div>
-                {item.link_url && (
-                  <a
-                    href={item.link_url}
-                    className="derived-section-card-link"
-                    target={
-                      item.link_url.startsWith("http") ? "_blank" : undefined
-                    }
-                    rel={
-                      item.link_url.startsWith("http")
-                        ? "noopener noreferrer"
-                        : undefined
-                    }
-                  >
-                    View →
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Rendered via real block component */}
+        {!authError && renderDelegateBlock()}
 
         {/* Empty result (after evaluation) */}
         {!evaluating &&
           !authError &&
           !evalError &&
           cfg.datasource_id &&
-          evaluatedItems.length === 0 && (
+          rawRows.length === 0 && (
             <div className="derived-section-empty">
               <p>Data source returned no items.</p>
+            </div>
+          )}
+
+        {/* Has rows but no column map configured */}
+        {!evaluating &&
+          !authError &&
+          !evalError &&
+          rawRows.length > 0 &&
+          mappedItems.length === 0 &&
+          canEdit && (
+            <div className="derived-section-empty">
+              <p>
+                Configure the column mapping above to map datasource rows to
+                card fields.
+              </p>
             </div>
           )}
       </div>
