@@ -10,6 +10,7 @@ import {
   Volume1,
   Volume2,
   VolumeX,
+  MoreHorizontal,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -54,7 +55,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const [volume, setVolume] = useState(() => getSoundVolume());
   const [volumeOpen, setVolumeOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const volumeRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,6 +72,18 @@ export const Header: React.FC<HeaderProps> = ({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [volumeOpen]);
+
+  // Close "More" dropdown on outside click
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [moreOpen]);
 
   // Use Jotai atoms for auth state
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -231,57 +246,94 @@ export const Header: React.FC<HeaderProps> = ({
 
         <nav className={`nav ${menuOpen ? "open" : ""}`}>
           <div className="nav-section">
-            {routeAllowed("landing") && (
-              <Link
-                to="/"
-                className={isActive("/")}
-                onClick={() => setMenuOpen(false)}
-              >
-                Home
-              </Link>
-            )}
-            {routeAllowed("store") && (
-              <Link
-                to="/store"
-                className={isActive("/store")}
-                onClick={() => setMenuOpen(false)}
-              >
-                Store
-              </Link>
-            )}
-            {routeAllowed("forum") && (
-              <Link
-                to="/forum"
-                className={isActive("/forum")}
-                onClick={() => setMenuOpen(false)}
-              >
-                Forum
-              </Link>
-            )}
-            <Link
-              to="/pages"
-              className={isActive("/pages")}
-              onClick={() => setMenuOpen(false)}
-            >
-              Pages
-            </Link>
-            <Link
-              to="/datasources"
-              className={`header-new-link ${isActive("/datasources")}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              Data Sources
-              <span className="header-new-badge">New</span>
-            </Link>
-            {isAuthenticated && hasPermission("events.view") && (
-              <Link
-                to="/activity"
-                className={isActive("/activity")}
-                onClick={() => setMenuOpen(false)}
-              >
-                Activity
-              </Link>
-            )}
+            {(() => {
+              const MAX_VISIBLE = 3;
+              const allItems = [
+                routeAllowed("landing") && {
+                  to: "/",
+                  label: "Home",
+                },
+                routeAllowed("store") && {
+                  to: "/store",
+                  label: "Store",
+                },
+                routeAllowed("forum") && {
+                  to: "/forum",
+                  label: "Forum",
+                },
+                {
+                  to: "/pages",
+                  label: "Pages",
+                },
+                {
+                  to: "/datasources",
+                  label: "Data Sources",
+                  isNew: true,
+                },
+                isAuthenticated &&
+                  hasPermission("events.view") && {
+                    to: "/activity",
+                    label: "Activity",
+                  },
+              ].filter(
+                (
+                  item,
+                ): item is { to: string; label: string; isNew?: boolean } =>
+                  !!item,
+              );
+
+              const visibleItems = allItems.slice(0, MAX_VISIBLE);
+              const overflowItems = allItems.slice(MAX_VISIBLE);
+
+              return (
+                <>
+                  {visibleItems.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={`${item.isNew ? "header-new-link " : ""}${isActive(item.to)}`}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {item.label}
+                      {item.isNew && (
+                        <span className="header-new-badge">New</span>
+                      )}
+                    </Link>
+                  ))}
+                  {overflowItems.length > 0 && (
+                    <div className="header-more-wrap" ref={moreRef}>
+                      <button
+                        className="icon-btn icon-btn--sm header-more-btn"
+                        title="More"
+                        onClick={() => setMoreOpen((v) => !v)}
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
+                      {moreOpen && (
+                        <div className="header-more-dropdown">
+                          {overflowItems.map((item) => (
+                            <Link
+                              key={item.to}
+                              to={item.to}
+                              className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
+                              onClick={() => {
+                                setMoreOpen(false);
+                                setMenuOpen(false);
+                              }}
+                            >
+                              {item.label}
+                              {item.isNew && (
+                                <span className="header-new-badge">New</span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           <div className="user-section">

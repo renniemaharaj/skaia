@@ -272,6 +272,25 @@
     background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
   }
 
+  /* Flatten "More" dropdown into mobile nav */
+  .header-more-wrap {
+    display: contents;
+  }
+
+  .header-more-btn {
+    display: none;
+  }
+
+  .header-more-dropdown {
+    display: contents;
+  }
+
+  .header-more-item {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: inherit;
+  }
+
   .user-section {
     width: 100%;
     flex-direction: column;
@@ -505,6 +524,69 @@
     opacity: 0.75;
     transform: scale(1.08);
   }
+}
+
+/* ── "More" nav overflow dropdown ──────────────────────────────── */
+
+.header-more-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.header-more-btn {
+  color: var(--text-secondary);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.header-more-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.header-more-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-hover);
+  z-index: 200;
+}
+
+.header-more-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  margin: 4px 0;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.header-more-item:hover,
+.header-more-item.active {
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  color: var(--primary-color);
+}
+
+.header-more-item.active {
+  font-weight: 600;
+}
+
+/* Override default nav underline on more-dropdown items */
+.header-more-item::after {
+  display: none !important;
 }
 
 /* ── Mobile Menu Variant 2: Fullscreen overlay ───────────────────── */
