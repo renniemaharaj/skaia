@@ -1,12 +1,13 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X, ThumbsUp } from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 
 import ViewThread from "../../components/forum/ViewThread";
 import ViewThreadMeta from "../../components/forum/ViewThreadMeta";
 import ViewThreadComments from "../../components/forum/ViewThreadComments";
 import { currentThreadAtom, threadPermissionsAtom } from "../../atoms/forum";
+import { currentUserAtom } from "../../atoms/auth";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
@@ -19,6 +20,7 @@ const ViewThreadPage = () => {
   const navigate = useNavigate();
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
+  const currentUser = useAtomValue(currentUserAtom);
   const { canEdit, canDelete } = useAtomValue(threadPermissionsAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,48 @@ const ViewThreadPage = () => {
     }
   };
 
+  const handleLikeThread = async () => {
+    if (!threadId || !currentThread || !currentUser) return;
+
+    const wasLiked = currentThread.is_liked;
+    setCurrentThread((prev) =>
+      prev
+        ? {
+            ...prev,
+            is_liked: !wasLiked,
+            likes: wasLiked
+              ? Math.max(0, (prev.likes || 0) - 1)
+              : (prev.likes || 0) + 1,
+          }
+        : prev,
+    );
+
+    try {
+      if (wasLiked) {
+        await apiRequest(`/forum/threads/${threadId}/like`, {
+          method: "DELETE",
+        });
+      } else {
+        await apiRequest(`/forum/threads/${threadId}/like`, {
+          method: "POST",
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling thread like:", error);
+      setCurrentThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              is_liked: wasLiked,
+              likes: wasLiked
+                ? (prev.likes || 0) + 1
+                : Math.max(0, (prev.likes || 0) - 1),
+            }
+          : prev,
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="modal">
@@ -152,7 +196,21 @@ const ViewThreadPage = () => {
         >
           <h3 style={{ margin: 0 }}>{currentThread.title}</h3>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            {currentUser && (
+              <button
+                className={`thread-action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}
+                onClick={handleLikeThread}
+                title="Like"
+                type="button"
+              >
+                <ThumbsUp size={14} />
+                {currentThread?.likes ? (
+                  <span>{currentThread.likes}</span>
+                ) : null}
+              </button>
+            )}
+
             {/* Edit - derived from live user permissions atom */}
             {canEdit && (
               <button

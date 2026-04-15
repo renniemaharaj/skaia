@@ -1,109 +1,173 @@
-.view-thread-meta-card {
-  gap: 0.75rem;
-  position: sticky;
-  top: 1rem;
-  max-height: fit-content;
-  padding: 0.75rem;
-}
-.view-thread-meta-container {
-  padding: 0;
-}
+/* ──────────────────────────────────────────────
+ * ViewThreadMeta — file-style thread header
+ *
+ * Uses shared tokens: .card, .badge / .badge-secondary,
+ * .thread-action-btn (ThreadActions.css), semantic status vars.
+ * Only truly unique layout concerns live here.
+ * ────────────────────────────────────────────── */
 
-@media (max-width: 1400px) {
-  .view-thread-meta-container {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    /* gap: 0.5rem; */
-  }
-}
-
-.meta-row {
+/* Panel — extends .card via markup, only overrides needed here */
+.vtm-panel {
+  max-width: 1080px;
+  margin: 1rem auto 0;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  flex-direction: column;
+  gap: var(--section-gap);
 }
 
-.meta-tags {
-  align-items: flex-start !important;
-}
-
-.tag-list {
+/* Header layout */
+.vtm-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 1.25rem;
+  justify-content: space-between;
 }
 
-.tag {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  border-radius: 0.25rem;
-  background: rgba(0, 0, 0, 0.05);
+/* Icon shell */
+.vtm-icon {
+  min-width: 60px;
+  min-height: 60px;
+  border-radius: var(--card-radius);
+  background: var(--bg-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
 }
 
-.status-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-open {
-  background: rgba(0, 200, 0, 0.1);
-  color: green;
-}
-
-.status-closed {
-  background: rgba(200, 0, 0, 0.1);
-  color: red;
-}
-
-.status-archived {
-  background: rgba(100, 100, 100, 0.1);
-  color: gray;
-}
-.view-thread-meta-container {
+/* Info block */
+.vtm-info {
+  flex: 1 1 360px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.user-card {
+.vtm-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.vtm-title {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.2vw, 2.2rem);
+  line-height: 1.05;
+  color: var(--text-primary);
+}
+
+.vtm-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 90%;
+}
+
+/* Author / status row */
+.vtm-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.vtm-meta-row .vtm-group {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-.user-card-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
+.vtm-info-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
-.user-card-info {
+.vtm-author-link {
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.vtm-author-link:hover {
+  color: var(--primary-color);
+}
+
+.vtm-id {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Actions column */
+.vtm-actions {
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
 }
 
-.user-card-name {
+/* Status uses existing semantic vars + .badge sizing */
+.vtm-status {
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
-.user-card-name-link {
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 0;
+.vtm-status--open {
+  background: var(--success-bg);
+  color: var(--success-color);
 }
 
-.user-card-role {
-  font-size: 0.85rem;
-  opacity: 0.7;
+.vtm-status--closed {
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 
-.thread-meta-id {
-  font-size: 0.85rem;
-  opacity: 0.6;
+.vtm-status--archived {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* Metrics row — reuses .badge-secondary sizing pattern */
+.vtm-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.vtm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.vtm-chip svg {
+  flex-shrink: 0;
+}
+
+.vtm-chip--tags {
+  gap: 0.5rem;
+}
+
+@media (max-width: 900px) {
+  .vtm-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vtm-actions {
+    align-items: stretch;
+  }
 }

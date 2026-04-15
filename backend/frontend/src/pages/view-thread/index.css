@@ -16,10 +16,10 @@
   border-radius: 12px;
   padding: 32px;
   width: 100%;
-  max-width: 100%;
+  max-width: 1180px;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
-  margin: auto;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
@@ -27,13 +27,21 @@
   top: 0;
   margin: 0 auto;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  position: sticky;
+  flex-direction: column;
+  gap: 1.5rem;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
   box-sizing: border-box;
+}
+
+.view-thread-page > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.view-thread-page > *:last-child {
+  flex: none;
 }
 
 .view-thread-page > *:last-child {
