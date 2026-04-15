@@ -180,22 +180,16 @@ const ViewThreadPage = () => {
           handlePermissions={(): React.ReactElement => <></>}
           handleThreads={(): React.ReactElement => <></>}
         />
-        {/* Header */}
         <div
           style={{
             marginTop: "1rem",
             marginBottom: "2rem",
             padding: "1rem",
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: "flex-end",
             alignItems: "center",
-            // borderLeft: "3px solid var(--primary-color)",
-            // borderRight: "3px solid var(--primary-color)",
           }}
-          // className="empty-state"
         >
-          <h3 style={{ margin: 0 }}>{currentThread.title}</h3>
-
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             {currentUser && (
               <button
