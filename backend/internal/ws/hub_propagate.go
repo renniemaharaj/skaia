@@ -73,6 +73,16 @@ func (h *Hub) BroadcastPage(action string, data interface{}) {
 	h.Broadcast(&Message{Type: PageUpdate, Payload: payload})
 }
 
+// BroadcastPageExceptUser sends a CMS page change to every connected client except
+// the user who originated the update.
+func (h *Hub) BroadcastPageExceptUser(userID int64, action string, data interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.BroadcastExceptUser(userID, &Message{Type: PageUpdate, Payload: payload})
+}
+
 // BroadcastEvent sends a new audit event to every connected client.
 func (h *Hub) BroadcastEvent(data interface{}) {
 	payload, _ := json.Marshal(map[string]interface{}{

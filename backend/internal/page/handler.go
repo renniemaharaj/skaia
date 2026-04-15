@@ -268,7 +268,7 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			ResourceID: id,
 			IP:         ievents.ClientIP(r),
 			Fn: func() {
-				h.hub.BroadcastPage("page_updated", updated)
+				h.hub.BroadcastPageExceptUser(userID, "page_updated", updated)
 			},
 		})
 	} else {
@@ -280,7 +280,7 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			ResourceID: id,
 			IP:         ievents.ClientIP(r),
 			Fn: func() {
-				h.hub.BroadcastPage("page_updated", p)
+				h.hub.BroadcastPageExceptUser(userID, "page_updated", p)
 			},
 		})
 	}

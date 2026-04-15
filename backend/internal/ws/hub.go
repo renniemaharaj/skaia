@@ -277,6 +277,25 @@ func (h *Hub) Broadcast(msg *Message) {
 	}
 }
 
+// BroadcastExceptUser sends a message to every connected client except those
+// authenticated as userID. This is useful for update flows where the sender
+// already has the latest state and should not be reloaded by its own broadcast.
+func (h *Hub) BroadcastExceptUser(userID int64, msg *Message) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for client := range h.clients {
+		if client.UserID == userID {
+			continue
+		}
+		select {
+		case client.Send <- msg:
+		default:
+			// Buffer full — skip this client.
+		}
+	}
+}
+
 // SendTeleport enqueues a teleport request so the hub routes it to the target.
 func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	select {

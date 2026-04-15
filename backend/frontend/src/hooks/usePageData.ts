@@ -103,6 +103,9 @@ export function usePageData(): UsePageDataReturn {
           body: JSON.stringify(p),
         },
       );
+      // The backend no longer echoes page:update back to the sender, so we
+      // use the HTTP response as the authoritative update for local state.
+      if (updated) setPage(updated);
       return updated;
     },
     [],
