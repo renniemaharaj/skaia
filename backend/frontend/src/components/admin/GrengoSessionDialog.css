@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-dark-heavy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -28,7 +28,7 @@
 .grengo-session-dialog p {
   margin: 0 0 1rem;
   font-size: 0.85rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .grengo-session-dialog label {
@@ -53,8 +53,8 @@
 }
 
 .grengo-session-error {
-  background: rgba(220, 38, 38, 0.15);
-  color: var(--error-color, #e74c3c);
+  background: color-mix(in srgb, var(--error-color) 15%, transparent);
+  color: var(--error-color);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   margin-bottom: 0.75rem;
@@ -97,7 +97,7 @@
 
 .grengo-session-actions .btn-primary {
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border-color: var(--primary-color);
 }
 
@@ -110,7 +110,7 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay-dark-heavy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,25 +118,25 @@
 }
 
 .grengo-maintenance-card {
-  background: var(--bg-secondary, #1a1a2e);
-  border: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 3rem 2.5rem;
   text-align: center;
   max-width: 420px;
   width: 90%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px var(--overlay-dark);
 }
 
 .grengo-maintenance-card h2 {
   margin: 0 0 0.75rem;
   font-size: 1.5rem;
-  color: var(--text-primary, #fff);
+  color: var(--text-primary);
 }
 
 .grengo-maintenance-card p {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text-secondary, #999);
+  color: var(--text-secondary);
   line-height: 1.5;
 }

@@ -14,10 +14,10 @@
   justify-content: center;
   padding: 80px 24px;
   font-size: 16px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
 }
 .up-error {
-  color: var(--error-color, #dc3545);
+  color: var(--error-color);
   font-weight: 500;
 }
 
@@ -44,8 +44,8 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #ffff;
+  background: var(--overlay-dark-heavy);
+  color: white;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -54,7 +54,7 @@
   transition: background 0.15s;
 }
 .up-banner-edit-btn:hover {
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--overlay-dark-heavy);
 }
 
 /* ── Profile card ─────────────────────────────────────────────────────────── */
@@ -63,10 +63,10 @@
   z-index: 1;
   margin: 0 24px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--border-color);
   border-top: none;
   border-radius: 0 0 12px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 8px var(--border-color);
 }
 
 .up-suspended-banner {
@@ -89,7 +89,7 @@
   align-items: flex-start;
   gap: 20px;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .up-avatar-wrap {
@@ -114,7 +114,7 @@
   border-radius: 50%;
   border: 4px solid var(--bg-secondary);
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -131,16 +131,16 @@
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 2px;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
 }
 .up-username {
   font-size: 14px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   margin: 0 0 6px;
 }
 .up-email {
   font-size: 13px;
-  color: var(--text-tertiary, #999);
+  color: var(--text-tertiary);
   margin: 0 0 6px;
 }
 
@@ -171,7 +171,7 @@
   color: var(--primary-color);
 }
 .up-badge-banned {
-  background: rgba(0, 0, 0, 0.08);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
   color: var(--text-secondary);
 }
 
@@ -210,7 +210,7 @@
 
 .up-btn-primary {
   background: var(--primary-color);
-  color: #fff;
+  color: white;
 }
 .up-btn-secondary {
   background: var(--bg-tertiary);
@@ -228,13 +228,13 @@
 /* Bio & meta */
 .up-bio {
   padding: 14px 24px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color);
 }
 .up-bio p {
   margin: 0;
   font-size: 14px;
   line-height: 1.65;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
 }
 
 .up-meta {
@@ -245,21 +245,21 @@
 }
 .up-meta-item {
   font-size: 13px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 /* ── Admin management pane ────────────────────────────────────────────────── */
 .up-manage-panel {
   margin: 20px 24px 0;
-  background: var(--bg-secondary, #f9f9f9);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .up-manage-section {
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color);
 }
 .up-manage-section:last-child {
   border-bottom: none;
@@ -270,7 +270,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   margin: 0 0 14px;
 }
 
@@ -311,7 +311,7 @@
   position: relative;
 }
 .up-checkbox-item:hover {
-  background: var(--bg-tertiary, #f0f0f0);
+  background: var(--bg-tertiary);
 }
 .up-checkbox-checked {
   background: var(--mint-light);
@@ -331,13 +331,13 @@
 .up-checkbox-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   flex: 1 1 100%;
   min-width: 0;
 }
 .up-checkbox-desc {
   font-size: 11px;
-  color: var(--text-secondary, #999);
+  color: var(--text-secondary);
   max-width: 100%;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -354,7 +354,7 @@
   gap: 8px;
   font-size: 18px;
   font-weight: 700;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   margin: 0 0 14px;
 }
 
@@ -367,8 +367,8 @@
 .up-thread-card {
   display: block;
   padding: 16px 20px;
-  background: var(--bg-secondary, #f9f9f9);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
@@ -383,7 +383,7 @@
 .up-thread-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -391,7 +391,7 @@
 }
 .up-thread-excerpt {
   font-size: 13px;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   margin: 0 0 10px;
   line-height: 1.5;
 }
@@ -400,7 +400,7 @@
   align-items: center;
   gap: 14px;
   font-size: 12px;
-  color: var(--text-tertiary, #999);
+  color: var(--text-tertiary);
 }
 .up-thread-meta span {
   display: flex;
@@ -421,12 +421,12 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .up-empty-hint {
   font-size: 14px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   text-align: center;
   padding: 24px 0;
   margin: 0;
@@ -440,8 +440,8 @@
 .up-uploads-count {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary, #888);
-  background: var(--bg-tertiary, #f0f0f0);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
   padding: 2px 8px;
   border-radius: 10px;
   margin-left: 4px;
@@ -454,7 +454,7 @@
   justify-content: center;
   padding: 32px 0;
   font-size: 13px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .up-uploads-error {
@@ -464,7 +464,7 @@
   justify-content: center;
   padding: 24px 0;
   font-size: 13px;
-  color: var(--error-color, #dc3545);
+  color: var(--error-color);
   margin: 0;
 }
 
@@ -490,18 +490,18 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .up-storage-value {
   font-size: 12px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .up-storage-bar {
   width: 100%;
   height: 6px;
-  background: var(--bg-tertiary, #e0e0e0);
+  background: var(--bg-tertiary);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -513,22 +513,22 @@
 }
 
 .up-storage-ok {
-  background: var(--success-color, #27ae60);
+  background: var(--success-color);
 }
 
 .up-storage-warning {
-  background: #f39c12;
+  background: var(--warning-color);
 }
 
 .up-storage-danger {
-  background: var(--error-color, #e74c3c);
+  background: var(--error-color);
 }
 
 .up-storage-warning-text {
   display: block;
   margin-top: 4px;
   font-size: 11px;
-  color: #f39c12;
+  color: var(--warning-color);
   font-weight: 600;
 }
 
@@ -536,9 +536,9 @@
 .up-uploads-scroll {
   max-height: 480px;
   overflow-y: auto;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: var(--bg-secondary, #f9f9f9);
+  background: var(--bg-secondary);
   padding: 12px;
 }
 
@@ -549,7 +549,7 @@
   background: transparent;
 }
 .up-uploads-scroll::-webkit-scrollbar-thumb {
-  background: var(--border-color, #ccc);
+  background: var(--border-color);
   border-radius: 3px;
 }
 
@@ -561,8 +561,8 @@
 }
 
 .up-upload-card {
-  background: var(--bg-color, #fff);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   overflow: hidden;
   transition:
@@ -572,11 +572,11 @@
 }
 .up-upload-card:hover {
   border-color: var(--primary-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 .up-upload-selected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(91, 158, 142, 0.25);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 .up-upload-deleting {
   opacity: 0.4;
@@ -590,7 +590,7 @@
   aspect-ratio: 1;
   overflow: hidden;
   cursor: pointer;
-  background: var(--bg-tertiary, #f0f0f0);
+  background: var(--bg-tertiary);
 }
 .up-upload-thumb img,
 .up-upload-thumb video {
@@ -615,8 +615,8 @@
   padding: 2px 8px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: var(--overlay-dark-heavy);
+  color: white;
   border-radius: 6px;
   backdrop-filter: blur(4px);
   text-transform: capitalize;
@@ -632,14 +632,14 @@
 .up-upload-filename {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .up-upload-meta {
   font-size: 11px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 /* Action buttons — uses .thread-action-btn from ThreadActions.css */
@@ -657,7 +657,7 @@
 }
 .thread-action-btn.copy-btn:hover {
   color: var(--primary-color);
-  background-color: rgba(91, 158, 142, 0.1);
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 /* Files sub-heading */
@@ -666,7 +666,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   margin: 16px 0 8px;
 }
 
@@ -677,9 +677,9 @@
   gap: 4px;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: var(--bg-secondary, #f9f9f9);
+  background: var(--bg-secondary);
   padding: 8px;
 }
 
@@ -689,8 +689,8 @@
   gap: 10px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: var(--bg-color, #fff);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
   transition:
     border-color 0.12s,
     opacity 0.2s;
@@ -700,7 +700,7 @@
 }
 .up-upload-file-icon {
   flex-shrink: 0;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 .up-upload-file-name {
   flex: 1;
@@ -717,7 +717,7 @@
 }
 .up-upload-file-meta {
   font-size: 11px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -725,7 +725,7 @@
 .up-upload-lightbox {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay-dark-heavy);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -738,10 +738,10 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-color, #fff);
+  background: var(--bg-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 48px color-mix(in srgb, var(--text-primary) 30%, transparent);
   cursor: default;
 }
 .up-upload-lightbox-content img {
@@ -755,13 +755,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  border-top: 1px solid var(--border-color, #e0e0e0);
-  background: var(--bg-secondary, #f9f9f9);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 .up-upload-lightbox-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -788,7 +788,7 @@
 .up-dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -801,7 +801,7 @@
   width: 100%;
   max-width: 480px;
   max-height: min(600px, 90dvh);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--text-primary) 18%, transparent);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -811,7 +811,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color);
 }
 .up-dialog-header h3 {
   margin: 0;
@@ -826,14 +826,14 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-secondary, #666);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   padding: 4px;
   border-radius: 6px;
 }
 .up-icon-btn:hover {
-  background: var(--bg-tertiary, #eee);
+  background: var(--bg-tertiary);
 }
 
 .up-dialog-body {
@@ -858,7 +858,7 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid var(--border-color, #e0e0e0);
+  border-top: 1px solid var(--border-color);
 }
 
 /* Field */
@@ -872,7 +872,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 .up-field input,
 .up-field textarea {
@@ -893,7 +893,7 @@
 .up-field input:focus,
 .up-field textarea:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(91, 158, 142, 0.18);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
 }
 
 .up-img-preview {

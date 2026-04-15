@@ -33,8 +33,8 @@
   height: 16px;
   padding: 0 3px;
   border-radius: 999px;
-  background: var(--danger-color, #e53e3e);
-  color: #fff;
+  background: var(--danger-color);
+  color: white;
   font-size: 0.6rem;
   font-weight: 700;
   display: flex;
@@ -126,13 +126,13 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--danger-color, #e53e3e);
+  color: var(--danger-color);
   font-size: 0.73rem;
   cursor: pointer;
   transition: background 0.13s ease;
 }
 .notif-clear-all:hover {
-  background: color-mix(in srgb, var(--danger-color, #e53e3e) 10%, transparent);
+  background: color-mix(in srgb, var(--danger-color) 10%, transparent);
 }
 
 /* Infinite-scroll sentinel */
@@ -208,11 +208,11 @@
 }
 .notif-type-icon--suspended,
 .notif-type-icon--banned {
-  color: var(--danger-color, #e53e3e);
+  color: var(--danger-color);
 }
 .notif-type-icon--thread_liked,
 .notif-type-icon--comment_liked {
-  color: var(--accent-color, #e07b39);
+  color: var(--accent-color);
 }
 
 .notif-body {
@@ -258,7 +258,7 @@
 }
 .notif-delete-btn:hover {
   background: var(--bg-color);
-  color: var(--danger-color, #e53e3e);
+  color: var(--danger-color);
 }
 
 @media (max-width: 840px) {

@@ -157,8 +157,8 @@
   position: absolute;
   inset: 0;
   z-index: 10;
-  background: rgba(15, 23, 42, 0.88);
-  color: #fff;
+  background: var(--overlay-dark-heavy);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -173,10 +173,10 @@
   max-width: 520px;
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--bg-color) 12%, transparent);
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
-  background: rgba(15, 23, 42, 0.98);
+  background: var(--overlay-dark-heavy);
 }
 
 .derived-section-protected__content svg {
@@ -193,7 +193,7 @@
 
 .derived-section-protected__content p {
   margin: 0 0 0.75rem;
-  color: rgba(255, 255, 255, 0.78);
+  color: color-mix(in srgb, var(--bg-color) 78%, transparent);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -204,7 +204,7 @@
   justify-content: center;
   padding: 0.7rem 1rem;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border-radius: 999px;
   text-decoration: none;
   font-size: 0.9rem;

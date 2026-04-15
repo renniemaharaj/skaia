@@ -54,8 +54,8 @@
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(0, 0, 0, 0.4) 0%,
-    rgba(0, 0, 0, 0.6) 100%
+    var(--overlay-dark) 0%,
+    var(--overlay-dark-heavy) 100%
   );
   display: flex;
   align-items: flex-end;
@@ -69,7 +69,7 @@
   color: white;
   font-size: 1.5rem;
   margin: 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 2px 8px var(--overlay-dark-heavy);
 }
 
 /* ── Gallery Album System ─────────────────────────────────────────────── */
@@ -277,14 +277,14 @@
   left: 0;
   right: 0;
   padding: 24px 32px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+  background: linear-gradient(transparent, var(--overlay-dark-heavy));
 }
 
 .gallery-wide-overlay h3 {
   color: white;
   font-size: 1.4rem;
   margin: 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 8px var(--overlay-dark-heavy);
 }
 
 /* Card images (grid) */

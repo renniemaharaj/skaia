@@ -79,7 +79,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -503,8 +503,8 @@
   padding: 0.4rem 0.875rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  background: #22c55e;
-  color: #fff;
+  background: var(--success-color);
+  color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -528,7 +528,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -699,12 +699,12 @@
   font-size: 0.625rem;
   font-weight: 700;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border-radius: 9px;
 }
 
 .ds-editor__tab-badge--warn {
-  background: #f59e0b;
+  background: var(--warning-color);
 }
 
 /* Panel content area */
@@ -824,10 +824,10 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: color-mix(in srgb, #ef4444 8%, var(--bg-secondary));
-  border: 1px solid color-mix(in srgb, #ef4444 30%, var(--border-color));
+  background: color-mix(in srgb, var(--error-color) 8%, var(--bg-secondary));
+  border: 1px solid color-mix(in srgb, var(--error-color) 30%, var(--border-color));
   border-radius: 8px;
-  color: #ef4444;
+  color: var(--error-color);
   margin-bottom: 0.5rem;
 }
 
@@ -857,13 +857,13 @@
 }
 
 .ds-diagnostic--error {
-  background: color-mix(in srgb, #ef4444 8%, var(--bg-secondary));
-  border-left: 3px solid #ef4444;
+  background: color-mix(in srgb, var(--error-color) 8%, var(--bg-secondary));
+  border-left: 3px solid var(--error-color);
 }
 
 .ds-diagnostic--warn {
-  background: color-mix(in srgb, #f59e0b 8%, var(--bg-secondary));
-  border-left: 3px solid #f59e0b;
+  background: color-mix(in srgb, var(--warning-color) 8%, var(--bg-secondary));
+  border-left: 3px solid var(--warning-color);
 }
 
 .ds-diagnostic__location {
@@ -1014,7 +1014,7 @@
 .ds-preview__type-tab--active {
   color: var(--text-primary);
   background: var(--bg-color);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 .ds-preview__save-section-btn {
@@ -1034,7 +1034,7 @@
 
 .ds-preview__save-section-btn:hover {
   background: var(--primary-color);
-  color: #fff;
+  color: white;
 }
 
 .ds-preview__note {
@@ -1146,7 +1146,7 @@
   padding: 0.3rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
+  color: white;
   background: var(--primary-color);
   border: none;
   border-radius: 6px;
@@ -1288,7 +1288,7 @@
 }
 
 .ds-table tbody tr:hover {
-  background: var(--card-hover-bg, rgba(91, 158, 142, 0.04));
+  background: var(--card-hover-bg);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1330,18 +1330,18 @@
 }
 
 .ds-run-summary__status--success {
-  color: #16a34a;
-  background: color-mix(in srgb, #16a34a 12%, transparent);
+  color: var(--success-color);
+  background: color-mix(in srgb, var(--success-color) 12%, transparent);
 }
 
 .ds-run-summary__status--error {
-  color: #ef4444;
-  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 12%, transparent);
 }
 
 .ds-run-summary__status--timeout {
-  color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: var(--warning-color);
+  background: color-mix(in srgb, var(--warning-color) 12%, transparent);
 }
 
 .ds-run-summary__stats {
@@ -1411,7 +1411,7 @@
   text-align: center;
   padding: 1px 5px;
   border-radius: 3px;
-  color: #fff;
+  color: white;
   background: var(--primary-color);
   flex-shrink: 0;
 }
@@ -1435,15 +1435,15 @@
 }
 
 .ds-fetch-entry__status--ok {
-  color: #16a34a;
+  color: var(--success-color);
 }
 
 .ds-fetch-entry__status--warn {
-  color: #f59e0b;
+  color: var(--warning-color);
 }
 
 .ds-fetch-entry__status--error {
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 .ds-fetch-entry__duration {
@@ -1471,9 +1471,9 @@
 
 .ds-fetch-entry__error {
   padding: 0.375rem 0.625rem;
-  background: color-mix(in srgb, #ef4444 8%, var(--bg-secondary));
-  border-top: 1px solid color-mix(in srgb, #ef4444 20%, var(--border-color));
+  background: color-mix(in srgb, var(--error-color) 8%, var(--bg-secondary));
+  border-top: 1px solid color-mix(in srgb, var(--error-color) 20%, var(--border-color));
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 0.625rem;
-  color: #ef4444;
+  color: var(--error-color);
 }

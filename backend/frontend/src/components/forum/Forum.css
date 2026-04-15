@@ -68,7 +68,7 @@
 
 /* New Thread Card */
 .new-thread-card {
-  background-color: rgba(202, 255, 237, 0.05);
+  background-color: color-mix(in srgb, var(--skaia-green-primary) 5%, transparent);
   border: 2px dashed var(--skaia-green-primary);
   box-shadow: none;
   display: flex;
@@ -98,10 +98,10 @@
 
 .new-thread-card:hover {
   border-color: var(--skaia-green-primary);
-  background-color: rgba(202, 255, 237, 0.08);
+  background-color: color-mix(in srgb, var(--skaia-green-primary) 8%, transparent);
   box-shadow:
-    0 8px 24px rgba(202, 255, 237, 0.25),
-    inset 0 0 0 2px rgba(202, 255, 237, 0.1);
+    0 8px 24px color-mix(in srgb, var(--skaia-green-primary) 25%, transparent),
+    inset 0 0 0 2px color-mix(in srgb, var(--skaia-green-primary) 10%, transparent);
   transform: translateY(-6px);
 }
 
@@ -209,7 +209,7 @@
 
 .thread-item:hover {
   border-left-color: var(--primary-color);
-  background-color: rgba(91, 158, 142, 0.08);
+  background-color: color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
 .thread-title-wrapper {

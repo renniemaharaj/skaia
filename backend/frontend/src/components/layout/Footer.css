@@ -2,7 +2,7 @@
   background: linear-gradient(
     135deg,
     var(--bg-secondary) 0%,
-    rgba(91, 158, 142, 0.05) 100%
+    color-mix(in srgb, var(--primary-color) 5%, transparent) 100%
   );
   border-top: 1px solid var(--border-color);
   padding: 4rem 2rem 2rem;
@@ -20,7 +20,7 @@
   height: 200px;
   background: radial-gradient(
     circle,
-    rgba(202, 255, 237, 0.1) 0%,
+    color-mix(in srgb, var(--skaia-green-primary) 10%, transparent) 0%,
     transparent 70%
   );
   border-radius: 50%;
@@ -67,7 +67,7 @@
 .footer-section h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.3rem;
-  color: var(--accent-color);
+  color: var(--primary-color);
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -106,7 +106,7 @@
 }
 
 .footer-check-icon {
-  color: var(--primary-color, #5b9e8e);
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -115,7 +115,7 @@
   border: none;
   cursor: pointer;
   padding: 2px 4px;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   border-radius: 4px;
   transition:
     color 0.15s,
@@ -124,8 +124,8 @@
 }
 
 .footer-remove-item-btn:hover {
-  color: var(--color-danger, #e74c3c);
-  background: rgba(231, 76, 60, 0.1);
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--error-color) 10%, transparent);
 }
 
 .footer-add-item-btn {
@@ -183,7 +183,7 @@
 
 .social-links a.social-link:hover {
   transform: translateY(-4px) scale(1.1);
-  box-shadow: 0 8px 16px rgba(202, 255, 237, 0.2);
+  box-shadow: 0 8px 16px color-mix(in srgb, var(--skaia-green-primary) 20%, transparent);
 }
 
 /* ── Editable social link wrapper ── */
@@ -219,12 +219,12 @@
 }
 
 .social-link-action-btn:hover {
-  color: var(--accent-color);
+  color: var(--primary-color);
   background: var(--bg-secondary);
 }
 
 .social-link-action-btn.danger:hover {
-  color: #e74c3c;
+  color: var(--error-color);
 }
 
 /* ── Social link inline editor ── */
@@ -247,8 +247,8 @@
 
 .social-link-url-input:focus {
   outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(202, 255, 237, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--skaia-green-primary) 15%, transparent);
 }
 
 /* ── Add social link button ── */
@@ -272,8 +272,8 @@
 }
 
 .social-link-add-btn:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
   transform: scale(1.05);
 }
 

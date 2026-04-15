@@ -9,26 +9,26 @@
   padding: 2px 6px;
   border-radius: 4px;
   transition: all 0.2s ease;
-  font-family: "Courier New", monospace;
+  font-family: var(--font-mono);
   font-size: 0.9em;
 }
 
 .id-link--user .id-link-text {
-  color: #3b82f6;
+  color: var(--module-user);
 }
 
 .id-link--user .id-link-text:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #1d4ed8;
+  background-color: color-mix(in srgb, var(--module-user) 10%, transparent);
+  color: var(--module-user);
 }
 
 .id-link--thread .id-link-text {
-  color: #8b5cf6;
+  color: var(--module-store);
 }
 
 .id-link--thread .id-link-text:hover {
-  background-color: rgba(139, 92, 246, 0.1);
-  color: #6d28d9;
+  background-color: color-mix(in srgb, var(--module-store) 10%, transparent);
+  color: var(--module-store);
 }
 
 .id-link-copy {
@@ -41,18 +41,12 @@
   justify-content: center;
   border-radius: 3px;
   transition: all 0.2s ease;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .id-link-copy:hover {
-  background-color: rgba(0, 0, 0, 0.1);
-  color: #1f2937;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .id-link-copy:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #f3f4f6;
-  }
-}
+/* Dark mode support — handled by data-theme, no @media needed */

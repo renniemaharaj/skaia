@@ -27,7 +27,7 @@
 
 .cta-content p {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--bg-color) 90%, transparent);
   margin-bottom: 32px;
   animation: fadeInUp 0.8s ease-out 0.6s both;
 }
@@ -46,7 +46,7 @@
 }
 
 .cta .btn-primary:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: color-mix(in srgb, var(--bg-color) 90%, transparent);
   transform: translateY(-2px);
 }
 
@@ -57,7 +57,7 @@
 }
 
 .cta .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: color-mix(in srgb, var(--bg-color) 10%, transparent);
   border-color: white;
 }
 

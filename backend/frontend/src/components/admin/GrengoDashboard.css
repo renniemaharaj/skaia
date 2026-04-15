@@ -25,7 +25,7 @@
 
 .grengo-gate p {
   font-size: 0.85rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   margin-bottom: 1.25rem;
 }
 
@@ -48,7 +48,7 @@
 }
 
 .grengo-gate .error {
-  color: var(--error-color, #e74c3c);
+  color: var(--error-color);
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
 }
@@ -108,33 +108,33 @@
 }
 
 .badge-enabled {
-  background: #d4edda;
-  color: #155724;
+  background: var(--success-bg);
+  color: var(--success-color);
 }
 .badge-disabled {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--warning-bg);
+  color: var(--warning-color);
 }
 .badge-running {
-  background: #cce5ff;
-  color: #004085;
+  background: var(--info-bg);
+  color: var(--info-color);
 }
 .badge-stopped {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 .badge-armed {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 .badge-disarmed {
-  background: #d4edda;
-  color: #155724;
+  background: var(--success-bg);
+  color: var(--success-color);
 }
 
 .grengo-table .domains {
   font-size: 0.8rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .grengo-table .actions {
@@ -257,7 +257,7 @@
 
 .grengo-dashboard .btn-primary {
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border-color: var(--primary-color);
 }
 
@@ -266,24 +266,24 @@
 }
 
 .grengo-dashboard .btn-danger {
-  color: var(--error-color, #e74c3c);
-  border-color: var(--error-color, #e74c3c);
+  color: var(--error-color);
+  border-color: var(--error-color);
 }
 
 .grengo-dashboard .btn-danger:hover {
-  background: var(--error-color, #e74c3c);
-  color: #fff;
+  background: var(--error-color);
+  color: white;
 }
 
 .grengo-dashboard .btn-warning {
-  color: #856404;
-  border-color: #ffc107;
-  background: rgba(255, 193, 7, 0.1);
+  color: var(--warning-color);
+  border-color: var(--warning-color);
+  background: color-mix(in srgb, var(--warning-color) 10%, transparent);
 }
 
 .grengo-dashboard .btn-warning:hover {
-  background: #ffc107;
-  color: #212529;
+  background: var(--warning-color);
+  color: var(--text-primary);
 }
 
 /* ── Empty state ────────────────────────────────────────────────────────── */
@@ -291,7 +291,7 @@
 .grengo-empty {
   text-align: center;
   padding: 3rem 1rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -328,7 +328,7 @@
 
 .grengo-env-unsaved {
   font-size: 0.75rem;
-  color: var(--warning-color, #f39c12);
+  color: var(--warning-color);
   font-weight: 600;
 }
 
@@ -378,7 +378,7 @@
 
 .stat-count {
   font-size: 0.75rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .stat-card-grid {
@@ -397,7 +397,7 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -423,15 +423,15 @@
 }
 
 .bar-ok {
-  background: #27ae60;
+  background: var(--success-color);
 }
 
 .bar-warning {
-  background: #f39c12;
+  background: var(--warning-color);
 }
 
 .bar-danger {
-  background: var(--error-color, #e74c3c);
+  background: var(--error-color);
 }
 
 /* ── Lock button ────────────────────────────────────────────────────────── */
@@ -477,23 +477,23 @@
 
 .storage-total-value {
   font-size: 0.85rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .storage-total-pct {
   display: block;
   margin-top: 0.35rem;
   font-size: 0.8rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
 }
 
 .storage-warning {
-  color: #f39c12;
+  color: var(--warning-color);
   font-weight: 600;
 }
 
 .storage-critical {
-  color: var(--error-color, #e74c3c);
+  color: var(--error-color);
   font-weight: 700;
 }
 
@@ -527,7 +527,7 @@
 }
 
 .storage-site-used {
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -577,7 +577,7 @@
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -649,7 +649,7 @@
 
 .site-storage-text {
   font-size: 0.78rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -663,7 +663,7 @@
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   font-size: 0.72rem;
-  color: var(--text-secondary, #888);
+  color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }

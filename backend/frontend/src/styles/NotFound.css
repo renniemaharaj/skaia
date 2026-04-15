@@ -4,7 +4,7 @@
   justify-content: center;
   min-height: calc(100vh - 200px);
   padding: 2rem;
-  background: var(--bg-primary);
+  background: var(--bg-color);
 }
 
 .not-found-content {
@@ -16,7 +16,7 @@
   display: flex;
   justify-content: center;
   margin-bottom: 2rem;
-  color: var(--accent-color);
+  color: var(--primary-color);
   opacity: 0.8;
 }
 
@@ -24,7 +24,7 @@
   font-size: 5rem;
   margin: 0;
   font-weight: bold;
-  color: var(--accent-color);
+  color: var(--primary-color);
   line-height: 1;
 }
 

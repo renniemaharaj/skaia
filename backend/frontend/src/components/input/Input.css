@@ -13,8 +13,8 @@
 .composer-wrapper--focused {
   border-color: var(--primary-color);
   box-shadow:
-    0 0 0 3px rgba(91, 158, 142, 0.1),
-    0 2px 8px rgba(0, 0, 0, 0.06);
+    0 0 0 3px color-mix(in srgb, var(--primary-color) 10%, transparent),
+    0 2px 8px color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 /* Compact variant (global chat sidebar) */
@@ -81,7 +81,7 @@
   border: none;
   border-radius: 10px;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   cursor: pointer;
   font-size: 1rem;
   transition:

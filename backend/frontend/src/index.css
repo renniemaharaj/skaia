@@ -45,6 +45,28 @@
   --success-bg: rgba(25, 135, 84, 0.1);
   --warning-color: #e67e00;
   --warning-bg: rgba(230, 126, 0, 0.1);
+  --info-color: #0066cc;
+  --info-bg: rgba(0, 102, 204, 0.1);
+  --success-border: rgba(25, 135, 84, 0.25);
+
+  /* Focus & overlay tokens */
+  --focus-ring: 0 0 0 3px rgba(91, 158, 142, 0.15);
+  --overlay-dark: rgba(0, 0, 0, 0.5);
+  --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+
+  /* Typography */
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* Module accent colors (activity badges, etc.) */
+  --module-user: #3b82f6;
+  --module-forum: #22c55e;
+  --module-store: #a855f7;
+  --module-config: #f97316;
+  --module-page: #ec4899;
+  --module-inbox: #0ea5e9;
+  --module-upload: #eab308;
+  --module-system: #ef4444;
 
   /* Compatibility with existing code */
   --mint-primary: #5b9e8e;
@@ -102,6 +124,28 @@ html[data-theme="dark"] {
   --success-bg: rgba(52, 201, 122, 0.12);
   --warning-color: #ffaa44;
   --warning-bg: rgba(255, 170, 68, 0.12);
+  --info-color: #60a5fa;
+  --info-bg: rgba(96, 165, 250, 0.12);
+  --success-border: rgba(52, 201, 122, 0.25);
+
+  /* Focus & overlay tokens */
+  --focus-ring: 0 0 0 3px rgba(123, 179, 160, 0.2);
+  --overlay-dark: rgba(0, 0, 0, 0.6);
+  --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+
+  /* Typography */
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
+  /* Module accent colors (activity badges, etc.) */
+  --module-user: #60a5fa;
+  --module-forum: #34d399;
+  --module-store: #c084fc;
+  --module-config: #fb923c;
+  --module-page: #f472b6;
+  --module-inbox: #38bdf8;
+  --module-upload: #facc15;
+  --module-system: #f87171;
 
   /* Compatibility */
   --mint-primary: #7bb3a0;
@@ -245,8 +289,6 @@ div#root {
   background-color: var(--primary-dark);
   transform: translateY(-2px);
   box-shadow: var(--shadow);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
 }
 
 .btn-secondary {
@@ -257,10 +299,6 @@ div#root {
 
 .btn-secondary:hover {
   background-color: var(--bg-tertiary);
-}
-
-.btn-secondary:hover {
-  background-color: var(--dark-tertiary);
 }
 
 .btn:disabled {
@@ -439,7 +477,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(91, 158, 142, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 /* Badge */

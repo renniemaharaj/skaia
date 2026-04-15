@@ -8,22 +8,53 @@ The frontend uses a centralized CSS design system defined in `backend/frontend/s
 
 ### Color Tokens
 
-| Token              | Light        | Dark        | Usage                   |
-| ------------------ | ------------ | ----------- | ----------------------- |
-| `--primary-color`  | `#5b9e8e`    | `#7bb3a0`   | Buttons, links, accents |
-| `--primary-light`  | `#7bb3a0`    | `#9dd4bf`   | Hover states            |
-| `--primary-dark`   | `#3d7366`    | `#5b9e8e`   | Active states           |
-| `--bg-color`       | `#ffffff`    | `#0f0f0f`   | Page background         |
-| `--bg-secondary`   | `#f9f9f9`    | `#1a1a1a`   | Card backgrounds        |
-| `--bg-tertiary`    | `#f0f0f0`    | `#252525`   | Section backgrounds     |
-| `--text-primary`   | `#1a1a1a`    | `#ffffff`   | Headings, body text     |
-| `--text-secondary` | `#666666`    | `#b0b0b0`   | Descriptions, meta      |
-| `--border-color`   | `#e0e0e0`    | `#333333`   | Borders, dividers       |
-| `--shadow`         | light shadow | dark shadow | Card resting state      |
-| `--shadow-hover`   | elevated     | elevated    | Card hover state        |
-| `--error-color`    | `#dc3545`    | `#ff6b7a`   | Error text, borders     |
-| `--success-color`  | `#198754`    | `#34c97a`   | Success indicators      |
-| `--warning-color`  | `#e67e00`    | `#ffaa44`   | Warning indicators      |
+| Token                   | Light        | Dark         | Usage                    |
+| ----------------------- | ------------ | ------------ | ------------------------ |
+| `--primary-color`       | `#5b9e8e`    | `#7bb3a0`    | Buttons, links, accents  |
+| `--primary-light`       | `#7bb3a0`    | `#9dd4bf`    | Hover states             |
+| `--primary-dark`        | `#3d7366`    | `#5b9e8e`    | Active states            |
+| `--skaia-green-primary` | `#caffed`    | `#caffed`    | Brand highlight color    |
+| `--bg-color`            | `#ffffff`    | `#0f0f0f`    | Page background          |
+| `--bg-secondary`        | `#f9f9f9`    | `#1a1a1a`    | Card backgrounds         |
+| `--bg-tertiary`         | `#f0f0f0`    | `#252525`    | Section backgrounds      |
+| `--text-primary`        | `#1a1a1a`    | `#ffffff`    | Headings, body text      |
+| `--text-secondary`      | `#666666`    | `#b0b0b0`    | Descriptions, meta       |
+| `--border-color`        | `#e0e0e0`    | `#333333`    | Borders, dividers        |
+| `--shadow`              | light shadow | dark shadow  | Card resting state       |
+| `--shadow-hover`        | elevated     | elevated     | Card hover state         |
+| `--error-color`         | `#dc3545`    | `#ff6b7a`    | Error text, borders      |
+| `--error-bg`            | rgba error   | rgba error   | Error background tint    |
+| `--error-border`        | rgba error   | rgba error   | Error border tint        |
+| `--success-color`       | `#198754`    | `#34c97a`    | Success indicators       |
+| `--success-bg`          | rgba success | rgba success | Success background tint  |
+| `--success-border`      | rgba success | rgba success | Success border tint      |
+| `--warning-color`       | `#e67e00`    | `#ffaa44`    | Warning indicators       |
+| `--warning-bg`          | rgba warning | rgba warning | Warning background tint  |
+| `--info-color`          | `#0066cc`    | `#60a5fa`    | Informational indicators |
+| `--info-bg`             | rgba info    | rgba info    | Info background tint     |
+
+### Focus, Overlay & Utility Tokens
+
+| Token                  | Light                               | Dark                            | Usage                         |
+| ---------------------- | ----------------------------------- | ------------------------------- | ----------------------------- |
+| `--focus-ring`         | `0 0 0 3px rgba(primary, 0.15)`     | `0 0 0 3px rgba(primary, 0.25)` | Focus outline for inputs/btns |
+| `--overlay-dark`       | `rgba(0,0,0,0.5)`                   | `rgba(0,0,0,0.6)`               | Modal/dialog overlays         |
+| `--overlay-dark-heavy` | `rgba(15,23,42,0.88)`               | `rgba(15,23,42,0.92)`           | Full-screen overlays          |
+| `--scrollbar-thumb`    | `rgba(0,0,0,0.15)`                  | `rgba(255,255,255,0.15)`        | Custom scrollbar thumb        |
+| `--font-mono`          | JetBrains Mono, Fira Code, Consolas | same                            | All monospace text            |
+
+### Module Accent Colors (Activity Badges)
+
+| Token             | Color     | Usage                    |
+| ----------------- | --------- | ------------------------ |
+| `--module-user`   | `#3b82f6` | User-related activity    |
+| `--module-forum`  | `#22c55e` | Forum activity           |
+| `--module-store`  | `#a855f7` | Store activity           |
+| `--module-config` | `#f97316` | Config/settings activity |
+| `--module-page`   | `#ec4899` | Page activity            |
+| `--module-inbox`  | `#0ea5e9` | Inbox/message activity   |
+| `--module-upload` | `#eab308` | Upload activity          |
+| `--module-system` | `#ef4444` | System/error activity    |
 
 ### Card Tokens
 
@@ -130,6 +161,128 @@ Component CSS must NOT redeclare:
 - Use `var(--border-color)` not `rgba(0,0,0,0.07)`
 - Use `var(--shadow)` not `0 2px 8px rgba(0,0,0,0.08)`
 - The `data-theme` attribute on `<html>` toggles light/dark
+
+---
+
+## Strict Enforcement Rules
+
+These rules are NON-NEGOTIABLE. Every CSS file must comply. Violations are blockers.
+
+### Rule 1: ZERO Hardcoded Colors
+
+No hex values (`#xxx`), no `rgb()`, no `rgba()` in component CSS. Every color must reference a design token via `var(--token)`.
+
+**Allowed**:
+
+```css
+color: var(--text-primary);
+background: var(--bg-secondary);
+border: 1px solid var(--border-color);
+color: white; /* Only for text on solid color buttons/badges */
+color: inherit; /* Inheriting parent color */
+color: transparent; /* Transparent keyword */
+color: currentColor; /* Inheriting current text color */
+```
+
+**Forbidden**:
+
+```css
+color: #666; /* Use var(--text-secondary) */
+background: rgba(0, 0, 0, 0.1); /* Use color-mix() with token */
+border: 1px solid #e0e0e0; /* Use var(--border-color) */
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Use var(--shadow) */
+```
+
+### Rule 2: ZERO var() Fallbacks
+
+Never provide fallback values in `var()` calls. If the token is undefined, the build is broken — fix the token, not the consumer.
+
+**Allowed**: `color: var(--text-primary);`
+**Forbidden**: `color: var(--text-primary, #1a1a1a);`
+
+### Rule 3: color-mix() for Opacity
+
+When you need a token color at reduced opacity, use `color-mix()`. Never use `rgba()` with raw color values.
+
+**Pattern**: `color-mix(in srgb, var(--token) XX%, transparent)`
+
+```css
+/* 10% opacity primary for subtle backgrounds */
+background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+
+/* 15% opacity error for error backgrounds */
+background: color-mix(in srgb, var(--error-color) 15%, transparent);
+
+/* Mixing with another token */
+background: color-mix(in srgb, var(--primary-color) 50%, var(--bg-color));
+```
+
+### Rule 4: data-theme for Dark Mode
+
+Dark mode is controlled by `html[data-theme="dark"]` in `index.css`. Component CSS must NEVER use `@media (prefers-color-scheme: dark)`. All dark mode adaptation happens automatically through token switching.
+
+**Forbidden**:
+
+```css
+@media (prefers-color-scheme: dark) {
+  .my-component {
+    background: #1a1a1a;
+  }
+}
+```
+
+### Rule 5: Shared Shadows Only
+
+Use `var(--shadow)`, `var(--shadow-hover)`, or `var(--focus-ring)` for all shadows. If a unique shadow is needed, define a new token in `:root` — never inline a raw `box-shadow` value in component CSS.
+
+### Rule 6: var(--font-mono) for Monospace
+
+All monospace text must use `font-family: var(--font-mono)`. Never inline `"JetBrains Mono", monospace` or `"Consolas", monospace`.
+
+### Rule 7: var(--card-radius) for Border Radius
+
+Cards and modals must use `border-radius: var(--card-radius)` (16px). Only use raw `border-radius` values for pills (`50%`, `999px`), small elements (`4px`, `6px`, `8px` for badges/tags/inputs), or when explicitly smaller radii are needed for components within cards.
+
+### Rule 8: !important Usage
+
+`!important` is ONLY allowed for:
+
+1. **Third-party library overrides** (TipTap editor, rich text widgets) — component CSS files like `Editor.css`, `RichTextBlock.css`
+2. **Page builder layout alignment** — `page-builder-core.css` alignment utilities that override inline styles
+3. **Responsive grid breakpoints** — forcing `grid-template-columns: 1fr` at mobile
+4. **Intentional reset overrides** — e.g. `.stat-card` stripping `.card` chrome
+
+Never use `!important` for: normal styling, hover states, color overrides, or competing specificity. If you need higher specificity, restructure selectors.
+
+### Rule 9: Semantic Color Mapping
+
+| Concept       | Token                       | NOT                            |
+| ------------- | --------------------------- | ------------------------------ |
+| Error/danger  | `var(--error-color)`        | `#ef4444`, `#dc2626`, `red`    |
+| Warning/amber | `var(--warning-color)`      | `#f59e0b`, `#f39c12`, `orange` |
+| Success/green | `var(--success-color)`      | `#22c55e`, `#16a34a`           |
+| Info/blue     | `var(--info-color)`         | `#0066cc`, `#3b82f6`           |
+| Focus ring    | `var(--focus-ring)`         | `0 0 0 3px rgba(...)`          |
+| Modal overlay | `var(--overlay-dark)`       | `rgba(0,0,0,0.4)`              |
+| Heavy overlay | `var(--overlay-dark-heavy)` | `rgba(0,0,0,0.7)`              |
+
+---
+
+## New Component CSS Checklist
+
+Before merging any new `.css` file:
+
+- [ ] No hardcoded hex values (except `white`, `transparent`, `currentColor`, `inherit`)
+- [ ] No `var()` fallbacks — every `var(--token)` stands alone
+- [ ] No `rgba()` / `rgb()` — use `color-mix()` with tokens for opacity
+- [ ] No `@media (prefers-color-scheme)` — dark mode is via `data-theme` attribute
+- [ ] No inline `box-shadow` values — use `var(--shadow)` / `var(--shadow-hover)` / `var(--focus-ring)`
+- [ ] No inline `font-family: "JetBrains Mono"` — use `var(--font-mono)`
+- [ ] No `!important` unless overriding third-party library or page builder inline styles
+- [ ] Uses `.card` base class for any card-like container
+- [ ] Uses `.section` base class for any section container
+- [ ] Uses `.icon-btn` + modifiers for icon-only buttons
+- [ ] Border radius uses `var(--card-radius)` for cards/modals
 
 ### 4. Responsive behavior
 
@@ -332,7 +485,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 - Fixed heights for grid cards to prevent layout shift (e.g., `height: 240px`)
 - Overflow: `overflow: hidden` on fixed-height cards
 - Preview panels: `max-height` + `overflow-y: auto` for scrollable content inside cards
-- Code preview snippets: `font-family: "JetBrains Mono", monospace; font-size: 0.6875rem`
+- Code preview snippets: `font-family: var(--font-mono); font-size: 0.6875rem`
 - Meta rows at bottom: `margin-top: auto; border-top: 1px solid var(--border-color)`
 
 ---
@@ -381,7 +534,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 - Body text: `0.8125rem`
 - Small meta: `0.75rem` / `0.6875rem`
 - Labels: `0.6875rem / 600 / uppercase / letter-spacing: 0.04em`
-- Mono code: `"JetBrains Mono", "Fira Code", "Consolas", monospace`
+- Mono code: `var(--font-mono)` → "JetBrains Mono", "Fira Code", "Consolas", monospace
 
 ---
 
@@ -416,7 +569,7 @@ Tables follow the Superset data grid pattern:
 
 - **Container**: `max-height: 480px`, `overflow: auto`, `border-radius: 10px`, `border: 1px solid var(--border-color)`
 - **Header**: `position: sticky; top: 0`, `--bg-tertiary`, uppercase labels at `0.6875rem / 600`
-- **Cells**: mono font (`JetBrains Mono`), `0.75rem`, `max-width: 280px` with `text-overflow: ellipsis`
+- **Cells**: mono font (`var(--font-mono)`), `0.75rem`, `max-width: 280px` with `text-overflow: ellipsis`
 - **Zebra**: even rows use `--bg-tertiary`
 - **Hover**: `--card-hover-bg`
 - **Columns**: Auto-detected from all keys across all `EvalItem` objects

@@ -39,8 +39,8 @@
   height: 100%;
   background: linear-gradient(
     135deg,
-    rgba(202, 255, 237, 0.15) 0%,
-    rgba(91, 158, 142, 0.1) 100%
+    color-mix(in srgb, var(--skaia-green-primary) 15%, transparent) 0%,
+    color-mix(in srgb, var(--primary-color) 10%, transparent) 100%
   );
   display: flex;
   align-items: center;
@@ -235,7 +235,7 @@
   font-size: 4rem;
   font-weight: 900;
   margin-bottom: 16px;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 4px 20px var(--overlay-dark-heavy);
   letter-spacing: 3px;
   animation: fadeInDown 0.8s ease-out;
 }
@@ -243,8 +243,8 @@
 .banner-content p {
   font-size: 1.4rem;
   margin-bottom: 40px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
-  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 10px var(--overlay-dark-heavy);
+  color: color-mix(in srgb, var(--bg-color) 95%, transparent);
   animation: fadeInDown 0.8s ease-out 0.2s both;
 }
 

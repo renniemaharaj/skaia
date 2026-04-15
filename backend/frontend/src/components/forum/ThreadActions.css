@@ -12,7 +12,7 @@
 }
 
 .thread-action-btn:hover {
-  background-color: rgba(91, 158, 142, 0.1);
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .thread-action-btn.edit-btn:hover {
@@ -20,6 +20,6 @@
 }
 
 .thread-action-btn.delete-btn:hover {
-  color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--error-color);
+  background-color: color-mix(in srgb, var(--error-color) 10%, transparent);
 }

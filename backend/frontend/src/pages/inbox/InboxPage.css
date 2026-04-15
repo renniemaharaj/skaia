@@ -55,7 +55,7 @@
   border: none;
   border-radius: 8px;
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   cursor: pointer;
   flex-shrink: 0;
   transition: opacity 0.15s ease;
@@ -88,7 +88,7 @@
 
 .inbox-search-input-wrapper:focus-within {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(91, 158, 142, 0.1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .inbox-search-icon {
@@ -181,7 +181,7 @@
 }
 
 .inbox-search-result-row:hover {
-  background: rgba(91, 158, 142, 0.08);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
 /* Dim existing conversations when search is active */
@@ -354,7 +354,7 @@
   gap: 6px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(91, 158, 142, 0.08);
+  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
   color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1;
@@ -652,7 +652,7 @@
   padding: 6px;
   min-width: 190px;
   z-index: 100;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--text-primary) 12%, transparent);
 }
 
 .inbox-chat-menu button {

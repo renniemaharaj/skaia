@@ -1,6 +1,6 @@
 .user-link {
   display: inline-block;
-  color: var(--primary-color, #0066cc);
+  color: var(--primary-color);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -9,9 +9,9 @@
 }
 
 .user-link:hover {
-  color: var(--primary-hover, #0052a3);
+  color: var(--primary-dark);
   text-decoration: underline;
-  background-color: rgba(0, 102, 204, 0.05);
+  background-color: color-mix(in srgb, var(--primary-color) 5%, transparent);
 }
 
 .user-link:active {
@@ -19,29 +19,13 @@
 }
 
 .user-link--subtle {
-  color: var(--text-primary, #1a1a1a);
+  color: var(--text-primary);
   font-weight: 400;
 }
 
 .user-link--subtle:hover {
-  color: var(--primary-color, #0066cc);
-  background-color: rgba(0, 102, 204, 0.05);
+  color: var(--primary-color);
+  background-color: color-mix(in srgb, var(--primary-color) 5%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  .user-link {
-    color: var(--primary-light, #4d9fff);
-  }
-
-  .user-link:hover {
-    color: var(--primary-lighter, #99ccff);
-  }
-
-  .user-link--subtle {
-    color: var(--text-primary, #e0e0e0);
-  }
-
-  .user-link--subtle:hover {
-    color: var(--primary-light, #4d9fff);
-  }
-}
+/* Dark mode handled by data-theme attribute on <html>, no @media needed */

@@ -349,7 +349,7 @@
 
 .pp-chat-input:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.14);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--info-color) 14%, transparent);
 }
 
 .pp-chat-input::placeholder {
@@ -405,7 +405,7 @@
 .comment-composer-send,
 .pp-chat-send {
   background: var(--primary-color);
-  color: #fff;
+  color: white;
   border: none;
   cursor: pointer;
   display: flex;
@@ -470,7 +470,7 @@
     justify-content: flex-start;
     padding-bottom: 0;
     overflow: hidden;
-    background: rgba(var(--bg-color-rgb, 255, 255, 255), 0.92);
+    background: color-mix(in srgb, var(--bg-color) 92%, transparent);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     z-index: 2000;
@@ -481,7 +481,7 @@
     top: 0;
     z-index: 3;
     padding: 10px 10px 8px;
-    background: rgba(var(--bg-secondary-rgb, 249, 249, 249), 0.95);
+    background: color-mix(in srgb, var(--bg-secondary) 95%, transparent);
     border-bottom: 1px solid var(--border-color);
   }
 

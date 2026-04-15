@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(91, 158, 142, 0.1);
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
   border-radius: 12px;
   color: var(--primary-color);
   transition: all 0.3s ease;

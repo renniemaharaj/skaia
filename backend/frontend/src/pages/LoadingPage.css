@@ -3,7 +3,11 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  background: linear-gradient(
+    135deg,
+    var(--bg-color) 0%,
+    var(--bg-tertiary) 100%
+  );
 }
 
 .loading-page-content {
@@ -20,11 +24,11 @@
 .spinner-circle {
   width: 60px;
   height: 60px;
-  border: 4px solid rgba(0, 212, 255, 0.1);
-  border-top: 4px solid #00d4ff;
+  border: 4px solid color-mix(in srgb, var(--primary-color) 15%, transparent);
+  border-top: 4px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
 @keyframes spin {
@@ -35,13 +39,13 @@
 
 .loading-title {
   font-size: 1.5rem;
-  color: #ffffff;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
 .loading-subtitle {
   font-size: 0.95rem;
-  color: #c0c0c0;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
