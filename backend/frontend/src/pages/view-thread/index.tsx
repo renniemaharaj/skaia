@@ -14,7 +14,6 @@ import { apiRequest } from "../../utils/api";
 import "./index.css";
 import "../../components/forum/IconButton.css";
 import "./../../components/store/EmptyState.css";
-import UserProfile from "../users/UserProfile";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();
@@ -174,16 +173,8 @@ const ViewThreadPage = () => {
         }}
       >
         {/* <Hero height="350px" /> */}
-        <UserProfile
-          userIdOverride={String(currentThread.user_id)}
-          hideUploads
-          handlePermissions={(): React.ReactElement => <></>}
-          handleThreads={(): React.ReactElement => <></>}
-        />
         <div
           style={{
-            marginTop: "1rem",
-            marginBottom: "2rem",
             padding: "1rem",
             display: "flex",
             justifyContent: "flex-end",
