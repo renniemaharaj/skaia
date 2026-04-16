@@ -23,6 +23,24 @@ const sortSections = (secs: LandingSection[]) =>
   [...secs].sort((a, b) => a.display_order - b.display_order);
 
 /**
+ * JSON.stringify with sorted keys so that key-order differences introduced by
+ * PostgreSQL JSONB normalisation don't cause false negatives.
+ */
+function stableStringify(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return Object.keys(value)
+        .sort()
+        .reduce<Record<string, unknown>>((acc, key) => {
+          acc[key] = (value as Record<string, unknown>)[key];
+          return acc;
+        }, {});
+    }
+    return value;
+  });
+}
+
+/**
  * Preserve object references for sections whose content hasn't changed.
  * React skips re-rendering memoised children when their props keep the same
  * reference, so returning the *old* object for unchanged sections means only
@@ -37,7 +55,7 @@ function mergeSections(
   let changed = current.length !== incoming.length;
   const merged = incoming.map((inc) => {
     const existing = currentMap.get(inc.id);
-    if (existing && JSON.stringify(existing) === JSON.stringify(inc)) {
+    if (existing && stableStringify(existing) === stableStringify(inc)) {
       return existing; // same data → keep old reference
     }
     changed = true;
@@ -209,6 +227,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   useEffect(() => {
+    // Our own save just echoed back via setPage — local sections are already
+    // authoritative so skip the merge entirely.
+    if (ownSavePendingRef.current) {
+      ownSavePendingRef.current = false;
+      return;
+    }
     // Don't overwrite sections while there are unsaved pending changes —
     // a live websocket event from another user would otherwise clobber
     // the editor's in-progress work.
@@ -283,6 +307,10 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const changeCountRef = useRef(0);
   const lastChangeTimeRef = useRef(0);
+  // When true, the next section-sync useEffect run was triggered by our own
+  // save echoing back via setPage — skip it because local state is already
+  // up to date.
+  const ownSavePendingRef = useRef(false);
 
   const savePageContent = useCallback(
     async (updatedSections: LandingSection[]) => {
@@ -290,6 +318,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         await ensurePage(updatedSections);
         return;
       }
+      ownSavePendingRef.current = true;
       const saved = await updatePage({
         ...pageRef.current,
         content: JSON.stringify(updatedSections),

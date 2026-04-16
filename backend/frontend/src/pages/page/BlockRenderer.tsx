@@ -16,7 +16,7 @@ import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
-import React, { memo, useCallback, useState } from "react";
+import React, { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   getSectionLayout,
   getSectionMargins,
@@ -76,6 +76,9 @@ const BLOCK_MAP: Record<
 interface SectionBlockProps {
   section: LandingSection;
   canEdit: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onMove: (sectionId: number, direction: "up" | "down") => void;
   onUpdate: (s: LandingSection) => void;
   onDelete: (id: number) => void;
   onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
@@ -86,6 +89,9 @@ interface SectionBlockProps {
 const SectionBlock = memo(function SectionBlock({
   section,
   canEdit,
+  isFirst,
+  isLast,
+  onMove,
   onUpdate,
   onDelete,
   onItemCreate,
@@ -112,26 +118,41 @@ const SectionBlock = memo(function SectionBlock({
     ...(bgColor ? { backgroundColor: bgColor } : {}),
   };
 
+  // Memoise the context value so SectionMoveButtons consumers don't re-render
+  // unless the section's position actually changed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const moveCtx = useMemo(
+    () => ({
+      onMoveUp: () => onMove(section.id, "up"),
+      onMoveDown: () => onMove(section.id, "down"),
+      canMoveUp: !isFirst,
+      canMoveDown: !isLast,
+    }),
+    [section.id, isFirst, isLast, onMove],
+  );
+
   return (
-    <div
-      className={`pb-section-layout pb-section-layout-${layout}`}
-      style={sectionStyle}
-      data-animation={animation !== "none" ? animation : undefined}
-    >
-      <Block
-        section={section}
-        canEdit={canEdit}
-        onUpdate={onUpdate}
-        onDelete={onDelete}
-        onItemCreate={onItemCreate}
-        onItemUpdate={onItemUpdate}
-        onItemDelete={onItemDelete}
-      />
-    </div>
+    <SectionMoveContext.Provider value={moveCtx}>
+      <div
+        className={`pb-section-layout pb-section-layout-${layout}`}
+        style={sectionStyle}
+        data-animation={animation !== "none" ? animation : undefined}
+      >
+        <Block
+          section={section}
+          canEdit={canEdit}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onItemCreate={onItemCreate}
+          onItemUpdate={onItemUpdate}
+          onItemDelete={onItemDelete}
+        />
+      </div>
+    </SectionMoveContext.Provider>
   );
 });
 
-export const BlockRenderer = ({
+export const BlockRenderer = memo(function BlockRenderer({
   sections,
   canEdit,
   onUpdateSection,
@@ -141,7 +162,7 @@ export const BlockRenderer = ({
   onUpdateItem,
   onDeleteItem,
   onMoveSection,
-}: BlockRendererProps) => {
+}: BlockRendererProps) {
   const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
 
   const addSection = (type: SectionType, insertIndex: number) => {
@@ -160,14 +181,21 @@ export const BlockRenderer = ({
     (a, b) => a.display_order - b.display_order,
   );
 
+  // Stable move handler — uses refs so the callback identity never changes.
+  const sectionsRef = useRef(orderedSections);
+  sectionsRef.current = orderedSections;
+  const onMoveSectionRef = useRef(onMoveSection);
+  onMoveSectionRef.current = onMoveSection;
+
   const handleMove = useCallback(
     (sectionId: number, direction: "up" | "down") => {
-      const idx = orderedSections.findIndex((s) => s.id === sectionId);
+      const secs = sectionsRef.current;
+      const idx = secs.findIndex((s) => s.id === sectionId);
       const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (neighborIdx < 0 || neighborIdx >= orderedSections.length) return;
-      onMoveSection(sectionId, orderedSections[neighborIdx].id);
+      if (neighborIdx < 0 || neighborIdx >= secs.length) return;
+      onMoveSectionRef.current(sectionId, secs[neighborIdx].id);
     },
-    [orderedSections, onMoveSection],
+    [],
   );
 
   const renderAddSectionTrigger = (insertIndex: number) => (
@@ -208,18 +236,13 @@ export const BlockRenderer = ({
         const isLast = i === orderedSections.length - 1;
 
         return (
-          <SectionMoveContext.Provider
-            key={section.id}
-            value={{
-              onMoveUp: () => handleMove(section.id, "up"),
-              onMoveDown: () => handleMove(section.id, "down"),
-              canMoveUp: !isFirst,
-              canMoveDown: !isLast,
-            }}
-          >
+          <React.Fragment key={section.id}>
             <SectionBlock
               section={section}
               canEdit={canEdit}
+              isFirst={isFirst}
+              isLast={isLast}
+              onMove={handleMove}
               onUpdate={onUpdateSection}
               onDelete={onDeleteSection}
               onItemCreate={onCreateItem}
@@ -227,9 +250,9 @@ export const BlockRenderer = ({
               onItemDelete={onDeleteItem}
             />
             {canEdit && renderAddSectionTrigger(i + 1)}
-          </SectionMoveContext.Provider>
+          </React.Fragment>
         );
       })}
     </>
   );
-};
+});
