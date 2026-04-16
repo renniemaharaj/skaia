@@ -1,0 +1,138 @@
+# Custom Pages — Multiplayer Fine-Grained Reactivity
+
+## Overview
+
+When multiple users are editing the same custom page simultaneously, changes
+must be applied at **section granularity**: only the section that actually
+changed should re-render. This eliminates visual flicker and preserves
+in-progress editing state for components the user has open.
+
+The system supports two directions of change flow:
+
+1. **Outgoing (own edits)** — the editing user's changes are saved to the
+   server and the HTTP response echoes the full page content back. The
+   section-sync must recognise that only the edited section changed and
+   preserve references for all others.
+
+2. **Incoming (other users' edits)** — a WebSocket `page_updated` broadcast
+   arrives with the full page. If the local user is currently editing, the
+   update is held until editing ends. When applied, only the changed section(s)
+   from the other user should re-render.
+
+Both directions use the same `mergeSections` diff to unify behaviour.
+
+---
+
+## Architecture
+
+### Section Reference Preservation (`mergeSections`)
+
+The core mechanism is a section-level diff that returns old object references
+for sections whose data hasn't changed:
+
+```
+mergeSections(current: LandingSection[], incoming: LandingSection[])
+  → LandingSection[]  (preserves old refs for unchanged sections)
+```
+
+Each incoming section is matched by `id` against the current array. If the
+section data is identical (via `stableStringify`), the **old object reference**
+is returned. React's `memo()` on `SectionBlock` then skips re-rendering.
+
+### JSONB Key-Order Normalisation (`stableStringify`)
+
+PostgreSQL JSONB sorts object keys alphabetically on storage. The frontend's
+`JSON.stringify` preserves JavaScript insertion order. A naïve stringify
+comparison always fails because key order differs.
+
+`stableStringify` is a `JSON.stringify` replacer that recursively sorts object
+keys before serializing, producing identical output regardless of source key
+order. This is essential because sections round-trip through JSONB between
+save and re-fetch.
+
+### Optional Field Normalisation
+
+The `items` field on `LandingSection` is typed as `items?: LandingItem[]`.
+JSONB always returns `[]` for empty arrays, but locally-created sections may
+have `items: undefined`. The comparison must normalise both to `[]`:
+
+```typescript
+stableStringify({ ...section, items: section.items ?? [] });
+```
+
+Without this, every section without items would appear "changed" on every
+server response.
+
+---
+
+## Edit Guard (Incoming Change Hold)
+
+When a user enters edit mode on any section component (slider, rich text,
+code editor, etc.), the `enterEdit` / `leaveEdit` callbacks increment
+`editingCount`. While editing:
+
+- **WebSocket `page_updated` events** are intercepted in `usePageData`. Instead
+  of calling `refresh(slug)`, a `pendingIncoming` flag is set.
+- **Section-sync useEffect** bails out if `editingCountRef.current > 0`.
+- **Save pipeline (BBR adaptive)** holds the debounce timer until all editors
+  are released, then flushes after an 800 ms pause.
+
+When the last editor is released (`editingCount → 0`):
+
+1. The `suppressLiveRefresh` param to `usePageData` becomes `false`.
+2. If `pendingIncoming` is true, `refresh(slug)` fires and fetches the latest
+   page from the server.
+3. The section-sync useEffect runs `mergeSections` against the fresh server
+   data, applying only the sections that actually differ.
+
+The `SaveStatusBar` shows "Incoming changes held while editing…" while changes
+are deferred.
+
+---
+
+## Memoisation Chain
+
+For section-level re-renders to actually be skipped, the entire prop chain
+must have stable references:
+
+1. **`mergeSections`** — preserves section object references for unchanged data.
+2. **Wrapper callbacks (`updateSectionWrapper`, etc.)** — defined with
+   `useCallback` and read current state from refs (`sectionsRef`,
+   `isPageFallbackRef`) so they never change identity.
+3. **`BlockRenderer`** — wrapped in `React.memo`. Receives stable sections
+   array + stable callbacks.
+4. **`SectionBlock`** — wrapped in `React.memo`. Receives individual section
+   reference + stable callbacks. Hosts `SectionMoveContext.Provider` internally
+   with `useMemo` so move-button context doesn't invalidate siblings.
+5. **`handleMove`** in `BlockRenderer` — uses a ref for current sections and
+   an empty dependency array so identity never changes.
+
+If any link in this chain creates a new reference on every render, `memo()`
+is defeated and all sections re-render.
+
+---
+
+## Invariants
+
+- **No `ownSavePendingRef` skip.** All server responses — own saves AND
+  incoming WS refreshes — go through `mergeSections`. This ensures the local
+  sections state is always JSONB-normalised, so subsequent comparisons are
+  between like-for-like objects.
+- **Section-sync guards:** The useEffect always bails out if
+  `pendingSectionsRef.current !== null` (unsaved pending changes) or
+  `editingCountRef.current > 0` (active editor open).
+- **Single diff for all paths.** There is no separate "own save" path vs
+  "incoming update" path. `mergeSections` + `stableStringify` + items
+  normalisation is the universal reconciliation.
+
+---
+
+## Key Files
+
+| File                                | Role                                              |
+| ----------------------------------- | ------------------------------------------------- |
+| `pages/page/PageBuilder.tsx`        | `mergeSections`, `stableStringify`, section-sync  |
+| `pages/page/BlockRenderer.tsx`      | `memo(SectionBlock)`, `memo(BlockRenderer)`       |
+| `hooks/usePageData.ts`              | Edit guard hold, `suppressLiveRefresh`, `refresh` |
+| `pages/page/SaveStatusBar.tsx`      | "Incoming changes held" indicator                 |
+| `pages/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit`          |

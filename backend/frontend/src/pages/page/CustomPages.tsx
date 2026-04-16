@@ -10,7 +10,6 @@ import {
   FileText,
   Crown,
   Users,
-  UserCog2Icon,
   ExternalLink,
   Search,
   LayoutGrid,
@@ -27,6 +26,7 @@ import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
 import type { LandingSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
+import UserAvatar from "../../components/user/UserAvatar";
 import "./CustomPages.css";
 
 const parsePageSections = (content: string) => {
@@ -130,11 +130,12 @@ export default function CustomPages() {
   const UserChip = ({ user }: { user: PageUser }) => (
     <span className="cp-user-chip">
       <span className="cp-user-chip__avatar">
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt={user.display_name || user.username} />
-        ) : (
-          <UserCog2Icon size={12} />
-        )}
+        <UserAvatar
+          src={user.avatar_url || undefined}
+          alt={user.display_name || user.username}
+          size={12}
+          initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
+        />
       </span>
       <span className="cp-user-chip__name">
         {user.display_name || user.username}

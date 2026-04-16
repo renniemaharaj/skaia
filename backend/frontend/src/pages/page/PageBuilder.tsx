@@ -4,12 +4,12 @@ import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
-import type { LandingSection, LandingItem } from "./types";
+import type { LandingSection, LandingItem, SectionEditor } from "./types";
 import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
-import { isAuthenticatedAtom } from "../../atoms/auth";
+import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import { LandingSkeleton } from "./LandingSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
@@ -55,7 +55,11 @@ function mergeSections(
   let changed = current.length !== incoming.length;
   const merged = incoming.map((inc) => {
     const existing = currentMap.get(inc.id);
-    if (existing && stableStringify(existing) === stableStringify(inc)) {
+    if (
+      existing &&
+      stableStringify({ ...existing, items: existing.items ?? [] }) ===
+        stableStringify({ ...inc, items: inc.items ?? [] })
+    ) {
       return existing; // same data → keep old reference
     }
     changed = true;
@@ -113,6 +117,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const showOwnershipBtn = showToolbar && page?.id && slug;
 
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const currentUser = useAtomValue(currentUserAtom);
+
+  /** Build a SectionEditor stamp from the current user. */
+  const currentEditorStamp = currentUser
+    ? (): SectionEditor => ({
+        user_id: currentUser.id,
+        username: currentUser.username,
+        display_name: currentUser.display_name,
+        avatar_url: currentUser.avatar_url || undefined,
+        edited_at: new Date().toISOString(),
+      })
+    : undefined;
 
   // Landing page selector state
   const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
@@ -227,12 +243,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   useEffect(() => {
-    // Our own save just echoed back via setPage — local sections are already
-    // authoritative so skip the merge entirely.
-    if (ownSavePendingRef.current) {
-      ownSavePendingRef.current = false;
-      return;
-    }
     // Don't overwrite sections while there are unsaved pending changes —
     // a live websocket event from another user would otherwise clobber
     // the editor's in-progress work.
@@ -307,10 +317,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const changeCountRef = useRef(0);
   const lastChangeTimeRef = useRef(0);
-  // When true, the next section-sync useEffect run was triggered by our own
-  // save echoing back via setPage — skip it because local state is already
-  // up to date.
-  const ownSavePendingRef = useRef(false);
 
   const savePageContent = useCallback(
     async (updatedSections: LandingSection[]) => {
@@ -318,7 +324,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         await ensurePage(updatedSections);
         return;
       }
-      ownSavePendingRef.current = true;
       const saved = await updatePage({
         ...pageRef.current,
         content: JSON.stringify(updatedSections),
@@ -432,14 +437,19 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     };
   }, []);
 
+  const editorStampRef = useRef(currentEditorStamp);
+  editorStampRef.current = currentEditorStamp;
+
   const updateSectionWrapper = useCallback(
     (s: LandingSection) => {
       if (isPageFallbackRef.current) {
         updateSection(s);
         return;
       }
+      const stamp = editorStampRef.current?.();
+      const stamped = stamp ? { ...s, last_edited_by: stamp } : s;
       const updated = sectionsRef.current.map((sec) =>
-        sec.id === s.id ? s : sec,
+        sec.id === stamped.id ? stamped : sec,
       );
       const ordered = sortSections(updated);
       setSections(ordered);
@@ -527,10 +537,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         updateItem(item);
         return;
       }
+      const stamp = editorStampRef.current?.();
       const updated = sectionsRef.current.map((section) => {
         if (!section.items) return section;
+        const hasItem = section.items.some((it) => it.id === item.id);
+        if (!hasItem) return section;
         return {
           ...section,
+          ...(stamp ? { last_edited_by: stamp } : {}),
           items: section.items.map((it) => (it.id === item.id ? item : it)),
         };
       });

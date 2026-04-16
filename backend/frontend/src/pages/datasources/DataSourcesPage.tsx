@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
+import UserAvatar from "../../components/user/UserAvatar";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { DataSource, DataSourceCreator } from "../page/types";
 import { toast } from "sonner";
@@ -79,14 +80,13 @@ export default function DataSourcesPage() {
     return (
       <span className="ds-creator-chip">
         <span className="ds-creator-chip__avatar">
-          {creator.avatar_url ? (
-            <img
-              src={creator.avatar_url}
-              alt={creator.display_name || creator.username}
-            />
-          ) : (
-            <UserCircle2 size={14} />
-          )}
+          <UserAvatar
+            src={creator.avatar_url || undefined}
+            alt={creator.display_name || creator.username}
+            size={14}
+            initials={(creator.display_name ||
+              creator.username)?.[0]?.toUpperCase()}
+          />
         </span>
         <span className="ds-creator-chip__name">
           {creator.display_name || creator.username}

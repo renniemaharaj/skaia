@@ -185,6 +185,47 @@
   flex-wrap: wrap;
 }
 
+/* ── Last edited by badge ─────────────────────────────────────────────── */
+
+.pb-last-edited-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 2px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  text-decoration: none;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.pb-last-edited-badge:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+}
+
+.pb-last-edited-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pb-last-edited-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-last-edited-time {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
 /* ── Layout wrapper for all sections ──────────────────────────────────── */
 
 .pb-section-layout {

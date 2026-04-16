@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  UserCog2Icon,
   Plus,
   InboxIcon,
   Search,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Picker from "@emoji-mart/react";
+import UserAvatar from "../../components/user/UserAvatar";
 import data from "@emoji-mart/data";
 import {
   inboxConversationsAtom,
@@ -796,11 +796,12 @@ function UserSearchResult({
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt={user.display_name || user.username} />
-        ) : (
-          <UserCog2Icon size={18} />
-        )}
+        <UserAvatar
+          src={user.avatar_url || undefined}
+          alt={user.display_name || user.username}
+          size={18}
+          initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
+        />
       </span>
       <span className="inbox-conv-info">
         <span className="inbox-conv-name">
@@ -833,14 +834,13 @@ function ConversationRow({
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
-        {other?.avatar_url ? (
-          <img
-            src={other.avatar_url}
-            alt={other.display_name || other.username}
-          />
-        ) : (
-          <UserCog2Icon size={18} />
-        )}
+        <UserAvatar
+          src={other?.avatar_url || undefined}
+          alt={other?.display_name || other?.username}
+          size={18}
+          initials={(other?.display_name ||
+            other?.username)?.[0]?.toUpperCase()}
+        />
       </span>
       <span className="inbox-conv-info">
         <span className="inbox-conv-name">
@@ -909,11 +909,14 @@ function InboxChatHeader({
             className="inbox-chat-user-link"
           >
             <span className="inbox-chat-avatar">
-              {activeConv.other_user.avatar_url ? (
-                <img src={activeConv.other_user.avatar_url} alt="" />
-              ) : (
-                <UserCog2Icon size={18} />
-              )}
+              <UserAvatar
+                src={activeConv.other_user.avatar_url || undefined}
+                alt={
+                  activeConv.other_user.display_name ||
+                  activeConv.other_user.username
+                }
+                size={18}
+              />
             </span>
             <span className="inbox-chat-username">
               {activeConv.other_user.display_name ||
@@ -977,11 +980,12 @@ function MessageBubble({
     <div className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}>
       {!isMe && (
         <span className="inbox-msg-avatar">
-          {m.sender_avatar ? (
-            <img src={m.sender_avatar} alt={m.sender_name} />
-          ) : (
-            <UserCog2Icon size={16} />
-          )}
+          <UserAvatar
+            src={m.sender_avatar || undefined}
+            alt={m.sender_name}
+            size={16}
+            initials={m.sender_name?.[0]?.toUpperCase()}
+          />
         </span>
       )}
       <div className="inbox-msg-body">

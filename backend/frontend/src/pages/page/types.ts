@@ -12,6 +12,14 @@ export interface LandingItem {
   config: string;
 }
 
+export interface SectionEditor {
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string;
+  edited_at?: string;
+}
+
 export interface LandingSection {
   id: number;
   display_order: number;
@@ -20,6 +28,7 @@ export interface LandingSection {
   subheading: string;
   config: string;
   items?: LandingItem[];
+  last_edited_by?: SectionEditor;
 }
 
 export interface Branding {

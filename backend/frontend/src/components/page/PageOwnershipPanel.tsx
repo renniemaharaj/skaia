@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useAtomValue } from "jotai";
-import { Crown, UserPlus, X, UserCog2Icon, ArrowRightLeft } from "lucide-react";
+import { Crown, UserPlus, X, ArrowRightLeft } from "lucide-react";
 import { toast } from "sonner";
 import { hasPermissionAtom, currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
+import UserAvatar from "../user/UserAvatar";
 import type { User } from "../../atoms/auth";
 import "./PageOwnershipPanel.css";
 
@@ -109,14 +110,13 @@ export default function PageOwnershipPanel({
         {owner ? (
           <div className="page-ownership__user">
             <span className="page-ownership__avatar">
-              {owner.avatar_url ? (
-                <img
-                  src={owner.avatar_url}
-                  alt={owner.display_name || owner.username}
-                />
-              ) : (
-                <UserCog2Icon size={16} />
-              )}
+              <UserAvatar
+                src={owner.avatar_url || undefined}
+                alt={owner.display_name || owner.username}
+                size={16}
+                initials={(owner.display_name ||
+                  owner.username)?.[0]?.toUpperCase()}
+              />
             </span>
             <span className="page-ownership__name">
               {owner.display_name || owner.username}
@@ -185,14 +185,13 @@ export default function PageOwnershipPanel({
             {editors.map((editor) => (
               <div key={editor.id} className="page-ownership__user">
                 <span className="page-ownership__avatar">
-                  {editor.avatar_url ? (
-                    <img
-                      src={editor.avatar_url}
-                      alt={editor.display_name || editor.username}
-                    />
-                  ) : (
-                    <UserCog2Icon size={16} />
-                  )}
+                  <UserAvatar
+                    src={editor.avatar_url || undefined}
+                    alt={editor.display_name || editor.username}
+                    size={16}
+                    initials={(editor.display_name ||
+                      editor.username)?.[0]?.toUpperCase()}
+                  />
                 </span>
                 <span className="page-ownership__name">
                   {editor.display_name || editor.username}

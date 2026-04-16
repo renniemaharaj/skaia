@@ -123,7 +123,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       <div className="up-container up-error">{error ?? "User not found"}</div>
     );
 
-  const displayAvatar = user.avatar_url || user.photo_url || null;
+  const displayAvatar = user.avatar_url || null;
   const displayBanner = user.banner_url || null;
 
   const permissionPanel = (

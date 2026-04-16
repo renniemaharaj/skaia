@@ -60,14 +60,43 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const [pendingIncoming, setPendingIncoming] = useState(false);
   const currentSlugRef = useRef<string | null>(null);
   const suppressRef = useRef(suppressLiveRefresh);
+  const pendingDataRef = useRef<any>(null);
+
+  /**
+   * Merge an incoming WS page payload into the current page state.
+   * Preserves per-user computed fields (is_liked, can_delete) that the
+   * broadcast doesn't carry, while applying content / metadata changes
+   * so the section-sync useEffect in PageBuilder can run mergeSections
+   * without an HTTP round-trip or loading-skeleton flash.
+   */
+  const applyIncomingData = useCallback((data: any) => {
+    setPage((prev) => {
+      if (!prev || !data) return prev;
+      return {
+        ...prev,
+        ...data,
+        // Always preserve per-user computed fields
+        is_liked: prev.is_liked,
+        can_delete: prev.can_delete,
+      };
+    });
+  }, []);
 
   useEffect(() => {
     suppressRef.current = suppressLiveRefresh;
     // If suppression was just lifted and there's a pending update, apply it now.
     if (!suppressLiveRefresh && pendingIncoming) {
       setPendingIncoming(false);
-      const slug = currentSlugRef.current;
-      if (slug) void refresh(slug);
+      const pending = pendingDataRef.current;
+      pendingDataRef.current = null;
+      if (pending) {
+        // Apply stored WS data directly — no HTTP round trip, no flicker.
+        applyIncomingData(pending);
+      } else {
+        // Fallback: no stored data (shouldn't normally happen).
+        const slug = currentSlugRef.current;
+        if (slug) void refresh(slug);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppressLiveRefresh]);
@@ -140,13 +169,21 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       ).detail;
       const slug = currentSlugRef.current;
       if (!slug) return;
+
       if (
-        (action === "page_updated" &&
-          (data?.slug === slug || data?.id === page?.id)) ||
-        (action === "page_deleted" && data?.id === page?.id)
+        action === "page_updated" &&
+        (data?.slug === slug || data?.id === page?.id)
       ) {
         if (suppressRef.current) {
-          // Hold the incoming update — apply when editing is finished.
+          // Hold the incoming update — store the data and apply when editing ends.
+          pendingDataRef.current = data;
+          setPendingIncoming(true);
+        } else {
+          // Apply WS data directly — no HTTP round trip, no loading flash.
+          applyIncomingData(data);
+        }
+      } else if (action === "page_deleted" && data?.id === page?.id) {
+        if (suppressRef.current) {
           setPendingIncoming(true);
         } else {
           refresh(slug);
@@ -155,7 +192,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     };
     window.addEventListener("page:live:event", handler);
     return () => window.removeEventListener("page:live:event", handler);
-  }, [page?.id, refresh]);
+  }, [page?.id, refresh, applyIncomingData]);
 
   return {
     page,

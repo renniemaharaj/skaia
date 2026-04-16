@@ -18,6 +18,9 @@ import {
   Maximize2,
   Check,
 } from "lucide-react";
+import type { SectionEditor } from "./types";
+import { Link } from "react-router-dom";
+import UserAvatar from "../../components/user/UserAvatar";
 import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { debounce } from "lodash";
 import { usePageBuilderContext } from "./PageBuilderContext";
@@ -31,6 +34,7 @@ export interface SectionMoveContextValue {
   onMoveDown?: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  lastEditedBy?: SectionEditor;
 }
 
 export const SectionMoveContext = createContext<SectionMoveContextValue>({
@@ -446,6 +450,46 @@ export const IconPicker = ({
   );
 };
 
+/** Format an ISO timestamp as a relative time string. */
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const secs = Math.floor(diff / 1000);
+  if (secs < 5) return "just now";
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+/** Small avatar + name chip showing who last edited this section. */
+const LastEditedByBadge = ({ editor }: { editor: SectionEditor }) => (
+  <Link
+    to={`/u/${editor.username}`}
+    className="pb-last-edited-badge"
+    title={`Last edited by ${editor.display_name || editor.username}${editor.edited_at ? ` · ${new Date(editor.edited_at).toLocaleString()}` : ""}`}
+    onClick={(e) => e.stopPropagation()}
+  >
+    <UserAvatar
+      src={editor.avatar_url || undefined}
+      alt={editor.display_name || editor.username}
+      size={18}
+      initials={(editor.display_name || editor.username)?.[0]?.toUpperCase()}
+      className="pb-last-edited-avatar"
+    />
+    <span className="pb-last-edited-name">
+      {editor.display_name || editor.username}
+    </span>
+    {editor.edited_at && (
+      <span className="pb-last-edited-time">
+        {formatRelativeTime(editor.edited_at)}
+      </span>
+    )}
+  </Link>
+);
+
 /** Toolbar for a section: delete, collapsed info, optional extra actions. */
 export const SectionToolbar = ({
   onDelete,
@@ -471,42 +515,49 @@ export const SectionToolbar = ({
   bgColor?: string;
   onBgColorChange?: (c: string) => void;
   extra?: React.ReactNode;
-}) => (
-  <div className="pb-section-toolbar">
-    <span className="pb-section-toolbar-label">{label}</span>
-    <div className="pb-section-toolbar-actions">
-      <SectionMoveButtons />
-      {layout && onLayoutChange ? (
-        <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
-      ) : null}
-      {margins && onMarginsChange ? (
-        <SectionSpacingControls margins={margins} onChange={onMarginsChange} />
-      ) : null}
-      {animation !== undefined && onAnimationChange ? (
-        <SectionAnimationControl
-          animation={animation}
-          onChange={onAnimationChange}
-        />
-      ) : null}
-      {bgColor !== undefined && onBgColorChange ? (
-        <ColorPickerButton
-          value={bgColor}
-          onChange={onBgColorChange}
-          title="Section color"
-        />
-      ) : null}
-      {extra}
-      <button
-        className="pb-section-toolbar-btn danger"
-        onClick={onDelete}
-        title="Remove section"
-        type="button"
-      >
-        <Trash2 size={14} />
-      </button>
+}) => {
+  const { lastEditedBy } = useContext(SectionMoveContext);
+  return (
+    <div className="pb-section-toolbar">
+      <span className="pb-section-toolbar-label">{label}</span>
+      {lastEditedBy && <LastEditedByBadge editor={lastEditedBy} />}
+      <div className="pb-section-toolbar-actions">
+        <SectionMoveButtons />
+        {layout && onLayoutChange ? (
+          <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
+        ) : null}
+        {margins && onMarginsChange ? (
+          <SectionSpacingControls
+            margins={margins}
+            onChange={onMarginsChange}
+          />
+        ) : null}
+        {animation !== undefined && onAnimationChange ? (
+          <SectionAnimationControl
+            animation={animation}
+            onChange={onAnimationChange}
+          />
+        ) : null}
+        {bgColor !== undefined && onBgColorChange ? (
+          <ColorPickerButton
+            value={bgColor}
+            onChange={onBgColorChange}
+            title="Section color"
+          />
+        ) : null}
+        {extra}
+        <button
+          className="pb-section-toolbar-btn danger"
+          onClick={onDelete}
+          title="Remove section"
+          type="button"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /** Add-item button inside a section. */
 export const AddItemButton = ({

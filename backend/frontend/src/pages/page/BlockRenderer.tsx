@@ -127,8 +127,9 @@ const SectionBlock = memo(function SectionBlock({
       onMoveDown: () => onMove(section.id, "down"),
       canMoveUp: !isFirst,
       canMoveDown: !isLast,
+      lastEditedBy: section.last_edited_by,
     }),
-    [section.id, isFirst, isLast, onMove],
+    [section.id, isFirst, isLast, onMove, section.last_edited_by],
   );
 
   return (

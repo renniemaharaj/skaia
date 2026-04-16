@@ -5,13 +5,13 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
-  UserCog2Icon,
   GhostIcon,
   Navigation,
   LocateFixed,
   MessageCircle,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
+import UserAvatar from "../../../components/user/UserAvatar";
 import {
   currentUserAtom,
   socketAtom,
@@ -226,10 +226,13 @@ const PresencePanel = () => {
         <span className="pp-avatar">
           {isGuest ? (
             <GhostIcon size={14} />
-          ) : u.avatar ? (
-            <img src={u.avatar} alt={u.user_name} />
           ) : (
-            <UserCog2Icon size={16} />
+            <UserAvatar
+              src={u.avatar || undefined}
+              alt={u.user_name}
+              size={16}
+              initials={u.user_name?.[0]?.toUpperCase()}
+            />
           )}
         </span>
         <span className="pp-name pp-guest">

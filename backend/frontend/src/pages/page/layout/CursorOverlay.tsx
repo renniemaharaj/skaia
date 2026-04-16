@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { cursorPositionsAtom } from "../../../atoms/presence";
+import UserAvatar from "../../../components/user/UserAvatar";
 import "./CursorOverlay.css";
 
 const CURSOR_EXPIRY_MS = 4000;
@@ -42,13 +43,13 @@ const CursorOverlay = () => {
           }}
           title={cursor.user_name}
         >
-          {cursor.avatar ? (
-            <img src={cursor.avatar} alt={cursor.user_name} />
-          ) : (
-            <span className="cursor-avatar-initials">
-              {cursor.user_name?.[0]?.toUpperCase() || "?"}
-            </span>
-          )}
+          <UserAvatar
+            src={cursor.avatar || undefined}
+            alt={cursor.user_name}
+            size={24}
+            initials={cursor.user_name?.[0]?.toUpperCase()}
+            className="cursor-avatar-img"
+          />
         </div>
       ))}
     </div>

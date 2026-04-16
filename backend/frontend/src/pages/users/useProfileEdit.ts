@@ -65,7 +65,7 @@ export function useProfileEdit({
     setEditSaving(true);
     setEditError(null);
     try {
-      let finalAvatarUrl = user.avatar_url ?? user.photo_url ?? "";
+      let finalAvatarUrl = user.avatar_url ?? "";
       let finalBannerUrl = user.banner_url ?? "";
 
       if (avatarFile) {
@@ -96,7 +96,12 @@ export function useProfileEdit({
 
       const updated = await apiRequest<ProfileUser>(`/users/${user.id}`, {
         method: "PUT",
-        body: JSON.stringify({ display_name: editDisplayName, bio: editBio }),
+        body: JSON.stringify({
+          display_name: editDisplayName,
+          bio: editBio,
+          avatar_url: finalAvatarUrl,
+          banner_url: finalBannerUrl,
+        }),
       });
 
       onSaved({

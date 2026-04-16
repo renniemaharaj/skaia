@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { Search, X, UserCog2Icon } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { currentUserAtom, type User } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
+import UserAvatar from "../user/UserAvatar";
 import "./PersonPicker.css";
 
 interface PersonPickerProps {
@@ -152,14 +153,13 @@ export default function PersonPicker({
             onClick={() => onSelect(user)}
           >
             <span className="person-picker__avatar">
-              {user.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt={user.display_name || user.username}
-                />
-              ) : (
-                <UserCog2Icon size={18} />
-              )}
+              <UserAvatar
+                src={user.avatar_url || undefined}
+                alt={user.display_name || user.username}
+                size={18}
+                initials={(user.display_name ||
+                  user.username)?.[0]?.toUpperCase()}
+              />
             </span>
             <span className="person-picker__info">
               <span className="person-picker__name">
