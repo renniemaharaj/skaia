@@ -5,6 +5,8 @@
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
+  justify-content: center;
+  justify-items: center;
 }
 
 /* ── Card widths (12-col spans) ───────────────────────────────────────── */
@@ -41,6 +43,7 @@
 .dcard__body {
   display: flex;
   flex-direction: column;
+  align-items: center;
   flex: 1;
   position: relative;
   z-index: 1;
