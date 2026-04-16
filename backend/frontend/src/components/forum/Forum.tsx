@@ -20,11 +20,7 @@ import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
 import UserLink from "../user/UserLink";
 
-interface ForumProps {
-  // No longer needed - all forum operations are now API-driven with WebSocket updates
-}
-
-export const Forum: React.FC<ForumProps> = () => {
+export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
     useState(false);
@@ -115,13 +111,6 @@ export const Forum: React.FC<ForumProps> = () => {
   const canDeleteCategory =
     currentUser?.permissions?.includes("forum.category-delete") ||
     guestSandboxMode;
-
-  // Debug logging
-  useEffect(() => {
-    console.log("Current user:", currentUser);
-    console.log("User permissions:", currentUser?.permissions);
-    console.log("Can create category:", canCreateCategory);
-  }, [currentUser, canCreateCategory]);
 
   return (
     <div className="forum-container">

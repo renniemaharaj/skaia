@@ -19,13 +19,18 @@ backend/
     ├── user/                  # User CRUD, roles, permissions, suspension, Redis cache
     ├── forum/                 # Categories, threads, comments, likes, Redis cache
     ├── store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
+    ├── cart/                  # Shopping cart API (add, remove, list, clear)
     ├── inbox/                 # 1-to-1 conversations + messages
     ├── notification/          # Per-user notifications (typed, routed, real-time)
     ├── config/                # site_config CRUD (branding, SEO, footer, features)
     ├── page/                  # CMS pages (slug-based, JSONB block content)
+    ├── customsection/         # User-defined custom sections for pages
+    ├── datasource/            # Data source definitions, compiler, TS runner
+    ├── events/                # Event dispatcher and activity logging
     ├── upload/                # Image/video/file/banner uploads (user-isolated dirs)
     ├── ws/                    # WebSocket hub, presence, chat ring, cursor broadcast
     ├── ssr/                   # index.html rewriting with SEO head tags
+    ├── utils/                 # Shared HTTP helpers
     ├── grengo/                # Admin dashboard API proxy
     ├── migrations/            # SQL schema (001), seed data (002), CMS schema (003)
     ├── integration/           # Integration test suite

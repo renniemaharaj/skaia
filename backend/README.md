@@ -34,12 +34,20 @@ internal/
   middleware/         jwt auth middleware
   user/              user CRUD, roles, permissions, cache
   forum/             categories, threads, comments, likes, cache
-  store/             categories, products, cart, orders, payments, subscriptions
+  store/             categories, products, orders, payments, subscriptions
+  cart/              shopping cart API
   inbox/             conversations, messages
   notification/      notifications
+  config/            site config (branding, SEO, footer, features)
+  page/              CMS pages (slug-based, JSONB blocks)
+  customsection/     user-defined custom sections
+  datasource/        data source definitions, compiler, TS runner
+  events/            event dispatcher and activity logging
   upload/            avatar/banner uploads
   ws/                websocket hub, chat, presence
+  ssr/               index.html rewriting with SEO tags
   utils/             http helpers
+  grengo/            admin dashboard API proxy
 migrations/          SQL schema and seed data
 ```
 

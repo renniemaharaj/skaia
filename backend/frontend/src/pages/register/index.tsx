@@ -1,9 +1,5 @@
 import { Auth } from "../../components/auth/Auth";
 
 export const RegisterPage = () => {
-  const handleAuthSuccess = (token: string) => {
-    console.log("Registration successful, token:", token);
-  };
-
-  return <Auth initialMode="register" onAuthSuccess={handleAuthSuccess} />;
+  return <Auth initialMode="register" />;
 };

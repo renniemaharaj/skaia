@@ -79,4 +79,5 @@ Detailed specifications live in `.specs/`:
 - **`ui_spec`** — Design system tokens, shared CSS classes, component rules
 - **`backend_spec`** — Architecture, handler/service/repository pattern, API routes, security
 - **`infrastructure_spec`** — Docker setup, nginx, grengo CLI, environment variables, tenant isolation
-
+- **`realtime_wss_spec`** — WebSocket protocol, message types, subscription lifecycle, atom ownership
+- **`migrations_spec`** — In-place schema update policy, idempotent SQL conventions
