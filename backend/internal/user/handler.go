@@ -109,6 +109,26 @@ func (h *Handler) propagatePermissions(userID int64) {
 	h.hub.SendToUser(userID, &ws.Message{Type: ws.UserUpdate, Payload: payload})
 }
 
+// checkManagePowerLevel enforces that actorID's max power level is strictly
+// greater than targetID's. Returns true (allowed) or writes a 403 and returns false.
+func (h *Handler) checkManagePowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(actorID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return false
+	}
+	targetLevel, err := h.svc.GetUserMaxPowerLevel(targetID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return false
+	}
+	if actorLevel <= targetLevel {
+		utils.WriteError(w, http.StatusForbidden, "insufficient power level to manage this user")
+		return false
+	}
+	return true
+}
+
 // Mount registers all user-domain routes onto r.
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
 	// Auth
@@ -152,6 +172,14 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 	r.Route("/roles", func(r chi.Router) {
 		r.Use(jwt)
 		r.Get("/", h.getRoles)
+		r.Post("/", h.createRole)
+		r.Route("/{roleId}", func(r chi.Router) {
+			r.Put("/", h.updateRole)
+			r.Delete("/", h.deleteRole)
+			r.Get("/permissions", h.getRolePermissions)
+			r.Post("/permissions", h.addPermissionToRole)
+			r.Delete("/permissions/{perm}", h.removePermissionFromRole)
+		})
 	})
 }
 
@@ -358,6 +386,9 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
+	if userID != id && canManage && !h.checkManagePowerLevel(w, userID, id) {
+		return
+	}
 
 	existing, err := h.svc.GetByID(id)
 	if err != nil {
@@ -485,6 +516,9 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
+		return
+	}
 
 	var req struct {
 		Permission string `json:"permission"`
@@ -528,6 +562,9 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 	targetID, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
 		return
 	}
 	permName := chi.URLParam(r, "perm")
@@ -578,6 +615,9 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
+		return
+	}
 
 	var req struct {
 		Role string `json:"role"`
@@ -623,6 +663,9 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
+		return
+	}
 	roleName := chi.URLParam(r, "role")
 	if roleName == "" {
 		utils.WriteError(w, http.StatusBadRequest, "role name required")
@@ -665,6 +708,9 @@ func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
+		return
+	}
 
 	var req struct {
 		Reason string `json:"reason"`
@@ -702,6 +748,9 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 	targetID, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	if !h.checkManagePowerLevel(w, userID, targetID) {
 		return
 	}
 
@@ -1049,4 +1098,213 @@ func validateBannerDimensions(file io.Reader) error {
 		return fmt.Errorf("banner height must be 350px, got %dpx", cfg.Height)
 	}
 	return nil
+}
+
+// Role CRUD handlers
+
+func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		PowerLevel  int    `json:"power_level"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		utils.WriteError(w, http.StatusBadRequest, "role name required")
+		return
+	}
+
+	// Actor cannot create a role with power level >= their own.
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return
+	}
+	if req.PowerLevel >= actorLevel {
+		utils.WriteError(w, http.StatusForbidden, "cannot create a role with power level equal to or exceeding your own")
+		return
+	}
+
+	role, err := h.svc.CreateRole(req.Name, req.Description, req.PowerLevel)
+	if err != nil {
+		log.Printf("user.Handler.createRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, role)
+}
+
+func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	roleID, err := parseID(r, "roleId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		PowerLevel  int    `json:"power_level"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		utils.WriteError(w, http.StatusBadRequest, "role name required")
+		return
+	}
+
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return
+	}
+	if req.PowerLevel >= actorLevel {
+		utils.WriteError(w, http.StatusForbidden, "cannot set power level equal to or exceeding your own")
+		return
+	}
+
+	role, err := h.svc.UpdateRole(roleID, req.Name, req.Description, req.PowerLevel)
+	if err != nil {
+		log.Printf("user.Handler.updateRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, role)
+}
+
+func (h *Handler) deleteRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	roleID, err := parseID(r, "roleId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+
+	// Prevent deleting a role with power level >= actor's level.
+	role, err := h.svc.GetRoleByID(roleID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "role not found")
+		return
+	}
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return
+	}
+	if role.PowerLevel >= actorLevel {
+		utils.WriteError(w, http.StatusForbidden, "cannot delete a role with power level equal to or exceeding your own")
+		return
+	}
+
+	if err := h.svc.DeleteRole(roleID); err != nil {
+		log.Printf("user.Handler.deleteRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "role deleted"})
+}
+
+func (h *Handler) getRolePermissions(w http.ResponseWriter, r *http.Request) {
+	_, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	roleID, err := parseID(r, "roleId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+
+	perms, err := h.svc.GetRolePermissions(roleID)
+	if err != nil {
+		log.Printf("user.Handler.getRolePermissions: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to fetch role permissions")
+		return
+	}
+	if perms == nil {
+		perms = []*models.Permission{}
+	}
+	utils.WriteJSON(w, http.StatusOK, perms)
+}
+
+func (h *Handler) addPermissionToRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	roleID, err := parseID(r, "roleId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+
+	var req struct {
+		Permission string `json:"permission"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Permission == "" {
+		utils.WriteError(w, http.StatusBadRequest, "permission name required")
+		return
+	}
+
+	if err := h.svc.AddPermissionToRole(roleID, req.Permission); err != nil {
+		log.Printf("user.Handler.addPermissionToRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to add permission to role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission added to role"})
+}
+
+func (h *Handler) removePermissionFromRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	roleID, err := parseID(r, "roleId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+	permName := chi.URLParam(r, "perm")
+
+	if err := h.svc.RemovePermissionFromRole(roleID, permName); err != nil {
+		log.Printf("user.Handler.removePermissionFromRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to remove permission from role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed from role"})
 }

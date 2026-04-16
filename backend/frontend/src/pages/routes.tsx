@@ -15,6 +15,7 @@ import CategoryThreadsPage from "./threads/categories/index.tsx";
 import InboxPage from "./inbox/InboxPage.tsx";
 import { AdminMetaSettings } from "./admin/meta.tsx";
 import GrengoPage from "./admin/grengo.tsx";
+import RolesManagementPage from "./admin/RolesManagementPage.tsx";
 import PageBuilder from "./page/PageBuilder.tsx";
 import CustomPages from "./page/CustomPages.tsx";
 import DataSourcesPage from "./datasources/DataSourcesPage.tsx";
@@ -33,6 +34,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta", element: <AdminMetaSettings /> },
+  { path: "admin/roles", element: <RolesManagementPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },

@@ -432,6 +432,32 @@
   margin: 0;
 }
 
+.up-manage-notice {
+  padding: 10px 24px;
+  background: color-mix(in srgb, var(--warning-color) 10%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--warning-color) 25%, transparent);
+  font-size: 13px;
+  color: var(--warning-color);
+  font-weight: 500;
+}
+
+.up-checkbox-power {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-color);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  flex-shrink: 0;
+}
+
+.up-checkbox-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* ── User uploads section ─────────────────────────────────────────────────── */
 .up-uploads-section {
   margin: 20px 24px 0;
@@ -576,7 +602,8 @@
 }
 .up-upload-selected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 .up-upload-deleting {
   opacity: 0.4;
@@ -741,7 +768,8 @@
   background: var(--bg-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 48px color-mix(in srgb, var(--text-primary) 30%, transparent);
+  box-shadow: 0 12px 48px
+    color-mix(in srgb, var(--text-primary) 30%, transparent);
   cursor: default;
 }
 .up-upload-lightbox-content img {
@@ -801,7 +829,8 @@
   width: 100%;
   max-width: 480px;
   max-height: min(600px, 90dvh);
-  box-shadow: 0 8px 32px color-mix(in srgb, var(--text-primary) 18%, transparent);
+  box-shadow: 0 8px 32px
+    color-mix(in srgb, var(--text-primary) 18%, transparent);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -893,7 +922,8 @@
 .up-field input:focus,
 .up-field textarea:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary-color) 18%, transparent);
 }
 
 .up-img-preview {

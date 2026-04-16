@@ -238,6 +238,46 @@ func (s *Service) GetAllRoles() ([]*models.Role, error) {
 	return s.repo.GetAllRoles()
 }
 
+// GetUserMaxPowerLevel returns the highest power_level among all roles assigned to userID.
+func (s *Service) GetUserMaxPowerLevel(userID int64) (int, error) {
+	return s.repo.GetUserMaxPowerLevel(userID)
+}
+
+// GetRoleByID returns the role with the given id.
+func (s *Service) GetRoleByID(id int64) (*models.Role, error) {
+	return s.repo.GetRoleByID(id)
+}
+
+// CreateRole creates a new role.
+func (s *Service) CreateRole(name, description string, powerLevel int) (*models.Role, error) {
+	return s.repo.CreateRole(name, description, powerLevel)
+}
+
+// UpdateRole updates an existing role's attributes.
+func (s *Service) UpdateRole(id int64, name, description string, powerLevel int) (*models.Role, error) {
+	return s.repo.UpdateRole(id, name, description, powerLevel)
+}
+
+// DeleteRole deletes a role by ID.
+func (s *Service) DeleteRole(id int64) error {
+	return s.repo.DeleteRole(id)
+}
+
+// GetRolePermissions returns all permissions assigned to the given role.
+func (s *Service) GetRolePermissions(roleID int64) ([]*models.Permission, error) {
+	return s.repo.GetRolePermissions(roleID)
+}
+
+// AddPermissionToRole assigns a permission to a role.
+func (s *Service) AddPermissionToRole(roleID int64, permissionName string) error {
+	return s.repo.AddPermissionToRole(roleID, permissionName)
+}
+
+// RemovePermissionFromRole removes a permission from a role.
+func (s *Service) RemovePermissionFromRole(roleID int64, permissionName string) error {
+	return s.repo.RemovePermissionFromRole(roleID, permissionName)
+}
+
 // Suspend suspends a user account with an optional reason.
 func (s *Service) Suspend(userID int64, reason string) error {
 	if err := s.repo.Suspend(userID, reason); err != nil {

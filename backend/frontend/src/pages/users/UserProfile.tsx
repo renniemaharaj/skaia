@@ -112,6 +112,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       permTogglingSet={permTogglingSet}
       onRoleToggle={handleRoleToggle}
       onPermissionToggle={handlePermissionToggle}
+      currentUserRoles={currentUser?.roles ?? []}
     />
   );
 

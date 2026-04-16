@@ -8,6 +8,16 @@ interface Props {
   permTogglingSet: Set<string>;
   onRoleToggle: (name: string) => void;
   onPermissionToggle: (name: string) => void;
+  /** currentUserRoles: the logged-in user's own role names, for power level comparison */
+  currentUserRoles?: string[];
+}
+
+/** Compute the highest power_level among the given role names from the catalogue. */
+function maxPowerLevel(roleNames: string[], allRoles: Role[]): number {
+  return roleNames.reduce((max, name) => {
+    const r = allRoles.find((ro) => ro.name === name);
+    return r ? Math.max(max, r.power_level) : max;
+  }, 0);
 }
 
 const UserManagePanel = ({
@@ -18,7 +28,12 @@ const UserManagePanel = ({
   permTogglingSet,
   onRoleToggle,
   onPermissionToggle,
+  currentUserRoles = [],
 }: Props) => {
+  const actorPower = maxPowerLevel(currentUserRoles, allRoles);
+  const targetPower = maxPowerLevel(user.roles ?? [], allRoles);
+  const canManageTarget = actorPower > targetPower;
+
   const groupedPermissions = allPermissions.reduce(
     (acc, p) => {
       const cat = p.category || "General";
@@ -31,6 +46,13 @@ const UserManagePanel = ({
 
   return (
     <div className="up-manage-panel">
+      {!canManageTarget && (
+        <div className="up-manage-notice">
+          You cannot modify this user — they have equal or greater power level
+          than you.
+        </div>
+      )}
+
       {/* Roles */}
       <section className="up-manage-section">
         <h3 className="up-manage-heading">Roles</h3>
@@ -38,18 +60,20 @@ const UserManagePanel = ({
           {allRoles.map((role) => {
             const checked = (user.roles ?? []).includes(role.name);
             const toggling = roleTogglingSet.has(role.name);
+            const disabled = !canManageTarget || toggling;
             return (
               <label
                 key={role.id}
-                className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}`}
+                className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}${!canManageTarget ? " up-checkbox-disabled" : ""}`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => onRoleToggle(role.name)}
-                  disabled={toggling}
+                  disabled={disabled}
                 />
                 <span className="up-checkbox-label">{role.name}</span>
+                <span className="up-checkbox-power">⚡{role.power_level}</span>
                 {role.description && (
                   <span className="up-checkbox-desc">{role.description}</span>
                 )}
@@ -70,16 +94,17 @@ const UserManagePanel = ({
               {perms.map((perm) => {
                 const checked = (user.permissions ?? []).includes(perm.name);
                 const toggling = permTogglingSet.has(perm.name);
+                const disabled = !canManageTarget || toggling;
                 return (
                   <label
                     key={perm.id}
-                    className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}`}
+                    className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}${!canManageTarget ? " up-checkbox-disabled" : ""}`}
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => onPermissionToggle(perm.name)}
-                      disabled={toggling}
+                      disabled={disabled}
                     />
                     <span className="up-checkbox-label">{perm.name}</span>
                     {perm.description && (

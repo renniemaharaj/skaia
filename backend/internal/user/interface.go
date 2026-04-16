@@ -32,6 +32,18 @@ type Repository interface {
 	RemovePermission(userID int64, permissionName string) error
 	GetAllPermissions() ([]*models.Permission, error)
 
+	// Power level
+	GetUserMaxPowerLevel(userID int64) (int, error)
+
+	// Role CRUD
+	CreateRole(name, description string, powerLevel int) (*models.Role, error)
+	UpdateRole(id int64, name, description string, powerLevel int) (*models.Role, error)
+	DeleteRole(id int64) error
+	GetRoleByID(id int64) (*models.Role, error)
+	GetRolePermissions(roleID int64) ([]*models.Permission, error)
+	AddPermissionToRole(roleID int64, permissionName string) error
+	RemovePermissionFromRole(roleID int64, permissionName string) error
+
 	// Suspension
 	Suspend(userID int64, reason string) error
 	Unsuspend(userID int64) error

@@ -1,12 +1,13 @@
 -- Seed data: roles, permissions, admin account, default forum categories.
 
 -- Roles
-INSERT INTO roles (id, name, description) VALUES
-    (1, 'admin',     'Administrator with full access'),
-    (2, 'member',    'Regular member'),
-    (3, 'banned',    'Banned user'),
-    (4, 'moderator', 'Can moderate forum content and manage users')
-ON CONFLICT DO NOTHING;
+INSERT INTO roles (id, name, description, power_level) VALUES
+    (1, 'admin',     'Administrator with full access',                       100),
+    (2, 'member',    'Regular member',                                        10),
+    (3, 'banned',    'Banned user',                                            0),
+    (4, 'moderator', 'Can moderate forum content and manage users',           50)
+ON CONFLICT (id) DO UPDATE
+    SET power_level = EXCLUDED.power_level;
 
 SELECT setval(pg_get_serial_sequence('roles', 'id'),
               (SELECT COALESCE(MAX(id), 0) + 1 FROM roles), false);

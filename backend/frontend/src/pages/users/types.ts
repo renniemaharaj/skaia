@@ -25,6 +25,7 @@ export interface Role {
   id: string;
   name: string;
   description: string;
+  power_level: number;
 }
 
 export interface ForumThread {

@@ -643,10 +643,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               </div>
             )}
             {isAdmin && !slug && (
-              <Link to="/admin/meta" className="page-admin-btn">
-                <Settings size={16} />
-                Site Meta
-              </Link>
+              <>
+                <Link to="/admin/meta" className="page-admin-btn">
+                  <Settings size={16} />
+                  Site Meta
+                </Link>
+                <Link to="/admin/roles" className="page-admin-btn">
+                  <Settings size={16} />
+                  Roles
+                </Link>
+              </>
             )}
             {!isEditable && (
               <div

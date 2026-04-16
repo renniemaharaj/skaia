@@ -1,0 +1,339 @@
+/* ── Container ──────────────────────────────────────────────────────────── */
+.rmp-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+.rmp-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.rmp-state--error {
+  color: var(--error-color);
+  font-weight: 500;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.rmp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.rmp-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.rmp-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  max-width: 520px;
+}
+
+.rmp-create-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Create card ─────────────────────────────────────────────────────────── */
+.rmp-create-card {
+  margin-bottom: 1.5rem;
+}
+
+.rmp-section-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+}
+
+.rmp-form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.rmp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.rmp-field--narrow {
+  max-width: 140px;
+}
+
+.rmp-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rmp-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.15s;
+}
+
+.rmp-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
+}
+
+.rmp-input[type="number"] {
+  width: 100%;
+}
+
+.rmp-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* ── Role list ───────────────────────────────────────────────────────────── */
+.rmp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rmp-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+}
+
+/* ── Role card ───────────────────────────────────────────────────────────── */
+.rmp-role-card {
+  padding: 1rem 1.25rem;
+}
+
+.rmp-role-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.rmp-role-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.rmp-role-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.rmp-role-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.rmp-power-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+  color: var(--primary-color);
+  white-space: nowrap;
+}
+
+/* ── Edit row ────────────────────────────────────────────────────────────── */
+.rmp-edit-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 1;
+}
+
+.rmp-input--name {
+  width: 160px;
+}
+
+.rmp-input--desc {
+  flex: 1;
+  min-width: 140px;
+}
+
+.rmp-power-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.rmp-input--power {
+  width: 80px;
+}
+
+/* ── Role actions ────────────────────────────────────────────────────────── */
+.rmp-role-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.rmp-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+}
+
+.rmp-delete-btn {
+  color: var(--error-color);
+  border-color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 8%, transparent);
+}
+
+.rmp-delete-btn:hover {
+  background: color-mix(in srgb, var(--error-color) 16%, transparent);
+}
+
+.rmp-expand-btn {
+  gap: 4px;
+}
+
+/* ── Permissions panel ───────────────────────────────────────────────────── */
+.rmp-perms-panel {
+  border-top: 1px solid var(--border-color);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.rmp-perms-loading {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+}
+
+.rmp-perm-group {
+  margin-bottom: 1.25rem;
+}
+
+.rmp-perm-group:last-child {
+  margin-bottom: 0;
+}
+
+.rmp-perm-category {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+}
+
+.rmp-perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.4rem;
+}
+
+.rmp-perm-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+  background: var(--bg-color);
+}
+
+.rmp-perm-item:hover {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+}
+
+.rmp-perm-checked {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.rmp-perm-toggling {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.rmp-perm-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.rmp-perm-desc {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+  margin-top: 1px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .rmp-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .rmp-form-row {
+    flex-direction: column;
+  }
+
+  .rmp-field--narrow {
+    max-width: 100%;
+  }
+
+  .rmp-role-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rmp-role-actions {
+    flex-wrap: wrap;
+  }
+
+  .rmp-perm-grid {
+    grid-template-columns: 1fr;
+  }
+}

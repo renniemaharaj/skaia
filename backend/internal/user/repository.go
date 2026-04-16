@@ -270,7 +270,7 @@ func (r *sqlRepository) RemoveRoleByName(userID int64, roleName string) error {
 }
 
 func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
-	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), created_at FROM roles ORDER BY id`)
+	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, created_at FROM roles ORDER BY power_level DESC, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
 	var roles []*models.Role
 	for rows.Next() {
 		ro := &models.Role{}
-		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.CreatedAt); err != nil {
+		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt); err != nil {
 			return nil, err
 		}
 		roles = append(roles, ro)
@@ -375,4 +375,106 @@ func (r *sqlRepository) GetAllPermissions() ([]*models.Permission, error) {
 		perms = append(perms, p)
 	}
 	return perms, rows.Err()
+}
+
+func (r *sqlRepository) GetUserMaxPowerLevel(userID int64) (int, error) {
+	var level int
+	err := r.db.QueryRow(
+		`SELECT COALESCE(MAX(ro.power_level), 0)
+		 FROM roles ro
+		 JOIN user_roles ur ON ro.id = ur.role_id
+		 WHERE ur.user_id = $1`,
+		userID,
+	).Scan(&level)
+	return level, err
+}
+
+func (r *sqlRepository) GetRoleByID(id int64) (*models.Role, error) {
+	ro := &models.Role{}
+	err := r.db.QueryRow(
+		`SELECT id, name, COALESCE(description, ''), power_level, created_at FROM roles WHERE id = $1`, id,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return ro, nil
+}
+
+func (r *sqlRepository) CreateRole(name, description string, powerLevel int) (*models.Role, error) {
+	ro := &models.Role{}
+	err := r.db.QueryRow(
+		`INSERT INTO roles (name, description, power_level)
+		 VALUES ($1, $2, $3)
+		 RETURNING id, name, COALESCE(description, ''), power_level, created_at`,
+		name, description, powerLevel,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt)
+	return ro, err
+}
+
+func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLevel int) (*models.Role, error) {
+	_, err := r.db.Exec(
+		`UPDATE roles SET name=$1, description=$2, power_level=$3 WHERE id=$4`,
+		name, description, powerLevel, id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return r.GetRoleByID(id)
+}
+
+func (r *sqlRepository) DeleteRole(id int64) error {
+	_, err := r.db.Exec(`DELETE FROM roles WHERE id = $1`, id)
+	return err
+}
+
+func (r *sqlRepository) GetRolePermissions(roleID int64) ([]*models.Permission, error) {
+	rows, err := r.db.Query(
+		`SELECT p.id, p.name, COALESCE(p.category, ''), COALESCE(p.description, ''), p.created_at
+		 FROM permissions p
+		 JOIN role_permissions rp ON p.id = rp.permission_id
+		 WHERE rp.role_id = $1
+		 ORDER BY p.category, p.name`,
+		roleID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var perms []*models.Permission
+	for rows.Next() {
+		p := &models.Permission{}
+		if err := rows.Scan(&p.ID, &p.Name, &p.Category, &p.Description, &p.CreatedAt); err != nil {
+			return nil, err
+		}
+		perms = append(perms, p)
+	}
+	return perms, rows.Err()
+}
+
+func (r *sqlRepository) AddPermissionToRole(roleID int64, permissionName string) error {
+	var permID int64
+	if err := r.db.QueryRow(
+		`INSERT INTO permissions (name) VALUES ($1)
+		 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+		 RETURNING id`,
+		permissionName,
+	).Scan(&permID); err != nil {
+		return err
+	}
+	_, err := r.db.Exec(
+		`INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		roleID, permID,
+	)
+	return err
+}
+
+func (r *sqlRepository) RemovePermissionFromRole(roleID int64, permissionName string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM role_permissions
+		 WHERE role_id = $1
+		   AND permission_id = (SELECT id FROM permissions WHERE name = $2)`,
+		roleID, permissionName,
+	)
+	return err
 }
