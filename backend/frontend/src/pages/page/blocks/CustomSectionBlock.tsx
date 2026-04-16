@@ -7,16 +7,9 @@ import type {
   DataSource,
   CustomSection,
   ColumnMap,
-  RenderableSectionType,
   FactTableConfig,
-  MappableField,
-  CardTemplate,
 } from "../types";
-import {
-  RENDERABLE_SECTION_TYPES,
-  RENDERABLE_TYPE_LABELS,
-  DEFAULT_CARD_TEMPLATE,
-} from "../types";
+import { DEFAULT_CARD_TEMPLATE } from "../types";
 import {
   SectionToolbar,
   getSectionLayout,
@@ -27,21 +20,13 @@ import {
   setSectionAnimation,
 } from "../EditControls";
 import { ColumnMapper } from "../ColumnMapper";
-import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
+import { mapRowsToItems, detectColumns } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
 import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
 
-// Block components we delegate rendering to
-import { CardGroupBlock } from "./CardGroupBlock";
-import { FeatureGridBlock } from "./FeatureGridBlock";
-import { StatCardsBlock } from "./StatCardsBlock";
-import { EventHighlightsBlock } from "./EventHighlightsBlock";
-import { ImageCardGrid } from "./ImageCardGrid";
-import type { ImageCardItem } from "./ImageCardGrid";
 import { DesignedCardGrid } from "./DesignedCardGrid";
-import { CardDesigner } from "../CardDesigner";
 
 interface Props {
   section: LandingSection;
@@ -107,12 +92,6 @@ async function evaluateDataSource(code: string): Promise<RawRow[]> {
     throw new Error("Data source code must return an array");
   }
   return result as RawRow[];
-}
-
-function formatCellValue(val: unknown): string {
-  if (val === null || val === undefined) return "";
-  if (typeof val === "object") return JSON.stringify(val);
-  return String(val);
 }
 
 export const CustomSectionBlock = ({
@@ -197,9 +176,8 @@ export const CustomSectionBlock = ({
   // Detect available columns from raw rows
   const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
 
-  // Determine render type — use column_map if present, else fall back to legacy
+  // Determine render type
   const hasColumnMap = cfg.column_map && Object.keys(cfg.column_map).length > 0;
-  const renderAs: RenderableSectionType = cfg.render_as ?? "card_group";
 
   // Build LandingItem[] from raw rows + column map + overrides
   const mappedItems: LandingItem[] = useMemo(() => {
@@ -219,68 +197,11 @@ export const CustomSectionBlock = ({
     section.id,
   ]);
 
-  // Virtual section with the mapped items
-  const virtualSection: LandingSection = useMemo(
-    () => ({ ...section, items: mappedItems }),
-    [section, mappedItems],
-  );
-
-  // Handle item updates → store as row overrides
-  const handleItemUpdate = useCallback(
-    (item: LandingItem) => {
-      const idx = -(item.id + 1);
-      if (idx < 0 || idx >= rawRows.length) return;
-
-      const key = rowKey(rawRows[idx], idx, cfg.row_key_column);
-      const currentOverrides = cfg.row_overrides ?? {};
-      const rowOverride = currentOverrides[key] ?? {};
-
-      const baseItem = mappedItems.find((m) => m.id === item.id);
-      if (!baseItem) return;
-
-      const fields: MappableField[] = [
-        "heading",
-        "subheading",
-        "icon",
-        "image_url",
-        "link_url",
-      ];
-      const newOverride = { ...rowOverride };
-      for (const f of fields) {
-        if (item[f] !== baseItem[f]) {
-          newOverride[f] = item[f];
-        }
-      }
-
-      onUpdate({
-        ...section,
-        config: updateConfig(section.config, {
-          row_overrides: { ...currentOverrides, [key]: newOverride },
-        }),
-      });
-    },
-    [
-      rawRows,
-      cfg.row_key_column,
-      cfg.row_overrides,
-      mappedItems,
-      section,
-      onUpdate,
-    ],
-  );
-
-  // Config updaters
+  // Build LandingItem[] from raw rows + column map + overrides
   const handleCSChange = (csId: number) => {
     onUpdate({
       ...section,
       config: updateConfig(section.config, { custom_section_id: csId }),
-    });
-  };
-
-  const handleRenderAsChange = (ra: RenderableSectionType) => {
-    onUpdate({
-      ...section,
-      config: updateConfig(section.config, { render_as: ra }),
     });
   };
 
@@ -298,124 +219,6 @@ export const CustomSectionBlock = ({
         row_key_column: col || undefined,
       }),
     });
-  };
-
-  const handleCardTemplateChange = (card_template: CardTemplate) => {
-    onUpdate({
-      ...section,
-      config: updateConfig(section.config, { card_template }),
-    });
-  };
-
-  // Auto-detect table columns (for legacy table fallback)
-  const tableColumns = useMemo(() => {
-    const keys = new Set<string>();
-    rawRows.forEach((row) => {
-      Object.keys(row).forEach((k) => keys.add(k));
-    });
-    return Array.from(keys);
-  }, [rawRows]);
-
-  // Render the delegate block when column mapping is active
-  const renderDelegateBlock = () => {
-    if (mappedItems.length === 0) return null;
-
-    const noop = () => {};
-    switch (renderAs) {
-      case "card_group":
-        return (
-          <CardGroupBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "feature_grid":
-        return (
-          <FeatureGridBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "stat_cards":
-        return (
-          <StatCardsBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "event_highlights":
-        return (
-          <EventHighlightsBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "image_cards": {
-        const imageItems: ImageCardItem[] = mappedItems.map((item) => ({
-          heading: item.heading || undefined,
-          subheading: item.subheading || undefined,
-          image_url: item.image_url || undefined,
-          icon: item.icon || undefined,
-          link_url: item.link_url || undefined,
-        }));
-        return <ImageCardGrid items={imageItems} />;
-      }
-      case "designed_card": {
-        const tmpl = cfg.card_template ?? DEFAULT_CARD_TEMPLATE;
-        return <DesignedCardGrid items={mappedItems} template={tmpl} />;
-      }
-      default:
-        return null;
-    }
-  };
-
-  // Legacy table rendering (no column map needed)
-  const renderLegacyTable = () => {
-    if (rawRows.length === 0 || tableColumns.length === 0) return null;
-    return (
-      <div className="custom-section-table-wrap">
-        <div className="custom-section-table-container">
-          <table className="custom-section-table">
-            <thead>
-              <tr>
-                {tableColumns.map((col) => (
-                  <th key={col}>{col}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rawRows.map((item, i) => (
-                <tr key={i}>
-                  {tableColumns.map((col) => (
-                    <td key={col}>{formatCellValue(item[col])}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
   };
 
   // Determine if we're in legacy table mode (no column map, section_type = "table")
@@ -484,24 +287,6 @@ export const CustomSectionBlock = ({
             )}
           </label>
 
-          {!isLegacyTable && (
-            <label className="custom-section-control">
-              <span>Render As</span>
-              <select
-                value={renderAs}
-                onChange={(e) =>
-                  handleRenderAsChange(e.target.value as RenderableSectionType)
-                }
-              >
-                {RENDERABLE_SECTION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {RENDERABLE_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
           {availableColumns.length > 0 && !isLegacyTable && (
             <label className="custom-section-control">
               <span>Row Key</span>
@@ -533,14 +318,6 @@ export const CustomSectionBlock = ({
           availableColumns={availableColumns}
           columnMap={cfg.column_map ?? {}}
           onChange={handleColumnMapChange}
-        />
-      )}
-
-      {/* Card designer UI (designed_card mode only) */}
-      {canEdit && renderAs === "designed_card" && !isLegacyTable && (
-        <CardDesigner
-          template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
-          onChange={handleCardTemplateChange}
         />
       )}
 
@@ -583,11 +360,13 @@ export const CustomSectionBlock = ({
           </div>
         )}
 
-        {/* Rendered via real block component (column-mapped) */}
-        {!authError && hasColumnMap && renderDelegateBlock()}
-
-        {/* Legacy table view (no column map) */}
-        {!authError && isLegacyTable && renderLegacyTable()}
+        {/* Rendered cards (column-mapped) */}
+        {!authError && hasColumnMap && mappedItems.length > 0 && (
+          <DesignedCardGrid
+            items={mappedItems}
+            template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
+          />
+        )}
 
         {/* Has rows but no column map — prompt to configure */}
         {!evaluating &&

@@ -5,16 +5,10 @@ import type {
   LandingItem,
   DataSource,
   ColumnMap,
-  RenderableSectionType,
   FactTableConfig,
-  MappableField,
   CardTemplate,
 } from "../types";
-import {
-  RENDERABLE_SECTION_TYPES,
-  RENDERABLE_TYPE_LABELS,
-  DEFAULT_CARD_TEMPLATE,
-} from "../types";
+import { DEFAULT_CARD_TEMPLATE } from "../types";
 import "./DerivedSectionBlock.css";
 import {
   SectionToolbar,
@@ -26,19 +20,12 @@ import {
   setSectionAnimation,
 } from "../EditControls";
 import { ColumnMapper } from "../ColumnMapper";
-import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
+import { mapRowsToItems, detectColumns } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
 import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
 
-// Block components we delegate rendering to
-import { CardGroupBlock } from "./CardGroupBlock";
-import { FeatureGridBlock } from "./FeatureGridBlock";
-import { StatCardsBlock } from "./StatCardsBlock";
-import { EventHighlightsBlock } from "./EventHighlightsBlock";
-import { ImageCardGrid } from "./ImageCardGrid";
-import type { ImageCardItem } from "./ImageCardGrid";
 import { DesignedCardGrid } from "./DesignedCardGrid";
 import { CardDesigner } from "../CardDesigner";
 
@@ -194,73 +181,11 @@ export const DerivedSectionBlock = ({
     section.id,
   ]);
 
-  // Build a virtual section with the mapped items for the delegate block
-  const virtualSection: LandingSection = useMemo(
-    () => ({
-      ...section,
-      items: mappedItems,
-    }),
-    [section, mappedItems],
-  );
-
-  // Handle item updates from the delegate block → store as row overrides
-  const handleItemUpdate = useCallback(
-    (item: LandingItem) => {
-      // Identify which row this item came from using its synthetic index
-      const idx = -(item.id + 1); // reverse the -(index+1) encoding
-      if (idx < 0 || idx >= rawRows.length) return;
-
-      const key = rowKey(rawRows[idx], idx, cfg.row_key_column);
-      const currentOverrides = cfg.row_overrides ?? {};
-      const rowOverride = currentOverrides[key] ?? {};
-
-      // Diff the item against the mapped base to find what was changed
-      const baseItem = mappedItems.find((m) => m.id === item.id);
-      if (!baseItem) return;
-
-      const fields: MappableField[] = [
-        "heading",
-        "subheading",
-        "icon",
-        "image_url",
-        "link_url",
-      ];
-      const newOverride = { ...rowOverride };
-      for (const f of fields) {
-        if (item[f] !== baseItem[f]) {
-          newOverride[f] = item[f];
-        }
-      }
-
-      onUpdate({
-        ...section,
-        config: updateConfig(section.config, {
-          row_overrides: { ...currentOverrides, [key]: newOverride },
-        }),
-      });
-    },
-    [
-      rawRows,
-      cfg.row_key_column,
-      cfg.row_overrides,
-      mappedItems,
-      section,
-      onUpdate,
-    ],
-  );
-
   // Config updaters
   const handleDatasourceChange = (dsId: number) => {
     onUpdate({
       ...section,
       config: updateConfig(section.config, { datasource_id: dsId }),
-    });
-  };
-
-  const handleRenderAsChange = (renderAs: RenderableSectionType) => {
-    onUpdate({
-      ...section,
-      config: updateConfig(section.config, { render_as: renderAs }),
     });
   };
 
@@ -291,83 +216,6 @@ export const DerivedSectionBlock = ({
     () => dataSources.find((d) => d.id === cfg.datasource_id),
     [dataSources, cfg.datasource_id],
   );
-
-  const renderAs = cfg.render_as ?? "card_group";
-
-  // Render the delegate block
-  const renderDelegateBlock = () => {
-    if (mappedItems.length === 0) return null;
-
-    // Noop handlers for create/delete (datasource-driven items aren't manually added/removed)
-    const noop = () => {};
-
-    switch (renderAs) {
-      case "card_group":
-        return (
-          <CardGroupBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "feature_grid":
-        return (
-          <FeatureGridBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "stat_cards":
-        return (
-          <StatCardsBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "event_highlights":
-        return (
-          <EventHighlightsBlock
-            section={virtualSection}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={() => {}}
-            onItemCreate={noop}
-            onItemUpdate={handleItemUpdate}
-            onItemDelete={noop}
-          />
-        );
-      case "image_cards": {
-        const imageItems: ImageCardItem[] = mappedItems.map((item) => ({
-          heading: item.heading || undefined,
-          subheading: item.subheading || undefined,
-          image_url: item.image_url || undefined,
-          icon: item.icon || undefined,
-          link_url: item.link_url || undefined,
-        }));
-        return <ImageCardGrid items={imageItems} />;
-      }
-      case "designed_card": {
-        const tmpl = cfg.card_template ?? DEFAULT_CARD_TEMPLATE;
-        return <DesignedCardGrid items={mappedItems} template={tmpl} />;
-      }
-      default:
-        return null;
-    }
-  };
 
   return (
     <section className="derived-section-block">
@@ -432,22 +280,6 @@ export const DerivedSectionBlock = ({
             )}
           </label>
 
-          <label className="derived-section-control">
-            <span>Render As</span>
-            <select
-              value={renderAs}
-              onChange={(e) =>
-                handleRenderAsChange(e.target.value as RenderableSectionType)
-              }
-            >
-              {RENDERABLE_SECTION_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {RENDERABLE_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </label>
-
           {availableColumns.length > 0 && (
             <label className="derived-section-control">
               <span>Row Key</span>
@@ -482,8 +314,8 @@ export const DerivedSectionBlock = ({
         />
       )}
 
-      {/* Card designer UI (designed_card mode only) */}
-      {canEdit && renderAs === "designed_card" && (
+      {/* Card designer */}
+      {canEdit && availableColumns.length > 0 && (
         <CardDesigner
           template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
           onChange={handleCardTemplateChange}
@@ -527,8 +359,13 @@ export const DerivedSectionBlock = ({
           </div>
         )}
 
-        {/* Rendered via real block component */}
-        {!authError && renderDelegateBlock()}
+        {/* Rendered cards */}
+        {!authError && mappedItems.length > 0 && (
+          <DesignedCardGrid
+            items={mappedItems}
+            template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
+          />
+        )}
 
         {/* Empty result (after evaluation) */}
         {!evaluating &&

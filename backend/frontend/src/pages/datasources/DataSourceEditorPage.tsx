@@ -31,6 +31,7 @@ import {
   Maximize2,
   AlignCenterHorizontal,
   MoveVertical,
+  Paintbrush,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type {
@@ -38,11 +39,14 @@ import type {
   CustomSection,
   PreviewType,
   LandingSection,
+  CardTemplate,
 } from "../page/types";
 import { ImageCardGrid } from "../page/blocks/ImageCardGrid";
 import { FeatureGridBlock } from "../page/blocks/FeatureGridBlock";
 import { StatCardsBlock } from "../page/blocks/StatCardsBlock";
-import { PREVIEW_TYPES } from "../page/types";
+import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
+import { CardDesigner } from "../page/CardDesigner";
+import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
 import { toast } from "sonner";
 import "./DataSources.css";
 
@@ -113,6 +117,7 @@ const DATASOURCE_PREVIEW_TYPES = [
   ...PREVIEW_TYPES,
   "feature",
   "image",
+  "designed_card",
 ] as const;
 
 type DataSourcePreviewType = (typeof DATASOURCE_PREVIEW_TYPES)[number];
@@ -123,6 +128,7 @@ const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
   table: "Table",
   feature: "Feature Grid",
   image: "Image Grid",
+  designed_card: "Card Designer",
 };
 
 export default function DataSourceEditorPage() {
@@ -167,6 +173,11 @@ export default function DataSourceEditorPage() {
   const [sectionName, setSectionName] = useState("");
   const [sectionDesc, setSectionDesc] = useState("");
   const [savingSection, setSavingSection] = useState(false);
+
+  // Card designer template
+  const [cardTemplate, setCardTemplate] = useState<CardTemplate>(
+    DEFAULT_CARD_TEMPLATE,
+  );
 
   // Auto-detect table columns from preview items
   const tableColumns = useMemo(() => {
@@ -699,6 +710,7 @@ export default function DataSourceEditorPage() {
                           {type === "image" && <Table2 size={13} />}
                           {type === "stat_cards" && <BarChart3 size={13} />}
                           {type === "table" && <Table2 size={13} />}
+                          {type === "designed_card" && <Paintbrush size={13} />}
                           {DATASOURCE_PREVIEW_TYPE_LABELS[type]}
                         </button>
                       ))}
@@ -888,6 +900,30 @@ export default function DataSourceEditorPage() {
                       </table>
                     </div>
                   </div>
+                )}
+
+                {/* Card Designer view */}
+                {previewItems.length > 0 && previewType === "designed_card" && (
+                  <>
+                    <CardDesigner
+                      template={cardTemplate}
+                      onChange={setCardTemplate}
+                    />
+                    <DesignedCardGrid
+                      items={previewItems.map((item, index) => ({
+                        id: -(index + 1),
+                        section_id: 0,
+                        display_order: index + 1,
+                        icon: item.icon ?? "",
+                        heading: item.heading ?? "",
+                        subheading: item.subheading ?? "",
+                        image_url: item.image_url ?? "",
+                        link_url: item.link_url ?? "",
+                        config: "{}",
+                      }))}
+                      template={cardTemplate}
+                    />
+                  </>
                 )}
               </div>
             )}
