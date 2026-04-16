@@ -61,6 +61,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const canEdit = guestSandboxMode;
   const canDelete =
     !!page?.can_delete || (page?.id != null && (isAdmin || isOwner));
+  const canChangeVisibility = page?.id != null && (isAdmin || isOwner);
   // Toolbar visible to admins and owners only — editors can edit inline but don't see the bar
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showOwnershipBtn = showToolbar && page?.id && slug;
@@ -611,6 +612,34 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+            {canChangeVisibility && page && (
+              <div className="page-admin-visibility">
+                <label
+                  htmlFor="page-visibility"
+                  className="page-admin-visibility__label"
+                >
+                  Visibility
+                </label>
+                <select
+                  id="page-visibility"
+                  className="page-admin-select"
+                  value={page.visibility || "public"}
+                  onChange={async (e) => {
+                    const nextVisibility = e.target.value;
+                    try {
+                      await updatePage({ ...page, visibility: nextVisibility });
+                      await refresh(slug);
+                    } catch (err) {
+                      console.error("Failed to update page visibility", err);
+                    }
+                  }}
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                  <option value="unlisted">Unlisted</option>
+                </select>
               </div>
             )}
             {isAdmin && !slug && (

@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import {
   threadCommentsAtom,
   enrichedThreadCommentsAtom,
+  currentThreadAtom,
 } from "../../atoms/forum";
 import { type ThreadComment } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
@@ -17,6 +18,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const comments = useAtomValue(enrichedThreadCommentsAtom);
   const setComments = useSetAtom(threadCommentsAtom);
   const currentUser = useAtomValue(currentUserAtom);
+  const currentThread = useAtomValue(currentThreadAtom);
   const { subscribe } = useWebSocketSync();
 
   const {
@@ -109,9 +111,13 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       title="Comments"
       comments={comments}
       isLoading={isLoading}
-      canComment={(currentUser?.permissions ?? []).includes(
-        "forum.thread-comment-new",
-      )}
+      canComment={
+        !currentThread?.is_locked &&
+        (currentUser?.permissions ?? []).includes("forum.thread-comment-new")
+      }
+      lockedMessage={
+        currentThread?.is_locked ? "This thread is locked." : undefined
+      }
       onSubmit={async (text) => {
         if (!threadId || isSubmitting) return;
         try {

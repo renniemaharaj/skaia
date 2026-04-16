@@ -32,10 +32,13 @@ const (
 
 	// Forum
 	ActCategoryCreated = "forum.category_created"
+	ActCategoryUpdated = "forum.category_updated"
 	ActCategoryDeleted = "forum.category_deleted"
 	ActThreadCreated   = "forum.thread_created"
 	ActThreadUpdated   = "forum.thread_updated"
 	ActThreadDeleted   = "forum.thread_deleted"
+	ActThreadLocked    = "forum.thread_locked"
+	ActThreadShared    = "forum.thread_shared"
 	ActThreadLiked     = "forum.thread_liked"
 	ActThreadUnliked   = "forum.thread_unliked"
 	ActCommentCreated  = "forum.comment_created"

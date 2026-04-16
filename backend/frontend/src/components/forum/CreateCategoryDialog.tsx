@@ -145,6 +145,24 @@ export const CreateCategoryDialog: React.FC<CreateCategoryDialogProps> = ({
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
+              type="button"
+              onClick={handleClose}
+              disabled={loading}
+              className="thread-action-btn btn-close"
+              title="Close"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-primary)",
+                padding: "4px",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <X size={20} />
+            </button>
+            <button
               type="submit"
               form="create-category-form"
               disabled={loading || !formData.name.trim()}
@@ -165,24 +183,6 @@ export const CreateCategoryDialog: React.FC<CreateCategoryDialogProps> = ({
               }}
             >
               {loading ? <Loader size={20} /> : <Check size={20} />}
-            </button>
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={loading}
-              className="thread-action-btn btn-close"
-              title="Close"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--text-primary)",
-                padding: "4px",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <X size={20} />
             </button>
           </div>
         </div>

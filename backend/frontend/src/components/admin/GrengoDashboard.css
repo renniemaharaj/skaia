@@ -533,21 +533,134 @@
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .grengo-dashboard {
+    padding: 0 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .grengo-dashboard h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Toolbar: wrap buttons nicely */
+  .grengo-toolbar {
+    gap: 0.35rem;
+  }
+
+  .grengo-toolbar .btn {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.55rem;
+  }
+
+  /* Stats cards: single column */
+  .grengo-stats-cards {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  .grengo-stat-overview {
+    grid-column: 1;
+  }
+
+  /* Table: card-style stacking */
+  .grengo-table-wrap {
+    max-height: none;
+  }
+
+  .grengo-table thead {
+    display: none;
+  }
+
+  .grengo-table,
+  .grengo-table tbody,
+  .grengo-table tr,
+  .grengo-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .grengo-table tr {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    background: var(--bg-color);
+  }
+
+  .grengo-table td {
+    padding: 0.2rem 0;
+    border-bottom: none;
+    font-size: 0.8rem;
+  }
+
+  .grengo-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+  }
+
+  .grengo-table .actions {
+    justify-content: flex-start;
+    margin-top: 0.3rem;
+  }
+
+  /* Create form */
   .grengo-create-form .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .grengo-table {
-    font-size: 0.78rem;
+  .grengo-create-form .form-actions {
+    justify-content: stretch;
   }
 
-  .grengo-table th,
-  .grengo-table td {
-    padding: 0.4rem 0.5rem;
+  .grengo-create-form .form-actions .btn {
+    flex: 1;
+    justify-content: center;
   }
 
+  /* Import form: stack fields */
+  .grengo-import-form .import-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Env editor */
+  .grengo-env-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .grengo-env-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Sysinfo */
   .grengo-sysinfo {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Storage panel */
+  .grengo-storage-overview {
+    padding: 0.75rem;
+  }
+
+  .storage-site-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  /* Compose controls */
+  .grengo-compose-controls {
     flex-direction: column;
   }
 }

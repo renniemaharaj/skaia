@@ -22,6 +22,8 @@ interface ThreadData {
   reply_count: number;
   is_pinned: boolean;
   is_locked: boolean;
+  is_shared: boolean;
+  original_thread_id?: string;
   user_name?: string;
 }
 

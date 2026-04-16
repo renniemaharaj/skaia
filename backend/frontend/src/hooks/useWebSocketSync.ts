@@ -539,6 +539,7 @@ export const useWebSocketSync = () => {
                     id: data.id,
                     name: data.name,
                     description: data.description,
+                    is_locked: data.is_locked || false,
                     thread_count: data.thread_count || 0,
                     created_at: data.created_at,
                     updated_at: data.updated_at,

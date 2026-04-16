@@ -181,6 +181,12 @@ func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusNotFound, "page not found")
 		return
 	}
+
+	if p.Visibility == "private" && !h.canEditPage(r, p.ID) && !h.isAdmin(r) {
+		utils.WriteError(w, http.StatusForbidden, "this page is private")
+		return
+	}
+
 	h.svc.EnrichPage(p)
 	uid, _ := utils.UserIDFromCtx(r)
 	h.svc.EnrichPageEngagement(p, uidPtr(uid))
@@ -327,8 +333,28 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 	if pages == nil {
 		pages = []*models.Page{}
 	}
-	// Enrich each page with editors
+
+	isAdm := h.isAdmin(r)
+	uid, _ := utils.UserIDFromCtx(r)
+
+	// Filter private pages for non-privileged users
+	var visible []*models.Page
 	for _, p := range pages {
+		if p.Visibility == "private" && !isAdm {
+			isOwner := p.OwnerID != nil && *p.OwnerID == uid
+			isEditor, _ := h.svc.IsEditor(p.ID, uid)
+			if !isOwner && !isEditor {
+				continue
+			}
+		}
+		visible = append(visible, p)
+	}
+	if visible == nil {
+		visible = []*models.Page{}
+	}
+
+	// Enrich each page with editors
+	for _, p := range visible {
 		if editors, err := h.svc.GetEditors(p.ID); err == nil {
 			p.Editors = editors
 		}
@@ -337,7 +363,7 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 		}
 		p.CanDelete = h.canDeletePageForPage(r, p)
 	}
-	utils.WriteJSON(w, http.StatusOK, pages)
+	utils.WriteJSON(w, http.StatusOK, visible)
 }
 
 // ── ownership & editor management ───────────────────────────────────────────

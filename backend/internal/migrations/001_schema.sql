@@ -202,8 +202,10 @@ CREATE TABLE IF NOT EXISTS forum_categories (
     name          VARCHAR(255) NOT NULL UNIQUE,
     description   TEXT,
     display_order INT DEFAULT 0,
+    is_locked     BOOLEAN DEFAULT false,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS forum_threads (
     id          BIGSERIAL    PRIMARY KEY,
@@ -215,9 +217,13 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     reply_count INT     DEFAULT 0,
     is_pinned   BOOLEAN DEFAULT false,
     is_locked   BOOLEAN DEFAULT false,
+    is_shared          BOOLEAN DEFAULT false,
+    original_thread_id BIGINT  REFERENCES forum_threads(id) ON DELETE SET NULL,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT false;
+ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS original_thread_id BIGINT REFERENCES forum_threads(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_forum_threads_category_id ON forum_threads(category_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_user_id     ON forum_threads(user_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at  ON forum_threads(created_at DESC);
@@ -358,11 +364,13 @@ CREATE TABLE IF NOT EXISTS pages (
     title       VARCHAR(255) NOT NULL DEFAULT '',
     description TEXT         NOT NULL DEFAULT '',
     is_index    BOOLEAN      NOT NULL DEFAULT FALSE,
+    visibility  VARCHAR(20)  NOT NULL DEFAULT 'public',
     content     JSONB        NOT NULL DEFAULT '[]',
     owner_id    BIGINT       REFERENCES users(id) ON DELETE SET NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) NOT NULL DEFAULT 'public';
 
 -- Ensure at most one page can be the index (homepage).
 CREATE UNIQUE INDEX IF NOT EXISTS pages_is_index_unique

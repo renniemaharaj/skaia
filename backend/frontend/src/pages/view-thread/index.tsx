@@ -1,6 +1,14 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, X, ThumbsUp } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  X,
+  ThumbsUp,
+  Lock,
+  Unlock,
+  Share2,
+} from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 
 import ViewThread from "../../components/forum/ViewThread";
@@ -20,7 +28,7 @@ const ViewThreadPage = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
   const currentUser = useAtomValue(currentUserAtom);
-  const { canEdit, canDelete } = useAtomValue(threadPermissionsAtom);
+  const { canEdit, canDelete, canLock } = useAtomValue(threadPermissionsAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +139,40 @@ const ViewThreadPage = () => {
     }
   };
 
+  const handleLockThread = async () => {
+    if (!threadId || !currentThread) return;
+    const newLocked = !currentThread.is_locked;
+    try {
+      await apiRequest(`/forum/threads/${threadId}/lock`, {
+        method: "PUT",
+        body: JSON.stringify({ is_locked: newLocked }),
+      });
+      setCurrentThread((prev) =>
+        prev ? { ...prev, is_locked: newLocked } : prev,
+      );
+    } catch (err) {
+      console.error("Lock toggle failed", err);
+    }
+  };
+
+  const handleShareThread = async () => {
+    if (!threadId || !currentThread) return;
+    try {
+      const shared = await apiRequest<{ id: string }>(
+        `/forum/threads/${threadId}/share`,
+        {
+          method: "POST",
+          body: JSON.stringify({ content: currentThread.content }),
+        },
+      );
+      if (shared?.id) {
+        navigate(`/view-thread/${shared.id}`);
+      }
+    } catch (err) {
+      console.error("Share failed", err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="modal">
@@ -196,6 +238,36 @@ const ViewThreadPage = () => {
               </button>
             )}
 
+            {/* Share */}
+            {currentUser && (
+              <button
+                className="thread-action-btn share-btn"
+                onClick={handleShareThread}
+                title="Share thread"
+                type="button"
+              >
+                <Share2 size={14} />
+              </button>
+            )}
+
+            {/* Lock/Unlock */}
+            {canLock && (
+              <button
+                className={`thread-action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
+                onClick={handleLockThread}
+                title={
+                  currentThread?.is_locked ? "Unlock thread" : "Lock thread"
+                }
+                type="button"
+              >
+                {currentThread?.is_locked ? (
+                  <Unlock size={14} />
+                ) : (
+                  <Lock size={14} />
+                )}
+              </button>
+            )}
+
             {/* Edit - derived from live user permissions atom */}
             {canEdit && (
               <button
@@ -233,6 +305,21 @@ const ViewThreadPage = () => {
         <div className="view-thread-page">
           <ViewThreadMeta threadId={threadId} />
           <div>
+            {currentThread.is_shared && currentThread.original_thread && (
+              <div
+                className="reshared-banner"
+                onClick={() =>
+                  navigate(`/view-thread/${currentThread.original_thread_id}`)
+                }
+              >
+                <Share2 size={14} />
+                <span>
+                  Reshared from{" "}
+                  <strong>{currentThread.original_thread.title}</strong> by{" "}
+                  {currentThread.original_thread.user_name ?? "unknown"}
+                </span>
+              </div>
+            )}
             <ViewThread content={currentThread.content} />
             <ViewThreadComments threadId={threadId} />
           </div>

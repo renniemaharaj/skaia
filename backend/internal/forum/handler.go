@@ -40,6 +40,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Category routes
 		r.With(optJWT).Get("/categories", h.listCategories)
 		r.With(jwt).Post("/categories", h.createCategory)
+		r.With(jwt).Put("/categories/{id}", h.updateCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
 		// Category-scoped thread listing
@@ -50,9 +51,11 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Post("/threads", h.createThread)
 		r.With(optJWT).Get("/threads/{id}", h.getThread)
 		r.With(jwt).Put("/threads/{id}", h.updateThread)
+		r.With(jwt).Put("/threads/{id}/lock", h.lockThread)
 		r.With(jwt).Delete("/threads/{id}", h.deleteThread)
 		r.With(jwt).Post("/threads/{threadId}/like", h.likeThread)
 		r.With(jwt).Delete("/threads/{threadId}/like", h.unlikeThread)
+		r.With(jwt).Post("/threads/{threadId}/share", h.shareThread)
 
 		// Comment routes
 		r.With(optJWT).Get("/threads/{id}/comments", h.listComments)
@@ -218,6 +221,79 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
+func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "forum.category-edit") {
+		return
+	}
+
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
+		return
+	}
+
+	cat, err := h.svc.GetCategory(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "category not found")
+		return
+	}
+
+	var req struct {
+		Name         *string `json:"name"`
+		Description  *string `json:"description"`
+		DisplayOrder *int    `json:"display_order"`
+		IsLocked     *bool   `json:"is_locked"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Name != nil {
+		cat.Name = *req.Name
+	}
+	if req.Description != nil {
+		cat.Description = *req.Description
+	}
+	if req.DisplayOrder != nil {
+		cat.DisplayOrder = *req.DisplayOrder
+	}
+	if req.IsLocked != nil {
+		cat.IsLocked = *req.IsLocked
+	}
+
+	updated, err := h.svc.UpdateCategory(cat)
+	if err != nil {
+		log.Printf("forum.updateCategory: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update category")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCategoryUpdated,
+		Resource:   ievents.ResForumCategory,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"name": updated.Name, "is_locked": updated.IsLocked},
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "category_updated",
+					"data":   updated,
+				}),
+			})
+		},
+	})
+	utils.WriteJSON(w, http.StatusOK, updated)
+}
+
 // Thread handlers
 
 func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
@@ -309,6 +385,16 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cat, err := h.svc.GetCategory(categoryID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "category not found")
+		return
+	}
+	if cat.IsLocked {
+		utils.WriteError(w, http.StatusForbidden, "category is locked")
+		return
+	}
+
 	created, err := h.svc.CreateThread(&models.ForumThread{
 		CategoryID: categoryID,
 		UserID:     userID,
@@ -378,6 +464,13 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 		thread.CanEdit = userID == thread.UserID || canEdit
 		canDel, _ := h.authz.HasPermission(userID, "forum.thread-delete")
 		thread.CanDelete = userID == thread.UserID || canDel
+		thread.CanLock = userID == thread.UserID || canEdit
+	}
+
+	if thread.IsShared && thread.OriginalThreadID != nil {
+		if orig, err := h.svc.GetThread(*thread.OriginalThreadID); err == nil {
+			thread.OriginalThread = orig
+		}
 	}
 
 	utils.WriteJSON(w, http.StatusOK, thread)
@@ -681,6 +774,16 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	thread, err := h.svc.GetThread(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
+		return
+	}
+	if thread.IsLocked {
+		utils.WriteError(w, http.StatusForbidden, "thread is locked")
+		return
+	}
+
 	var req struct {
 		Content string `json:"content"`
 	}
@@ -937,6 +1040,126 @@ func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "unliked", "likes": count})
+}
+
+func (h *Handler) lockThread(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		return
+	}
+
+	thread, err := h.svc.GetThread(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
+		return
+	}
+
+	canEdit, _ := h.authz.HasPermission(userID, "forum.thread-edit")
+	if thread.UserID != userID && !canEdit {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	var req struct {
+		IsLocked bool `json:"is_locked"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	thread.IsLocked = req.IsLocked
+	updated, err := h.svc.UpdateThread(thread)
+	if err != nil {
+		log.Printf("forum.lockThread: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to update thread")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadLocked,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"is_locked": updated.IsLocked},
+		Fn: func() {
+			h.hub.PropagateForumThread(id, map[string]interface{}{"is_locked": updated.IsLocked}, "thread_locked")
+		},
+	})
+	utils.WriteJSON(w, http.StatusOK, updated)
+}
+
+func (h *Handler) shareThread(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "forum.thread-new") {
+		return
+	}
+
+	threadID, err := h.parseID(r, "threadId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		return
+	}
+
+	original, err := h.svc.GetThread(threadID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "original thread not found")
+		return
+	}
+
+	var req struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	shared, err := h.svc.CreateThread(&models.ForumThread{
+		CategoryID:       original.CategoryID,
+		UserID:           userID,
+		Title:            original.Title,
+		Content:          req.Content,
+		IsShared:         true,
+		OriginalThreadID: &threadID,
+	})
+	if err != nil {
+		log.Printf("forum.shareThread: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to share thread")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadShared,
+		Resource:   ievents.ResForum,
+		ResourceID: shared.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"original_thread_id": threadID},
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "thread_shared",
+					"data":   shared,
+				}),
+			})
+			h.hub.PropagateForumThread(shared.ID, shared, "thread_created")
+		},
+	})
+	utils.WriteJSON(w, http.StatusCreated, shared)
 }
 
 // marshalPayload encodes v to json.RawMessage, silently ignoring errors.

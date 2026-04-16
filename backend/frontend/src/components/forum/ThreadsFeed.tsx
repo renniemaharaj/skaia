@@ -1,6 +1,6 @@
 import "./ThreadsFeed.css";
 import { Link } from "react-router-dom";
-import { ChevronUp, Eye, Heart, MessageSquare } from "lucide-react";
+import { ChevronUp, Eye, Heart, MessageSquare, Share2 } from "lucide-react";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
 import UserLink from "../user/UserLink";
 import { formatDate } from "../../utils/serverTime";
@@ -53,7 +53,14 @@ const ThreadsFeed = ({
             to={`/view-thread/${t.id}`}
             className="card card--interactive card--compact threads-feed-card"
           >
-            <div className="threads-feed-title">{t.title}</div>
+            <div className="threads-feed-title">
+              {t.is_shared && (
+                <span className="threads-feed-reshared-badge" title="Reshared">
+                  <Share2 size={12} />
+                </span>
+              )}
+              {t.title}
+            </div>
             <p className="threads-feed-excerpt">
               {t.content.replace(/<[^>]*>/g, "").slice(0, 130)}
               {t.content.length > 130 ? "…" : ""}

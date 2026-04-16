@@ -65,3 +65,41 @@
     padding: 0;
   }
 }
+
+/* ── Reshared thread banner ──────────────────────────────────── */
+.reshared-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--bg-tertiary, var(--bg-secondary));
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.reshared-banner:hover {
+  background: var(--bg-hover, var(--bg-tertiary));
+}
+.reshared-banner strong {
+  color: var(--text-primary);
+}
+
+/* ── Lock / Share action buttons ─────────────────────────────── */
+.thread-action-btn.lock-btn,
+.thread-action-btn.share-btn {
+  color: var(--text-secondary);
+}
+.thread-action-btn.lock-btn:hover {
+  color: var(--warning-color, #f59e0b);
+}
+.thread-action-btn.lock-btn.locked {
+  color: var(--warning-color, #f59e0b);
+}
+.thread-action-btn.share-btn:hover {
+  color: var(--primary-color);
+}

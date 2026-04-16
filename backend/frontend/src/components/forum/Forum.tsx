@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Eye, MessageSquare, Plus, Edit2, Trash2 } from "lucide-react";
+import {
+  Eye,
+  MessageSquare,
+  Plus,
+  Edit2,
+  Trash2,
+  Lock,
+  Unlock,
+} from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   currentUserAtom,
@@ -50,6 +58,7 @@ export const Forum: React.FC = () => {
           id: cat.id,
           name: cat.name,
           description: cat.description || "",
+          is_locked: cat.is_locked || false,
           thread_count: cat.thread_count || 0,
           created_at: cat.created_at,
           updated_at: cat.updated_at,
@@ -97,6 +106,21 @@ export const Forum: React.FC = () => {
     }
   };
 
+  const handleToggleCategoryLock = async (
+    categoryId: string,
+    locked: boolean,
+  ) => {
+    try {
+      await apiRequest(`/forum/categories/${categoryId}`, {
+        method: "PUT",
+        body: JSON.stringify({ is_locked: locked }),
+      });
+      loadForums();
+    } catch (error) {
+      console.error("Error toggling category lock:", error);
+    }
+  };
+
   const handleDeleteThread = (threadId: string, _: string) => {
     apiRequest(`/forum/threads/${threadId}`, {
       method: "DELETE",
@@ -110,6 +134,10 @@ export const Forum: React.FC = () => {
     guestSandboxMode;
   const canDeleteCategory =
     currentUser?.permissions?.includes("forum.category-delete") ||
+    guestSandboxMode;
+  const canEditCategories =
+    currentUser?.permissions?.includes("forum.category-edit") ||
+    currentUser?.roles?.includes("admin") ||
     guestSandboxMode;
 
   return (
@@ -217,6 +245,7 @@ export const Forum: React.FC = () => {
               id: `skeleton-${i}`,
               name: "",
               description: "",
+              is_locked: false,
               thread_count: 0,
               created_at: "",
               updated_at: "",
@@ -245,7 +274,12 @@ export const Forum: React.FC = () => {
                     style={{ width: "50%", height: 20, borderRadius: 4 }}
                   />
                 ) : (
-                  <h3 className="forum-category-title">{forum.name}</h3>
+                  <h3 className="forum-category-title">
+                    {forum.is_locked && (
+                      <Lock size={14} className="category-lock-icon" />
+                    )}
+                    {forum.name}
+                  </h3>
                 )}
                 <div
                   style={{
@@ -267,6 +301,29 @@ export const Forum: React.FC = () => {
                             .length
                         }
                       </span>
+                      {canEditCategories && !loading && (
+                        <button
+                          className={`thread-action-btn lock-btn${forum.is_locked ? " locked" : ""}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleCategoryLock(
+                              forum.id,
+                              !forum.is_locked,
+                            );
+                          }}
+                          title={
+                            forum.is_locked
+                              ? "Unlock category"
+                              : "Lock category"
+                          }
+                        >
+                          {forum.is_locked ? (
+                            <Unlock size={14} />
+                          ) : (
+                            <Lock size={14} />
+                          )}
+                        </button>
+                      )}
                       {canDeleteCategory && (
                         <button
                           className="thread-action-btn delete-btn"

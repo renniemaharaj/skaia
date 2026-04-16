@@ -429,6 +429,26 @@
   flex-shrink: 0;
 }
 
+.cp-card__badge--private {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--warning-color, #f59e0b);
+  background: color-mix(
+    in srgb,
+    var(--warning-color, #f59e0b) 12%,
+    var(--bg-tertiary)
+  );
+}
+
+.cp-card__badge--unlisted {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-secondary) 12%, var(--bg-tertiary));
+}
+
 .cp-user-chip {
   display: inline-flex;
   align-items: center;

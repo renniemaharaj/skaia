@@ -99,7 +99,8 @@ type Page struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	IsIndex     bool      `json:"is_index"`
-	Content     string    `json:"content"` // raw JSON array of sections
+	Visibility  string    `json:"visibility"` // "public", "private", "unlisted"
+	Content     string    `json:"content"`    // raw JSON array of sections
 	OwnerID     *int64    `json:"owner_id,omitempty"`
 	ViewCount   int       `json:"view_count"`
 	CreatedAt   time.Time `json:"created_at"`

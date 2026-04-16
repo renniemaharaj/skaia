@@ -39,6 +39,7 @@ interface CommentSectionProps {
   onCommentsScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
   showCount?: boolean;
   disabled?: boolean;
+  lockedMessage?: string;
 }
 
 const CommentSection = ({
@@ -59,6 +60,7 @@ const CommentSection = ({
   onCommentsScroll,
   showCount = true,
   disabled = false,
+  lockedMessage,
 }: CommentSectionProps) => {
   const hasComments = comments.length > 0;
 
@@ -170,6 +172,10 @@ const CommentSection = ({
           })
         )}
       </div>
+
+      {lockedMessage && !canComment && (
+        <div className="comment-locked-message">{lockedMessage}</div>
+      )}
 
       {canComment && (
         <div className="comment-composer">

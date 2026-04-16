@@ -6,6 +6,7 @@ import "./ForumCategory.css";
 interface Category {
   id: string;
   name: string;
+  is_locked?: boolean;
 }
 
 interface ForumCategoryProps {
@@ -25,6 +26,7 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
           response?.map((cat) => ({
             id: cat.id,
             name: cat.name,
+            is_locked: cat.is_locked,
           })) || [];
         setCategories(categoryList);
       } catch (error) {
@@ -49,8 +51,9 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
         >
           <option value="">Select a category</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
+            <option key={cat.id} value={cat.id} disabled={cat.is_locked}>
               {cat.name}
+              {cat.is_locked ? " (locked)" : ""}
             </option>
           ))}
         </select>

@@ -32,6 +32,10 @@ export interface ForumThread {
   reply_count: number;
   is_pinned: boolean;
   is_locked: boolean;
+  is_shared: boolean;
+  original_thread_id?: string;
+  original_thread?: ForumThread;
+  can_lock?: boolean;
   created_at: string;
   updated_at: string;
   user_name?: string;
@@ -50,6 +54,7 @@ export interface ForumCategory {
   id: string;
   name: string;
   description?: string;
+  is_locked: boolean;
   thread_count: number;
   created_at: string;
   updated_at: string;
@@ -95,6 +100,7 @@ export const threadPermissionsAtom = atom((get) => {
     return {
       canEdit: sandbox,
       canDelete: sandbox,
+      canLock: sandbox,
       canLikeComments: sandbox,
       canDeleteThreadComment: sandbox,
       canLikeThreads: sandbox,
@@ -109,6 +115,8 @@ export const threadPermissionsAtom = atom((get) => {
       isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
     canDelete:
       isOwner || isAdmin || perms.includes("forum.thread-delete") || sandbox,
+    canLock:
+      isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
     canLikeComments: true,
     canDeleteThreadComment:
       isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,

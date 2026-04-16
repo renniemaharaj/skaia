@@ -17,6 +17,7 @@ import {
   List,
   Trash2,
   Plus,
+  EyeOff,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { toast } from "sonner";
@@ -342,6 +343,16 @@ export default function CustomPages() {
               {page.is_index && (
                 <span className="cp-card__badge">Homepage</span>
               )}
+              {page.visibility === "private" && (
+                <span className="cp-card__badge cp-card__badge--private">
+                  <EyeOff size={10} /> Private
+                </span>
+              )}
+              {page.visibility === "unlisted" && (
+                <span className="cp-card__badge cp-card__badge--unlisted">
+                  <EyeOff size={10} /> Unlisted
+                </span>
+              )}
             </Link>
           ))}
         </div>
@@ -367,6 +378,16 @@ export default function CustomPages() {
                 {page.is_index && (
                   <span className="cp-card__badge cp-card__badge--inline">
                     Homepage
+                  </span>
+                )}
+                {page.visibility === "private" && (
+                  <span className="cp-card__badge cp-card__badge--inline cp-card__badge--private">
+                    <EyeOff size={10} /> Private
+                  </span>
+                )}
+                {page.visibility === "unlisted" && (
+                  <span className="cp-card__badge cp-card__badge--inline cp-card__badge--unlisted">
+                    <EyeOff size={10} /> Unlisted
                   </span>
                 )}
               </span>

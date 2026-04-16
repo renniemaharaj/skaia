@@ -18,10 +18,10 @@ func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, COALESCE(view_count, 0), created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
 		 FROM pages WHERE slug = $1`, slug,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -36,10 +36,10 @@ func (r *sqlRepository) GetIndex() (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, COALESCE(view_count, 0), created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
 		 FROM pages WHERE is_index = TRUE LIMIT 1`,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +54,10 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, COALESCE(view_count, 0), created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
 		 FROM pages WHERE id = $1`, id,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
-		&p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt)
+		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 func (r *sqlRepository) List() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT id, slug, title, description, is_index, content::text,
-		        owner_id, COALESCE(view_count, 0), created_at, updated_at
+		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
 		 FROM pages ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 		p := &models.Page{}
 		var ownerID sql.NullInt64
 		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
-			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if ownerID.Valid {
@@ -97,10 +97,10 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 
 func (r *sqlRepository) Create(p *models.Page) error {
 	return r.db.QueryRow(
-		`INSERT INTO pages (slug, title, description, is_index, content, owner_id)
-		 VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+		`INSERT INTO pages (slug, title, description, is_index, content, owner_id, visibility)
+		 VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
 		 RETURNING id, created_at, updated_at`,
-		p.Slug, p.Title, p.Description, p.IsIndex, p.Content, p.OwnerID,
+		p.Slug, p.Title, p.Description, p.IsIndex, p.Content, p.OwnerID, p.Visibility,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
@@ -108,10 +108,10 @@ func (r *sqlRepository) Update(p *models.Page) error {
 	return r.db.QueryRow(
 		`UPDATE pages
 		 SET slug = $2, title = $3, description = $4, is_index = $5,
-		     content = $6::jsonb, updated_at = CURRENT_TIMESTAMP
+		     content = $6::jsonb, visibility = $7, updated_at = CURRENT_TIMESTAMP
 		 WHERE id = $1
 		 RETURNING updated_at`,
-		p.ID, p.Slug, p.Title, p.Description, p.IsIndex, p.Content,
+		p.ID, p.Slug, p.Title, p.Description, p.IsIndex, p.Content, p.Visibility,
 	).Scan(&p.UpdatedAt)
 }
 

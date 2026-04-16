@@ -20,6 +20,7 @@ export interface PageBuilderPage {
   owner_id?: number | null;
   owner?: PageUser | null;
   editors?: PageUser[];
+  visibility?: string;
   view_count: number;
   likes: number;
   is_liked: boolean;

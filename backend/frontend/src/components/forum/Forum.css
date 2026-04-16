@@ -64,11 +64,23 @@
   font-weight: 700;
   color: var(--primary-color);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.category-lock-icon {
+  color: var(--warning-color, #f59e0b);
+  flex-shrink: 0;
 }
 
 /* New Thread Card */
 .new-thread-card {
-  background-color: color-mix(in srgb, var(--skaia-green-primary) 5%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--skaia-green-primary) 5%,
+    transparent
+  );
   border: 2px dashed var(--skaia-green-primary);
   box-shadow: none;
   display: flex;
@@ -98,10 +110,15 @@
 
 .new-thread-card:hover {
   border-color: var(--skaia-green-primary);
-  background-color: color-mix(in srgb, var(--skaia-green-primary) 8%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--skaia-green-primary) 8%,
+    transparent
+  );
   box-shadow:
     0 8px 24px color-mix(in srgb, var(--skaia-green-primary) 25%, transparent),
-    inset 0 0 0 2px color-mix(in srgb, var(--skaia-green-primary) 10%, transparent);
+    inset 0 0 0 2px
+      color-mix(in srgb, var(--skaia-green-primary) 10%, transparent);
   transform: translateY(-6px);
 }
 
