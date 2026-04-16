@@ -1,0 +1,68 @@
+/* ── Designed Card Grid ────────────────────────────────────────────────── */
+
+.dcard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* ── Card widths (12-col spans) ───────────────────────────────────────── */
+
+.dcard--narrow {
+  grid-column: span 3;
+}
+
+.dcard--regular {
+  grid-column: span 4;
+}
+
+.dcard--wide {
+  grid-column: span 6;
+}
+
+.dcard--halfway {
+  grid-column: span 8;
+}
+
+.dcard--full {
+  grid-column: 1 / -1;
+}
+
+/* ── Card structure ───────────────────────────────────────────────────── */
+
+.dcard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.dcard__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.dcard__body--overlay {
+  background: color-mix(in srgb, var(--bg-color) 70%, transparent);
+  border-radius: var(--card-radius);
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .dcard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dcard--narrow,
+  .dcard--regular,
+  .dcard--wide,
+  .dcard--halfway,
+  .dcard--full {
+    grid-column: auto;
+  }
+}

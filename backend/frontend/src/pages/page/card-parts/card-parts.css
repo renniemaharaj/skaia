@@ -1,0 +1,125 @@
+/* ── Card Parts ─ Reusable card zone components ───────────────────────── */
+
+/* ── Image ────────────────────────────────────────────────────────────── */
+
+.cdp-image {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cdp-image--top {
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+}
+
+.cdp-image--bottom {
+  border-radius: 0 0 var(--card-radius) var(--card-radius);
+}
+
+.cdp-image--background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.cdp-image--empty {
+  opacity: 0.4;
+}
+
+.cdp-image__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Heading ──────────────────────────────────────────────────────────── */
+
+.cdp-heading {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.cdp-heading--sm {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.cdp-heading--md {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.cdp-heading--lg {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+/* ── Subheading ───────────────────────────────────────────────────────── */
+
+.cdp-subheading {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cdp-subheading--sm {
+  font-size: 0.8rem;
+}
+
+.cdp-subheading--md {
+  font-size: 0.875rem;
+}
+
+.cdp-subheading--lg {
+  font-size: 1rem;
+}
+
+/* ── Icon ─────────────────────────────────────────────────────────────── */
+
+.cdp-icon {
+  display: flex;
+}
+
+.cdp-icon__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-secondary);
+}
+
+/* ── Link ─────────────────────────────────────────────────────────────── */
+
+.cdp-link {
+  margin: 0;
+}
+
+.cdp-link--sm {
+  font-size: 0.8rem;
+}
+
+.cdp-link--md {
+  font-size: 0.875rem;
+}
+
+.cdp-link--lg {
+  font-size: 1rem;
+}
+
+.cdp-link__anchor {
+  color: var(--primary-color);
+  text-decoration: none;
+  word-break: break-word;
+  transition: opacity 0.15s;
+}
+
+.cdp-link__anchor:hover {
+  opacity: 0.8;
+}

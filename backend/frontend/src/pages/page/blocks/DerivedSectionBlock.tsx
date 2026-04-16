@@ -8,8 +8,13 @@ import type {
   RenderableSectionType,
   FactTableConfig,
   MappableField,
+  CardTemplate,
 } from "../types";
-import { RENDERABLE_SECTION_TYPES, RENDERABLE_TYPE_LABELS } from "../types";
+import {
+  RENDERABLE_SECTION_TYPES,
+  RENDERABLE_TYPE_LABELS,
+  DEFAULT_CARD_TEMPLATE,
+} from "../types";
 import "./DerivedSectionBlock.css";
 import {
   SectionToolbar,
@@ -34,6 +39,8 @@ import { StatCardsBlock } from "./StatCardsBlock";
 import { EventHighlightsBlock } from "./EventHighlightsBlock";
 import { ImageCardGrid } from "./ImageCardGrid";
 import type { ImageCardItem } from "./ImageCardGrid";
+import { DesignedCardGrid } from "./DesignedCardGrid";
+import { CardDesigner } from "../CardDesigner";
 
 interface Props {
   section: LandingSection;
@@ -273,6 +280,13 @@ export const DerivedSectionBlock = ({
     });
   };
 
+  const handleCardTemplateChange = (card_template: CardTemplate) => {
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, { card_template }),
+    });
+  };
+
   const selectedDS = useMemo(
     () => dataSources.find((d) => d.id === cfg.datasource_id),
     [dataSources, cfg.datasource_id],
@@ -345,6 +359,10 @@ export const DerivedSectionBlock = ({
           link_url: item.link_url || undefined,
         }));
         return <ImageCardGrid items={imageItems} />;
+      }
+      case "designed_card": {
+        const tmpl = cfg.card_template ?? DEFAULT_CARD_TEMPLATE;
+        return <DesignedCardGrid items={mappedItems} template={tmpl} />;
       }
       default:
         return null;
@@ -461,6 +479,14 @@ export const DerivedSectionBlock = ({
           availableColumns={availableColumns}
           columnMap={cfg.column_map ?? {}}
           onChange={handleColumnMapChange}
+        />
+      )}
+
+      {/* Card designer UI (designed_card mode only) */}
+      {canEdit && renderAs === "designed_card" && (
+        <CardDesigner
+          template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
+          onChange={handleCardTemplateChange}
         />
       )}
 

@@ -1,0 +1,372 @@
+/**
+ * CardDesigner — visual card template builder.
+ *
+ * Lets the user configure card dimensions, toggle zones on/off,
+ * reorder zones via drag-and-drop, and set alignment + size per zone.
+ * Produces a CardTemplate stored in the section config JSON.
+ */
+import { useCallback, useState } from "react";
+import {
+  GripVertical,
+  Eye,
+  EyeOff,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  ChevronUp,
+  ChevronDown,
+  Image,
+  Type,
+  FileText,
+  Smile,
+  ExternalLink,
+} from "lucide-react";
+import type {
+  CardTemplate,
+  CardZone,
+  CardWidth,
+  ZoneAlign,
+  ZoneSize,
+  ImagePosition,
+  MappableField,
+} from "./types";
+import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
+import "./CardDesigner.css";
+
+interface CardDesignerProps {
+  template: CardTemplate;
+  onChange: (template: CardTemplate) => void;
+}
+
+const CARD_WIDTH_OPTIONS: { value: CardWidth; label: string }[] = [
+  { value: "narrow", label: "Narrow (3 col)" },
+  { value: "regular", label: "Regular (4 col)" },
+  { value: "wide", label: "Wide (6 col)" },
+  { value: "halfway", label: "Half (8 col)" },
+  { value: "full", label: "Full (12 col)" },
+];
+
+const ASPECT_RATIO_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "1/1", label: "1:1 Square" },
+  { value: "4/3", label: "4:3" },
+  { value: "16/9", label: "16:9 Wide" },
+  { value: "3/4", label: "3:4 Tall" },
+];
+
+const IMAGE_POSITION_OPTIONS: { value: ImagePosition; label: string }[] = [
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "background", label: "Background" },
+  { value: "none", label: "Hidden" },
+];
+
+const ZONE_SIZE_OPTIONS: { value: ZoneSize; label: string }[] = [
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+];
+
+const FIELD_ICONS: Record<MappableField, React.FC<{ size: number }>> = {
+  image_url: Image,
+  heading: Type,
+  subheading: FileText,
+  icon: Smile,
+  link_url: ExternalLink,
+};
+
+export const CardDesigner = ({ template, onChange }: CardDesignerProps) => {
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const updateTemplate = useCallback(
+    (updates: Partial<CardTemplate>) => {
+      onChange({ ...template, ...updates });
+    },
+    [template, onChange],
+  );
+
+  const updateZone = useCallback(
+    (index: number, updates: Partial<CardZone>) => {
+      const zones = template.zones.map((z, i) =>
+        i === index ? { ...z, ...updates } : z,
+      );
+      onChange({ ...template, zones });
+    },
+    [template, onChange],
+  );
+
+  const moveZone = useCallback(
+    (from: number, to: number) => {
+      if (from === to) return;
+      const zones = [...template.zones];
+      const [moved] = zones.splice(from, 1);
+      zones.splice(to, 0, moved);
+      onChange({ ...template, zones });
+    },
+    [template, onChange],
+  );
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDragIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    if (dragIndex !== null) {
+      moveZone(dragIndex, toIndex);
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const resetToDefault = () => {
+    onChange({ ...DEFAULT_CARD_TEMPLATE });
+  };
+
+  // Filter zones: image_url is handled separately via imagePosition
+  const bodyZoneIndices = template.zones
+    .map((z, i) => ({ zone: z, originalIndex: i }))
+    .filter((entry) => entry.zone.field !== "image_url");
+
+  return (
+    <div className="card-designer">
+      <div className="card-designer__header">
+        <span className="card-designer__title">Card Designer</span>
+        <button
+          type="button"
+          className="card-designer__reset"
+          onClick={resetToDefault}
+        >
+          Reset
+        </button>
+      </div>
+
+      {/* Dimensions row */}
+      <div className="card-designer__dimensions">
+        <label className="card-designer__field">
+          <span>Width</span>
+          <select
+            value={template.cardWidth}
+            onChange={(e) =>
+              updateTemplate({ cardWidth: e.target.value as CardWidth })
+            }
+          >
+            {CARD_WIDTH_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="card-designer__field">
+          <span>Aspect Ratio</span>
+          <select
+            value={template.aspectRatio ?? "auto"}
+            onChange={(e) =>
+              updateTemplate({
+                aspectRatio:
+                  e.target.value === "auto" ? undefined : e.target.value,
+              })
+            }
+          >
+            {ASPECT_RATIO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="card-designer__field">
+          <span>Min Height</span>
+          <input
+            type="number"
+            min={0}
+            max={800}
+            step={20}
+            value={template.minHeight ?? 0}
+            onChange={(e) =>
+              updateTemplate({
+                minHeight: Number(e.target.value) || undefined,
+              })
+            }
+          />
+        </label>
+
+        <label className="card-designer__field">
+          <span>Image</span>
+          <select
+            value={template.imagePosition}
+            onChange={(e) =>
+              updateTemplate({
+                imagePosition: e.target.value as ImagePosition,
+              })
+            }
+          >
+            {IMAGE_POSITION_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="card-designer__field">
+          <span>Gap</span>
+          <input
+            type="number"
+            min={0}
+            max={32}
+            step={2}
+            value={template.gap}
+            onChange={(e) => updateTemplate({ gap: Number(e.target.value) })}
+          />
+        </label>
+
+        <label className="card-designer__field">
+          <span>Padding</span>
+          <input
+            type="number"
+            min={0}
+            max={48}
+            step={4}
+            value={template.padding}
+            onChange={(e) =>
+              updateTemplate({ padding: Number(e.target.value) })
+            }
+          />
+        </label>
+      </div>
+
+      {/* Zone list: reorderable rows */}
+      <div className="card-designer__zones">
+        <div className="card-designer__zones-header">
+          <span>Zones</span>
+          <span className="card-designer__zones-hint">
+            Drag to reorder · toggle visibility
+          </span>
+        </div>
+
+        {bodyZoneIndices.map(({ zone, originalIndex }, visualIndex) => {
+          const FieldIcon = FIELD_ICONS[zone.field];
+          const isDragging = dragIndex === originalIndex;
+          const isDragOver = dragOverIndex === originalIndex;
+
+          return (
+            <div
+              key={zone.field}
+              className={`card-designer__zone${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${!zone.visible ? " hidden-zone" : ""}`}
+              draggable
+              onDragStart={(e) => handleDragStart(e, originalIndex)}
+              onDragOver={(e) => handleDragOver(e, originalIndex)}
+              onDrop={(e) => handleDrop(e, originalIndex)}
+              onDragEnd={handleDragEnd}
+            >
+              <span className="card-designer__zone-grip">
+                <GripVertical size={14} />
+              </span>
+
+              <span className="card-designer__zone-icon">
+                <FieldIcon size={14} />
+              </span>
+
+              <span className="card-designer__zone-label">
+                {MAPPABLE_FIELD_LABELS[zone.field]}
+              </span>
+
+              {/* Alignment buttons */}
+              <div className="card-designer__zone-align">
+                {(["left", "center", "right"] as ZoneAlign[]).map((a) => (
+                  <button
+                    key={a}
+                    type="button"
+                    className={`icon-btn icon-btn--xs${zone.align === a ? " icon-btn--active" : ""}`}
+                    onClick={() => updateZone(originalIndex, { align: a })}
+                    title={`Align ${a}`}
+                  >
+                    {a === "left" && <AlignLeft size={12} />}
+                    {a === "center" && <AlignCenter size={12} />}
+                    {a === "right" && <AlignRight size={12} />}
+                  </button>
+                ))}
+              </div>
+
+              {/* Size buttons */}
+              <div className="card-designer__zone-size">
+                {ZONE_SIZE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`card-designer__size-btn${zone.size === opt.value ? " active" : ""}`}
+                    onClick={() =>
+                      updateZone(originalIndex, { size: opt.value })
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Move up/down */}
+              <button
+                type="button"
+                className="icon-btn icon-btn--xs"
+                disabled={visualIndex === 0}
+                onClick={() => {
+                  const prevOriginal =
+                    bodyZoneIndices[visualIndex - 1]?.originalIndex;
+                  if (prevOriginal !== undefined)
+                    moveZone(originalIndex, prevOriginal);
+                }}
+                title="Move up"
+              >
+                <ChevronUp size={12} />
+              </button>
+              <button
+                type="button"
+                className="icon-btn icon-btn--xs"
+                disabled={visualIndex === bodyZoneIndices.length - 1}
+                onClick={() => {
+                  const nextOriginal =
+                    bodyZoneIndices[visualIndex + 1]?.originalIndex;
+                  if (nextOriginal !== undefined)
+                    moveZone(originalIndex, nextOriginal);
+                }}
+                title="Move down"
+              >
+                <ChevronDown size={12} />
+              </button>
+
+              {/* Visibility toggle */}
+              <button
+                type="button"
+                className={`icon-btn icon-btn--xs${zone.visible ? "" : " icon-btn--danger"}`}
+                onClick={() =>
+                  updateZone(originalIndex, { visible: !zone.visible })
+                }
+                title={zone.visible ? "Hide zone" : "Show zone"}
+              >
+                {zone.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};

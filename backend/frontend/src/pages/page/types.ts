@@ -139,6 +139,7 @@ export const RENDERABLE_SECTION_TYPES = [
   "stat_cards",
   "event_highlights",
   "image_cards",
+  "designed_card",
 ] as const;
 export type RenderableSectionType = (typeof RENDERABLE_SECTION_TYPES)[number];
 
@@ -148,6 +149,7 @@ export const RENDERABLE_TYPE_LABELS: Record<RenderableSectionType, string> = {
   stat_cards: "Stat Cards",
   event_highlights: "Event Highlights",
   image_cards: "Image Cards",
+  designed_card: "Designed Card",
 };
 
 /** Fields on a LandingItem that a datasource column can be mapped to. */
@@ -177,6 +179,64 @@ export type RowOverrides = Record<
   Partial<Record<MappableField, string>>
 >;
 
+/* ── Card Designer types ───────────────────────────────────────────────── */
+
+/** Card width options for grid-based card layouts. */
+export type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
+
+/** Alignment options for card zones. */
+export type ZoneAlign = "left" | "center" | "right";
+
+/** Size presets for card zone content. */
+export type ZoneSize = "sm" | "md" | "lg";
+
+/** Where the image zone sits relative to the card body. */
+export type ImagePosition = "top" | "bottom" | "background" | "none";
+
+/**
+ * A zone within a designed card. Each zone renders one MappableField
+ * with configurable alignment and sizing.
+ */
+export interface CardZone {
+  field: MappableField;
+  align: ZoneAlign;
+  size: ZoneSize;
+  visible: boolean;
+}
+
+/**
+ * Card template describing the visual layout of a designed card.
+ * Stored in the section config JSON alongside FactTableConfig.
+ */
+export interface CardTemplate {
+  cardWidth: CardWidth;
+  minHeight?: number;
+  aspectRatio?: string;
+  zones: CardZone[];
+  gap: number;
+  padding: number;
+  imagePosition: ImagePosition;
+}
+
+/** Default zone order for a new card template. */
+export const DEFAULT_CARD_ZONES: CardZone[] = [
+  { field: "image_url", align: "center", size: "lg", visible: true },
+  { field: "icon", align: "left", size: "md", visible: false },
+  { field: "heading", align: "left", size: "md", visible: true },
+  { field: "subheading", align: "left", size: "sm", visible: true },
+  { field: "link_url", align: "left", size: "sm", visible: false },
+];
+
+export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
+  cardWidth: "regular",
+  minHeight: 280,
+  aspectRatio: "auto",
+  zones: DEFAULT_CARD_ZONES,
+  gap: 8,
+  padding: 16,
+  imagePosition: "top",
+};
+
 /** Configuration for a datasource-driven section. */
 export interface FactTableConfig {
   datasource_id?: number;
@@ -185,6 +245,7 @@ export interface FactTableConfig {
   row_overrides?: RowOverrides;
   columns?: number;
   row_key_column?: string; // which datasource column provides the stable row key
+  card_template?: CardTemplate;
 }
 
 /** A saved custom section (reusable data-bound visualization). */

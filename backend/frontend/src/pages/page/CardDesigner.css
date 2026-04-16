@@ -1,0 +1,204 @@
+/* ── Card Designer ────────────────────────────────────────────────────── */
+
+.card-designer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.card-designer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-designer__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.card-designer__reset {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.card-designer__reset:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* ── Dimensions row ───────────────────────────────────────────────────── */
+
+.card-designer__dimensions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.card-designer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 100px;
+}
+
+.card-designer__field select,
+.card-designer__field input {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  min-width: 80px;
+}
+
+.card-designer__field input[type="number"] {
+  width: 72px;
+}
+
+/* ── Zone list ────────────────────────────────────────────────────────── */
+
+.card-designer__zones {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-designer__zones-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-designer__zones-hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.card-designer__zone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  transition: all 0.15s;
+  cursor: grab;
+}
+
+.card-designer__zone:active {
+  cursor: grabbing;
+}
+
+.card-designer__zone.dragging {
+  opacity: 0.4;
+}
+
+.card-designer__zone.drag-over {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+}
+
+.card-designer__zone.hidden-zone {
+  opacity: 0.45;
+}
+
+.card-designer__zone-grip {
+  color: var(--text-secondary);
+  opacity: 0.4;
+  display: flex;
+  align-items: center;
+}
+
+.card-designer__zone-icon {
+  display: flex;
+  align-items: center;
+  color: var(--primary-color);
+}
+
+.card-designer__zone-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 72px;
+}
+
+/* ── Zone alignment buttons ───────────────────────────────────────────── */
+
+.card-designer__zone-align {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+/* ── Zone size buttons ────────────────────────────────────────────────── */
+
+.card-designer__zone-size {
+  display: flex;
+  gap: 2px;
+}
+
+.card-designer__size-btn {
+  padding: 2px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.card-designer__size-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.card-designer__size-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .card-designer__dimensions {
+    flex-direction: column;
+  }
+
+  .card-designer__zone {
+    flex-wrap: wrap;
+  }
+
+  .card-designer__zone-align {
+    margin-left: 0;
+  }
+}
