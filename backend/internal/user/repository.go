@@ -303,6 +303,14 @@ func (r *sqlRepository) Unsuspend(userID int64) error {
 	return err
 }
 
+func (r *sqlRepository) UpdatePasswordHash(userID int64, newHash string) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET password_hash=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
+		newHash, userID,
+	)
+	return err
+}
+
 func (r *sqlRepository) HasPermission(userID int64, permission string) (bool, error) {
 	var count int
 	err := r.db.QueryRow(

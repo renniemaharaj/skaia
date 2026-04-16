@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
+import { toast } from "sonner";
 
 import { useUserData } from "./useUserData";
 import { useProfileEdit } from "./useProfileEdit";
@@ -14,6 +15,7 @@ import UserUploads from "./UserUploads";
 import EditProfileDialog from "./EditProfileDialog";
 import SuspendDialog from "./SuspendDialog";
 
+import { apiRequest } from "../../utils/api";
 import "./UserProfile.css";
 
 interface UserProfileProps {
@@ -43,6 +45,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const canSuspend = hasPermission("user.suspend");
   const isOwnProfile = String(currentUser?.id) === String(effectiveUserId);
   const canEdit = canManage || isOwnProfile;
+  const canResetPassword = (canManage && !isOwnProfile) || isOwnProfile;
 
   const {
     user,
@@ -83,6 +86,26 @@ const UserProfile: React.FC<UserProfileProps> = ({
     isOwnProfile,
     onSaved: (updated) => setUser((u) => (u ? { ...u, ...updated } : u)),
   });
+
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const handleResetPassword = async () => {
+    if (!user?.id) return;
+    if (
+      !window.confirm(
+        `Reset password for ${user.display_name || user.username}? A new password will be sent to their inbox.`,
+      )
+    )
+      return;
+    setResetPasswordLoading(true);
+    try {
+      await apiRequest(`/users/${user.id}/reset-password`, { method: "POST" });
+      toast.success("Password reset — new password sent to user's inbox");
+    } catch {
+      toast.error("Failed to reset password");
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
 
   const {
     threads,
@@ -136,11 +159,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
         displayBanner={displayBanner}
         canEdit={canEdit}
         canSuspend={canSuspend}
+        canResetPassword={canResetPassword}
         isOwnProfile={isOwnProfile}
         suspendLoading={suspendLoading}
+        resetPasswordLoading={resetPasswordLoading}
         onEditOpen={() => setEditOpen(true)}
         onSuspendOpen={() => setSuspendDialogOpen(true)}
         onUnsuspend={handleUnsuspend}
+        onResetPassword={handleResetPassword}
       />
 
       {handlePermissions

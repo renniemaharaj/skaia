@@ -37,6 +37,8 @@ interface UsePageDataReturn {
   isEditable: boolean;
   isAdmin: boolean;
   isOwner: boolean;
+  /** True when a page_updated WS event arrived while edits were in progress */
+  pendingIncoming: boolean;
   refresh: (slug?: string) => Promise<void>;
   createPage: (
     page: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">,
@@ -47,7 +49,7 @@ interface UsePageDataReturn {
   deletePage: (id: number) => Promise<void>;
 }
 
-export function usePageData(): UsePageDataReturn {
+export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const hasPermission = useAtomValue(hasPermissionAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const isAdmin = hasPermission("home.manage");
@@ -55,7 +57,20 @@ export function usePageData(): UsePageDataReturn {
   const [page, setPage] = useState<PageBuilderPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pendingIncoming, setPendingIncoming] = useState(false);
   const currentSlugRef = useRef<string | null>(null);
+  const suppressRef = useRef(suppressLiveRefresh);
+
+  useEffect(() => {
+    suppressRef.current = suppressLiveRefresh;
+    // If suppression was just lifted and there's a pending update, apply it now.
+    if (!suppressLiveRefresh && pendingIncoming) {
+      setPendingIncoming(false);
+      const slug = currentSlugRef.current;
+      if (slug) void refresh(slug);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suppressLiveRefresh]);
 
   const isOwner = !!(
     page?.owner_id &&
@@ -130,7 +145,12 @@ export function usePageData(): UsePageDataReturn {
           (data?.slug === slug || data?.id === page?.id)) ||
         (action === "page_deleted" && data?.id === page?.id)
       ) {
-        refresh(slug);
+        if (suppressRef.current) {
+          // Hold the incoming update — apply when editing is finished.
+          setPendingIncoming(true);
+        } else {
+          refresh(slug);
+        }
       }
     };
     window.addEventListener("page:live:event", handler);
@@ -144,6 +164,7 @@ export function usePageData(): UsePageDataReturn {
     isEditable,
     isAdmin,
     isOwner,
+    pendingIncoming,
     refresh,
     createPage,
     updatePage,

@@ -47,4 +47,7 @@ type Repository interface {
 	// Suspension
 	Suspend(userID int64, reason string) error
 	Unsuspend(userID int64) error
+
+	// Password
+	UpdatePasswordHash(userID int64, newHash string) error
 }

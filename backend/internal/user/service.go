@@ -1,12 +1,25 @@
 package user
 
 import (
+	"crypto/rand"
 	"errors"
 	"log"
+	"math/big"
 
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/models"
 )
+
+const securePassChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+
+func generateSecurePassword(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(securePassChars))))
+		b[i] = securePassChars[n.Int64()]
+	}
+	return string(b)
+}
 
 // Service contains all business logic for the user domain.
 // It sits between handlers and the repository, providing caching and
@@ -294,6 +307,22 @@ func (s *Service) Unsuspend(userID int64) error {
 	}
 	s.cache.Invalidate(userID)
 	return nil
+}
+
+// ResetPassword generates a new secure random password for the target user,
+// hashes and stores it, then returns the plaintext password so the caller can
+// deliver it (e.g. via a noreply inbox message).
+func (s *Service) ResetPassword(targetID int64) (string, error) {
+	newPw := generateSecurePassword(16)
+	hash, err := auth.HashPassword(newPw)
+	if err != nil {
+		return "", err
+	}
+	if err := s.repo.UpdatePasswordHash(targetID, hash); err != nil {
+		return "", err
+	}
+	s.cache.Invalidate(targetID)
+	return newPw, nil
 }
 
 // SuspendedError is returned by Login when the account is suspended.

@@ -449,7 +449,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.H
 			ws.HandleConnection(w, r, hub)
 		})
 
-		iuser.NewHandler(userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		inboxRepo := iinbox.NewRepository(db)
+		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
+		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
@@ -459,8 +461,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.H
 
 		inotif.NewHandler(notifSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 
-		inboxRepo := iinbox.NewRepository(db)
-		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 		iinbox.NewHandler(inboxSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
 		icfg.NewHandler(cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)

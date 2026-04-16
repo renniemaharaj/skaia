@@ -39,17 +39,23 @@ func userContentDir(userID int64, subdir string) (string, error) {
 	return dir, os.MkdirAll(dir, 0755)
 }
 
+// NoreplyMessenger delivers automated inbox messages to users from the system account.
+type NoreplyMessenger interface {
+	SendNoreplyToUser(recipientID int64, content string) error
+}
+
 // Handler owns the HTTP layer for the user domain.
 type Handler struct {
 	svc        *Service
 	hub        *ws.Hub
 	dispatcher *ievents.Dispatcher
+	noreply    NoreplyMessenger
 }
 
 // NewHandler returns a Handler backed by the given Service and WebSocket Hub.
-func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher) *Handler {
+func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, noreply NoreplyMessenger) *Handler {
 	os.MkdirAll(usersDir, 0755) //nolint:errcheck
-	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher}
+	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, noreply: noreply}
 }
 
 // propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
@@ -157,6 +163,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Delete("/{id}/roles/{role}", h.removeRole)
 			r.Post("/{id}/suspend", h.suspendUser)
 			r.Delete("/{id}/suspend", h.unsuspendUser)
+			r.Post("/{id}/reset-password", h.resetPassword)
 			r.Post("/me/photo", h.uploadProfilePhoto)
 			r.Post("/me/banner", h.uploadProfileBanner)
 			r.Post("/{id}/photo", h.uploadUserPhoto)
@@ -769,6 +776,63 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 		Fn:         func() { h.propagateUserSession(targetID) },
 	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "user unsuspended"})
+}
+
+func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	isOwn := actorID == targetID
+	canManage, _ := h.svc.HasPermission(actorID, "user.manage-others")
+	if !isOwn && !canManage {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !isOwn && !h.checkManagePowerLevel(w, actorID, targetID) {
+		return
+	}
+
+	newPw, err := h.svc.ResetPassword(targetID)
+	if err != nil {
+		log.Printf("user.Handler.resetPassword: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to reset password")
+		return
+	}
+
+	if h.noreply != nil {
+		target, _ := h.svc.GetByID(targetID)
+		displayName := ""
+		if target != nil {
+			displayName = target.DisplayName
+			if displayName == "" {
+				displayName = target.Username
+			}
+		}
+		content := fmt.Sprintf(
+			"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
+			displayName, newPw,
+		)
+		if err2 := h.noreply.SendNoreplyToUser(targetID, content); err2 != nil {
+			log.Printf("user.Handler.resetPassword: noreply send failed: %v", err2)
+		}
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     actorID,
+		Activity:   ievents.ActUserUpdated,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+	})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Password reset and sent to user's inbox"})
 }
 
 // FileUploadResponse is returned after a successful upload.

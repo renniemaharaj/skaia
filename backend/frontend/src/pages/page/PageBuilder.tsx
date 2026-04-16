@@ -19,6 +19,33 @@ import { toast } from "sonner";
 import "./PageBuilder.css";
 import "../../components/ui/FeatureCard.css";
 
+const sortSections = (secs: LandingSection[]) =>
+  [...secs].sort((a, b) => a.display_order - b.display_order);
+
+/**
+ * Preserve object references for sections whose content hasn't changed.
+ * React skips re-rendering memoised children when their props keep the same
+ * reference, so returning the *old* object for unchanged sections means only
+ * the actually-modified section triggers a re-render.
+ */
+function mergeSections(
+  current: LandingSection[],
+  incoming: LandingSection[],
+): LandingSection[] {
+  if (current.length === 0) return incoming;
+  const currentMap = new Map(current.map((s) => [s.id, s]));
+  let changed = current.length !== incoming.length;
+  const merged = incoming.map((inc) => {
+    const existing = currentMap.get(inc.id);
+    if (existing && JSON.stringify(existing) === JSON.stringify(inc)) {
+      return existing; // same data → keep old reference
+    }
+    changed = true;
+    return inc;
+  });
+  return changed ? merged : current;
+}
+
 interface PageBuilderProps {
   /** Optional slug to load. Falls back to the URL :slug param, then index. */
   slug?: string;
@@ -27,6 +54,9 @@ interface PageBuilderProps {
 export default function PageBuilder(props: PageBuilderProps = {}) {
   const params = useParams<{ slug?: string }>();
   const slug = props.slug ?? params.slug;
+  const navigate = useNavigate();
+  const [editingCount, setEditingCount] = useState(0);
+
   const {
     page,
     loading,
@@ -38,9 +68,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     updatePage,
     createPage,
     deletePage,
-  } = usePageData();
-  const navigate = useNavigate();
-  const [editingCount, setEditingCount] = useState(0);
+    pendingIncoming,
+  } = usePageData(editingCount > 0);
 
   const {
     sections: landingSections,
@@ -53,7 +82,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     updateItem,
     deleteItem,
   } = useLandingData(editingCount > 0);
-
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
   const [showOwnership, setShowOwnership] = useState(false);
@@ -185,6 +213,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     // a live websocket event from another user would otherwise clobber
     // the editor's in-progress work.
     if (pendingSectionsRef.current !== null) return;
+    // Likewise, don't update while the user has an editor open even if they
+    // haven't made changes yet — the incoming content would reset the editor.
+    if (editingCountRef.current > 0) return;
 
     if (slug && !page && error) {
       setSections([]);
@@ -195,14 +226,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       try {
         const parsed = JSON.parse(page.content);
         if (Array.isArray(parsed)) {
-          setSections(sortSections(parsed));
+          setSections((prev) => mergeSections(prev, sortSections(parsed)));
           return;
         }
       } catch {
         // invalid JSON
       }
     }
-    setSections(sortSections(landingSections));
+    setSections((prev) => mergeSections(prev, sortSections(landingSections)));
   }, [slug, page, page?.content, landingSections, error]);
 
   useEffect(() => {
@@ -234,8 +265,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const isPageFallback =
     (!page || !!error || (!slug && !page?.content)) && !slug;
 
-  const sortSections = (secs: LandingSection[]) =>
-    [...secs].sort((a, b) => a.display_order - b.display_order);
+  // Stable refs so useCallback wrappers never go stale.
+  const sectionsRef = useRef<LandingSection[]>(sections);
+  sectionsRef.current = sections;
+  const isPageFallbackRef = useRef(isPageFallback);
+  isPageFallbackRef.current = isPageFallback;
 
   // ── Adaptive BBR save pipeline ─────────────────────────────────────────
   // Changes are batched with an adaptive delay (800 ms base, grows by 200 ms
@@ -369,144 +403,162 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     };
   }, []);
 
-  const updateSectionWrapper = (s: LandingSection) => {
-    if (isPageFallback) {
-      updateSection(s);
-      return;
-    }
-    const updated = sections.map((sec) => (sec.id === s.id ? s : sec));
-    const ordered = sortSections(updated);
-    setSections(ordered);
-    scheduleSave(ordered);
-  };
-
-  const createSectionWrapper = (s: Omit<LandingSection, "id">) => {
-    if (isPageFallback) {
-      createSection(s);
-      return;
-    }
-
-    const sorted = sortSections(sections);
-    const newSection: LandingSection = { ...s, id: Date.now() };
-
-    const insertionIndex = Math.max(
-      0,
-      Math.min(
-        sorted.length,
-        typeof s.display_order === "number"
-          ? s.display_order - 1
-          : sorted.length,
-      ),
-    );
-
-    const updated = [...sorted];
-    updated.splice(insertionIndex, 0, newSection);
-
-    const normalized = updated.map((section, idx) => ({
-      ...section,
-      display_order: idx + 1,
-    }));
-
-    setSections(normalized);
-    void immediateSave(normalized);
-  };
-
-  const deleteSectionWrapper = (id: number) => {
-    if (isPageFallback) {
-      deleteSection(id);
-      return;
-    }
-    const updated = sections.filter((section) => section.id !== id);
-    const ordered = sortSections(updated);
-    setSections(ordered);
-    void immediateSave(ordered);
-  };
-
-  const createItemWrapper = (
-    sectionId: number,
-    item: Omit<LandingItem, "id">,
-  ) => {
-    if (isPageFallback) {
-      createItem(sectionId, item);
-      return;
-    }
-    const updated = sections.map((section) => {
-      if (section.id !== sectionId) {
-        return section;
+  const updateSectionWrapper = useCallback(
+    (s: LandingSection) => {
+      if (isPageFallbackRef.current) {
+        updateSection(s);
+        return;
       }
-      const items = section.items ?? [];
-      return {
+      const updated = sectionsRef.current.map((sec) =>
+        sec.id === s.id ? s : sec,
+      );
+      const ordered = sortSections(updated);
+      setSections(ordered);
+      scheduleSave(ordered);
+    },
+    [updateSection, scheduleSave],
+  );
+
+  const createSectionWrapper = useCallback(
+    (s: Omit<LandingSection, "id">) => {
+      if (isPageFallbackRef.current) {
+        createSection(s);
+        return;
+      }
+
+      const sorted = sortSections(sectionsRef.current);
+      const newSection: LandingSection = { ...s, id: Date.now() };
+
+      const insertionIndex = Math.max(
+        0,
+        Math.min(
+          sorted.length,
+          typeof s.display_order === "number"
+            ? s.display_order - 1
+            : sorted.length,
+        ),
+      );
+
+      const updated = [...sorted];
+      updated.splice(insertionIndex, 0, newSection);
+
+      const normalized = updated.map((section, idx) => ({
         ...section,
-        items: [...items, { ...item, id: Date.now() }],
-      };
-    });
-    const ordered = sortSections(updated);
-    setSections(ordered);
-    void immediateSave(ordered);
-  };
+        display_order: idx + 1,
+      }));
 
-  const updateItemWrapper = (item: LandingItem) => {
-    if (isPageFallback) {
-      updateItem(item);
-      return;
-    }
-    const updated = sections.map((section) => {
-      if (!section.items) return section;
-      return {
+      setSections(normalized);
+      void immediateSave(normalized);
+    },
+    [createSection, immediateSave],
+  );
+
+  const deleteSectionWrapper = useCallback(
+    (id: number) => {
+      if (isPageFallbackRef.current) {
+        deleteSection(id);
+        return;
+      }
+      const updated = sectionsRef.current.filter(
+        (section) => section.id !== id,
+      );
+      const ordered = sortSections(updated);
+      setSections(ordered);
+      void immediateSave(ordered);
+    },
+    [deleteSection, immediateSave],
+  );
+
+  const createItemWrapper = useCallback(
+    (sectionId: number, item: Omit<LandingItem, "id">) => {
+      if (isPageFallbackRef.current) {
+        createItem(sectionId, item);
+        return;
+      }
+      const updated = sectionsRef.current.map((section) => {
+        if (section.id !== sectionId) {
+          return section;
+        }
+        const items = section.items ?? [];
+        return {
+          ...section,
+          items: [...items, { ...item, id: Date.now() }],
+        };
+      });
+      const ordered = sortSections(updated);
+      setSections(ordered);
+      void immediateSave(ordered);
+    },
+    [createItem, immediateSave],
+  );
+
+  const updateItemWrapper = useCallback(
+    (item: LandingItem) => {
+      if (isPageFallbackRef.current) {
+        updateItem(item);
+        return;
+      }
+      const updated = sectionsRef.current.map((section) => {
+        if (!section.items) return section;
+        return {
+          ...section,
+          items: section.items.map((it) => (it.id === item.id ? item : it)),
+        };
+      });
+      const ordered = sortSections(updated);
+      setSections(ordered);
+      scheduleSave(ordered);
+    },
+    [updateItem, scheduleSave],
+  );
+
+  const deleteItemWrapper = useCallback(
+    (id: number) => {
+      if (isPageFallbackRef.current) {
+        deleteItem(id);
+        return;
+      }
+      const updated = sectionsRef.current.map((section) => {
+        if (!section.items) return section;
+        return {
+          ...section,
+          items: section.items.filter((item) => item.id !== id),
+        };
+      });
+      const ordered = sortSections(updated);
+      setSections(ordered);
+      void immediateSave(ordered);
+    },
+    [deleteItem, immediateSave],
+  );
+
+  const moveSectionWrapper = useCallback(
+    async (sourceSectionId: number, targetSectionId: number) => {
+      const sorted = sortSections(sectionsRef.current);
+      const sourceIdx = sorted.findIndex((sec) => sec.id === sourceSectionId);
+      const targetIdx = sorted.findIndex((sec) => sec.id === targetSectionId);
+      if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx)
+        return;
+
+      const next = [...sorted];
+      const [moving] = next.splice(sourceIdx, 1);
+      next.splice(targetIdx, 0, moving);
+
+      const normalized = next.map((section, idx) => ({
         ...section,
-        items: section.items.map((it) => (it.id === item.id ? item : it)),
-      };
-    });
-    const ordered = sortSections(updated);
-    setSections(ordered);
-    scheduleSave(ordered);
-  };
+        display_order: idx + 1,
+      }));
 
-  const deleteItemWrapper = (id: number) => {
-    if (isPageFallback) {
-      deleteItem(id);
-      return;
-    }
-    const updated = sections.map((section) => {
-      if (!section.items) return section;
-      return {
-        ...section,
-        items: section.items.filter((item) => item.id !== id),
-      };
-    });
-    const ordered = sortSections(updated);
-    setSections(ordered);
-    void immediateSave(ordered);
-  };
+      setSections(normalized);
 
-  const moveSectionWrapper = async (
-    sourceSectionId: number,
-    targetSectionId: number,
-  ) => {
-    const sorted = sortSections(sections);
-    const sourceIdx = sorted.findIndex((sec) => sec.id === sourceSectionId);
-    const targetIdx = sorted.findIndex((sec) => sec.id === targetSectionId);
-    if (sourceIdx === -1 || targetIdx === -1 || sourceIdx === targetIdx) return;
-
-    const next = [...sorted];
-    const [moving] = next.splice(sourceIdx, 1);
-    next.splice(targetIdx, 0, moving);
-
-    const normalized = next.map((section, idx) => ({
-      ...section,
-      display_order: idx + 1,
-    }));
-
-    setSections(normalized);
-
-    if (isPageFallback) {
-      // Use the atomic reorder endpoint instead of individual section updates
-      // so display_order is persisted in a single transaction.
-      await reorderSections(normalized.map((s) => s.id));
-    } else {
-      await immediateSave(normalized);
-    }
-  };
+      if (isPageFallbackRef.current) {
+        await reorderSections(normalized.map((s) => s.id));
+      } else {
+        await immediateSave(normalized);
+      }
+    },
+    [reorderSections, immediateSave],
+  );
 
   if (loading || (slug === undefined && landingLoading)) {
     return (
@@ -528,7 +580,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     );
   }
 
-  const contextValue = { editingCount, enterEdit, leaveEdit, saveStatus };
+  const contextValue = {
+    editingCount,
+    enterEdit,
+    leaveEdit,
+    saveStatus,
+    pendingIncoming,
+  };
 
   if (isNewPage) {
     return (

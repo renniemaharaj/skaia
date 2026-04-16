@@ -2,10 +2,13 @@ import {
   Camera,
   Edit3,
   MessageCircle,
+  MoreHorizontal,
+  RefreshCw,
   ShieldOff,
   UserCheck,
   UserX,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ProfileUser } from "./types";
 import { formatDate } from "./useUserData";
@@ -17,11 +20,14 @@ interface Props {
   displayBanner: string | null;
   canEdit: boolean;
   canSuspend: boolean;
+  canResetPassword: boolean;
   isOwnProfile: boolean;
   suspendLoading: boolean;
+  resetPasswordLoading: boolean;
   onEditOpen: () => void;
   onSuspendOpen: () => void;
   onUnsuspend: () => void;
+  onResetPassword: () => void;
 }
 
 const UserProfileCard = ({
@@ -30,13 +36,32 @@ const UserProfileCard = ({
   displayBanner,
   canEdit,
   canSuspend,
+  canResetPassword,
   isOwnProfile,
   suspendLoading,
+  resetPasswordLoading,
   onEditOpen,
   onSuspendOpen,
   onUnsuspend,
+  onResetPassword,
 }: Props) => {
   const navigate = useNavigate();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [moreOpen]);
+
+  const hasMoreActions = (canSuspend && !isOwnProfile) || canResetPassword;
+
   return (
     <>
       {/* Banner */}
@@ -117,25 +142,58 @@ const UserProfileCard = ({
                 <Edit3 size={14} /> Edit Profile
               </button>
             )}
-            {canSuspend &&
-              !isOwnProfile &&
-              (user.is_suspended ? (
+            {hasMoreActions && (
+              <div className="up-more-wrap" ref={moreRef}>
                 <button
-                  className="up-btn up-btn-success"
-                  onClick={onUnsuspend}
-                  disabled={suspendLoading}
+                  className={`up-btn up-btn-secondary${moreOpen ? " active" : ""}`}
+                  onClick={() => setMoreOpen((v) => !v)}
+                  title="More actions"
                 >
-                  <UserCheck size={14} /> Unsuspend
+                  <MoreHorizontal size={14} />
                 </button>
-              ) : (
-                <button
-                  className="up-btn up-btn-danger"
-                  onClick={onSuspendOpen}
-                  disabled={suspendLoading}
-                >
-                  <UserX size={14} /> Suspend
-                </button>
-              ))}
+                {moreOpen && (
+                  <div className="up-more-menu">
+                    {canSuspend &&
+                      !isOwnProfile &&
+                      (user.is_suspended ? (
+                        <button
+                          className="up-more-item up-more-item--success"
+                          onClick={() => {
+                            setMoreOpen(false);
+                            onUnsuspend();
+                          }}
+                          disabled={suspendLoading}
+                        >
+                          <UserCheck size={14} /> Unsuspend
+                        </button>
+                      ) : (
+                        <button
+                          className="up-more-item up-more-item--danger"
+                          onClick={() => {
+                            setMoreOpen(false);
+                            onSuspendOpen();
+                          }}
+                          disabled={suspendLoading}
+                        >
+                          <UserX size={14} /> Suspend
+                        </button>
+                      ))}
+                    {canResetPassword && (
+                      <button
+                        className="up-more-item up-more-item--warning"
+                        onClick={() => {
+                          setMoreOpen(false);
+                          onResetPassword();
+                        }}
+                        disabled={resetPasswordLoading}
+                      >
+                        <RefreshCw size={14} /> Reset Password
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

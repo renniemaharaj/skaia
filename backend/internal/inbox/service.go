@@ -3,6 +3,7 @@ package inbox
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -298,4 +299,14 @@ func (s *Service) SendSystemMessage(senderID, recipientID int64, content, messag
 		s.hub.SendToUser(recipientID, notifMsg)
 	}
 	return nil
+}
+
+// SendNoreplyToUser delivers an automated message to a user's inbox from the
+// system "noreply" account. The noreply user must exist (seeded in 002_seed.sql).
+func (s *Service) SendNoreplyToUser(recipientID int64, content string) error {
+	noreply, err := s.userSvc.GetByUsername("noreply")
+	if err != nil {
+		return fmt.Errorf("noreply user not found: %w", err)
+	}
+	return s.SendSystemMessage(noreply.ID, recipientID, content, "text")
 }

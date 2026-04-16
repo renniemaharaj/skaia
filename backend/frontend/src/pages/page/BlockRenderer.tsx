@@ -16,7 +16,7 @@ import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
-import { useCallback, useState } from "react";
+import React, { memo, useCallback, useState } from "react";
 import {
   getSectionLayout,
   getSectionMargins,
@@ -65,6 +65,71 @@ const BLOCK_MAP: Record<
   derived_section: DerivedSectionBlock as never,
   custom_section: CustomSectionBlock as never,
 };
+
+/**
+ * Memoised wrapper for a single section block.  When the parent re-renders
+ * (e.g. a WS update changed a *different* section), this component will bail
+ * out as long as its props still reference the same objects — which is
+ * guaranteed by the `mergeSections` diffing in PageBuilder and the stable
+ * `useCallback` wrappers.
+ */
+interface SectionBlockProps {
+  section: LandingSection;
+  canEdit: boolean;
+  onUpdate: (s: LandingSection) => void;
+  onDelete: (id: number) => void;
+  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
+  onItemUpdate: (item: LandingItem) => void;
+  onItemDelete: (id: number) => void;
+}
+
+const SectionBlock = memo(function SectionBlock({
+  section,
+  canEdit,
+  onUpdate,
+  onDelete,
+  onItemCreate,
+  onItemUpdate,
+  onItemDelete,
+}: SectionBlockProps) {
+  const Block = BLOCK_MAP[section.section_type];
+  if (!Block) return null;
+
+  const layout = getSectionLayout(section.config);
+  const margins = getSectionMargins(section.config);
+  const animation = getSectionAnimation(section.config);
+  const bgColor = getSectionBgColor(section.config);
+
+  const sectionStyle: React.CSSProperties = {
+    ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
+    ...(margins.marginBottom
+      ? { marginBottom: `${margins.marginBottom}px` }
+      : {}),
+    ...(margins.paddingLeft ? { paddingLeft: `${margins.paddingLeft}px` } : {}),
+    ...(margins.paddingRight
+      ? { paddingRight: `${margins.paddingRight}px` }
+      : {}),
+    ...(bgColor ? { backgroundColor: bgColor } : {}),
+  };
+
+  return (
+    <div
+      className={`pb-section-layout pb-section-layout-${layout}`}
+      style={sectionStyle}
+      data-animation={animation !== "none" ? animation : undefined}
+    >
+      <Block
+        section={section}
+        canEdit={canEdit}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onItemCreate={onItemCreate}
+        onItemUpdate={onItemUpdate}
+        onItemDelete={onItemDelete}
+      />
+    </div>
+  );
+});
 
 export const BlockRenderer = ({
   sections,
@@ -139,28 +204,8 @@ export const BlockRenderer = ({
       {canEdit && renderAddSectionTrigger(0)}
 
       {orderedSections.map((section, i) => {
-        const Block = BLOCK_MAP[section.section_type];
-        if (!Block) return null;
-        const layout = getSectionLayout(section.config);
-        const margins = getSectionMargins(section.config);
-        const animation = getSectionAnimation(section.config);
-        const bgColor = getSectionBgColor(section.config);
         const isFirst = i === 0;
         const isLast = i === orderedSections.length - 1;
-
-        const sectionStyle: React.CSSProperties = {
-          ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
-          ...(margins.marginBottom
-            ? { marginBottom: `${margins.marginBottom}px` }
-            : {}),
-          ...(margins.paddingLeft
-            ? { paddingLeft: `${margins.paddingLeft}px` }
-            : {}),
-          ...(margins.paddingRight
-            ? { paddingRight: `${margins.paddingRight}px` }
-            : {}),
-          ...(bgColor ? { backgroundColor: bgColor } : {}),
-        };
 
         return (
           <SectionMoveContext.Provider
@@ -172,21 +217,15 @@ export const BlockRenderer = ({
               canMoveDown: !isLast,
             }}
           >
-            <div
-              className={`pb-section-layout pb-section-layout-${layout}`}
-              style={sectionStyle}
-              data-animation={animation !== "none" ? animation : undefined}
-            >
-              <Block
-                section={section}
-                canEdit={canEdit}
-                onUpdate={onUpdateSection}
-                onDelete={onDeleteSection}
-                onItemCreate={onCreateItem}
-                onItemUpdate={onUpdateItem}
-                onItemDelete={onDeleteItem}
-              />
-            </div>
+            <SectionBlock
+              section={section}
+              canEdit={canEdit}
+              onUpdate={onUpdateSection}
+              onDelete={onDeleteSection}
+              onItemCreate={onCreateItem}
+              onItemUpdate={onUpdateItem}
+              onItemDelete={onDeleteItem}
+            />
             {canEdit && renderAddSectionTrigger(i + 1)}
           </SectionMoveContext.Provider>
         );
