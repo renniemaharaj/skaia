@@ -5,7 +5,7 @@
  * reorder zones via drag-and-drop, and set alignment + size per zone.
  * Produces a CardTemplate stored in the section config JSON.
  */
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import {
   GripVertical,
   Eye,
@@ -21,8 +21,7 @@ import {
   Smile,
   ExternalLink,
 } from "lucide-react";
-import { SectionSpacingControls } from "./EditControls";
-import type { SectionMargins } from "./EditControls";
+import { BoxSpacingControls } from "./EditControls";
 import type {
   CardTemplate,
   CardZone,
@@ -108,6 +107,8 @@ const CONTENT_ALIGN_OPTIONS: { value: CardContentAlign; label: string }[] = [
   { value: "end", label: "Bottom" },
   { value: "stretch", label: "Stretch" },
 ];
+
+const MonacoEditor = lazy(() => import("../../components/monaco/Editor"));
 
 const FIELD_ICONS: Record<MappableField, React.FC<{ size: number }>> = {
   image_url: Image,
@@ -436,32 +437,46 @@ export const CardDesigner = ({
             </label>
           </div>
 
-          <SectionSpacingControls
-            margins={
-              {
-                marginTop: template.paddingTop,
-                marginBottom: template.paddingBottom,
-                paddingLeft: template.paddingLeft,
-                paddingRight: template.paddingRight,
-              } as SectionMargins
-            }
-            onChange={(next) =>
-              updateTemplate({
-                ...(next.marginTop !== undefined
-                  ? { paddingTop: next.marginTop }
-                  : {}),
-                ...(next.marginBottom !== undefined
-                  ? { paddingBottom: next.marginBottom }
-                  : {}),
-                ...(next.paddingLeft !== undefined
-                  ? { paddingLeft: next.paddingLeft }
-                  : {}),
-                ...(next.paddingRight !== undefined
-                  ? { paddingRight: next.paddingRight }
-                  : {}),
-              })
-            }
-          />
+          <div className="card-designer__group-grid">
+            <div className="card-designer__field card-designer__field--wide">
+              <BoxSpacingControls
+                label="Margin"
+                values={{
+                  top: template.marginTop ?? 0,
+                  right: template.marginRight ?? 0,
+                  bottom: template.marginBottom ?? 0,
+                  left: template.marginLeft ?? 0,
+                }}
+                onChange={(next) =>
+                  updateTemplate({
+                    marginTop: next.top,
+                    marginRight: next.right,
+                    marginBottom: next.bottom,
+                    marginLeft: next.left,
+                  })
+                }
+              />
+            </div>
+            <div className="card-designer__field card-designer__field--wide">
+              <BoxSpacingControls
+                label="Padding"
+                values={{
+                  top: template.paddingTop,
+                  right: template.paddingRight,
+                  bottom: template.paddingBottom,
+                  left: template.paddingLeft,
+                }}
+                onChange={(next) =>
+                  updateTemplate({
+                    paddingTop: next.top,
+                    paddingRight: next.right,
+                    paddingBottom: next.bottom,
+                    paddingLeft: next.left,
+                  })
+                }
+              />
+            </div>
+          </div>
         </div>
 
         {mode === "table" && (
@@ -474,56 +489,48 @@ export const CardDesigner = ({
             </div>
 
             <div className="card-designer__group-grid">
-              <label className="card-designer__field">
+              <label className="card-designer__field card-designer__checkbox-field">
                 <span>Striped rows</span>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--sm${template.tableStriped ? " icon-btn--active" : ""}`}
-                  onClick={() =>
-                    updateTemplate({ tableStriped: !template.tableStriped })
+                <input
+                  type="checkbox"
+                  checked={template.tableStriped}
+                  onChange={(e) =>
+                    updateTemplate({ tableStriped: e.target.checked })
                   }
-                >
-                  {template.tableStriped ? "On" : "Off"}
-                </button>
+                />
               </label>
 
-              <label className="card-designer__field">
+              <label className="card-designer__field card-designer__checkbox-field">
                 <span>Hover rows</span>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--sm${template.tableHover ? " icon-btn--active" : ""}`}
-                  onClick={() =>
-                    updateTemplate({ tableHover: !template.tableHover })
+                <input
+                  type="checkbox"
+                  checked={template.tableHover}
+                  onChange={(e) =>
+                    updateTemplate({ tableHover: e.target.checked })
                   }
-                >
-                  {template.tableHover ? "On" : "Off"}
-                </button>
+                />
               </label>
 
-              <label className="card-designer__field">
+              <label className="card-designer__field card-designer__checkbox-field">
                 <span>Bordered</span>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--sm${template.tableBordered ? " icon-btn--active" : ""}`}
-                  onClick={() =>
-                    updateTemplate({ tableBordered: !template.tableBordered })
+                <input
+                  type="checkbox"
+                  checked={template.tableBordered}
+                  onChange={(e) =>
+                    updateTemplate({ tableBordered: e.target.checked })
                   }
-                >
-                  {template.tableBordered ? "On" : "Off"}
-                </button>
+                />
               </label>
 
-              <label className="card-designer__field">
+              <label className="card-designer__field card-designer__checkbox-field">
                 <span>Compact</span>
-                <button
-                  type="button"
-                  className={`icon-btn icon-btn--sm${template.tableCompact ? " icon-btn--active" : ""}`}
-                  onClick={() =>
-                    updateTemplate({ tableCompact: !template.tableCompact })
+                <input
+                  type="checkbox"
+                  checked={template.tableCompact}
+                  onChange={(e) =>
+                    updateTemplate({ tableCompact: e.target.checked })
                   }
-                >
-                  {template.tableCompact ? "On" : "Off"}
-                </button>
+                />
               </label>
             </div>
           </div>
@@ -533,23 +540,34 @@ export const CardDesigner = ({
           <div className="card-designer__group-toolbar">
             <span className="card-designer__group-heading">Custom CSS</span>
             <span className="card-designer__group-note">
-              Full-width CSS editor for card overrides
+              Monaco-powered stylesheet editor for the card or table preview
             </span>
           </div>
 
-          <label className="card-designer__field card-designer__field--wide">
+          <div className="card-designer__field card-designer__field--wide">
             <span>CSS</span>
-            <textarea
-              className="card-designer__css-editor"
-              value={template.customCss ?? ""}
-              onChange={(e) => updateTemplate({ customCss: e.target.value })}
-              placeholder="/* Use .dcard--custom-css to scope styles */"
-            />
+            <div className="card-designer__css-editor-wrapper">
+              <Suspense
+                fallback={
+                  <div className="card-designer__css-editor-fallback">
+                    Loading editor…
+                  </div>
+                }
+              >
+                <MonacoEditor
+                  height={260}
+                  language="css"
+                  code={template.customCss ?? ""}
+                  onChange={(v: string) => updateTemplate({ customCss: v })}
+                  editable
+                />
+              </Suspense>
+            </div>
             <span className="card-designer__field-note">
               Use <code>.dcard--custom-css</code> to scope custom rules to the
-              rendered card.
+              rendered card or table.
             </span>
-          </label>
+          </div>
         </div>
 
         <div className="card-designer__group">

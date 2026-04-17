@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+} from "react";
 import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
 import type {
@@ -8,6 +14,8 @@ import type {
   CustomSection,
   ColumnMap,
   FactTableConfig,
+  CardTemplate,
+  CardZone,
 } from "../types";
 import { DEFAULT_CARD_TEMPLATE } from "../types";
 import {
@@ -94,6 +102,123 @@ async function evaluateDataSource(code: string): Promise<RawRow[]> {
   return result as RawRow[];
 }
 
+function getStringValue(value: unknown): string | undefined {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
+  return undefined;
+}
+
+function coerceHeading(row: RawRow): string | undefined {
+  return (
+    getStringValue(row.heading) ||
+    getStringValue(row.title) ||
+    getStringValue(row.name)
+  );
+}
+
+function coerceSubheading(row: RawRow): string | undefined {
+  return (
+    getStringValue(row.subheading) ||
+    getStringValue(row.description) ||
+    getStringValue(row.subtitle)
+  );
+}
+
+function coerceImageUrl(row: RawRow): string | undefined {
+  return getStringValue(row.image_url) || getStringValue(row.image);
+}
+
+function coerceLinkUrl(row: RawRow): string | undefined {
+  return (
+    getStringValue(row.link_url) ||
+    getStringValue(row.url) ||
+    getStringValue(row.link)
+  );
+}
+
+function coerceIcon(row: RawRow): string | undefined {
+  return getStringValue(row.icon);
+}
+
+function formatCellValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (Array.isArray(value)) return value.map(String).join(", ");
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function TablePreview({
+  rows,
+  columns,
+  template,
+}: {
+  rows: RawRow[];
+  columns: string[];
+  template: CardTemplate;
+}) {
+  const tableClass = [
+    "custom-section-table",
+    template.tableBordered ? "custom-section-table--bordered" : "",
+    template.tableCompact ? "custom-section-table--compact" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const zoneMap = Object.fromEntries(
+    template.zones.map((zone) => [zone.field, zone]),
+  ) as Record<string, CardZone>;
+
+  const getColumnStyle = (col: string): CSSProperties => {
+    const zone = zoneMap[col];
+    return {
+      textAlign: zone?.align ?? "left",
+      fontSize: zone
+        ? zone.size === "sm"
+          ? "0.85rem"
+          : zone.size === "lg"
+            ? "1.05rem"
+            : "0.95rem"
+        : undefined,
+    };
+  };
+
+  const containerStyle: React.CSSProperties = {
+    margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
+    padding: `${template.paddingTop ?? 0}px ${template.paddingRight ?? 16}px ${template.paddingBottom ?? 16}px ${template.paddingLeft ?? 16}px`,
+  };
+
+  return (
+    <div className="custom-section-table-wrap" style={containerStyle}>
+      {template.customCss ? <style>{template.customCss}</style> : null}
+      <div className="custom-section-table-container dtable--custom-css">
+        <table className={tableClass}>
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th key={col} style={getColumnStyle(col)}>
+                  {col}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {columns.map((col) => (
+                  <td key={col} style={getColumnStyle(col)}>
+                    {formatCellValue(row[col])}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export const CustomSectionBlock = ({
   section,
   canEdit,
@@ -129,7 +254,7 @@ export const CustomSectionBlock = ({
   }, []);
 
   const selectedCS = useMemo(
-    () => customSections.find((cs) => cs.id === cfg.custom_section_id),
+    () => customSections.find((cs) => cs.id === Number(cfg.custom_section_id)),
     [customSections, cfg.custom_section_id],
   );
 
@@ -165,19 +290,65 @@ export const CustomSectionBlock = ({
     }
   }, [selectedCS]);
 
-  // Auto-evaluate on custom section change
+  // Auto-evaluate once the selected custom section is available
   useEffect(() => {
-    if (cfg.custom_section_id) {
+    if (cfg.custom_section_id && selectedCS) {
       runEvaluation();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg.custom_section_id]);
+  }, [cfg.custom_section_id, selectedCS, runEvaluation]);
 
   // Detect available columns from raw rows
   const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
 
-  // Determine render type
+  const selectedCSConfig = useMemo<FactTableConfig>(() => {
+    if (!selectedCS) return {};
+    try {
+      return JSON.parse(selectedCS.config || "{}");
+    } catch {
+      return {};
+    }
+  }, [selectedCS]);
+
+  const effectiveTemplate = useMemo<CardTemplate>(() => {
+    return (
+      cfg.card_template ??
+      selectedCSConfig.card_template ??
+      DEFAULT_CARD_TEMPLATE
+    );
+  }, [cfg.card_template, selectedCSConfig.card_template]);
+
   const hasColumnMap = cfg.column_map && Object.keys(cfg.column_map).length > 0;
+
+  const previewItems: LandingItem[] = useMemo(() => {
+    if (
+      !selectedCS ||
+      rawRows.length === 0 ||
+      hasColumnMap ||
+      selectedCS.section_type === "table"
+    ) {
+      return [];
+    }
+
+    return rawRows
+      .map((row, index) => {
+        const heading = coerceHeading(row);
+        const subheading = coerceSubheading(row);
+        if (!heading || !subheading) return null;
+
+        return {
+          id: -(index + 1),
+          section_id: section.id,
+          display_order: index + 1,
+          icon: coerceIcon(row) ?? "",
+          heading,
+          subheading,
+          image_url: coerceImageUrl(row) ?? "",
+          link_url: coerceLinkUrl(row) ?? "",
+          config: "{}",
+        } as LandingItem;
+      })
+      .filter((item): item is LandingItem => item !== null);
+  }, [rawRows, selectedCS, hasColumnMap, section.id]);
 
   // Build LandingItem[] from raw rows + column map + overrides
   const mappedItems: LandingItem[] = useMemo(() => {
@@ -197,7 +368,6 @@ export const CustomSectionBlock = ({
     section.id,
   ]);
 
-  // Build LandingItem[] from raw rows + column map + overrides
   const handleCSChange = (csId: number) => {
     onUpdate({
       ...section,
@@ -362,24 +532,46 @@ export const CustomSectionBlock = ({
 
         {/* Rendered cards (column-mapped) */}
         {!authError && hasColumnMap && mappedItems.length > 0 && (
-          <DesignedCardGrid
-            items={mappedItems}
-            template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
-          />
+          <DesignedCardGrid items={mappedItems} template={effectiveTemplate} />
         )}
+
+        {/* Render saved custom section preview items */}
+        {!authError &&
+          !hasColumnMap &&
+          selectedCS?.section_type !== "table" &&
+          previewItems.length > 0 && (
+            <DesignedCardGrid
+              items={previewItems}
+              template={effectiveTemplate}
+            />
+          )}
+
+        {/* Render table preview for saved table custom sections */}
+        {!authError &&
+          !hasColumnMap &&
+          selectedCS?.section_type === "table" &&
+          rawRows.length > 0 && (
+            <TablePreview
+              rows={rawRows}
+              columns={availableColumns}
+              template={effectiveTemplate}
+            />
+          )}
 
         {/* Has rows but no column map — prompt to configure */}
         {!evaluating &&
           !authError &&
           !evalError &&
           rawRows.length > 0 &&
-          mappedItems.length === 0 &&
-          !isLegacyTable &&
-          canEdit && (
+          !hasColumnMap &&
+          selectedCS &&
+          selectedCS.section_type !== "table" &&
+          previewItems.length === 0 && (
             <div className="custom-section-empty">
               <p>
-                Configure the column mapping above to map datasource rows to
-                card fields.
+                Saved custom section returned rows, but no display fields were
+                found. Ensure the datasource produces heading/subheading or add
+                a column mapping.
               </p>
             </div>
           )}

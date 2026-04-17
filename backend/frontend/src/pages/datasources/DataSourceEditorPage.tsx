@@ -5,6 +5,7 @@ import {
   useState,
   lazy,
   Suspense,
+  type CSSProperties,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -34,7 +35,12 @@ import {
   Paintbrush,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
-import type { DataSource, CustomSection, CardTemplate } from "../page/types";
+import type {
+  DataSource,
+  CustomSection,
+  CardTemplate,
+  CardZone,
+} from "../page/types";
 import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
 import { CardDesigner } from "../page/CardDesigner";
 import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
@@ -1009,15 +1015,42 @@ function TablePreview({
     .filter(Boolean)
     .join(" ");
 
+  const zoneMap = Object.fromEntries(
+    template.zones.map((zone) => [zone.field, zone]),
+  ) as Record<string, CardZone>;
+
+  const getColumnStyle = (col: string): CSSProperties => {
+    const zone = zoneMap[col];
+    const style: CSSProperties = {
+      textAlign: zone?.align ?? "left",
+    };
+    if (zone) {
+      style.fontSize =
+        zone.size === "sm"
+          ? "0.85rem"
+          : zone.size === "lg"
+            ? "1.05rem"
+            : "0.95rem";
+    }
+    return style;
+  };
+
+  const containerStyle: React.CSSProperties = {
+    margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
+    padding: `${template.paddingTop ?? 0}px ${template.paddingRight ?? 16}px ${template.paddingBottom ?? 16}px ${template.paddingLeft ?? 16}px`,
+  };
+
   return (
-    <div className="ds-table-wrap">
+    <div className="ds-table-wrap" style={containerStyle}>
       {template.customCss ? <style>{template.customCss}</style> : null}
       <div className="ds-table-container dtable--custom-css">
         <table className={tableClass}>
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col}>{col}</th>
+                <th key={col} style={getColumnStyle(col)}>
+                  {col}
+                </th>
               ))}
             </tr>
           </thead>
@@ -1025,7 +1058,9 @@ function TablePreview({
             {items.map((item, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((col) => (
-                  <td key={col}>{formatCellValue(item[col])}</td>
+                  <td key={col} style={getColumnStyle(col)}>
+                    {formatCellValue(item[col])}
+                  </td>
                 ))}
               </tr>
             ))}

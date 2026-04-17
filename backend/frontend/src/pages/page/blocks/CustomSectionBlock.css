@@ -214,6 +214,16 @@
   font-size: 0.8125rem;
 }
 
+.custom-section-table--bordered th,
+.custom-section-table--bordered td {
+  border: 1px solid var(--border-color);
+}
+
+.custom-section-table--compact th,
+.custom-section-table--compact td {
+  padding: 0.35rem 0.5rem;
+}
+
 .custom-section-table thead {
   position: sticky;
   top: 0;

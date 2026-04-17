@@ -229,20 +229,34 @@
   font-size: 0.82rem;
 }
 
-.card-designer__css-editor {
-  min-height: 170px;
-  font-family: var(--font-mono);
-  resize: vertical;
-  line-height: 1.5;
+.card-designer__checkbox-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.card-designer__field input:focus,
-.card-designer__field select:focus,
-.card-designer__css-editor:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 14%, transparent);
+.card-designer__checkbox-field input[type="checkbox"] {
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+.card-designer__css-editor-wrapper {
+  min-height: 260px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card-designer__css-editor-fallback {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
 }
 
 .card-designer__field-note {

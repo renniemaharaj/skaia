@@ -243,7 +243,12 @@ export interface CardTemplate {
   gap: number;
   /** Grid gap between cards (px). */
   gridGap: number;
-  /** Padding: per-side control (top, right, bottom, left) in px. */
+  /** Margin: outer spacing around the card or table in px. */
+  marginTop: number;
+  marginRight: number;
+  marginBottom: number;
+  marginLeft: number;
+  /** Padding: inner spacing inside the card or table wrapper in px. */
   paddingTop: number;
   paddingRight: number;
   paddingBottom: number;
@@ -287,6 +292,10 @@ export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
   zones: DEFAULT_CARD_ZONES,
   gap: 8,
   gridGap: 24,
+  marginTop: 0,
+  marginRight: 0,
+  marginBottom: 0,
+  marginLeft: 0,
   paddingTop: 0,
   paddingRight: 16,
   paddingBottom: 16,
@@ -325,6 +334,14 @@ export function migrateCardTemplate(t: Partial<CardTemplate>): CardTemplate {
   if (base.overflow === undefined) base.overflow = "hidden";
   if (base.contentAlign === undefined) base.contentAlign = "start";
   if (base.customCss === undefined) base.customCss = "";
+  if (base.marginTop === undefined) base.marginTop = 0;
+  if (base.marginRight === undefined) base.marginRight = 0;
+  if (base.marginBottom === undefined) base.marginBottom = 0;
+  if (base.marginLeft === undefined) base.marginLeft = 0;
+  if (base.paddingTop === undefined) base.paddingTop = 0;
+  if (base.paddingRight === undefined) base.paddingRight = 16;
+  if (base.paddingBottom === undefined) base.paddingBottom = 16;
+  if (base.paddingLeft === undefined) base.paddingLeft = 16;
   if (base.tableStriped === undefined) base.tableStriped = true;
   if (base.tableHover === undefined) base.tableHover = true;
   if (base.tableBordered === undefined) base.tableBordered = false;

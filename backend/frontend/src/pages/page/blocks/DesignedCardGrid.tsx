@@ -120,6 +120,7 @@ const DesignedCard = ({
       aspectRatio && aspectRatio !== "auto" ? aspectRatio : undefined,
     borderRadius: `${borderRadius ?? 16}px`,
     overflow: overflow ?? "hidden",
+    margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
   };
 
   const bodyStyle: React.CSSProperties = {

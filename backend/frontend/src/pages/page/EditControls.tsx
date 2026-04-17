@@ -109,6 +109,13 @@ export interface SectionMargins {
   paddingRight: number;
 }
 
+export interface BoxSpacingValues {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 export function getSectionMargins(config: string): SectionMargins {
   const parsed = safeParseConfig(config);
   return {
@@ -316,6 +323,120 @@ export const SectionSpacingControls = ({
       >
         <Check size={13} />
       </button>
+    </div>
+  );
+};
+
+export const BoxSpacingControls = ({
+  label,
+  values,
+  onChange,
+}: {
+  label: string;
+  values: BoxSpacingValues;
+  onChange: (values: BoxSpacingValues) => void;
+}) => {
+  const [draft, setDraft] = useState<BoxSpacingValues>(values);
+
+  useEffect(() => {
+    setDraft(values);
+  }, [values]);
+
+  const changed =
+    draft.top !== values.top ||
+    draft.right !== values.right ||
+    draft.bottom !== values.bottom ||
+    draft.left !== values.left;
+
+  return (
+    <div className="section-spacing-box">
+      <div className="section-spacing-box-heading">{label}</div>
+      <div className="section-spacing-capture">
+        <div className="section-spacing-group">
+          <span className="section-spacing-pair">
+            <label>T</label>
+            <input
+              type="number"
+              value={draft.top}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  top: Number(e.target.value),
+                }))
+              }
+              title="Top (px)"
+              min={0}
+              max={200}
+              step={4}
+            />
+          </span>
+          <span className="section-spacing-pair">
+            <label>B</label>
+            <input
+              type="number"
+              value={draft.bottom}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  bottom: Number(e.target.value),
+                }))
+              }
+              title="Bottom (px)"
+              min={0}
+              max={200}
+              step={4}
+            />
+          </span>
+        </div>
+        <div className="section-spacing-group">
+          <span className="section-spacing-pair">
+            <label>L</label>
+            <input
+              type="number"
+              value={draft.left}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  left: Number(e.target.value),
+                }))
+              }
+              title="Left (px)"
+              min={0}
+              max={200}
+              step={4}
+            />
+          </span>
+          <span className="section-spacing-pair">
+            <label>R</label>
+            <input
+              type="number"
+              value={draft.right}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  right: Number(e.target.value),
+                }))
+              }
+              title="Right (px)"
+              min={0}
+              max={200}
+              step={4}
+            />
+          </span>
+        </div>
+        <button
+          type="button"
+          className={`pb-action-btn section-spacing-capture-btn${
+            changed ? " dirty" : ""
+          }`}
+          onClick={() => onChange(draft)}
+          disabled={!changed}
+          title={`Apply ${label.toLowerCase()}`}
+          aria-label={`Apply ${label.toLowerCase()}`}
+        >
+          <Check size={13} />
+        </button>
+      </div>
     </div>
   );
 };
