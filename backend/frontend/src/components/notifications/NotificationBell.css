@@ -27,13 +27,13 @@
 
 .notif-badge {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 2px;
+  right: 2px;
   min-width: 16px;
   height: 16px;
-  padding: 0 3px;
+  padding: 0 4px;
   border-radius: 999px;
-  background: var(--danger-color);
+  background: var(--error-color);
   color: white;
   font-size: 0.6rem;
   font-weight: 700;
@@ -41,6 +41,7 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  line-height: 1;
 }
 
 /* Dropdown panel */
@@ -126,13 +127,13 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--danger-color);
+  color: var(--error-color);
   font-size: 0.73rem;
   cursor: pointer;
   transition: background 0.13s ease;
 }
 .notif-clear-all:hover {
-  background: color-mix(in srgb, var(--danger-color) 10%, transparent);
+  background: color-mix(in srgb, var(--error-color) 10%, transparent);
 }
 
 /* Infinite-scroll sentinel */
@@ -208,7 +209,7 @@
 }
 .notif-type-icon--suspended,
 .notif-type-icon--banned {
-  color: var(--danger-color);
+  color: var(--error-color);
 }
 .notif-type-icon--thread_liked,
 .notif-type-icon--comment_liked {
@@ -258,7 +259,7 @@
 }
 .notif-delete-btn:hover {
   background: var(--bg-color);
-  color: var(--danger-color);
+  color: var(--error-color);
 }
 
 @media (max-width: 840px) {

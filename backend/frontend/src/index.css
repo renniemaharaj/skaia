@@ -498,6 +498,27 @@ select:focus {
   border: 1px solid var(--primary-color);
 }
 
+.status-badge,
+.status-badge--dot {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.status-badge--dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
