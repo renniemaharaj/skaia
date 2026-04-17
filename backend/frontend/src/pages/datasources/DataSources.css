@@ -914,14 +914,58 @@
     padding: 20px;
   }
 
+  .ds-page__header,
+  .ds-editor__topbar,
+  .ds-preview__toolbar,
+  .ds-page__toolbar {
+    flex-wrap: wrap;
+  }
+
   .ds-page__header {
     flex-direction: column;
     gap: 1rem;
   }
 
-  .ds-page__header-actions {
+  .ds-page__header-actions,
+  .ds-editor__topbar-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .ds-page__view-toggle,
+  .ds-preview__type-tabs,
+  .ds-editor__layout-controls {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .ds-page__search,
+  .ds-page__count,
+  .ds-preview__save-section-btn,
+  .ds-editor__layout-btn {
+    min-width: 0;
+  }
+
+  .ds-page__header-actions > *,
+  .ds-editor__topbar-actions > *,
+  .ds-preview__toolbar > * {
+    min-width: 0;
+  }
+
+  .ds-page__toolbar {
+    align-items: stretch;
+  }
+
+  .ds-page__search {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+
+  .ds-page__count {
+    white-space: normal;
   }
 
   .ds-grid {
