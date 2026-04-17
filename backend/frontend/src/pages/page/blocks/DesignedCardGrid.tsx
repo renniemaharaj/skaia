@@ -111,6 +111,7 @@ const DesignedCard = ({
 
   const styleClass =
     cardStyle && cardStyle !== "default" ? ` dcard--${cardStyle}` : "";
+  const customCssClass = template.customCss ? " dcard--custom-css" : "";
 
   const cardCss: React.CSSProperties = {
     minHeight: minHeight ? `${minHeight}px` : undefined,
@@ -130,7 +131,7 @@ const DesignedCard = ({
 
   return (
     <div
-      className={`dcard card card--interactive dcard--${template.cardWidth}${styleClass}`}
+      className={`dcard card card--interactive dcard--${template.cardWidth}${styleClass}${customCssClass}`}
       style={cardCss}
     >
       {/* Background image mode */}
@@ -191,6 +192,7 @@ export const DesignedCardGrid = ({
 
   return (
     <div className="dcard-grid" style={gridStyle}>
+      {template.customCss ? <style>{template.customCss}</style> : null}
       {items.map((item, index) => (
         <DesignedCard key={item.id ?? index} item={item} template={template} />
       ))}

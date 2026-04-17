@@ -41,6 +41,7 @@ import "./CardDesigner.css";
 interface CardDesignerProps {
   template: CardTemplate;
   onChange: (template: CardTemplate) => void;
+  mode?: "card" | "table";
 }
 
 const CARD_WIDTH_OPTIONS: { value: CardWidth; label: string }[] = [
@@ -116,7 +117,11 @@ const FIELD_ICONS: Record<MappableField, React.FC<{ size: number }>> = {
   link_url: ExternalLink,
 };
 
-export const CardDesigner = ({ template, onChange }: CardDesignerProps) => {
+export const CardDesigner = ({
+  template,
+  onChange,
+  mode = "card",
+}: CardDesignerProps) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -457,6 +462,94 @@ export const CardDesigner = ({ template, onChange }: CardDesignerProps) => {
               })
             }
           />
+        </div>
+
+        {mode === "table" && (
+          <div className="card-designer__group">
+            <div className="card-designer__group-toolbar">
+              <span className="card-designer__group-heading">Table style</span>
+              <span className="card-designer__group-note">
+                Configure table row and header appearance
+              </span>
+            </div>
+
+            <div className="card-designer__group-grid">
+              <label className="card-designer__field">
+                <span>Striped rows</span>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm${template.tableStriped ? " icon-btn--active" : ""}`}
+                  onClick={() =>
+                    updateTemplate({ tableStriped: !template.tableStriped })
+                  }
+                >
+                  {template.tableStriped ? "On" : "Off"}
+                </button>
+              </label>
+
+              <label className="card-designer__field">
+                <span>Hover rows</span>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm${template.tableHover ? " icon-btn--active" : ""}`}
+                  onClick={() =>
+                    updateTemplate({ tableHover: !template.tableHover })
+                  }
+                >
+                  {template.tableHover ? "On" : "Off"}
+                </button>
+              </label>
+
+              <label className="card-designer__field">
+                <span>Bordered</span>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm${template.tableBordered ? " icon-btn--active" : ""}`}
+                  onClick={() =>
+                    updateTemplate({ tableBordered: !template.tableBordered })
+                  }
+                >
+                  {template.tableBordered ? "On" : "Off"}
+                </button>
+              </label>
+
+              <label className="card-designer__field">
+                <span>Compact</span>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm${template.tableCompact ? " icon-btn--active" : ""}`}
+                  onClick={() =>
+                    updateTemplate({ tableCompact: !template.tableCompact })
+                  }
+                >
+                  {template.tableCompact ? "On" : "Off"}
+                </button>
+              </label>
+            </div>
+          </div>
+        )}
+
+        <div className="card-designer__group">
+          <div className="card-designer__group-toolbar">
+            <span className="card-designer__group-heading">Custom CSS</span>
+            <span className="card-designer__group-note">
+              Full-width CSS editor for card overrides
+            </span>
+          </div>
+
+          <label className="card-designer__field card-designer__field--wide">
+            <span>CSS</span>
+            <textarea
+              className="card-designer__css-editor"
+              value={template.customCss ?? ""}
+              onChange={(e) => updateTemplate({ customCss: e.target.value })}
+              placeholder="/* Use .dcard--custom-css to scope styles */"
+            />
+            <span className="card-designer__field-note">
+              Use <code>.dcard--custom-css</code> to scope custom rules to the
+              rendered card.
+            </span>
+          </label>
         </div>
 
         <div className="card-designer__group">

@@ -261,6 +261,13 @@ export interface CardTemplate {
   overflow: CardOverflow;
   /** Body content vertical alignment. */
   contentAlign: CardContentAlign;
+  /** Optional custom CSS to apply to designed cards or tables. */
+  customCss?: string;
+  /** Table design options when rendering a table preview. */
+  tableStriped?: boolean;
+  tableHover?: boolean;
+  tableBordered?: boolean;
+  tableCompact?: boolean;
 }
 
 /** Default zone order for a new card template. */
@@ -290,6 +297,11 @@ export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
   cardStyle: "default",
   overflow: "hidden",
   contentAlign: "start",
+  customCss: "",
+  tableStriped: true,
+  tableHover: true,
+  tableBordered: false,
+  tableCompact: false,
 };
 
 /** Migrate legacy template that only had a single `padding` field. */
@@ -312,6 +324,11 @@ export function migrateCardTemplate(t: Partial<CardTemplate>): CardTemplate {
   if (base.cardStyle === undefined) base.cardStyle = "default";
   if (base.overflow === undefined) base.overflow = "hidden";
   if (base.contentAlign === undefined) base.contentAlign = "start";
+  if (base.customCss === undefined) base.customCss = "";
+  if (base.tableStriped === undefined) base.tableStriped = true;
+  if (base.tableHover === undefined) base.tableHover = true;
+  if (base.tableBordered === undefined) base.tableBordered = false;
+  if (base.tableCompact === undefined) base.tableCompact = false;
   return base;
 }
 

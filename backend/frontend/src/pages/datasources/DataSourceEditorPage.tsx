@@ -34,16 +34,7 @@ import {
   Paintbrush,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
-import type {
-  DataSource,
-  CustomSection,
-  PreviewType,
-  LandingSection,
-  CardTemplate,
-} from "../page/types";
-import { ImageCardGrid } from "../page/blocks/ImageCardGrid";
-import { FeatureGridBlock } from "../page/blocks/FeatureGridBlock";
-import { StatCardsBlock } from "../page/blocks/StatCardsBlock";
+import type { DataSource, CustomSection, CardTemplate } from "../page/types";
 import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
 import { CardDesigner } from "../page/CardDesigner";
 import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
@@ -131,6 +122,104 @@ const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
   designed_card: "Card Designer",
 };
 
+function formatCellValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+const DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS: Record<
+  DataSourcePreviewType,
+  CardTemplate
+> = {
+  cards: {
+    ...DEFAULT_CARD_TEMPLATE,
+    cardWidth: "regular",
+    cardStyle: "default",
+    imagePosition: "top",
+    contentAlign: "start",
+    gap: 12,
+    gridGap: 24,
+    zones: [
+      { field: "image_url", align: "center", size: "lg", visible: true },
+      { field: "icon", align: "center", size: "md", visible: false },
+      { field: "heading", align: "left", size: "md", visible: true },
+      { field: "subheading", align: "left", size: "sm", visible: true },
+      { field: "link_url", align: "left", size: "sm", visible: false },
+    ],
+  },
+  stat_cards: {
+    ...DEFAULT_CARD_TEMPLATE,
+    cardWidth: "narrow",
+    cardStyle: "flat",
+    imagePosition: "none",
+    contentAlign: "stretch",
+    gap: 8,
+    gridGap: 20,
+    borderRadius: 14,
+    zones: [
+      { field: "image_url", align: "center", size: "lg", visible: false },
+      { field: "icon", align: "left", size: "md", visible: true },
+      { field: "heading", align: "left", size: "md", visible: true },
+      { field: "subheading", align: "left", size: "sm", visible: true },
+      { field: "link_url", align: "left", size: "sm", visible: false },
+    ],
+  },
+  feature: {
+    ...DEFAULT_CARD_TEMPLATE,
+    cardWidth: "narrow",
+    cardStyle: "minimal",
+    imagePosition: "none",
+    contentAlign: "center",
+    gap: 8,
+    gridGap: 24,
+    borderRadius: 16,
+    zones: [
+      { field: "image_url", align: "center", size: "lg", visible: false },
+      { field: "icon", align: "center", size: "lg", visible: true },
+      { field: "heading", align: "center", size: "md", visible: true },
+      { field: "subheading", align: "center", size: "sm", visible: true },
+      { field: "link_url", align: "center", size: "sm", visible: false },
+    ],
+  },
+  image: {
+    ...DEFAULT_CARD_TEMPLATE,
+    cardWidth: "regular",
+    cardStyle: "flat",
+    imagePosition: "top",
+    contentAlign: "start",
+    gap: 10,
+    gridGap: 24,
+    zones: [
+      { field: "image_url", align: "center", size: "lg", visible: true },
+      { field: "icon", align: "center", size: "md", visible: false },
+      { field: "heading", align: "left", size: "md", visible: true },
+      { field: "subheading", align: "left", size: "sm", visible: true },
+      { field: "link_url", align: "left", size: "sm", visible: false },
+    ],
+  },
+  table: {
+    ...DEFAULT_CARD_TEMPLATE,
+    cardWidth: "full",
+    cardStyle: "minimal",
+    imagePosition: "none",
+    contentAlign: "stretch",
+    gap: 10,
+    gridGap: 12,
+    borderRadius: 10,
+    zones: [
+      { field: "image_url", align: "left", size: "lg", visible: false },
+      { field: "icon", align: "left", size: "md", visible: false },
+      { field: "heading", align: "left", size: "md", visible: true },
+      { field: "subheading", align: "left", size: "sm", visible: true },
+      { field: "link_url", align: "left", size: "sm", visible: false },
+    ],
+  },
+  designed_card: {
+    ...DEFAULT_CARD_TEMPLATE,
+  },
+};
+
 export default function DataSourceEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -153,6 +242,14 @@ export default function DataSourceEditorPage() {
   const [runStats, setRunStats] = useState<RunStats | null>(null);
   const [expandedFetch, setExpandedFetch] = useState<Set<number>>(new Set());
 
+  const tableColumns = useMemo(() => {
+    const keys = new Set<string>();
+    previewItems.forEach((item) => {
+      Object.keys(item).forEach((key) => keys.add(key));
+    });
+    return Array.from(keys);
+  }, [previewItems]);
+
   // Active panel on the right
   type RightPanel = "preview" | "compiled" | "diagnostics";
   const [activePanel, setActivePanel] = useState<RightPanel>("preview");
@@ -174,19 +271,28 @@ export default function DataSourceEditorPage() {
   const [sectionDesc, setSectionDesc] = useState("");
   const [savingSection, setSavingSection] = useState(false);
 
-  // Card designer template
-  const [cardTemplate, setCardTemplate] = useState<CardTemplate>(
-    DEFAULT_CARD_TEMPLATE,
-  );
+  // Card designer templates for each preview mode.
+  const [cardTemplates, setCardTemplates] = useState<
+    Record<DataSourcePreviewType, CardTemplate>
+  >(() => ({
+    cards: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.cards,
+    stat_cards: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.stat_cards,
+    feature: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.feature,
+    image: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.image,
+    table: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.table,
+    designed_card: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.designed_card,
+  }));
 
-  // Auto-detect table columns from preview items
-  const tableColumns = useMemo(() => {
-    const keys = new Set<string>();
-    previewItems.forEach((item) => {
-      Object.keys(item).forEach((k) => keys.add(k));
-    });
-    return Array.from(keys);
-  }, [previewItems]);
+  const currentCardTemplate = cardTemplates[previewType];
+  const handleCardTemplateChange = useCallback(
+    (template: CardTemplate) => {
+      setCardTemplates((prev) => ({
+        ...prev,
+        [previewType]: template,
+      }));
+    },
+    [previewType],
+  );
 
   const fetchDS = useCallback(async () => {
     if (isNew) return;
@@ -385,6 +491,7 @@ export default function DataSourceEditorPage() {
       // Per-item validation and sanitization — skip bad entries, never throw
       const sanitized: EvalItem[] = [];
       let skippedItems = 0;
+      const isTablePreview = previewType === "table";
       for (const raw of rawItems as unknown[]) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
           skippedItems++;
@@ -403,13 +510,14 @@ export default function DataSourceEditorPage() {
           (typeof obj.description === "string" && obj.description.trim()) ||
           (typeof obj.subtitle === "string" && obj.subtitle.trim()) ||
           null;
-        if (!heading || !subheading) {
+        if (!isTablePreview && (!heading || !subheading)) {
           skippedItems++;
           continue;
         }
-        sanitized.push({
-          heading,
-          subheading,
+        const row: EvalItem = {
+          ...obj,
+          heading: heading ?? undefined,
+          subheading: subheading ?? undefined,
           icon: typeof obj.icon === "string" ? obj.icon : undefined,
           image_url:
             typeof obj.image_url === "string"
@@ -425,7 +533,8 @@ export default function DataSourceEditorPage() {
                 : typeof obj.link === "string"
                   ? obj.link
                   : undefined,
-        });
+        };
+        sanitized.push(row);
       }
 
       setRunStats({
@@ -482,12 +591,6 @@ export default function DataSourceEditorPage() {
     !!evalError ||
     (runStats != null && runStats.exitReason !== "success");
 
-  const formatCellValue = (val: unknown): string => {
-    if (val === null || val === undefined) return "";
-    if (typeof val === "object") return JSON.stringify(val);
-    return String(val);
-  };
-
   const handleSaveSection = async () => {
     if (!sectionName.trim()) {
       toast.error("Section name is required");
@@ -502,7 +605,10 @@ export default function DataSourceEditorPage() {
           description: sectionDesc,
           datasource_id: Number(id),
           section_type: previewType,
-          config: JSON.stringify({ columns: 3 }),
+          config: JSON.stringify({
+            columns: 3,
+            card_template: currentCardTemplate,
+          }),
         }),
       });
       toast.success(`Section "${sectionName}" saved`);
@@ -715,22 +821,14 @@ export default function DataSourceEditorPage() {
                         </button>
                       ))}
                     </div>
-                    {!isNew &&
-                      PREVIEW_TYPES.includes(previewType as PreviewType) && (
-                        <button
-                          className="ds-preview__save-section-btn"
-                          onClick={() => setShowSaveSection((v) => !v)}
-                        >
-                          <Bookmark size={13} /> Save as Section
-                        </button>
-                      )}
-                    {!isNew &&
-                      !PREVIEW_TYPES.includes(previewType as PreviewType) && (
-                        <div className="ds-preview__note">
-                          Save as section is only supported for Cards, Stats,
-                          and Table.
-                        </div>
-                      )}
+                    {!isNew && (
+                      <button
+                        className="ds-preview__save-section-btn"
+                        onClick={() => setShowSaveSection((v) => !v)}
+                      >
+                        <Bookmark size={13} /> Save as Section
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -782,148 +880,37 @@ export default function DataSourceEditorPage() {
                   </div>
                 )}
 
-                {/* Cards view */}
-                {previewItems.length > 0 && previewType === "cards" && (
-                  <ImageCardGrid
-                    items={previewItems.map((item) => ({
-                      heading: item.heading,
-                      subheading: item.subheading,
-                      image_url: item.image_url,
-                      icon: item.icon,
-                      link_url: item.link_url,
-                      width: "regular",
-                    }))}
+                {previewItems.length > 0 && (
+                  <CardDesigner
+                    template={currentCardTemplate}
+                    onChange={handleCardTemplateChange}
+                    mode={previewType === "table" ? "table" : "card"}
                   />
                 )}
 
-                {/* Image grid view */}
-                {previewItems.length > 0 && previewType === "image" && (
-                  <ImageCardGrid
-                    items={previewItems.map((item) => ({
-                      heading: item.heading,
-                      subheading: item.subheading,
-                      image_url: item.image_url,
-                      icon: item.icon,
-                      link_url: item.link_url,
-                      width: "regular",
-                    }))}
-                  />
-                )}
-
-                {/* Feature grid view */}
-                {previewItems.length > 0 && previewType === "feature" && (
-                  <FeatureGridBlock
-                    section={
-                      {
-                        id: 0,
-                        display_order: 1,
-                        section_type: "feature_grid",
-                        heading: "",
-                        subheading: "",
-                        config: "{}",
-                        items: previewItems.map((item, index) => ({
-                          id: index + 1,
-                          section_id: 0,
-                          display_order: index + 1,
-                          icon: item.icon ?? "",
-                          heading: item.heading ?? "",
-                          subheading: item.subheading ?? "",
-                          image_url: item.image_url ?? "",
-                          link_url: item.link_url ?? "",
-                          config: "{}",
-                        })),
-                      } as LandingSection
-                    }
-                    canEdit={false}
-                    onUpdate={() => {}}
-                    onDelete={() => {}}
-                    onItemCreate={() => {}}
-                    onItemUpdate={() => {}}
-                    onItemDelete={() => {}}
-                  />
-                )}
-
-                {/* Stat Cards view */}
-                {previewItems.length > 0 && previewType === "stat_cards" && (
-                  <StatCardsBlock
-                    section={
-                      {
-                        id: 0,
-                        display_order: 1,
-                        section_type: "stat_cards",
-                        heading: "",
-                        subheading: "",
-                        config: "{}",
-                        items: previewItems.map((item, index) => ({
-                          id: index + 1,
-                          section_id: 0,
-                          display_order: index + 1,
-                          icon: item.icon ?? "",
-                          heading: item.heading ?? "",
-                          subheading: item.subheading ?? "",
-                          image_url: item.image_url ?? "",
-                          link_url: item.link_url ?? "",
-                          config: "{}",
-                        })),
-                      } as LandingSection
-                    }
-                    canEdit={false}
-                    onUpdate={() => {}}
-                    onDelete={() => {}}
-                    onItemCreate={() => {}}
-                    onItemUpdate={() => {}}
-                    onItemDelete={() => {}}
-                  />
-                )}
-
-                {/* Table view */}
                 {previewItems.length > 0 && previewType === "table" && (
-                  <div className="ds-table-wrap">
-                    <div className="ds-table-container">
-                      <table className="ds-table">
-                        <thead>
-                          <tr>
-                            {tableColumns.map((col) => (
-                              <th key={col}>{col}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {previewItems.map((item, i) => (
-                            <tr key={i}>
-                              {tableColumns.map((col) => (
-                                <td key={col}>{formatCellValue(item[col])}</td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  <TablePreview
+                    items={previewItems}
+                    columns={tableColumns}
+                    template={currentCardTemplate}
+                  />
                 )}
 
-                {/* Card Designer view */}
-                {previewItems.length > 0 && previewType === "designed_card" && (
-                  <>
-                    <CardDesigner
-                      template={cardTemplate}
-                      onChange={setCardTemplate}
-                    />
-                    <DesignedCardGrid
-                      items={previewItems.map((item, index) => ({
-                        id: -(index + 1),
-                        section_id: 0,
-                        display_order: index + 1,
-                        icon: item.icon ?? "",
-                        heading: item.heading ?? "",
-                        subheading: item.subheading ?? "",
-                        image_url: item.image_url ?? "",
-                        link_url: item.link_url ?? "",
-                        config: "{}",
-                      }))}
-                      template={cardTemplate}
-                    />
-                  </>
+                {previewItems.length > 0 && previewType !== "table" && (
+                  <DesignedCardGrid
+                    items={previewItems.map((item, index) => ({
+                      id: -(index + 1),
+                      section_id: 0,
+                      display_order: index + 1,
+                      icon: item.icon ?? "",
+                      heading: item.heading ?? "",
+                      subheading: item.subheading ?? "",
+                      image_url: item.image_url ?? "",
+                      link_url: item.link_url ?? "",
+                      config: "{}",
+                    }))}
+                    template={currentCardTemplate}
+                  />
                 )}
               </div>
             )}
@@ -998,6 +985,52 @@ export default function DataSourceEditorPage() {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TablePreview({
+  items,
+  columns,
+  template,
+}: {
+  items: EvalItem[];
+  columns: string[];
+  template: CardTemplate;
+}) {
+  const tableClass = [
+    "ds-table",
+    template.tableBordered ? "ds-table--bordered" : "",
+    template.tableCompact ? "ds-table--compact" : "",
+    !template.tableStriped ? "ds-table--no-stripes" : "",
+    !template.tableHover ? "ds-table--no-hover" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className="ds-table-wrap">
+      {template.customCss ? <style>{template.customCss}</style> : null}
+      <div className="ds-table-container dtable--custom-css">
+        <table className={tableClass}>
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th key={col}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, rowIndex) => (
+              <tr key={rowIndex}>
+                {columns.map((col) => (
+                  <td key={col}>{formatCellValue(item[col])}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -1196,11 +1229,6 @@ function SaveAsSectionForm({
         <div className="ds-save-section__info">
           Type: <strong>{DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}</strong>
         </div>
-        {!PREVIEW_TYPES.includes(previewType as PreviewType) && (
-          <div className="ds-preview__note ds-preview__note--warn">
-            This preview type cannot be saved as a custom section.
-          </div>
-        )}
         <div className="ds-save-section__actions">
           <button className="ds-save-section__cancel" onClick={onClose}>
             Cancel
@@ -1208,11 +1236,7 @@ function SaveAsSectionForm({
           <button
             className="ds-save-section__submit"
             onClick={onSubmit}
-            disabled={
-              saving ||
-              !sectionName.trim() ||
-              !PREVIEW_TYPES.includes(previewType as PreviewType)
-            }
+            disabled={saving || !sectionName.trim()}
           >
             {saving ? (
               <Loader2 size={13} className="spin" />

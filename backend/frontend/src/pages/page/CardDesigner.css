@@ -1,11 +1,12 @@
 .card-designer {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.56rem;
+  margin-top: 1rem;
+  padding: 0.56rem;
   background: var(--bg-secondary);
   border: 1px solid var(--card-border);
-  border-radius: var(--card-radius);
+  border-radius: 10px;
   color: var(--text-primary);
 }
 
@@ -13,22 +14,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .card-designer__title {
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .card-designer__reset {
-  font-size: 0.78rem;
-  padding: 0.4rem 0.75rem;
+  font-size: 0.72rem;
+  padding: 0.35rem 0.6rem;
   border-radius: 999px;
   background: var(--bg-color);
   color: var(--text-primary);
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--border-color);
   cursor: pointer;
 }
 
@@ -37,12 +38,12 @@
 }
 .card-designer__body {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.56rem;
 }
 
 .card-designer__group {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.5rem;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -51,31 +52,31 @@
 
 .card-designer__group + .card-designer__group {
   border-top: 1px solid var(--border-color);
-  padding-top: 0.8rem;
+  padding-top: 0.65rem;
 }
 
 .card-designer__group-toolbar {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 
 .card-designer__group-heading {
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .card-designer__group-note {
   color: var(--text-secondary);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
 }
 
 .card-designer__group-grid {
   display: grid;
-  gap: 0.55rem;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
 }
 
 .card-designer__range-slider {
@@ -147,17 +148,17 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   width: 100%;
-  padding: 0.8rem 0.95rem;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 14px;
+  padding: 0.65rem 0.8rem;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
   color: var(--text-primary);
   cursor: pointer;
   transition: background 120ms ease;
 }
 
 .card-designer__section-toggle:hover {
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-color) 90%, var(--bg-secondary));
 }
 
 .card-designer__section-toggle svg {
@@ -196,8 +197,8 @@
 
 .card-designer__field {
   display: grid;
-  gap: 0.25rem;
-  min-width: 120px;
+  gap: 0.2rem;
+  min-width: 100px;
 }
 
 .card-designer__field--wide {
@@ -215,23 +216,41 @@
 }
 
 .card-designer__field input,
-.card-designer__field select {
+.card-designer__field select,
+.card-designer__field select,
+.card-designer__css-editor {
   width: 100%;
   min-width: 0;
-  padding: 0.72rem 0.85rem;
+  padding: 0.55rem 0.65rem;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+}
+
+.card-designer__css-editor {
+  min-height: 170px;
+  font-family: var(--font-mono);
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .card-designer__field input:focus,
-.card-designer__field select:focus {
+.card-designer__field select:focus,
+.card-designer__css-editor:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px
     color-mix(in srgb, var(--primary-color) 14%, transparent);
+}
+
+.card-designer__field-note {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .card-designer__field input::-webkit-outer-spin-button,
@@ -241,11 +260,11 @@
 
 .card-designer__style-btn {
   display: grid;
-  gap: 0.45rem;
-  padding: 0.72rem;
-  border-radius: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  gap: 0.35rem;
+  padding: 0.55rem;
+  border-radius: 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition:
     transform 140ms ease,
@@ -254,7 +273,7 @@
 }
 
 .card-designer__style-btn:hover {
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-color) 90%, var(--bg-secondary));
 }
 
 .card-designer__style-btn.active {
@@ -266,16 +285,16 @@
 .card-designer__style-preview {
   display: grid;
   place-items: center;
-  min-height: 34px;
-  border-radius: 12px;
+  min-height: 28px;
+  border-radius: 10px;
   background: var(--bg-secondary);
 }
 
 .card-designer__style-chip {
   width: 100%;
-  height: 20px;
-  border-radius: 10px;
-  border: 1px solid var(--card-border);
+  height: 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .card-designer__style-chip--default {
@@ -319,12 +338,12 @@
 .card-designer__range-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.56rem;
 }
 
 .card-designer__range-row input[type="range"] {
   flex: 1;
-  height: 2rem;
+  height: 1.6rem;
   appearance: none;
   background: transparent;
 }
@@ -337,30 +356,30 @@
 
 .card-designer__range-row input[type="range"]::-webkit-slider-thumb {
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--primary-color);
   border: 2px solid var(--bg-color);
 }
 
 .card-designer__range-value {
-  min-width: 42px;
+  min-width: 38px;
   text-align: right;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--text-primary);
 }
 
 .card-designer__zones {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.55rem;
 }
 
 .card-designer__zones-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .card-designer__zones-hint {
@@ -372,11 +391,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border-radius: 14px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--card-border);
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border-radius: 10px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
 }
 
 .card-designer__zone.dragging {
@@ -396,8 +415,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 8px;
   background: var(--bg-color);
   color: var(--text-secondary);
@@ -406,9 +425,9 @@
 .card-designer__zone-label {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 0.9rem;
-  flex: 1 1 150px;
-  min-width: 120px;
+  font-size: 0.82rem;
+  flex: 1 1 130px;
+  min-width: 100px;
 }
 
 .card-designer__zone-align,
@@ -419,12 +438,12 @@
 }
 
 .card-designer__size-btn {
-  padding: 0.38rem 0.62rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 999px;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
-  border: 1px solid var(--card-border);
-  font-size: 0.82rem;
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
