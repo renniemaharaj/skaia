@@ -106,6 +106,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   } = useLandingData(editingCount > 0);
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
+  const [sectionsSourced, setSectionsSourced] = useState(false);
   const [showOwnership, setShowOwnership] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
@@ -301,6 +302,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     // Clear sections when the slug changes so we don't briefly render the
     // previous page's content while the new page is loading.
     setSections([]);
+    setSectionsSourced(false);
   }, [slug]);
 
   useEffect(() => {
@@ -314,6 +316,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
     if (slug && !page && error) {
       setSections([]);
+      setSectionsSourced(true);
       return;
     }
 
@@ -322,6 +325,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         const parsed = JSON.parse(page.content);
         if (Array.isArray(parsed)) {
           setSections((prev) => mergeSections(prev, sortSections(parsed)));
+          setSectionsSourced(true);
           return;
         }
       } catch {
@@ -334,8 +338,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       return;
     }
 
+    // Don't fall back to landing sections while the page index request is
+    // still in flight — stale landing data may differ from the page entity
+    // and would flash briefly before the correct content replaces it.
+    if (loading) return;
+
     setSections((prev) => mergeSections(prev, sortSections(landingSections)));
-  }, [slug, page, page?.content, landingSections, error]);
+    setSectionsSourced(true);
+  }, [slug, page, page?.content, landingSections, error, loading]);
 
   useEffect(() => {
     refresh(slug);
@@ -673,7 +683,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     [reorderSections, immediateSave],
   );
 
-  if (loading || (slug === undefined && landingLoading)) {
+  if (loading || (slug === undefined && landingLoading) || !sectionsSourced) {
     return (
       <div className="pb-container">
         <LandingSkeleton />
