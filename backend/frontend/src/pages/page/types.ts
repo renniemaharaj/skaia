@@ -109,6 +109,47 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   custom_section: "Custom Section",
 };
 
+export interface SectionTypeGroup {
+  id: string;
+  label: string;
+  description?: string;
+  types: SectionType[];
+}
+
+export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
+  {
+    id: "featured",
+    label: "Featured blocks",
+    description: "Large visual sections for your hero and highlights.",
+    types: ["hero", "cta", "event_highlights", "profile_card"],
+  },
+  {
+    id: "content",
+    label: "Content blocks",
+    description:
+      "Cards, stats, galleries and social links for structured content.",
+    types: [
+      "card_group",
+      "stat_cards",
+      "social_links",
+      "image_gallery",
+      "feature_grid",
+    ],
+  },
+  {
+    id: "rich",
+    label: "Rich content",
+    description: "Text, code and custom sections for advanced content.",
+    types: [
+      "rich_text",
+      "code_editor",
+      "data_sources",
+      "derived_section",
+      "custom_section",
+    ],
+  },
+];
+
 /** Creator info returned with a data source. */
 export interface DataSourceCreator {
   id: number;

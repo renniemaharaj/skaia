@@ -1,5 +1,5 @@
 import type { LandingSection, LandingItem, SectionType } from "./types";
-import { SECTION_TYPE_LABELS, SECTION_TYPES } from "./types";
+import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
 import "./page-builder-core.css";
 import { HeroBlock } from "./blocks/HeroBlock";
 import { CardGroupBlock } from "./blocks/CardGroupBlock";
@@ -16,7 +16,14 @@ import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
-import React, { memo, useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   getSectionLayout,
   getSectionMargins,
@@ -199,6 +206,33 @@ export const BlockRenderer = memo(function BlockRenderer({
     [],
   );
 
+  const [lastOpenedGroup, setLastOpenedGroup] = useState<string | null>(
+    () => SECTION_TYPE_GROUPS[0]?.id ?? null,
+  );
+
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(SECTION_TYPE_GROUPS.map((group) => group.id)),
+  );
+
+  useEffect(() => {
+    if (activeAddIndex !== null && openGroups.size === 0 && lastOpenedGroup) {
+      setOpenGroups(new Set([lastOpenedGroup]));
+    }
+  }, [activeAddIndex, lastOpenedGroup, openGroups.size]);
+
+  const toggleGroup = useCallback((groupId: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+        setLastOpenedGroup(groupId);
+      }
+      return next;
+    });
+  }, []);
+
   const renderAddSectionTrigger = (insertIndex: number) => (
     <div className="pb-add-section" key={`add-section-${insertIndex}`}>
       <button
@@ -214,14 +248,42 @@ export const BlockRenderer = memo(function BlockRenderer({
 
       {activeAddIndex === insertIndex && (
         <div className="pb-add-section-menu">
-          {SECTION_TYPES.map((type: SectionType) => (
-            <button
-              key={type}
-              className="pb-add-section-menu-item"
-              onClick={() => addSection(type, insertIndex)}
-            >
-              {SECTION_TYPE_LABELS[type] ?? type}
-            </button>
+          {SECTION_TYPE_GROUPS.map((group) => (
+            <div className="pb-add-section-group" key={group.id}>
+              <button
+                type="button"
+                className="pb-add-section-group-header"
+                onClick={() => toggleGroup(group.id)}
+              >
+                <div>
+                  <div className="pb-add-section-group-label">
+                    {group.label}
+                  </div>
+                  {group.description && (
+                    <div className="pb-add-section-group-desc">
+                      {group.description}
+                    </div>
+                  )}
+                </div>
+                <span className="pb-add-section-group-toggle">
+                  {openGroups.has(group.id) ? "−" : "+"}
+                </span>
+              </button>
+
+              {openGroups.has(group.id) && (
+                <div className="pb-add-section-group-items">
+                  {group.types.map((type) => (
+                    <button
+                      key={type}
+                      className="pb-add-section-menu-item"
+                      onClick={() => addSection(type, insertIndex)}
+                    >
+                      {SECTION_TYPE_LABELS[type] ?? type}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
