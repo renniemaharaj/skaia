@@ -116,6 +116,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Toolbar visible to admins and owners only — editors can edit inline but don't see the bar
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showOwnershipBtn = showToolbar && page?.id && slug;
+  const canShowSandboxToggle = !isEditable;
+  const sandboxToggleIsStandalone =
+    canShowSandboxToggle && !showOwnershipBtn && !(isAdmin && !slug);
 
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -812,66 +815,80 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               </button>
             )}
 
-            <div className="page-admin-more-wrap" ref={moreRef}>
+            {sandboxToggleIsStandalone && (
               <button
                 type="button"
-                className={`icon-btn icon-btn--sm page-admin-more-btn${moreOpen ? " active" : ""}`}
-                onClick={() => setMoreOpen((v) => !v)}
-                title="More actions"
+                className="page-admin-btn"
+                onClick={() => setGuestSandboxEnabled((current) => !current)}
               >
-                <MoreHorizontal size={18} />
+                {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
               </button>
-              {moreOpen && (
-                <div className="page-admin-more-dropdown">
-                  {showOwnershipBtn && (
-                    <button
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setShowOwnership((v) => !v);
-                        setMoreOpen(false);
-                      }}
-                    >
-                      Manage page ownership
-                    </button>
-                  )}
-                  {isAdmin && !slug && (
-                    <>
-                      <Link
-                        to="/admin/meta"
+            )}
+
+            {(showOwnershipBtn ||
+              (isAdmin && !slug) ||
+              (!sandboxToggleIsStandalone && canShowSandboxToggle)) && (
+              <div className="page-admin-more-wrap" ref={moreRef}>
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm page-admin-more-btn${moreOpen ? " active" : ""}`}
+                  onClick={() => setMoreOpen((v) => !v)}
+                  title="More actions"
+                >
+                  <MoreHorizontal size={18} />
+                </button>
+                {moreOpen && (
+                  <div className="page-admin-more-dropdown">
+                    {showOwnershipBtn && (
+                      <button
+                        type="button"
                         className="page-admin-more-item"
-                        onClick={() => setMoreOpen(false)}
+                        onClick={() => {
+                          setShowOwnership((v) => !v);
+                          setMoreOpen(false);
+                        }}
                       >
-                        Site Meta
-                      </Link>
-                      <Link
-                        to="/admin/roles"
+                        Manage page ownership
+                      </button>
+                    )}
+                    {isAdmin && !slug && (
+                      <>
+                        <Link
+                          to="/admin/meta"
+                          className="page-admin-more-item"
+                          onClick={() => setMoreOpen(false)}
+                        >
+                          Site Meta
+                        </Link>
+                        <Link
+                          to="/admin/roles"
+                          className="page-admin-more-item"
+                          onClick={() => setMoreOpen(false)}
+                        >
+                          Roles
+                        </Link>
+                      </>
+                    )}
+                    {!isEditable && !sandboxToggleIsStandalone && (
+                      <button
+                        type="button"
                         className="page-admin-more-item"
-                        onClick={() => setMoreOpen(false)}
+                        onClick={() => {
+                          setGuestSandboxEnabled(
+                            (current: boolean) => !(current as boolean),
+                          );
+                          setMoreOpen(false);
+                        }}
                       >
-                        Roles
-                      </Link>
-                    </>
-                  )}
-                  {!isEditable && (
-                    <button
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setGuestSandboxEnabled(
-                          (current: boolean) => !(current as boolean),
-                        );
-                        setMoreOpen(false);
-                      }}
-                    >
-                      {guestSandboxEnabled
-                        ? "Disable sandbox"
-                        : "Enable sandbox"}
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                        {guestSandboxEnabled
+                          ? "Disable sandbox"
+                          : "Enable sandbox"}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
         {showOwnership && showOwnershipBtn && (
