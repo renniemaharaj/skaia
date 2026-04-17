@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { Settings, Users, Eye, ThumbsUp, ChevronDown } from "lucide-react";
+import { Eye, ThumbsUp, ChevronDown, MoreHorizontal } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
@@ -133,8 +133,21 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Landing page selector state
   const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
   const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDocumentClick = (event: globalThis.MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", onDocumentClick);
+    return () => window.removeEventListener("mousedown", onDocumentClick);
+  }, [moreOpen]);
 
   const landingPageLabel = page
     ? page.is_index
@@ -224,12 +237,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const ensurePage = useCallback(
     async (content: LandingSection[]): Promise<PageBuilderPage | null> => {
       if (pageRef.current) return pageRef.current;
-      if (!slug) return null;
+      // For the index route (!slug), create a page entity with is_index: true
+      // so that subsequent edits use the page-content path with fine-grained WS updates.
       const created = await createPage({
-        slug,
-        title: slug,
+        slug: slug || "homepage",
+        title: slug || "Homepage",
         description: "",
-        is_index: false,
+        is_index: !slug,
         content: JSON.stringify(content),
         view_count: 0,
         likes: 0,
@@ -241,6 +255,47 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     },
     [slug, createPage, refresh],
   );
+
+  // Auto-migrate: if the index route has legacy landing sections but no page
+  // entity yet, silently create one so all edits use the page-content / WS path.
+  const autoMigratedRef = useRef(false);
+  useEffect(() => {
+    if (
+      autoMigratedRef.current ||
+      slug ||
+      !isAdmin ||
+      loading ||
+      page ||
+      landingLoading ||
+      landingSections.length === 0
+    )
+      return;
+    autoMigratedRef.current = true;
+    createPage({
+      slug: "homepage",
+      title: "Homepage",
+      description: "",
+      is_index: true,
+      content: JSON.stringify(sortSections(landingSections)),
+      view_count: 0,
+      likes: 0,
+      is_liked: false,
+      comment_count: 0,
+    })
+      .then(() => refresh(undefined))
+      .catch(() => {
+        autoMigratedRef.current = false;
+      });
+  }, [
+    slug,
+    isAdmin,
+    loading,
+    page,
+    landingLoading,
+    landingSections,
+    createPage,
+    refresh,
+  ]);
 
   useEffect(() => {
     // Don't overwrite sections while there are unsaved pending changes —
@@ -439,10 +494,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const editorStampRef = useRef(currentEditorStamp);
   editorStampRef.current = currentEditorStamp;
+  // Ref so wrapper callbacks can check admin status without stale closures.
+  const isAdminRef = useRef(isAdmin);
+  isAdminRef.current = isAdmin;
 
   const updateSectionWrapper = useCallback(
     (s: LandingSection) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         updateSection(s);
         return;
       }
@@ -460,7 +518,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const createSectionWrapper = useCallback(
     (s: Omit<LandingSection, "id">) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         createSection(s);
         return;
       }
@@ -494,7 +552,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const deleteSectionWrapper = useCallback(
     (id: number) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         deleteSection(id);
         return;
       }
@@ -510,7 +568,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const createItemWrapper = useCallback(
     (sectionId: number, item: Omit<LandingItem, "id">) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         createItem(sectionId, item);
         return;
       }
@@ -533,7 +591,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const updateItemWrapper = useCallback(
     (item: LandingItem) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         updateItem(item);
         return;
       }
@@ -557,7 +615,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const deleteItemWrapper = useCallback(
     (id: number) => {
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         deleteItem(id);
         return;
       }
@@ -594,7 +652,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
       setSections(normalized);
 
-      if (isPageFallbackRef.current) {
+      if (isPageFallbackRef.current && !isAdminRef.current) {
         await reorderSections(normalized.map((s) => s.id));
       } else {
         await immediateSave(normalized);
@@ -661,28 +719,33 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     <PageBuilderContext.Provider value={contextValue}>
       <div className="pb-container">
         {showToolbar && (
-          <div className="page-admin-bar">
-            {showOwnershipBtn && (
-              <button
-                type="button"
-                className={`page-admin-btn${showOwnership ? " active" : ""}`}
-                onClick={() => setShowOwnership((v) => !v)}
-                title="Manage page ownership"
-              >
-                <Users size={16} />
-                Manage
-              </button>
+          <div className="page-admin-bar page-admin-bar--menu">
+            {canChangeVisibility && page && (
+              <div className="page-admin-visibility">
+                <select
+                  id="page-visibility"
+                  className="page-admin-select"
+                  value={page.visibility || "public"}
+                  onChange={async (e) => {
+                    const nextVisibility = e.target.value;
+                    try {
+                      await updatePage({
+                        ...page,
+                        visibility: nextVisibility,
+                      });
+                      await refresh(slug);
+                    } catch (err) {
+                      console.error("Failed to update page visibility", err);
+                    }
+                  }}
+                >
+                  <option value="public">Public</option>
+                  <option value="private">Private</option>
+                  <option value="unlisted">Unlisted</option>
+                </select>
+              </div>
             )}
-            {canDelete && page?.id && (
-              <button
-                type="button"
-                className="page-admin-btn page-admin-btn--danger"
-                onClick={handleDeletePage}
-                title="Delete this page"
-              >
-                Delete
-              </button>
-            )}
+
             {isAdmin && !slug && (
               <div className="page-admin-dropdown-wrap">
                 <button
@@ -715,67 +778,78 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                 )}
               </div>
             )}
-            {canChangeVisibility && page && (
-              <div className="page-admin-visibility">
-                <label
-                  htmlFor="page-visibility"
-                  className="page-admin-visibility__label"
-                >
-                  Visibility
-                </label>
-                <select
-                  id="page-visibility"
-                  className="page-admin-select"
-                  value={page.visibility || "public"}
-                  onChange={async (e) => {
-                    const nextVisibility = e.target.value;
-                    try {
-                      await updatePage({ ...page, visibility: nextVisibility });
-                      await refresh(slug);
-                    } catch (err) {
-                      console.error("Failed to update page visibility", err);
-                    }
-                  }}
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                  <option value="unlisted">Unlisted</option>
-                </select>
-              </div>
-            )}
-            {isAdmin && !slug && (
-              <>
-                <Link to="/admin/meta" className="page-admin-btn">
-                  <Settings size={16} />
-                  Site Meta
-                </Link>
-                <Link to="/admin/roles" className="page-admin-btn">
-                  <Settings size={16} />
-                  Roles
-                </Link>
-              </>
-            )}
-            {!isEditable && (
-              <div
-                className={`guest-sandbox${guestSandboxEnabled ? " active" : ""}`}
+
+            {canDelete && page?.id && (
+              <button
+                type="button"
+                className="page-admin-btn page-admin-btn--danger"
+                onClick={handleDeletePage}
+                title="Delete this page"
               >
-                <button
-                  type="button"
-                  className={`page-admin-btn guest-sandbox-btn${
-                    guestSandboxEnabled ? " active" : ""
-                  }`}
-                  onClick={() =>
-                    setGuestSandboxEnabled(
-                      (current: boolean) => !(current as boolean),
-                    )
-                  }
-                  title="Toggle guest sandbox mode"
-                >
-                  <Settings size={16} />
-                  Sandbox
-                </button>
-              </div>
+                Delete
+              </button>
             )}
+
+            <div className="page-admin-more-wrap" ref={moreRef}>
+              <button
+                type="button"
+                className={`icon-btn icon-btn--sm page-admin-more-btn${moreOpen ? " active" : ""}`}
+                onClick={() => setMoreOpen((v) => !v)}
+                title="More actions"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+              {moreOpen && (
+                <div className="page-admin-more-dropdown">
+                  {showOwnershipBtn && (
+                    <button
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setShowOwnership((v) => !v);
+                        setMoreOpen(false);
+                      }}
+                    >
+                      Manage page ownership
+                    </button>
+                  )}
+                  {isAdmin && !slug && (
+                    <>
+                      <Link
+                        to="/admin/meta"
+                        className="page-admin-more-item"
+                        onClick={() => setMoreOpen(false)}
+                      >
+                        Site Meta
+                      </Link>
+                      <Link
+                        to="/admin/roles"
+                        className="page-admin-more-item"
+                        onClick={() => setMoreOpen(false)}
+                      >
+                        Roles
+                      </Link>
+                    </>
+                  )}
+                  {!isEditable && (
+                    <button
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setGuestSandboxEnabled(
+                          (current: boolean) => !(current as boolean),
+                        );
+                        setMoreOpen(false);
+                      }}
+                    >
+                      {guestSandboxEnabled
+                        ? "Disable sandbox"
+                        : "Enable sandbox"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
         {showOwnership && showOwnershipBtn && (

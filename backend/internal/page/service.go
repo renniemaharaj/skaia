@@ -53,6 +53,33 @@ func (s *Service) Update(p *models.Page) error {
 	return s.repo.Update(p)
 }
 
+// Duplicate creates a copy of an existing page under a new slug.
+func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Page, error) {
+	src, err := s.repo.GetByID(fromID)
+	if err != nil {
+		return nil, fmt.Errorf("source page not found: %w", err)
+	}
+	title := newTitle
+	if title == "" {
+		title = src.Title + " (copy)"
+	}
+	dup := &models.Page{
+		Slug:        newSlug,
+		Title:       title,
+		Description: src.Description,
+		IsIndex:     false,
+		Content:     src.Content,
+		Visibility:  "private",
+	}
+	if dup.Content == "" {
+		dup.Content = "[]"
+	}
+	if err := s.repo.Create(dup); err != nil {
+		return nil, err
+	}
+	return dup, nil
+}
+
 func (s *Service) Delete(id int64) error {
 	// Look up the page owner so we can decrement their allocation.
 	p, err := s.repo.GetByID(id)

@@ -17,6 +17,8 @@ import {
   Trash2,
   Plus,
   EyeOff,
+  Copy,
+  Pencil,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { toast } from "sonner";
@@ -58,6 +60,17 @@ export default function CustomPages() {
   const [search, setSearch] = useState("");
   const [allocation, setAllocation] = useState<Allocation | null>(null);
   const [claiming, setClaiming] = useState(false);
+  const [renamingPage, setRenamingPage] = useState<PageBuilderPage | null>(
+    null,
+  );
+  const [duplicatingPage, setDuplicatingPage] =
+    useState<PageBuilderPage | null>(null);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [renameSlug, setRenameSlug] = useState("");
+  const [dupSlug, setDupSlug] = useState("");
+  const [dupTitle, setDupTitle] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (
       (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
@@ -106,6 +119,81 @@ export default function CustomPages() {
       setClaiming(false);
     }
   }, [navigate]);
+
+  const openRename = useCallback(
+    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setRenameTitle(page.title || page.slug);
+      setRenameSlug(page.slug);
+      setRenamingPage(page);
+    },
+    [],
+  );
+
+  const handleRename = useCallback(async () => {
+    if (!renamingPage || !renameTitle.trim()) return;
+    setRenaming(true);
+    try {
+      const updated = await apiRequest<PageBuilderPage>(
+        `/config/pages/${renamingPage.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            ...renamingPage,
+            title: renameTitle.trim(),
+            slug: renameSlug.trim() || renamingPage.slug,
+          }),
+        },
+      );
+      setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      toast.success("Page renamed");
+      setRenamingPage(null);
+    } catch {
+      toast.error("Failed to rename page");
+    } finally {
+      setRenaming(false);
+    }
+  }, [renamingPage, renameTitle, renameSlug]);
+
+  const openDuplicate = useCallback(
+    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDupSlug(`${page.slug}-copy`);
+      setDupTitle(`${page.title || page.slug} (Copy)`);
+      setDuplicatingPage(page);
+    },
+    [],
+  );
+
+  const handleDuplicate = useCallback(async () => {
+    if (!duplicatingPage || !dupSlug.trim()) return;
+    setDuplicating(true);
+    try {
+      const created = await apiRequest<PageBuilderPage>(
+        `/config/pages/${duplicatingPage.id}/duplicate`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            slug: dupSlug.trim(),
+            title: dupTitle.trim() || dupSlug.trim(),
+          }),
+        },
+      );
+      setPages((prev) => [...prev, created]);
+      apiRequest<Allocation>("/config/pages/my-allocation")
+        .then((data) => setAllocation(data))
+        .catch(() => {});
+      toast.success("Page duplicated");
+      setDuplicatingPage(null);
+      navigate(`/page/${created.slug}`);
+    } catch {
+      toast.error("Failed to duplicate page");
+    } finally {
+      setDuplicating(false);
+    }
+  }, [duplicatingPage, dupSlug, dupTitle, navigate]);
 
   const canClaim =
     !!currentUser &&
@@ -296,6 +384,24 @@ export default function CustomPages() {
                   {page.can_delete && (
                     <button
                       type="button"
+                      className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                      onClick={(e) => openRename(e, page)}
+                      title="Rename page"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                    onClick={(e) => openDuplicate(e, page)}
+                    title="Duplicate page"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  {page.can_delete && (
+                    <button
+                      type="button"
                       className="icon-btn icon-btn--sm icon-btn--danger cp-delete-btn"
                       onClick={(event) => handleDeletePage(event, page)}
                       disabled={deletingPageId === page.id}
@@ -406,6 +512,24 @@ export default function CustomPages() {
                 {relativeTimeAgo(page.updated_at)}
               </span>
               <span className="cp-list__col cp-list__col--action">
+                {page.can_delete && (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                    onClick={(e) => openRename(e, page)}
+                    title="Rename page"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                  onClick={(e) => openDuplicate(e, page)}
+                  title="Duplicate page"
+                >
+                  <Copy size={14} />
+                </button>
                 {page.can_delete ? (
                   <button
                     type="button"
@@ -422,6 +546,101 @@ export default function CustomPages() {
               </span>
             </Link>
           ))}
+        </div>
+      )}
+
+      {renamingPage && (
+        <div className="cp-modal-overlay" onClick={() => setRenamingPage(null)}>
+          <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="cp-modal__title">Rename page</h3>
+            <label className="cp-modal__label">
+              Title
+              <input
+                type="text"
+                className="cp-modal__input"
+                value={renameTitle}
+                onChange={(e) => setRenameTitle(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                autoFocus
+              />
+            </label>
+            {!renamingPage.is_index && (
+              <label className="cp-modal__label">
+                Slug
+                <input
+                  type="text"
+                  className="cp-modal__input"
+                  value={renameSlug}
+                  onChange={(e) => setRenameSlug(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                />
+              </label>
+            )}
+            <div className="cp-modal__actions">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setRenamingPage(null)}
+                disabled={renaming}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleRename}
+                disabled={renaming || !renameTitle.trim()}
+              >
+                {renaming ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicatingPage && (
+        <div
+          className="cp-modal-overlay"
+          onClick={() => setDuplicatingPage(null)}
+        >
+          <div className="cp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="cp-modal__title">Duplicate page</h3>
+            <label className="cp-modal__label">
+              New slug
+              <input
+                type="text"
+                className="cp-modal__input"
+                value={dupSlug}
+                onChange={(e) => setDupSlug(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDuplicate()}
+                autoFocus
+              />
+            </label>
+            <label className="cp-modal__label">
+              New title
+              <input
+                type="text"
+                className="cp-modal__input"
+                value={dupTitle}
+                onChange={(e) => setDupTitle(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDuplicate()}
+              />
+            </label>
+            <div className="cp-modal__actions">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setDuplicatingPage(null)}
+                disabled={duplicating}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleDuplicate}
+                disabled={duplicating || !dupSlug.trim()}
+              >
+                {duplicating ? "Duplicating…" : "Duplicate"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

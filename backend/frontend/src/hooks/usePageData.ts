@@ -47,6 +47,11 @@ interface UsePageDataReturn {
     page: Omit<PageBuilderPage, "created_at" | "updated_at">,
   ) => Promise<PageBuilderPage>;
   deletePage: (id: number) => Promise<void>;
+  duplicatePage: (
+    id: number,
+    newSlug: string,
+    newTitle?: string,
+  ) => Promise<PageBuilderPage>;
 }
 
 export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
@@ -162,6 +167,19 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     });
   }, []);
 
+  const duplicatePage = useCallback(
+    async (id: number, newSlug: string, newTitle?: string) => {
+      return await apiRequest<PageBuilderPage>(
+        `/config/pages/${id}/duplicate`,
+        {
+          method: "POST",
+          body: JSON.stringify({ slug: newSlug, title: newTitle }),
+        },
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     const handler = (e: Event) => {
       const { action, data } = (
@@ -206,5 +224,6 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     createPage,
     updatePage,
     deletePage,
+    duplicatePage,
   };
 }

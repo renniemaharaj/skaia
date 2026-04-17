@@ -49,6 +49,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Get("/my-allocation", h.getMyAllocation)
 			r.Put("/{id}", h.updatePage)
 			r.Delete("/{id}", h.deletePage)
+			r.Post("/{id}/duplicate", h.duplicatePage)
 
 			// Ownership & editor management
 			r.Put("/{id}/owner", h.setOwner)
@@ -237,6 +238,47 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		Meta:       map[string]interface{}{"slug": p.Slug},
 		Fn: func() {
 			h.hub.BroadcastPage("page_created", p)
+		},
+	})
+}
+
+func (h *Handler) duplicatePage(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	// Admins, owners, and editors may duplicate.
+	if !h.requireHomeManage(r) && !h.canEditPage(r, id) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var body struct {
+		Slug  string `json:"slug"`
+		Title string `json:"title"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Slug == "" {
+		utils.WriteError(w, http.StatusBadRequest, "slug is required")
+		return
+	}
+	dup, err := h.svc.Duplicate(id, body.Slug, body.Title)
+	if err != nil {
+		log.Printf("page.duplicatePage: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "duplicate failed")
+		return
+	}
+	h.svc.EnrichPage(dup)
+	utils.WriteJSON(w, http.StatusCreated, dup)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActPageCreated,
+		Resource:   ievents.ResPage,
+		ResourceID: dup.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"slug": dup.Slug, "duplicated_from": id},
+		Fn: func() {
+			h.hub.BroadcastPage("page_created", dup)
 		},
 	})
 }
