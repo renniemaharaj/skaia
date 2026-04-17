@@ -21,6 +21,8 @@ import {
   Smile,
   ExternalLink,
 } from "lucide-react";
+import { SectionSpacingControls } from "./EditControls";
+import type { SectionMargins } from "./EditControls";
 import type {
   CardTemplate,
   CardZone,
@@ -429,70 +431,32 @@ export const CardDesigner = ({ template, onChange }: CardDesignerProps) => {
             </label>
           </div>
 
-          <div className="card-designer__padding-box">
-            <span className="card-designer__padding-label">Card padding</span>
-            <div className="card-designer__padding-grid">
-              <div className="card-designer__padding-row card-designer__padding-row--top">
-                <label className="card-designer__padding-input">
-                  <span>Top</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={64}
-                    step={4}
-                    value={template.paddingTop ?? 0}
-                    onChange={(e) =>
-                      updateTemplate({ paddingTop: Number(e.target.value) })
-                    }
-                  />
-                </label>
-              </div>
-              <div className="card-designer__padding-row card-designer__padding-row--middle">
-                <label className="card-designer__padding-input">
-                  <span>Left</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={64}
-                    step={4}
-                    value={template.paddingLeft ?? 0}
-                    onChange={(e) =>
-                      updateTemplate({ paddingLeft: Number(e.target.value) })
-                    }
-                  />
-                </label>
-                <div className="card-designer__padding-center">content</div>
-                <label className="card-designer__padding-input">
-                  <span>Right</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={64}
-                    step={4}
-                    value={template.paddingRight ?? 0}
-                    onChange={(e) =>
-                      updateTemplate({ paddingRight: Number(e.target.value) })
-                    }
-                  />
-                </label>
-              </div>
-              <div className="card-designer__padding-row card-designer__padding-row--bottom">
-                <label className="card-designer__padding-input">
-                  <span>Bottom</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={64}
-                    step={4}
-                    value={template.paddingBottom ?? 0}
-                    onChange={(e) =>
-                      updateTemplate({ paddingBottom: Number(e.target.value) })
-                    }
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
+          <SectionSpacingControls
+            margins={
+              {
+                marginTop: template.paddingTop,
+                marginBottom: template.paddingBottom,
+                paddingLeft: template.paddingLeft,
+                paddingRight: template.paddingRight,
+              } as SectionMargins
+            }
+            onChange={(next) =>
+              updateTemplate({
+                ...(next.marginTop !== undefined
+                  ? { paddingTop: next.marginTop }
+                  : {}),
+                ...(next.marginBottom !== undefined
+                  ? { paddingBottom: next.marginBottom }
+                  : {}),
+                ...(next.paddingLeft !== undefined
+                  ? { paddingLeft: next.paddingLeft }
+                  : {}),
+                ...(next.paddingRight !== undefined
+                  ? { paddingRight: next.paddingRight }
+                  : {}),
+              })
+            }
+          />
         </div>
 
         <div className="card-designer__group">
