@@ -147,6 +147,7 @@
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
+  justify-items: start;
   width: 100%;
   padding: 0.65rem 0.8rem;
   background: var(--bg-color);
@@ -155,6 +156,11 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: background 120ms ease;
+}
+
+.card-designer__section-toggle > div {
+  display: grid;
+  gap: 0.18rem;
 }
 
 .card-designer__section-toggle:hover {
