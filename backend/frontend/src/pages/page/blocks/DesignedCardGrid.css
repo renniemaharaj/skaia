@@ -42,20 +42,92 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .dcard__body {
   display: flex;
   flex-direction: column;
-  align-items: center;
   flex: 1;
   position: relative;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 .dcard__body--overlay {
   background: color-mix(in srgb, var(--bg-color) 70%, transparent);
-  border-radius: var(--card-radius);
+  border-radius: inherit;
+}
+
+/* ── Card style variants ──────────────────────────────────────────────── */
+
+.dcard--flat {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
+}
+
+.dcard--flat:hover {
+  box-shadow: none;
+}
+
+.dcard--elevated {
+  border: none;
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--text-primary) 10%, transparent),
+    0 1px 4px color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.dcard--elevated:hover {
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--text-primary) 14%, transparent),
+    0 2px 6px color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.dcard--outlined {
+  background: transparent;
+  border: 2px solid var(--border-color);
+  box-shadow: none;
+}
+
+.dcard--outlined:hover {
+  border-color: var(--primary-color);
+  box-shadow: none;
+}
+
+.dcard--glass {
+  background: color-mix(in srgb, var(--card-bg) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+.dcard--glass:hover {
+  background: color-mix(in srgb, var(--card-bg) 75%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.dcard--filled {
+  background: var(--bg-tertiary);
+  border: none;
+  box-shadow: none;
+}
+
+.dcard--filled:hover {
+  background: var(--bg-secondary);
+  box-shadow: none;
+}
+
+.dcard--minimal {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.dcard--minimal:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+  box-shadow: none;
 }
 
 /* ── Responsive ───────────────────────────────────────────────────────── */

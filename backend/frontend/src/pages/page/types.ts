@@ -202,6 +202,22 @@ export type ZoneSize = "sm" | "md" | "lg";
 /** Where the image zone sits relative to the card body. */
 export type ImagePosition = "top" | "bottom" | "background" | "none";
 
+/** Card visual style presets. */
+export type CardStyle =
+  | "default"
+  | "flat"
+  | "elevated"
+  | "outlined"
+  | "glass"
+  | "filled"
+  | "minimal";
+
+/** Overflow behavior for card content. */
+export type CardOverflow = "hidden" | "visible" | "auto";
+
+/** Content alignment within the card body. */
+export type CardContentAlign = "start" | "center" | "end" | "stretch";
+
 /**
  * A zone within a designed card. Each zone renders one MappableField
  * with configurable alignment and sizing.
@@ -220,11 +236,31 @@ export interface CardZone {
 export interface CardTemplate {
   cardWidth: CardWidth;
   minHeight?: number;
+  maxHeight?: number;
   aspectRatio?: string;
   zones: CardZone[];
+  /** Inner gap between body zones (px). */
   gap: number;
-  padding: number;
+  /** Grid gap between cards (px). */
+  gridGap: number;
+  /** Padding: per-side control (top, right, bottom, left) in px. */
+  paddingTop: number;
+  paddingRight: number;
+  paddingBottom: number;
+  paddingLeft: number;
+  /** Legacy unified padding — migrated to per-side on load. */
+  padding?: number;
   imagePosition: ImagePosition;
+  /** Image height in px — controls how much space the image claims. */
+  imageHeight?: number;
+  /** Border radius in px. */
+  borderRadius: number;
+  /** Card style preset. */
+  cardStyle: CardStyle;
+  /** Overflow behavior. */
+  overflow: CardOverflow;
+  /** Body content vertical alignment. */
+  contentAlign: CardContentAlign;
 }
 
 /** Default zone order for a new card template. */
@@ -238,13 +274,46 @@ export const DEFAULT_CARD_ZONES: CardZone[] = [
 
 export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
   cardWidth: "regular",
-  minHeight: 280,
+  minHeight: undefined,
+  maxHeight: undefined,
   aspectRatio: "auto",
   zones: DEFAULT_CARD_ZONES,
   gap: 8,
-  padding: 16,
+  gridGap: 24,
+  paddingTop: 0,
+  paddingRight: 16,
+  paddingBottom: 16,
+  paddingLeft: 16,
   imagePosition: "top",
+  imageHeight: undefined,
+  borderRadius: 16,
+  cardStyle: "default",
+  overflow: "hidden",
+  contentAlign: "start",
 };
+
+/** Migrate legacy template that only had a single `padding` field. */
+export function migrateCardTemplate(t: Partial<CardTemplate>): CardTemplate {
+  const base = { ...DEFAULT_CARD_TEMPLATE, ...t };
+  // Migrate legacy single padding to per-side
+  if (
+    t.padding !== undefined &&
+    t.paddingTop === undefined &&
+    t.paddingRight === undefined
+  ) {
+    base.paddingTop = t.padding;
+    base.paddingRight = t.padding;
+    base.paddingBottom = t.padding;
+    base.paddingLeft = t.padding;
+  }
+  // Ensure defaults for new fields
+  if (base.gridGap === undefined) base.gridGap = 24;
+  if (base.borderRadius === undefined) base.borderRadius = 16;
+  if (base.cardStyle === undefined) base.cardStyle = "default";
+  if (base.overflow === undefined) base.overflow = "hidden";
+  if (base.contentAlign === undefined) base.contentAlign = "start";
+  return base;
+}
 
 /** Configuration for a datasource-driven section. */
 export interface FactTableConfig {

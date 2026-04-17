@@ -7,6 +7,7 @@ interface CardPartImageProps {
   align?: ZoneAlign;
   size?: ZoneSize;
   position?: "top" | "bottom" | "background";
+  fixedHeight?: number;
 }
 
 const SIZE_HEIGHT: Record<ZoneSize, string> = {
@@ -21,12 +22,15 @@ export const CardPartImage = ({
   align = "center",
   size = "md",
   position = "top",
+  fixedHeight,
 }: CardPartImageProps) => {
+  const height = fixedHeight ? `${fixedHeight}px` : SIZE_HEIGHT[size];
+
   if (!src) {
     return (
       <div
         className={`cdp-image cdp-image--${position} cdp-image--empty`}
-        style={{ minHeight: SIZE_HEIGHT[size] }}
+        style={{ minHeight: height, height: fixedHeight ? height : undefined }}
       />
     );
   }
@@ -34,7 +38,7 @@ export const CardPartImage = ({
   return (
     <div
       className={`cdp-image cdp-image--${position}`}
-      style={{ minHeight: SIZE_HEIGHT[size] }}
+      style={{ minHeight: height, height: fixedHeight ? height : undefined }}
     >
       <img
         src={src}

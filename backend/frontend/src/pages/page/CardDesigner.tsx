@@ -29,6 +29,9 @@ import type {
   ZoneSize,
   ImagePosition,
   MappableField,
+  CardStyle,
+  CardOverflow,
+  CardContentAlign,
 } from "./types";
 import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
 import "./CardDesigner.css";
@@ -65,6 +68,42 @@ const ZONE_SIZE_OPTIONS: { value: ZoneSize; label: string }[] = [
   { value: "sm", label: "S" },
   { value: "md", label: "M" },
   { value: "lg", label: "L" },
+];
+
+const CARD_STYLE_OPTIONS: { value: CardStyle; label: string; hint: string }[] =
+  [
+    {
+      value: "default",
+      label: "Default",
+      hint: "Standard card with border + shadow",
+    },
+    { value: "flat", label: "Flat", hint: "No shadow, subtle border" },
+    {
+      value: "elevated",
+      label: "Elevated",
+      hint: "Stronger shadow, no border",
+    },
+    {
+      value: "outlined",
+      label: "Outlined",
+      hint: "Prominent border, no shadow",
+    },
+    { value: "glass", label: "Glass", hint: "Frosted glass / translucent" },
+    { value: "filled", label: "Filled", hint: "Solid background, no border" },
+    { value: "minimal", label: "Minimal", hint: "Borderless, no bg" },
+  ];
+
+const OVERFLOW_OPTIONS: { value: CardOverflow; label: string }[] = [
+  { value: "hidden", label: "Hidden" },
+  { value: "visible", label: "Visible" },
+  { value: "auto", label: "Scroll" },
+];
+
+const CONTENT_ALIGN_OPTIONS: { value: CardContentAlign; label: string }[] = [
+  { value: "start", label: "Top" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "Bottom" },
+  { value: "stretch", label: "Stretch" },
 ];
 
 const FIELD_ICONS: Record<MappableField, React.FC<{ size: number }>> = {
@@ -155,217 +194,425 @@ export const CardDesigner = ({ template, onChange }: CardDesignerProps) => {
         </button>
       </div>
 
-      {/* Dimensions row */}
-      <div className="card-designer__dimensions">
-        <label className="card-designer__field">
-          <span>Width</span>
-          <select
-            value={template.cardWidth}
-            onChange={(e) =>
-              updateTemplate({ cardWidth: e.target.value as CardWidth })
-            }
-          >
-            {CARD_WIDTH_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="card-designer__body">
+        <div className="card-designer__group">
+          <div className="card-designer__group-toolbar">
+            <span className="card-designer__group-heading">Card settings</span>
+            <span className="card-designer__group-note">
+              Size, behavior, and surface style
+            </span>
+          </div>
 
-        <label className="card-designer__field">
-          <span>Aspect Ratio</span>
-          <select
-            value={template.aspectRatio ?? "auto"}
-            onChange={(e) =>
-              updateTemplate({
-                aspectRatio:
-                  e.target.value === "auto" ? undefined : e.target.value,
-              })
-            }
-          >
-            {ASPECT_RATIO_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <div className="card-designer__group-grid">
+            <label className="card-designer__field">
+              <span>Width</span>
+              <select
+                value={template.cardWidth}
+                onChange={(e) =>
+                  updateTemplate({ cardWidth: e.target.value as CardWidth })
+                }
+              >
+                {CARD_WIDTH_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="card-designer__field">
-          <span>Min Height</span>
-          <input
-            type="number"
-            min={0}
-            max={800}
-            step={20}
-            value={template.minHeight ?? 0}
-            onChange={(e) =>
-              updateTemplate({
-                minHeight: Number(e.target.value) || undefined,
-              })
-            }
-          />
-        </label>
+            <label className="card-designer__field">
+              <span>Aspect ratio</span>
+              <select
+                value={template.aspectRatio ?? "auto"}
+                onChange={(e) =>
+                  updateTemplate({
+                    aspectRatio:
+                      e.target.value === "auto" ? undefined : e.target.value,
+                  })
+                }
+              >
+                {ASPECT_RATIO_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-        <label className="card-designer__field">
-          <span>Image</span>
-          <select
-            value={template.imagePosition}
-            onChange={(e) =>
-              updateTemplate({
-                imagePosition: e.target.value as ImagePosition,
-              })
-            }
-          >
-            {IMAGE_POSITION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <label className="card-designer__field">
+              <span>Min height</span>
+              <input
+                type="number"
+                min={0}
+                max={800}
+                step={20}
+                placeholder="auto"
+                value={template.minHeight ?? ""}
+                onChange={(e) =>
+                  updateTemplate({
+                    minHeight: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+              />
+            </label>
 
-        <label className="card-designer__field">
-          <span>Gap</span>
-          <input
-            type="number"
-            min={0}
-            max={32}
-            step={2}
-            value={template.gap}
-            onChange={(e) => updateTemplate({ gap: Number(e.target.value) })}
-          />
-        </label>
+            <label className="card-designer__field">
+              <span>Max height</span>
+              <input
+                type="number"
+                min={0}
+                max={1200}
+                step={20}
+                placeholder="none"
+                value={template.maxHeight ?? ""}
+                onChange={(e) =>
+                  updateTemplate({
+                    maxHeight: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+              />
+            </label>
 
-        <label className="card-designer__field">
-          <span>Padding</span>
-          <input
-            type="number"
-            min={0}
-            max={48}
-            step={4}
-            value={template.padding}
-            onChange={(e) =>
-              updateTemplate({ padding: Number(e.target.value) })
-            }
-          />
-        </label>
-      </div>
+            <label className="card-designer__field">
+              <span>Overflow</span>
+              <select
+                value={template.overflow ?? "hidden"}
+                onChange={(e) =>
+                  updateTemplate({ overflow: e.target.value as CardOverflow })
+                }
+              >
+                {OVERFLOW_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-      {/* Zone list: reorderable rows */}
-      <div className="card-designer__zones">
-        <div className="card-designer__zones-header">
-          <span>Zones</span>
-          <span className="card-designer__zones-hint">
-            Drag to reorder · toggle visibility
-          </span>
+            <label className="card-designer__field">
+              <span>Vertical align</span>
+              <select
+                value={template.contentAlign ?? "start"}
+                onChange={(e) =>
+                  updateTemplate({
+                    contentAlign: e.target.value as CardContentAlign,
+                  })
+                }
+              >
+                {CONTENT_ALIGN_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="card-designer__field card-designer__field--wide">
+              <span>Border radius</span>
+              <div className="card-designer__range-row">
+                <input
+                  className="card-designer__range-slider"
+                  type="range"
+                  min={0}
+                  max={32}
+                  step={1}
+                  value={template.borderRadius ?? 16}
+                  onChange={(e) =>
+                    updateTemplate({ borderRadius: Number(e.target.value) })
+                  }
+                />
+                <span className="card-designer__range-value">
+                  {template.borderRadius ?? 16}px
+                </span>
+              </div>
+            </label>
+
+            <div className="card-designer__style-grid">
+              {CARD_STYLE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`card-designer__style-btn${
+                    template.cardStyle === opt.value ? " active" : ""
+                  }`}
+                  onClick={() => updateTemplate({ cardStyle: opt.value })}
+                  title={opt.hint}
+                >
+                  <span className="card-designer__style-preview">
+                    <span
+                      className={`card-designer__style-chip card-designer__style-chip--${opt.value}`}
+                    />
+                  </span>
+                  <span className="card-designer__style-name">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {bodyZoneIndices.map(({ zone, originalIndex }, visualIndex) => {
-          const FieldIcon = FIELD_ICONS[zone.field];
-          const isDragging = dragIndex === originalIndex;
-          const isDragOver = dragOverIndex === originalIndex;
+        <div className="card-designer__group">
+          <div className="card-designer__group-toolbar">
+            <span className="card-designer__group-heading">Spacing</span>
+            <span className="card-designer__group-note">
+              Grid + padding controls
+            </span>
+          </div>
 
-          return (
-            <div
-              key={zone.field}
-              className={`card-designer__zone${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${!zone.visible ? " hidden-zone" : ""}`}
-              draggable
-              onDragStart={(e) => handleDragStart(e, originalIndex)}
-              onDragOver={(e) => handleDragOver(e, originalIndex)}
-              onDrop={(e) => handleDrop(e, originalIndex)}
-              onDragEnd={handleDragEnd}
-            >
-              <span className="card-designer__zone-grip">
-                <GripVertical size={14} />
-              </span>
-
-              <span className="card-designer__zone-icon">
-                <FieldIcon size={14} />
-              </span>
-
-              <span className="card-designer__zone-label">
-                {MAPPABLE_FIELD_LABELS[zone.field]}
-              </span>
-
-              {/* Alignment buttons */}
-              <div className="card-designer__zone-align">
-                {(["left", "center", "right"] as ZoneAlign[]).map((a) => (
-                  <button
-                    key={a}
-                    type="button"
-                    className={`icon-btn icon-btn--xs${zone.align === a ? " icon-btn--active" : ""}`}
-                    onClick={() => updateZone(originalIndex, { align: a })}
-                    title={`Align ${a}`}
-                  >
-                    {a === "left" && <AlignLeft size={12} />}
-                    {a === "center" && <AlignCenter size={12} />}
-                    {a === "right" && <AlignRight size={12} />}
-                  </button>
-                ))}
-              </div>
-
-              {/* Size buttons */}
-              <div className="card-designer__zone-size">
-                {ZONE_SIZE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`card-designer__size-btn${zone.size === opt.value ? " active" : ""}`}
-                    onClick={() =>
-                      updateZone(originalIndex, { size: opt.value })
-                    }
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Move up/down */}
-              <button
-                type="button"
-                className="icon-btn icon-btn--xs"
-                disabled={visualIndex === 0}
-                onClick={() => {
-                  const prevOriginal =
-                    bodyZoneIndices[visualIndex - 1]?.originalIndex;
-                  if (prevOriginal !== undefined)
-                    moveZone(originalIndex, prevOriginal);
-                }}
-                title="Move up"
-              >
-                <ChevronUp size={12} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn icon-btn--xs"
-                disabled={visualIndex === bodyZoneIndices.length - 1}
-                onClick={() => {
-                  const nextOriginal =
-                    bodyZoneIndices[visualIndex + 1]?.originalIndex;
-                  if (nextOriginal !== undefined)
-                    moveZone(originalIndex, nextOriginal);
-                }}
-                title="Move down"
-              >
-                <ChevronDown size={12} />
-              </button>
-
-              {/* Visibility toggle */}
-              <button
-                type="button"
-                className={`icon-btn icon-btn--xs${zone.visible ? "" : " icon-btn--danger"}`}
-                onClick={() =>
-                  updateZone(originalIndex, { visible: !zone.visible })
+          <div className="card-designer__group-grid">
+            <label className="card-designer__field">
+              <span>Grid gap</span>
+              <input
+                type="number"
+                min={0}
+                max={64}
+                step={4}
+                value={template.gridGap ?? 24}
+                onChange={(e) =>
+                  updateTemplate({ gridGap: Number(e.target.value) })
                 }
-                title={zone.visible ? "Hide zone" : "Show zone"}
+              />
+            </label>
+
+            <label className="card-designer__field">
+              <span>Zone gap</span>
+              <input
+                type="number"
+                min={0}
+                max={32}
+                step={2}
+                value={template.gap}
+                onChange={(e) =>
+                  updateTemplate({ gap: Number(e.target.value) })
+                }
+              />
+            </label>
+
+            <label className="card-designer__field">
+              <span>Image position</span>
+              <select
+                value={template.imagePosition}
+                onChange={(e) =>
+                  updateTemplate({
+                    imagePosition: e.target.value as ImagePosition,
+                  })
+                }
               >
-                {zone.visible ? <Eye size={12} /> : <EyeOff size={12} />}
-              </button>
+                {IMAGE_POSITION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="card-designer__field">
+              <span>Image height</span>
+              <input
+                type="number"
+                min={0}
+                max={600}
+                step={20}
+                placeholder="auto"
+                value={template.imageHeight ?? ""}
+                onChange={(e) =>
+                  updateTemplate({
+                    imageHeight: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+              />
+            </label>
+          </div>
+
+          <div className="card-designer__padding-box">
+            <span className="card-designer__padding-label">Card padding</span>
+            <div className="card-designer__padding-grid">
+              <div className="card-designer__padding-row card-designer__padding-row--top">
+                <label className="card-designer__padding-input">
+                  <span>Top</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={64}
+                    step={4}
+                    value={template.paddingTop ?? 0}
+                    onChange={(e) =>
+                      updateTemplate({ paddingTop: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+              <div className="card-designer__padding-row card-designer__padding-row--middle">
+                <label className="card-designer__padding-input">
+                  <span>Left</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={64}
+                    step={4}
+                    value={template.paddingLeft ?? 0}
+                    onChange={(e) =>
+                      updateTemplate({ paddingLeft: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                <div className="card-designer__padding-center">content</div>
+                <label className="card-designer__padding-input">
+                  <span>Right</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={64}
+                    step={4}
+                    value={template.paddingRight ?? 0}
+                    onChange={(e) =>
+                      updateTemplate({ paddingRight: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+              <div className="card-designer__padding-row card-designer__padding-row--bottom">
+                <label className="card-designer__padding-input">
+                  <span>Bottom</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={64}
+                    step={4}
+                    value={template.paddingBottom ?? 0}
+                    onChange={(e) =>
+                      updateTemplate({ paddingBottom: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="card-designer__group">
+          <div className="card-designer__group-toolbar">
+            <span className="card-designer__group-heading">Zones</span>
+            <span className="card-designer__group-note">
+              Drag, reorder, align and toggle fields
+            </span>
+          </div>
+
+          <div className="card-designer__zones">
+            <div className="card-designer__zones-header">
+              <span>Content Zones</span>
+              <span className="card-designer__zones-hint">
+                Drag to reorder · toggle visibility
+              </span>
+            </div>
+
+            {bodyZoneIndices.map(({ zone, originalIndex }, visualIndex) => {
+              const FieldIcon = FIELD_ICONS[zone.field];
+              const isDragging = dragIndex === originalIndex;
+              const isDragOver = dragOverIndex === originalIndex;
+
+              return (
+                <div
+                  key={zone.field}
+                  className={`card-designer__zone${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${!zone.visible ? " hidden-zone" : ""}`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, originalIndex)}
+                  onDragOver={(e) => handleDragOver(e, originalIndex)}
+                  onDrop={(e) => handleDrop(e, originalIndex)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <span className="card-designer__zone-grip">
+                    <GripVertical size={14} />
+                  </span>
+
+                  <span className="card-designer__zone-icon">
+                    <FieldIcon size={14} />
+                  </span>
+
+                  <span className="card-designer__zone-label">
+                    {MAPPABLE_FIELD_LABELS[zone.field]}
+                  </span>
+
+                  <div className="card-designer__zone-align">
+                    {(["left", "center", "right"] as ZoneAlign[]).map((a) => (
+                      <button
+                        key={a}
+                        type="button"
+                        className={`icon-btn icon-btn--xs${zone.align === a ? " icon-btn--active" : ""}`}
+                        onClick={() => updateZone(originalIndex, { align: a })}
+                        title={`Align ${a}`}
+                      >
+                        {a === "left" && <AlignLeft size={12} />}
+                        {a === "center" && <AlignCenter size={12} />}
+                        {a === "right" && <AlignRight size={12} />}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="card-designer__zone-size">
+                    {ZONE_SIZE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`card-designer__size-btn${zone.size === opt.value ? " active" : ""}`}
+                        onClick={() =>
+                          updateZone(originalIndex, { size: opt.value })
+                        }
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--xs"
+                    disabled={visualIndex === 0}
+                    onClick={() => {
+                      const prevOriginal =
+                        bodyZoneIndices[visualIndex - 1]?.originalIndex;
+                      if (prevOriginal !== undefined)
+                        moveZone(originalIndex, prevOriginal);
+                    }}
+                    title="Move up"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--xs"
+                    disabled={visualIndex === bodyZoneIndices.length - 1}
+                    onClick={() => {
+                      const nextOriginal =
+                        bodyZoneIndices[visualIndex + 1]?.originalIndex;
+                      if (nextOriginal !== undefined)
+                        moveZone(originalIndex, nextOriginal);
+                    }}
+                    title="Move down"
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`icon-btn icon-btn--xs${zone.visible ? "" : " icon-btn--danger"}`}
+                    onClick={() =>
+                      updateZone(originalIndex, { visible: !zone.visible })
+                    }
+                    title={zone.visible ? "Hide zone" : "Show zone"}
+                  >
+                    {zone.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
