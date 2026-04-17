@@ -191,6 +191,7 @@
 
 .comment-section .thread-action-btn.delete-btn:hover {
   color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 10%, transparent);
 }
 
 .comment-locked-message {

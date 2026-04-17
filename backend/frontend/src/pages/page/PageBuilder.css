@@ -151,12 +151,24 @@
   cursor: pointer;
   transition:
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.page-admin-btn--danger {
+  color: var(--error-color);
+  border-color: var(--error-color);
 }
 
 .page-admin-btn:hover {
   color: var(--primary-color);
   border-color: var(--primary-color);
+}
+
+.page-admin-btn--danger:hover {
+  color: var(--error-color);
+  background: var(--error-bg);
+  border-color: var(--error-color);
 }
 
 .page-admin-btn.active {

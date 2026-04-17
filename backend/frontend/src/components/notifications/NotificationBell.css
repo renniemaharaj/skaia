@@ -258,7 +258,7 @@
   opacity: 1;
 }
 .notif-delete-btn:hover {
-  background: var(--bg-color);
+  background: var(--error-bg);
   color: var(--error-color);
 }
 

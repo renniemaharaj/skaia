@@ -85,6 +85,7 @@
 
 .page-ownership__btn--danger:hover {
   color: var(--error-color);
+  background: var(--error-bg);
 }
 
 .page-ownership__btn--subtle:hover {

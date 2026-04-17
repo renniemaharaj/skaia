@@ -315,7 +315,8 @@
 }
 
 .cp-delete-btn:hover {
-  background: var(--bg-secondary);
+  color: var(--error-color);
+  background: var(--error-bg);
 }
 
 .cp-card:hover .cp-card__link-icon {
