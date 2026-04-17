@@ -823,6 +823,15 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		if err2 := h.noreply.SendNoreplyToUser(targetID, content); err2 != nil {
 			log.Printf("user.Handler.resetPassword: noreply send failed: %v", err2)
 		}
+		if actorID != targetID {
+			adminContent := fmt.Sprintf(
+				"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n— System",
+				displayName, newPw,
+			)
+			if err2 := h.noreply.SendNoreplyToUser(actorID, adminContent); err2 != nil {
+				log.Printf("user.Handler.resetPassword: noreply copy to actor failed: %v", err2)
+			}
+		}
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
@@ -832,7 +841,11 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		ResourceID: targetID,
 		IP:         ievents.ClientIP(r),
 	})
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Password reset and sent to user's inbox"})
+	message := "Password reset and sent to user's inbox"
+	if actorID != targetID {
+		message = "Password reset and sent to user's inbox. A copy has also been sent to your inbox."
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": message})
 }
 
 // FileUploadResponse is returned after a successful upload.
