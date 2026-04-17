@@ -298,6 +298,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   ]);
 
   useEffect(() => {
+    // Clear sections when the slug changes so we don't briefly render the
+    // previous page's content while the new page is loading.
+    setSections([]);
+  }, [slug]);
+
+  useEffect(() => {
     // Don't overwrite sections while there are unsaved pending changes —
     // a live websocket event from another user would otherwise clobber
     // the editor's in-progress work.
@@ -322,6 +328,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         // invalid JSON
       }
     }
+
+    if (slug) {
+      setSections([]);
+      return;
+    }
+
     setSections((prev) => mergeSections(prev, sortSections(landingSections)));
   }, [slug, page, page?.content, landingSections, error]);
 

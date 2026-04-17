@@ -64,6 +64,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const [error, setError] = useState("");
   const [pendingIncoming, setPendingIncoming] = useState(false);
   const currentSlugRef = useRef<string | null>(null);
+  const requestIdRef = useRef(0);
   const suppressRef = useRef(suppressLiveRefresh);
   const pendingDataRef = useRef<any>(null);
 
@@ -117,19 +118,25 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const isEditable = isAdmin || isOwner || isEditor;
 
   const refresh = useCallback(async (slug?: string) => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
+    setPage(null);
+    currentSlugRef.current = null;
+
     try {
       const endpoint = slug ? `/config/pages/${slug}` : "/config/pages/index";
       const currentPage = await apiRequest<PageBuilderPage>(endpoint);
+      if (requestId !== requestIdRef.current) return;
       setPage(currentPage);
       currentSlugRef.current = currentPage?.slug ?? null;
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       const msg = err instanceof Error ? err.message : "Failed to load page";
       setPage(null);
       setError(msg);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, []);
 
