@@ -29,6 +29,8 @@ func UserIDFromCtx(r *http.Request) (int64, bool) {
 // WriteJSON serialises v to JSON and sets Content-Type.
 func WriteJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v) //nolint:errcheck
 }
