@@ -9,7 +9,9 @@ import {
   getSectionMargins,
   setSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   setSectionAnimation,
+  setSectionAnimationIntensity,
   getSectionBgColor,
   setSectionBgColor,
 } from "../EditControls";
@@ -50,6 +52,13 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
+            })
+          }
+          animationIntensity={getSectionAnimationIntensity(section.config)}
+          onAnimationIntensityChange={(i) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimationIntensity(section.config, i),
             })
           }
           extra={

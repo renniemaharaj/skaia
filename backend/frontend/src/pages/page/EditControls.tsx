@@ -170,6 +170,28 @@ export function setSectionAnimation(
   return JSON.stringify({ ...parsed, animation });
 }
 
+// ── Animation intensity helpers ─────────────────────────────────────────────
+
+export const ANIMATION_INTENSITIES = ["subtle", "normal", "dramatic"] as const;
+export type AnimationIntensity = (typeof ANIMATION_INTENSITIES)[number];
+
+export function getSectionAnimationIntensity(
+  config: string,
+): AnimationIntensity {
+  const parsed = safeParseConfig(config);
+  if (ANIMATION_INTENSITIES.includes(parsed.animationIntensity))
+    return parsed.animationIntensity;
+  return "normal";
+}
+
+export function setSectionAnimationIntensity(
+  config: string,
+  intensity: AnimationIntensity,
+): string {
+  const parsed = safeParseConfig(config);
+  return JSON.stringify({ ...parsed, animationIntensity: intensity });
+}
+
 // ── Background color helpers ────────────────────────────────────────────────
 
 export function getSectionBgColor(config: string): string {
@@ -264,7 +286,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Padding top (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -281,7 +303,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Padding bottom (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -298,7 +320,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Padding left (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -315,7 +337,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Padding right (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -334,7 +356,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Margin top (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -351,7 +373,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Margin bottom (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -368,7 +390,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Margin left (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -385,7 +407,7 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Margin right (px)"
-            min={0}
+            min={-200}
             max={200}
             step={4}
           />
@@ -445,7 +467,7 @@ export const BoxSpacingControls = ({
                 }))
               }
               title="Top (px)"
-              min={0}
+              min={-200}
               max={200}
               step={4}
             />
@@ -462,7 +484,7 @@ export const BoxSpacingControls = ({
                 }))
               }
               title="Bottom (px)"
-              min={0}
+              min={-200}
               max={200}
               step={4}
             />
@@ -481,7 +503,7 @@ export const BoxSpacingControls = ({
                 }))
               }
               title="Left (px)"
-              min={0}
+              min={-200}
               max={200}
               step={4}
             />
@@ -498,7 +520,7 @@ export const BoxSpacingControls = ({
                 }))
               }
               title="Right (px)"
-              min={0}
+              min={-200}
               max={200}
               step={4}
             />
@@ -521,13 +543,17 @@ export const BoxSpacingControls = ({
   );
 };
 
-/** Animation style selector for sections. */
+/** Animation style selector for sections with intensity control. */
 export const SectionAnimationControl = ({
   animation,
   onChange,
+  intensity,
+  onIntensityChange,
 }: {
   animation: SectionAnimation;
   onChange: (a: SectionAnimation) => void;
+  intensity?: AnimationIntensity;
+  onIntensityChange?: (i: AnimationIntensity) => void;
 }) => (
   <div className="section-animation-control">
     <select
@@ -541,6 +567,21 @@ export const SectionAnimationControl = ({
         </option>
       ))}
     </select>
+    {animation !== "none" && onIntensityChange && (
+      <div className="section-intensity-control">
+        {ANIMATION_INTENSITIES.map((i) => (
+          <button
+            key={i}
+            type="button"
+            className={`section-intensity-btn${intensity === i ? " active" : ""}`}
+            onClick={() => onIntensityChange(i)}
+            title={`${i.charAt(0).toUpperCase() + i.slice(1)} intensity`}
+          >
+            {i === "subtle" ? "S" : i === "normal" ? "M" : "L"}
+          </button>
+        ))}
+      </div>
+    )}
   </div>
 );
 
@@ -701,6 +742,8 @@ export const SectionToolbar = ({
   onMarginsChange,
   animation,
   onAnimationChange,
+  animationIntensity,
+  onAnimationIntensityChange,
   bgColor,
   onBgColorChange,
   extra,
@@ -713,6 +756,8 @@ export const SectionToolbar = ({
   onMarginsChange?: (m: Partial<SectionMargins>) => void;
   animation?: SectionAnimation;
   onAnimationChange?: (a: SectionAnimation) => void;
+  animationIntensity?: AnimationIntensity;
+  onAnimationIntensityChange?: (i: AnimationIntensity) => void;
   bgColor?: string;
   onBgColorChange?: (c: string) => void;
   extra?: React.ReactNode;
@@ -737,6 +782,8 @@ export const SectionToolbar = ({
           <SectionAnimationControl
             animation={animation}
             onChange={onAnimationChange}
+            intensity={animationIntensity}
+            onIntensityChange={onAnimationIntensityChange}
           />
         ) : null}
         {bgColor !== undefined && onBgColorChange ? (

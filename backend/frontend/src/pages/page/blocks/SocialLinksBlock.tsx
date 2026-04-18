@@ -8,7 +8,9 @@ import {
   getSectionMargins,
   setSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   setSectionAnimation,
+  setSectionAnimationIntensity,
 } from "../EditControls";
 import { ICON_MAP } from "../iconMap";
 import { Pencil, Plus, Trash2, Check } from "lucide-react";
@@ -166,6 +168,13 @@ export const SocialLinksBlock = ({
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
+            })
+          }
+          animationIntensity={getSectionAnimationIntensity(section.config)}
+          onAnimationIntensityChange={(i) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimationIntensity(section.config, i),
             })
           }
         />

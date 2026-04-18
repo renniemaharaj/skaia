@@ -764,30 +764,59 @@
   -moz-appearance: none;
 }
 
-/* ── Section animation classes ───────────────────────────────────────── */
+/* ── Section animation classes (scroll-triggered) ────────────────────── */
 
-.pb-section-layout[data-animation="fade-in"] {
-  animation: sectionFadeIn 0.6s ease-out both;
+/* Sections with animation start invisible until scrolled into view */
+.pb-section-layout[data-animation]:not([data-in-view]) {
+  opacity: 0;
 }
 
-.pb-section-layout[data-animation="slide-up"] {
-  animation: sectionSlideUp 0.6s ease-out both;
+/* Intensity variables — default to "normal" */
+.pb-section-layout[data-intensity="subtle"] {
+  --anim-distance: 20px;
+  --anim-scale: 0.95;
+  --anim-duration: 0.45s;
+  --anim-bounce-over: -4px;
+  --anim-bounce-back: 2px;
+}
+.pb-section-layout[data-intensity="normal"],
+.pb-section-layout:not([data-intensity]) {
+  --anim-distance: 40px;
+  --anim-scale: 0.9;
+  --anim-duration: 0.6s;
+  --anim-bounce-over: -8px;
+  --anim-bounce-back: 4px;
+}
+.pb-section-layout[data-intensity="dramatic"] {
+  --anim-distance: 80px;
+  --anim-scale: 0.82;
+  --anim-duration: 0.8s;
+  --anim-bounce-over: -14px;
+  --anim-bounce-back: 6px;
 }
 
-.pb-section-layout[data-animation="slide-left"] {
-  animation: sectionSlideLeft 0.6s ease-out both;
+.pb-section-layout[data-animation="fade-in"][data-in-view] {
+  animation: sectionFadeIn var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="slide-right"] {
-  animation: sectionSlideRight 0.6s ease-out both;
+.pb-section-layout[data-animation="slide-up"][data-in-view] {
+  animation: sectionSlideUp var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="zoom-in"] {
-  animation: sectionZoomIn 0.5s ease-out both;
+.pb-section-layout[data-animation="slide-left"][data-in-view] {
+  animation: sectionSlideLeft var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="bounce"] {
-  animation: sectionBounce 0.8s ease-out both;
+.pb-section-layout[data-animation="slide-right"][data-in-view] {
+  animation: sectionSlideRight var(--anim-duration, 0.6s) ease-out both;
+}
+
+.pb-section-layout[data-animation="zoom-in"][data-in-view] {
+  animation: sectionZoomIn var(--anim-duration, 0.5s) ease-out both;
+}
+
+.pb-section-layout[data-animation="bounce"][data-in-view] {
+  animation: sectionBounce calc(var(--anim-duration, 0.6s) * 1.33) ease-out both;
 }
 
 @keyframes sectionFadeIn {
@@ -802,7 +831,7 @@
 @keyframes sectionSlideUp {
   from {
     opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(var(--anim-distance, 40px));
   }
   to {
     opacity: 1;
@@ -813,7 +842,7 @@
 @keyframes sectionSlideLeft {
   from {
     opacity: 0;
-    transform: translateX(-40px);
+    transform: translateX(calc(var(--anim-distance, 40px) * -1));
   }
   to {
     opacity: 1;
@@ -824,7 +853,7 @@
 @keyframes sectionSlideRight {
   from {
     opacity: 0;
-    transform: translateX(40px);
+    transform: translateX(var(--anim-distance, 40px));
   }
   to {
     opacity: 1;
@@ -835,7 +864,7 @@
 @keyframes sectionZoomIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(var(--anim-scale, 0.9));
   }
   to {
     opacity: 1;
@@ -846,18 +875,60 @@
 @keyframes sectionBounce {
   0% {
     opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(var(--anim-distance, 40px));
   }
   60% {
     opacity: 1;
-    transform: translateY(-8px);
+    transform: translateY(var(--anim-bounce-over, -8px));
   }
   80% {
-    transform: translateY(4px);
+    transform: translateY(var(--anim-bounce-back, 4px));
   }
   100% {
     transform: translateY(0);
   }
+}
+
+/* ── Animation intensity picker ──────────────────────────────────────── */
+
+.section-intensity-control {
+  display: inline-flex;
+  align-items: stretch;
+  height: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 2px;
+}
+
+.section-intensity-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.section-intensity-btn + .section-intensity-btn {
+  border-left: 1px solid var(--border-color);
+}
+
+.section-intensity-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.section-intensity-btn.active {
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-color));
+  color: var(--primary-color);
 }
 
 /* ── Save status pill ─────────────────────────────────────────────────── */

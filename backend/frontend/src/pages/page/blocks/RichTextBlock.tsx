@@ -9,7 +9,9 @@ import {
   getSectionMargins,
   setSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   setSectionAnimation,
+  setSectionAnimationIntensity,
 } from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the landing bundle small. */
@@ -94,6 +96,13 @@ export const RichTextBlock = ({
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
+            })
+          }
+          animationIntensity={getSectionAnimationIntensity(section.config)}
+          onAnimationIntensityChange={(i) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimationIntensity(section.config, i),
             })
           }
           extra={

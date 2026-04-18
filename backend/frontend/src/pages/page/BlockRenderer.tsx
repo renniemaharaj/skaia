@@ -16,11 +16,19 @@ import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
-import React, { memo, useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   getSectionLayout,
   getSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   getSectionBgColor,
   SectionMoveContext,
 } from "./EditControls";
@@ -104,7 +112,31 @@ const SectionBlock = memo(function SectionBlock({
   const layout = getSectionLayout(section.config);
   const margins = getSectionMargins(section.config);
   const animation = getSectionAnimation(section.config);
+  const intensity = getSectionAnimationIntensity(section.config);
   const bgColor = getSectionBgColor(section.config);
+
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(animation === "none");
+
+  useEffect(() => {
+    if (animation === "none") {
+      setInView(true);
+      return;
+    }
+    const el = sectionRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [animation]);
 
   const sectionStyle: React.CSSProperties = {
     ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
@@ -141,9 +173,12 @@ const SectionBlock = memo(function SectionBlock({
   return (
     <SectionMoveContext.Provider value={moveCtx}>
       <div
+        ref={sectionRef}
         className={`pb-section-layout pb-section-layout-${layout}`}
         style={sectionStyle}
         data-animation={animation !== "none" ? animation : undefined}
+        data-intensity={animation !== "none" ? intensity : undefined}
+        data-in-view={inView ? "" : undefined}
       >
         <Block
           section={section}

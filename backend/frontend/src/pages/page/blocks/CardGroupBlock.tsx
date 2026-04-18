@@ -10,7 +10,9 @@ import {
   getSectionMargins,
   setSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   setSectionAnimation,
+  setSectionAnimationIntensity,
 } from "../EditControls";
 
 interface Props {
@@ -59,6 +61,13 @@ export const CardGroupBlock = ({
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
+            })
+          }
+          animationIntensity={getSectionAnimationIntensity(section.config)}
+          onAnimationIntensityChange={(i) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimationIntensity(section.config, i),
             })
           }
         />

@@ -11,7 +11,9 @@ import {
   getSectionMargins,
   setSectionMargins,
   getSectionAnimation,
+  getSectionAnimationIntensity,
   setSectionAnimation,
+  setSectionAnimationIntensity,
 } from "../EditControls";
 import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
@@ -179,6 +181,13 @@ export const DataSourcesBlock = ({
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
+            })
+          }
+          animationIntensity={getSectionAnimationIntensity(section.config)}
+          onAnimationIntensityChange={(i) =>
+            onUpdate({
+              ...section,
+              config: setSectionAnimationIntensity(section.config, i),
             })
           }
         />
