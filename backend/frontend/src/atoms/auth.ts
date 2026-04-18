@@ -14,6 +14,7 @@ export interface User {
   is_suspended: boolean;
   roles: string[];
   permissions: string[];
+  power_level?: number;
   created_at: string;
   updated_at: string;
 }

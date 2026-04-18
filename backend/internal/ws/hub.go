@@ -151,6 +151,10 @@ type Hub struct {
 
 	// presence coalescing
 	presenceDirty atomic.Int32
+
+	// chat slow mode — updated dynamically by SetChatSlowMode
+	chatSlowModeEnabled  atomic.Bool
+	chatSlowModeInterval atomic.Int64 // seconds; 0 means use default burst rate
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -179,6 +183,16 @@ func NewHub() *Hub {
 }
 
 // clientLabel returns a human-readable string for a Client suitable for log output.
+// SetChatSlowMode updates the global chat slow-mode configuration.
+// This takes effect immediately for all connected clients on the next message.
+func (h *Hub) SetChatSlowMode(enabled bool, intervalSeconds int) {
+	h.chatSlowModeEnabled.Store(enabled)
+	if intervalSeconds < 1 {
+		intervalSeconds = 10
+	}
+	h.chatSlowModeInterval.Store(int64(intervalSeconds))
+}
+
 func clientLabel(c *Client) string {
 	if c.UserID == 0 {
 		return fmt.Sprintf("guest (conn=%d)", c.ClientID)

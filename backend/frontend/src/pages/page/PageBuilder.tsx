@@ -11,7 +11,6 @@ import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
 import type { LandingSection, LandingItem, SectionEditor } from "./types";
-import { useLandingData } from "../../hooks/useLandingData";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
@@ -101,17 +100,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     pendingIncoming,
   } = usePageData(editingCount > 0);
 
-  const {
-    sections: landingSections,
-    loading: landingLoading,
-    updateSection,
-    createSection,
-    deleteSection,
-    reorderSections,
-    createItem,
-    updateItem,
-    deleteItem,
-  } = useLandingData(editingCount > 0);
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<LandingSection[]>([]);
   const [sectionsSourced, setSectionsSourced] = useState(false);
@@ -149,6 +137,25 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const moreRef = useRef<HTMLDivElement | null>(null);
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
+  const [armInProgress, setArmInProgress] = useState(false);
+  const RATE_LIMIT_KEY = "pb_rate_limit_until";
+
+  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(
+    () => {
+      try {
+        const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
+        if (stored) {
+          const until = parseInt(stored, 10);
+          const remaining = Math.ceil((until - Date.now()) / 1000);
+          if (remaining > 0) return remaining;
+          sessionStorage.removeItem(RATE_LIMIT_KEY);
+        }
+      } catch {
+        // sessionStorage unavailable
+      }
+      return undefined;
+    },
+  );
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -160,6 +167,78 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     window.addEventListener("mousedown", onDocumentClick);
     return () => window.removeEventListener("mousedown", onDocumentClick);
   }, [moreOpen]);
+
+  const currentUserPowerLevel =
+    typeof (currentUser as any)?.power_level === "number"
+      ? (currentUser as any).power_level
+      : undefined;
+  const canArmSite =
+    !slug &&
+    isAdmin &&
+    (currentUserPowerLevel === undefined ? true : currentUserPowerLevel > 50);
+
+  const handleArmSite = useCallback(async () => {
+    setArmInProgress(true);
+    try {
+      await apiRequest("/api/site/arm", { method: "POST" });
+      toast.success("Site armed — maintenance mode enabled.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to arm the site";
+      toast.error(message);
+    } finally {
+      setArmInProgress(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (errorStatus !== 429) {
+      setHoldingSeconds(undefined);
+      try {
+        sessionStorage.removeItem(RATE_LIMIT_KEY);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    if (retryAfter !== undefined) {
+      setHoldingSeconds((current) => {
+        const next =
+          current === undefined ? retryAfter : Math.max(current, retryAfter);
+        try {
+          const until = Date.now() + next * 1000;
+          sessionStorage.setItem(RATE_LIMIT_KEY, String(until));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+    }
+  }, [errorStatus, retryAfter]);
+
+  useEffect(() => {
+    if (holdingSeconds === undefined) return;
+
+    const interval = setInterval(() => {
+      setHoldingSeconds((seconds) => {
+        if (seconds === undefined || seconds <= 1) {
+          clearInterval(interval);
+          try {
+            sessionStorage.removeItem(RATE_LIMIT_KEY);
+          } catch {
+            /* ignore */
+          }
+          return undefined;
+        }
+        return seconds - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [holdingSeconds]);
+
+  const displayHoldSeconds = holdingSeconds ?? retryAfter;
 
   const landingPageLabel = page
     ? page.is_index
@@ -205,6 +284,10 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           : "Landing page reset to default",
       );
       setLandingDropdownOpen(false);
+      // Reload the index route so the new landing page is shown immediately.
+      if (!slug) {
+        await refresh();
+      }
     } catch {
       toast.error("Failed to set landing page");
     }
@@ -249,11 +332,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const ensurePage = useCallback(
     async (content: LandingSection[]): Promise<PageBuilderPage | null> => {
       if (pageRef.current) return pageRef.current;
-      // For the index route (!slug), create a page entity with is_index: true
-      // so that subsequent edits use the page-content path with fine-grained WS updates.
       const created = await createPage({
-        slug: slug || "homepage",
-        title: slug || "Homepage",
+        slug: slug || "landing",
+        title: slug || "Landing",
         description: "",
         is_index: !slug,
         content: JSON.stringify(content),
@@ -267,47 +348,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     },
     [slug, createPage, refresh],
   );
-
-  // Auto-migrate: if the index route has legacy landing sections but no page
-  // entity yet, silently create one so all edits use the page-content / WS path.
-  const autoMigratedRef = useRef(false);
-  useEffect(() => {
-    if (
-      autoMigratedRef.current ||
-      slug ||
-      !isAdmin ||
-      loading ||
-      page ||
-      landingLoading ||
-      landingSections.length === 0
-    )
-      return;
-    autoMigratedRef.current = true;
-    createPage({
-      slug: "homepage",
-      title: "Homepage",
-      description: "",
-      is_index: true,
-      content: JSON.stringify(sortSections(landingSections)),
-      view_count: 0,
-      likes: 0,
-      is_liked: false,
-      comment_count: 0,
-    })
-      .then(() => refresh(undefined))
-      .catch(() => {
-        autoMigratedRef.current = false;
-      });
-  }, [
-    slug,
-    isAdmin,
-    loading,
-    page,
-    landingLoading,
-    landingSections,
-    createPage,
-    refresh,
-  ]);
 
   useEffect(() => {
     // Clear sections when the slug changes so we don't briefly render the
@@ -325,7 +365,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     // haven't made changes yet — the incoming content would reset the editor.
     if (editingCountRef.current > 0) return;
 
-    if (slug && !page && error) {
+    if (!page && error) {
+      // Page not found (404) — show empty sections.
       setSections([]);
       setSectionsSourced(true);
       return;
@@ -344,19 +385,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }
     }
 
-    if (slug) {
+    // No content yet (page exists but empty, or still loading).
+    if (!loading) {
       setSections([]);
-      return;
+      setSectionsSourced(true);
     }
-
-    // Don't fall back to landing sections while the page index request is
-    // still in flight — stale landing data may differ from the page entity
-    // and would flash briefly before the correct content replaces it.
-    if (loading) return;
-
-    setSections((prev) => mergeSections(prev, sortSections(landingSections)));
-    setSectionsSourced(true);
-  }, [slug, page, page?.content, landingSections, error, loading]);
+  }, [page, page?.content, error, loading]);
 
   useEffect(() => {
     refresh(slug);
@@ -380,18 +414,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     return () => window.removeEventListener("config:live:event", handler);
   }, [refresh, slug]);
 
-  // Only fall back to the per-section landing API when we're on the index
-  // page and no page entity exists for it yet, or the index page has no
-  // page content. Custom-page slugs always use the page-content JSON approach
-  // (ensurePage will auto-create if needed).
-  const isPageFallback =
-    (!page || !!error || (!slug && !page?.content)) && !slug;
-
   // Stable refs so useCallback wrappers never go stale.
   const sectionsRef = useRef<LandingSection[]>(sections);
   sectionsRef.current = sections;
-  const isPageFallbackRef = useRef(isPageFallback);
-  isPageFallbackRef.current = isPageFallback;
 
   // ── Adaptive BBR save pipeline ─────────────────────────────────────────
   // Changes are batched with an adaptive delay (800 ms base, grows by 200 ms
@@ -527,16 +552,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const editorStampRef = useRef(currentEditorStamp);
   editorStampRef.current = currentEditorStamp;
-  // Ref so wrapper callbacks can check admin status without stale closures.
-  const isAdminRef = useRef(isAdmin);
-  isAdminRef.current = isAdmin;
 
   const updateSectionWrapper = useCallback(
     (s: LandingSection) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        updateSection(s);
-        return;
-      }
       const stamp = editorStampRef.current?.();
       const stamped = stamp ? { ...s, last_edited_by: stamp } : s;
       const updated = sectionsRef.current.map((sec) =>
@@ -546,16 +564,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(ordered);
       scheduleSave(ordered);
     },
-    [updateSection, scheduleSave],
+    [scheduleSave],
   );
 
   const createSectionWrapper = useCallback(
     (s: Omit<LandingSection, "id">) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        createSection(s);
-        return;
-      }
-
       const sorted = sortSections(sectionsRef.current);
       const newSection: LandingSection = { ...s, id: Date.now() };
 
@@ -580,15 +593,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(normalized);
       void immediateSave(normalized);
     },
-    [createSection, immediateSave],
+    [immediateSave],
   );
 
   const deleteSectionWrapper = useCallback(
     (id: number) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        deleteSection(id);
-        return;
-      }
       const updated = sectionsRef.current.filter(
         (section) => section.id !== id,
       );
@@ -596,15 +605,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(ordered);
       void immediateSave(ordered);
     },
-    [deleteSection, immediateSave],
+    [immediateSave],
   );
 
   const createItemWrapper = useCallback(
     (sectionId: number, item: Omit<LandingItem, "id">) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        createItem(sectionId, item);
-        return;
-      }
       const updated = sectionsRef.current.map((section) => {
         if (section.id !== sectionId) {
           return section;
@@ -619,15 +624,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(ordered);
       void immediateSave(ordered);
     },
-    [createItem, immediateSave],
+    [immediateSave],
   );
 
   const updateItemWrapper = useCallback(
     (item: LandingItem) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        updateItem(item);
-        return;
-      }
       const stamp = editorStampRef.current?.();
       const updated = sectionsRef.current.map((section) => {
         if (!section.items) return section;
@@ -643,15 +644,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(ordered);
       scheduleSave(ordered);
     },
-    [updateItem, scheduleSave],
+    [scheduleSave],
   );
 
   const deleteItemWrapper = useCallback(
     (id: number) => {
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        deleteItem(id);
-        return;
-      }
       const updated = sectionsRef.current.map((section) => {
         if (!section.items) return section;
         return {
@@ -663,7 +660,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections(ordered);
       void immediateSave(ordered);
     },
-    [deleteItem, immediateSave],
+    [immediateSave],
   );
 
   const moveSectionWrapper = useCallback(
@@ -684,17 +681,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }));
 
       setSections(normalized);
-
-      if (isPageFallbackRef.current && !isAdminRef.current) {
-        await reorderSections(normalized.map((s) => s.id));
-      } else {
-        await immediateSave(normalized);
-      }
+      await immediateSave(normalized);
     },
-    [reorderSections, immediateSave],
+    [immediateSave],
   );
 
-  if (loading || (slug === undefined && landingLoading) || !sectionsSourced) {
+  if (loading || !sectionsSourced) {
     return (
       <div className="pb-container">
         <LandingSkeleton />
@@ -716,13 +708,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           <ShieldAlert size={48} style={{ marginBottom: 20 }} />
           <h2>Rate limit exceeded</h2>
           <p style={{ opacity: 0.75, marginTop: 12 }}>
-            The page builder is currently receiving too many requests. Please
-            wait a moment and try again.
+            The page builder is currently receiving too many requests. You must
+            wait before trying again.
           </p>
-          {retryAfter ? (
+          {displayHoldSeconds ? (
             <p style={{ opacity: 0.7, marginTop: 8 }}>
-              Retry after approximately {retryAfter} second
-              {retryAfter === 1 ? "" : "s"}.
+              Estimated wait time: {displayHoldSeconds} second
+              {displayHoldSeconds === 1 ? "" : "s"}.
             </p>
           ) : null}
         </div>
@@ -730,12 +722,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     );
   }
 
-  if (slug && error && !canEdit) {
+  if (error && !canEdit) {
     return (
       <div className="pb-container">
         <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
           <p style={{ color: "var(--color-danger, #e74c3c)" }}>
-            Page not found: {error}
+            {slug ? `Page not found: ${error}` : "No landing page configured."}
           </p>
         </div>
       </div>
@@ -848,6 +840,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                 title="Delete this page"
               >
                 Delete
+              </button>
+            )}
+
+            {canArmSite && (
+              <button
+                type="button"
+                className="page-admin-btn page-admin-btn--danger"
+                onClick={handleArmSite}
+                disabled={armInProgress}
+                title="Arm the site"
+              >
+                {armInProgress ? "Arming…" : "Arm site"}
               </button>
             )}
 

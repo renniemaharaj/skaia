@@ -259,6 +259,14 @@
   font-style: italic;
 }
 
+.pp-admin-settings {
+  display: none;
+}
+
+.pp-slowmode-btn--active {
+  color: var(--primary-color);
+}
+
 /* ── Chat feed ────────────────────────────────────────────────── */
 .pp-chat-feed {
   max-height: 340px;

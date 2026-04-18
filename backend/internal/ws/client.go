@@ -26,6 +26,8 @@ type Client struct {
 	cursorLimit    rateBucket
 	presenceLimit  rateBucket
 	broadcastLimit rateBucket
+	// lastChatAt tracks when the last global chat message was sent, for slow-mode enforcement.
+	lastChatAt time.Time
 }
 
 const (
@@ -71,10 +73,10 @@ func (c *Client) ReadPump() {
 		case Tp:
 			c.handleTp(msg)
 		case GlobalChat:
-			if c.chatLimit.allow() {
+			if c.allowChat() {
 				c.handleGlobalChat(msg)
 			} else {
-				c.sendClientError("You are sending global chat messages too quickly.", c.chatLimit.nextAvailable())
+				c.sendClientError("You are sending global chat messages too quickly.", c.chatRetryAfter())
 			}
 		case Cursor:
 			if c.cursorLimit.allow() {
@@ -265,6 +267,42 @@ func (c *Client) handleGlobalChat(msg Message) {
 		IsGuest:   isGuest,
 		SessionID: c.SessionID,
 	})
+}
+
+// allowChat returns true if this client is permitted to send a global chat message
+// right now. It respects the hub's dynamic slow-mode setting; when slow mode is
+// disabled it falls back to the per-client token bucket.
+func (c *Client) allowChat() bool {
+	if c.Hub.chatSlowModeEnabled.Load() {
+		interval := c.Hub.chatSlowModeInterval.Load()
+		if interval < 1 {
+			interval = 10
+		}
+		now := time.Now()
+		if now.Sub(c.lastChatAt) < time.Duration(interval)*time.Second {
+			return false
+		}
+		c.lastChatAt = now
+		return true
+	}
+	return c.chatLimit.allow()
+}
+
+// chatRetryAfter returns how long the client should wait before sending another
+// global chat message.
+func (c *Client) chatRetryAfter() time.Duration {
+	if c.Hub.chatSlowModeEnabled.Load() {
+		interval := c.Hub.chatSlowModeInterval.Load()
+		if interval < 1 {
+			interval = 10
+		}
+		wait := time.Duration(interval)*time.Second - time.Since(c.lastChatAt)
+		if wait < 0 {
+			wait = 0
+		}
+		return wait
+	}
+	return c.chatLimit.nextAvailable()
 }
 
 func (c *Client) sendClientError(message string, retryAfter time.Duration) {

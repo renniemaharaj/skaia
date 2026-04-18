@@ -370,13 +370,25 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	cfgRepo := icfg.NewRepository(db)
 	cfgSvc := icfg.NewService(cfgRepo)
 
+	// Bootstrap hub chat slow-mode from the persisted config so it takes
+	// effect on the first connection rather than waiting for the next toggle.
+	if sc, err := cfgSvc.GetConfig("comment_slowmode"); err == nil && sc != nil {
+		var sm struct {
+			Enabled  bool `json:"enabled"`
+			Interval int  `json:"interval"`
+		}
+		if json.Unmarshal([]byte(sc.Value), &sm) == nil {
+			hub.SetChatSlowMode(sm.Enabled, sm.Interval)
+		}
+	}
+
 	// ── All API routes under /api ──────────────────────────────────────
 	r.Route("/api", func(api chi.Router) {
 		armedDir := os.Getenv("ARMED_DIR")
 		if armedDir == "" {
 			armedDir = "armed"
 		}
-		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
+		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
 		api.Use(imw.RateLimitByIP(), imw.RateLimitByClient())
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -387,6 +399,78 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		api.Get("/armed-status", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]bool{"armed": imw.IsArmed(armedDir)})
+		})
+
+		api.Route("/site", func(site chi.Router) {
+			site.Use(imw.JWTAuthMiddleware, imw.PermissionMiddleware("home.manage"))
+
+			site.Post("/arm", func(w http.ResponseWriter, r *http.Request) {
+				claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+				if !ok || claims == nil {
+					http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+					return
+				}
+
+				powerLevel, err := userSvc.GetUserMaxPowerLevel(claims.UserID)
+				if err != nil {
+					http.Error(w, `{"error":"failed to validate power level"}`, http.StatusInternalServerError)
+					return
+				}
+				if powerLevel <= 50 {
+					http.Error(w, `{"error":"insufficient power level"}`, http.StatusForbidden)
+					return
+				}
+
+				armedDir := os.Getenv("ARMED_DIR")
+				if armedDir == "" {
+					armedDir = "armed"
+				}
+
+				if err := writeArmedFile(armedDir, "site-admin"); err != nil {
+					http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(SimpleResponse{Message: "site armed", Status: "ok"})
+			})
+
+			site.Post("/disarm", func(w http.ResponseWriter, r *http.Request) {
+				claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+				if !ok || claims == nil {
+					http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+					return
+				}
+
+				powerLevel, err := userSvc.GetUserMaxPowerLevel(claims.UserID)
+				if err != nil {
+					http.Error(w, `{"error":"failed to validate power level"}`, http.StatusInternalServerError)
+					return
+				}
+				if powerLevel <= 50 {
+					http.Error(w, `{"error":"insufficient power level"}`, http.StatusForbidden)
+					return
+				}
+
+				armedDir := os.Getenv("ARMED_DIR")
+				if armedDir == "" {
+					armedDir = "armed"
+				}
+
+				if err := removeArmedFile(armedDir, "site-admin"); err != nil {
+					if os.IsNotExist(err) {
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusNotFound)
+						json.NewEncoder(w).Encode(SimpleResponse{Message: "not armed", Status: "ok"})
+						return
+					}
+					http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(SimpleResponse{Message: "site disarmed", Status: "ok"})
+			})
 		})
 
 		api.Post("/arm", func(w http.ResponseWriter, r *http.Request) {

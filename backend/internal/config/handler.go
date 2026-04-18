@@ -307,6 +307,8 @@ func (h *Handler) updateCommentSlowMode(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, "save failed")
 		return
 	}
+	// Apply immediately to all existing WebSocket connections.
+	h.hub.SetChatSlowMode(body.Enabled, body.Interval)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(payload)
 	userID, _ := utils.UserIDFromCtx(r)

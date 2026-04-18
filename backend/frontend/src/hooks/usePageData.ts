@@ -68,6 +68,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const [retryAfter, setRetryAfter] = useState<number | undefined>(undefined);
   const [pendingIncoming, setPendingIncoming] = useState(false);
   const currentSlugRef = useRef<string | null>(null);
+  const requestedSlugRef = useRef<string | undefined>(undefined);
   const requestIdRef = useRef(0);
   const suppressRef = useRef(suppressLiveRefresh);
   const pendingDataRef = useRef<any>(null);
@@ -123,12 +124,21 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
 
   const refresh = useCallback(async (slug?: string) => {
     const requestId = ++requestIdRef.current;
+    // Only clear page state when navigating to a genuinely different slug.
+    // Re-fetching the same slug (e.g. after an update) keeps old data visible
+    // so sections don't flash/revert while the request is in flight.
+    const isSlugChange = slug !== requestedSlugRef.current;
+    requestedSlugRef.current = slug;
+
     setLoading(true);
     setError("");
     setErrorStatus(undefined);
     setRetryAfter(undefined);
-    setPage(null);
-    currentSlugRef.current = null;
+
+    if (isSlugChange) {
+      setPage(null);
+      currentSlugRef.current = null;
+    }
 
     try {
       const endpoint = slug ? `/config/pages/${slug}` : "/config/pages/index";

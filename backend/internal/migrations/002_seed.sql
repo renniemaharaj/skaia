@@ -148,6 +148,15 @@ INSERT INTO site_config (key, value) VALUES
     }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
+-- ── Default landing page (custom page entity) ──────────────────────────────
+INSERT INTO pages (slug, title, description, is_index, content, visibility)
+SELECT 'landing', 'Landing', '', TRUE, '[]'::jsonb, 'public'
+WHERE NOT EXISTS (SELECT 1 FROM pages WHERE slug = 'landing');
+
+INSERT INTO site_config (key, value)
+VALUES ('landing_page_slug', '"landing"'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
 -- ── System "noreply" user for automated inbox messages ──────────────────────
 INSERT INTO users (username, email, password_hash, display_name, bio,
                    avatar_url, banner_url, photo_url,

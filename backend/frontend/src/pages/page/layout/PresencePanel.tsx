@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
@@ -9,9 +9,11 @@ import {
   Navigation,
   LocateFixed,
   MessageCircle,
+  Gauge,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
+import { apiRequest } from "../../../utils/api";
 import {
   currentUserAtom,
   socketAtom,
@@ -53,6 +55,9 @@ const PresencePanel = () => {
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
       : 0,
   );
+  const [slowModeEnabled, setSlowModeEnabled] = useState(false);
+  const [slowModeInterval, setSlowModeInterval] = useState(10);
+  const [slowModeLoading, setSlowModeLoading] = useState(true);
   const prevChatLenRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const rawUsers = useAtomValue(onlineUsersAtom);
@@ -177,6 +182,68 @@ const PresencePanel = () => {
       window.visualViewport?.removeEventListener("scroll", updateHeight);
     };
   }, []);
+
+  const canManagePresenceSettings = hasPermission("home.manage");
+  const loadSlowMode = useCallback(async () => {
+    if (!canManagePresenceSettings) return;
+    setSlowModeLoading(true);
+    try {
+      const data = await apiRequest<{ enabled: boolean; interval: number }>(
+        "/config/comment-slowmode",
+      );
+      setSlowModeEnabled(data?.enabled ?? false);
+      setSlowModeInterval(data?.interval ?? 10);
+    } catch {
+      // ignore
+    } finally {
+      setSlowModeLoading(false);
+    }
+  }, [canManagePresenceSettings]);
+
+  const toggleSlowMode = useCallback(async () => {
+    if (!canManagePresenceSettings) return;
+    setSlowModeLoading(true);
+    try {
+      const data = await apiRequest<{ enabled: boolean; interval: number }>(
+        "/config/comment-slowmode",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            enabled: !slowModeEnabled,
+            interval: slowModeInterval || 10,
+          }),
+        },
+      );
+      setSlowModeEnabled(data?.enabled ?? false);
+      setSlowModeInterval(data?.interval ?? 10);
+      toast.success(
+        data?.enabled
+          ? "Comment slow mode enabled"
+          : "Comment slow mode disabled",
+      );
+    } catch {
+      toast.error("Failed to update comment slow mode");
+    } finally {
+      setSlowModeLoading(false);
+    }
+  }, [canManagePresenceSettings, slowModeEnabled, slowModeInterval]);
+
+  useEffect(() => {
+    if (!canManagePresenceSettings) return;
+    void loadSlowMode();
+
+    const handler = (e: Event) => {
+      const { action, data } = (
+        e as CustomEvent<{ action: string; data?: any }>
+      ).detail;
+      if (action === "comment_slowmode_updated") {
+        setSlowModeEnabled(data?.enabled ?? false);
+        setSlowModeInterval(data?.interval ?? 10);
+      }
+    };
+    window.addEventListener("config:live:event", handler);
+    return () => window.removeEventListener("config:live:event", handler);
+  }, [canManagePresenceSettings, loadSlowMode]);
 
   useEffect(() => {
     if (!expanded || !isMobile) return;
@@ -327,6 +394,23 @@ const PresencePanel = () => {
             )}
           </button>
         </div>
+        {canManagePresenceSettings && (
+          <button
+            type="button"
+            className={`pp-chevron pp-slowmode-btn${slowModeEnabled ? " pp-slowmode-btn--active" : ""}`}
+            onClick={toggleSlowMode}
+            disabled={slowModeLoading}
+            title={
+              slowModeLoading
+                ? "Loading…"
+                : slowModeEnabled
+                  ? `Slow mode on — ${slowModeInterval}s`
+                  : "Enable slow mode"
+            }
+          >
+            <Gauge size={13} />
+          </button>
+        )}
         <button
           className="pp-chevron"
           onClick={() => setExpanded((v) => !v)}

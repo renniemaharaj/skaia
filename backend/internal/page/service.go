@@ -43,6 +43,9 @@ func (s *Service) Create(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"
 	}
+	if p.Visibility == "" {
+		p.Visibility = "public"
+	}
 	return s.repo.Create(p)
 }
 

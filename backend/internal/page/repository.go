@@ -190,7 +190,7 @@ func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT p.id, p.slug, p.title, p.description, p.is_index, p.content::text,
-		        p.owner_id, COALESCE(p.view_count, 0), p.created_at, p.updated_at,
+		        p.owner_id, COALESCE(p.view_count, 0), p.visibility, p.created_at, p.updated_at,
 		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''),
 		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id),
 		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id)
@@ -209,7 +209,7 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		var oID sql.NullInt64
 		var oUsername, oDisplayName, oAvatar sql.NullString
 		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
-			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.CreatedAt, &p.UpdatedAt,
+			&p.IsIndex, &p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
 			&oID, &oUsername, &oDisplayName, &oAvatar,
 			&p.Likes, &p.CommentCount); err != nil {
 			return nil, err
