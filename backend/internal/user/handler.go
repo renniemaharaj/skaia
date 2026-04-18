@@ -20,6 +20,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/skaia/backend/internal/auth"
 	ievents "github.com/skaia/backend/internal/events"
+	"github.com/skaia/backend/internal/middleware"
 	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -139,9 +140,9 @@ func (h *Handler) checkManagePowerLevel(w http.ResponseWriter, actorID, targetID
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
 	// Auth
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", h.register)
-		r.Post("/login", h.login)
-		r.Post("/refresh", h.refreshToken)
+		r.With(middleware.AuthLimitMiddleware()).Post("/register", h.register)
+		r.With(middleware.AuthLimitMiddleware()).Post("/login", h.login)
+		r.With(middleware.AuthLimitMiddleware()).Post("/refresh", h.refreshToken)
 		r.With(jwt).Post("/logout", h.logout)
 	})
 

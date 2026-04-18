@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/internal/events"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
@@ -28,13 +30,15 @@ type CreatorInfo struct {
 
 // Handler serves data-source endpoints.
 type Handler struct {
-	svc     *Service
-	userSvc *iuser.Service
+	svc               *Service
+	userSvc           *iuser.Service
+	compileCache      *CompileCache
+	compileDispatcher *CompileDispatcher
 }
 
 // NewHandler creates a datasource Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc}
+func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache, compileDispatcher *CompileDispatcher) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, compileCache: compileCache, compileDispatcher: compileDispatcher}
 }
 
 // enrich attaches creator info to a datasource.
@@ -55,17 +59,20 @@ func (h *Handler) enrich(ds *models.DataSource) DataSourceResponse {
 }
 
 // Mount registers data-source routes under /config/datasources.
-func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, optionalJWT func(http.Handler) http.Handler, compileIPLimit func(http.Handler) http.Handler, compileClientLimit func(http.Handler) http.Handler) {
 	r.Route("/config/datasources", func(r chi.Router) {
 		// Public reads
 		r.Get("/", h.listDataSources)
 		r.Get("/{id}", h.getDataSource)
 
-		// Protected writes
+		// Guests may request compiled output for a datasource by id.
+		r.With(optionalJWT, compileIPLimit, compileClientLimit).Get("/{id}/compile", h.compileDataSourceByID)
+
+		// Protected writes and raw compile.
 		r.Group(func(r chi.Router) {
 			r.Use(jwt)
-			r.Post("/", h.createDataSource)
 			r.Post("/compile", h.compileTypeScript)
+			r.Post("/", h.createDataSource)
 			r.Put("/{id}", h.updateDataSource)
 			r.Delete("/{id}", h.deleteDataSource)
 		})
@@ -194,11 +201,66 @@ func (h *Handler) compileTypeScript(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "code is required")
 		return
 	}
+
 	result, err := CompileTypeScript(body.Code)
 	if err != nil {
 		log.Printf("datasource.compile: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	result.Cached = false
 	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
+		return
+	}
+
+	ds, err := h.svc.GetByID(id)
+	if err != nil {
+		log.Printf("datasource.compile: lookup failed: %v", err)
+		utils.WriteError(w, http.StatusNotFound, "datasource not found")
+		return
+	}
+	if ds.Code == "" {
+		utils.WriteError(w, http.StatusBadRequest, "datasource has no code")
+		return
+	}
+
+	if h.compileCache != nil {
+		if cached, ok := h.compileCache.Get(ds.Code); ok {
+			utils.WriteJSON(w, http.StatusOK, cached)
+			return
+		}
+	}
+
+	job := CompileJob{
+		DataSourceID: id,
+		Source:       ds.Code,
+		IP:           events.ClientIP(r),
+		ResultCh:     make(chan compileResult, 1),
+	}
+	if uid, ok := utils.UserIDFromCtx(r); ok {
+		job.UserID = uid
+	}
+
+	if h.compileDispatcher == nil || !h.compileDispatcher.Dispatch(job) {
+		utils.WriteError(w, http.StatusServiceUnavailable, "compiler queue is busy")
+		return
+	}
+
+	select {
+	case res := <-job.ResultCh:
+		if res.Err != nil {
+			log.Printf("datasource.compile: %v", res.Err)
+			utils.WriteError(w, http.StatusInternalServerError, res.Err.Error())
+			return
+		}
+		utils.WriteJSON(w, http.StatusOK, res.Result)
+	case <-time.After(15 * time.Second):
+		utils.WriteError(w, http.StatusGatewayTimeout, "compiler timed out")
+	}
 }

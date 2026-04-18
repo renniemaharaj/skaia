@@ -10,7 +10,6 @@ import "./CustomSectionBlock.css";
 import type {
   LandingSection,
   LandingItem,
-  DataSource,
   CustomSection,
   ColumnMap,
   FactTableConfig,
@@ -58,6 +57,7 @@ interface CompileResult {
     message: string;
     category: number;
   }[];
+  cached?: boolean;
 }
 
 function parseConfig(config: string): CustomSectionConfig {
@@ -80,10 +80,11 @@ function updateConfig(
   }
 }
 
-async function evaluateDataSource(code: string): Promise<RawRow[]> {
+async function evaluateDataSource(
+  datasourceId: number,
+): Promise<{ rows: RawRow[]; cached: boolean }> {
   const compileRes = await apiRequest<CompileResult>(
-    "/config/datasources/compile",
-    { method: "POST", body: JSON.stringify({ code }) },
+    `/config/datasources/${datasourceId}/compile`,
   );
   const errors = (compileRes.diagnostics ?? []).filter((d) => d.category === 1);
   if (errors.length > 0) {
@@ -99,7 +100,7 @@ async function evaluateDataSource(code: string): Promise<RawRow[]> {
   if (!Array.isArray(result)) {
     throw new Error("Data source code must return an array");
   }
-  return result as RawRow[];
+  return { rows: result as RawRow[], cached: compileRes.cached ?? false };
 }
 
 function getStringValue(value: unknown): string | undefined {
@@ -233,6 +234,7 @@ export const CustomSectionBlock = ({
   const [evalError, setEvalError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
+  const [compileCached, setCompileCached] = useState<boolean | null>(null);
   const [loadingList, setLoadingList] = useState(true);
 
   const isAuthError = (message: string) =>
@@ -269,12 +271,13 @@ export const CustomSectionBlock = ({
     setEvaluating(true);
     setEvalError(null);
     setAuthError(false);
+    setCompileCached(null);
     try {
-      const ds = await apiRequest<DataSource>(
-        `/config/datasources/${selectedCS.datasource_id}`,
+      const { rows, cached } = await evaluateDataSource(
+        selectedCS.datasource_id,
       );
-      const rows = await evaluateDataSource(ds.code);
       setRawRows(rows);
+      setCompileCached(cached);
       toast.success(`"${selectedCS.name}" — ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -512,6 +515,18 @@ export const CustomSectionBlock = ({
                 </Link>
               </div>
             </div>
+          </div>
+        )}
+
+        {compileCached !== null && (
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: "#6b7280",
+              marginBottom: "0.75rem",
+            }}
+          >
+            {compileCached ? "Cached result" : "Fresh compilation"}
           </div>
         )}
 

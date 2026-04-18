@@ -57,6 +57,7 @@ interface CompileResult {
     message: string;
     category: number;
   }[];
+  cached?: boolean;
 }
 
 interface EvalItem {
@@ -240,6 +241,7 @@ export default function DataSourceEditorPage() {
   // Compile/evaluate state
   const [compiling, setCompiling] = useState(false);
   const [compiledJS, setCompiledJS] = useState<string | null>(null);
+  const [compileCached, setCompileCached] = useState<boolean | null>(null);
   const [diagnostics, setDiagnostics] = useState<CompileResult["diagnostics"]>(
     [],
   );
@@ -365,6 +367,7 @@ export default function DataSourceEditorPage() {
     setEvalError(null);
     setPreviewItems([]);
     setCompiledJS(null);
+    setCompileCached(null);
     setDiagnostics([]);
     setRunStats(null);
     setExpandedFetch(new Set());
@@ -425,6 +428,7 @@ export default function DataSourceEditorPage() {
         { method: "POST", body: JSON.stringify({ code }) },
       );
       setCompiledJS(result.js);
+      setCompileCached(result.cached ?? false);
       setDiagnostics(result.diagnostics ?? []);
 
       const errors = (result.diagnostics ?? []).filter((d) => d.category === 1);
@@ -924,6 +928,11 @@ export default function DataSourceEditorPage() {
             {/* Compiled JS */}
             {activePanel === "compiled" && (
               <div className="ds-editor__compiled">
+                {compileCached !== null && (
+                  <div className="ds-editor__compile-status">
+                    {compileCached ? "Cached compilation" : "Fresh compilation"}
+                  </div>
+                )}
                 {compiledJS ? (
                   <pre className="ds-editor__compiled-code">{compiledJS}</pre>
                 ) : (

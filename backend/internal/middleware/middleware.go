@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -99,12 +100,76 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 	)
 }
 
-// AuthLimitMiddleware applies 10 req/min per IP for auth endpoints.
+// AuthLimitMiddleware applies 10 req/min per client (or IP fallback) for auth endpoints.
 func AuthLimitMiddleware() func(http.Handler) http.Handler {
 	return httprate.Limit(10, time.Minute,
-		httprate.WithKeyByIP(),
+		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"too many auth attempts"}`, http.StatusTooManyRequests)
+		}),
+	)
+}
+
+func RateLimitByIP() func(http.Handler) http.Handler {
+	limit := envIntDefault("API_RATE_LIMIT_IP", 100)
+	return httprate.Limit(limit, time.Minute,
+		httprate.WithKeyFuncs(httprate.KeyByRealIP),
+		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+		}),
+	)
+}
+
+func RateLimitByClient() func(http.Handler) http.Handler {
+	limit := envIntDefault("API_RATE_LIMIT_CLIENT", 200)
+	return httprate.Limit(limit, time.Minute,
+		httprate.WithKeyFuncs(KeyByClientID),
+		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+		}),
+	)
+}
+
+func envIntDefault(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	return n
+}
+
+func KeyByClientID(r *http.Request) (string, error) {
+	clientID := strings.TrimSpace(r.Header.Get("X-Client-ID"))
+	if clientID != "" {
+		return clientID, nil
+	}
+	ip, err := httprate.KeyByRealIP(r)
+	if err != nil {
+		return "", err
+	}
+	return "anon:" + ip, nil
+}
+
+func CompileRateLimitByIP() func(http.Handler) http.Handler {
+	limit := envIntDefault("COMPILER_RATE_LIMIT_IP", 20)
+	return httprate.Limit(limit, time.Minute,
+		httprate.WithKeyFuncs(httprate.KeyByRealIP),
+		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, `{"error":"compiler rate limit exceeded"}`, http.StatusTooManyRequests)
+		}),
+	)
+}
+
+func CompileRateLimitByClient() func(http.Handler) http.Handler {
+	limit := envIntDefault("COMPILER_RATE_LIMIT_CLIENT", 60)
+	return httprate.Limit(limit, time.Minute,
+		httprate.WithKeyFuncs(KeyByClientID),
+		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, `{"error":"compiler client rate limit exceeded"}`, http.StatusTooManyRequests)
 		}),
 	)
 }

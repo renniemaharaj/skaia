@@ -67,12 +67,14 @@ interface CompileResult {
     message: string;
     category: number;
   }[];
+  cached?: boolean;
 }
 
-async function evaluateDataSource(code: string): Promise<RawRow[]> {
+async function evaluateDataSource(
+  datasourceId: number,
+): Promise<{ rows: RawRow[]; cached: boolean }> {
   const compileRes = await apiRequest<CompileResult>(
-    "/config/datasources/compile",
-    { method: "POST", body: JSON.stringify({ code }) },
+    `/config/datasources/${datasourceId}/compile`,
   );
 
   const errors = (compileRes.diagnostics ?? []).filter((d) => d.category === 1);
@@ -91,7 +93,7 @@ async function evaluateDataSource(code: string): Promise<RawRow[]> {
   if (!Array.isArray(result)) {
     throw new Error("Data source code must return an array");
   }
-  return result as RawRow[];
+  return { rows: result as RawRow[], cached: compileRes.cached ?? false };
 }
 
 export const DerivedSectionBlock = ({
@@ -108,6 +110,7 @@ export const DerivedSectionBlock = ({
   const [evalError, setEvalError] = useState<string | null>(null);
   const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
+  const [compileCached, setCompileCached] = useState<boolean | null>(null);
   const [loadingDS, setLoadingDS] = useState(true);
 
   // Load available data sources
@@ -131,13 +134,12 @@ export const DerivedSectionBlock = ({
     setEvaluating(true);
     setEvalError(null);
     setAuthError(false);
+    setCompileCached(null);
     try {
-      const ds = await apiRequest<DataSource>(
-        `/config/datasources/${cfg.datasource_id}`,
-      );
-      const rows = await evaluateDataSource(ds.code);
+      const { rows, cached } = await evaluateDataSource(cfg.datasource_id);
       setRawRows(rows);
-      toast.success(`Evaluated "${ds.name}" — ${rows.length} row(s)`);
+      setCompileCached(cached);
+      toast.success(`Evaluated data source — ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       const auth = isAuthError(msg);
@@ -342,6 +344,18 @@ export const DerivedSectionBlock = ({
                 </Link>
               </div>
             </div>
+          </div>
+        )}
+
+        {compileCached !== null && (
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: "#6b7280",
+              marginBottom: "0.75rem",
+            }}
+          >
+            {compileCached ? "Cached result" : "Fresh compilation"}
           </div>
         )}
 

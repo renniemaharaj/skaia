@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/internal/auth"
 	icfg "github.com/skaia/backend/internal/config"
@@ -136,6 +137,11 @@ func main() {
 	}
 	dispatcher.Start()
 
+	rdb := database.NewRedisClient()
+	dsCompileCache := ids.NewCompileCacheWithClient(rdb)
+	dsCompileDispatcher := ids.NewCompileDispatcher(dsCompileCache, dispatcher)
+	dsCompileDispatcher.Start()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -143,7 +149,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           buildRouter(database.DB, hub, dispatcher),
+		Handler:           buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsCompileDispatcher),
 		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 15)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 15)) * time.Second,
@@ -169,6 +175,7 @@ func main() {
 		log.Fatalf("server forced shutdown: %v", err)
 	}
 	dispatcher.Stop()
+	dsCompileDispatcher.Stop()
 	log.Println("server stopped")
 }
 
@@ -233,8 +240,7 @@ func removeArmedFile(armedDir, clientID string) error {
 	return os.Remove(filePath)
 }
 
-func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.Handler {
-	rdb := database.NewRedisClient()
+func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsCompileDispatcher *ids.CompileDispatcher) http.Handler {
 
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
@@ -371,15 +377,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.H
 			armedDir = "armed"
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
+		api.Use(imw.RateLimitByIP(), imw.RateLimitByClient())
 
-		// Prevent Cloudflare (and browsers) from caching API responses.
-		api.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
-				w.Header().Set("Pragma", "no-cache")
-				next.ServeHTTP(w, r)
-			})
-		})
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
@@ -471,7 +470,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher) http.H
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
-		ids.NewHandler(dsSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher)
+		dsHandler.Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, imw.CompileRateLimitByIP(), imw.CompileRateLimitByClient())
 
 		csRepo := ics.NewRepository(db)
 		csSvc := ics.NewService(csRepo)

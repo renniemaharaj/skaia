@@ -23,6 +23,7 @@ type Diagnostic struct {
 type CompileResult struct {
 	JS          string       `json:"js"`
 	Diagnostics []Diagnostic `json:"diagnostics"`
+	Cached      bool         `json:"cached,omitempty"`
 }
 
 // tsRunnerDir returns the absolute path to the tsrunner directory.
