@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -13,6 +14,68 @@ import (
 
 	"github.com/go-chi/httprate"
 	"github.com/skaia/backend/internal/auth"
+)
+
+// penaltyBox enforces a lockout period after a client triggers a rate limit.
+// Once penalised, every request from that key is rejected until the penalty
+// expires — the client cannot "reset" by simply waiting for the sliding
+// window counter to roll over.
+type penaltyBox struct {
+	mu      sync.RWMutex
+	entries map[string]time.Time // key → penalty expiry
+}
+
+func newPenaltyBox() *penaltyBox {
+	pb := &penaltyBox{entries: make(map[string]time.Time)}
+	go pb.cleanup()
+	return pb
+}
+
+// penalize records a lockout for key lasting duration from now.
+func (pb *penaltyBox) penalize(key string, d time.Duration) {
+	pb.mu.Lock()
+	pb.entries[key] = time.Now().Add(d)
+	pb.mu.Unlock()
+}
+
+// check returns the remaining lockout duration. If the key is not penalised
+// (or the penalty expired) it returns 0, false.
+func (pb *penaltyBox) check(key string) (remaining time.Duration, active bool) {
+	pb.mu.RLock()
+	until, ok := pb.entries[key]
+	pb.mu.RUnlock()
+	if !ok {
+		return 0, false
+	}
+	rem := time.Until(until)
+	if rem <= 0 {
+		return 0, false
+	}
+	return rem, true
+}
+
+// cleanup periodically removes expired entries to prevent unbounded growth.
+func (pb *penaltyBox) cleanup() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		pb.mu.Lock()
+		now := time.Now()
+		for k, v := range pb.entries {
+			if now.After(v) {
+				delete(pb.entries, k)
+			}
+		}
+		pb.mu.Unlock()
+	}
+}
+
+var (
+	ipPenalty        = newPenaltyBox()
+	clientPenalty    = newPenaltyBox()
+	authPenalty      = newPenaltyBox()
+	compileIPPen     = newPenaltyBox()
+	compileClientPen = newPenaltyBox()
 )
 
 // JWTAuthMiddleware validates the Bearer token in the Authorization header.
@@ -103,33 +166,82 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 }
 
 // AuthLimitMiddleware applies 10 req/min per client (or IP fallback) for auth endpoints.
+// Once triggered, the client is locked out for the full penalty period.
 func AuthLimitMiddleware() func(http.Handler) http.Handler {
-	return httprate.Limit(10, time.Minute,
+	penaltyDuration := time.Duration(envIntDefault("AUTH_RATE_LIMIT_PENALTY_SECONDS", 60)) * time.Second
+
+	rateLimiter := httprate.Limit(10, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			writeRateLimitJSON(w, "too many auth attempts", http.StatusTooManyRequests, 60)
+			key, _ := KeyByClientID(r)
+			authPenalty.penalize(key, penaltyDuration)
+			writeRateLimitJSON(w, "too many auth attempts", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
+
+	return func(next http.Handler) http.Handler {
+		limited := rateLimiter(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			key, _ := KeyByClientID(r)
+			if rem, active := authPenalty.check(key); active {
+				writeRateLimitJSON(w, "too many auth attempts", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
+				return
+			}
+			limited.ServeHTTP(w, r)
+		})
+	}
 }
 
 func RateLimitByIP() func(http.Handler) http.Handler {
 	limit := envIntDefault("API_RATE_LIMIT_IP", 100)
-	return httprate.Limit(limit, time.Minute,
+	penaltyDuration := time.Duration(envIntDefault("API_RATE_LIMIT_PENALTY_SECONDS", 60)) * time.Second
+
+	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, 60)
+			key, _ := httprate.KeyByRealIP(r)
+			ipPenalty.penalize(key, penaltyDuration)
+			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
+
+	return func(next http.Handler) http.Handler {
+		limited := rateLimiter(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			key, _ := httprate.KeyByRealIP(r)
+			if rem, active := ipPenalty.check(key); active {
+				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
+				return
+			}
+			limited.ServeHTTP(w, r)
+		})
+	}
 }
 
 func RateLimitByClient() func(http.Handler) http.Handler {
 	limit := envIntDefault("API_RATE_LIMIT_CLIENT", 200)
-	return httprate.Limit(limit, time.Minute,
+	penaltyDuration := time.Duration(envIntDefault("API_RATE_LIMIT_PENALTY_SECONDS", 60)) * time.Second
+
+	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, 60)
+			key, _ := KeyByClientID(r)
+			clientPenalty.penalize(key, penaltyDuration)
+			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
+
+	return func(next http.Handler) http.Handler {
+		limited := rateLimiter(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			key, _ := KeyByClientID(r)
+			if rem, active := clientPenalty.check(key); active {
+				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
+				return
+			}
+			limited.ServeHTTP(w, r)
+		})
+	}
 }
 
 func CommentSlowMode(getConfig func() (bool, time.Duration)) func(http.Handler) http.Handler {
@@ -233,22 +345,54 @@ func KeyByClientID(r *http.Request) (string, error) {
 
 func CompileRateLimitByIP() func(http.Handler) http.Handler {
 	limit := envIntDefault("COMPILER_RATE_LIMIT_IP", 20)
-	return httprate.Limit(limit, time.Minute,
+	penaltyDuration := time.Duration(envIntDefault("COMPILER_RATE_LIMIT_PENALTY_SECONDS", 60)) * time.Second
+
+	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			writeRateLimitJSON(w, "compiler rate limit exceeded", http.StatusTooManyRequests, 60)
+			key, _ := httprate.KeyByRealIP(r)
+			compileIPPen.penalize(key, penaltyDuration)
+			writeRateLimitJSON(w, "compiler rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
+
+	return func(next http.Handler) http.Handler {
+		limited := rateLimiter(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			key, _ := httprate.KeyByRealIP(r)
+			if rem, active := compileIPPen.check(key); active {
+				writeRateLimitJSON(w, "compiler rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
+				return
+			}
+			limited.ServeHTTP(w, r)
+		})
+	}
 }
 
 func CompileRateLimitByClient() func(http.Handler) http.Handler {
 	limit := envIntDefault("COMPILER_RATE_LIMIT_CLIENT", 60)
-	return httprate.Limit(limit, time.Minute,
+	penaltyDuration := time.Duration(envIntDefault("COMPILER_RATE_LIMIT_PENALTY_SECONDS", 60)) * time.Second
+
+	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			writeRateLimitJSON(w, "compiler client rate limit exceeded", http.StatusTooManyRequests, 60)
+			key, _ := KeyByClientID(r)
+			compileClientPen.penalize(key, penaltyDuration)
+			writeRateLimitJSON(w, "compiler client rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
+
+	return func(next http.Handler) http.Handler {
+		limited := rateLimiter(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			key, _ := KeyByClientID(r)
+			if rem, active := compileClientPen.check(key); active {
+				writeRateLimitJSON(w, "compiler client rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
+				return
+			}
+			limited.ServeHTTP(w, r)
+		})
+	}
 }
 
 // IsArmed checks whether any armed file exists in the given directory.

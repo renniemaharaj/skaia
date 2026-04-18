@@ -192,28 +192,45 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   }, []);
 
   useEffect(() => {
-    if (errorStatus !== 429) {
-      setHoldingSeconds(undefined);
-      try {
-        sessionStorage.removeItem(RATE_LIMIT_KEY);
-      } catch {
-        /* ignore */
+    if (errorStatus === 429) {
+      if (retryAfter !== undefined) {
+        setHoldingSeconds((current) => {
+          const next =
+            current === undefined ? retryAfter : Math.max(current, retryAfter);
+          try {
+            const until = Date.now() + next * 1000;
+            sessionStorage.setItem(RATE_LIMIT_KEY, String(until));
+          } catch {
+            /* ignore */
+          }
+          return next;
+        });
       }
       return;
     }
 
-    if (retryAfter !== undefined) {
-      setHoldingSeconds((current) => {
-        const next =
-          current === undefined ? retryAfter : Math.max(current, retryAfter);
-        try {
-          const until = Date.now() + next * 1000;
-          sessionStorage.setItem(RATE_LIMIT_KEY, String(until));
-        } catch {
-          /* ignore */
+    // errorStatus is NOT 429 (e.g. undefined during reload, or a success).
+    // Only clear holdingSeconds if the sessionStorage penalty has also expired.
+    // This prevents a reload from wiping the timer before the API responds.
+    try {
+      const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
+      if (stored) {
+        const until = parseInt(stored, 10);
+        const remaining = Math.ceil((until - Date.now()) / 1000);
+        if (remaining > 0) {
+          // Penalty still active — keep the holding screen.
+          return;
         }
-        return next;
-      });
+      }
+    } catch {
+      /* ignore */
+    }
+
+    setHoldingSeconds(undefined);
+    try {
+      sessionStorage.removeItem(RATE_LIMIT_KEY);
+    } catch {
+      /* ignore */
     }
   }, [errorStatus, retryAfter]);
 
