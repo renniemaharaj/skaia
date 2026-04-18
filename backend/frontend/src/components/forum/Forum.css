@@ -70,7 +70,7 @@
 }
 
 .category-lock-icon {
-  color: var(--warning-color, #f59e0b);
+  color: var(--warning-color);
   flex-shrink: 0;
 }
 

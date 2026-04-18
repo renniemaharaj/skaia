@@ -361,7 +361,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: var(--card-bg, var(--bg-secondary));
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 4px 16px
@@ -454,7 +454,7 @@
 }
 
 .header-inbox-btn--unread {
-  color: var(--success-color, #22c55e);
+  color: var(--success-color);
 }
 
 .header-inbox-badge {

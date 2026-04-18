@@ -7,14 +7,8 @@ import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
 import UserAvatar from "../user/UserAvatar";
 import type { User } from "../../atoms/auth";
+import type { PageUser } from "../../hooks/usePageData";
 import "./PageOwnershipPanel.css";
-
-export interface PageUser {
-  id: number;
-  username: string;
-  display_name: string;
-  avatar_url: string;
-}
 
 interface PageOwnershipPanelProps {
   pageId: number;

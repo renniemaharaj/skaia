@@ -335,7 +335,7 @@
   border-top: 1px solid var(--border-color);
   width: 100%;
   box-sizing: border-box;
-  background: var(--bg-overlay, transparent);
+  background: transparent;
 }
 
 .pp-chat-input {
@@ -474,7 +474,7 @@
     width: 100vw;
     max-width: 100vw;
     min-width: 100vw;
-    height: var(--presence-panel-height, 100svh);
+    height: 100svh;
     justify-content: flex-start;
     padding-bottom: 0;
     overflow: hidden;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { isAuthenticatedAtom, currentUserAtom } from "../atoms/auth";
+import { apiRequest } from "../utils/api";
 
 /**
  * Ctrl+G (or Cmd+G on macOS) opens a passcode dialog.
@@ -53,9 +54,8 @@ export function useGrengoShortcut() {
   // Check armed status on mount.
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/armed-status")
-      .then((r) => r.json())
-      .then((data: { armed: boolean }) => {
+    apiRequest<{ armed: boolean }>("/api/armed-status")
+      .then((data) => {
         if (cancelled) return;
         if (data.armed) {
           setArmed(true);
@@ -75,22 +75,13 @@ export function useGrengoShortcut() {
     setLoading(true);
     setError("");
     try {
-      const token = localStorage.getItem("auth.accessToken");
-      const res = await fetch("/api/grengo/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      const data = await apiRequest<{ session_id: string; expires_at: string }>(
+        "/api/grengo/session",
+        {
+          method: "POST",
+          body: JSON.stringify({ p1, p2 }),
         },
-        body: JSON.stringify({ p1, p2 }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-
-      const data: { session_id: string; expires_at: string } = await res.json();
+      );
       setShowDialog(false);
       navigate(`/tmp/${data.session_id}`);
     } catch (e: unknown) {

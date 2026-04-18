@@ -6,7 +6,6 @@ import {
   guestRoutesFunc,
 } from "./pages/routing";
 import { Layout } from "./pages/Layout";
-import { CartProvider } from "./context/CartContext";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import ErrorBoundary from "./ErrorBoundary";
 import { useSiteConfig } from "./hooks/useSiteConfig";
@@ -30,23 +29,21 @@ export default function App() {
   const [guestSandboxMode] = useGuestSandboxMode();
 
   return (
-    <CartProvider>
-      <Router>
-        <ThemeProvider>
-          <SiteConfigLoader>
-            <Layout>
-              <ErrorBoundary>
-                <Routes>
-                  {publicRoutesFunc(features, guestSandboxMode)}
-                  {guestRoutesFunc(features, guestSandboxMode)}
-                  {protectedRoutesFunc(features, guestSandboxMode)}
-                </Routes>
-              </ErrorBoundary>
-            </Layout>
-            <GrengoSessionDialog />
-          </SiteConfigLoader>
-        </ThemeProvider>
-      </Router>
-    </CartProvider>
+    <Router>
+      <ThemeProvider>
+        <SiteConfigLoader>
+          <Layout>
+            <ErrorBoundary>
+              <Routes>
+                {publicRoutesFunc(features, guestSandboxMode)}
+                {guestRoutesFunc(features, guestSandboxMode)}
+                {protectedRoutesFunc(features, guestSandboxMode)}
+              </Routes>
+            </ErrorBoundary>
+          </Layout>
+          <GrengoSessionDialog />
+        </SiteConfigLoader>
+      </ThemeProvider>
+    </Router>
   );
 }

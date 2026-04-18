@@ -205,7 +205,7 @@ func (h *Handler) compileTypeScript(w http.ResponseWriter, r *http.Request) {
 	result, err := CompileTypeScript(body.Code)
 	if err != nil {
 		log.Printf("datasource.compile: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
 		return
 	}
 	result.Cached = false
@@ -256,7 +256,7 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 	case res := <-job.ResultCh:
 		if res.Err != nil {
 			log.Printf("datasource.compile: %v", res.Err)
-			utils.WriteError(w, http.StatusInternalServerError, res.Err.Error())
+			utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
 			return
 		}
 		utils.WriteJSON(w, http.StatusOK, res.Result)

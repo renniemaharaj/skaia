@@ -73,7 +73,7 @@
   gap: 0.5rem;
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
-  background: var(--bg-tertiary, var(--bg-secondary));
+  background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--primary-color);
   border-radius: 6px;
@@ -83,7 +83,7 @@
   transition: background 0.15s;
 }
 .reshared-banner:hover {
-  background: var(--bg-hover, var(--bg-tertiary));
+  background: var(--bg-tertiary);
 }
 .reshared-banner strong {
   color: var(--text-primary);
@@ -95,10 +95,10 @@
   color: var(--text-secondary);
 }
 .thread-action-btn.lock-btn:hover {
-  color: var(--warning-color, #f59e0b);
+  color: var(--warning-color);
 }
 .thread-action-btn.lock-btn.locked {
-  color: var(--warning-color, #f59e0b);
+  color: var(--warning-color);
 }
 .thread-action-btn.share-btn:hover {
   color: var(--primary-color);

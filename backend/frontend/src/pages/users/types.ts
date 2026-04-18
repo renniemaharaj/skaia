@@ -27,21 +27,3 @@ export interface Role {
   description: string;
   power_level: number;
 }
-
-export interface ForumThread {
-  id: string;
-  title: string;
-  content: string;
-  category_id: string;
-  user_id?: string;
-  view_count: number;
-  reply_count: number;
-  likes: number;
-  is_pinned: boolean;
-  is_locked: boolean;
-  created_at: string;
-  user_name: string;
-  user_avatar?: string;
-}
-
-export const THREADS_PER_PAGE = 15;

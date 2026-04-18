@@ -50,7 +50,7 @@
   background: var(--bg-color);
   color: var(--text-secondary);
   font-size: 0.78rem;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
   cursor: grab;
   transition: all 0.15s;
   user-select: none;
@@ -129,7 +129,7 @@
   background: var(--bg-color);
   color: var(--text-primary);
   font-size: 0.8rem;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono);
 }
 
 .column-mapper-slot-clear {
