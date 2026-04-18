@@ -69,6 +69,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			// Landing page config
 			r.Put("/landing-page", h.setLandingPage)
 
+			// Factory reset
+			r.Post("/factory-reset", h.factoryResetHomepage)
+
 			// Admin: page allocation management
 			r.Get("/allocations", h.listAllocations)
 			r.Put("/allocations/{userId}", h.upsertAllocation)
@@ -925,6 +928,74 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": body.Slug},
 		Fn: func() {
 			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
+		},
+	})
+}
+
+// ── factory reset ───────────────────────────────────────────────────────────
+
+// factoryResetHomepage deletes all custom pages, legacy landing sections/items,
+// stale config keys, page allocations, then creates a fresh default index page.
+func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	// 1. Delete all custom pages (cascades: editors, likes, comments, views).
+	if err := h.svc.DeleteAll(); err != nil {
+		log.Printf("factoryReset: delete pages: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete pages")
+		return
+	}
+
+	// 2. Delete legacy landing_sections + landing_items.
+	if err := h.configSvc.DeleteAllSections(); err != nil {
+		log.Printf("factoryReset: delete sections: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete landing sections")
+		return
+	}
+
+	// 3. Remove stale config keys that accumulate from landing usage.
+	for _, key := range []string{"landing_page_slug"} {
+		_ = h.configSvc.DeleteConfig(key)
+	}
+
+	// 4. Reset all user page allocations to zero used.
+	allocs, _ := h.svc.ListAllocations()
+	for _, a := range allocs {
+		_ = h.svc.ReconcileUsedCount(a.UserID)
+	}
+
+	// 5. Create a clean default index page.
+	defaultPage := &models.Page{
+		Slug:       "landing",
+		Title:      "Home",
+		IsIndex:    true,
+		Content:    `[]`,
+		Visibility: "public",
+	}
+	if err := h.svc.Create(defaultPage); err != nil {
+		log.Printf("factoryReset: create default page: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create default page")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"message": "homepage factory reset complete",
+		"page":    defaultPage,
+	})
+
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActPageUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"action": "factory_reset_homepage"},
+		Fn: func() {
+			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"action": "factory_reset"})
 		},
 	})
 }

@@ -22,6 +22,14 @@ func (s *Service) UpsertConfig(key, valueJSON string) error {
 	return s.repo.UpsertConfig(key, valueJSON)
 }
 
+func (s *Service) DeleteConfig(key string) error {
+	return s.repo.DeleteConfig(key)
+}
+
+func (s *Service) DeleteAllSections() error {
+	return s.repo.DeleteAllSections()
+}
+
 // ── Landing sections ────────────────────────────────────────────────────────
 
 func (s *Service) ListSections() ([]*models.LandingSection, error) {

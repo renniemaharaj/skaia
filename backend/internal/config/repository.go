@@ -37,7 +37,17 @@ func (r *sqlRepository) UpsertConfig(key, valueJSON string) error {
 	return err
 }
 
+func (r *sqlRepository) DeleteConfig(key string) error {
+	_, err := r.db.Exec(`DELETE FROM site_config WHERE key = $1`, key)
+	return err
+}
+
 // ── Landing sections ────────────────────────────────────────────────────────
+
+func (r *sqlRepository) DeleteAllSections() error {
+	_, err := r.db.Exec(`DELETE FROM landing_sections`)
+	return err
+}
 
 func (r *sqlRepository) ListSections() ([]*models.LandingSection, error) {
 	rows, err := r.db.Query(

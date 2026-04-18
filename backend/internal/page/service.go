@@ -39,6 +39,10 @@ func (s *Service) List() ([]*models.Page, error) {
 	return s.repo.List()
 }
 
+func (s *Service) DeleteAll() error {
+	return s.repo.DeleteAll()
+}
+
 func (s *Service) Create(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"

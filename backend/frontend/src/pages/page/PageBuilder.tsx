@@ -138,6 +138,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
   const [armInProgress, setArmInProgress] = useState(false);
+  const [resetInProgress, setResetInProgress] = useState(false);
   const RATE_LIMIT_KEY = "pb_rate_limit_until";
 
   const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(
@@ -190,6 +191,27 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setArmInProgress(false);
     }
   }, []);
+
+  const handleFactoryReset = useCallback(async () => {
+    if (
+      !window.confirm(
+        "Factory reset homepage?\n\nThis will permanently delete ALL custom pages, landing sections, and reset page allocations. A fresh default homepage will be created.\n\nThis cannot be undone.",
+      )
+    )
+      return;
+    setResetInProgress(true);
+    try {
+      await apiRequest("/config/pages/factory-reset", { method: "POST" });
+      toast.success("Homepage factory reset complete.");
+      await refresh();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Factory reset failed";
+      toast.error(message);
+    } finally {
+      setResetInProgress(false);
+    }
+  }, [refresh]);
 
   useEffect(() => {
     if (errorStatus === 429) {
@@ -924,6 +946,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                         >
                           Roles
                         </Link>
+                        <button
+                          type="button"
+                          className="page-admin-more-item"
+                          style={{ color: "var(--color-danger, #e74c3c)" }}
+                          disabled={resetInProgress}
+                          onClick={() => {
+                            setMoreOpen(false);
+                            void handleFactoryReset();
+                          }}
+                        >
+                          {resetInProgress
+                            ? "Resetting…"
+                            : "Factory reset homepage"}
+                        </button>
                       </>
                     )}
                     {!isEditable && !sandboxToggleIsStandalone && (

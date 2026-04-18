@@ -120,6 +120,11 @@ func (r *sqlRepository) Delete(id int64) error {
 	return err
 }
 
+func (r *sqlRepository) DeleteAll() error {
+	_, err := r.db.Exec(`DELETE FROM pages`)
+	return err
+}
+
 // ── ownership & editors ─────────────────────────────────────────────────────
 
 func (r *sqlRepository) SetOwner(pageID, ownerID int64) error {

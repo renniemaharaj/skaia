@@ -10,6 +10,7 @@ type Repository interface {
 	Create(p *models.Page) error
 	Update(p *models.Page) error
 	Delete(id int64) error
+	DeleteAll() error
 	List() ([]*models.Page, error)
 
 	// Ownership & editors

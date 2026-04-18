@@ -7,8 +7,10 @@ type Repository interface {
 	// Site config
 	GetConfig(key string) (*models.SiteConfig, error)
 	UpsertConfig(key, valueJSON string) error
+	DeleteConfig(key string) error
 
 	// Landing sections
+	DeleteAllSections() error
 	ListSections() ([]*models.LandingSection, error)
 	GetSection(id int64) (*models.LandingSection, error)
 	CreateSection(s *models.LandingSection) error
