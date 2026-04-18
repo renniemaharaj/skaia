@@ -162,11 +162,24 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
 
   const createPage = useCallback(
     async (p: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">) => {
-      const created = await apiRequest<PageBuilderPage>("/config/pages", {
-        method: "POST",
-        body: JSON.stringify(p),
-      });
-      return created;
+      try {
+        const created = await apiRequest<PageBuilderPage>("/config/pages", {
+          method: "POST",
+          body: JSON.stringify(p),
+        });
+        return created;
+      } catch (err) {
+        // 409 Conflict: page with this slug already exists.
+        // The backend returns the existing page in the response body, but
+        // apiRequest already consumed it. Fetch by slug instead.
+        if (err instanceof Error && (err as any).status === 409) {
+          const existing = await apiRequest<PageBuilderPage>(
+            `/config/pages/${encodeURIComponent(p.slug)}`,
+          );
+          return existing;
+        }
+        throw err;
+      }
     },
     [],
   );

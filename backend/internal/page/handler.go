@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -226,6 +227,17 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.Create(&p); err != nil {
+		// Detect unique constraint violation on slug and return the existing page.
+		if strings.Contains(err.Error(), "pages_slug_key") || strings.Contains(err.Error(), "23505") {
+			existing, ferr := h.svc.GetBySlug(p.Slug)
+			if ferr == nil {
+				h.svc.EnrichPage(existing)
+				uid, _ := utils.UserIDFromCtx(r)
+				h.svc.EnrichPageEngagement(existing, uidPtr(uid))
+				utils.WriteJSON(w, http.StatusConflict, existing)
+				return
+			}
+		}
 		log.Printf("page.createPage: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "create failed")
 		return
