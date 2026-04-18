@@ -104,9 +104,13 @@ export function setSectionLayout(
 
 export interface SectionMargins {
   marginTop: number;
+  marginRight: number;
   marginBottom: number;
-  paddingLeft: number;
+  marginLeft: number;
+  paddingTop: number;
   paddingRight: number;
+  paddingBottom: number;
+  paddingLeft: number;
 }
 
 export interface BoxSpacingValues {
@@ -120,9 +124,13 @@ export function getSectionMargins(config: string): SectionMargins {
   const parsed = safeParseConfig(config);
   return {
     marginTop: parsed.marginTop ?? 0,
+    marginRight: parsed.marginRight ?? 0,
     marginBottom: parsed.marginBottom ?? 0,
-    paddingLeft: parsed.paddingLeft ?? 0,
+    marginLeft: parsed.marginLeft ?? 0,
+    paddingTop: parsed.paddingTop ?? 0,
     paddingRight: parsed.paddingRight ?? 0,
+    paddingBottom: parsed.paddingBottom ?? 0,
+    paddingLeft: parsed.paddingLeft ?? 0,
   };
 }
 
@@ -233,51 +241,53 @@ export const SectionSpacingControls = ({
 
   const changed =
     draftMargins.marginTop !== margins.marginTop ||
+    draftMargins.marginRight !== margins.marginRight ||
     draftMargins.marginBottom !== margins.marginBottom ||
-    draftMargins.paddingLeft !== margins.paddingLeft ||
-    draftMargins.paddingRight !== margins.paddingRight;
+    draftMargins.marginLeft !== margins.marginLeft ||
+    draftMargins.paddingTop !== margins.paddingTop ||
+    draftMargins.paddingRight !== margins.paddingRight ||
+    draftMargins.paddingBottom !== margins.paddingBottom ||
+    draftMargins.paddingLeft !== margins.paddingLeft;
 
   return (
     <div className="section-spacing-capture">
       <div className="section-spacing-group">
         <span className="section-spacing-pair">
-          <label>T</label>
+          <label>PT</label>
           <input
             type="number"
-            value={draftMargins.marginTop}
+            value={draftMargins.paddingTop}
             onChange={(e) =>
               setDraftMargins((prev) => ({
                 ...prev,
-                marginTop: Number(e.target.value),
+                paddingTop: Number(e.target.value),
               }))
             }
-            title="Margin top (px)"
+            title="Padding top (px)"
             min={0}
             max={200}
             step={4}
           />
         </span>
         <span className="section-spacing-pair">
-          <label>B</label>
+          <label>PB</label>
           <input
             type="number"
-            value={draftMargins.marginBottom}
+            value={draftMargins.paddingBottom}
             onChange={(e) =>
               setDraftMargins((prev) => ({
                 ...prev,
-                marginBottom: Number(e.target.value),
+                paddingBottom: Number(e.target.value),
               }))
             }
-            title="Margin bottom (px)"
+            title="Padding bottom (px)"
             min={0}
             max={200}
             step={4}
           />
         </span>
-      </div>
-      <div className="section-spacing-group">
         <span className="section-spacing-pair">
-          <label>L</label>
+          <label>PL</label>
           <input
             type="number"
             value={draftMargins.paddingLeft}
@@ -294,7 +304,7 @@ export const SectionSpacingControls = ({
           />
         </span>
         <span className="section-spacing-pair">
-          <label>R</label>
+          <label>PR</label>
           <input
             type="number"
             value={draftMargins.paddingRight}
@@ -305,6 +315,76 @@ export const SectionSpacingControls = ({
               }))
             }
             title="Padding right (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+      </div>
+      <div className="section-spacing-group">
+        <span className="section-spacing-pair">
+          <label>MT</label>
+          <input
+            type="number"
+            value={draftMargins.marginTop}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginTop: Number(e.target.value),
+              }))
+            }
+            title="Margin top (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+        <span className="section-spacing-pair">
+          <label>MB</label>
+          <input
+            type="number"
+            value={draftMargins.marginBottom}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginBottom: Number(e.target.value),
+              }))
+            }
+            title="Margin bottom (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+        <span className="section-spacing-pair">
+          <label>ML</label>
+          <input
+            type="number"
+            value={draftMargins.marginLeft}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginLeft: Number(e.target.value),
+              }))
+            }
+            title="Margin left (px)"
+            min={0}
+            max={200}
+            step={4}
+          />
+        </span>
+        <span className="section-spacing-pair">
+          <label>MR</label>
+          <input
+            type="number"
+            value={draftMargins.marginRight}
+            onChange={(e) =>
+              setDraftMargins((prev) => ({
+                ...prev,
+                marginRight: Number(e.target.value),
+              }))
+            }
+            title="Margin right (px)"
             min={0}
             max={200}
             step={4}

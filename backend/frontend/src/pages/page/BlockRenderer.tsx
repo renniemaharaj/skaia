@@ -108,13 +108,19 @@ const SectionBlock = memo(function SectionBlock({
 
   const sectionStyle: React.CSSProperties = {
     ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
+    ...(margins.marginRight ? { marginRight: `${margins.marginRight}px` } : {}),
     ...(margins.marginBottom
       ? { marginBottom: `${margins.marginBottom}px` }
       : {}),
-    ...(margins.paddingLeft ? { paddingLeft: `${margins.paddingLeft}px` } : {}),
+    ...(margins.marginLeft ? { marginLeft: `${margins.marginLeft}px` } : {}),
+    ...(margins.paddingTop ? { paddingTop: `${margins.paddingTop}px` } : {}),
     ...(margins.paddingRight
       ? { paddingRight: `${margins.paddingRight}px` }
       : {}),
+    ...(margins.paddingBottom
+      ? { paddingBottom: `${margins.paddingBottom}px` }
+      : {}),
+    ...(margins.paddingLeft ? { paddingLeft: `${margins.paddingLeft}px` } : {}),
     ...(bgColor ? { backgroundColor: bgColor } : {}),
   };
 
