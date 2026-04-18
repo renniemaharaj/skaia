@@ -140,7 +140,20 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     }
 
     try {
-      const endpoint = slug ? `/config/pages/${slug}` : "/config/pages/index";
+      let endpoint: string;
+      if (slug) {
+        endpoint = `/config/pages/${slug}`;
+      } else {
+        // Index mode: resolve the landing slug first, then fetch by slug.
+        // This avoids the single /config/pages/index cache key that CDNs
+        // serve stale when the landing page is swapped — the per-slug URL
+        // has a unique cache key per page.
+        const cfg = await apiRequest<{ slug: string }>(
+          "/config/pages/landing-slug",
+        );
+        if (requestId !== requestIdRef.current) return;
+        endpoint = `/config/pages/${cfg.slug}`;
+      }
       const currentPage = await apiRequest<PageBuilderPage>(endpoint);
       if (requestId !== requestIdRef.current) return;
       setPage(currentPage);

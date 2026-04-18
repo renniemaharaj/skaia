@@ -36,6 +36,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 	r.Route("/config/pages", func(r chi.Router) {
 		// Public reads
 		r.With(optJWT).Get("/index", h.getIndex)
+		r.Get("/landing-slug", h.getLandingSlug)
 		r.Get("/list", h.listPages)
 		r.With(optJWT).Get("/browse", h.browsePages)
 		r.With(optJWT).Get("/{slug}", h.getBySlug)
@@ -137,6 +138,23 @@ func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
 }
 
 // ── handlers ────────────────────────────────────────────────────────────────
+
+// getLandingSlug returns just the configured landing page slug.
+// The frontend uses this to resolve the slug, then fetches the page by slug
+// directly — avoiding the single /config/pages/index CDN cache key.
+func (h *Handler) getLandingSlug(w http.ResponseWriter, r *http.Request) {
+	sc, err := h.configSvc.GetConfig("landing_page_slug")
+	if err != nil || sc.Value == "" || sc.Value == `""` {
+		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
+		return
+	}
+	var slug string
+	if json.Unmarshal([]byte(sc.Value), &slug) != nil || slug == "" {
+		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"slug": slug})
+}
 
 func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 	// Landing page is purely config-driven: look up landing_page_slug.
