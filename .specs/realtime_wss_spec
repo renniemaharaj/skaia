@@ -176,21 +176,37 @@ All messages are JSON frames:
 
 ### Config Actions (`config:update`)
 
-| `action`           | `data`       | Delivery  |
-| ------------------ | ------------ | --------- |
-| `branding_updated` | Branding     | broadcast |
-| `seo_updated`      | SEOConfig    | broadcast |
-| `footer_updated`   | FooterConfig | broadcast |
-| `features_updated` | `string[]`   | broadcast |
+| `action`               | `data`             | Delivery  |
+| ---------------------- | ------------------ | --------- |
+| `branding_updated`     | Branding           | broadcast |
+| `seo_updated`          | SEOConfig          | broadcast |
+| `footer_updated`       | FooterConfig       | broadcast |
+| `features_updated`     | `string[]`         | broadcast |
+| `landing_page_updated` | `{ slug: string }` | broadcast |
+
+**`landing_page_updated`** is emitted alongside `landing_page_changed`
+(page:update) when the admin swaps the landing page. The config:update
+channel drives UI elements like the "Landing Page" badge in CustomPages
+and triggers a fallback `refresh()` in PageBuilder for edge cases where
+the page:update WS push was missed.
 
 ### Page Actions (`page:update`)
 
-| `action`          | `data`             | Delivery  |
-| ----------------- | ------------------ | --------- |
-| `page_created`    | PageBuilderPage    | broadcast |
-| `page_updated`    | PageBuilderPage    | broadcast |
-| `page_deleted`    | `{ id, slug }`     | broadcast |
-| `landing_updated` | `LandingSection[]` | broadcast |
+| `action`               | `data`             | Delivery                          |
+| ---------------------- | ------------------ | --------------------------------- |
+| `page_created`         | PageBuilderPage    | broadcast                         |
+| `page_updated`         | PageBuilderPage    | broadcast (except sender)         |
+| `page_deleted`         | `{ id, slug }`     | broadcast                         |
+| `landing_page_changed` | PageBuilderPage    | broadcast (full new landing page) |
+| `landing_updated`      | `LandingSection[]` | broadcast                         |
+
+**`landing_page_changed`** is emitted by `setLandingPage` via `hub.BroadcastPage`.
+It carries the full enriched page so clients can swap the landing page via
+WebSocket with zero HTTP requests, completely bypassing CDN caches.
+
+**`page_updated`** uses `BroadcastPageExceptUser` — the sender already has the
+authoritative page from the HTTP response, so they don't receive their own
+update back. All other clients receive it and apply via `applyIncomingData`.
 
 ### Notification Actions
 

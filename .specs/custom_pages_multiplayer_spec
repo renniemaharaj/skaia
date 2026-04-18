@@ -118,6 +118,17 @@ is defeated and all sections re-render.
   incoming WS refreshes — go through `mergeSections`. This ensures the local
   sections state is always JSONB-normalised, so subsequent comparisons are
   between like-for-like objects.
+- **`page_updated` excludes sender.** The backend uses
+  `BroadcastPageExceptUser(userID, ...)` so the editing user doesn't receive
+  their own update back — they already have the authoritative data from the
+  HTTP response.
+- **applyIncomingData preserves per-user fields.** The broadcast doesn't
+  carry `is_liked` or `can_delete` (user-specific). The setter merges incoming
+  data while keeping these fields from the previous state.
+- **Save timer cancelled on landing swap.** When the landing page is changed
+  via the dropdown, `saveTimerRef` is cleared and `pendingSectionsRef` is
+  nulled BEFORE issuing the swap API call — otherwise the old page's queued
+  save would fire and overwrite the new page's content.
 - **Section-sync guards:** The useEffect always bails out if
   `pendingSectionsRef.current !== null` (unsaved pending changes) or
   `editingCountRef.current > 0` (active editor open).

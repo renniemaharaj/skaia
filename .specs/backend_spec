@@ -206,6 +206,39 @@ All under `/api/`. JWT-protected unless noted.
 - `/config/*` — branding, SEO, footer, features, landing, pages
 - `/upload/*` — image, video, file, banner
 
+### Page / Landing Endpoints
+
+All under `/config/pages` (chi subroute).
+
+| Method | Path                   | Auth      | Purpose                            |
+| ------ | ---------------------- | --------- | ---------------------------------- |
+| GET    | /landing-slug          | none      | Resolve configured landing slug    |
+| GET    | /index                 | opt JWT   | Fetch landing page inline (legacy) |
+| GET    | /list                  | none      | List all pages                     |
+| GET    | /browse                | opt JWT   | Public feed with ownership data    |
+| GET    | /{slug}                | opt JWT   | Fetch page by slug                 |
+| GET    | /{slug}/comments       | opt JWT   | List page comments                 |
+| POST   | /{slug}/view           | none      | Record page view                   |
+| POST   | /                      | JWT+perm  | Create page                        |
+| PUT    | /{id}                  | JWT+perm  | Update page content                |
+| DELETE | /{id}                  | JWT+perm  | Delete page                        |
+| POST   | /{id}/duplicate        | JWT+perm  | Duplicate page                     |
+| PUT    | /landing-page          | JWT+perm  | Set landing page slug              |
+| POST   | /factory-reset         | JWT+perm  | Delete all pages + reset config    |
+| PUT    | /{id}/owner            | JWT+perm  | Set page owner                     |
+| DELETE | /{id}/owner            | JWT+perm  | Clear page owner                   |
+| POST   | /{id}/editors          | JWT+perm  | Add editor                         |
+| DELETE | /{id}/editors/{userId} | JWT+perm  | Remove editor                      |
+| POST   | /{id}/like             | JWT       | Like page                          |
+| DELETE | /{id}/like             | JWT       | Unlike page                        |
+| POST   | /{id}/comments         | JWT+limit | Create comment                     |
+| PUT    | /comments/{commentId}  | JWT+limit | Update comment                     |
+| DELETE | /comments/{commentId}  | JWT+limit | Delete comment                     |
+
+**Critical: Landing page is config-driven.** The `landing_page_slug` key in
+`site_config` determines which page renders at `/`. There is no `is_index`
+column. See `landing_page_spec` for the full data flow.
+
 ## Security Checklist
 
 - bcrypt cost 12 for passwords
