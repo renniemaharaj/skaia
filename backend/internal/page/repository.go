@@ -37,7 +37,7 @@ func (r *sqlRepository) GetIndex() (*models.Page, error) {
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, is_index, content::text,
 		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
-		 FROM pages WHERE is_index = TRUE LIMIT 1`,
+		 FROM pages WHERE is_index = TRUE ORDER BY created_at DESC LIMIT 1`,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.IsIndex,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {

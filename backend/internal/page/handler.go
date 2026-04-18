@@ -152,6 +152,10 @@ func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 				utils.WriteJSON(w, http.StatusOK, p)
 				return
 			}
+			// Slug points to a deleted page — auto-clean the stale config
+			// so every subsequent request doesn't repeat the failed lookup.
+			log.Printf("page.getIndex: landing_page_slug %q not found, cleaning up", slug)
+			_ = h.configSvc.DeleteConfig("landing_page_slug")
 		}
 	}
 	p, err := h.svc.GetIndex()

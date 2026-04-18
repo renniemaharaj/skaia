@@ -201,9 +201,29 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       return;
     setResetInProgress(true);
     try {
+      // Cancel any queued save so stale sections from the deleted page
+      // don't get written back to the freshly-created default page.
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      pendingSectionsRef.current = null;
+
       await apiRequest("/config/pages/factory-reset", { method: "POST" });
       toast.success("Homepage factory reset complete.");
+
+      // Clear local sections so the old content doesn't persist in state.
+      setSections([]);
+      setSectionsSourced(false);
+
       await refresh();
+
+      // Re-fetch page list so the landing-page dropdown is up-to-date.
+      if (isAdmin) {
+        apiRequest<PageBuilderPage[]>("/config/pages/list")
+          .then((data) => setAllPages(data ?? []))
+          .catch(() => {});
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Factory reset failed";
@@ -211,7 +231,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     } finally {
       setResetInProgress(false);
     }
-  }, [refresh]);
+  }, [refresh, isAdmin]);
 
   useEffect(() => {
     if (errorStatus === 429) {
@@ -313,6 +333,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleSetLandingPage = async (selectedSlug: string) => {
     try {
+      // Cancel queued saves so stale sections from the previous landing page
+      // aren't written over the incoming page's content.
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      pendingSectionsRef.current = null;
+
       await apiRequest("/config/pages/landing-page", {
         method: "PUT",
         body: JSON.stringify({ slug: selectedSlug }),
@@ -323,6 +351,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           : "Landing page reset to default",
       );
       setLandingDropdownOpen(false);
+
+      // Clear old sections so the new landing page starts clean.
+      setSections([]);
+      setSectionsSourced(false);
+
       // Reload the index route so the new landing page is shown immediately.
       if (!slug) {
         await refresh();
