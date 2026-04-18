@@ -66,11 +66,13 @@
   font-size: 0.82rem;
   font-weight: 700;
   color: var(--text-primary);
+  text-align: left;
 }
 
 .card-designer__group-note {
   color: var(--text-secondary);
   font-size: 0.7rem;
+  text-align: left;
 }
 
 .card-designer__group-grid {
