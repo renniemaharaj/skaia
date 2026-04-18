@@ -304,6 +304,13 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
+	// Verify the page exists before checking permissions or applying updates.
+	// This prevents 500s when the frontend holds a stale page ID (e.g. after
+	// a factory reset recreated the landing page with a new ID).
+	if _, err := h.svc.GetByID(id); err != nil {
+		utils.WriteError(w, http.StatusNotFound, "page not found")
+		return
+	}
 	if !h.canEditPage(r, id) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return

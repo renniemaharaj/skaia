@@ -456,6 +456,10 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Stable refs so useCallback wrappers never go stale.
   const sectionsRef = useRef<LandingSection[]>(sections);
   sectionsRef.current = sections;
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  const slugRef = useRef(slug);
+  slugRef.current = slug;
 
   // ── Adaptive BBR save pipeline ─────────────────────────────────────────
   // Changes are batched with an adaptive delay (800 ms base, grows by 200 ms
@@ -505,6 +509,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       );
     } catch {
       setSaveStatus("error");
+      toast.error("Failed to save changes — reloading page");
+      refreshRef.current(slugRef.current);
       setTimeout(
         () => setSaveStatus((s) => (s === "error" ? "idle" : s)),
         3000,
@@ -572,6 +578,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       );
     } catch {
       setSaveStatus("error");
+      toast.error("Failed to save changes — reloading page");
+      refreshRef.current(slugRef.current);
       setTimeout(
         () => setSaveStatus((s) => (s === "error" ? "idle" : s)),
         3000,
