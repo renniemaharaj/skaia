@@ -73,7 +73,9 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 }
 
 const scanCols = `id, username, email, password_hash, display_name, avatar_url, banner_url, photo_url,
-                  bio, discord_id, is_suspended, suspended_at, suspended_reason, created_at, updated_at`
+                  bio, discord_id, is_suspended, suspended_at, suspended_reason,
+                  email_verified, email_verified_at, totp_secret, totp_enabled,
+                  created_at, updated_at`
 
 func scanUser(row interface {
 	Scan(dest ...any) error
@@ -82,7 +84,9 @@ func scanUser(row interface {
 	err := row.Scan(
 		&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.DisplayName,
 		&u.AvatarURL, &u.BannerURL, &u.PhotoURL, &u.Bio, &u.DiscordID,
-		&u.IsSuspended, &u.SuspendedAt, &u.SuspendedReason, &u.CreatedAt, &u.UpdatedAt,
+		&u.IsSuspended, &u.SuspendedAt, &u.SuspendedReason,
+		&u.EmailVerified, &u.EmailVerifiedAt, &u.TOTPSecret, &u.TOTPEnabled,
+		&u.CreatedAt, &u.UpdatedAt,
 	)
 	return u, err
 }
@@ -484,5 +488,140 @@ func (r *sqlRepository) RemovePermissionFromRole(roleID int64, permissionName st
 		   AND permission_id = (SELECT id FROM permissions WHERE name = $2)`,
 		roleID, permissionName,
 	)
+	return err
+}
+
+// ── Email verification ─────────────────────────────────────────────────────
+
+func (r *sqlRepository) CreateEmailVerificationToken(userID int64, token string, expiresAt interface{}) error {
+	_, err := r.db.Exec(
+		`INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+		userID, token, expiresAt,
+	)
+	return err
+}
+
+func (r *sqlRepository) GetEmailVerificationToken(token string) (*models.EmailVerificationToken, error) {
+	t := &models.EmailVerificationToken{}
+	err := r.db.QueryRow(
+		`SELECT id, user_id, token, expires_at, created_at
+		 FROM email_verification_tokens WHERE token = $1`, token,
+	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (r *sqlRepository) MarkEmailVerified(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET email_verified = true, email_verified_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		userID,
+	)
+	return err
+}
+
+func (r *sqlRepository) DeleteEmailVerificationTokens(userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM email_verification_tokens WHERE user_id = $1`, userID)
+	return err
+}
+
+// ── Password reset ─────────────────────────────────────────────────────────
+
+func (r *sqlRepository) CreatePasswordResetToken(userID int64, token string, expiresAt interface{}) error {
+	_, err := r.db.Exec(
+		`INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
+		userID, token, expiresAt,
+	)
+	return err
+}
+
+func (r *sqlRepository) GetPasswordResetToken(token string) (*models.PasswordResetToken, error) {
+	t := &models.PasswordResetToken{}
+	err := r.db.QueryRow(
+		`SELECT id, user_id, token, expires_at, used, created_at
+		 FROM password_reset_tokens WHERE token = $1`, token,
+	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.Used, &t.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+func (r *sqlRepository) MarkPasswordResetTokenUsed(tokenID int64) error {
+	_, err := r.db.Exec(`UPDATE password_reset_tokens SET used = true WHERE id = $1`, tokenID)
+	return err
+}
+
+func (r *sqlRepository) DeletePasswordResetTokens(userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM password_reset_tokens WHERE user_id = $1`, userID)
+	return err
+}
+
+// ── TOTP / 2FA ─────────────────────────────────────────────────────────────
+
+func (r *sqlRepository) SetTOTPSecret(userID int64, secret string) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET totp_secret = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`,
+		secret, userID,
+	)
+	return err
+}
+
+func (r *sqlRepository) EnableTOTP(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET totp_enabled = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		userID,
+	)
+	return err
+}
+
+func (r *sqlRepository) DisableTOTP(userID int64) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET totp_enabled = false, totp_secret = '', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		userID,
+	)
+	return err
+}
+
+func (r *sqlRepository) CreateTOTPBackupCodes(userID int64, codeHashes []string) error {
+	for _, h := range codeHashes {
+		if _, err := r.db.Exec(
+			`INSERT INTO totp_backup_codes (user_id, code_hash) VALUES ($1, $2)`,
+			userID, h,
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *sqlRepository) GetTOTPBackupCodes(userID int64) ([]*models.TOTPBackupCode, error) {
+	rows, err := r.db.Query(
+		`SELECT id, user_id, code_hash, used FROM totp_backup_codes WHERE user_id = $1 ORDER BY id`,
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var codes []*models.TOTPBackupCode
+	for rows.Next() {
+		c := &models.TOTPBackupCode{}
+		if err := rows.Scan(&c.ID, &c.UserID, &c.CodeHash, &c.Used); err != nil {
+			return nil, err
+		}
+		codes = append(codes, c)
+	}
+	return codes, rows.Err()
+}
+
+func (r *sqlRepository) UseTOTPBackupCode(codeID int64) error {
+	_, err := r.db.Exec(`UPDATE totp_backup_codes SET used = true WHERE id = $1`, codeID)
+	return err
+}
+
+func (r *sqlRepository) DeleteTOTPBackupCodes(userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM totp_backup_codes WHERE user_id = $1`, userID)
 	return err
 }

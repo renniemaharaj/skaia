@@ -24,6 +24,8 @@ export interface AuthResponse {
   refresh_token?: string;
   user: User;
   expires_in?: number;
+  requires_totp?: boolean;
+  totp_token?: string;
 }
 
 /**
@@ -257,4 +259,88 @@ export async function uploadFile(
   }
 
   return response.json();
+}
+
+// ── Email Verification ──────────────────────────────────────────────────────
+
+export async function verifyEmail(token: string): Promise<{ status: string }> {
+  return apiRequest("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function resendVerificationEmail(): Promise<{ status: string }> {
+  return apiRequest("/auth/resend-verification", {
+    method: "POST",
+  });
+}
+
+// ── Password Reset ──────────────────────────────────────────────────────────
+
+export async function forgotPassword(
+  email: string,
+): Promise<{ status: string }> {
+  return apiRequest("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ status: string }> {
+  return apiRequest("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+}
+
+// ── TOTP / 2FA ──────────────────────────────────────────────────────────────
+
+export interface TOTPSetupResponse {
+  secret: string;
+  otpauth: string;
+  qr_uri: string;
+}
+
+export interface TOTPEnableResponse {
+  status: string;
+  backup_codes: string[];
+}
+
+export async function loginTOTP(
+  totpToken: string,
+  totpCode?: string,
+  backupCode?: string,
+): Promise<AuthResponse> {
+  return apiRequest("/auth/login/totp", {
+    method: "POST",
+    body: JSON.stringify({
+      totp_token: totpToken,
+      totp_code: totpCode,
+      backup_code: backupCode,
+    }),
+  });
+}
+
+export async function totpSetup(): Promise<TOTPSetupResponse> {
+  return apiRequest("/auth/totp/setup", { method: "POST" });
+}
+
+export async function totpEnable(code: string): Promise<TOTPEnableResponse> {
+  return apiRequest("/auth/totp/enable", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function totpDisable(
+  password: string,
+): Promise<{ status: string }> {
+  return apiRequest("/auth/totp/disable", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
 }

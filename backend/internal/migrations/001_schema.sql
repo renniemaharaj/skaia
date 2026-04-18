@@ -496,3 +496,44 @@ CREATE INDEX IF NOT EXISTS idx_events_user_id    ON events(user_id);
 CREATE INDEX IF NOT EXISTS idx_events_activity   ON events(activity);
 CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_resource   ON events(resource, resource_id);
+
+-- ── Email verification & 2FA columns ───────────────────────────────────────
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified    BOOLEAN   DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret       VARCHAR(64)  DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled      BOOLEAN   DEFAULT false;
+
+-- ── Email verification tokens ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id         BIGSERIAL    PRIMARY KEY,
+    user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token      VARCHAR(128) NOT NULL UNIQUE,
+    expires_at TIMESTAMP    NOT NULL,
+    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_email_verify_user   ON email_verification_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_verify_token  ON email_verification_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_email_verify_expiry ON email_verification_tokens(expires_at);
+
+-- ── Password reset tokens ──────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id         BIGSERIAL    PRIMARY KEY,
+    user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token      VARCHAR(128) NOT NULL UNIQUE,
+    expires_at TIMESTAMP    NOT NULL,
+    used       BOOLEAN      DEFAULT false,
+    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_pw_reset_user   ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_pw_reset_token  ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_pw_reset_expiry ON password_reset_tokens(expires_at);
+
+-- ── TOTP backup codes ──────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS totp_backup_codes (
+    id         BIGSERIAL    PRIMARY KEY,
+    user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash  VARCHAR(255) NOT NULL,
+    used       BOOLEAN      DEFAULT false,
+    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_totp_backup_user ON totp_backup_codes(user_id);

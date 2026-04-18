@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/lib/pq"
 	"github.com/skaia/backend/internal/auth"
+	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
 	"github.com/skaia/backend/internal/middleware"
 	iupload "github.com/skaia/backend/internal/upload"
@@ -51,12 +52,13 @@ type Handler struct {
 	hub        *ws.Hub
 	dispatcher *ievents.Dispatcher
 	noreply    NoreplyMessenger
+	email      *iemail.Sender
 }
 
 // NewHandler returns a Handler backed by the given Service and WebSocket Hub.
-func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, noreply NoreplyMessenger) *Handler {
+func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, noreply NoreplyMessenger, emailSender *iemail.Sender) *Handler {
 	os.MkdirAll(usersDir, 0755) //nolint:errcheck
-	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, noreply: noreply}
+	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, noreply: noreply, email: emailSender}
 }
 
 // propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
@@ -142,8 +144,22 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 	r.Route("/auth", func(r chi.Router) {
 		r.With(middleware.AuthLimitMiddleware()).Post("/register", h.register)
 		r.With(middleware.AuthLimitMiddleware()).Post("/login", h.login)
+		r.With(middleware.AuthLimitMiddleware()).Post("/login/totp", h.loginTOTP)
 		r.With(middleware.AuthLimitMiddleware()).Post("/refresh", h.refreshToken)
 		r.With(jwt).Post("/logout", h.logout)
+
+		// Email verification (public — token-authenticated)
+		r.With(middleware.AuthLimitMiddleware()).Post("/verify-email", h.verifyEmail)
+		r.With(jwt).Post("/resend-verification", h.resendVerification)
+
+		// Password recovery (public — no auth required)
+		r.With(middleware.AuthLimitMiddleware()).Post("/forgot-password", h.forgotPassword)
+		r.With(middleware.AuthLimitMiddleware()).Post("/reset-password", h.resetPasswordWithToken)
+
+		// 2FA / TOTP (requires auth)
+		r.With(jwt).Post("/totp/setup", h.totpSetup)
+		r.With(jwt).Post("/totp/enable", h.totpEnable)
+		r.With(jwt).Post("/totp/disable", h.totpDisable)
 	})
 
 	// Users
@@ -244,6 +260,22 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		IP:         ievents.ClientIP(r),
 		Meta:       map[string]interface{}{"username": user.Username},
 	})
+
+	// Send verification email (best-effort, non-blocking).
+	if h.email != nil && h.email.Configured() {
+		go func(uid int64, uname, uemail string) {
+			token, err := h.svc.CreateEmailVerificationToken(uid)
+			if err != nil {
+				log.Printf("user.Handler.register: create verification token: %v", err)
+				return
+			}
+			html := iemail.VerifyEmailHTML(uname, token)
+			if err := h.email.Send(uemail, "Verify Your Email", html); err != nil {
+				log.Printf("user.Handler.register: send verification email to %s: %v", uemail, err)
+			}
+		}(user.ID, user.Username, user.Email)
+	}
+
 	utils.WriteJSON(w, http.StatusCreated, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
@@ -275,6 +307,25 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		default:
 			utils.WriteError(w, http.StatusInternalServerError, "login failed")
 		}
+		return
+	}
+
+	// If TOTP is enabled, require a second step.
+	if user.TOTPEnabled {
+		// Issue a short-lived TOTP challenge token (5 min).
+		totpToken, err := auth.GenerateTokenWithExpiration(
+			user.ID, user.Username, user.Email, user.DisplayName,
+			user.Roles, user.Permissions, 5*time.Minute,
+		)
+		if err != nil {
+			log.Printf("user.Handler.login: generate totp challenge token: %v", err)
+			utils.WriteError(w, http.StatusInternalServerError, "login failed")
+			return
+		}
+		utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
+			RequiresTOTP: true,
+			TOTPToken:    totpToken,
+		})
 		return
 	}
 
@@ -1390,4 +1441,354 @@ func (h *Handler) removePermissionFromRole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed from role"})
+}
+
+// ── Email verification handlers ─────────────────────────────────────────────
+
+func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Token == "" {
+		utils.WriteError(w, http.StatusBadRequest, "verification token required")
+		return
+	}
+
+	if err := h.svc.VerifyEmail(req.Token); err != nil {
+		log.Printf("user.Handler.verifyEmail: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "email verified"})
+}
+
+func (h *Handler) resendVerification(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	user, err := h.svc.GetByID(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if user.EmailVerified {
+		utils.WriteError(w, http.StatusBadRequest, "email already verified")
+		return
+	}
+	if h.email == nil || !h.email.Configured() {
+		utils.WriteError(w, http.StatusServiceUnavailable, "email service not configured")
+		return
+	}
+
+	token, err := h.svc.ResendVerificationToken(userID)
+	if err != nil {
+		log.Printf("user.Handler.resendVerification: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create verification token")
+		return
+	}
+
+	go func(uname, uemail, tok string) {
+		html := iemail.VerifyEmailHTML(uname, tok)
+		if err := h.email.Send(uemail, "Verify Your Email", html); err != nil {
+			log.Printf("user.Handler.resendVerification: send email to %s: %v", uemail, err)
+		}
+	}(user.Username, user.Email, token)
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "verification email sent"})
+}
+
+// ── Password recovery handlers ──────────────────────────────────────────────
+
+func (h *Handler) forgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
+		utils.WriteError(w, http.StatusBadRequest, "email required")
+		return
+	}
+
+	if h.email == nil || !h.email.Configured() {
+		log.Println("user.Handler.forgotPassword: email not configured")
+		utils.WriteError(w, http.StatusServiceUnavailable, "email service not configured — contact an administrator to reset your password")
+		return
+	}
+
+	// Always return success to avoid email enumeration.
+	defer utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"status": "if the email exists, a reset link has been sent",
+	})
+
+	user, err := h.svc.GetByEmail(req.Email)
+	if err != nil {
+		return // user not found — silent
+	}
+
+	token, err := h.svc.CreatePasswordResetToken(user.ID)
+	if err != nil {
+		log.Printf("user.Handler.forgotPassword: create token: %v", err)
+		return
+	}
+
+	go func(uname, uemail, tok string) {
+		html := iemail.PasswordResetHTML(uname, tok)
+		if err := h.email.Send(uemail, "Reset Your Password", html); err != nil {
+			log.Printf("user.Handler.forgotPassword: send email to %s: %v", uemail, err)
+		}
+	}(user.Username, user.Email, token)
+}
+
+func (h *Handler) resetPasswordWithToken(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Token       string `json:"token"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Token == "" || req.NewPassword == "" {
+		utils.WriteError(w, http.StatusBadRequest, "token and new_password required")
+		return
+	}
+
+	if err := h.svc.ResetPasswordWithToken(req.Token, req.NewPassword); err != nil {
+		log.Printf("user.Handler.resetPasswordWithToken: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Notify user via email (best-effort).
+	if h.email != nil && h.email.Configured() {
+		go func(tok string) {
+			u, err := h.svc.GetPasswordResetTokenUser(tok)
+			if err != nil {
+				return
+			}
+			html := iemail.PasswordChangedHTML(u.Username)
+			_ = h.email.Send(u.Email, "Password Changed", html)
+		}(req.Token)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "password reset successfully"})
+}
+
+// ── TOTP / 2FA handlers ────────────────────────────────────────────────────
+
+func (h *Handler) loginTOTP(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		TOTPToken  string `json:"totp_token"`
+		TOTPCode   string `json:"totp_code"`
+		BackupCode string `json:"backup_code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.TOTPToken == "" {
+		utils.WriteError(w, http.StatusBadRequest, "totp_token required")
+		return
+	}
+
+	claims, err := auth.ValidateToken(req.TOTPToken)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "invalid or expired TOTP token")
+		return
+	}
+
+	user, err := h.svc.GetByID(claims.UserID)
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, "user not found")
+		return
+	}
+
+	if !user.TOTPEnabled || user.TOTPSecret == "" {
+		utils.WriteError(w, http.StatusBadRequest, "2FA is not enabled for this account")
+		return
+	}
+
+	var valid bool
+	if req.BackupCode != "" {
+		// Try backup code.
+		valid, err = h.svc.ValidateTOTPBackupCode(user.ID, req.BackupCode)
+		if err != nil {
+			log.Printf("user.Handler.loginTOTP: backup code validation: %v", err)
+			utils.WriteError(w, http.StatusInternalServerError, "verification failed")
+			return
+		}
+	} else if req.TOTPCode != "" {
+		// Validate TOTP code.
+		valid = validateTOTPCode(user.TOTPSecret, req.TOTPCode)
+	} else {
+		utils.WriteError(w, http.StatusBadRequest, "totp_code or backup_code required")
+		return
+	}
+
+	if !valid {
+		utils.WriteError(w, http.StatusUnauthorized, "invalid verification code")
+		return
+	}
+
+	// Issue full access token.
+	accessToken, err := auth.GenerateTokenWithPermissions(
+		user.ID, user.Username, user.Email, user.DisplayName, user.Roles, user.Permissions,
+	)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "token generation failed")
+		return
+	}
+	user.PasswordHash = ""
+	user.TOTPSecret = ""
+
+	log.Printf("auth: login+2fa %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     user.ID,
+		Activity:   ievents.ActUserLoggedIn,
+		Resource:   ievents.ResUser,
+		ResourceID: user.ID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"2fa": true},
+	})
+	utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
+		AccessToken: accessToken,
+		User:        user,
+	})
+}
+
+func (h *Handler) totpSetup(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	user, err := h.svc.GetByID(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if user.TOTPEnabled {
+		utils.WriteError(w, http.StatusBadRequest, "2FA is already enabled")
+		return
+	}
+
+	secret, uri, err := generateTOTPSecret(user.Email)
+	if err != nil {
+		log.Printf("user.Handler.totpSetup: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to generate TOTP secret")
+		return
+	}
+
+	if err := h.svc.SetTOTPSecret(userID, secret); err != nil {
+		log.Printf("user.Handler.totpSetup: save secret: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to save TOTP secret")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"secret":  secret,
+		"otpauth": uri,
+		"qr_uri":  uri,
+	})
+}
+
+func (h *Handler) totpEnable(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Code == "" {
+		utils.WriteError(w, http.StatusBadRequest, "verification code required")
+		return
+	}
+
+	user, err := h.svc.GetByID(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "user not found")
+		return
+	}
+	if user.TOTPEnabled {
+		utils.WriteError(w, http.StatusBadRequest, "2FA is already enabled")
+		return
+	}
+	if user.TOTPSecret == "" {
+		utils.WriteError(w, http.StatusBadRequest, "call /auth/totp/setup first")
+		return
+	}
+
+	if !validateTOTPCode(user.TOTPSecret, req.Code) {
+		utils.WriteError(w, http.StatusUnauthorized, "invalid verification code")
+		return
+	}
+
+	backupCodes, err := h.svc.EnableTOTP(userID)
+	if err != nil {
+		log.Printf("user.Handler.totpEnable: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to enable 2FA")
+		return
+	}
+
+	// Notify via email.
+	if h.email != nil && h.email.Configured() {
+		go func(uname, uemail string) {
+			html := iemail.TOTPEnabledHTML(uname)
+			_ = h.email.Send(uemail, "Two-Factor Authentication Enabled", html)
+		}(user.Username, user.Email)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":       "2fa enabled",
+		"backup_codes": backupCodes,
+	})
+}
+
+func (h *Handler) totpDisable(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Password == "" {
+		utils.WriteError(w, http.StatusBadRequest, "current password required to disable 2FA")
+		return
+	}
+
+	user, err := h.svc.GetByID(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	if !auth.ComparePassword(user.PasswordHash, req.Password) {
+		utils.WriteError(w, http.StatusUnauthorized, "invalid password")
+		return
+	}
+
+	if err := h.svc.DisableTOTP(userID); err != nil {
+		log.Printf("user.Handler.totpDisable: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to disable 2FA")
+		return
+	}
+
+	// Notify via email.
+	if h.email != nil && h.email.Configured() {
+		go func(uname, uemail string) {
+			html := iemail.TOTPDisabledHTML(uname)
+			_ = h.email.Send(uemail, "Two-Factor Authentication Disabled", html)
+		}(user.Username, user.Email)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "2fa disabled"})
 }

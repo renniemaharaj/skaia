@@ -24,6 +24,7 @@ import (
 	icfg "github.com/skaia/backend/internal/config"
 	ics "github.com/skaia/backend/internal/customsection"
 	ids "github.com/skaia/backend/internal/datasource"
+	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
@@ -555,7 +556,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
-		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		emailSender := iemail.NewSenderFromEnv()
+		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 

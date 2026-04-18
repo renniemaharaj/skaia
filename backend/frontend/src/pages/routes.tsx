@@ -21,6 +21,9 @@ import CustomPages from "./page/CustomPages.tsx";
 import DataSourcesPage from "./datasources/DataSourcesPage.tsx";
 import DataSourceEditorPage from "./datasources/DataSourceEditorPage.tsx";
 import ActivityPage from "./activity/index.tsx";
+import VerifyEmailPage from "./verify-email/index.tsx";
+import ForgotPasswordPage from "./forgot-password/index.tsx";
+import ResetPasswordPage from "./reset-password/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -66,4 +69,7 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "*", element: <NotFoundPage /> },
   { path: "login", element: <LoginPage /> },
   { path: "register", element: <RegisterPage /> },
+  { path: "verify-email", element: <VerifyEmailPage /> },
+  { path: "forgot-password", element: <ForgotPasswordPage /> },
+  { path: "reset-password", element: <ResetPasswordPage /> },
 ];

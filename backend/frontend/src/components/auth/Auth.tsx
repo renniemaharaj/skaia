@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import {
   Mail,
@@ -8,13 +8,19 @@ import {
   AlertCircle,
   Loader,
   CheckCircle,
+  ShieldCheck,
 } from "lucide-react";
 import {
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
 } from "../../atoms/auth";
-import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
+import {
+  loginUser,
+  loginTOTP,
+  registerUser,
+  type AuthResponse,
+} from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 
@@ -37,6 +43,11 @@ export const Auth: React.FC<AuthPageProps> = ({
     password: "",
     passwordConfirm: "",
   });
+
+  // TOTP challenge state
+  const [totpToken, setTotpToken] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [useBackupCode, setUseBackupCode] = useState(false);
 
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
@@ -70,13 +81,45 @@ export const Auth: React.FC<AuthPageProps> = ({
     }));
   };
 
+  const completeLogin = (data: AuthResponse) => {
+    setAccessToken(data.access_token);
+    if (data.refresh_token) {
+      setRefreshToken(data.refresh_token);
+    }
+    setCurrentUser(data.user);
+    if (onAuthSuccess) {
+      onAuthSuccess(data.access_token);
+    }
+    const from = (location.state as any)?.from?.pathname;
+    const redirectTo =
+      from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
+    navigate(redirectTo);
+  };
+
+  const handleTOTPSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await loginTOTP(
+        totpToken!,
+        useBackupCode ? undefined : totpCode,
+        useBackupCode ? totpCode : undefined,
+      );
+      completeLogin(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
     try {
-      // Validate form
       if (!isLogin && formData.password !== formData.passwordConfirm) {
         throw new Error("Passwords do not match");
       }
@@ -85,35 +128,22 @@ export const Auth: React.FC<AuthPageProps> = ({
       if (isLogin) {
         data = await loginUser(formData.email, formData.password);
 
-        // Store tokens in atoms (atomWithStorage handles localStorage automatically)
-        setAccessToken(data.access_token);
-        if (data.refresh_token) {
-          setRefreshToken(data.refresh_token);
-        }
-        setCurrentUser(data.user);
-
-        // Call success callback
-        if (onAuthSuccess) {
-          onAuthSuccess(data.access_token);
+        // 2FA required — show TOTP challenge
+        if (data.requires_totp && data.totp_token) {
+          setTotpToken(data.totp_token);
+          setTotpCode("");
+          setLoading(false);
+          return;
         }
 
-        // Redirect to previous page or home (skip /register and grengo tmp
-        // sessions — those are one-time sessions that will have expired).
-        const from = (location.state as any)?.from?.pathname;
-        const redirectTo =
-          from && from !== "/register" && !from.startsWith("/tmp/")
-            ? from
-            : "/";
-        navigate(redirectTo);
+        completeLogin(data);
       } else {
-        // Registration
         data = await registerUser(
           formData.username,
           formData.email,
           formData.password,
         );
 
-        // Show success message and redirect to login
         setError(null);
         setFormData({
           username: "",
@@ -122,7 +152,6 @@ export const Auth: React.FC<AuthPageProps> = ({
           passwordConfirm: "",
         });
 
-        // Redirect to login page with success message
         navigate("/login", {
           state: {
             message: "Account created successfully! Please log in.",
@@ -136,6 +165,115 @@ export const Auth: React.FC<AuthPageProps> = ({
       setLoading(false);
     }
   };
+
+  // ── TOTP challenge screen ──────────────────────────────────────────────
+  if (totpToken) {
+    return (
+      <div className="auth-page">
+        <div className="auth-container">
+          <div className="auth-card">
+            <div className="auth-header">
+              <ShieldCheck
+                size={40}
+                style={{ color: "var(--primary-color)", marginBottom: 8 }}
+              />
+              <h1>Two-Factor Authentication</h1>
+              <p>
+                {useBackupCode
+                  ? "Enter one of your backup codes"
+                  : "Enter the 6-digit code from your authenticator app"}
+              </p>
+            </div>
+
+            {error && (
+              <div className="auth-error">
+                <AlertCircle size={20} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleTOTPSubmit} className="auth-form">
+              <div className="form-group">
+                <label htmlFor="totp_code">
+                  {useBackupCode ? "Backup Code" : "Verification Code"}
+                </label>
+                <div className="input-wrapper">
+                  <ShieldCheck size={20} className="input-icon" />
+                  <input
+                    id="totp_code"
+                    type="text"
+                    inputMode={useBackupCode ? "text" : "numeric"}
+                    autoComplete="one-time-code"
+                    placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
+                    maxLength={useBackupCode ? 9 : 6}
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    required
+                    disabled={loading}
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="auth-button" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader size={20} className="spinning" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </button>
+            </form>
+
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
+
+            <div className="auth-toggle">
+              <p>
+                <button
+                  type="button"
+                  className="auth-toggle-btn"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTotpCode("");
+                    setError(null);
+                  }}
+                  disabled={loading}
+                >
+                  {useBackupCode
+                    ? "Use authenticator code"
+                    : "Use a backup code"}
+                </button>
+              </p>
+              <p style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="auth-toggle-btn"
+                  onClick={() => {
+                    setTotpToken(null);
+                    setTotpCode("");
+                    setError(null);
+                  }}
+                  disabled={loading}
+                >
+                  Back to login
+                </button>
+              </p>
+            </div>
+          </div>
+
+          <div className="auth-bg-decoration">
+            <div className="decoration-circle decoration-circle-1"></div>
+            <div className="decoration-circle decoration-circle-2"></div>
+            <div className="decoration-circle decoration-circle-3"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page">
@@ -234,6 +372,12 @@ export const Auth: React.FC<AuthPageProps> = ({
                     disabled={loading}
                   />
                 </div>
+              </div>
+            )}
+
+            {isLogin && (
+              <div className="auth-forgot">
+                <Link to="/forgot-password">Forgot your password?</Link>
               </div>
             )}
 

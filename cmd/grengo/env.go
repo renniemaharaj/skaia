@@ -13,56 +13,70 @@ import (
 
 // envDefaultEntry keeps insertion order for the defaults registry.
 type envDefaultEntry struct {
-	Key   string
-	Value string
+	Key     string
+	Value   string
+	Section string // optional section header (rendered as "# Section" before this entry)
 }
 
 // envDefaults is the authoritative list of env vars every client should have.
-// When `grengo migrate` runs it appends any that are missing with these values.
-// Keys already present in the .env are NEVER overwritten.
+// When `grengo migrate` runs it appends any missing keys as **commented-out**
+// lines (e.g. `# SMTP_HOST=`) so admins can see all available knobs without
+// affecting the running config. Keys already present (active or commented) are
+// NEVER overwritten or duplicated.
 //
 // To add a new env var: just add it here AND in the cmdNew template.
 var envDefaults = []envDefaultEntry{
 	// Redis
-	{"REDIS_URL", "redis://redis:6379"},
+	{"REDIS_URL", "redis://redis:6379", "Redis"},
 	// Auth
-	{"SESSION_TIMEOUT_MIN", "43200"}, // 1 month = 30d × 24h × 60m
-	{"ENVIRONMENT", "production"},
+	{"SESSION_TIMEOUT_MIN", "43200", "Auth"}, // 1 month = 30d × 24h × 60m
+	{"ENVIRONMENT", "production", ""},
 	// Frontend SSR
-	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html"},
+	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html", "Frontend SSR"},
 	// Features
-	{"FEATURES_ENABLED", "landing,store,forum,cart,users,inbox,presence"},
+	{"FEATURES_ENABLED", "landing,store,forum,cart,users,inbox,presence", "Features"},
 	// Payments
-	{"PAYMENT_PROVIDER", "demo"},
-	{"STRIPE_SECRET_KEY", ""},
-	{"STRIPE_WEBHOOK_SECRET", ""},
+	{"PAYMENT_PROVIDER", "demo", "Payments"},
+	{"STRIPE_SECRET_KEY", "", ""},
+	{"STRIPE_WEBHOOK_SECRET", "", ""},
 	// Tuning
-	{"DB_MAX_OPEN_CONNS", "100"},
-	{"DB_MAX_IDLE_CONNS", "50"},
-	{"DB_CONN_MAX_LIFETIME_MIN", "30"},
-	{"DB_CONN_MAX_IDLE_TIME_MIN", "5"},
-	{"WS_MAX_CONNECTIONS", "100000"},
-	{"WS_MAX_WORKERS", "256"},
-	{"WS_SESSION_SIZE", "100"},
-	{"WS_CHAT_RING_SIZE", "80"},
-	{"WS_PRESENCE_INTERVAL_MS", "1000"},
-	{"HTTP_READ_TIMEOUT_SEC", "15"},
-	{"HTTP_WRITE_TIMEOUT_SEC", "15"},
-	{"HTTP_IDLE_TIMEOUT_SEC", "60"},
-	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30"},
+	{"DB_MAX_OPEN_CONNS", "100", "Tuning"},
+	{"DB_MAX_IDLE_CONNS", "50", ""},
+	{"DB_CONN_MAX_LIFETIME_MIN", "30", ""},
+	{"DB_CONN_MAX_IDLE_TIME_MIN", "5", ""},
+	{"WS_MAX_CONNECTIONS", "100000", ""},
+	{"WS_MAX_WORKERS", "256", ""},
+	{"WS_SESSION_SIZE", "100", ""},
+	{"WS_CHAT_RING_SIZE", "80", ""},
+	{"WS_PRESENCE_INTERVAL_MS", "1000", ""},
+	{"HTTP_READ_TIMEOUT_SEC", "15", ""},
+	{"HTTP_WRITE_TIMEOUT_SEC", "15", ""},
+	{"HTTP_IDLE_TIMEOUT_SEC", "60", ""},
+	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30", ""},
 	// Upload limits
-	{"MAX_UPLOAD_PER_USER_MB", "500"},
-	{"MAX_UPLOAD_TOTAL_MB", "5000"},
+	{"MAX_UPLOAD_PER_USER_MB", "500", "Upload Limits"},
+	{"MAX_UPLOAD_TOTAL_MB", "5000", ""},
+	// Email / SMTP
+	{"SMTP_HOST", "", "Email / SMTP"},
+	{"SMTP_PORT", "587", ""},
+	{"SMTP_USER", "", ""},
+	{"SMTP_PASSWORD", "", ""},
+	{"SMTP_FROM", "", ""},
+	{"SMTP_FROM_NAME", "", ""},
+	{"BASE_URL", "", ""},
+	{"SITE_NAME", "", ""},
 	// Grengo internal API
-	{"GRENGO_API_URL", "http://host.docker.internal:9100"},
+	{"GRENGO_API_URL", "http://host.docker.internal:9100", "Grengo Internal API"},
 }
 
 // syncEnvDefaults reads a client's .env, appends any keys from envDefaults
-// that are missing, and writes the file back. Existing values are never touched.
-// Returns the number of keys added.
+// that are missing, and writes the file back. New keys are added **commented
+// out** (e.g. `# SMTP_HOST=`) so they're visible but don't affect the running
+// config. Keys already present — whether active or commented — are never
+// touched. Returns the number of keys added.
 func syncEnvDefaults(name string) int {
 	envFile := clientEnvFile(name)
-	existing := loadEnvMap(envFile)
+	existing := loadEnvKeys(envFile) // includes both active and commented-out keys
 
 	var toAdd []envDefaultEntry
 	for _, d := range envDefaults {
@@ -88,9 +102,15 @@ func syncEnvDefaults(name string) int {
 		content += "\n"
 	}
 
-	content += fmt.Sprintf("\n# Defaults added by grengo migrate – %s\n", time.Now().Format(time.RFC3339))
+	content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
+
+	lastSection := ""
 	for _, d := range toAdd {
-		content += fmt.Sprintf("%s=%s\n", d.Key, d.Value)
+		if d.Section != "" && d.Section != lastSection {
+			content += fmt.Sprintf("\n# %s\n", d.Section)
+			lastSection = d.Section
+		}
+		content += fmt.Sprintf("# %s=%s\n", d.Key, d.Value)
 	}
 
 	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
@@ -120,7 +140,7 @@ func envVal(file, key string) string {
 	return ""
 }
 
-// loadEnvMap reads an entire .env file into a map.
+// loadEnvMap reads an entire .env file into a map (active lines only).
 func loadEnvMap(file string) map[string]string {
 	m := make(map[string]string)
 	f, err := os.Open(file)
@@ -139,7 +159,54 @@ func loadEnvMap(file string) map[string]string {
 			m[line[:idx]] = line[idx+1:]
 		}
 	}
+
 	return m
+}
+
+// loadEnvKeys reads a .env file and returns the set of all keys present,
+// including both active lines (`KEY=val`) and commented-out lines (`# KEY=val`).
+// This prevents grengo migrate from re-appending vars the admin has already seen.
+func loadEnvKeys(file string) map[string]struct{} {
+	m := make(map[string]struct{})
+	f, err := os.Open(file)
+	if err != nil {
+		return m
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		// Strip leading "# " or "#" to catch commented-out vars.
+		bare := line
+		if strings.HasPrefix(bare, "#") {
+			bare = strings.TrimLeft(bare[1:], " ")
+		}
+		if idx := strings.Index(bare, "="); idx > 0 {
+			key := bare[:idx]
+			// Only count keys that look like env var names (uppercase, underscores, digits).
+			if isEnvKey(key) {
+				m[key] = struct{}{}
+			}
+		}
+	}
+	return m
+}
+
+// isEnvKey returns true if s looks like a valid env var name (A-Z, 0-9, _).
+func isEnvKey(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 // SharedEnv holds root-level Postgres config.

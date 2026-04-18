@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -183,7 +184,7 @@ func cmdMigrateAll(rebuild bool) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // backupDatabase creates a timestamped pg_dump of dbName in the client directory
-// and returns the resulting file path.
+// and returns the resulting file path. Old backups beyond maxBackups are pruned.
 func backupDatabase(name, dbName string) string {
 	dump, err := pgDump(dbName)
 	if err != nil {
@@ -194,7 +195,27 @@ func backupDatabase(name, dbName string) string {
 	if err := os.WriteFile(backupFile, dump, 0644); err != nil {
 		die("Cannot write backup file: %v", err)
 	}
+	pruneBackups(name, dbName, 5)
 	return backupFile
+}
+
+// pruneBackups removes the oldest backup files for a client/db, keeping only
+// the newest `keep` files. Backups are matched by the naming convention
+// "<dbName>-backup-*.sql".
+func pruneBackups(name, dbName string, keep int) {
+	pattern := filepath.Join(clientDir(name), dbName+"-backup-*.sql")
+	matches, err := filepath.Glob(pattern)
+	if err != nil || len(matches) <= keep {
+		return
+	}
+	sort.Strings(matches) // lexicographic = chronological due to timestamp format
+	for _, f := range matches[:len(matches)-keep] {
+		if err := os.Remove(f); err != nil {
+			warn("Cannot remove old backup %s: %v", filepath.Base(f), err)
+		} else {
+			log("Pruned old backup: %s", filepath.Base(f))
+		}
+	}
 }
 
 // pgDumpDataOnly runs pg_dump --data-only --disable-triggers inside the postgres

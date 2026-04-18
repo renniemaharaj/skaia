@@ -16,6 +16,7 @@ import EditProfileDialog from "./EditProfileDialog";
 import SuspendDialog from "./SuspendDialog";
 
 import { apiRequest } from "../../utils/api";
+import SecuritySettings from "../../components/auth/SecuritySettings";
 import "./UserProfile.css";
 
 interface UserProfileProps {
@@ -168,6 +169,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onUnsuspend={handleUnsuspend}
         onResetPassword={handleResetPassword}
       />
+
+      {isOwnProfile && (
+        <SecuritySettings
+          emailVerified={user.email_verified ?? false}
+          totpEnabled={user.totp_enabled ?? false}
+          onUpdate={() => setUser((u) => (u ? { ...u } : u))}
+        />
+      )}
 
       {handlePermissions
         ? handlePermissions(permissionPanel)

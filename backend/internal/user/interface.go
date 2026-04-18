@@ -50,4 +50,25 @@ type Repository interface {
 
 	// Password
 	UpdatePasswordHash(userID int64, newHash string) error
+
+	// Email verification
+	CreateEmailVerificationToken(userID int64, token string, expiresAt interface{}) error
+	GetEmailVerificationToken(token string) (*models.EmailVerificationToken, error)
+	MarkEmailVerified(userID int64) error
+	DeleteEmailVerificationTokens(userID int64) error
+
+	// Password reset
+	CreatePasswordResetToken(userID int64, token string, expiresAt interface{}) error
+	GetPasswordResetToken(token string) (*models.PasswordResetToken, error)
+	MarkPasswordResetTokenUsed(tokenID int64) error
+	DeletePasswordResetTokens(userID int64) error
+
+	// TOTP / 2FA
+	SetTOTPSecret(userID int64, secret string) error
+	EnableTOTP(userID int64) error
+	DisableTOTP(userID int64) error
+	CreateTOTPBackupCodes(userID int64, codeHashes []string) error
+	GetTOTPBackupCodes(userID int64) ([]*models.TOTPBackupCode, error)
+	UseTOTPBackupCode(codeID int64) error
+	DeleteTOTPBackupCodes(userID int64) error
 }

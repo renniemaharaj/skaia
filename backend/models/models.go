@@ -20,6 +20,10 @@ type User struct {
 	IsSuspended     bool       `json:"is_suspended"`
 	SuspendedAt     *time.Time `json:"suspended_at"`
 	SuspendedReason *string    `json:"suspended_reason"`
+	EmailVerified   bool       `json:"email_verified"`
+	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
+	TOTPEnabled     bool       `json:"totp_enabled"`
+	TOTPSecret      string     `json:"-"`
 	Roles           []string   `json:"roles"`
 	Permissions     []string   `json:"permissions"`
 	CreatedAt       time.Time  `json:"created_at"`
@@ -38,6 +42,7 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	TOTPCode string `json:"totp_code,omitempty"`
 }
 
 // RefreshRequest represents a token refresh request.
@@ -51,6 +56,35 @@ type AuthResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	User         *User  `json:"user"`
 	ExpiresIn    int    `json:"expires_in"`
+	RequiresTOTP bool   `json:"requires_totp,omitempty"`
+	TOTPToken    string `json:"totp_token,omitempty"`
+}
+
+// EmailVerificationToken is used to verify a user's email address.
+type EmailVerificationToken struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// PasswordResetToken is used for email-based password recovery.
+type PasswordResetToken struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Used      bool      `json:"used"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// TOTPBackupCode is a one-time-use recovery code for 2FA.
+type TOTPBackupCode struct {
+	ID       int64  `json:"id"`
+	UserID   int64  `json:"user_id"`
+	CodeHash string `json:"-"`
+	Used     bool   `json:"used"`
 }
 
 // StoreCategory represents a category in the store.

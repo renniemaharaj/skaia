@@ -9,6 +9,8 @@ export interface ProfileUser {
   bio?: string;
   is_suspended: boolean;
   suspended_reason?: string;
+  email_verified?: boolean;
+  totp_enabled?: boolean;
   permissions: string[];
   roles: string[];
   created_at: string;

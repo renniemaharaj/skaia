@@ -194,6 +194,22 @@
   cursor: not-allowed;
 }
 
+.auth-forgot {
+  text-align: right;
+  margin-top: -8px;
+}
+
+.auth-forgot a {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.auth-forgot a:hover {
+  color: var(--primary-color);
+}
+
 .spinning {
   animation: spin 1s linear infinite;
 }

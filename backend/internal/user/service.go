@@ -2,9 +2,13 @@ package user
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log"
 	"math/big"
+	"time"
 
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/models"
@@ -332,4 +336,172 @@ type SuspendedError struct {
 
 func (e *SuspendedError) Error() string {
 	return "account suspended: " + e.Reason
+}
+
+// ── Email verification ────────────────────────────────────────────────────
+
+// CreateEmailVerificationToken generates a secure token and stores it.
+func (s *Service) CreateEmailVerificationToken(userID int64) (string, error) {
+	token := generateSecureToken(64)
+	expiresAt := time.Now().Add(24 * time.Hour)
+	if err := s.repo.CreateEmailVerificationToken(userID, token, expiresAt); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// VerifyEmail validates the token and marks the user's email as verified.
+func (s *Service) VerifyEmail(token string) error {
+	t, err := s.repo.GetEmailVerificationToken(token)
+	if err != nil {
+		return errors.New("invalid or expired verification token")
+	}
+	if time.Now().After(t.ExpiresAt) {
+		return errors.New("verification token has expired")
+	}
+	if err := s.repo.MarkEmailVerified(t.UserID); err != nil {
+		return err
+	}
+	s.cache.Invalidate(t.UserID)
+	_ = s.repo.DeleteEmailVerificationTokens(t.UserID)
+	return nil
+}
+
+// ResendVerificationToken deletes old tokens and creates a new one.
+func (s *Service) ResendVerificationToken(userID int64) (string, error) {
+	_ = s.repo.DeleteEmailVerificationTokens(userID)
+	return s.CreateEmailVerificationToken(userID)
+}
+
+// ── Password reset ────────────────────────────────────────────────────────
+
+// CreatePasswordResetToken generates a secure token for password recovery.
+func (s *Service) CreatePasswordResetToken(userID int64) (string, error) {
+	_ = s.repo.DeletePasswordResetTokens(userID) // revoke old tokens
+	token := generateSecureToken(64)
+	expiresAt := time.Now().Add(1 * time.Hour)
+	if err := s.repo.CreatePasswordResetToken(userID, token, expiresAt); err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// ResetPasswordWithToken validates the reset token and sets a new password.
+func (s *Service) ResetPasswordWithToken(token, newPassword string) error {
+	if len(newPassword) < 8 || len(newPassword) > 72 {
+		return errors.New("password must be 8-72 characters")
+	}
+	t, err := s.repo.GetPasswordResetToken(token)
+	if err != nil {
+		return errors.New("invalid or expired reset token")
+	}
+	if t.Used {
+		return errors.New("reset token has already been used")
+	}
+	if time.Now().After(t.ExpiresAt) {
+		return errors.New("reset token has expired")
+	}
+	hash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+	if err := s.repo.UpdatePasswordHash(t.UserID, hash); err != nil {
+		return err
+	}
+	_ = s.repo.MarkPasswordResetTokenUsed(t.ID)
+	s.cache.Invalidate(t.UserID)
+	return nil
+}
+
+// GetPasswordResetTokenUser returns the user associated with a reset token (for email notifications).
+func (s *Service) GetPasswordResetTokenUser(token string) (*models.User, error) {
+	t, err := s.repo.GetPasswordResetToken(token)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetByID(t.UserID)
+}
+
+// ── TOTP / 2FA ────────────────────────────────────────────────────────────
+
+// SetTOTPSecret stores a TOTP secret for the user (without enabling it yet).
+func (s *Service) SetTOTPSecret(userID int64, secret string) error {
+	if err := s.repo.SetTOTPSecret(userID, secret); err != nil {
+		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// EnableTOTP enables 2FA for the user and generates backup codes.
+func (s *Service) EnableTOTP(userID int64) ([]string, error) {
+	if err := s.repo.EnableTOTP(userID); err != nil {
+		return nil, err
+	}
+	_ = s.repo.DeleteTOTPBackupCodes(userID)
+
+	plainCodes := make([]string, 10)
+	hashes := make([]string, 10)
+	for i := range plainCodes {
+		plainCodes[i] = generateBackupCode()
+		h := sha256.Sum256([]byte(plainCodes[i]))
+		hashes[i] = hex.EncodeToString(h[:])
+	}
+	if err := s.repo.CreateTOTPBackupCodes(userID, hashes); err != nil {
+		return nil, err
+	}
+	s.cache.Invalidate(userID)
+	return plainCodes, nil
+}
+
+// DisableTOTP disables 2FA and removes backup codes.
+func (s *Service) DisableTOTP(userID int64) error {
+	if err := s.repo.DisableTOTP(userID); err != nil {
+		return err
+	}
+	_ = s.repo.DeleteTOTPBackupCodes(userID)
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// ValidateTOTPBackupCode checks if a backup code matches and consumes it.
+func (s *Service) ValidateTOTPBackupCode(userID int64, code string) (bool, error) {
+	codes, err := s.repo.GetTOTPBackupCodes(userID)
+	if err != nil {
+		return false, err
+	}
+	h := sha256.Sum256([]byte(code))
+	hex := hex.EncodeToString(h[:])
+	for _, c := range codes {
+		if !c.Used && c.CodeHash == hex {
+			if err := s.repo.UseTOTPBackupCode(c.ID); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// ── Token helpers ─────────────────────────────────────────────────────────
+
+const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func generateSecureToken(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
+		b[i] = tokenChars[n.Int64()]
+	}
+	return string(b)
+}
+
+func generateBackupCode() string {
+	const digits = "0123456789"
+	b := make([]byte, 8)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+		b[i] = digits[n.Int64()]
+	}
+	return string(b[:4]) + "-" + string(b[4:])
 }
