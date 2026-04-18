@@ -225,6 +225,18 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         e as CustomEvent<{ action: string; data?: any }>
       ).detail;
       const slug = currentSlugRef.current;
+
+      // Landing page was swapped to a different page — replace entirely.
+      // Only applies when the hook is in "index" mode (no explicit slug).
+      if (action === "landing_page_changed" && data) {
+        if (!requestedSlugRef.current) {
+          // We're on the index route — swap to the new landing page.
+          setPage(data as PageBuilderPage);
+          currentSlugRef.current = data.slug ?? null;
+          return;
+        }
+      }
+
       if (!slug) return;
 
       if (

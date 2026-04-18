@@ -946,6 +946,17 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "slug": body.Slug})
+
+	// Fetch the full new landing page so we can push it through WebSocket,
+	// completely bypassing any CDN / browser HTTP caching.
+	var fullPage *models.Page
+	if body.Slug != "" {
+		if p, err := h.svc.GetBySlug(body.Slug); err == nil {
+			h.svc.EnrichPage(p)
+			fullPage = p
+		}
+	}
+
 	userID, _ := utils.UserIDFromCtx(r)
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:   userID,
@@ -954,6 +965,11 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 		IP:       ievents.ClientIP(r),
 		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": body.Slug},
 		Fn: func() {
+			// Push the full page through page:update so the frontend can swap
+			// without any HTTP request (cache-proof).
+			if fullPage != nil {
+				h.hub.BroadcastPage("landing_page_changed", fullPage)
+			}
 			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
 		},
 	})
