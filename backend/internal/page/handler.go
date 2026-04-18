@@ -139,29 +139,23 @@ func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
 // ── handlers ────────────────────────────────────────────────────────────────
 
 func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
-	// Check if there's a custom landing page slug configured
-	if sc, err := h.configSvc.GetConfig("landing_page_slug"); err == nil && sc.Value != "" && sc.Value != `""` {
-		var slug string
-		if json.Unmarshal([]byte(sc.Value), &slug) == nil && slug != "" {
-			p, err := h.svc.GetBySlug(slug)
-			if err == nil {
-				h.svc.EnrichPage(p)
-				uid, _ := utils.UserIDFromCtx(r)
-				h.svc.EnrichPageEngagement(p, uidPtr(uid))
-				p.CanDelete = h.canDeletePageForPage(r, p)
-				utils.WriteJSON(w, http.StatusOK, p)
-				return
-			}
-			// Slug points to a deleted page — auto-clean the stale config
-			// so every subsequent request doesn't repeat the failed lookup.
-			log.Printf("page.getIndex: landing_page_slug %q not found, cleaning up", slug)
-			_ = h.configSvc.DeleteConfig("landing_page_slug")
-		}
+	// Landing page is purely config-driven: look up landing_page_slug.
+	sc, err := h.configSvc.GetConfig("landing_page_slug")
+	if err != nil || sc.Value == "" || sc.Value == `""` {
+		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
+		return
 	}
-	p, err := h.svc.GetIndex()
+	var slug string
+	if json.Unmarshal([]byte(sc.Value), &slug) != nil || slug == "" {
+		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
+		return
+	}
+	p, err := h.svc.GetBySlug(slug)
 	if err != nil {
-		log.Printf("page.getIndex: %v", err)
-		utils.WriteError(w, http.StatusNotFound, "no index page")
+		// Slug points to a deleted page — auto-clean the stale config.
+		log.Printf("page.getIndex: landing_page_slug %q not found, cleaning up", slug)
+		_ = h.configSvc.DeleteConfig("landing_page_slug")
+		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
 		return
 	}
 	h.svc.EnrichPage(p)
@@ -431,7 +425,17 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 		}
 		p.CanDelete = h.canDeletePageForPage(r, p)
 	}
-	utils.WriteJSON(w, http.StatusOK, visible)
+
+	// Include the current landing page slug so the frontend can show a badge.
+	landingSlug := ""
+	if sc, err := h.configSvc.GetConfig("landing_page_slug"); err == nil {
+		_ = json.Unmarshal([]byte(sc.Value), &landingSlug)
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"pages":             visible,
+		"landing_page_slug": landingSlug,
+	})
 }
 
 // ── ownership & editor management ───────────────────────────────────────────
@@ -958,7 +962,8 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 // ── factory reset ───────────────────────────────────────────────────────────
 
 // factoryResetHomepage deletes all custom pages, legacy landing sections/items,
-// stale config keys, page allocations, then creates a fresh default index page.
+// stale config keys, and page allocations. No default page is created — the
+// user must create a page and set it as the landing page via config.
 func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
 	if !h.requireHomeManage(r) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
@@ -990,24 +995,9 @@ func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
 		_ = h.svc.ReconcileUsedCount(a.UserID)
 	}
 
-	// 5. Create a clean default index page.
-	defaultPage := &models.Page{
-		Slug:       "landing",
-		Title:      "Home",
-		IsIndex:    true,
-		Content:    `[]`,
-		Visibility: "public",
-	}
-	if err := h.svc.Create(defaultPage); err != nil {
-		log.Printf("factoryReset: create default page: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to create default page")
-		return
-	}
-
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":  "ok",
-		"message": "homepage factory reset complete",
-		"page":    defaultPage,
+		"message": "factory reset complete — all pages removed",
 	})
 
 	userID, _ := utils.UserIDFromCtx(r)

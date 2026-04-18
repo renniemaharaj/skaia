@@ -15,7 +15,6 @@ export interface PageBuilderPage {
   slug: string;
   title: string;
   description: string;
-  is_index: boolean;
   content: string; // JSON string of landing sections
   owner_id?: number | null;
   owner?: PageUser | null;

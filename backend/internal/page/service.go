@@ -27,10 +27,6 @@ func (s *Service) GetBySlug(slug string) (*models.Page, error) {
 	return s.repo.GetBySlug(slug)
 }
 
-func (s *Service) GetIndex() (*models.Page, error) {
-	return s.repo.GetIndex()
-}
-
 func (s *Service) GetByID(id int64) (*models.Page, error) {
 	return s.repo.GetByID(id)
 }
@@ -74,7 +70,6 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 		Slug:        newSlug,
 		Title:       title,
 		Description: src.Description,
-		IsIndex:     false,
 		Content:     src.Content,
 		Visibility:  "private",
 	}

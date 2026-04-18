@@ -365,7 +365,6 @@ CREATE TABLE IF NOT EXISTS pages (
     slug        VARCHAR(120) NOT NULL UNIQUE,
     title       VARCHAR(255) NOT NULL DEFAULT '',
     description TEXT         NOT NULL DEFAULT '',
-    is_index    BOOLEAN      NOT NULL DEFAULT FALSE,
     visibility  VARCHAR(20)  NOT NULL DEFAULT 'public',
     content     JSONB        NOT NULL DEFAULT '[]',
     owner_id    BIGINT       REFERENCES users(id) ON DELETE SET NULL,
@@ -374,9 +373,9 @@ CREATE TABLE IF NOT EXISTS pages (
 );
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS visibility VARCHAR(20) NOT NULL DEFAULT 'public';
 
--- Ensure at most one page can be the index (homepage).
-CREATE UNIQUE INDEX IF NOT EXISTS pages_is_index_unique
-    ON pages (is_index) WHERE is_index = TRUE;
+-- Drop legacy is_index column and its unique index if they exist.
+DROP INDEX IF EXISTS pages_is_index_unique;
+ALTER TABLE pages DROP COLUMN IF EXISTS is_index;
 
 -- For existing databases: add owner_id if missing.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL;

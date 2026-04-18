@@ -56,6 +56,7 @@ export default function CustomPages() {
   const currentUser = useAtomValue(currentUserAtom);
   const navigate = useNavigate();
   const [pages, setPages] = useState<PageBuilderPage[]>([]);
+  const [landingPageSlug, setLandingPageSlug] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [allocation, setAllocation] = useState<Allocation | null>(null);
@@ -78,16 +79,26 @@ export default function CustomPages() {
   });
 
   useEffect(() => {
-    apiRequest<PageBuilderPage[]>("/config/pages/browse")
-      .then((data) => setPages(data ?? []))
+    apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+      "/config/pages/browse",
+    )
+      .then((data) => {
+        setPages(data?.pages ?? []);
+        setLandingPageSlug(data?.landing_page_slug ?? "");
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     const handler = () => {
-      apiRequest<PageBuilderPage[]>("/config/pages/browse")
-        .then((data) => setPages(data ?? []))
+      apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+        "/config/pages/browse",
+      )
+        .then((data) => {
+          setPages(data?.pages ?? []);
+          setLandingPageSlug(data?.landing_page_slug ?? "");
+        })
         .catch(() => {});
     };
     window.addEventListener("page:live:event", handler);
@@ -373,7 +384,7 @@ export default function CustomPages() {
           {filtered.map((page) => (
             <Link
               key={page.id}
-              to={page.is_index ? "/" : `/page/${page.slug}`}
+              to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
               className="cp-card card card--interactive"
             >
               <div className="cp-card__top">
@@ -447,8 +458,8 @@ export default function CustomPages() {
                 </span>
               </div>
 
-              {page.is_index && (
-                <span className="cp-card__badge">Homepage</span>
+              {page.slug === landingPageSlug && (
+                <span className="cp-card__badge">Landing Page</span>
               )}
               {page.visibility === "private" && (
                 <span className="cp-card__badge cp-card__badge--private">
@@ -477,14 +488,14 @@ export default function CustomPages() {
           {filtered.map((page) => (
             <Link
               key={page.id}
-              to={page.is_index ? "/" : `/page/${page.slug}`}
+              to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
               className="cp-list__row"
             >
               <span className="cp-list__col cp-list__col--name">
                 <span className="cp-list__name">{page.title || page.slug}</span>
-                {page.is_index && (
+                {page.slug === landingPageSlug && (
                   <span className="cp-card__badge cp-card__badge--inline">
-                    Homepage
+                    Landing Page
                   </span>
                 )}
                 {page.visibility === "private" && (
@@ -564,18 +575,16 @@ export default function CustomPages() {
                 autoFocus
               />
             </label>
-            {!renamingPage.is_index && (
-              <label className="cp-modal__label">
-                Slug
-                <input
-                  type="text"
-                  className="cp-modal__input"
-                  value={renameSlug}
-                  onChange={(e) => setRenameSlug(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleRename()}
-                />
-              </label>
-            )}
+            <label className="cp-modal__label">
+              Slug
+              <input
+                type="text"
+                className="cp-modal__input"
+                value={renameSlug}
+                onChange={(e) => setRenameSlug(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              />
+            </label>
             <div className="cp-modal__actions">
               <button
                 className="btn btn-ghost"

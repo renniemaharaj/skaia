@@ -195,14 +195,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const handleFactoryReset = useCallback(async () => {
     if (
       !window.confirm(
-        "Factory reset homepage?\n\nThis will permanently delete ALL custom pages, landing sections, and reset page allocations. A fresh default homepage will be created.\n\nThis cannot be undone.",
+        "Reset all pages?\n\nThis will permanently delete ALL custom pages, landing sections, and reset page allocations.\n\nThis cannot be undone.",
       )
     )
       return;
     setResetInProgress(true);
     try {
-      // Cancel any queued save so stale sections from the deleted page
-      // don't get written back to the freshly-created default page.
+      // Cancel any queued save so stale sections aren't written back.
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -210,23 +209,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       pendingSectionsRef.current = null;
 
       await apiRequest("/config/pages/factory-reset", { method: "POST" });
-      toast.success("Homepage factory reset complete.");
+      toast.success("Reset complete — all pages removed.");
 
       // Clear local sections so the old content doesn't persist in state.
       setSections([]);
       setSectionsSourced(false);
 
-      await refresh();
-
-      // Re-fetch page list so the landing-page dropdown is up-to-date.
-      if (isAdmin) {
-        apiRequest<PageBuilderPage[]>("/config/pages/list")
-          .then((data) => setAllPages(data ?? []))
-          .catch(() => {});
-      }
+      // Navigate to pages browse since there's no landing page anymore.
+      navigate("/pages");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Factory reset failed";
+      const message = err instanceof Error ? err.message : "Reset failed";
       toast.error(message);
     } finally {
       setResetInProgress(false);
@@ -299,11 +291,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const displayHoldSeconds = holdingSeconds ?? retryAfter;
 
-  const landingPageLabel = page
-    ? page.is_index
-      ? "Default (index)"
-      : page.title || page.slug
-    : "Landing Page";
+  const landingPageLabel = page ? page.title || page.slug : "Landing Page";
 
   // Sync engagement state from page
   useEffect(() => {
@@ -348,7 +336,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       toast.success(
         selectedSlug
           ? `Landing page set to "${selectedSlug}"`
-          : "Landing page reset to default",
+          : "Landing page cleared",
       );
       setLandingDropdownOpen(false);
 
@@ -356,7 +344,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setSections([]);
       setSectionsSourced(false);
 
-      // Reload the index route so the new landing page is shown immediately.
+      // Reload the landing page so the new selection is shown immediately.
       if (!slug) {
         await refresh();
       }
@@ -408,7 +396,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         slug: slug || "landing",
         title: slug || "Landing",
         description: "",
-        is_index: !slug,
         content: JSON.stringify(content),
         view_count: 0,
         likes: 0,
@@ -892,12 +879,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                 </button>
                 {landingDropdownOpen && (
                   <div className="page-admin-dropdown">
-                    <button
-                      className="page-admin-dropdown-item"
-                      onClick={() => handleSetLandingPage("")}
-                    >
-                      Default (index)
-                    </button>
                     {allPages.map((p) => (
                       <button
                         key={p.id}
@@ -997,9 +978,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                             void handleFactoryReset();
                           }}
                         >
-                          {resetInProgress
-                            ? "Resetting…"
-                            : "Factory reset homepage"}
+                          {resetInProgress ? "Resetting…" : "Reset all pages"}
                         </button>
                       </>
                     )}

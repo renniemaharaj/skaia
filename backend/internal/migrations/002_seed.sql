@@ -62,7 +62,7 @@ INSERT INTO users (id, username, email, password_hash, display_name, bio,
                    is_suspended, created_at, updated_at)
 SELECT 1, 'admin', 'admin@skaiacraft.local', '$placeholder$',
        'Administrator', 'Default administrator account',
-       '', '', '', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+       '/banner.png', '/banner.png', '/banner.png', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 
 SELECT setval(pg_get_serial_sequence('users', 'id'),
@@ -121,8 +121,8 @@ INSERT INTO site_config (key, value) VALUES
     ('branding', '{
         "site_name": "",
         "tagline": "",
-        "logo_url": "",
-        "favicon_url": "",
+        "logo_url": "/banner.png",
+        "favicon_url": "/banner.png",
         "header_title": "",
         "header_subtitle": "",
         "header_variant": 0,
@@ -131,7 +131,7 @@ INSERT INTO site_config (key, value) VALUES
     ('seo', '{
         "title": "",
         "description": "",
-        "og_image": ""
+        "og_image": "/banner.png"
     }'::jsonb),
     ('footer', '{
         "variant": 0,
@@ -148,13 +148,47 @@ INSERT INTO site_config (key, value) VALUES
     }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- ── Default landing page (custom page entity) ──────────────────────────────
-INSERT INTO pages (slug, title, description, is_index, content, visibility)
-SELECT 'landing', 'Landing', '', TRUE, '[]'::jsonb, 'public'
-WHERE NOT EXISTS (SELECT 1 FROM pages WHERE slug = 'landing');
+-- ── "Get Started" seed page ─────────────────────────────────────────────────
+-- A showcase page demonstrating available block types. Set as landing page via config.
+INSERT INTO pages (slug, title, description, content, visibility)
+SELECT 'get-started', 'Get Started', 'A quick tour of the page builder blocks available on your site.',
+       '[
+         {
+           "id": "gs-hero",
+           "display_order": 1,
+           "section_type": "hero",
+           "heading": "Welcome to Your Site",
+           "subheading": "This is a sample landing page created by the seed. Customise or replace it from the page builder.",
+           "config": {},
+           "items": []
+         },
+         {
+           "id": "gs-features",
+           "display_order": 2,
+           "section_type": "features",
+           "heading": "Feature Highlights",
+           "subheading": "Showcase what makes your community special.",
+           "config": {},
+           "items": [
+             {"id": "gs-f1", "display_order": 1, "icon": "star",    "heading": "Block Builder",  "subheading": "Drag-and-drop sections to build pages visually.", "image_url": "", "link_url": ""},
+             {"id": "gs-f2", "display_order": 2, "icon": "users",   "heading": "Community",      "subheading": "Forums, comments, and real-time presence.", "image_url": "", "link_url": ""},
+             {"id": "gs-f3", "display_order": 3, "icon": "palette", "heading": "Theming",        "subheading": "Full branding control from the admin panel.", "image_url": "", "link_url": ""}
+           ]
+         },
+         {
+           "id": "gs-cta",
+           "display_order": 3,
+           "section_type": "cta",
+           "heading": "Ready to build?",
+           "subheading": "Head to the admin panel and start customising your pages.",
+           "config": {},
+           "items": []
+         }
+       ]'::jsonb, 'public'
+WHERE NOT EXISTS (SELECT 1 FROM pages WHERE slug = 'get-started');
 
 INSERT INTO site_config (key, value)
-VALUES ('landing_page_slug', '"landing"'::jsonb)
+VALUES ('landing_page_slug', '"get-started"'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- ── System "noreply" user for automated inbox messages ──────────────────────
