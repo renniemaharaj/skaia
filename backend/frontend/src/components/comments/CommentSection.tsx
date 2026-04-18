@@ -40,6 +40,10 @@ interface CommentSectionProps {
   showCount?: boolean;
   disabled?: boolean;
   lockedMessage?: string;
+  showSlowModeControl?: boolean;
+  slowModeEnabled?: boolean;
+  slowModeInterval?: number;
+  onToggleSlowMode?: () => Promise<void> | void;
 }
 
 const CommentSection = ({
@@ -61,6 +65,10 @@ const CommentSection = ({
   showCount = true,
   disabled = false,
   lockedMessage,
+  showSlowModeControl = false,
+  slowModeEnabled = false,
+  slowModeInterval,
+  onToggleSlowMode,
 }: CommentSectionProps) => {
   const hasComments = comments.length > 0;
 
@@ -72,8 +80,27 @@ const CommentSection = ({
   return (
     <div className={`comment-section ${rootClassName}`.trim()}>
       <div className="comments-header">
-        <h3>{title}</h3>
-        {showCount && <span className="comments-count">{headerCount}</span>}
+        <div className="comments-header-main">
+          <h3>{title}</h3>
+          {showCount && <span className="comments-count">{headerCount}</span>}
+        </div>
+        <div className="comment-slowmode-actions">
+          {slowModeEnabled && !showSlowModeControl ? (
+            <span className="comment-slowmode-indicator">
+              Slow mode active
+              {slowModeInterval ? ` — ${slowModeInterval}s` : ""}
+            </span>
+          ) : null}
+          {showSlowModeControl ? (
+            <button
+              type="button"
+              className={`comment-slowmode-toggle${slowModeEnabled ? " active" : ""}`}
+              onClick={() => void onToggleSlowMode?.()}
+            >
+              {slowModeEnabled ? "Slow mode on" : "Enable slow mode"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div

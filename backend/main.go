@@ -448,10 +448,31 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			ws.HandleConnection(w, r, hub)
 		})
 
+		commentSlowMode := imw.CommentSlowMode(func() (bool, time.Duration) {
+			sc, err := cfgSvc.GetConfig("comment_slowmode")
+			if err != nil || sc == nil {
+				return false, 0
+			}
+			var payload struct {
+				Enabled  bool `json:"enabled"`
+				Interval int  `json:"interval"`
+			}
+			if err := json.Unmarshal([]byte(sc.Value), &payload); err != nil {
+				return false, 0
+			}
+			if !payload.Enabled {
+				return false, 0
+			}
+			if payload.Interval < 1 {
+				payload.Interval = 10
+			}
+			return true, time.Duration(payload.Interval) * time.Second
+		})
+
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		uploadHandler := iupload.NewHandler(hub)
@@ -466,7 +487,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo, inboxSvc)
-		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)

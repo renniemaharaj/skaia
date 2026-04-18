@@ -37,3 +37,14 @@ func (b *rateBucket) allow() bool {
 	b.tokens--
 	return true
 }
+
+func (b *rateBucket) nextAvailable() time.Duration {
+	now := time.Now()
+	elapsed := now.Sub(b.last).Seconds()
+	tokens := b.tokens + elapsed*b.rate
+	if tokens >= 1 {
+		return 0
+	}
+	remaining := 1 - tokens
+	return time.Duration(remaining / b.rate * float64(time.Second))
+}

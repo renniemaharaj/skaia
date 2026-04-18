@@ -81,6 +81,7 @@ const (
 	ActBrandingUpdated = "config.branding_updated"
 	ActSEOUpdated      = "config.seo_updated"
 	ActFooterUpdated   = "config.footer_updated"
+	ActConfigUpdated   = "config.updated"
 	ActSectionCreated  = "config.section_created"
 	ActSectionUpdated  = "config.section_updated"
 	ActSectionDeleted  = "config.section_deleted"

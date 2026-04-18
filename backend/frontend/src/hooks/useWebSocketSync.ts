@@ -192,6 +192,17 @@ export const useWebSocketSync = () => {
               ? JSON.parse(message.payload)
               : message.payload;
 
+          // Handle generic WS error and rate-limit notices
+          if (message.type === "error") {
+            const errPayload = payload as { message?: string; action?: string };
+            if (errPayload.message) {
+              toast.error(errPayload.message, {
+                duration: 5000,
+              });
+            }
+            return;
+          }
+
           // Handle user update propagation
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;

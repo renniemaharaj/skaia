@@ -101,6 +101,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/branding", h.getBranding)
 		r.Get("/seo", h.getSEO)
 		r.Get("/footer", h.getFooter)
+		r.Get("/comment-slowmode", h.getCommentSlowMode)
 		r.Get("/landing", h.getLanding)
 		r.Get("/features", h.getFeatures)
 		r.Get("/feature/{feature}", h.getFeature)
@@ -111,6 +112,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 			r.Put("/branding", h.updateBranding)
 			r.Put("/seo", h.updateSEO)
 			r.Put("/footer", h.updateFooter)
+			r.Put("/comment-slowmode", h.updateCommentSlowMode)
 
 			// Sections
 			r.Post("/landing/sections", h.createSection)
@@ -265,6 +267,56 @@ func (h *Handler) updateFooter(w http.ResponseWriter, r *http.Request) {
 		IP:       ievents.ClientIP(r),
 		Fn: func() {
 			h.hub.BroadcastConfig("footer_updated", body)
+		},
+	})
+}
+
+func (h *Handler) getCommentSlowMode(w http.ResponseWriter, r *http.Request) {
+	sc, err := h.svc.GetConfig("comment_slowmode")
+	if err != nil || sc == nil {
+		utils.WriteJSON(w, http.StatusOK, map[string]any{"enabled": false, "interval": 10})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(sc.Value))
+}
+
+func (h *Handler) updateCommentSlowMode(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var body struct {
+		Enabled  bool `json:"enabled"`
+		Interval int  `json:"interval"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	if body.Interval < 1 {
+		body.Interval = 10
+	}
+	payload, err := json.Marshal(body)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "save failed")
+		return
+	}
+	if err := h.svc.UpsertConfig("comment_slowmode", string(payload)); err != nil {
+		log.Printf("config.updateCommentSlowMode: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "save failed")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload)
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActConfigUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Fn: func() {
+			h.hub.BroadcastConfig("comment_slowmode_updated", payload)
 		},
 	})
 }

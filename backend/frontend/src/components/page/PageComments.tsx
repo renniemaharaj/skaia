@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { isAuthenticatedAtom } from "../../atoms/auth";
+import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 import CommentSection from "../comments/CommentSection";
@@ -29,7 +29,47 @@ interface Props {
 export default function PageComments({ pageId, pageSlug }: Props) {
   const [comments, setComments] = useState<PageComment[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [slowModeEnabled, setSlowModeEnabled] = useState(false);
+  const [slowModeInterval, setSlowModeInterval] = useState(10);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const hasPermission = useAtomValue(hasPermissionAtom);
+  const canManageHome = hasPermission("home.manage");
+
+  const loadSlowMode = useCallback(async () => {
+    try {
+      const data = await apiRequest<{ enabled: boolean; interval: number }>(
+        "/config/comment-slowmode",
+      );
+      setSlowModeEnabled(data?.enabled ?? false);
+      setSlowModeInterval(data?.interval ?? 10);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleSlowMode = useCallback(async () => {
+    try {
+      const data = await apiRequest<{ enabled: boolean; interval: number }>(
+        "/config/comment-slowmode",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            enabled: !slowModeEnabled,
+            interval: slowModeInterval || 10,
+          }),
+        },
+      );
+      setSlowModeEnabled(data?.enabled ?? false);
+      setSlowModeInterval(data?.interval ?? 10);
+      toast.success(
+        data?.enabled
+          ? "Comment slow mode enabled"
+          : "Comment slow mode disabled",
+      );
+    } catch {
+      toast.error("Failed to update comment slow mode");
+    }
+  }, [slowModeEnabled, slowModeInterval]);
 
   const {
     feedRef,
@@ -75,6 +115,21 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     window.addEventListener("page:live:event", handler);
     return () => window.removeEventListener("page:live:event", handler);
   }, [pageId, appendComment, setComments]);
+
+  useEffect(() => {
+    void loadSlowMode();
+    const handler = (e: Event) => {
+      const { action, data } = (
+        e as CustomEvent<{ action: string; data?: any }>
+      ).detail;
+      if (action === "comment_slowmode_updated") {
+        setSlowModeEnabled(data?.enabled ?? false);
+        setSlowModeInterval(data?.interval ?? 10);
+      }
+    };
+    window.addEventListener("config:live:event", handler);
+    return () => window.removeEventListener("config:live:event", handler);
+  }, [loadSlowMode]);
 
   const handleSubmit = async (text: string) => {
     const trimmed = text.trim();
@@ -172,6 +227,10 @@ export default function PageComments({ pageId, pageSlug }: Props) {
         highlightedCommentId={highlightedCommentId}
         onCommentsScroll={handleScroll}
         disabled={submitting}
+        showSlowModeControl={canManageHome}
+        slowModeEnabled={slowModeEnabled}
+        slowModeInterval={slowModeInterval}
+        onToggleSlowMode={toggleSlowMode}
       />
     </div>
   );

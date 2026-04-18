@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-chi/httprate"
@@ -95,7 +97,7 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 	return httprate.Limit(100, time.Minute,
 		httprate.WithKeyByIP(),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, 60)
 		}),
 	)
 }
@@ -105,7 +107,7 @@ func AuthLimitMiddleware() func(http.Handler) http.Handler {
 	return httprate.Limit(10, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"too many auth attempts"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "too many auth attempts", http.StatusTooManyRequests, 60)
 		}),
 	)
 }
@@ -115,7 +117,7 @@ func RateLimitByIP() func(http.Handler) http.Handler {
 	return httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, 60)
 		}),
 	)
 }
@@ -125,9 +127,84 @@ func RateLimitByClient() func(http.Handler) http.Handler {
 	return httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"rate limit exceeded"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, 60)
 		}),
 	)
+}
+
+func CommentSlowMode(getConfig func() (bool, time.Duration)) func(http.Handler) http.Handler {
+	if getConfig == nil {
+		return func(next http.Handler) http.Handler {
+			return next
+		}
+	}
+
+	var mu sync.Mutex
+	interval := time.Duration(envIntDefault("COMMENT_SLOWMODE_SECONDS", 10)) * time.Second
+	counter := httprate.NewLocalLimitCounter(interval)
+	var limiter *httprate.RateLimiter
+	lastChecked := time.Time{}
+	enabled := false
+
+	createLimiter := func(interval time.Duration) {
+		counter.Config(1, interval)
+		limiter = httprate.NewRateLimiter(1, interval,
+			httprate.WithKeyFuncs(KeyByClientID),
+			httprate.WithLimitCounter(counter),
+			httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
+				writeRateLimitJSON(w, "comment slowmode active — please wait before another comment action", http.StatusTooManyRequests, int(interval.Seconds()))
+			}),
+		)
+	}
+	createLimiter(interval)
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			mu.Lock()
+			if time.Since(lastChecked) > 2*time.Second {
+				lastChecked = time.Now()
+				cfgEnabled, cfgInterval := getConfig()
+				if !cfgEnabled {
+					enabled = false
+				} else {
+					interval = cfgInterval
+					if interval < time.Second {
+						interval = 10 * time.Second
+					}
+					enabled = true
+					createLimiter(interval)
+				}
+			}
+			mu.Unlock()
+
+			if !enabled {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			limiter.Handler(next).ServeHTTP(w, r)
+		})
+	}
+}
+
+func envBoolDefault(key string, def bool) bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
+	if v == "" {
+		return def
+	}
+	return v == "1" || v == "true" || v == "yes" || v == "on"
+}
+
+func writeRateLimitJSON(w http.ResponseWriter, message string, status int, retryAfter int) {
+	w.Header().Set("Content-Type", "application/json")
+	if retryAfter > 0 {
+		w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+	}
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"error":       message,
+		"retry_after": retryAfter,
+	})
 }
 
 func envIntDefault(key string, def int) int {
@@ -159,7 +236,7 @@ func CompileRateLimitByIP() func(http.Handler) http.Handler {
 	return httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"compiler rate limit exceeded"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "compiler rate limit exceeded", http.StatusTooManyRequests, 60)
 		}),
 	)
 }
@@ -169,7 +246,7 @@ func CompileRateLimitByClient() func(http.Handler) http.Handler {
 	return httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, `{"error":"compiler client rate limit exceeded"}`, http.StatusTooManyRequests)
+			writeRateLimitJSON(w, "compiler client rate limit exceeded", http.StatusTooManyRequests, 60)
 		}),
 	)
 }

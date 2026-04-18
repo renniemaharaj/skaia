@@ -35,7 +35,7 @@ func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Aut
 }
 
 // Mount registers all forum routes on r.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
 	r.Route("/forum", func(r chi.Router) {
 		// Category routes
 		r.With(optJWT).Get("/categories", h.listCategories)
@@ -59,11 +59,11 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 
 		// Comment routes
 		r.With(optJWT).Get("/threads/{id}/comments", h.listComments)
-		r.With(jwt).Post("/threads/{id}/comments", h.createComment)
-		r.With(jwt).Put("/comments/{id}", h.updateComment)
-		r.With(jwt).Delete("/comments/{id}", h.deleteComment)
-		r.With(jwt).Post("/comments/{commentId}/like", h.likeComment)
-		r.With(jwt).Delete("/comments/{commentId}/like", h.unlikeComment)
+		r.With(jwt, commentLimiter).Post("/threads/{id}/comments", h.createComment)
+		r.With(jwt, commentLimiter).Put("/comments/{id}", h.updateComment)
+		r.With(jwt, commentLimiter).Delete("/comments/{id}", h.deleteComment)
+		r.With(jwt, commentLimiter).Post("/comments/{commentId}/like", h.likeComment)
+		r.With(jwt, commentLimiter).Delete("/comments/{commentId}/like", h.unlikeComment)
 	})
 }
 

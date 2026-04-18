@@ -34,6 +34,8 @@ interface UsePageDataReturn {
   page: PageBuilderPage | null;
   loading: boolean;
   error: string;
+  errorStatus?: number;
+  retryAfter?: number;
   isEditable: boolean;
   isAdmin: boolean;
   isOwner: boolean;
@@ -62,6 +64,8 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const [page, setPage] = useState<PageBuilderPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
+  const [retryAfter, setRetryAfter] = useState<number | undefined>(undefined);
   const [pendingIncoming, setPendingIncoming] = useState(false);
   const currentSlugRef = useRef<string | null>(null);
   const requestIdRef = useRef(0);
@@ -121,6 +125,8 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
+    setErrorStatus(undefined);
+    setRetryAfter(undefined);
     setPage(null);
     currentSlugRef.current = null;
 
@@ -133,8 +139,12 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       const msg = err instanceof Error ? err.message : "Failed to load page";
+      const status = err instanceof Error ? (err as any).status : undefined;
+      const retry = err instanceof Error ? (err as any).retryAfter : undefined;
       setPage(null);
       setError(msg);
+      setErrorStatus(status);
+      setRetryAfter(retry);
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
@@ -223,6 +233,8 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     page,
     loading,
     error,
+    errorStatus,
+    retryAfter,
     isEditable,
     isAdmin,
     isOwner,

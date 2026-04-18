@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { Eye, ThumbsUp, ChevronDown, MoreHorizontal } from "lucide-react";
+import {
+  Eye,
+  ThumbsUp,
+  ChevronDown,
+  MoreHorizontal,
+  ShieldAlert,
+} from "lucide-react";
 import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
@@ -83,6 +89,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     page,
     loading,
     error,
+    errorStatus,
+    retryAfter,
     refresh,
     isEditable,
     isAdmin,
@@ -690,6 +698,34 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     return (
       <div className="pb-container">
         <LandingSkeleton />
+      </div>
+    );
+  }
+
+  if (errorStatus === 429) {
+    return (
+      <div className="pb-container">
+        <div
+          style={{
+            textAlign: "center",
+            padding: "4rem 1rem",
+            maxWidth: 560,
+            margin: "0 auto",
+          }}
+        >
+          <ShieldAlert size={48} style={{ marginBottom: 20 }} />
+          <h2>Rate limit exceeded</h2>
+          <p style={{ opacity: 0.75, marginTop: 12 }}>
+            The page builder is currently receiving too many requests. Please
+            wait a moment and try again.
+          </p>
+          {retryAfter ? (
+            <p style={{ opacity: 0.7, marginTop: 8 }}>
+              Retry after approximately {retryAfter} second
+              {retryAfter === 1 ? "" : "s"}.
+            </p>
+          ) : null}
+        </div>
       </div>
     );
   }

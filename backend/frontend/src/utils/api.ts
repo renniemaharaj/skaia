@@ -3,6 +3,7 @@
  */
 
 import { getDefaultStore } from "jotai";
+import { toast } from "sonner";
 import { type User } from "../atoms/auth";
 import { apiBaseUrlAtom } from "../atoms/config";
 
@@ -29,7 +30,6 @@ export interface AuthResponse {
  * Get authorization headers with token
  */
 function getAuthHeaders(includeContentType = true): Record<string, string> {
-  // Get token from localStorage as raw string (no JSON serialization)
   const token = localStorage.getItem("auth.accessToken");
 
   if (token) {
@@ -42,8 +42,21 @@ function getAuthHeaders(includeContentType = true): Record<string, string> {
   }
   return {
     ...(includeContentType && { "Content-Type": "application/json" }),
-    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+}
+
+function mergeHeaders(base: HeadersInit, extra?: HeadersInit): Headers {
+  const headers = new Headers(base);
+  if (!extra) {
+    return headers;
+  }
+
+  const extraHeaders = new Headers(extra);
+  extraHeaders.forEach((value, key) => {
+    headers.set(key, value);
+  });
+  return headers;
 }
 
 /**
@@ -58,19 +71,32 @@ export async function apiRequest<T>(
   const isFormData = options.body instanceof FormData;
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...getAuthHeaders(!isFormData),
-      ...options.headers,
-    },
+    headers: mergeHeaders(getAuthHeaders(!isFormData), options.headers),
   });
 
   if (!response.ok) {
     let errorMessage = `HTTP ${response.status}`;
+    let retryAfter: number | undefined;
+    let errorData: ApiError | null = null;
     try {
-      const errorData: ApiError = await response.json();
-      errorMessage = errorData.error || errorData.message || errorMessage;
+      errorData = await response.json();
+      errorMessage = errorData?.error || errorData?.message || errorMessage;
     } catch {
       // Use default error message
+    }
+
+    const retryHeader = response.headers.get("Retry-After");
+    if (retryHeader) {
+      const retry = parseInt(retryHeader, 10);
+      if (!Number.isNaN(retry)) {
+        retryAfter = retry;
+      }
+    }
+
+    if (response.status === 429) {
+      toast.error(
+        `${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`,
+      );
     }
 
     // Handle 503 — site may be armed (maintenance mode)
@@ -106,10 +132,10 @@ export async function apiRequest<T>(
             // Retry the original request with the new token
             const retryResp = await fetch(url, {
               ...options,
-              headers: {
-                ...getAuthHeaders(!isFormData),
-                ...options.headers,
-              },
+              headers: mergeHeaders(
+                getAuthHeaders(!isFormData),
+                options.headers,
+              ),
             });
             if (retryResp.ok) {
               try {
@@ -137,7 +163,15 @@ export async function apiRequest<T>(
       );
     }
 
-    throw new Error(errorMessage);
+    const err = new Error(errorMessage) as Error & {
+      status?: number;
+      retryAfter?: number;
+      details?: ApiError | null;
+    };
+    err.status = response.status;
+    if (retryAfter !== undefined) err.retryAfter = retryAfter;
+    err.details = errorData;
+    throw err;
   }
 
   try {
@@ -215,7 +249,7 @@ export async function uploadFile(
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     body: formData,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: mergeHeaders(token ? { Authorization: `Bearer ${token}` } : {}),
   });
 
   if (!response.ok) {

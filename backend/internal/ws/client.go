@@ -73,6 +73,8 @@ func (c *Client) ReadPump() {
 		case GlobalChat:
 			if c.chatLimit.allow() {
 				c.handleGlobalChat(msg)
+			} else {
+				c.sendClientError("You are sending global chat messages too quickly.", c.chatLimit.nextAvailable())
 			}
 		case Cursor:
 			if c.cursorLimit.allow() {
@@ -263,6 +265,21 @@ func (c *Client) handleGlobalChat(msg Message) {
 		IsGuest:   isGuest,
 		SessionID: c.SessionID,
 	})
+}
+
+func (c *Client) sendClientError(message string, retryAfter time.Duration) {
+	payload, err := json.Marshal(map[string]any{
+		"action":      "rate_limited",
+		"message":     message,
+		"retry_after": int(retryAfter.Seconds()),
+	})
+	if err != nil {
+		return
+	}
+	select {
+	case c.Send <- &Message{Type: ErrorMessage, Payload: payload}:
+	default:
+	}
 }
 
 // subscriptionKey returns the canonical map key for a resource subscription.

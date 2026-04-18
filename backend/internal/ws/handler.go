@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -88,13 +89,21 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 
 	conn.SetReadLimit(maxMessageSize)
 
+	chatRate := 5.0
+	chatBurst := 5.0
+	if envBoolDefault("WS_GLOBAL_CHAT_SLOWMODE_ENABLED", false) {
+		interval := envIntDefault("WS_GLOBAL_CHAT_SLOWMODE_SECONDS", 10)
+		chatRate = 1.0 / float64(interval)
+		chatBurst = 1.0
+	}
+
 	client := &Client{
 		Hub:            hub,
 		Conn:           conn,
 		Send:           make(chan *Message, 256),
 		UserID:         userID,
 		UserName:       userName,
-		chatLimit:      newRateBucket(5, 5),
+		chatLimit:      newRateBucket(chatRate, chatBurst),
 		cursorLimit:    newRateBucket(30, 30),
 		presenceLimit:  newRateBucket(5, 5),
 		broadcastLimit: newRateBucket(10, 10),
@@ -104,4 +113,24 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 
 	go client.ReadPump()
 	go client.WritePump()
+}
+
+func envIntDefault(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	return n
+}
+
+func envBoolDefault(key string, def bool) bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv(key)))
+	if v == "" {
+		return def
+	}
+	return v == "1" || v == "true" || v == "yes" || v == "on"
 }

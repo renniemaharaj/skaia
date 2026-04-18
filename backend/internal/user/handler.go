@@ -1097,6 +1097,11 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		return
 	}
 	file.Seek(0, 0) //nolint:errcheck
+	if err := validateBannerDimensions(file); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	file.Seek(0, 0) //nolint:errcheck
 
 	bannerDir, err := userContentDir(userID, "banners")
 	if err != nil {

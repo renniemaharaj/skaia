@@ -31,7 +31,7 @@ func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service
 }
 
 // Mount registers page routes under /config/pages.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
 	r.Route("/config/pages", func(r chi.Router) {
 		// Public reads
 		r.With(optJWT).Get("/index", h.getIndex)
@@ -60,11 +60,11 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			// Engagement
 			r.Post("/{id}/like", h.likePage)
 			r.Delete("/{id}/like", h.unlikePage)
-			r.Post("/{id}/comments", h.createComment)
-			r.Put("/comments/{commentId}", h.updateComment)
-			r.Delete("/comments/{commentId}", h.deleteComment)
-			r.Post("/comments/{commentId}/like", h.likeComment)
-			r.Delete("/comments/{commentId}/like", h.unlikeComment)
+			r.With(commentLimiter).Post("/{id}/comments", h.createComment)
+			r.With(commentLimiter).Put("/comments/{commentId}", h.updateComment)
+			r.With(commentLimiter).Delete("/comments/{commentId}", h.deleteComment)
+			r.With(commentLimiter).Post("/comments/{commentId}/like", h.likeComment)
+			r.With(commentLimiter).Delete("/comments/{commentId}/like", h.unlikeComment)
 
 			// Landing page config
 			r.Put("/landing-page", h.setLandingPage)
