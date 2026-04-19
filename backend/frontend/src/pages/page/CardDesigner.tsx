@@ -479,7 +479,9 @@ export const CardDesigner = ({
 
               <div className="card-designer__group">
                 <div className="card-designer__group-toolbar">
-                  <span className="card-designer__group-heading">Box spacing</span>
+                  <span className="card-designer__group-heading">
+                    Box spacing
+                  </span>
                   <span className="card-designer__group-note">
                     Margin and padding for this card layout
                   </span>
@@ -782,7 +784,6 @@ export const CardDesigner = ({
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
