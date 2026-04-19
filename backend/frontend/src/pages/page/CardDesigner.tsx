@@ -234,9 +234,9 @@ export const CardDesigner = ({
 
           {openSections.has("card-settings") && (
             <div className="card-designer__section-body">
-              <div className="card-designer__group-grid">
-                <label className="card-designer__field">
-                  <span>Width</span>
+              <div className="cd-ctrl-row">
+                <span className="cd-ctrl">
+                  <label>Width</label>
                   <select
                     value={template.cardWidth}
                     onChange={(e) =>
@@ -249,10 +249,9 @@ export const CardDesigner = ({
                       </option>
                     ))}
                   </select>
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Aspect ratio</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Ratio</label>
                   <select
                     value={template.aspectRatio ?? "auto"}
                     onChange={(e) =>
@@ -270,48 +269,9 @@ export const CardDesigner = ({
                       </option>
                     ))}
                   </select>
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Min height</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={800}
-                    step={20}
-                    placeholder="auto"
-                    value={template.minHeight ?? ""}
-                    onChange={(e) =>
-                      updateTemplate({
-                        minHeight: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                  />
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Max height</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={1200}
-                    step={20}
-                    placeholder="none"
-                    value={template.maxHeight ?? ""}
-                    onChange={(e) =>
-                      updateTemplate({
-                        maxHeight: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      })
-                    }
-                  />
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Overflow</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Overflow</label>
                   <select
                     value={template.overflow ?? "hidden"}
                     onChange={(e) =>
@@ -326,10 +286,9 @@ export const CardDesigner = ({
                       </option>
                     ))}
                   </select>
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Vertical align</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Align</label>
                   <select
                     value={template.contentAlign ?? "start"}
                     onChange={(e) =>
@@ -344,50 +303,85 @@ export const CardDesigner = ({
                       </option>
                     ))}
                   </select>
-                </label>
+                </span>
+              </div>
 
-                <label className="card-designer__field card-designer__field--wide">
-                  <span>Border radius</span>
-                  <div className="card-designer__range-row">
-                    <input
-                      className="card-designer__range-slider"
-                      type="range"
-                      min={0}
-                      max={32}
-                      step={1}
-                      value={template.borderRadius ?? 16}
-                      onChange={(e) =>
-                        updateTemplate({ borderRadius: Number(e.target.value) })
-                      }
-                    />
-                    <span className="card-designer__range-value">
-                      {template.borderRadius ?? 16}px
-                    </span>
-                  </div>
-                </label>
-
-                <div className="card-designer__style-grid">
-                  {CARD_STYLE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      className={`card-designer__style-btn${
-                        template.cardStyle === opt.value ? " active" : ""
-                      }`}
-                      onClick={() => updateTemplate({ cardStyle: opt.value })}
-                      title={opt.hint}
-                    >
-                      <span className="card-designer__style-preview">
-                        <span
-                          className={`card-designer__style-chip card-designer__style-chip--${opt.value}`}
-                        />
-                      </span>
-                      <span className="card-designer__style-name">
-                        {opt.label}
-                      </span>
-                    </button>
-                  ))}
+              <div className="cd-ctrl-row">
+                <span className="cd-ctrl">
+                  <label>Min H</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={800}
+                    step={20}
+                    placeholder="—"
+                    value={template.minHeight ?? ""}
+                    onChange={(e) =>
+                      updateTemplate({
+                        minHeight: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                  />
+                </span>
+                <span className="cd-ctrl">
+                  <label>Max H</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={1200}
+                    step={20}
+                    placeholder="—"
+                    value={template.maxHeight ?? ""}
+                    onChange={(e) =>
+                      updateTemplate({
+                        maxHeight: e.target.value
+                          ? Number(e.target.value)
+                          : undefined,
+                      })
+                    }
+                  />
+                </span>
+                <span className="cd-range-label">Radius</span>
+                <div className="cd-range-row" style={{ flex: 1, minWidth: 80 }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={32}
+                    step={1}
+                    value={template.borderRadius ?? 16}
+                    onChange={(e) =>
+                      updateTemplate({ borderRadius: Number(e.target.value) })
+                    }
+                  />
+                  <span className="cd-range-value">
+                    {template.borderRadius ?? 16}px
+                  </span>
                 </div>
+              </div>
+
+              <div className="card-designer__style-grid">
+                {CARD_STYLE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`card-designer__style-btn${
+                      template.cardStyle === opt.value ? " active" : ""
+                    }`}
+                    onClick={() => updateTemplate({ cardStyle: opt.value })}
+                    title={opt.hint}
+                  >
+                    <span className="card-designer__style-preview">
+                      <span
+                        className={`card-designer__style-chip card-designer__style-chip--${opt.value}`}
+                      />
+                    </span>
+                    <span className="card-designer__style-name">
+                      {opt.label}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -410,9 +404,9 @@ export const CardDesigner = ({
 
           {openSections.has("spacing") && (
             <div className="card-designer__section-body">
-              <div className="card-designer__group-grid">
-                <label className="card-designer__field">
-                  <span>Grid gap</span>
+              <div className="cd-ctrl-row">
+                <span className="cd-ctrl">
+                  <label>Grid</label>
                   <input
                     type="number"
                     min={0}
@@ -423,10 +417,9 @@ export const CardDesigner = ({
                       updateTemplate({ gridGap: Number(e.target.value) })
                     }
                   />
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Zone gap</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Zone</label>
                   <input
                     type="number"
                     min={0}
@@ -437,10 +430,9 @@ export const CardDesigner = ({
                       updateTemplate({ gap: Number(e.target.value) })
                     }
                   />
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Image position</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Img pos</label>
                   <select
                     value={template.imagePosition}
                     onChange={(e) =>
@@ -455,16 +447,15 @@ export const CardDesigner = ({
                       </option>
                     ))}
                   </select>
-                </label>
-
-                <label className="card-designer__field">
-                  <span>Image height</span>
+                </span>
+                <span className="cd-ctrl">
+                  <label>Img H</label>
                   <input
                     type="number"
                     min={0}
                     max={600}
                     step={20}
-                    placeholder="auto"
+                    placeholder="—"
                     value={template.imageHeight ?? ""}
                     onChange={(e) =>
                       updateTemplate({
@@ -474,60 +465,44 @@ export const CardDesigner = ({
                       })
                     }
                   />
-                </label>
+                </span>
               </div>
 
-              <div className="card-designer__group">
-                <div className="card-designer__group-toolbar">
-                  <span className="card-designer__group-heading">
-                    Box spacing
-                  </span>
-                  <span className="card-designer__group-note">
-                    Margin and padding for this card layout
-                  </span>
-                </div>
+              <BoxSpacingControls
+                label="Margin"
+                values={{
+                  top: template.marginTop ?? 0,
+                  right: template.marginRight ?? 0,
+                  bottom: template.marginBottom ?? 0,
+                  left: template.marginLeft ?? 0,
+                }}
+                onChange={(next) =>
+                  updateTemplate({
+                    marginTop: next.top,
+                    marginRight: next.right,
+                    marginBottom: next.bottom,
+                    marginLeft: next.left,
+                  })
+                }
+              />
 
-                <div className="card-designer__group-grid">
-                  <div className="card-designer__field card-designer__field--wide">
-                    <BoxSpacingControls
-                      label="Margin"
-                      values={{
-                        top: template.marginTop ?? 0,
-                        right: template.marginRight ?? 0,
-                        bottom: template.marginBottom ?? 0,
-                        left: template.marginLeft ?? 0,
-                      }}
-                      onChange={(next) =>
-                        updateTemplate({
-                          marginTop: next.top,
-                          marginRight: next.right,
-                          marginBottom: next.bottom,
-                          marginLeft: next.left,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="card-designer__field card-designer__field--wide">
-                    <BoxSpacingControls
-                      label="Padding"
-                      values={{
-                        top: template.paddingTop,
-                        right: template.paddingRight,
-                        bottom: template.paddingBottom,
-                        left: template.paddingLeft,
-                      }}
-                      onChange={(next) =>
-                        updateTemplate({
-                          paddingTop: next.top,
-                          paddingRight: next.right,
-                          paddingBottom: next.bottom,
-                          paddingLeft: next.left,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
+              <BoxSpacingControls
+                label="Padding"
+                values={{
+                  top: template.paddingTop,
+                  right: template.paddingRight,
+                  bottom: template.paddingBottom,
+                  left: template.paddingLeft,
+                }}
+                onChange={(next) =>
+                  updateTemplate({
+                    paddingTop: next.top,
+                    paddingRight: next.right,
+                    paddingBottom: next.bottom,
+                    paddingLeft: next.left,
+                  })
+                }
+              />
             </div>
           )}
         </div>
@@ -552,50 +527,47 @@ export const CardDesigner = ({
 
             {openSections.has("table-style") && (
               <div className="card-designer__section-body">
-                <div className="card-designer__group-grid">
-                  <label className="card-designer__field card-designer__checkbox-field">
-                    <span>Striped rows</span>
-                    <input
-                      type="checkbox"
-                      checked={template.tableStriped}
-                      onChange={(e) =>
-                        updateTemplate({ tableStriped: e.target.checked })
-                      }
-                    />
-                  </label>
-
-                  <label className="card-designer__field card-designer__checkbox-field">
-                    <span>Hover rows</span>
-                    <input
-                      type="checkbox"
-                      checked={template.tableHover}
-                      onChange={(e) =>
-                        updateTemplate({ tableHover: e.target.checked })
-                      }
-                    />
-                  </label>
-
-                  <label className="card-designer__field card-designer__checkbox-field">
-                    <span>Bordered</span>
-                    <input
-                      type="checkbox"
-                      checked={template.tableBordered}
-                      onChange={(e) =>
-                        updateTemplate({ tableBordered: e.target.checked })
-                      }
-                    />
-                  </label>
-
-                  <label className="card-designer__field card-designer__checkbox-field">
-                    <span>Compact</span>
-                    <input
-                      type="checkbox"
-                      checked={template.tableCompact}
-                      onChange={(e) =>
-                        updateTemplate({ tableCompact: e.target.checked })
-                      }
-                    />
-                  </label>
+                <div className="cd-ctrl-row">
+                  <button
+                    type="button"
+                    className={`cd-toggle${template.tableStriped ? " active" : ""}`}
+                    onClick={() =>
+                      updateTemplate({ tableStriped: !template.tableStriped })
+                    }
+                  >
+                    <span className="cd-toggle__dot" />
+                    Striped
+                  </button>
+                  <button
+                    type="button"
+                    className={`cd-toggle${template.tableHover ? " active" : ""}`}
+                    onClick={() =>
+                      updateTemplate({ tableHover: !template.tableHover })
+                    }
+                  >
+                    <span className="cd-toggle__dot" />
+                    Hover
+                  </button>
+                  <button
+                    type="button"
+                    className={`cd-toggle${template.tableBordered ? " active" : ""}`}
+                    onClick={() =>
+                      updateTemplate({ tableBordered: !template.tableBordered })
+                    }
+                  >
+                    <span className="cd-toggle__dot" />
+                    Bordered
+                  </button>
+                  <button
+                    type="button"
+                    className={`cd-toggle${template.tableCompact ? " active" : ""}`}
+                    onClick={() =>
+                      updateTemplate({ tableCompact: !template.tableCompact })
+                    }
+                  >
+                    <span className="cd-toggle__dot" />
+                    Compact
+                  </button>
                 </div>
               </div>
             )}

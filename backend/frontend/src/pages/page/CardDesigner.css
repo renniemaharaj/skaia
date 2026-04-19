@@ -476,6 +476,177 @@
   border-color: var(--primary-color);
 }
 
+/* ── Compact inline controls (inspector-density) ─────────────────────── */
+
+.cd-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.cd-ctrl {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.cd-ctrl > label {
+  padding: 0 3px 0 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.cd-ctrl input[type="number"] {
+  width: 42px;
+  height: 26px;
+  margin-top: 0.77rem;
+  line-height: 26px;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  outline: none;
+  text-align: center;
+  -webkit-appearance: textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  border-radius: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.cd-ctrl input[type="number"]::-webkit-inner-spin-button,
+.cd-ctrl input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.cd-ctrl input[type="number"]:focus,
+.cd-ctrl select:focus {
+  background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-color));
+}
+
+.cd-ctrl select {
+  height: 26px;
+  padding: 0 2px 0 4px;
+  font-size: 0.7rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  min-width: 0;
+}
+
+/* ── Compact toggle pills ────────────────────────────────────────────── */
+
+.cd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px 0 6px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  user-select: none;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.cd-toggle:hover {
+  background: var(--bg-tertiary);
+}
+
+.cd-toggle.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-color));
+  color: var(--primary-color);
+}
+
+.cd-toggle .cd-toggle__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-color);
+  transition: background 120ms ease;
+}
+
+.cd-toggle.active .cd-toggle__dot {
+  background: var(--primary-color);
+}
+
+/* ── Compact range row ───────────────────────────────────────────────── */
+
+.cd-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+}
+
+.cd-range-row input[type="range"] {
+  flex: 1;
+  height: 26px;
+  appearance: none;
+  background: transparent;
+}
+
+.cd-range-row input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-color);
+}
+
+.cd-range-row input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  border: 2px solid var(--bg-color);
+  margin-top: -4px;
+}
+
+.cd-range-row .cd-range-value {
+  min-width: 34px;
+  text-align: right;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cd-range-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .card-designer__dimensions,
   .card-designer__row,
