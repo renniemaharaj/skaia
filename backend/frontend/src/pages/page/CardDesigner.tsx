@@ -476,6 +476,56 @@ export const CardDesigner = ({
                   />
                 </label>
               </div>
+
+              <div className="card-designer__group">
+                <div className="card-designer__group-toolbar">
+                  <span className="card-designer__group-heading">Box spacing</span>
+                  <span className="card-designer__group-note">
+                    Margin and padding for this card layout
+                  </span>
+                </div>
+
+                <div className="card-designer__group-grid">
+                  <div className="card-designer__field card-designer__field--wide">
+                    <BoxSpacingControls
+                      label="Margin"
+                      values={{
+                        top: template.marginTop ?? 0,
+                        right: template.marginRight ?? 0,
+                        bottom: template.marginBottom ?? 0,
+                        left: template.marginLeft ?? 0,
+                      }}
+                      onChange={(next) =>
+                        updateTemplate({
+                          marginTop: next.top,
+                          marginRight: next.right,
+                          marginBottom: next.bottom,
+                          marginLeft: next.left,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="card-designer__field card-designer__field--wide">
+                    <BoxSpacingControls
+                      label="Padding"
+                      values={{
+                        top: template.paddingTop,
+                        right: template.paddingRight,
+                        bottom: template.paddingBottom,
+                        left: template.paddingLeft,
+                      }}
+                      onChange={(next) =>
+                        updateTemplate({
+                          paddingTop: next.top,
+                          paddingRight: next.right,
+                          paddingBottom: next.bottom,
+                          paddingLeft: next.left,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -733,55 +783,6 @@ export const CardDesigner = ({
           )}
         </div>
 
-        <div className="card-designer__group">
-          <div className="card-designer__group-toolbar">
-            <span className="card-designer__group-heading">Box spacing</span>
-            <span className="card-designer__group-note">
-              Margin and padding for this card layout
-            </span>
-          </div>
-
-          <div className="card-designer__group-grid">
-            <div className="card-designer__field card-designer__field--wide">
-              <BoxSpacingControls
-                label="Margin"
-                values={{
-                  top: template.marginTop ?? 0,
-                  right: template.marginRight ?? 0,
-                  bottom: template.marginBottom ?? 0,
-                  left: template.marginLeft ?? 0,
-                }}
-                onChange={(next) =>
-                  updateTemplate({
-                    marginTop: next.top,
-                    marginRight: next.right,
-                    marginBottom: next.bottom,
-                    marginLeft: next.left,
-                  })
-                }
-              />
-            </div>
-            <div className="card-designer__field card-designer__field--wide">
-              <BoxSpacingControls
-                label="Padding"
-                values={{
-                  top: template.paddingTop,
-                  right: template.paddingRight,
-                  bottom: template.paddingBottom,
-                  left: template.paddingLeft,
-                }}
-                onChange={(next) =>
-                  updateTemplate({
-                    paddingTop: next.top,
-                    paddingRight: next.right,
-                    paddingBottom: next.bottom,
-                    paddingLeft: next.left,
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
