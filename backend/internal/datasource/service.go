@@ -31,3 +31,11 @@ func (s *Service) Update(ds *models.DataSource) error {
 func (s *Service) Delete(id int64) error {
 	return s.repo.Delete(id)
 }
+
+func (s *Service) GetEnvData(id int64) (string, error) {
+	return s.repo.GetEnvData(id)
+}
+
+func (s *Service) UpdateEnvData(id int64, envData string) error {
+	return s.repo.UpdateEnvData(id, envData)
+}

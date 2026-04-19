@@ -1,0 +1,52 @@
+.env-vars-editor {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.env-vars-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.env-vars-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.env-vars-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.env-vars-hint {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}
+
+.env-vars-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.env-vars-body {
+  min-height: 60px;
+}
+
+.env-vars-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}

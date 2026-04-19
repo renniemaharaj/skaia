@@ -15,9 +15,9 @@ func (r *sqlRepository) GetByID(id int64) (*models.DataSource, error) {
 	ds := &models.DataSource{}
 	var createdBy sql.NullInt64
 	err := r.db.QueryRow(
-		`SELECT id, name, description, code, created_by, created_at, updated_at
+		`SELECT id, name, description, code, env_data, created_by, created_at, updated_at
 		 FROM data_sources WHERE id = $1`, id,
-	).Scan(&ds.ID, &ds.Name, &ds.Description, &ds.Code, &createdBy, &ds.CreatedAt, &ds.UpdatedAt)
+	).Scan(&ds.ID, &ds.Name, &ds.Description, &ds.Code, &ds.EnvData, &createdBy, &ds.CreatedAt, &ds.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.DataSource, error) {
 
 func (r *sqlRepository) List() ([]*models.DataSource, error) {
 	rows, err := r.db.Query(
-		`SELECT id, name, description, code, created_by, created_at, updated_at
+		`SELECT id, name, description, code, env_data, created_by, created_at, updated_at
 		 FROM data_sources ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (r *sqlRepository) List() ([]*models.DataSource, error) {
 	for rows.Next() {
 		ds := &models.DataSource{}
 		var createdBy sql.NullInt64
-		if err := rows.Scan(&ds.ID, &ds.Name, &ds.Description, &ds.Code, &createdBy, &ds.CreatedAt, &ds.UpdatedAt); err != nil {
+		if err := rows.Scan(&ds.ID, &ds.Name, &ds.Description, &ds.Code, &ds.EnvData, &createdBy, &ds.CreatedAt, &ds.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if createdBy.Valid {
@@ -71,6 +71,19 @@ func (r *sqlRepository) Update(ds *models.DataSource) error {
 
 func (r *sqlRepository) Delete(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM data_sources WHERE id = $1`, id)
+	return err
+}
+
+func (r *sqlRepository) GetEnvData(id int64) (string, error) {
+	var envData string
+	err := r.db.QueryRow(`SELECT env_data FROM data_sources WHERE id = $1`, id).Scan(&envData)
+	return envData, err
+}
+
+func (r *sqlRepository) UpdateEnvData(id int64, envData string) error {
+	_, err := r.db.Exec(
+		`UPDATE data_sources SET env_data = $1, updated_at = NOW() WHERE id = $2`,
+		envData, id)
 	return err
 }
 

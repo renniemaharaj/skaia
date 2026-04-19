@@ -354,6 +354,7 @@ type DataSource struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	Code        string    `json:"code"`
+	EnvData     string    `json:"env_data,omitempty"`
 	CreatedBy   *int64    `json:"created_by,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

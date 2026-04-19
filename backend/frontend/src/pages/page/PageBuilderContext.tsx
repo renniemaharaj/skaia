@@ -14,6 +14,8 @@ export interface PageBuilderContextValue {
   saveStatus: SaveStatus;
   /** True when an incoming page_updated WS event is being held because editing is active. */
   pendingIncoming: boolean;
+  /** The current page ID (if known). Used by blocks for env-var-aware execution. */
+  pageId?: number;
 }
 
 const noop = () => {};
@@ -24,6 +26,7 @@ export const PageBuilderContext = createContext<PageBuilderContextValue>({
   leaveEdit: noop,
   saveStatus: "idle",
   pendingIncoming: false,
+  pageId: undefined,
 });
 
 export function usePageBuilderContext(): PageBuilderContextValue {

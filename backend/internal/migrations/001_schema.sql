@@ -446,6 +446,7 @@ CREATE TABLE IF NOT EXISTS data_sources (
     name        VARCHAR(255) NOT NULL,
     description TEXT         NOT NULL DEFAULT '',
     code        TEXT         NOT NULL DEFAULT '',
+    env_data    TEXT         NOT NULL DEFAULT '',
     created_by  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
@@ -466,6 +467,8 @@ CREATE TABLE IF NOT EXISTS custom_sections (
 );
 CREATE INDEX IF NOT EXISTS idx_custom_sections_datasource ON custom_sections(datasource_id);
 CREATE INDEX IF NOT EXISTS idx_custom_sections_created_by ON custom_sections(created_by);
+
+
 
 -- ── User page allocations (per-user custom page quotas) ─────────────────────
 CREATE TABLE IF NOT EXISTS user_page_allocations (

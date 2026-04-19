@@ -9,4 +9,6 @@ type Repository interface {
 	Create(ds *models.DataSource) error
 	Update(ds *models.DataSource) error
 	Delete(id int64) error
+	GetEnvData(id int64) (string, error)
+	UpdateEnvData(id int64, envData string) error
 }

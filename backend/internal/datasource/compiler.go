@@ -71,3 +71,61 @@ func CompileTypeScript(source string) (*CompileResult, error) {
 	}
 	return &result, nil
 }
+
+// ExecuteResult holds the output of a TypeScript execution (compile + run).
+type ExecuteResult struct {
+	Data        json.RawMessage `json:"data"`
+	Diagnostics []Diagnostic    `json:"diagnostics"`
+	Error       string          `json:"error,omitempty"`
+}
+
+// ExecuteTypeScript compiles TypeScript source and executes it server-side in a
+// sandboxed VM context with the provided environment variables injected.
+// Returns the result data (JSON array) directly.
+func ExecuteTypeScript(source string, env map[string]string) (*ExecuteResult, error) {
+	dir := tsRunnerDir()
+	scriptPath := filepath.Join(dir, "execute.js")
+
+	input := struct {
+		Source string            `json:"source"`
+		Env    map[string]string `json:"env"`
+	}{
+		Source: source,
+		Env:    env,
+	}
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal execute input: %w", err)
+	}
+
+	cmd := exec.Command("node", scriptPath)
+	cmd.Dir = dir
+	cmd.Stdin = strings.NewReader(string(inputJSON))
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	done := make(chan error, 1)
+	go func() { done <- cmd.Run() }()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			errMsg := stderr.String()
+			if errMsg == "" {
+				errMsg = err.Error()
+			}
+			return nil, fmt.Errorf("ts execute failed: %s", errMsg)
+		}
+	case <-time.After(15 * time.Second):
+		_ = cmd.Process.Kill()
+		return nil, fmt.Errorf("ts execute timed out after 15s")
+	}
+
+	var result ExecuteResult
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		return nil, fmt.Errorf("failed to parse ts execute output: %w", err)
+	}
+	return &result, nil
+}

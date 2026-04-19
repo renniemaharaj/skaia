@@ -68,6 +68,12 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, optio
 		// Guests may request compiled output for a datasource by id.
 		r.With(optionalJWT, compileIPLimit, compileClientLimit).Get("/{id}/compile", h.compileDataSourceByID)
 
+		// Server-side execute with env vars.
+		r.With(optionalJWT, compileIPLimit, compileClientLimit).Post("/{id}/execute", h.executeDataSourceByID)
+
+		// Environment variables per datasource.
+		r.With(optionalJWT).Get("/{id}/env", h.getEnvData)
+
 		// Protected writes and raw compile.
 		r.Group(func(r chi.Router) {
 			r.Use(jwt)
@@ -75,6 +81,8 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, optio
 			r.Post("/", h.createDataSource)
 			r.Put("/{id}", h.updateDataSource)
 			r.Delete("/{id}", h.deleteDataSource)
+			r.Put("/{id}/env", h.upsertEnvData)
+			r.Delete("/{id}/env", h.deleteEnvData)
 		})
 	})
 }
@@ -263,4 +271,156 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 	case <-time.After(15 * time.Second):
 		utils.WriteError(w, http.StatusGatewayTimeout, "compiler timed out")
 	}
+}
+
+// executeDataSourceByID compiles a datasource and executes it server-side
+// with the datasource's own environment variables injected.
+func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
+		return
+	}
+
+	ds, err := h.svc.GetByID(id)
+	if err != nil {
+		log.Printf("datasource.execute: lookup failed: %v", err)
+		utils.WriteError(w, http.StatusNotFound, "datasource not found")
+		return
+	}
+	if ds.Code == "" {
+		utils.WriteError(w, http.StatusBadRequest, "datasource has no code")
+		return
+	}
+
+	// Check for client-supplied env_data (editor context); fall back to DB.
+	var body struct {
+		EnvData string `json:"env_data"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body) // intentionally ignoring errors (empty body is fine)
+
+	env := map[string]string{}
+	if body.EnvData != "" {
+		env = parseEnvData(body.EnvData)
+	} else if ds.EnvData != "" {
+		env = parseEnvData(ds.EnvData)
+	}
+
+	result, err := ExecuteTypeScript(ds.Code, env)
+	if err != nil {
+		log.Printf("datasource.execute: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "execution failed")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, result)
+}
+
+// ── Environment variables per datasource ────────────────────────────────────
+
+func (h *Handler) getEnvData(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
+		return
+	}
+	// Only privileged users may read env vars — guests get empty.
+	if !h.requireHomeManage(r) {
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"env_data": ""})
+		return
+	}
+	envData, err := h.svc.GetEnvData(id)
+	if err != nil {
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"env_data": ""})
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"env_data": envData})
+}
+
+func (h *Handler) upsertEnvData(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
+		return
+	}
+	var body struct {
+		EnvData string `json:"env_data"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	if err := h.svc.UpdateEnvData(id, body.EnvData); err != nil {
+		log.Printf("datasource.upsertEnvData: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to save env vars")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (h *Handler) deleteEnvData(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
+		return
+	}
+	if err := h.svc.UpdateEnvData(id, ""); err != nil {
+		log.Printf("datasource.deleteEnvData: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to clear env vars")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+// parseEnvData parses raw .env-format text into a key-value map.
+func parseEnvData(raw string) map[string]string {
+	env := map[string]string{}
+	for _, line := range splitLines(raw) {
+		line = trimSpace(line)
+		if line == "" || line[0] == '#' {
+			continue
+		}
+		idx := -1
+		for i := 0; i < len(line); i++ {
+			if line[i] == '=' {
+				idx = i
+				break
+			}
+		}
+		if idx < 1 {
+			continue
+		}
+		key := trimSpace(line[:idx])
+		val := trimSpace(line[idx+1:])
+		if len(val) >= 2 && ((val[0] == '"' && val[len(val)-1] == '"') || (val[0] == '\'' && val[len(val)-1] == '\'')) {
+			val = val[1 : len(val)-1]
+		}
+		env[key] = val
+	}
+	return env
+}
+
+func splitLines(s string) []string {
+	var lines []string
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\n' {
+			lines = append(lines, s[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(s) {
+		lines = append(lines, s[start:])
+	}
+	return lines
+}
+
+func trimSpace(s string) string {
+	i, j := 0, len(s)
+	for i < j && (s[i] == ' ' || s[i] == '\t' || s[i] == '\r') {
+		i++
+	}
+	for j > i && (s[j-1] == ' ' || s[j-1] == '\t' || s[j-1] == '\r') {
+		j--
+	}
+	return s[i:j]
 }

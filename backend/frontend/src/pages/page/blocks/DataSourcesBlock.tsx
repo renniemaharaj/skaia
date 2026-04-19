@@ -18,6 +18,7 @@ import {
 import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import EnvVarsEditor from "../../../components/page/EnvVarsEditor";
 
 const MonacoEditor = lazy(() => import("../../../components/monaco/Editor"));
 
@@ -47,6 +48,7 @@ export const DataSourcesBlock = ({
   const [formName, setFormName] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formCode, setFormCode] = useState("");
+  const [formEnvData, setFormEnvData] = useState("");
   const [saving, setSaving] = useState(false);
 
   const { enterEdit, leaveEdit } = usePageBuilderContext();
@@ -91,6 +93,7 @@ export const DataSourcesBlock = ({
     setFormCode(
       '// Return an array of items:\n// { heading, subheading, icon?, image_url?, link_url? }\n\nreturn [\n  { heading: "Example", subheading: "Hello world" },\n];\n',
     );
+    setFormEnvData("");
   };
 
   const startEdit = (ds: DataSource) => {
@@ -98,6 +101,13 @@ export const DataSourcesBlock = ({
     setFormName(ds.name);
     setFormDesc(ds.description);
     setFormCode(ds.code);
+    // Fetch env data from server (returns empty for non-privileged users)
+    setFormEnvData("");
+    if (ds.id > 0) {
+      apiRequest<{ env_data?: string }>(`/config/datasources/${ds.id}/env`)
+        .then((res) => setFormEnvData(res.env_data ?? ""))
+        .catch(() => {});
+    }
   };
 
   const cancelEdit = () => setEditingDS(null);
@@ -243,6 +253,15 @@ export const DataSourcesBlock = ({
               />
             </label>
           </div>
+          {editingDS && (
+            <div className="data-sources-editor-env">
+              <EnvVarsEditor
+                datasourceId={editingDS.id}
+                value={formEnvData}
+                onChange={setFormEnvData}
+              />
+            </div>
+          )}
           <div className="data-sources-editor-code">
             <span className="data-sources-editor-code-label">
               Code (TypeScript — must return an array)

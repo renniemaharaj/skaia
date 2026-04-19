@@ -61,41 +61,35 @@ function updateConfig(
   }
 }
 
-interface CompileResult {
-  js: string;
+interface ExecuteResult {
+  data: RawRow[] | null;
   diagnostics: {
     line: number;
     col: number;
     message: string;
     category: number;
   }[];
-  cached?: boolean;
+  error?: string;
 }
 
 async function evaluateDataSource(
   datasourceId: number,
+  envData?: string,
 ): Promise<{ rows: RawRow[]; cached: boolean }> {
-  const compileRes = await apiRequest<CompileResult>(
-    `/config/datasources/${datasourceId}/compile`,
+  const execRes = await apiRequest<ExecuteResult>(
+    `/config/datasources/${datasourceId}/execute`,
+    {
+      method: "POST",
+      body: JSON.stringify({ env_data: envData ?? "" }),
+    },
   );
-
-  const errors = (compileRes.diagnostics ?? []).filter((d) => d.category === 1);
-  if (errors.length > 0) {
-    throw new Error(
-      errors.map((d) => `Line ${d.line}: ${d.message}`).join("\n"),
-    );
+  if (execRes.error) {
+    throw new Error(execRes.error);
   }
-
-  const fn = new Function(
-    "fetch",
-    `"use strict"; return (async () => { ${compileRes.js} })();`,
-  );
-
-  const result = await fn(fetch.bind(globalThis));
-  if (!Array.isArray(result)) {
+  if (!Array.isArray(execRes.data)) {
     throw new Error("Data source code must return an array");
   }
-  return { rows: result as RawRow[], cached: compileRes.cached ?? false };
+  return { rows: execRes.data as RawRow[], cached: false };
 }
 
 export const DerivedSectionBlock = ({

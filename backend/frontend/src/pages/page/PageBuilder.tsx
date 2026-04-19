@@ -138,6 +138,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
   const [armInProgress, setArmInProgress] = useState(false);
+  const [isArmed, setIsArmed] = useState(false);
   const [resetInProgress, setResetInProgress] = useState(false);
   const RATE_LIMIT_KEY = "pb_rate_limit_until";
 
@@ -178,19 +179,36 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     isAdmin &&
     (currentUserPowerLevel === undefined ? true : currentUserPowerLevel > 50);
 
-  const handleArmSite = useCallback(async () => {
+  useEffect(() => {
+    if (!canArmSite) return;
+    apiRequest<{ armed: boolean }>("/api/armed-status")
+      .then((res) => setIsArmed(res.armed))
+      .catch(() => {});
+  }, [canArmSite]);
+
+  const handleArmToggle = useCallback(async () => {
+    const action = isArmed ? "disarm" : "arm";
+    const label = isArmed
+      ? "Disarm the site? This will restore normal operation."
+      : "Arm the site? This will enable maintenance mode and block API requests.";
+    if (!window.confirm(label)) return;
     setArmInProgress(true);
     try {
-      await apiRequest("/api/site/arm", { method: "POST" });
-      toast.success("Site armed — maintenance mode enabled.");
+      await apiRequest(`/api/site/${action}`, { method: "POST" });
+      setIsArmed(!isArmed);
+      toast.success(
+        isArmed
+          ? "Site disarmed — normal operation restored."
+          : "Site armed — maintenance mode enabled.",
+      );
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to arm the site";
+        err instanceof Error ? err.message : `Failed to ${action} the site`;
       toast.error(message);
     } finally {
       setArmInProgress(false);
     }
-  }, []);
+  }, [isArmed]);
 
   const handleFactoryReset = useCallback(async () => {
     if (
@@ -807,6 +825,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     leaveEdit,
     saveStatus,
     pendingIncoming,
+    pageId: page?.id,
   };
 
   if (isNewPage) {
@@ -907,12 +926,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
             {canArmSite && (
               <button
                 type="button"
-                className="page-admin-btn page-admin-btn--danger"
-                onClick={handleArmSite}
+                className={`page-admin-btn ${
+                  isArmed ? "page-admin-btn--success" : "page-admin-btn--danger"
+                }`}
+                onClick={handleArmToggle}
                 disabled={armInProgress}
-                title="Arm the site"
+                title={isArmed ? "Disarm the site" : "Arm the site"}
               >
-                {armInProgress ? "Arming…" : "Arm site"}
+                {armInProgress
+                  ? isArmed
+                    ? "Disarming…"
+                    : "Arming…"
+                  : isArmed
+                    ? "Disarm site"
+                    : "Arm site"}
               </button>
             )}
 
@@ -1014,7 +1041,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
             />
           </div>
         )}
-
         {/* Engagement stats bar */}
         {page?.id && (
           <div className="page-engagement-bar">
