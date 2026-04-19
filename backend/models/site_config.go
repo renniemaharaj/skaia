@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// SiteConfig is a key→JSON-value row from the site_config table.
+// SiteConfig is a key=>JSON-value row from the site_config table.
 type SiteConfig struct {
 	Key       string    `json:"key"`
 	Value     string    `json:"value"` // raw JSON string

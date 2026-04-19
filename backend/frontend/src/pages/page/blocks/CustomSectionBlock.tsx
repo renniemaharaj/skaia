@@ -33,9 +33,11 @@ import { mapRowsToItems, detectColumns } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
 import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { DesignedCardGrid } from "./DesignedCardGrid";
+import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
 
 interface Props {
   section: LandingSection;
@@ -80,12 +82,14 @@ interface ExecuteResult {
     category: number;
   }[];
   error?: string;
+  cached_at?: string;
+  cache_ttl?: number;
 }
 
 async function evaluateDataSource(
   datasourceId: number,
   envData?: string,
-): Promise<{ rows: RawRow[]; cached: boolean }> {
+): Promise<{ rows: RawRow[]; cachedAt: Date; cacheTTL: number }> {
   const execRes = await apiRequest<ExecuteResult>(
     `/config/datasources/${datasourceId}/execute`,
     {
@@ -99,7 +103,11 @@ async function evaluateDataSource(
   if (!Array.isArray(execRes.data)) {
     throw new Error("Data source code must return an array");
   }
-  return { rows: execRes.data as RawRow[], cached: false };
+  return {
+    rows: execRes.data as RawRow[],
+    cachedAt: execRes.cached_at ? new Date(execRes.cached_at) : new Date(),
+    cacheTTL: execRes.cache_ttl ?? 0,
+  };
 }
 
 function getStringValue(value: unknown): string | undefined {
@@ -234,6 +242,8 @@ export const CustomSectionBlock = ({
   const [authError, setAuthError] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [compileCached, setCompileCached] = useState<boolean | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
+  const [dscacheTTL, setDsCacheTTL] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
 
   const isAuthError = (message: string) =>
@@ -271,12 +281,15 @@ export const CustomSectionBlock = ({
     setEvalError(null);
     setAuthError(false);
     setCompileCached(null);
+    setLastRunAt(null);
     try {
-      const { rows, cached } = await evaluateDataSource(
+      const { rows, cachedAt, cacheTTL } = await evaluateDataSource(
         selectedCS.datasource_id,
       );
       setRawRows(rows);
-      setCompileCached(cached);
+      setCompileCached(true);
+      setLastRunAt(cachedAt);
+      setDsCacheTTL(cacheTTL);
       toast.success(`"${selectedCS.name}" — ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -524,15 +537,15 @@ export const CustomSectionBlock = ({
           </div>
         )}
 
-        {compileCached !== null && (
-          <div
-            style={{
-              fontSize: "0.85rem",
-              color: "#6b7280",
-              marginBottom: "0.75rem",
-            }}
-          >
-            {compileCached ? "Cached result" : "Fresh compilation"}
+        {compileCached !== null && lastRunAt && (
+          <div className="ds-last-updated">
+            <Clock size={11} />
+            <span>Updated {formatTimeAgo(lastRunAt)}</span>
+            {dscacheTTL > 0 && (
+              <span className="ds-last-updated__cache-badge">
+                {cacheTTLLabel(dscacheTTL)}
+              </span>
+            )}
           </div>
         )}
 

@@ -1047,7 +1047,7 @@ function MessageBubble({
                       </span>
                     )}
                     <span className="inbox-page-card__link">
-                      Open your page →
+                      Open your page
                     </span>
                   </div>
                 </Link>

@@ -164,6 +164,8 @@ export interface DataSource {
   name: string;
   description: string;
   code: string;
+  files?: Record<string, string>;
+  cache_ttl: number;
   created_by?: number;
   creator?: DataSourceCreator;
   created_at: string;
@@ -220,7 +222,7 @@ export const MAPPABLE_FIELD_LABELS: Record<MappableField, string> = {
   link_url: "Link URL",
 };
 
-/** Maps LandingItem field → datasource column name. */
+/** Maps LandingItem field => datasource column name. */
 export type ColumnMap = Partial<Record<MappableField, string>>;
 
 /** Per-row overrides keyed by a stable row identifier. */

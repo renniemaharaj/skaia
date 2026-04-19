@@ -65,7 +65,7 @@ function mergeSections(
       stableStringify({ ...existing, items: existing.items ?? [] }) ===
         stableStringify({ ...inc, items: inc.items ?? [] })
     ) {
-      return existing; // same data → keep old reference
+      return existing; // same data => keep old reference
     }
     changed = true;
     return inc;

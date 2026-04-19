@@ -346,7 +346,7 @@ export const useWebSocketSync = () => {
                 setCategoryFeedThreads((prev) => {
                   if (prev.some((t) => String(t.id) === String(thread.id)))
                     return prev;
-                  return [...prev, thread]; // newest at end → bottom of the chat feed
+                  return [...prev, thread]; // newest at end => bottom of the chat feed
                 });
               }
               // User feed

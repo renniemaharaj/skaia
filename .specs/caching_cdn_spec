@@ -60,8 +60,8 @@ are not cached at the edge. However:
 
 The frontend resolves the landing page in two steps:
 
-1. `GET /config/pages/landing-slug` → `{ "slug": "my-page" }` (tiny, never cached)
-2. `GET /config/pages/my-page` → full page data (unique URL per page)
+1. `GET /config/pages/landing-slug` => `{ "slug": "my-page" }` (tiny, never cached)
+2. `GET /config/pages/my-page` => full page data (unique URL per page)
 
 This avoids the single-cache-key problem entirely.
 
@@ -69,8 +69,8 @@ This avoids the single-cache-key problem entirely.
 
 For real-time updates, the backend pushes full data through WebSocket:
 
-- `landing_page_changed` → full page object via `page:update`
-- `page_updated` → full page object via `page:update`
+- `landing_page_changed` => full page object via `page:update`
+- `page_updated` => full page object via `page:update`
 
 WebSocket is not subject to CDN caching.
 

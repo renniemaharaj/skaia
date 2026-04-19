@@ -11,16 +11,16 @@ rendered at `/`. Any custom page can be the landing page.
 ## Cold Load: User Visits `/`
 
 ```
-Browser → GET /
+Browser => GET /
   └── nginx serves index.html (SSR-injected <title>, OG, favicon)
-        └── React mounts <Index /> → <PageBuilder /> (no slug prop)
+        └── React mounts <Index /> => <PageBuilder /> (no slug prop)
 
 PageBuilder mounts:
   └── usePageData(editingCount > 0).refresh() called with no slug
 
 refresh() — index mode (no slug):
-  1. GET /config/pages/landing-slug  →  { "slug": "my-page" }
-  2. GET /config/pages/my-page       →  full PageBuilderPage object
+  1. GET /config/pages/landing-slug  =>  { "slug": "my-page" }
+  2. GET /config/pages/my-page       =>  full PageBuilderPage object
 
 Why two requests:
   /config/pages/index is a SINGLE CDN cache key — when the landing page is
@@ -42,7 +42,7 @@ Frontend:
   2. Clear pendingSectionsRef
   3. PUT /config/pages/landing-page  { slug: "new-page" }
   4. Clear sections + sectionsSourced
-  5. Call refresh() → two-step fetch (landing-slug → page by slug)
+  5. Call refresh() => two-step fetch (landing-slug => page by slug)
 
 Backend (setLandingPage handler):
   1. Upsert "landing_page_slug" in site_config
@@ -53,16 +53,16 @@ Backend (setLandingPage handler):
 
 All other clients receive (via useWebSocketSync):
 
-  page:update → window "page:live:event":
+  page:update => window "page:live:event":
     usePageData handler sees action === "landing_page_changed"
     If in index mode (no requestedSlugRef.current):
-      → setPage(data) directly — ZERO HTTP requests, completely cache-proof
+      => setPage(data) directly — ZERO HTTP requests, completely cache-proof
 
-  config:update → window "config:live:event":
+  config:update => window "config:live:event":
     PageBuilder handler sees action === "landing_page_updated"
     If !slug && editingCount === 0:
-      → refresh() — two-step fetch as fallback
-    CustomPages handler re-fetches browse → badge updates correctly
+      => refresh() — two-step fetch as fallback
+    CustomPages handler re-fetches browse => badge updates correctly
 ```
 
 ## Page Content Updated (Same Landing Page)
@@ -71,18 +71,18 @@ All other clients receive (via useWebSocketSync):
 Editor saves a section on the landing page:
 
 Frontend:
-  BBR adaptive save pipeline → PUT /config/pages/{id}
+  BBR adaptive save pipeline => PUT /config/pages/{id}
   HTTP response = updated page (authoritative for sender)
 
 Backend:
   BroadcastPageExceptUser(userID, "page_updated", enrichedPage)
-  → page:update sent to all clients EXCEPT the one who saved
+  => page:update sent to all clients EXCEPT the one who saved
 
 Other clients:
   page:live:event with action === "page_updated"
   If data.slug matches currentSlugRef OR data.id matches page.id:
-    If editing → hold in pendingDataRef, set pendingIncoming flag
-    If not editing → applyIncomingData(data) directly (no HTTP)
+    If editing => hold in pendingDataRef, set pendingIncoming flag
+    If not editing => applyIncomingData(data) directly (no HTTP)
 ```
 
 ## Key Endpoints
@@ -109,7 +109,7 @@ Other clients:
 - **No `is_index` column.** Landing page is determined solely by `landing_page_slug`
   in `site_config`.
 - **Frontend NEVER calls `/config/pages/index` for the landing page.** It uses
-  the two-step flow: landing-slug → fetch by slug. The index endpoint exists
+  the two-step flow: landing-slug => fetch by slug. The index endpoint exists
   for backwards compatibility only.
 - **WS push is the primary update path.** HTTP is the fallback. `landing_page_changed`
   carries the full page object so clients can swap without any HTTP request.
@@ -128,7 +128,7 @@ Other clients:
 
 2. **307 redirect from getIndex to getBySlug.** `fetch()` follows the redirect
    transparently, but the redirected response confused PageBuilder's page
-   creation logic (null page → ensurePage → creates "landing" page).
+   creation logic (null page => ensurePage => creates "landing" page).
    Fix: serve inline from getIndex, but frontend uses landing-slug endpoint.
 
 3. **Broadcasting only the slug on config:update.** The frontend needs the full

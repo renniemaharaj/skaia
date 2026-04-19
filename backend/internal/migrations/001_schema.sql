@@ -446,6 +446,7 @@ CREATE TABLE IF NOT EXISTS data_sources (
     name        VARCHAR(255) NOT NULL,
     description TEXT         NOT NULL DEFAULT '',
     code        TEXT         NOT NULL DEFAULT '',
+    files       JSONB        NOT NULL DEFAULT '{}',
     env_data    TEXT         NOT NULL DEFAULT '',
     created_by  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,

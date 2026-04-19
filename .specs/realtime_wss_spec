@@ -3,7 +3,7 @@
 ## Overview
 
 All mutable UI data in Skaia flows through a single, unified real-time model:
-**subscribe → receive push → update atom → render**.
+**subscribe => receive push => update atom => render**.
 
 A single singleton WebSocket connection is opened per browser context on app
 load (established inside `useWebSocketSync`). The connection authenticates via
@@ -13,7 +13,7 @@ exponential backoff (3 s fixed). All subscriptions are tracked in a module-level
 
 The principle: **no data point the UI depends on should require a manual page
 refresh or a polling timer.** Every domain resource has a WebSocket projection
-that covers its full lifecycle: created → updated → deleted.
+that covers its full lifecycle: created => updated => deleted.
 
 ---
 
@@ -24,14 +24,14 @@ There are three distinct delivery strategies, selected per event by the backend:
 ### 1. Resource Subscription (targeted, opt-in)
 
 The client explicitly subscribes to a named resource key. The backend maintains
-a reverse index `key → []Client`. Events are only delivered to subscribed
+a reverse index `key => []Client`. Events are only delivered to subscribed
 clients. Subscriptions are sent immediately on resource load and replayed on
 reconnect.
 
 ```
-client → server:  { type: "subscribe",   payload: { resource_type: "thread", resource_id: 42 } }
-client → server:  { type: "unsubscribe", payload: { resource_type: "thread", resource_id: 42 } }
-server → client:  { type: "forum:update", payload: { action: "thread_updated", id: 42, data: {...} } }
+client => server:  { type: "subscribe",   payload: { resource_type: "thread", resource_id: 42 } }
+client => server:  { type: "unsubscribe", payload: { resource_type: "thread", resource_id: 42 } }
+server => client:  { type: "forum:update", payload: { action: "thread_updated", id: 42, data: {...} } }
 ```
 
 **Subscribe on mount, unsubscribe on unmount.** Resource subscriptions are the
@@ -84,7 +84,7 @@ Resources that use broadcast (no subscription required):
 | CMS pages       | `page_created`, `page_updated`, `page_deleted`                          |
 | Forum broadcast | `thread_created`, `thread_deleted` (live feed fallback path)            |
 
-Resources that use direct push (server → user, no subscription):
+Resources that use direct push (server => user, no subscription):
 
 | Message type                        | Trigger                                |
 | ----------------------------------- | -------------------------------------- |
@@ -100,7 +100,7 @@ Resources that use direct push (server → user, no subscription):
 All messages are JSON frames:
 `{ type: string, payload: string (JSON-encoded) }`
 
-### Client → Server
+### Client => Server
 
 | `type`          | Payload fields                 | Purpose                       |
 | --------------- | ------------------------------ | ----------------------------- |
@@ -112,7 +112,7 @@ All messages are JSON frames:
 | `cursor:update` | `x` (float64), `y` (float64)   | Broadcast cursor position     |
 | `tp`            | `target_user_id`, `route`      | Admin teleport command        |
 
-### Server → Client
+### Server => Client
 
 | `type`                | Payload                                           | Delivery mode         |
 | --------------------- | ------------------------------------------------- | --------------------- |
@@ -254,7 +254,7 @@ const { subscribe, unsubscribe } = useWebSocketSync();
 - Sends `{ type: "unsubscribe", ... }` if socket is open
 - Call in cleanup (`useEffect` return) when leaving a page
 
-### Message Handler → Atom Map
+### Message Handler => Atom Map
 
 | WS message type       | Action                                    | Atom mutated                                                     |
 | --------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
@@ -390,7 +390,7 @@ triggers the backend to push the canonical updated state via WS, which in turn
 updates the atom. This creates a single write path:
 
 ```
-user action → REST mutation → backend → WS push → atom update → render
+user action => REST mutation => backend => WS push => atom update => render
 ```
 
 Optimistic updates (local atom flip before REST confirms) are permitted for

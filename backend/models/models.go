@@ -350,14 +350,16 @@ type Notification struct {
 // DataSource holds a named TypeScript code snippet that can be evaluated
 // to produce a JSON array of items for derived page sections.
 type DataSource struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Code        string    `json:"code"`
-	EnvData     string    `json:"env_data,omitempty"`
-	CreatedBy   *int64    `json:"created_by,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID          int64           `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	Code        string          `json:"code"`
+	Files       json.RawMessage `json:"files"`
+	EnvData     string          `json:"env_data,omitempty"`
+	CacheTTL    int             `json:"cache_ttl"`
+	CreatedBy   *int64          `json:"created_by,omitempty"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
 }
 
 // CustomSection is a reusable data-bound visualization (like a Superset chart).

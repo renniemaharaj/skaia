@@ -77,7 +77,7 @@ func runMigrations(dbName string, env SharedEnv) {
 // safe to run on a live database — existing objects are untouched and any new
 // tables, indexes, or seed rows are added.
 //
-// With --rebuild the command performs a full export → drop → recreate → migrate →
+// With --rebuild the command performs a full export => drop => recreate => migrate =>
 // restore cycle for more invasive schema changes.
 func cmdMigrate(name string, rebuild bool) {
 	if !clientExists(name) {
@@ -109,14 +109,14 @@ func cmdMigrate(name string, rebuild bool) {
 
 	// Safety backup before applying migrations.
 	backupFile := backupDatabase(name, dbName)
-	log("Safety backup → %s", backupFile)
+	log("Safety backup => %s", backupFile)
 
 	log("Applying migrations to '%s'…", dbName)
 	runMigrations(dbName, env)
 	log("Migrate complete for '%s'", name)
 }
 
-// cmdMigrateRebuild performs a full data-only dump → drop → recreate → migrate →
+// cmdMigrateRebuild performs a full data-only dump => drop => recreate => migrate =>
 // restore cycle.  Useful when schema changes go beyond additive (e.g. column
 // renames, type changes).
 func cmdMigrateRebuild(name, dbName string, env SharedEnv) {
@@ -128,7 +128,7 @@ func cmdMigrateRebuild(name, dbName string, env SharedEnv) {
 
 	// 2. Full pg_dump for safety, then data-only dump for restore.
 	backupFile := backupDatabase(name, dbName)
-	log("Full safety backup → %s", backupFile)
+	log("Full safety backup => %s", backupFile)
 
 	log("Dumping data from '%s'…", dbName)
 	dataSQL, err := pgDumpDataOnly(dbName)

@@ -123,7 +123,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	// ── upload/serve_traversal_blocked ────────────────────────────────────────
 	s.Add("upload/serve_traversal_blocked", func(t *T) {
 		resp := s.GET("/uploads/../etc/passwd", nil)
-		// Go's http.FileServer cleans the path (/../etc/passwd → /etc/passwd) and
+		// Go's http.FileServer cleans the path (/../etc/passwd => /etc/passwd) and
 		// returns 404 when the file doesn't exist, which is equally safe as 403.
 		t.Require(resp.StatusCode == 403 || resp.StatusCode == 400 || resp.StatusCode == 404,
 			"directory traversal must be blocked (4xx), got %d", resp.StatusCode)

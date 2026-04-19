@@ -495,7 +495,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 ### Page layout
 
 - **Page header**: Title + subtitle left, action buttons right (flex, space-between)
-- **Toolbar**: Search input (border-radius: 8px, focus → primary-color) + count + view toggle
+- **Toolbar**: Search input (border-radius: 8px, focus => primary-color) + count + view toggle
 - **Grid/List toggle**: Paired `.icon-btn` in border-group container (first/last radius override)
 - Max width: `1400px` for list pages, `1600px` for editor pages
 
@@ -520,7 +520,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 ### Micro-patterns
 
 - **Creator chips**: Avatar (18px circle) + name in pill with `border-radius: 12px`
-- **Skeleton loading**: Shimmer gradient animation on `--bg-secondary` → `--bg-tertiary`
+- **Skeleton loading**: Shimmer gradient animation on `--bg-secondary` => `--bg-tertiary`
 - **Error display**: `--error-bg` background, `--error-color` text, left border accent
 - **Empty states**: Centered icon + heading + subtext + optional CTA button
 
@@ -534,7 +534,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 - Body text: `0.8125rem`
 - Small meta: `0.75rem` / `0.6875rem`
 - Labels: `0.6875rem / 600 / uppercase / letter-spacing: 0.04em`
-- Mono code: `var(--font-mono)` → "JetBrains Mono", "Fira Code", "Consolas", monospace
+- Mono code: `var(--font-mono)` => "JetBrains Mono", "Fira Code", "Consolas", monospace
 
 ---
 
@@ -551,7 +551,7 @@ Custom sections pair a **data source** (TypeScript code) with a **visualization 
 
 ### Architecture
 
-- **Data source**: TypeScript code snippet → compiles to JS → evaluates to `EvalItem[]`
+- **Data source**: TypeScript code snippet => compiles to JS => evaluates to `EvalItem[]`
 - **Custom section**: `{ name, datasource_id, section_type, config }` — saved to `custom_sections` table
 - **Page builder block**: `custom_section` block type selects a saved custom section, evaluates its datasource, and renders using the stored visualization type
 
@@ -577,10 +577,10 @@ Tables follow the Superset data grid pattern:
 ### Flow
 
 1. User writes data source code in the editor
-2. Runs it → previews results
+2. Runs it => previews results
 3. Switches between visualization types (Cards / Stats / Table)
-4. Clicks "Save as Section" → names it → saved to `custom_sections` table
-5. In page builder, adds a `custom_section` block → selects from saved sections → renders automatically
+4. Clicks "Save as Section" => names it => saved to `custom_sections` table
+5. In page builder, adds a `custom_section` block => selects from saved sections => renders automatically
 
 ### Component Map Addition
 

@@ -31,6 +31,7 @@ func compilerEnvIntDefault(key string, def int) int {
 type CompileJob struct {
 	DataSourceID int64
 	Source       string
+	Files        map[string]string
 	UserID       int64
 	IP           string
 	ResultCh     chan compileResult
@@ -102,7 +103,11 @@ func (d *CompileDispatcher) worker(id int) {
 }
 
 func (d *CompileDispatcher) processJob(job CompileJob) {
-	res, err := CompileTypeScript(job.Source)
+	files := job.Files
+	if len(files) == 0 && job.Source != "" {
+		files = map[string]string{"main.ts": job.Source}
+	}
+	res, err := CompileTypeScript(files)
 	if err == nil && d.cache != nil {
 		d.cache.Set(job.Source, res)
 	}

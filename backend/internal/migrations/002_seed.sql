@@ -35,7 +35,7 @@ ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('permissions', 'id'), 18, false);
 
--- Role → permission assignments
+-- Role => permission assignments
 INSERT INTO role_permissions (role_id, permission_id) VALUES
     (2, 1),   -- member: forum.thread-new
     (2, 7)    -- member: forum.thread-comment-new

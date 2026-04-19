@@ -20,21 +20,21 @@ const (
 	Subscribe          MessageType = "subscribe"
 	Unsubscribe        MessageType = "unsubscribe"
 	Ping               MessageType = "ping"
-	Presence           MessageType = "presence"            // client → server: announce route
-	PresenceSync       MessageType = "presence:update"     // server → client: online list
-	Tp                 MessageType = "tp"                  // client → server → target: teleport request
+	Presence           MessageType = "presence"            // client => server: announce route
+	PresenceSync       MessageType = "presence:update"     // server => client: online list
+	Tp                 MessageType = "tp"                  // client => server => target: teleport request
 	GlobalChat         MessageType = "global:chat"         // bidirectional: send / receive global chat
-	GlobalChatHistory  MessageType = "global:chat:history" // server → client on connect: recent history
-	InboxUpdate        MessageType = "inbox:update"        // server → subscribed clients: conversation changed
-	InboxMsg           MessageType = "inbox:message"       // server → recipient: unread badge ping
-	NotificationMsg    MessageType = "notification"        // server → client: incoming user notification
-	NotificationUpdate MessageType = "notification:update" // server → client: notification read/deleted
-	NotificationSync   MessageType = "notification:sync"   // server → client on connect: notification bootstrap
-	CartUpdate         MessageType = "cart:update"         // server → client: user's cart changed
-	ConfigUpdate       MessageType = "config:update"       // server → all: branding/seo/footer/landing changed
-	PageUpdate         MessageType = "page:update"         // server → all: CMS page created/updated/deleted
-	Cursor             MessageType = "cursor:update"       // client → server → same-route clients: cursor position
-	EventsUpdate       MessageType = "events:update"       // server → admin clients: new audit event
+	GlobalChatHistory  MessageType = "global:chat:history" // server => client on connect: recent history
+	InboxUpdate        MessageType = "inbox:update"        // server => subscribed clients: conversation changed
+	InboxMsg           MessageType = "inbox:message"       // server => recipient: unread badge ping
+	NotificationMsg    MessageType = "notification"        // server => client: incoming user notification
+	NotificationUpdate MessageType = "notification:update" // server => client: notification read/deleted
+	NotificationSync   MessageType = "notification:sync"   // server => client on connect: notification bootstrap
+	CartUpdate         MessageType = "cart:update"         // server => client: user's cart changed
+	ConfigUpdate       MessageType = "config:update"       // server => all: branding/seo/footer/landing changed
+	PageUpdate         MessageType = "page:update"         // server => all: CMS page created/updated/deleted
+	Cursor             MessageType = "cursor:update"       // client => server => same-route clients: cursor position
+	EventsUpdate       MessageType = "events:update"       // server => admin clients: new audit event
 	ErrorMessage       MessageType = "error"
 )
 

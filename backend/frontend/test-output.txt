@@ -19,7 +19,7 @@
  [32m✓[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mNavigation Links[2m > [22mrenders all navigation links[32m 55[2mms[22m[39m
  [32m✓[39m src/components/Auth.test.tsx[2m > [22mAuth Component[2m > [22mLogin Mode[2m > [22mallows toggling to register mode[32m 116[2mms[22m[39m
  [31m×[39m src/components/Header.test.tsx[2m > [22mHeader Component[2m > [22mNavigation Links[2m > [22mapplies active class to current page link[32m 40[2mms[22m[39m
-[31m   → [2mexpect([22m[31melement[31m[2m).toHaveClass([22m[32m[32m"active"[32m[31m[2m)[22m
+[31m   => [2mexpect([22m[31melement[31m[2m).toHaveClass([22m[32m[32m"active"[32m[31m[2m)[22m
 
 Expected the element to have class:
 [32m  active[31m

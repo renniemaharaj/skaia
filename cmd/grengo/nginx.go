@@ -92,7 +92,7 @@ func generateNginxConfig() {
 
 	clients := enabledClients()
 
-	// No enabled clients → 503 fallback
+	// No enabled clients => 503 fallback
 	if len(clients) == 0 {
 		fallback := `server { listen 80 default_server; return 503 "No backends configured – run: grengo new <name>\n"; }` + "\n"
 		if err := os.WriteFile(confPath, []byte(fallback), 0644); err != nil {
@@ -129,8 +129,8 @@ gzip_types
 		fmt.Fprintf(&b, "upstream %s-backend {\n    server %s-backend:%s;\n    keepalive 32;\n}\n\n", c.Name, c.Name, c.Port)
 	}
 
-	// Host → backend mapping
-	b.WriteString("# ── Host → backend mapping ────────────────────────────────────────────────\n")
+	// Host => backend mapping
+	b.WriteString("# ── Host => backend mapping ────────────────────────────────────────────────\n")
 	b.WriteString("map $host $backend_upstream {\n")
 	for _, c := range clients {
 		for _, domain := range c.Domains {
@@ -279,7 +279,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `)
 
 	// Catch-all
-	b.WriteString(`    # ── Catch-all → SSR / SPA ────────────────────────────────────────────
+	b.WriteString(`    # ── Catch-all => SSR / SPA ────────────────────────────────────────────
     location / {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -298,5 +298,5 @@ proxy_cache_path /var/cache/nginx/uploads
 	if err := os.WriteFile(confPath, []byte(b.String()), 0644); err != nil {
 		die("Cannot write nginx config: %v", err)
 	}
-	log("nginx config written → %s", confPath)
+	log("nginx config written => %s", confPath)
 }

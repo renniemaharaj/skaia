@@ -79,7 +79,7 @@ func cmdExportClient(name, outFile string) {
 		warn("PostgreSQL is not running — archive will not include DB data")
 	}
 
-	log("Client '%s' exported → %s", name, outFile)
+	log("Client '%s' exported => %s", name, outFile)
 }
 
 // ─── Client Import ────────────────────────────────────────────────────────────
@@ -193,7 +193,7 @@ func cmdExportNode(outFile string) {
 		}
 	}
 
-	log("Node exported → %s  (%d client(s))", outFile, len(names))
+	log("Node exported => %s  (%d client(s))", outFile, len(names))
 }
 
 // ─── Node Import ──────────────────────────────────────────────────────────────
@@ -447,7 +447,7 @@ func pgDump(dbName string) ([]byte, error) {
 
 // ─── Env helpers ──────────────────────────────────────────────────────────────
 
-// parseEnvBytes parses raw .env bytes into a key→value map.
+// parseEnvBytes parses raw .env bytes into a key=>value map.
 // Comments and blank lines are ignored.
 func parseEnvBytes(data []byte) map[string]string {
 	m := make(map[string]string)

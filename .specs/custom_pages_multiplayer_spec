@@ -32,7 +32,7 @@ for sections whose data hasn't changed:
 
 ```
 mergeSections(current: LandingSection[], incoming: LandingSection[])
-  → LandingSection[]  (preserves old refs for unchanged sections)
+  => LandingSection[]  (preserves old refs for unchanged sections)
 ```
 
 Each incoming section is matched by `id` against the current array. If the
@@ -77,7 +77,7 @@ code editor, etc.), the `enterEdit` / `leaveEdit` callbacks increment
 - **Save pipeline (BBR adaptive)** holds the debounce timer until all editors
   are released, then flushes after an 800 ms pause.
 
-When the last editor is released (`editingCount → 0`):
+When the last editor is released (`editingCount => 0`):
 
 1. The `suppressLiveRefresh` param to `usePageData` becomes `false`.
 2. If `pendingIncoming` is true, `refresh(slug)` fires and fetches the latest

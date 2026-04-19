@@ -3,8 +3,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  lazy,
-  Suspense,
   type CSSProperties,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -45,13 +43,13 @@ import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
 import { CardDesigner } from "../page/CardDesigner";
 import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
 import { toast } from "sonner";
+import TabbedEditor from "../../components/page/TabbedEditor";
 import "./DataSources.css";
-
-const MonacoEditor = lazy(() => import("../../components/monaco/Editor"));
 
 interface CompileResult {
   js: string;
   diagnostics: {
+    file: string;
     line: number;
     col: number;
     message: string;
@@ -110,6 +108,12 @@ return [
   { heading: "Example", subheading: "Hello world" },
 ];
 `;
+
+import {
+  CACHE_TTL_OPTIONS,
+  formatTimeAgo,
+  cacheTTLLabel,
+} from "../../utils/cache";
 
 const DATASOURCE_PREVIEW_TYPES = [
   ...PREVIEW_TYPES,
@@ -234,14 +238,18 @@ export default function DataSourceEditorPage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [code, setCode] = useState(DEFAULT_CODE);
+  const [files, setFiles] = useState<Record<string, string>>({
+    "main.ts": DEFAULT_CODE,
+  });
+  const [envData, setEnvData] = useState("");
+  const [cacheTTL, setCacheTTL] = useState(0);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
 
   // Compile/evaluate state
   const [compiling, setCompiling] = useState(false);
   const [compiledJS, setCompiledJS] = useState<string | null>(null);
-  const [compileCached, setCompileCached] = useState<boolean | null>(null);
+  const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [diagnostics, setDiagnostics] = useState<CompileResult["diagnostics"]>(
     [],
   );
@@ -308,7 +316,22 @@ export default function DataSourceEditorPage() {
       const ds = await apiRequest<DataSource>(`/config/datasources/${id}`);
       setName(ds.name);
       setDescription(ds.description);
-      setCode(ds.code);
+      setCacheTTL(ds.cache_ttl ?? 0);
+      // Prefer files map; fall back to legacy code field
+      if (ds.files && Object.keys(ds.files).length > 0) {
+        setFiles(ds.files);
+      } else {
+        setFiles({ "main.ts": ds.code || DEFAULT_CODE });
+      }
+      // Fetch env data (returns empty for unauthorized users)
+      try {
+        const env = await apiRequest<{ env_data: string }>(
+          `/config/datasources/${id}/env`,
+        );
+        setEnvData(env.env_data ?? "");
+      } catch {
+        // not authorized or no env data — leave empty
+      }
     } catch {
       toast.error("Data source not found");
       navigate("/datasources");
@@ -328,7 +351,13 @@ export default function DataSourceEditorPage() {
     }
     setSaving(true);
     try {
-      const payload = { name, description, code };
+      const payload = {
+        name,
+        description,
+        code: files["main.ts"] ?? "",
+        files,
+        cache_ttl: cacheTTL,
+      };
       if (isNew) {
         const created = await apiRequest<DataSource>("/config/datasources", {
           method: "POST",
@@ -367,7 +396,7 @@ export default function DataSourceEditorPage() {
     setEvalError(null);
     setPreviewItems([]);
     setCompiledJS(null);
-    setCompileCached(null);
+    setLastRunAt(null);
     setDiagnostics([]);
     setRunStats(null);
     setExpandedFetch(new Set());
@@ -425,10 +454,10 @@ export default function DataSourceEditorPage() {
     try {
       const result = await apiRequest<CompileResult>(
         "/config/datasources/compile",
-        { method: "POST", body: JSON.stringify({ code }) },
+        { method: "POST", body: JSON.stringify({ files }) },
       );
       setCompiledJS(result.js);
-      setCompileCached(result.cached ?? false);
+      setLastRunAt(new Date());
       setDiagnostics(result.diagnostics ?? []);
 
       const errors = (result.diagnostics ?? []).filter((d) => d.category === 1);
@@ -442,21 +471,49 @@ export default function DataSourceEditorPage() {
           fetchLog,
         });
         setEvalError(
-          errors.map((d) => `Line ${d.line}: ${d.message}`).join("\n"),
+          errors
+            .map(
+              (d) =>
+                `${d.file ? d.file + " " : ""}Line ${d.line}: ${d.message}`,
+            )
+            .join("\n"),
         );
         setActivePanel("diagnostics");
         return;
       }
 
-      // Evaluate compiled JS with timeout and intercepted fetch
+      // Parse .env data into key-value pairs for sandbox injection
+      const parsedEnv: Record<string, string> = {};
+      for (const line of envData.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+        const eqIdx = trimmed.indexOf("=");
+        if (eqIdx < 1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        let val = trimmed.slice(eqIdx + 1).trim();
+        // Strip surrounding quotes
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
+        parsedEnv[key] = val;
+      }
+      const envKeys = Object.keys(parsedEnv);
+      const envValues = Object.values(parsedEnv);
+
+      // Evaluate compiled JS with timeout and intercepted fetch + env vars
       const fn = new Function(
         "fetch",
+        "env",
+        ...envKeys,
         `"use strict"; return (async () => { ${result.js} })();`,
       );
       let rawItems: unknown;
       try {
         rawItems = await Promise.race([
-          fn(trackedFetch),
+          fn(trackedFetch, Object.freeze({ ...parsedEnv }), ...envValues),
           new Promise<never>((_, reject) =>
             setTimeout(
               () =>
@@ -587,7 +644,8 @@ export default function DataSourceEditorPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const codeLineCount = code.split("\n").length;
+  const mainCode = files["main.ts"] ?? "";
+  const codeLineCount = mainCode.split("\n").length;
   const editorHeight = heightMode
     ? Math.max(400, Math.min(viewportHeight * 0.55, 700))
     : Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
@@ -697,7 +755,7 @@ export default function DataSourceEditorPage() {
           <button
             className="ds-editor__run-btn"
             onClick={handleRun}
-            disabled={compiling || !code.trim()}
+            disabled={compiling || !mainCode.trim()}
           >
             {compiling ? (
               <Loader2 size={14} className="spin" />
@@ -746,6 +804,20 @@ export default function DataSourceEditorPage() {
             placeholder="What this data source produces"
           />
         </div>
+        <div className="ds-editor__field ds-editor__field--cache">
+          <label>Cache</label>
+          <select
+            value={cacheTTL}
+            onChange={(e) => setCacheTTL(Number(e.target.value))}
+            className="ds-editor__cache-select"
+          >
+            {CACHE_TTL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Main split view: Editor + Results */}
@@ -758,19 +830,14 @@ export default function DataSourceEditorPage() {
             <span className="ds-editor__line-count">{codeLineCount} lines</span>
           </div>
           <div className="ds-editor__code-area">
-            <Suspense
-              fallback={
-                <div className="ds-skeleton" style={{ height: editorHeight }} />
-              }
-            >
-              <MonacoEditor
-                height={editorHeight}
-                language="typescript"
-                code={code}
-                onChange={(v: string) => setCode(v)}
-                editable
-              />
-            </Suspense>
+            <TabbedEditor
+              files={files}
+              onFilesChange={setFiles}
+              envData={envData}
+              onEnvDataChange={setEnvData}
+              datasourceId={isNew ? 0 : Number(id)}
+              height={editorHeight}
+            />
           </div>
         </div>
 
@@ -805,6 +872,18 @@ export default function DataSourceEditorPage() {
                 </span>
               )}
             </button>
+
+            {lastRunAt && (
+              <div className="ds-editor__last-updated">
+                <Clock size={11} />
+                <span>Updated {formatTimeAgo(lastRunAt)}</span>
+                {cacheTTL > 0 && (
+                  <span className="ds-editor__cache-badge">
+                    {cacheTTLLabel(cacheTTL)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="ds-editor__panel-content">
@@ -928,11 +1007,6 @@ export default function DataSourceEditorPage() {
             {/* Compiled JS */}
             {activePanel === "compiled" && (
               <div className="ds-editor__compiled">
-                {compileCached !== null && (
-                  <div className="ds-editor__compile-status">
-                    {compileCached ? "Cached compilation" : "Fresh compilation"}
-                  </div>
-                )}
                 {compiledJS ? (
                   <pre className="ds-editor__compiled-code">{compiledJS}</pre>
                 ) : (
@@ -991,7 +1065,7 @@ export default function DataSourceEditorPage() {
                     className={`ds-diagnostic ${d.category === 1 ? "ds-diagnostic--error" : "ds-diagnostic--warn"}`}
                   >
                     <span className="ds-diagnostic__location">
-                      Ln {d.line}, Col {d.col}
+                      {d.file ? `${d.file} ` : ""}Ln {d.line}, Col {d.col}
                     </span>
                     <span className="ds-diagnostic__message">{d.message}</span>
                   </div>

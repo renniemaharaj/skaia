@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Go 1.24 server using chi/v5 router. Follows a strict **handler → service → repository** pattern with constructor-based dependency injection. No ORM — all database access is raw SQL via `lib/pq`.
+Go 1.24 server using chi/v5 router. Follows a strict **handler => service => repository** pattern with constructor-based dependency injection. No ORM — all database access is raw SQL via `lib/pq`.
 
 ## Package Layout
 
@@ -37,7 +37,7 @@ backend/
     └── testutil/              # Test helpers (DB setup)
 ```
 
-## Handler → Service → Repository Pattern
+## Handler => Service => Repository Pattern
 
 ### Handlers (`handler.go`)
 

@@ -113,7 +113,7 @@ func (h *Hub) handleSubscribe(sub ResourceSubscription) {
 	}
 	h.clientSubs[sub.Client][key] = true
 	h.mu.Unlock()
-	log.Printf("ws: sub     %s → %s", clientLabel(sub.Client), key)
+	log.Printf("ws: sub     %s => %s", clientLabel(sub.Client), key)
 }
 
 func (h *Hub) handleUnsubscribe(unsub ResourceSubscription) {

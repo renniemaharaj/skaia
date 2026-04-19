@@ -22,7 +22,7 @@ import (
 // window counter to roll over.
 type penaltyBox struct {
 	mu      sync.RWMutex
-	entries map[string]time.Time // key → penalty expiry
+	entries map[string]time.Time // key => penalty expiry
 }
 
 func newPenaltyBox() *penaltyBox {

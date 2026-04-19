@@ -100,7 +100,7 @@ export function useThreadsFeed({
     try {
       const res = await apiRequest<{ threads: ForumThread[] }>(buildUrl(0));
       const page = res?.threads ?? [];
-      // API returns newest-first (DESC); reverse so oldest is at top → newest visible at bottom
+      // API returns newest-first (DESC); reverse so oldest is at top => newest visible at bottom
       setThreads([...page].reverse());
       offsetRef.current = page.length;
       if (page.length < limit) exhaustedRef.current = true;

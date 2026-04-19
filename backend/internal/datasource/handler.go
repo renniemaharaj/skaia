@@ -34,11 +34,12 @@ type Handler struct {
 	userSvc           *iuser.Service
 	compileCache      *CompileCache
 	compileDispatcher *CompileDispatcher
+	executeCache      *ExecuteCache
 }
 
 // NewHandler creates a datasource Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache, compileDispatcher *CompileDispatcher) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc, compileCache: compileCache, compileDispatcher: compileDispatcher}
+func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache, compileDispatcher *CompileDispatcher, executeCache *ExecuteCache) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, compileCache: compileCache, compileDispatcher: compileDispatcher, executeCache: executeCache}
 }
 
 // enrich attaches creator info to a datasource.
@@ -171,6 +172,9 @@ func (h *Handler) updateDataSource(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "update failed")
 		return
 	}
+	if h.executeCache != nil {
+		h.executeCache.Invalidate(id)
+	}
 	updated, _ := h.svc.GetByID(id)
 	if updated != nil {
 		utils.WriteJSON(w, http.StatusOK, h.enrich(updated))
@@ -199,18 +203,24 @@ func (h *Handler) deleteDataSource(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) compileTypeScript(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Code string `json:"code"`
+		Code  string            `json:"code"`
+		Files map[string]string `json:"files"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
-	if body.Code == "" {
-		utils.WriteError(w, http.StatusBadRequest, "code is required")
-		return
+	// Support both legacy single-code and multi-file.
+	files := body.Files
+	if len(files) == 0 {
+		if body.Code == "" {
+			utils.WriteError(w, http.StatusBadRequest, "code or files required")
+			return
+		}
+		files = map[string]string{"main.ts": body.Code}
 	}
 
-	result, err := CompileTypeScript(body.Code)
+	result, err := CompileTypeScript(files)
 	if err != nil {
 		log.Printf("datasource.compile: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
@@ -233,7 +243,7 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusNotFound, "datasource not found")
 		return
 	}
-	if ds.Code == "" {
+	if ds.Code == "" && len(filesFromDS(ds)) == 0 {
 		utils.WriteError(w, http.StatusBadRequest, "datasource has no code")
 		return
 	}
@@ -245,9 +255,13 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
+	// Use files if available, fall back to legacy code.
+	files := filesFromDS(ds)
+
 	job := CompileJob{
 		DataSourceID: id,
 		Source:       ds.Code,
+		Files:        files,
 		IP:           events.ClientIP(r),
 		ResultCh:     make(chan compileResult, 1),
 	}
@@ -275,6 +289,7 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 
 // executeDataSourceByID compiles a datasource and executes it server-side
 // with the datasource's own environment variables injected.
+// If the datasource has a cache_ttl > 0, results are served from Redis.
 func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -288,9 +303,17 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusNotFound, "datasource not found")
 		return
 	}
-	if ds.Code == "" {
+	if ds.Code == "" && len(filesFromDS(ds)) == 0 {
 		utils.WriteError(w, http.StatusBadRequest, "datasource has no code")
 		return
+	}
+
+	// Serve from cache if the datasource has a TTL and the result is cached.
+	if ds.CacheTTL > 0 && h.executeCache != nil {
+		if cached, ok := h.executeCache.Get(id); ok {
+			utils.WriteJSON(w, http.StatusOK, cached)
+			return
+		}
 	}
 
 	// Check for client-supplied env_data (editor context); fall back to DB.
@@ -306,13 +329,27 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		env = parseEnvData(ds.EnvData)
 	}
 
-	result, err := ExecuteTypeScript(ds.Code, env)
+	files := filesFromDS(ds)
+
+	result, err := ExecuteTypeScript(files, env)
 	if err != nil {
 		log.Printf("datasource.execute: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "execution failed")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, result)
+
+	// Cache the result if TTL is configured and execution succeeded.
+	if ds.CacheTTL > 0 && h.executeCache != nil && result.Error == "" {
+		h.executeCache.Set(id, result, time.Duration(ds.CacheTTL)*time.Second)
+	}
+
+	// Return with cached_at = now for fresh executions
+	resp := CachedExecuteResult{
+		ExecuteResult: *result,
+		CachedAt:      time.Now(),
+		CacheTTL:      ds.CacheTTL,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 // ── Environment variables per datasource ────────────────────────────────────
@@ -353,6 +390,9 @@ func (h *Handler) upsertEnvData(w http.ResponseWriter, r *http.Request) {
 		log.Printf("datasource.upsertEnvData: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to save env vars")
 		return
+	}
+	if h.executeCache != nil {
+		h.executeCache.Invalidate(id)
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
@@ -423,4 +463,19 @@ func trimSpace(s string) string {
 		j--
 	}
 	return s[i:j]
+}
+
+// filesFromDS extracts the files map from a datasource, falling back to
+// legacy single-code mode when the files column is empty.
+func filesFromDS(ds *models.DataSource) map[string]string {
+	if len(ds.Files) > 2 { // not empty "{}"
+		var m map[string]string
+		if json.Unmarshal(ds.Files, &m) == nil && len(m) > 0 {
+			return m
+		}
+	}
+	if ds.Code != "" {
+		return map[string]string{"main.ts": ds.Code}
+	}
+	return map[string]string{}
 }

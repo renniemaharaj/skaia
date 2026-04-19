@@ -119,7 +119,7 @@ type Hub struct {
 	register        chan *Client
 	unregister      chan *Client
 	subscriptions   map[string][]*Client        // key: "resource_type:resource_id"
-	clientSubs      map[*Client]map[string]bool // reverse index: client → subscription keys
+	clientSubs      map[*Client]map[string]bool // reverse index: client => subscription keys
 	subscribe       chan ResourceSubscription
 	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
@@ -135,12 +135,12 @@ type Hub struct {
 
 	// per-session chat ring buffers — protected by chatMu
 	chatMu     sync.Mutex
-	chatRings  map[int64]*sessionChatRing // sessionID → ring
+	chatRings  map[int64]*sessionChatRing // sessionID => ring
 	nextChatID int64
 
 	// sessions — protected by sessionMu
 	sessionMu   sync.Mutex
-	sessions    map[int64]int // sessionID → active client count
+	sessions    map[int64]int // sessionID => active client count
 	nextSession int64
 
 	// monotonic client ID

@@ -18,9 +18,10 @@ import {
 import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import EnvVarsEditor from "../../../components/page/EnvVarsEditor";
 
-const MonacoEditor = lazy(() => import("../../../components/monaco/Editor"));
+const TabbedEditor = lazy(
+  () => import("../../../components/page/TabbedEditor"),
+);
 
 interface Props {
   section: LandingSection;
@@ -47,7 +48,7 @@ export const DataSourcesBlock = ({
   const [editingDS, setEditingDS] = useState<DataSource | null>(null);
   const [formName, setFormName] = useState("");
   const [formDesc, setFormDesc] = useState("");
-  const [formCode, setFormCode] = useState("");
+  const [formFiles, setFormFiles] = useState<Record<string, string>>({});
   const [formEnvData, setFormEnvData] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -85,14 +86,17 @@ export const DataSourcesBlock = ({
       name: "",
       description: "",
       code: "",
+      files: {},
       created_at: "",
+      cache_ttl: 0,
       updated_at: "",
     });
     setFormName("");
     setFormDesc("");
-    setFormCode(
-      '// Return an array of items:\n// { heading, subheading, icon?, image_url?, link_url? }\n\nreturn [\n  { heading: "Example", subheading: "Hello world" },\n];\n',
-    );
+    setFormFiles({
+      "main.ts":
+        '// Return an array of items:\n// { heading, subheading, icon?, image_url?, link_url? }\n\nreturn [\n  { heading: "Example", subheading: "Hello world" },\n];\n',
+    });
     setFormEnvData("");
   };
 
@@ -100,7 +104,14 @@ export const DataSourcesBlock = ({
     setEditingDS(ds);
     setFormName(ds.name);
     setFormDesc(ds.description);
-    setFormCode(ds.code);
+    // Use files map if available, fall back to legacy code field
+    const files =
+      ds.files && Object.keys(ds.files).length > 0
+        ? ds.files
+        : ds.code
+          ? { "main.ts": ds.code }
+          : { "main.ts": "" };
+    setFormFiles(files);
     // Fetch env data from server (returns empty for non-privileged users)
     setFormEnvData("");
     if (ds.id > 0) {
@@ -119,7 +130,12 @@ export const DataSourcesBlock = ({
     }
     setSaving(true);
     try {
-      const payload = { name: formName, description: formDesc, code: formCode };
+      const payload = {
+        name: formName,
+        description: formDesc,
+        code: formFiles["main.ts"] ?? "",
+        files: formFiles,
+      };
       if (editingDS && editingDS.id > 0) {
         await apiRequest<DataSource>(`/config/datasources/${editingDS.id}`, {
           method: "PUT",
@@ -162,9 +178,6 @@ export const DataSourcesBlock = ({
       console.error(err);
     }
   };
-
-  const codeLineCount = (formCode || "").split("\n").length;
-  const editorHeight = Math.max(200, Math.min(codeLineCount * 20 + 40, 500));
 
   return (
     <section className="data-sources-block">
@@ -253,33 +266,22 @@ export const DataSourcesBlock = ({
               />
             </label>
           </div>
-          {editingDS && (
-            <div className="data-sources-editor-env">
-              <EnvVarsEditor
-                datasourceId={editingDS.id}
-                value={formEnvData}
-                onChange={setFormEnvData}
-              />
-            </div>
-          )}
           <div className="data-sources-editor-code">
-            <span className="data-sources-editor-code-label">
-              Code (TypeScript — must return an array)
-            </span>
             <Suspense
               fallback={
                 <div
                   className="skeleton-bar"
-                  style={{ height: editorHeight, borderRadius: 8 }}
+                  style={{ height: 400, borderRadius: 8 }}
                 />
               }
             >
-              <MonacoEditor
-                height={editorHeight}
-                language="typescript"
-                code={formCode}
-                onChange={(v: string) => setFormCode(v)}
-                editable
+              <TabbedEditor
+                files={formFiles}
+                onFilesChange={setFormFiles}
+                envData={formEnvData}
+                onEnvDataChange={setFormEnvData}
+                datasourceId={editingDS.id}
+                height={400}
               />
             </Suspense>
           </div>

@@ -13,6 +13,7 @@ import (
 
 // Diagnostic is a single TypeScript compiler diagnostic.
 type Diagnostic struct {
+	File     string `json:"file"`
 	Line     int    `json:"line"`
 	Col      int    `json:"col"`
 	Message  string `json:"message"`
@@ -32,22 +33,28 @@ func tsRunnerDir() string {
 	return filepath.Join(filepath.Dir(file), "tsrunner")
 }
 
-// CompileTypeScript compiles TypeScript source code to JavaScript by invoking
-// the tsrunner Node.js script. Returns the compiled JS and any diagnostics.
-func CompileTypeScript(source string) (*CompileResult, error) {
+// CompileTypeScript compiles TypeScript source files to JavaScript by invoking
+// the tsrunner Node.js script. Accepts a map of filename=>content.
+func CompileTypeScript(files map[string]string) (*CompileResult, error) {
 	dir := tsRunnerDir()
 	scriptPath := filepath.Join(dir, "compile.js")
 
+	input := struct {
+		Files map[string]string `json:"files"`
+	}{Files: files}
+	inputJSON, err := json.Marshal(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal compile input: %w", err)
+	}
+
 	cmd := exec.Command("node", scriptPath)
 	cmd.Dir = dir
-	cmd.Stdin = strings.NewReader(source)
+	cmd.Stdin = strings.NewReader(string(inputJSON))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	// Set a reasonable timeout via context — but exec.Command doesn't take
-	// context directly, so we use a timer and kill if needed.
 	done := make(chan error, 1)
 	go func() { done <- cmd.Run() }()
 
@@ -79,19 +86,18 @@ type ExecuteResult struct {
 	Error       string          `json:"error,omitempty"`
 }
 
-// ExecuteTypeScript compiles TypeScript source and executes it server-side in a
-// sandboxed VM context with the provided environment variables injected.
-// Returns the result data (JSON array) directly.
-func ExecuteTypeScript(source string, env map[string]string) (*ExecuteResult, error) {
+// ExecuteTypeScript compiles TypeScript source files and executes the result
+// server-side in a sandboxed VM context with provided environment variables.
+func ExecuteTypeScript(files map[string]string, env map[string]string) (*ExecuteResult, error) {
 	dir := tsRunnerDir()
 	scriptPath := filepath.Join(dir, "execute.js")
 
 	input := struct {
-		Source string            `json:"source"`
-		Env    map[string]string `json:"env"`
+		Files map[string]string `json:"files"`
+		Env   map[string]string `json:"env"`
 	}{
-		Source: source,
-		Env:    env,
+		Files: files,
+		Env:   env,
 	}
 	inputJSON, err := json.Marshal(input)
 	if err != nil {

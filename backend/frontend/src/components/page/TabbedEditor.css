@@ -1,0 +1,221 @@
+/* ── Tabbed Editor ────────────────────────────────────────────────── */
+
+.tabbed-editor {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+/* ── Tab bar ──────────────────────────────────────────────────────── */
+
+.tabbed-editor__tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  min-height: 36px;
+  overflow-x: auto;
+}
+
+.tabbed-editor__tab-list {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabbed-editor__tab-list::-webkit-scrollbar {
+  display: none;
+}
+
+.tabbed-editor__tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  min-height: 36px;
+  font-size: 0.775rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-right: 1px solid var(--border-color);
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.tabbed-editor__tab:hover {
+  background: color-mix(in srgb, var(--bg-color) 50%, transparent);
+  color: var(--text-primary);
+}
+
+.tabbed-editor__tab--active {
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--primary-color);
+}
+
+.tabbed-editor__tab-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tabbed-editor__tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  opacity: 0;
+  transition:
+    opacity 0.1s,
+    background 0.1s;
+}
+
+.tabbed-editor__tab:hover .tabbed-editor__tab-close {
+  opacity: 1;
+}
+
+.tabbed-editor__tab-close:hover {
+  background: var(--error-bg, rgba(255, 80, 80, 0.15));
+  color: var(--error-color, #e74c3c);
+}
+
+.tabbed-editor__rename-input {
+  width: 80px;
+  padding: 1px 4px;
+  border: 1px solid var(--primary-color);
+  border-radius: 3px;
+  font-size: 0.775rem;
+  background: var(--bg-color);
+  color: inherit;
+  outline: none;
+}
+
+/* ── Add button ───────────────────────────────────────────────────── */
+
+.tabbed-editor__add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.1s,
+    background 0.1s;
+}
+
+.tabbed-editor__add-btn:hover {
+  background: color-mix(in srgb, var(--bg-color) 50%, transparent);
+  color: var(--primary-color);
+}
+
+/* ── Actions area (right side of tab bar) ─────────────────────────── */
+
+.tabbed-editor__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* ── Diagnostic badges on tabs ────────────────────────────────────── */
+
+.tabbed-editor__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tabbed-editor__badge--error {
+  background: var(--error-bg, rgba(255, 80, 80, 0.15));
+  color: var(--error-color, #e74c3c);
+}
+
+.tabbed-editor__badge--warn {
+  background: rgba(255, 180, 0, 0.15);
+  color: #e08800;
+}
+
+/* ── Diagnostic summary in actions bar ────────────────────────────── */
+
+.tabbed-editor__diag-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.725rem;
+  font-weight: 600;
+}
+
+.tabbed-editor__diag-errors {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--error-color, #e74c3c);
+}
+
+.tabbed-editor__diag-warnings {
+  color: #e08800;
+}
+
+/* ── Env locked placeholder ───────────────────────────────────────── */
+
+.tabbed-editor__env-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.tabbed-editor__env-unlock-btn {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.tabbed-editor__env-unlock-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ── Editor wrapper ───────────────────────────────────────────────── */
+
+.tabbed-editor__editor-wrap {
+  overflow: hidden;
+}

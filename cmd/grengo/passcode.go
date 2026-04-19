@@ -59,7 +59,7 @@ func cmdPasscodeSet(args []string) {
 		die("Failed to write .pcode: %v", err)
 	}
 
-	log("Passcode set → %s", pcodePath())
+	log("Passcode set => %s", pcodePath())
 	info("The grengo API is now accessible with this passcode pair.")
 }
 

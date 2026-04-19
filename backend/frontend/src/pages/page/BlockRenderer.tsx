@@ -45,7 +45,7 @@ interface BlockRendererProps {
   onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
 }
 
-/** Maps section_type → block component. */
+/** Maps section_type => block component. */
 const BLOCK_MAP: Record<
   string,
   React.FC<{

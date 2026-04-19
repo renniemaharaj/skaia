@@ -140,6 +140,7 @@ func main() {
 
 	rdb := database.NewRedisClient()
 	dsCompileCache := ids.NewCompileCacheWithClient(rdb)
+	dsExecuteCache := ids.NewExecuteCacheWithClient(rdb)
 	dsCompileDispatcher := ids.NewCompileDispatcher(dsCompileCache, dispatcher)
 	dsCompileDispatcher.Start()
 
@@ -150,7 +151,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsCompileDispatcher),
+		Handler:           buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher),
 		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 15)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 15)) * time.Second,
@@ -241,7 +242,7 @@ func removeArmedFile(armedDir, clientID string) error {
 	return os.Remove(filePath)
 }
 
-func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsCompileDispatcher *ids.CompileDispatcher) http.Handler {
+func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher) http.Handler {
 
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
@@ -577,7 +578,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
-		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher)
+		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher, dsExecuteCache)
 		dsHandler.Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, imw.CompileRateLimitByIP(), imw.CompileRateLimitByClient())
 
 		csRepo := ics.NewRepository(db)

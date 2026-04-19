@@ -2,13 +2,14 @@
  * tsrunner/execute.js
  *
  * Reads a JSON payload from stdin:
- *   { "source": "<TypeScript code>", "env": { "KEY": "VALUE", ... } }
+ *   { "files": { "main.ts": "...", "helpers.ts": "..." }, "env": { "KEY": "VALUE", ... } }
  *
- * 1. Compiles TypeScript → JavaScript
- * 2. Executes the compiled JS in a sandboxed VM context with:
+ * 1. Merges all .ts files (alphabetically, main.ts last)
+ * 2. Compiles merged TypeScript => JavaScript
+ * 3. Executes the compiled JS in a sandboxed VM context with:
  *    - `env` object containing injected environment variables
  *    - `fetch` function for HTTP requests
- * 3. Writes JSON result to stdout:
+ * 4. Writes JSON result to stdout:
  *   { "data": [...], "diagnostics": [...] }
  *
  * Exit code 0 on success; exit code 1 on fatal errors.
@@ -27,11 +28,58 @@ function readStdin() {
   });
 }
 
+/**
+ * Merge files into a single source string. Non-.ts files are skipped.
+ * Files are sorted alphabetically with main.ts always last.
+ */
+function mergeFiles(files) {
+  const names = Object.keys(files)
+    .filter((f) => f.endsWith(".ts"))
+    .sort((a, b) => {
+      if (a === "main.ts") return 1;
+      if (b === "main.ts") return -1;
+      return a.localeCompare(b);
+    });
+
+  const offsets = [];
+  let merged = "";
+  let currentLine = 1;
+
+  for (const name of names) {
+    const content = files[name] || "";
+    const lineCount = content.split("\n").length;
+    offsets.push({ file: name, startLine: currentLine, lineCount });
+    merged += content + "\n";
+    currentLine += lineCount;
+  }
+
+  return { merged, offsets };
+}
+
+function mapLineToFile(line, offsets) {
+  for (let i = offsets.length - 1; i >= 0; i--) {
+    if (line >= offsets[i].startLine) {
+      return {
+        file: offsets[i].file,
+        line: line - offsets[i].startLine + 1,
+      };
+    }
+  }
+  return { file: "main.ts", line };
+}
+
 async function main() {
   const raw = await readStdin();
   const input = JSON.parse(raw);
-  const source = input.source || "";
+  const files = input.files || {};
   const envVars = input.env || {};
+
+  // Fallback: legacy single-source mode
+  if (Object.keys(files).length === 0 && input.source) {
+    files["main.ts"] = input.source;
+  }
+
+  const { merged, offsets } = mergeFiles(files);
 
   /** @type {import("typescript").CompilerOptions} */
   const compilerOptions = {
@@ -45,7 +93,7 @@ async function main() {
     isolatedModules: true,
   };
 
-  const result = ts.transpileModule(source, {
+  const result = ts.transpileModule(merged, {
     compilerOptions,
     reportDiagnostics: true,
     fileName: "datasource.ts",
@@ -56,8 +104,14 @@ async function main() {
       d.file && d.start !== undefined
         ? d.file.getLineAndCharacterOfPosition(d.start)
         : null;
+    const mergedLine = pos ? pos.line + 1 : 0;
+    const mapped =
+      mergedLine > 0
+        ? mapLineToFile(mergedLine, offsets)
+        : { file: "main.ts", line: 0 };
     return {
-      line: pos ? pos.line + 1 : 0,
+      file: mapped.file,
+      line: mapped.line,
       col: pos ? pos.character : 0,
       message: ts.flattenDiagnosticMessageText(d.messageText, "\n"),
       category: d.category,
@@ -75,7 +129,6 @@ async function main() {
 
   // Execute the compiled JS in a sandboxed context
   try {
-    // Freeze the env object so the script cannot modify it
     const frozenEnv = Object.freeze({ ...envVars });
 
     const wrappedCode = `

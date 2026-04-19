@@ -114,9 +114,9 @@ function markdownToHtml(md: string): string {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     // hr
     .replace(/^---$/gm, "<hr/>")
-    // line breaks: double newline → paragraph
+    // line breaks: double newline => paragraph
     .replace(/\n\n+/g, "</p><p>")
-    // single newline → br
+    // single newline => br
     .replace(/\n/g, "<br/>");
   html = `<p>${html}</p>`;
   return html;
@@ -209,7 +209,7 @@ export const CodeEditorBlock = ({
   const lineCount = (localCode || "").split("\n").length;
   const editorHeight = Math.max(150, Math.min(lineCount * 20 + 40, 600));
 
-  /** HTML for renderable preview (markdown→html or raw html). */
+  /** HTML for renderable preview (markdown=>html or raw html). */
   const renderedHtml = useMemo(() => {
     if (!isRenderable || !localCode) return "";
     if (localLanguage === "markdown") return markdownToHtml(localCode);
