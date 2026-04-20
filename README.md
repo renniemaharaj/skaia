@@ -12,6 +12,7 @@ Skaia is a self-hosted, multi-tenant web platform. Each tenant gets an isolated 
 - **Real-time** — WebSocket presence, global chat, cursor sharing, admin teleport
 - **RBAC** — 4 default roles, 18 granular permissions, instant permission propagation
 - **SEO** — server-side meta injection, dynamic sitemap
+- **Collaborative Planning** — `.todo/` directory for human-AI planning, status, and specifications
 
 ## Stack
 
@@ -47,7 +48,7 @@ Access: `http://localhost` · Admin dashboard: `Ctrl+G` in browser · Management
 ## Key Commands
 
 | Command                        | Description                              |
-| ------------------------------ | ---------------------------------------- |
+| ------------------------------ | ---------------------------------------- | -------------- |
 | `grengo new [name]`            | Create tenant (interactive wizard)       |
 | `grengo list`                  | List all tenants with status             |
 | `grengo compose up`            | Start all infra + tenants                |
@@ -55,7 +56,7 @@ Access: `http://localhost` · Admin dashboard: `Ctrl+G` in browser · Management
 | `grengo build`                 | Rebuild the backend Docker image         |
 | `grengo start/stop <name>`     | Start/stop a tenant                      |
 | `grengo enable/disable <name>` | Enable/disable tenant + regenerate nginx |
-| `grengo migrate <name\|all>`   | Run migrations                           |
+| `grengo migrate <name          | all>`                                    | Run migrations |
 | `grengo export/import <name>`  | Backup/restore a tenant                  |
 | `grengo nginx reload`          | Regenerate + reload nginx config         |
 
@@ -72,12 +73,23 @@ cd backend && go test ./...
 cd backend/frontend && npm test
 ```
 
-## Specs
+## Collaborative Planning & Specs
 
-Detailed specifications live in `.specs/`:
+All collaborative planning, status tracking, and specifications are now kept in the `.todo/` directory:
+
+- `.todo/README.md` — Directory usage, rules, and emoji policy
+- `.todo/.status` — Status tracking for all plans
+- `.todo/.specs` — Human-AI specifications and design docs
+- `.todo/*` — Individual todo plans (no extension)
+
+Specs previously in `.specs/` are now in `.todo/.specs`:
 
 - **`ui_spec`** — Design system tokens, shared CSS classes, component rules
 - **`backend_spec`** — Architecture, handler/service/repository pattern, API routes, security
 - **`infrastructure_spec`** — Docker setup, nginx, grengo CLI, environment variables, tenant isolation
 - **`realtime_wss_spec`** — WebSocket protocol, message types, subscription lifecycle, atom ownership
 - **`migrations_spec`** — In-place schema update policy, idempotent SQL conventions
+
+> Emoji use for status is strictly limited to `.todo/.status` as described in `.todo/README.md` and is forbidden elsewhere in the project.
+
+---
