@@ -1,0 +1,12 @@
+# Project-wide Normalization: 'landing' vs 'page'
+
+## Goal
+Ensure 'landing' is only used for the / route (site homepage) and not for generic page/section/item logic. Normalize all generic usage to 'page'.
+
+## Steps
+1. Audit all comments, utility functions, and grengo CLI/tooling for use of the term 'landing'.
+2. Update comments, function names, and documentation to use 'page' instead of 'landing' for generic usage.
+3. Rename the LandingSkeleton component and its file to PageSkeleton (or similar), and update all imports/usages to match.
+4. Update any references to LandingSkeleton in the frontend (e.g., PageBuilder, error/loading states) to use the new 'page' terminology.
+5. Review all grengo commands, help text, and code for 'landing' usage and update to 'page' where appropriate.
+6. Add a test/validation step to ensure no generic usage of 'landing' remains outside of the / route context.

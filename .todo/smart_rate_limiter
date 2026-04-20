@@ -1,8 +1,7 @@
-todo: smart_rate_limiter
-
 goal: Design and implement a smart rate limiter that groups users into shared rate-limit rooms and tracks rate-limit events globally for admin dashboard management.
 
 plan:
+
 - Define the rate limiter model:
   - A room is a group of users sharing a combined request budget.
   - Each room has a capacity / rate limit and a penalty state.
@@ -33,6 +32,7 @@ plan:
   - Validate event records appear in the global events table and can be queried.
 
 security-notes:
+
 - Shared room limiting should not expose one user's actions to another user beyond aggregate throttling behavior.
 - Admin bypass capabilities must be restricted and audited.
 - Rate-limit event logging should avoid leaking sensitive payload data while preserving useful metadata.
