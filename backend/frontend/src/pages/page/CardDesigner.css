@@ -543,6 +543,7 @@
 .cd-ctrl select {
   height: 26px;
   padding: 0 2px 0 4px;
+  margin-top: 0.77rem;
   font-size: 0.7rem;
   border: none;
   background: transparent;
