@@ -178,10 +178,6 @@ func (s *Service) CanDelete(pageID, userID int64, isAdmin bool) bool {
 
 // ── Engagement ──────────────────────────────────────────────────────────────
 
-func (s *Service) RecordView(pageID int64, userID *int64) error {
-	return s.repo.RecordView(pageID, userID)
-}
-
 func (s *Service) LikePage(pageID, userID int64) (int64, error) {
 	return s.repo.LikePage(pageID, userID)
 }

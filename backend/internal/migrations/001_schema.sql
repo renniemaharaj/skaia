@@ -215,7 +215,6 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     user_id     BIGINT       NOT NULL REFERENCES users(id)            ON DELETE CASCADE,
     title       VARCHAR(255) NOT NULL,
     content     TEXT         NOT NULL,
-    view_count  INT     DEFAULT 0,
     reply_count INT     DEFAULT 0,
     is_pinned   BOOLEAN DEFAULT false,
     is_locked   BOOLEAN DEFAULT false,
@@ -224,6 +223,7 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE forum_threads DROP COLUMN IF EXISTS view_count;
 ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT false;
 ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS original_thread_id BIGINT REFERENCES forum_threads(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_forum_threads_category_id ON forum_threads(category_id);
@@ -396,17 +396,9 @@ CREATE INDEX IF NOT EXISTS idx_page_editors_user ON page_editors(user_id);
 
 -- ── Page engagement: views, likes, comments ─────────────────────────────────
 
--- Track unique page views per user (or anonymous via session)
-ALTER TABLE pages ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0;
-
-CREATE TABLE IF NOT EXISTS page_views (
-    id         BIGSERIAL PRIMARY KEY,
-    page_id    BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
-    user_id    BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    viewed_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_page_views_page ON page_views(page_id);
-CREATE INDEX IF NOT EXISTS idx_page_views_user ON page_views(user_id);
+-- Old page_views table and pages.view_count replaced by resource_views (006).
+DROP TABLE IF EXISTS page_views;
+ALTER TABLE pages DROP COLUMN IF EXISTS view_count;
 
 -- Page likes (one per user)
 CREATE TABLE IF NOT EXISTS page_likes (

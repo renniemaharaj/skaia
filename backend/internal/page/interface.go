@@ -23,7 +23,6 @@ type Repository interface {
 	ListWithOwnership() ([]*models.Page, error)
 
 	// Engagement
-	RecordView(pageID int64, userID *int64) error
 	LikePage(pageID, userID int64) (int64, error)
 	UnlikePage(pageID, userID int64) (int64, error)
 	IsPageLikedByUser(pageID, userID int64) (bool, error)

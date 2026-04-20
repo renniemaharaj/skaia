@@ -19,6 +19,7 @@ import {
   EyeOff,
   Copy,
   Pencil,
+  BarChart3,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
 import type { LandingSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
+import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import "./CustomPages.css";
 
 const parsePageSections = (content: string) => {
@@ -72,6 +74,9 @@ export default function CustomPages() {
   const [dupTitle, setDupTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [analyticsPage, setAnalyticsPage] = useState<PageBuilderPage | null>(
+    null,
+  );
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (
       (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
@@ -410,6 +415,20 @@ export default function CustomPages() {
                   >
                     <Copy size={14} />
                   </button>
+                  {(page.can_delete || page.can_edit) && (
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                      onClick={(e: MouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setAnalyticsPage(page);
+                      }}
+                      title="Analytics"
+                    >
+                      <BarChart3 size={14} />
+                    </button>
+                  )}
                   {page.can_delete && (
                     <button
                       type="button"
@@ -541,6 +560,20 @@ export default function CustomPages() {
                 >
                   <Copy size={14} />
                 </button>
+                {(page.can_delete || page.can_edit) && (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                    onClick={(e: MouseEvent) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setAnalyticsPage(page);
+                    }}
+                    title="Analytics"
+                  >
+                    <BarChart3 size={14} />
+                  </button>
+                )}
                 {page.can_delete ? (
                   <button
                     type="button"
@@ -651,6 +684,15 @@ export default function CustomPages() {
             </div>
           </div>
         </div>
+      )}
+
+      {analyticsPage && (
+        <ResourceAnalytics
+          resource="page"
+          resourceId={analyticsPage.id}
+          title={analyticsPage.title || analyticsPage.slug}
+          onClose={() => setAnalyticsPage(null)}
+        />
       )}
     </div>
   );

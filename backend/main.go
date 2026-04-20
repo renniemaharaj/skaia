@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/database"
+	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
 	icfg "github.com/skaia/backend/internal/config"
 	ics "github.com/skaia/backend/internal/customsection"
@@ -558,8 +559,11 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 		emailSender := iemail.NewSenderFromEnv()
+		analyticsRepo := ianalytics.NewRepository(db)
+		analyticsSvc := ianalytics.NewService(analyticsRepo)
+
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
+		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		uploadHandler := iupload.NewHandler(hub)
@@ -574,7 +578,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		pageRepo := ipage.NewRepository(db)
 		pageSvc := ipage.NewService(pageRepo, inboxSvc)
-		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
+		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
@@ -588,6 +592,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		// Events log admin API.
 		eventsRepo := ievents.NewRepository(db)
 		ievents.NewHandler(eventsRepo, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		// Analytics API.
+		ianalytics.NewHandler(analyticsSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

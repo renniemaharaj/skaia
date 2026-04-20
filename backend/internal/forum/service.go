@@ -90,10 +90,6 @@ func (s *Service) DeleteThread(id int64) error {
 	return err
 }
 
-func (s *Service) IncrementViewCount(id int64) error {
-	return s.threads.IncrementViewCount(id)
-}
-
 func (s *Service) LikeThread(threadID, userID int64) (int64, error) {
 	count, err := s.threads.Like(threadID, userID)
 	if err == nil {

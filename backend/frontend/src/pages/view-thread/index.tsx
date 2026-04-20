@@ -8,6 +8,7 @@ import {
   Lock,
   Unlock,
   Share2,
+  BarChart3,
 } from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 
@@ -18,6 +19,7 @@ import { currentThreadAtom, threadPermissionsAtom } from "../../atoms/forum";
 import { currentUserAtom } from "../../atoms/auth";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
+import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 
 import "./index.css";
 import "../../components/forum/IconButton.css";
@@ -32,6 +34,7 @@ const ViewThreadPage = () => {
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const [isMobile, setIsMobile] = useState(
     window.matchMedia("(max-width: 880px)").matches,
@@ -290,6 +293,18 @@ const ViewThreadPage = () => {
               </button>
             )}
 
+            {/* Analytics */}
+            {currentUser && (canEdit || canDelete) && (
+              <button
+                className="thread-action-btn"
+                onClick={() => setShowAnalytics(true)}
+                title="Analytics"
+                type="button"
+              >
+                <BarChart3 size={14} />
+              </button>
+            )}
+
             {/* Close */}
             <button
               className="thread-action-btn close-btn"
@@ -325,6 +340,15 @@ const ViewThreadPage = () => {
           </div>
         </div>
       </div>
+
+      {showAnalytics && currentThread && (
+        <ResourceAnalytics
+          resource="thread"
+          resourceId={Number(currentThread.id)}
+          title={currentThread.title}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
     </div>
   );
 };

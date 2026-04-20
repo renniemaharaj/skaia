@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	ianalytics "github.com/skaia/backend/internal/analytics"
 	iconfig "github.com/skaia/backend/internal/config"
 	ievents "github.com/skaia/backend/internal/events"
 	iuser "github.com/skaia/backend/internal/user"
@@ -19,16 +20,17 @@ import (
 
 // Handler serves custom-page endpoints.
 type Handler struct {
-	svc        *Service
-	configSvc  *iconfig.Service
-	userSvc    *iuser.Service
-	hub        *ws.Hub
-	dispatcher *ievents.Dispatcher
+	svc          *Service
+	configSvc    *iconfig.Service
+	userSvc      *iuser.Service
+	hub          *ws.Hub
+	dispatcher   *ievents.Dispatcher
+	analyticsSvc *ianalytics.Service
 }
 
 // NewHandler creates a page Handler.
-func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *ievents.Dispatcher) *Handler {
-	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher}
+func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, analyticsSvc *ianalytics.Service) *Handler {
+	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher, analyticsSvc: analyticsSvc}
 }
 
 // Mount registers page routes under /config/pages.
@@ -442,6 +444,7 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 			p.Editors = []*models.PageUser{}
 		}
 		p.CanDelete = h.canDeletePageForPage(r, p)
+		p.CanEdit = h.canEditPage(r, p.ID)
 	}
 
 	// Include the current landing page slug so the frontend can show a badge.
@@ -663,7 +666,9 @@ func (h *Handler) recordView(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		uidp = &uid
 	}
-	_ = h.svc.RecordView(p.ID, uidp)
+	if h.analyticsSvc != nil {
+		_ = h.analyticsSvc.RecordView("page", p.ID, uidp, ievents.ClientIP(r))
+	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

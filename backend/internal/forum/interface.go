@@ -23,7 +23,6 @@ type ThreadRepository interface {
 	Create(thread *models.ForumThread) (*models.ForumThread, error)
 	Update(thread *models.ForumThread) (*models.ForumThread, error)
 	Delete(id int64) error
-	IncrementViewCount(id int64) error
 	Like(threadID, userID int64) (int64, error)
 	Unlike(threadID, userID int64) (int64, error)
 	IsLikedByUser(threadID, userID int64) (bool, error)

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	ianalytics "github.com/skaia/backend/internal/analytics"
 	ievents "github.com/skaia/backend/internal/events"
 	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
@@ -22,16 +23,17 @@ type NotifSender interface {
 
 // Handler exposes all forum HTTP endpoints.
 type Handler struct {
-	svc        *Service
-	hub        *ws.Hub
-	notifSvc   NotifSender
-	authz      utils.Authorizer
-	dispatcher *ievents.Dispatcher
+	svc          *Service
+	hub          *ws.Hub
+	notifSvc     NotifSender
+	authz        utils.Authorizer
+	dispatcher   *ievents.Dispatcher
+	analyticsSvc *ianalytics.Service
 }
 
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Authorizer, dispatcher *ievents.Dispatcher) *Handler {
-	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz, dispatcher: dispatcher}
+func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Authorizer, dispatcher *ievents.Dispatcher, analyticsSvc *ianalytics.Service) *Handler {
+	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz, dispatcher: dispatcher, analyticsSvc: analyticsSvc}
 }
 
 // Mount registers all forum routes on r.
@@ -445,9 +447,20 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = h.svc.IncrementViewCount(id)
-
 	userID, hasClaims := utils.UserIDFromCtx(r)
+
+	// Record view in the centralized resource_views table.
+	if h.analyticsSvc != nil {
+		var uidp *int64
+		if hasClaims {
+			uidp = &userID
+		}
+		_ = h.analyticsSvc.RecordView("thread", id, uidp, ievents.ClientIP(r))
+		// Refresh the view count from resource_views so the response is up-to-date.
+		if vc, err := h.analyticsSvc.ViewCount("thread", id); err == nil {
+			thread.ViewCount = int(vc)
+		}
+	}
 
 	if userID > 0 {
 		if isLiked, err := h.svc.IsThreadLikedByUser(id, userID); err == nil {

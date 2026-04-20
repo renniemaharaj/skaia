@@ -18,7 +18,9 @@ func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, content::text,
-		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
+		        owner_id,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
+		        visibility, created_at, updated_at
 		 FROM pages WHERE slug = $1`, slug,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
@@ -36,7 +38,9 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT id, slug, title, description, content::text,
-		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
+		        owner_id,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
+		        visibility, created_at, updated_at
 		 FROM pages WHERE id = $1`, id,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
@@ -52,7 +56,9 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 func (r *sqlRepository) List() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT id, slug, title, description, content::text,
-		        owner_id, COALESCE(view_count, 0), visibility, created_at, updated_at
+		        owner_id,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
+		        visibility, created_at, updated_at
 		 FROM pages ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
@@ -177,7 +183,9 @@ func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	rows, err := r.db.Query(
 		`SELECT p.id, p.slug, p.title, p.description, p.content::text,
-		        p.owner_id, COALESCE(p.view_count, 0), p.visibility, p.created_at, p.updated_at,
+		        p.owner_id,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=p.id), 0),
+		        p.visibility, p.created_at, p.updated_at,
 		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''),
 		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id),
 		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id)
@@ -217,22 +225,7 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	return pages, rows.Err()
 }
 
-// ── engagement: views, likes, comments ──────────────────────────────────────
-
-func (r *sqlRepository) RecordView(pageID int64, userID *int64) error {
-	var uid sql.NullInt64
-	if userID != nil {
-		uid = sql.NullInt64{Int64: *userID, Valid: true}
-	}
-	_, err := r.db.Exec(
-		`INSERT INTO page_views (page_id, user_id) VALUES ($1, $2)`, pageID, uid)
-	if err != nil {
-		return err
-	}
-	_, err = r.db.Exec(
-		`UPDATE pages SET view_count = COALESCE(view_count, 0) + 1 WHERE id = $1`, pageID)
-	return err
-}
+// ── engagement: likes, comments ─────────────────────────────────────────
 
 func (r *sqlRepository) LikePage(pageID, userID int64) (int64, error) {
 	_, err := r.db.Exec(

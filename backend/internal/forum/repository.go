@@ -97,7 +97,8 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 	var origID sql.NullInt64
 	err := r.db.QueryRow(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
-		        ft.view_count, ft.reply_count, ft.is_pinned, ft.is_locked,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
+		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
 		        u.username, u.avatar_url,
@@ -134,7 +135,8 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int) ([]*models.ForumThread, error) {
 	rows, err := r.db.Query(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
-		        ft.view_count, ft.reply_count, ft.is_pinned, ft.is_locked,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
+		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
 		        u.username, u.avatar_url,
@@ -175,7 +177,8 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*models.ForumThread, error) {
 	rows, err := r.db.Query(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
-		        ft.view_count, ft.reply_count, ft.is_pinned, ft.is_locked,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
+		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
 		        u.username, u.avatar_url,
@@ -218,37 +221,36 @@ func (r *sqlThreadRepository) Create(thread *models.ForumThread) (*models.ForumT
 		`INSERT INTO forum_threads (category_id, user_id, title, content, is_pinned, is_locked, is_shared, original_thread_id)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		 RETURNING id, category_id, user_id, title, content,
-		           view_count, reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at`,
+		           reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at`,
 		thread.CategoryID, thread.UserID, thread.Title, thread.Content, thread.IsPinned, thread.IsLocked, thread.IsShared, thread.OriginalThreadID,
 	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content,
-		&thread.ViewCount, &thread.ReplyCount, &thread.IsPinned, &thread.IsLocked,
+		&thread.ReplyCount, &thread.IsPinned, &thread.IsLocked,
 		&thread.IsShared, &thread.OriginalThreadID,
 		&thread.CreatedAt, &thread.UpdatedAt)
+	thread.ViewCount = 0
 	return thread, err
 }
 
 func (r *sqlThreadRepository) Update(thread *models.ForumThread) (*models.ForumThread, error) {
+	var vc int
 	err := r.db.QueryRow(
 		`UPDATE forum_threads
 		 SET title=$1, content=$2, is_pinned=$3, is_locked=$4, updated_at=CURRENT_TIMESTAMP
 		 WHERE id=$5
 		 RETURNING id, category_id, user_id, title, content,
-		           view_count, reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at`,
+		           COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=forum_threads.id), 0),
+		           reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at`,
 		thread.Title, thread.Content, thread.IsPinned, thread.IsLocked, thread.ID,
 	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content,
-		&thread.ViewCount, &thread.ReplyCount, &thread.IsPinned, &thread.IsLocked,
+		&vc, &thread.ReplyCount, &thread.IsPinned, &thread.IsLocked,
 		&thread.IsShared, &thread.OriginalThreadID,
 		&thread.CreatedAt, &thread.UpdatedAt)
+	thread.ViewCount = vc
 	return thread, err
 }
 
 func (r *sqlThreadRepository) Delete(id int64) error {
 	_, err := r.db.Exec(`DELETE FROM forum_threads WHERE id = $1`, id)
-	return err
-}
-
-func (r *sqlThreadRepository) IncrementViewCount(id int64) error {
-	_, err := r.db.Exec(`UPDATE forum_threads SET view_count = view_count + 1 WHERE id = $1`, id)
 	return err
 }
 
