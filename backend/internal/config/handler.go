@@ -340,7 +340,7 @@ func (h *Handler) createSection(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	var s models.LandingSection
+	var s models.PageSection
 	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
@@ -375,7 +375,7 @@ func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	var s models.LandingSection
+	var s models.PageSection
 	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
@@ -499,7 +499,7 @@ func (h *Handler) createItem(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid sectionId")
 		return
 	}
-	var item models.LandingItem
+	var item models.PageItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
@@ -535,7 +535,7 @@ func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	var item models.LandingItem
+	var item models.PageItem
 	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return

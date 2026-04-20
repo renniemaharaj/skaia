@@ -2,7 +2,7 @@
 //
 // ExtractUploadURLs scans HTML/Markdown content for /uploads/… paths so
 // callers (forum, config, user handlers) can remove the corresponding files
-// when the owning entity (thread, comment, landing item, avatar) is deleted.
+// when the owning entity (thread, comment, page item, avatar) is deleted.
 package upload
 
 import (

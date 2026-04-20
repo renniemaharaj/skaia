@@ -15,7 +15,7 @@ func TestConfigService_CreateSection_ShiftsExistingSections(t *testing.T) {
 	repo := config.NewRepository(db)
 	svc := config.NewService(repo)
 
-	sec1 := &models.LandingSection{
+	sec1 := &models.PageSection{
 		DisplayOrder: 1,
 		SectionType:  "hero",
 		Heading:      "First",
@@ -24,7 +24,7 @@ func TestConfigService_CreateSection_ShiftsExistingSections(t *testing.T) {
 	}
 	require.NoError(t, svc.CreateSection(sec1))
 
-	sec2 := &models.LandingSection{
+	sec2 := &models.PageSection{
 		DisplayOrder: 2,
 		SectionType:  "cta",
 		Heading:      "Third",
@@ -33,7 +33,7 @@ func TestConfigService_CreateSection_ShiftsExistingSections(t *testing.T) {
 	}
 	require.NoError(t, svc.CreateSection(sec2))
 
-	secMid := &models.LandingSection{
+	secMid := &models.PageSection{
 		DisplayOrder: 2,
 		SectionType:  "feature_grid",
 		Heading:      "Second",

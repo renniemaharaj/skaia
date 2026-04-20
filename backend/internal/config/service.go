@@ -32,15 +32,15 @@ func (s *Service) DeleteAllSections() error {
 
 // ── Landing sections ────────────────────────────────────────────────────────
 
-func (s *Service) ListSections() ([]*models.LandingSection, error) {
+func (s *Service) ListSections() ([]*models.PageSection, error) {
 	return s.repo.ListSections()
 }
 
-func (s *Service) GetSection(id int64) (*models.LandingSection, error) {
+func (s *Service) GetSection(id int64) (*models.PageSection, error) {
 	return s.repo.GetSection(id)
 }
 
-func (s *Service) CreateSection(sec *models.LandingSection) error {
+func (s *Service) CreateSection(sec *models.PageSection) error {
 	if sec.Config == "" {
 		sec.Config = "{}"
 	}
@@ -67,7 +67,7 @@ func (s *Service) CreateSection(sec *models.LandingSection) error {
 	return s.repo.CreateSection(sec)
 }
 
-func (s *Service) UpdateSection(sec *models.LandingSection) error {
+func (s *Service) UpdateSection(sec *models.PageSection) error {
 	if sec.Config == "" {
 		sec.Config = "{}"
 	}
@@ -82,24 +82,24 @@ func (s *Service) ReorderSections(ids []int64) error {
 	return s.repo.ReorderSections(ids)
 }
 
-// ── Landing items ───────────────────────────────────────────────────────────
+// ── Page items ───────────────────────────────────────────────────────────
 
-func (s *Service) ListItems(sectionID int64) ([]*models.LandingItem, error) {
+func (s *Service) ListItems(sectionID int64) ([]*models.PageItem, error) {
 	return s.repo.ListItems(sectionID)
 }
 
-func (s *Service) GetItem(id int64) (*models.LandingItem, error) {
+func (s *Service) GetItem(id int64) (*models.PageItem, error) {
 	return s.repo.GetItem(id)
 }
 
-func (s *Service) CreateItem(item *models.LandingItem) error {
+func (s *Service) CreateItem(item *models.PageItem) error {
 	if item.Config == "" {
 		item.Config = "{}"
 	}
 	return s.repo.CreateItem(item)
 }
 
-func (s *Service) UpdateItem(item *models.LandingItem) error {
+func (s *Service) UpdateItem(item *models.PageItem) error {
 	if item.Config == "" {
 		item.Config = "{}"
 	}

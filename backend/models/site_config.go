@@ -9,21 +9,21 @@ type SiteConfig struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// LandingSection is an ordered block on the landing page.
-type LandingSection struct {
-	ID           int64          `json:"id"`
-	DisplayOrder int            `json:"display_order"`
-	SectionType  string         `json:"section_type"` // hero, card_group, stat_cards, social_links, image_gallery, feature_grid, cta
-	Heading      string         `json:"heading"`
-	Subheading   string         `json:"subheading"`
-	Config       string         `json:"config"` // raw JSON
-	Items        []*LandingItem `json:"items,omitempty"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
+// PageSection is an ordered block on a custom page (not just the landing page).
+type PageSection struct {
+	ID           int64       `json:"id"`
+	DisplayOrder int         `json:"display_order"`
+	SectionType  string      `json:"section_type"` // hero, card_group, stat_cards, social_links, image_gallery, feature_grid, cta
+	Heading      string      `json:"heading"`
+	Subheading   string      `json:"subheading"`
+	Config       string      `json:"config"` // raw JSON
+	Items        []*PageItem `json:"items,omitempty"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
 }
 
-// LandingItem is a card/tile/image within a section.
-type LandingItem struct {
+// PageItem is a card/tile/image within a section.
+type PageItem struct {
 	ID           int64     `json:"id"`
 	SectionID    int64     `json:"section_id"`
 	DisplayOrder int       `json:"display_order"`
@@ -37,13 +37,13 @@ type LandingItem struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-type LandingItemCardWidth string
+type PageItemCardWidth string
 
 const (
-	LandingItemCardWidthNarrow  LandingItemCardWidth = "narrow"
-	LandingItemCardWidthRegular LandingItemCardWidth = "regular"
-	LandingItemCardWidthWide    LandingItemCardWidth = "wide"
-	LandingItemCardWidthFull    LandingItemCardWidth = "full"
+	PageItemCardWidthNarrow  PageItemCardWidth = "narrow"
+	PageItemCardWidthRegular PageItemCardWidth = "regular"
+	PageItemCardWidthWide    PageItemCardWidth = "wide"
+	PageItemCardWidthFull    PageItemCardWidth = "full"
 )
 
 // Branding holds site identity fetched from site_config.
