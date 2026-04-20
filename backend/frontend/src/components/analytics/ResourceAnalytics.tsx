@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { X, BarChart3, Users, Eye } from "lucide-react";
 import {
   AreaChart,
@@ -177,15 +177,65 @@ export default function ResourceAnalytics({
 
   const chartColor = "var(--primary-color)";
   const daily = data?.daily ?? [];
-  const visitorKey = (entry: VisitorEntry) =>
-    entry.user_id != null
-      ? `user:${entry.user_id}`
-      : `anon:${entry.ip ?? "unknown"}`;
 
-  const visitorLabel = (entry: VisitorEntry) =>
-    entry.user_id
-      ? entry.display_name || entry.username || "User"
+  const getIpUserMap = (entries: VisitorEntry[]) => {
+    const map = new Map<string, VisitorEntry>();
+    for (const entry of entries) {
+      if (entry.ip && entry.user_id != null) {
+        if (!map.has(entry.ip)) {
+          map.set(entry.ip, entry);
+        }
+      }
+    }
+    return map;
+  };
+
+  const ipUserMap = getIpUserMap(visitors);
+
+  const effectiveVisitor = (entry: VisitorEntry) => {
+    if (entry.user_id != null) {
+      return entry;
+    }
+    if (entry.ip && ipUserMap.has(entry.ip)) {
+      return ipUserMap.get(entry.ip)!;
+    }
+    return entry;
+  };
+
+  const visitorKey = (entry: VisitorEntry) => {
+    const effective = effectiveVisitor(entry);
+    return effective.user_id != null
+      ? `user:${effective.user_id}`
+      : `anon:${entry.ip ?? "unknown"}`;
+  };
+
+  const visitorLabel = (entry: VisitorEntry) => {
+    const effective = effectiveVisitor(entry);
+    return effective.user_id
+      ? effective.display_name || effective.username || "User"
       : "Anonymous";
+  };
+
+  const renderVisitorUser = (entry: VisitorEntry) => {
+    const effective = effectiveVisitor(entry);
+    if (!effective.user_id) {
+      return <span className="ra-visitor-anon">Anonymous</span>;
+    }
+
+    return (
+      <>
+        <UserAvatar
+          src={effective.avatar_url}
+          alt={effective.display_name || effective.username || "User"}
+          size={18}
+          initials={(effective.display_name || effective.username || "?")
+            .charAt(0)
+            .toUpperCase()}
+        />
+        <span>{effective.display_name || effective.username || "User"}</span>
+      </>
+    );
+  };
 
   const visitorGroups = (entries: VisitorEntry[]) => {
     const groups: Array<{
@@ -193,14 +243,16 @@ export default function ResourceAnalytics({
       head: VisitorEntry;
       others: VisitorEntry[];
     }> = [];
+    const groupMap = new Map<string, number>();
 
     for (const entry of entries) {
       const key = visitorKey(entry);
-      const last = groups[groups.length - 1];
-      if (last && last.key === key) {
-        last.others.push(entry);
+      const index = groupMap.get(key);
+      if (index != null) {
+        groups[index].others.push(entry);
       } else {
         groups.push({ key, head: entry, others: [] });
+        groupMap.set(key, groups.length - 1);
       }
     }
 
@@ -446,7 +498,7 @@ export default function ResourceAnalytics({
                     </thead>
                     <tbody>
                       {visitorGroups(visitors).map((group) => (
-                        <>
+                        <Fragment key={`${group.key}-${group.head.id}`}>
                           <tr key={`${group.key}-${group.head.id}`}>
                             <td>{formatTimestamp(group.head.created_at)}</td>
                             <td>
@@ -456,35 +508,7 @@ export default function ResourceAnalytics({
                             </td>
                             <td>
                               <span className="ra-visitor-user">
-                                {group.head.user_id ? (
-                                  <>
-                                    <UserAvatar
-                                      src={group.head.avatar_url}
-                                      alt={
-                                        group.head.display_name ||
-                                        group.head.username ||
-                                        "User"
-                                      }
-                                      size={18}
-                                      initials={(
-                                        group.head.display_name ||
-                                        group.head.username ||
-                                        "?"
-                                      )
-                                        .charAt(0)
-                                        .toUpperCase()}
-                                    />
-                                    <span>
-                                      {group.head.display_name ||
-                                        group.head.username ||
-                                        "User"}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="ra-visitor-anon">
-                                    Anonymous
-                                  </span>
-                                )}
+                                {renderVisitorUser(group.head)}
                                 {group.others.length > 0 && (
                                   <span className="ra-visitor-group-badge">
                                     +{group.others.length} more
@@ -516,11 +540,7 @@ export default function ResourceAnalytics({
                                         <span className="ra-ip">
                                           {visit.ip || "—"}
                                         </span>
-                                        <span>
-                                          {visit.user_id
-                                            ? visitorLabel(visit)
-                                            : "Anonymous"}
-                                        </span>
+                                        <span>{visitorLabel(visit)}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -528,7 +548,7 @@ export default function ResourceAnalytics({
                               </td>
                             </tr>
                           )}
-                        </>
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

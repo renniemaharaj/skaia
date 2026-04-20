@@ -43,7 +43,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(optJWT).Get("/browse", h.browsePages)
 		r.With(optJWT).Get("/{slug}", h.getBySlug)
 		r.With(optJWT).Get("/{slug}/comments", h.listComments)
-		r.Post("/{slug}/view", h.recordView)
+		r.With(optJWT).Post("/{slug}/view", h.recordView)
 
 		// Protected writes
 		r.Group(func(r chi.Router) {
