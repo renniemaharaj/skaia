@@ -11,7 +11,7 @@ The system supports two directions of change flow:
 
 1. **Outgoing (own edits)** — the editing user's changes are saved to the
    server and the HTTP response echoes the full page content back. The
-   section-sync must recognise that only the edited section changed and
+   section-sync must recognize that only the edited section changed and
    preserve references for all others.
 
 2. **Incoming (other users' edits)** — a WebSocket `page_updated` broadcast
@@ -39,7 +39,7 @@ Each incoming section is matched by `id` against the current array. If the
 section data is identical (via `stableStringify`), the **old object reference**
 is returned. React's `memo()` on `SectionBlock` then skips re-rendering.
 
-### JSONB Key-Order Normalisation (`stableStringify`)
+### JSONB Key-Order Normalization (`stableStringify`)
 
 PostgreSQL JSONB sorts object keys alphabetically on storage. The frontend's
 `JSON.stringify` preserves JavaScript insertion order. A naïve stringify
@@ -50,11 +50,11 @@ keys before serializing, producing identical output regardless of source key
 order. This is essential because sections round-trip through JSONB between
 save and re-fetch.
 
-### Optional Field Normalisation
+### Optional Field Normalization
 
 The `items` field on `LandingSection` is typed as `items?: LandingItem[]`.
 JSONB always returns `[]` for empty arrays, but locally-created sections may
-have `items: undefined`. The comparison must normalise both to `[]`:
+have `items: undefined`. The comparison must normalize both to `[]`:
 
 ```typescript
 stableStringify({ ...section, items: section.items ?? [] });
@@ -116,7 +116,7 @@ is defeated and all sections re-render.
 
 - **No `ownSavePendingRef` skip.** All server responses — own saves AND
   incoming WS refreshes — go through `mergeSections`. This ensures the local
-  sections state is always JSONB-normalised, so subsequent comparisons are
+  sections state is always JSONB-normalized, so subsequent comparisons are
   between like-for-like objects.
 - **`page_updated` excludes sender.** The backend uses
   `BroadcastPageExceptUser(userID, ...)` so the editing user doesn't receive

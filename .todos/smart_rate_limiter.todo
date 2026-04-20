@@ -1,0 +1,38 @@
+todo: smart_rate_limiter
+
+goal: Design and implement a smart rate limiter that groups users into shared rate-limit rooms and tracks rate-limit events globally for admin dashboard management.
+
+plan:
+- Define the rate limiter model:
+  - A room is a group of users sharing a combined request budget.
+  - Each room has a capacity / rate limit and a penalty state.
+  - New users start in shared rooms; users who keep triggering limits move to a room by themselves.
+- Implement grouping logic:
+  - Track per-user request counts and denied requests.
+  - Assign users to rooms based on behavior and shared limits.
+  - When a user repeatedly hits the limit, move them into a dedicated room with stricter isolation.
+- Record rate-limit events:
+  - Add account-level logging for rate-limiter events: user_id, room_id, event_type, request_path, timestamp, source_ip, denied_reason.
+  - Store these records in the global events table so they can be queried in dashboards.
+- Build admin UI routes:
+  - Create a dashboard route showing current limiter rooms and the users inside them.
+  - Include a naughty-corner view for users currently being rate limited.
+  - Show denied requests, event timestamps, and penalty status.
+- Admin controls:
+  - Allow administrators to bypass rate limiting for a specific user.
+  - Allow administrators to reassign users to a different room or remove them from penalty rooms.
+  - Allow administrators to clear rate limiter state for a user.
+- Data and event policy:
+  - Ensure all rate-limit events are auditable and tied to accounts.
+  - Capture both successful and denied request counts for each user.
+  - Keep room membership and penalty state in a store that can be surfaced to UI in real time or near real time.
+- Testing:
+  - Validate room shared budgets apply correctly.
+  - Validate repeated offenders are moved into self-room isolation.
+  - Validate admin bypass and management actions work and are persisted.
+  - Validate event records appear in the global events table and can be queried.
+
+security-notes:
+- Shared room limiting should not expose one user's actions to another user beyond aggregate throttling behavior.
+- Admin bypass capabilities must be restricted and audited.
+- Rate-limit event logging should avoid leaking sensitive payload data while preserving useful metadata.

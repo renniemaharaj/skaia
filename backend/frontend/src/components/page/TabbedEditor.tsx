@@ -36,7 +36,7 @@ interface CompileDiagnostic {
 
 /* ── Props ───────────────────────────────────────────────────────────── */
 export interface TabbedEditorProps {
-  /** Map of filename → content (.ts files only). */
+  /** Map of filename => content (.ts files only). */
   files: Record<string, string>;
   onFilesChange: (files: Record<string, string>) => void;
   /** .env content (separate from files for auth-gating). */

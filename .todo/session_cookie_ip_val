@@ -1,0 +1,152 @@
+goal: Implement session-aware IP validation with **step-up authentication using Cloudflare Turnstile**, instead of hard-blocking users when their IP changes.
+
+---
+
+plan:
+
+- Investigate current session/auth model:
+  - JWT access tokens are stateless and do not store client IP.
+  - Introduce a **stateful session layer** to track metadata such as:
+    - session_id / token_id
+    - user_id
+    - created_ip
+    - last_seen_ip
+    - user_agent_hash
+    - issued_at / expires_at
+
+---
+
+- Implement IP-aware validation (soft enforcement):
+  - On each authenticated request:
+    - Extract real client IP from trusted source (`CF-Connecting-IP`)
+    - Compare with session.created_ip (or last_seen_ip)
+
+  - If IP mismatch:
+    - DO NOT reject request outright
+    - Mark request as `step_up_required`
+
+---
+
+- Integrate Cloudflare Turnstile (challenge-based step-up):
+
+  Flow:
+  - Backend detects risk (e.g. IP mismatch)
+  - Backend responds with:
+    - `step_up_required: true`
+
+  - Frontend renders Turnstile challenge
+  - User completes challenge
+  - Frontend sends Turnstile token to backend
+  - Backend verifies token with Cloudflare
+  - If valid:
+    - Allow request
+    - Update session.last_seen_ip
+    - Optionally refresh session/token
+
+---
+
+- Backend Turnstile verification (Go):
+  - Call Cloudflare verify endpoint:
+    POST https://challenges.cloudflare.com/turnstile/v0/siteverify
+
+  - Validate:
+    - success = true
+    - optionally match remoteip
+
+---
+
+- Auth middleware update:
+
+  Replace hard failure logic:
+
+  OLD:
+  if IP mismatch => reject
+
+  NEW:
+  if IP mismatch:
+  if no Turnstile token:
+  return step_up_required
+  else:
+  verify Turnstile token
+  if invalid => reject
+  if valid => continue + update session IP
+
+---
+
+- Real IP handling (Cloudflare):
+  - Always use:
+    CF-Connecting-IP
+
+  - Never trust:
+    - raw RemoteAddr
+    - unvalidated X-Forwarded-For
+
+  - Deployment requirement:
+    - Only allow traffic from Cloudflare IP ranges
+    - Prevent header spoofing
+
+---
+
+- Frontend integration:
+  - Dynamically render Turnstile widget when `step_up_required = true`
+  - On success:
+    - send token to backend
+    - retry original request
+
+---
+
+- API key / site key handling (multi-tenant support):
+
+  Problem:
+  - Turnstile requires a `site_key` (public)
+  - Each tenant may require different keys
+
+  Approach:
+  - Store Turnstile config per tenant in backend:
+    tenant_id
+    turnstile_site_key
+    turnstile_secret_key
+
+  - Backend exposes endpoint:
+    GET /auth/turnstile-config
+
+  - Response:
+    {
+    "site_key": "..."
+    }
+
+  - Frontend fetches site_key dynamically per tenant
+
+  - Secret key NEVER exposed to frontend
+
+  Notes:
+  - Site key is safe to expose (public by design)
+  - Secret key must remain server-side only
+  - This supports clean multi-tenant isolation
+
+---
+
+- Tests:
+  - valid token + same IP => success
+  - valid token + different IP => triggers challenge => success after verification
+  - invalid Turnstile token => rejected
+  - missing token when required => step_up_required response
+  - anonymous routes remain unaffected
+
+---
+
+- Security notes:
+  - IP binding is a **risk signal**, not a strict identity guarantee
+  - Turnstile replaces need for custom puzzles or behavioral timing logic
+  - Avoid building custom authentication mechanisms when proven solutions exist
+  - Ensure all Turnstile verification happens server-side
+
+---
+
+summary:
+
+- Do not block users on IP change
+- Introduce **step-up authentication using Cloudflare Turnstile**
+- Keep control in backend (when to challenge)
+- Offload challenge complexity to Cloudflare
+- Maintain clean multi-tenant support via backend-provided site keys
