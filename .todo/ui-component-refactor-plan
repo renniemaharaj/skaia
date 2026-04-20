@@ -1,0 +1,226 @@
+# Goal
+
+Create a Skaia-aligned schema-driven UI system where the backend owns canonical page content, section/block definitions, and integration primitives, while the frontend renders and edits those sections through an existing builder surface.
+
+---
+
+# Core Principle
+
+The backend owns the page/block schema and integration definitions. The frontend renders page content dynamically and edits it through a section-aware builder.
+
+---
+
+# Current Skaia Baseline
+
+- `backend/models.Page` stores custom page content as raw JSON in `Content`, typically a JSON array of page section/block objects.
+- Backend page APIs are already under `/config/pages/*`; root landing page resolution is controlled by `/config/pages/landing-slug`.
+- Frontend uses `PageBuilder`, `BlockRenderer`, and typed blocks in `backend/frontend/src/pages/page/blocks/*`.
+- Integration-focused block types already exist: `data_sources`, `derived_section`, and `custom_section`.
+- Data sources and custom sections are managed through existing admin APIs under `/config/datasources` and `/config/custom-sections`.
+- Existing page section/block code and page builder are the right foundation to extend rather than replace.
+
+---
+# Terminology Cleanup
+
+- Move away from the generic `LandingPage` concept in filenames, imports, and component names except where it refers explicitly to the root `/` landing page.
+- Treat all building blocks as `Section`, `Block`, `PageLayout`, `PageBuilder`, or `PageSection` primitives instead of `Landing*` unless the page is literally the homepage.
+- Preserve `landing-page` or `landing-slug` only for the actual site root resolution flow, not for internal builder components, sections, or page-layout abstractions.
+- The goal is a clean transition into the new UI model where `landing` is a route-level concept, not a general block or builder namespace.
+
+---
+
+# Architecture
+
+1. Postgres (Canonical Storage)
+   - Keep the `pages` table and `Content` JSONB as the authoritative page payload.
+   - Persist section content as typed page section/block objects.
+   - Add registry tables only if needed for explicit section metadata and schema validation.
+
+2. Go Backend (Authority Layer)
+   - Validate saved page `Content` against supported `section_type`s and integration references.
+   - Serve page content, section metadata, and editor schema to the frontend.
+   - Keep current page CRUD plus landing slug resolution and page broadcast semantics.
+   - Integrate datasource/custom-section references during save and ensure the backend rejects invalid IDs.
+
+3. React Frontend (Renderer + Builder)
+   - Use the existing `PageBuilder` flow and `BlockRenderer` mapping from `section_type` to block component.
+   - Hydrate from `/config/pages/{slug}` or `/config/pages/index` and preserve `mergeSections` memoization.
+   - Render only supported block types and keep section metadata in-sync with backend definitions.
+   - Let builder edit `section_type`, `config`, and integration settings for datasource / custom section blocks.
+
+---
+
+# Skaia Section/Block Registry Model
+
+Each saved page block should follow the existing `LandingSection` shape:
+
+LandingSection:
+
+- id: number
+- display_order: number
+- section_type: string
+- heading: string
+- subheading: string
+- config: string (JSON object)
+- items?: LandingItem[]
+- last_edited_by?: SectionEditor
+
+Supported `section_type`s in Skaia today:
+
+- hero
+- card_group
+- stat_cards
+- social_links
+- image_gallery
+- feature_grid
+- cta
+- event_highlights
+- profile_card
+- rich_text
+- code_editor
+- data_sources
+- derived_section
+- custom_section
+
+Integration-specific primitives:
+
+- `data_sources`: show available data sources and metadata
+- `derived_section`: execute a datasource and render a derived card grid
+- `custom_section`: embed compiled custom section templates or third-party integration blocks
+
+---
+
+# Backend API Alignment
+
+Use existing Skaia endpoints and add registry metadata paths where needed:
+
+- GET `/config/pages/landing-slug`
+- GET `/config/pages/{slug}`
+- GET `/config/pages/list`
+- POST `/config/pages`
+- PUT `/config/pages/{id}`
+- POST `/config/pages/{id}/duplicate`
+- GET `/config/datasources`
+- POST `/config/datasources`
+- GET `/config/custom-sections`
+
+New registry metadata endpoints should be additive, not replace the current page routes:
+
+- GET `/config/sections` → list supported `section_type`s and schema
+- GET `/config/section-types/{type}` → props/config schema for each block type
+
+---
+
+# Frontend Responsibilities
+
+1. Page Content Hydration
+   - Fetch page JSON from `/config/pages/{slug}` or landing slug lookup.
+   - Parse `Content` into typed sections and render with `BlockRenderer`.
+
+2. Section Mapping
+   - Map `section_type` to block component using the current `BLOCK_MAP`.
+   - Ensure invalid or unknown `section_type`s are handled safely in renderer.
+
+3. Builder Editing
+   - Use the existing page builder toolbar and section editor flows.
+   - Provide controls for datasource selection, custom section selection, block config, and section items.
+   - Persist edits back to `/config/pages/{id}`.
+
+4. Integration Metadata
+   - Fetch `/config/datasources` and `/config/custom-sections` for builder dropdowns.
+   - Surface allowed datasource exec/config fields in the block editor.
+
+---
+
+# Page Builder Extensions
+
+This project will extend the existing builder with a new programmable section editor that exposes primitives, variants, configuration, and compile preview.
+
+- Section editor must provide users with the available UI primitives and variants as first-class choices, not as hard-coded page components.
+- Each section should expose a schema-driven config surface for block-specific props, layout, and style options.
+- The builder will support `UI` and `Code` tabs, plus an `Events`/`Scripts` tab when applicable.
+- A shared Monaco editor will power TypeScript scripting for section-level logic, event handlers, and programmable compilation.
+- The editor experience should mirror the datasource editor model, with tabbed views and compile/run validation.
+- Users can configure available events and write TypeScript handlers for those events in the page builder.
+- Section compilation should be referenceable from the editor: the code tab can compile into a section definition, while the UI tab edits schema-driven props.
+- Keep the code editor shared across the page builder so datasource scripts, custom section code, and event scripts use the same Monaco/TypeScript environment.
+- Where possible, preserve the current page builder’s live save semantics while allowing code compilation errors to be surfaced before persist.
+
+---
+
+# Project-Specific Integration Rules
+
+- Data source blocks are integration primitives, not arbitrary code: they must reference a saved `DataSource` and execute through `/config/datasources/{id}/execute`.
+- Derived sections should be tied to compiled datasource queries and column maps, matching existing `DerivedSectionBlock` behavior.
+- Custom sections should use the current custom section registry, not free-form JSX/HTML.
+- Block config should remain JSON-backed and validated server-side.
+- The builder UI may allow preview/editing, but backend validation must reject unknown or unsupported `section_type`s.
+
+---
+
+# Versioning Strategy
+
+- Track versioning at the page/content level if possible.
+- Add a `content_version` or `template_version` field when introducing section schema changes.
+- Support fallback for deprecated/renamed section types in the renderer.
+- Use backend migration paths for saved `Content` arrays when block schema evolves.
+
+---
+
+# Data Flow
+
+1. Frontend requests page content via Skaia page APIs.
+2. Backend returns canonical `Page.Content` JSON, enriched with ownership and engagement data.
+3. Frontend renders sections via `BlockRenderer` and section-specific component code.
+4. Builder edits section JSON and integrates datasource/custom-section references.
+5. Frontend submits updates to `/config/pages/{id}`.
+6. Backend validates, persists, and optionally broadcasts the page update.
+
+---
+
+# Phased Implementation
+
+Phase 1 — Align with current Skaia page model
+
+- Keep existing `pages` table and `Content` JSON storage.
+- Treat page section/block JSON and current section block types as the canonical schema.
+- Ensure page builder uses current block components and section metadata.
+
+Phase 2 — Add explicit section metadata
+
+- Introduce a section registry API for allowed block types and config schema.
+- Add backend validation for supported `section_type`s and datasource references.
+- Wire builder dropdowns to the registry metadata.
+
+Phase 3 — Enforce integration primitives
+
+- Make `data_sources`, `derived_section`, and `custom_section` first-class builder primitives.
+- Ensure builder can only save those blocks when referenced backends exist.
+- Validate custom-section templates and datasource execution metadata.
+
+Phase 4 — Convert routes to dynamic page rendering
+
+- Render landing page and custom pages fully from stored page content.
+- Replace hardcoded route UI with registry-driven page blocks where feasible.
+- Keep comments/likes and ownership flows intact.
+
+Phase 5 — Add versioning and migration
+
+- Add version metadata for block schema.
+- Support fallback/render path for legacy saved section payloads.
+- Migrate legacy page section data into the new registry-driven shape.
+
+---
+
+# Key Constraints
+
+- Backend is authoritative for page content and block schema.
+- Frontend may not persist unknown `section_type`s or unsupported integration references.
+- All saved page content must be renderable from stored JSON and supported block definitions.
+- Integration-specific blocks must be validated against Skaia's datasource/custom-section API surface.
+
+---
+
+# Final Note
+
+This plan is Skaia-specific: it builds on the current page builder, section block model, and datasource/custom-section integration. The primary work is not to invent a generic registry from scratch, but to tighten schema validation, centralize section metadata, and make custom page content the authoritative source for dynamic UI.
