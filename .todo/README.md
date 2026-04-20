@@ -1,6 +1,6 @@
 # Agent TODO & Specs System
 
-This directory is used for collaborative planning and tracking of software engineering tasks by AI agents and developers. Only plain text files with no extension are allowed, except for `README.md`, `.status`, and `.specs`.
+This directory is used for collaborative planning and tracking of software engineering tasks by AI agents and developers. Only plain text files with no extension are allowed, except for `README.md`, `.tip`, and `.specs`.
 
 ## Usage Rules
 
@@ -12,8 +12,8 @@ This directory is used for collaborative planning and tracking of software engin
 
 ## Status Tracking
 
-- The `.status` file tracks the current progress of each todo plan in this directory.
-- Each tracked todo gets a block in `.status` with the following structure:
+- The `.tip` file tracks the current progress of each todo plan in this directory and is the entrypoint for beginning any real work.
+- Each tracked todo gets a block in `.tip` with the following structure:
 
 ```
 <--/------->
@@ -43,17 +43,18 @@ This directory is used for collaborative planning and tracking of software engin
 
 ## Workflow
 
-1. **Planning**: Add high-level plans, migration steps, or refactor strategies as entries in `.todo` files.
-2. **Specs**: Use `.specs` files for detailed requirements, design, or interface documentation to support planning and implementation.
-3. **Iteration**: Update, refine, or split plans/specs as new requirements or insights emerge.
-4. **Implementation**: Once a plan is finalized, a powerful agent or human can implement the steps.
-5. **Validation**: Use `.todo` entries and `.status` to track validation, testing, and review steps.
+1. **Entrypoint**: Open `.tip` first to understand current status and what work should begin.
+2. **Planning**: Add high-level plans, migration steps, or refactor strategies as entries in `.todo` files.
+3. **Specs**: Use `.specs` files for detailed requirements, design, or interface documentation to support planning and implementation.
+4. **Iteration**: Update, refine, or split plans/specs as new requirements or insights emerge.
+5. **Implementation**: Once a plan is finalized, a powerful agent or human can implement the steps.
+6. **Validation**: Use `.todo` entries and `.tip` to track validation, testing, and review steps.
 
 ## Project Additions
 
 - `.specs` files are now supported in this directory for collaborative, human-AI specification and design work.
-- All planning, status, and specification tracking for collaborative work should be kept in `.todo`, `.status`, or `.specs` files here.
-- Emoji use is strictly limited to this directory and the `.status` file as described above.
+- All planning, status, and specification tracking for collaborative work should be kept in `.todo`, `.tip`, or `.specs` files here.
+- Emoji use is strictly limited to this directory and the `.tip` file as described above.
 
 ---
 

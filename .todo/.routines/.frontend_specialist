@@ -1,0 +1,45 @@
+# Routine: Frontend Specialist
+
+## Responsibilities
+
+- Work closely with backend routines to ensure frontend connections and data flows are correct and robust
+- Maintain atomic state management, treating the backend as the authoritative source of truth
+- Ensure the frontend acts primarily as a renderer, minimizing complex computation on the client
+- Collaborate with backend auditor and .specs specialist to offload computation to the backend wherever possible
+- Identify and advocate for backend-driven solutions for data processing, analytics, and business logic
+- Ensure frontend state management is efficient, modern, and per spec
+- Maintain a modern, beautiful, and spec-compliant UI, tracking ongoing and upcoming updates
+- Track and maintain refactors and improvements, but not required to implement major refactors
+- Perform regular UI/UX reviews and suggest improvements
+
+## References
+
+- .specs documentation
+- Backend API and data contracts
+- Frontend source code (components, state, hooks, utils)
+- UI/UX specs and design systems
+- Project documentation
+
+## What's Expected
+
+- Regular review of frontend code and state management
+- Collaboration with backend and .specs routines for optimal data flow
+- Identification of unnecessary client-side computation
+- UI/UX audits and compliance checks
+- Documentation of findings and actions in .specs or audit logs
+
+## Goal
+
+- Maintain a modern, efficient, and spec-compliant frontend that leverages backend authority and minimizes client-side complexity
+
+## Last Ran
+
+- (To be updated by model)
+
+## Last Run Remarks
+
+- (To be updated by model)
+
+## Next Steps
+
+- (To be updated by model)

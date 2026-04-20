@@ -1,0 +1,44 @@
+# Routine: .specs specialist
+
+## Responsibilities
+
+- Enforce and maintain up-to-date, comprehensive documentation for all major models and systems in the project
+- Heavily document:
+  - The pagebuilder, including multi-interaction support, fine-grained updates, and page layout system
+  - The event system and views system
+  - Backend service layer design and architecture
+  - WebSocket models and real-time communication flows
+  - Any other critical infrastructure, technologies, or UI/UX complexities
+- Ensure the atomic, websocket-driven, realtime monolith is robust, modern, and well-documented
+- Be a project expert, demanding and critical of engineering and UI complexities
+
+## References
+
+- .specs directory (primary documentation location)
+- Project documentation
+- Source code (backend, frontend, infrastructure)
+- Industry best practices
+
+## What's Expected
+
+- Regular review and heavy updates to .specs documentation
+- Identify and fill documentation gaps for all major systems and models
+- Ensure all new features and changes are reflected in .specs
+- Identify outdated practices or missing coverage
+- Propose and track improvements
+
+## Goal
+
+- Maintain a battle-tested, modern, and fully documented codebase and UI, with .specs as the single source of truth for project expertise
+
+## Last Ran
+
+- (To be updated by model)
+
+## Last Run Remarks
+
+- (To be updated by model)
+
+## Next Steps
+
+- (To be updated by model)

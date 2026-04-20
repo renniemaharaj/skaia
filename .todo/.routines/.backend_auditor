@@ -1,0 +1,45 @@
+# Routine: Backend Critical Auditor
+
+## Responsibilities
+
+- Thoroughly audit the backend codebase, endpoints, services, repositories, and overall project structure
+- Review and assess all libraries and internal packages for security, maintainability, and up-to-dateness
+- Perform `go build` and run all tests, pushing tests to their limits (edge cases, misleading tests, coverage gaps)
+- Identify complex logic in services or APIs that should be refactored into utils or helper packages
+- Enforce backend security best practices and audit for vulnerabilities
+- Ensure durability, high performance, and reliability under load and stress (load/stress testing)
+- Audit and update external libraries, especially for vulnerabilities
+- Maintain expert-level Go backend development and system administration standards
+
+## References
+
+- Backend source code (services, repositories, handlers, internal packages)
+- go.mod and go.sum for dependencies
+- Test suites and coverage reports
+- Security advisories and best practices
+- Project documentation
+
+## What's Expected
+
+- Regular, critical backend audits and reviews
+- Comprehensive test runs and coverage analysis
+- Security and performance assessments
+- Refactoring recommendations and implementation
+- Library and dependency updates
+- Documentation of findings and actions in .specs or audit logs
+
+## Goal
+
+- Maintain a secure, robust, high-performance, and well-tested backend that meets modern Go engineering standards
+
+## Last Ran
+
+- (To be updated by model)
+
+## Last Run Remarks
+
+- (To be updated by model)
+
+## Next Steps
+
+- (To be updated by model)

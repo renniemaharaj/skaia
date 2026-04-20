@@ -1,0 +1,40 @@
+# .todo/.tip
+
+This file tracks the current progress of each todo plan in the .todo directory (excluding .tip, files with extensions, or unparsable/garbage files).
+
+<--/------->
+
+## migration
+
+### Current Progress
+
+- **Phase 1: Inventory and audit** — 🟡 In progress (plan drafted, inventory not started)
+- **Phase 2: Migration strategy and renaming** — ⬜ Not started
+- **Phase 3: Code and config updates** — ⬜ Not started
+- **Phase 4: Testing and validation** — ⬜ Not started
+- **Phase 5: Rollback and communication** — ⬜ Not started
+
+### Next Steps
+
+- [ ] Review and update migration plan
+- [ ] Inventory and rename tables, indexes, columns, and references
+- [ ] Update backend code and config
+- [ ] Test migration and document rollback
+
+<--/------->
+
+## project_normalization
+
+### Current Progress
+
+- **Phase 1: Audit usage of 'landing'** — 🟡 In progress (plan drafted, audit not started)
+- **Phase 2: Update code, comments, and docs** — ⬜ Not started
+- **Phase 3: Rename components and imports** — ⬜ Not started
+- **Phase 4: Validation and testing** — ⬜ Not started
+
+### Next Steps
+
+- [ ] Audit all code, comments, and CLI/tooling for 'landing' usage
+- [ ] Update to 'page' where appropriate
+- [ ] Rename components and update imports/usages
+- [ ] Add validation step for generic usage

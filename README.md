@@ -78,7 +78,7 @@ cd backend/frontend && npm test
 All collaborative planning, status tracking, and specifications are now kept in the `.todo/` directory:
 
 - `.todo/README.md` — Directory usage, rules, and emoji policy
-- `.todo/.status` — Status tracking for all plans
+- `.todo/.tip` — Current status tracker and entrypoint for beginning any real work
 - `.todo/.specs` — Human-AI specifications and design docs
 - `.todo/*` — Individual todo plans (no extension)
 
