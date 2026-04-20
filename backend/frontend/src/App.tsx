@@ -40,8 +40,8 @@ export default function App() {
                 {protectedRoutesFunc(features, guestSandboxMode)}
               </Routes>
             </ErrorBoundary>
+            <GrengoSessionDialog />
           </Layout>
-          <GrengoSessionDialog />
         </SiteConfigLoader>
       </ThemeProvider>
     </Router>

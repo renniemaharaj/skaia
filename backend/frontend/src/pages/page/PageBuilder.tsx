@@ -5,7 +5,6 @@ import {
   ThumbsUp,
   ChevronDown,
   MoreHorizontal,
-  ShieldAlert,
   BarChart3,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
@@ -90,8 +89,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     page,
     loading,
     error,
-    errorStatus,
-    retryAfter,
     refresh,
     isEditable,
     isAdmin,
@@ -143,24 +140,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [armInProgress, setArmInProgress] = useState(false);
   const [isArmed, setIsArmed] = useState(false);
   const [resetInProgress, setResetInProgress] = useState(false);
-  const RATE_LIMIT_KEY = "pb_rate_limit_until";
-
-  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(
-    () => {
-      try {
-        const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
-        if (stored) {
-          const until = parseInt(stored, 10);
-          const remaining = Math.ceil((until - Date.now()) / 1000);
-          if (remaining > 0) return remaining;
-          sessionStorage.removeItem(RATE_LIMIT_KEY);
-        }
-      } catch {
-        // sessionStorage unavailable
-      }
-      return undefined;
-    },
-  );
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -245,72 +224,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setResetInProgress(false);
     }
   }, [refresh, isAdmin]);
-
-  useEffect(() => {
-    if (errorStatus === 429) {
-      if (retryAfter !== undefined) {
-        setHoldingSeconds((current) => {
-          const next =
-            current === undefined ? retryAfter : Math.max(current, retryAfter);
-          try {
-            const until = Date.now() + next * 1000;
-            sessionStorage.setItem(RATE_LIMIT_KEY, String(until));
-          } catch {
-            /* ignore */
-          }
-          return next;
-        });
-      }
-      return;
-    }
-
-    // errorStatus is NOT 429 (e.g. undefined during reload, or a success).
-    // Only clear holdingSeconds if the sessionStorage penalty has also expired.
-    // This prevents a reload from wiping the timer before the API responds.
-    try {
-      const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
-      if (stored) {
-        const until = parseInt(stored, 10);
-        const remaining = Math.ceil((until - Date.now()) / 1000);
-        if (remaining > 0) {
-          // Penalty still active — keep the holding screen.
-          return;
-        }
-      }
-    } catch {
-      /* ignore */
-    }
-
-    setHoldingSeconds(undefined);
-    try {
-      sessionStorage.removeItem(RATE_LIMIT_KEY);
-    } catch {
-      /* ignore */
-    }
-  }, [errorStatus, retryAfter]);
-
-  useEffect(() => {
-    if (holdingSeconds === undefined) return;
-
-    const interval = setInterval(() => {
-      setHoldingSeconds((seconds) => {
-        if (seconds === undefined || seconds <= 1) {
-          clearInterval(interval);
-          try {
-            sessionStorage.removeItem(RATE_LIMIT_KEY);
-          } catch {
-            /* ignore */
-          }
-          return undefined;
-        }
-        return seconds - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [holdingSeconds]);
-
-  const displayHoldSeconds = holdingSeconds ?? retryAfter;
 
   const landingPageLabel = page ? page.title || page.slug : "Landing Page";
 
@@ -778,34 +691,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     return (
       <div className="pb-container">
         <LandingSkeleton />
-      </div>
-    );
-  }
-
-  if (errorStatus === 429) {
-    return (
-      <div className="pb-container">
-        <div
-          style={{
-            textAlign: "center",
-            padding: "4rem 1rem",
-            maxWidth: 560,
-            margin: "0 auto",
-          }}
-        >
-          <ShieldAlert size={48} style={{ marginBottom: 20 }} />
-          <h2>Rate limit exceeded</h2>
-          <p style={{ opacity: 0.75, marginTop: 12 }}>
-            The page builder is currently receiving too many requests. You must
-            wait before trying again.
-          </p>
-          {displayHoldSeconds ? (
-            <p style={{ opacity: 0.7, marginTop: 8 }}>
-              Estimated wait time: {displayHoldSeconds} second
-              {displayHoldSeconds === 1 ? "" : "s"}.
-            </p>
-          ) : null}
-        </div>
       </div>
     );
   }

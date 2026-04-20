@@ -277,6 +277,16 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     return () => window.removeEventListener("page:live:event", handler);
   }, [page?.id, refresh, applyIncomingData]);
 
+  useEffect(() => {
+    const handler = () => {
+      if (errorStatus === 429) {
+        void refresh(requestedSlugRef.current);
+      }
+    };
+    window.addEventListener("api:rate-limit-cleared", handler);
+    return () => window.removeEventListener("api:rate-limit-cleared", handler);
+  }, [errorStatus, refresh]);
+
   return {
     page,
     loading,

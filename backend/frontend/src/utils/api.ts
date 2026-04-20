@@ -99,6 +99,14 @@ export async function apiRequest<T>(
       toast.error(
         `${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`,
       );
+      window.dispatchEvent(
+        new CustomEvent("api:rate-limit", {
+          detail: {
+            retryAfter,
+            requestUrl: url,
+          },
+        }),
+      );
     }
 
     // Handle 503 — site may be armed (maintenance mode)
