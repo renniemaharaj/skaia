@@ -27,7 +27,7 @@ import { currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
-import type { LandingSection } from "./types";
+import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
@@ -36,7 +36,7 @@ import "./CustomPages.css";
 const parsePageSections = (content: string) => {
   try {
     const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) return parsed as LandingSection[];
+    if (Array.isArray(parsed)) return parsed as PageSection[];
   } catch {
     // ignore invalid content
   }

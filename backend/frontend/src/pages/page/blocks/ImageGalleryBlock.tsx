@@ -10,7 +10,7 @@ import {
   Minimize2,
   AlignCenterHorizontal,
 } from "lucide-react";
-import type { LandingSection, LandingItem } from "../types";
+import type { PageSection, PageItem } from "../types";
 import {
   EditableText,
   SectionToolbar,
@@ -133,12 +133,12 @@ function setSectionCardWidth(config: string, width: CardWidth): string {
 }
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onItemUpdate: (item: LandingItem) => void;
+  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
 
@@ -229,7 +229,7 @@ export const ImageGalleryBlock = ({
     });
   };
 
-  const setItemWidth = (item: LandingItem, width: CardWidth) => {
+  const setItemWidth = (item: PageItem, width: CardWidth) => {
     onItemUpdate({
       ...item,
       config: setItemMeta(item.config, { width }),

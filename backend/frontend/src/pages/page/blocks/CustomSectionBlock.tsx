@@ -8,8 +8,8 @@ import {
 import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
 import type {
-  LandingSection,
-  LandingItem,
+  PageSection,
+  PageItem,
   CustomSection,
   ColumnMap,
   FactTableConfig,
@@ -40,12 +40,12 @@ import { DesignedCardGrid } from "./DesignedCardGrid";
 import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onItemUpdate: (item: LandingItem) => void;
+  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
 
@@ -334,7 +334,7 @@ export const CustomSectionBlock = ({
 
   const hasColumnMap = cfg.column_map && Object.keys(cfg.column_map).length > 0;
 
-  const previewItems: LandingItem[] = useMemo(() => {
+  const previewItems: PageItem[] = useMemo(() => {
     if (
       !selectedCS ||
       rawRows.length === 0 ||
@@ -360,13 +360,13 @@ export const CustomSectionBlock = ({
           image_url: coerceImageUrl(row) ?? "",
           link_url: coerceLinkUrl(row) ?? "",
           config: "{}",
-        } as LandingItem;
+        } as PageItem;
       })
-      .filter((item): item is LandingItem => item !== null);
+      .filter((item): item is PageItem => item !== null);
   }, [rawRows, selectedCS, hasColumnMap, section.id]);
 
-  // Build LandingItem[] from raw rows + column map + overrides
-  const mappedItems: LandingItem[] = useMemo(() => {
+  // Build PageItem[] from raw rows + column map + overrides
+  const mappedItems: PageItem[] = useMemo(() => {
     if (!cfg.column_map || rawRows.length === 0) return [];
     return mapRowsToItems(
       rawRows,

@@ -1,4 +1,4 @@
-import type { LandingSection, LandingItem } from "../types";
+import type { PageSection, PageItem } from "../types";
 import "./CardGroupBlock.css";
 import {
   EditableText,
@@ -16,12 +16,12 @@ import {
 } from "../EditControls";
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onItemUpdate: (item: LandingItem) => void;
+  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
 

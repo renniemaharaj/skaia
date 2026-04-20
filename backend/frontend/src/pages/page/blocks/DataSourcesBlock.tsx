@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import type { LandingSection, DataSource } from "../types";
+import type { PageSection, DataSource } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
 import { ImageCardGrid } from "./ImageCardGrid";
 import "./DataSourcesBlock.css";
@@ -24,9 +24,9 @@ const TabbedEditor = lazy(
 );
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
 }
 

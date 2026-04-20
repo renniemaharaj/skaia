@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LandingSection } from "../types";
+import type { PageSection } from "../types";
 import "./HeroBlock.css";
 import {
   EditableText,
@@ -41,9 +41,9 @@ function getVideos(cfg: HeroCfg): string[] {
 }
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
 }
 

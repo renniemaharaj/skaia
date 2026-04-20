@@ -10,7 +10,7 @@ import {
 import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
-import type { LandingSection, LandingItem, SectionEditor } from "./types";
+import type { PageSection, PageItem, SectionEditor } from "./types";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import "./PageBuilder.css";
 import "../../components/ui/FeatureCard.css";
 
-const sortSections = (secs: LandingSection[]) =>
+const sortSections = (secs: PageSection[]) =>
   [...secs].sort((a, b) => a.display_order - b.display_order);
 
 /**
@@ -53,9 +53,9 @@ function stableStringify(obj: unknown): string {
  * the actually-modified section triggers a re-render.
  */
 function mergeSections(
-  current: LandingSection[],
-  incoming: LandingSection[],
-): LandingSection[] {
+  current: PageSection[],
+  incoming: PageSection[],
+): PageSection[] {
   if (current.length === 0) return incoming;
   const currentMap = new Map(current.map((s) => [s.id, s]));
   let changed = current.length !== incoming.length;
@@ -100,7 +100,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   } = usePageData(editingCount > 0);
 
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
-  const [sections, setSections] = useState<LandingSection[]>([]);
+  const [sections, setSections] = useState<PageSection[]>([]);
   const [sectionsSourced, setSectionsSourced] = useState(false);
   const [showOwnership, setShowOwnership] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
@@ -324,7 +324,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
    * we're on a 404 slug the user has permission to build.
    */
   const ensurePage = useCallback(
-    async (content: LandingSection[]): Promise<PageBuilderPage | null> => {
+    async (content: PageSection[]): Promise<PageBuilderPage | null> => {
       if (pageRef.current) return pageRef.current;
       const created = await createPage({
         slug: slug || "landing",
@@ -408,7 +408,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   }, [refresh, slug]);
 
   // Stable refs so useCallback wrappers never go stale.
-  const sectionsRef = useRef<LandingSection[]>(sections);
+  const sectionsRef = useRef<PageSection[]>(sections);
   sectionsRef.current = sections;
   const refreshRef = useRef(refresh);
   refreshRef.current = refresh;
@@ -423,13 +423,13 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const editingCountRef = useRef(0);
-  const pendingSectionsRef = useRef<LandingSection[] | null>(null);
+  const pendingSectionsRef = useRef<PageSection[] | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const changeCountRef = useRef(0);
   const lastChangeTimeRef = useRef(0);
 
   const savePageContent = useCallback(
-    async (updatedSections: LandingSection[]) => {
+    async (updatedSections: PageSection[]) => {
       if (!pageRef.current || pageRef.current.id == null) {
         await ensurePage(updatedSections);
         return;
@@ -493,7 +493,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   /** Schedule a debounced save with adaptive backoff for rapid-fire changes. */
   const scheduleSave = useCallback(
-    (sections: LandingSection[]) => {
+    (sections: PageSection[]) => {
       pendingSectionsRef.current = sections;
       setSaveStatus("pending");
       if (editingCountRef.current > 0) return; // hold while editing
@@ -516,7 +516,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   /** Immediate save for discrete structural actions (create / delete / move). */
-  const immediateSave = useCallback(async (sections: LandingSection[]) => {
+  const immediateSave = useCallback(async (sections: PageSection[]) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -555,7 +555,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   editorStampRef.current = currentEditorStamp;
 
   const updateSectionWrapper = useCallback(
-    (s: LandingSection) => {
+    (s: PageSection) => {
       const stamp = editorStampRef.current?.();
       const stamped = stamp ? { ...s, last_edited_by: stamp } : s;
       const updated = sectionsRef.current.map((sec) =>
@@ -569,9 +569,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   const createSectionWrapper = useCallback(
-    (s: Omit<LandingSection, "id">) => {
+    (s: Omit<PageSection, "id">) => {
       const sorted = sortSections(sectionsRef.current);
-      const newSection: LandingSection = { ...s, id: Date.now() };
+      const newSection: PageSection = { ...s, id: Date.now() };
 
       const insertionIndex = Math.max(
         0,
@@ -610,12 +610,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   const createItemWrapper = useCallback(
-    (sectionId: number, item: Omit<LandingItem, "id">) => {
+    (sectionId: number, item: Omit<PageItem, "id">) => {
       const updated = sectionsRef.current.map((section) => {
         if (section.id !== sectionId) {
           return section;
         }
-        const items = section.items ?? [];
+        const items: PageItem[] = section.items ?? [];
         return {
           ...section,
           items: [...items, { ...item, id: Date.now() }],
@@ -629,16 +629,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   const updateItemWrapper = useCallback(
-    (item: LandingItem) => {
+    (item: PageItem) => {
       const stamp = editorStampRef.current?.();
       const updated = sectionsRef.current.map((section) => {
         if (!section.items) return section;
-        const hasItem = section.items.some((it) => it.id === item.id);
+        const hasItem = (section.items as PageItem[]).some(
+          (it) => it.id === item.id,
+        );
         if (!hasItem) return section;
         return {
           ...section,
           ...(stamp ? { last_edited_by: stamp } : {}),
-          items: section.items.map((it) => (it.id === item.id ? item : it)),
+          items: (section.items as PageItem[]).map((it) =>
+            it.id === item.id ? item : it,
+          ),
         };
       });
       const ordered = sortSections(updated);
@@ -654,7 +658,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         if (!section.items) return section;
         return {
           ...section,
-          items: section.items.filter((item) => item.id !== id),
+          items: (section.items as PageItem[]).filter((item) => item.id !== id),
         };
       });
       const ordered = sortSections(updated);

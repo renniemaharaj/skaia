@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type {
-  LandingSection,
-  LandingItem,
+  PageSection,
+  PageItem,
   DataSource,
   ColumnMap,
   FactTableConfig,
@@ -34,12 +34,12 @@ import { DesignedCardGrid } from "./DesignedCardGrid";
 import { CardDesigner } from "../CardDesigner";
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onItemUpdate: (item: LandingItem) => void;
+  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
 
@@ -177,7 +177,7 @@ export const DerivedSectionBlock = ({
   const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
 
   // Build LandingItem[] from raw rows + column map + overrides
-  const mappedItems: LandingItem[] = useMemo(() => {
+  const mappedItems: PageItem[] = useMemo(() => {
     if (!cfg.column_map || rawRows.length === 0) return [];
     return mapRowsToItems(
       rawRows,

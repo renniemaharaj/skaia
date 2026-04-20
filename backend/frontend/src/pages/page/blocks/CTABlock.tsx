@@ -1,4 +1,4 @@
-import type { LandingSection } from "../types";
+import type { PageSection } from "../types";
 import "./CTABlock.css";
 import {
   EditableText,
@@ -17,9 +17,9 @@ import {
 } from "../EditControls";
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
 }
 

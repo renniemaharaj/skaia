@@ -1,4 +1,4 @@
-import type { LandingSection, LandingItem, SectionType } from "./types";
+import type { PageSection, PageItem, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
 import "./page-builder-core.css";
 import { HeroBlock } from "./blocks/HeroBlock";
@@ -34,13 +34,13 @@ import {
 } from "./EditControls";
 
 interface BlockRendererProps {
-  sections: LandingSection[];
+  sections: PageSection[];
   canEdit: boolean;
-  onUpdateSection: (s: LandingSection) => void;
+  onUpdateSection: (s: PageSection) => void;
   onDeleteSection: (id: number) => void;
-  onCreateSection: (s: Omit<LandingSection, "id">) => void;
-  onCreateItem: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onUpdateItem: (item: LandingItem) => void;
+  onCreateSection: (s: Omit<PageSection, "id">) => void;
+  onCreateItem: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onUpdateItem: (item: PageItem) => void;
   onDeleteItem: (id: number) => void;
   onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
 }
@@ -49,12 +49,12 @@ interface BlockRendererProps {
 const BLOCK_MAP: Record<
   string,
   React.FC<{
-    section: LandingSection;
+    section: PageSection;
     canEdit: boolean;
-    onUpdate: (s: LandingSection) => void;
+    onUpdate: (s: PageSection) => void;
     onDelete: (id: number) => void;
-    onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-    onItemUpdate: (item: LandingItem) => void;
+    onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+    onItemUpdate: (item: PageItem) => void;
     onItemDelete: (id: number) => void;
   }>
 > = {
@@ -82,15 +82,15 @@ const BLOCK_MAP: Record<
  * `useCallback` wrappers.
  */
 interface SectionBlockProps {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
   isFirst: boolean;
   isLast: boolean;
   onMove: (sectionId: number, direction: "up" | "down") => void;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<LandingItem, "id">) => void;
-  onItemUpdate: (item: LandingItem) => void;
+  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
 

@@ -1,29 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import type { LandingItem, LandingSection } from "../pages/page/types";
+import type { PageItem, PageSection } from "../pages/page/types";
 import { apiRequest } from "../utils/api";
 
 interface UseLandingDataReturn {
-  sections: LandingSection[];
+  sections: PageSection[];
   loading: boolean;
   error: string | null;
   refetch: () => void;
-  updateSection: (s: LandingSection) => Promise<void>;
-  createSection: (s: Omit<LandingSection, "id">) => Promise<void>;
+  updateSection: (s: PageSection) => Promise<void>;
+  createSection: (s: Omit<PageSection, "id">) => Promise<void>;
   deleteSection: (id: number) => Promise<void>;
   reorderSections: (orderedIds: number[]) => Promise<void>;
-  createItem: (
-    sectionId: number,
-    item: Omit<LandingItem, "id">,
-  ) => Promise<void>;
-  updateItem: (item: LandingItem) => Promise<void>;
+  createItem: (sectionId: number, item: Omit<PageItem, "id">) => Promise<void>;
+  updateItem: (item: PageItem) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
 }
 
 export function useLandingData(
   suppressLiveRefresh = false,
 ): UseLandingDataReturn {
-  const [sections, setSections] = useState<LandingSection[]>([]);
+  const [sections, setSections] = useState<PageSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +28,7 @@ export function useLandingData(
     try {
       setLoading(true);
       setError(null);
-      const data = await apiRequest<LandingSection[]>("/config/landing");
+      const data = await apiRequest<PageSection[]>("/config/landing");
       setSections(data ?? []);
     } catch (err) {
       const msg =
@@ -58,7 +55,7 @@ export function useLandingData(
     return () => window.removeEventListener("config:live:event", handler);
   }, [fetchSections, suppressLiveRefresh]);
 
-  const updateSection = useCallback(async (s: LandingSection) => {
+  const updateSection = useCallback(async (s: PageSection) => {
     try {
       await apiRequest(`/config/landing/sections/${s.id}`, {
         method: "PUT",
@@ -73,9 +70,9 @@ export function useLandingData(
     }
   }, []);
 
-  const createSection = useCallback(async (s: Omit<LandingSection, "id">) => {
+  const createSection = useCallback(async (s: Omit<PageSection, "id">) => {
     try {
-      const created = await apiRequest<LandingSection>(
+      const created = await apiRequest<PageSection>(
         "/config/landing/sections",
         { method: "POST", body: JSON.stringify(s) },
       );
@@ -107,9 +104,9 @@ export function useLandingData(
   }, []);
 
   const createItem = useCallback(
-    async (sectionId: number, item: Omit<LandingItem, "id">) => {
+    async (sectionId: number, item: Omit<PageItem, "id">) => {
       try {
-        const created = await apiRequest<LandingItem>(
+        const created = await apiRequest<PageItem>(
           `/config/landing/sections/${sectionId}/items`,
           { method: "POST", body: JSON.stringify(item) },
         );
@@ -128,7 +125,7 @@ export function useLandingData(
     [],
   );
 
-  const updateItem = useCallback(async (item: LandingItem) => {
+  const updateItem = useCallback(async (item: PageItem) => {
     try {
       await apiRequest(`/config/landing/items/${item.id}`, {
         method: "PUT",

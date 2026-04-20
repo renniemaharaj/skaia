@@ -1,4 +1,4 @@
-import type { LandingSection } from "../types";
+import type { PageSection } from "../types";
 import "./SocialLinksBlock.css";
 import {
   SectionToolbar,
@@ -17,9 +17,9 @@ import { Pencil, Plus, Trash2, Check } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
 }
 

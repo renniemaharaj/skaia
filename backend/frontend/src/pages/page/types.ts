@@ -1,5 +1,7 @@
 /** Types for the landing page block system. */
 
+/** Types for the landing page block system. */
+
 export interface LandingItem {
   id: number;
   section_id: number;
@@ -20,14 +22,26 @@ export interface SectionEditor {
   edited_at?: string;
 }
 
-export interface LandingSection {
+export interface PageItem {
+  id: number;
+  section_id: number;
+  display_order: number;
+  icon: string;
+  heading: string;
+  subheading: string;
+  image_url: string;
+  link_url: string;
+  config: string;
+}
+
+export interface PageSection {
   id: number;
   display_order: number;
   section_type: string;
   heading: string;
   subheading: string;
   config: string;
-  items?: LandingItem[];
+  items?: PageItem[];
   last_edited_by?: SectionEditor;
 }
 
@@ -73,6 +87,8 @@ export interface FooterConfig {
 }
 
 /** All section types the renderer knows about. */
+/** All section types the renderer knows about. */
+
 export const SECTION_TYPES = [
   "hero",
   "card_group",

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from "react";
-import type { LandingSection } from "../types";
+import type { PageSection } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
 import "./RichTextBlock.css";
 import {
@@ -19,9 +19,9 @@ const Editor = lazy(() => import("../../../components/forum/Editor"));
 const ViewThread = lazy(() => import("../../../components/forum/ViewThread"));
 
 interface Props {
-  section: LandingSection;
+  section: PageSection;
   canEdit: boolean;
-  onUpdate: (s: LandingSection) => void;
+  onUpdate: (s: PageSection) => void;
   onDelete: (id: number) => void;
 }
 
