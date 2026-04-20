@@ -6,6 +6,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   ShieldAlert,
+  BarChart3,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
@@ -19,6 +20,7 @@ import { LandingSkeleton } from "./LandingSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
 import PageComments from "../../components/page/PageComments";
+import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 import "./PageBuilder.css";
@@ -134,6 +136,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
   const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
@@ -979,6 +982,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                         Manage page ownership
                       </button>
                     )}
+                    {showOwnershipBtn && page?.id && (
+                      <button
+                        type="button"
+                        className="page-admin-more-item"
+                        onClick={() => {
+                          setShowAnalytics(true);
+                          setMoreOpen(false);
+                        }}
+                      >
+                        Page Analytics
+                      </button>
+                    )}
                     {isAdmin && !slug && (
                       <>
                         <Link
@@ -1059,6 +1074,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
             <span className="page-engagement-stat">
               {page.comment_count ?? 0} comments
             </span>
+            {slug && (isAdmin || isOwner) && (
+              <button
+                type="button"
+                className="icon-btn icon-btn--sm page-engagement-analytics"
+                onClick={() => setShowAnalytics(true)}
+                title="Page analytics"
+              >
+                <BarChart3 size={14} />
+              </button>
+            )}
           </div>
         )}
 
@@ -1080,6 +1105,15 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         )}
         <SaveStatusBar />
       </div>
+
+      {showAnalytics && page?.id && (
+        <ResourceAnalytics
+          resource="page"
+          resourceId={page.id}
+          title={page.title || page.slug}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
     </PageBuilderContext.Provider>
   );
 }

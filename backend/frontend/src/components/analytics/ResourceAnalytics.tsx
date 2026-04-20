@@ -91,11 +91,13 @@ export default function ResourceAnalytics({
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
 
   // visitors
   const [visitors, setVisitors] = useState<VisitorEntry[]>([]);
   const [visitorsLoading, setVisitorsLoading] = useState(false);
+  const [visitorsError, setVisitorsError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [identifiedOnly, setIdentifiedOnly] = useState(false);
 
@@ -103,13 +105,17 @@ export default function ResourceAnalytics({
 
   const loadStats = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await apiRequest<StatsResponse>(
-        `/api/analytics/views/${resource}/${resourceId}?days=${days}`,
+        `/analytics/views/${resource}/${resourceId}?days=${days}`,
       );
+      if (!res) {
+        throw new Error("Invalid analytics response");
+      }
       setData(res);
-    } catch {
-      // silent
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load analytics");
     } finally {
       setLoading(false);
     }
@@ -124,16 +130,22 @@ export default function ResourceAnalytics({
   const loadVisitors = useCallback(
     async (offset: number) => {
       setVisitorsLoading(true);
+      if (offset === 0) setVisitorsError(null);
       try {
         const identified = identifiedOnly ? "&identified=true" : "";
         const res = await apiRequest<VisitorsResponse>(
-          `/api/analytics/visitors/${resource}/${resourceId}?limit=${PAGE_SIZE}&offset=${offset}${identified}`,
+          `/analytics/visitors/${resource}/${resourceId}?limit=${PAGE_SIZE}&offset=${offset}${identified}`,
         );
+        if (!res) {
+          throw new Error("Invalid visitors response");
+        }
         const list = res.visitors ?? [];
         setVisitors((prev) => (offset === 0 ? list : [...prev, ...list]));
         setHasMore(list.length === PAGE_SIZE);
-      } catch {
-        // silent
+      } catch (err) {
+        setVisitorsError(
+          err instanceof Error ? err.message : "Failed to load visitors",
+        );
       } finally {
         setVisitorsLoading(false);
       }
@@ -165,7 +177,35 @@ export default function ResourceAnalytics({
 
   const chartColor = "var(--primary-color)";
   const daily = data?.daily ?? [];
+  const visitorKey = (entry: VisitorEntry) =>
+    entry.user_id != null
+      ? `user:${entry.user_id}`
+      : `anon:${entry.ip ?? "unknown"}`;
 
+  const visitorLabel = (entry: VisitorEntry) =>
+    entry.user_id
+      ? entry.display_name || entry.username || "User"
+      : "Anonymous";
+
+  const visitorGroups = (entries: VisitorEntry[]) => {
+    const groups: Array<{
+      key: string;
+      head: VisitorEntry;
+      others: VisitorEntry[];
+    }> = [];
+
+    for (const entry of entries) {
+      const key = visitorKey(entry);
+      const last = groups[groups.length - 1];
+      if (last && last.key === key) {
+        last.others.push(entry);
+      } else {
+        groups.push({ key, head: entry, others: [] });
+      }
+    }
+
+    return groups;
+  };
   /* ── render ───────────────────────────────────────────── */
 
   return (
@@ -246,6 +286,17 @@ export default function ResourceAnalytics({
             <>
               {loading ? (
                 <div className="ra-loading">Loading analytics…</div>
+              ) : error ? (
+                <div className="ra-error">
+                  Failed to load analytics: {error}
+                  <button
+                    type="button"
+                    className="ra-retry"
+                    onClick={loadStats}
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : (
                 <>
                   <div className="ra-chart-header">
@@ -366,6 +417,17 @@ export default function ResourceAnalytics({
 
               {visitorsLoading && visitors.length === 0 ? (
                 <div className="ra-loading">Loading visitors…</div>
+              ) : visitorsError ? (
+                <div className="ra-error">
+                  Failed to load visitors: {visitorsError}
+                  <button
+                    type="button"
+                    className="ra-retry"
+                    onClick={() => loadVisitors(0)}
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : visitors.length === 0 ? (
                 <div className="ra-empty-visitors">
                   {identifiedOnly
@@ -383,36 +445,90 @@ export default function ResourceAnalytics({
                       </tr>
                     </thead>
                     <tbody>
-                      {visitors.map((v) => (
-                        <tr key={v.id}>
-                          <td>{formatTimestamp(v.created_at)}</td>
-                          <td>
-                            <span className="ra-ip">{v.ip || "—"}</span>
-                          </td>
-                          <td>
-                            {v.user_id ? (
-                              <span className="ra-visitor-user">
-                                <UserAvatar
-                                  src={v.avatar_url}
-                                  alt={v.display_name || v.username || "User"}
-                                  size={18}
-                                  initials={(
-                                    v.display_name ||
-                                    v.username ||
-                                    "?"
-                                  )
-                                    .charAt(0)
-                                    .toUpperCase()}
-                                />
-                                <span>
-                                  {v.display_name || v.username || "User"}
-                                </span>
+                      {visitorGroups(visitors).map((group) => (
+                        <>
+                          <tr key={`${group.key}-${group.head.id}`}>
+                            <td>{formatTimestamp(group.head.created_at)}</td>
+                            <td>
+                              <span className="ra-ip">
+                                {group.head.ip || "—"}
                               </span>
-                            ) : (
-                              <span className="ra-visitor-anon">None</span>
-                            )}
-                          </td>
-                        </tr>
+                            </td>
+                            <td>
+                              <span className="ra-visitor-user">
+                                {group.head.user_id ? (
+                                  <>
+                                    <UserAvatar
+                                      src={group.head.avatar_url}
+                                      alt={
+                                        group.head.display_name ||
+                                        group.head.username ||
+                                        "User"
+                                      }
+                                      size={18}
+                                      initials={(
+                                        group.head.display_name ||
+                                        group.head.username ||
+                                        "?"
+                                      )
+                                        .charAt(0)
+                                        .toUpperCase()}
+                                    />
+                                    <span>
+                                      {group.head.display_name ||
+                                        group.head.username ||
+                                        "User"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="ra-visitor-anon">
+                                    Anonymous
+                                  </span>
+                                )}
+                                {group.others.length > 0 && (
+                                  <span className="ra-visitor-group-badge">
+                                    +{group.others.length} more
+                                  </span>
+                                )}
+                              </span>
+                            </td>
+                          </tr>
+                          {group.others.length > 0 && (
+                            <tr key={`${group.key}-${group.head.id}-details`}>
+                              <td
+                                colSpan={3}
+                                className="ra-visitor-group-details-cell"
+                              >
+                                <details className="ra-visitor-group-details">
+                                  <summary>
+                                    View {group.others.length} earlier visit
+                                    {group.others.length > 1 ? "s" : ""}
+                                  </summary>
+                                  <div className="ra-visitor-group-list">
+                                    {group.others.map((visit) => (
+                                      <div
+                                        className="ra-visitor-group-item"
+                                        key={visit.id}
+                                      >
+                                        <span className="ra-visitor-group-time">
+                                          {formatTimestamp(visit.created_at)}
+                                        </span>
+                                        <span className="ra-ip">
+                                          {visit.ip || "—"}
+                                        </span>
+                                        <span>
+                                          {visit.user_id
+                                            ? visitorLabel(visit)
+                                            : "Anonymous"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       ))}
                     </tbody>
                   </table>

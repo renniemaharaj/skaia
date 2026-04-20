@@ -245,6 +245,65 @@
   border-radius: 999px;
 }
 
+.ra-visitor-group-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.ra-visitor-group-details-cell {
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ra-visitor-group-details {
+  width: 100%;
+}
+
+.ra-visitor-group-details summary {
+  cursor: pointer;
+  padding: 0.75rem 0.75rem 0.5rem;
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0 0 6px 6px;
+}
+
+.ra-visitor-group-list {
+  max-height: 180px;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-color);
+}
+
+.ra-visitor-group-item {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.ra-visitor-group-item:last-child {
+  border-bottom: none;
+}
+
+.ra-visitor-group-time {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
 .ra-ip {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -287,6 +346,39 @@
   padding: 2rem 1rem;
   color: var(--text-secondary);
   font-size: 0.8125rem;
+}
+
+.ra-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 0.75rem;
+  color: var(--error-color);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+  margin: 1rem;
+  padding: 1.5rem;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.ra-retry {
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  border: 1px solid var(--error-border);
+  background: transparent;
+  color: var(--error-color);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ra-retry:hover {
+  background: var(--error-border);
 }
 
 /* ── responsive ────────────────────────────────────────── */
