@@ -1,0 +1,19 @@
+### Current Progress
+
+- **Phase 1: Define rate limiter model** — ⬜ Not started
+- **Phase 2: Implement grouping logic** — ⬜ Not started
+- **Phase 3: Record rate-limit events** — ⬜ Not started
+- **Phase 4: Build admin UI routes** — ⬜ Not started
+- **Phase 5: Admin controls** — ⬜ Not started
+- **Phase 6: Data/event policy** — ⬜ Not started
+- **Phase 7: Testing** — ⬜ Not started
+
+### Next Steps
+
+- [ ] Define rate limiter model
+- [ ] Implement grouping logic
+- [ ] Record rate-limit events
+- [ ] Build admin UI routes
+- [ ] Implement admin controls
+- [ ] Enforce data/event policy
+- [ ] Test all scenarios

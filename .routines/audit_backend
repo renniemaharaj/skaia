@@ -1,5 +1,3 @@
-// File migrated to audit_backend. This file is deprecated and will be removed.
-
 # Routine: audit_backend
 
 ## Purpose
@@ -42,12 +40,12 @@ Maintain a secure, robust, high-performance, and well-tested backend that meets 
 
 ```
 for service in backend:
-	audit endpoints, repos, handlers
-	check dependencies
-	run tests (edge cases, coverage)
-	identify refactor candidates
-	check for vulnerabilities
-	document in .specs/audit logs
+    audit endpoints, repos, handlers
+    check dependencies
+    run tests (edge cases, coverage)
+    identify refactor candidates
+    check for vulnerabilities
+    document in .specs_specialist/audit logs
 ```
 
 ## Contexts
@@ -60,9 +58,9 @@ for service in backend:
 
 ## Extension/See Also
 
-- `.routines/correctness` for validation and anti-patterns
-- `.specs_specialist` for architecture, design, and protocol details
-- `.github/copilot-instructions.md` for global agent guidance
+- `.routines/correctness` — for validation and anti-patterns
+- `.specs_specialist` — for architecture, design, and protocol details
+- `.github/copilot-instructions.md` — for global agent guidance
 
 ## Last Ran
 

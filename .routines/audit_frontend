@@ -1,5 +1,3 @@
-// File migrated to audit_frontend. This file is deprecated and will be removed.
-
 # Routine: audit_frontend
 
 ## Purpose
@@ -26,13 +24,13 @@ Maintain a modern, efficient, and spec-compliant frontend that leverages backend
 - Backend is the source of truth for state/data
 - Minimize client-side computation
 - UI/UX must be modern, beautiful, and spec-compliant
-- Collaboration with backend and .specs routines is essential
+- Collaboration with backend and .specs_specialist routines is essential
 - Document all findings and actions for traceability
 
 ## Workflow
 
 1. Review frontend code and state management
-2. Collaborate with backend and .specs routines for optimal data flow
+2. Collaborate with backend and .specs_specialist routines for optimal data flow
 3. Identify unnecessary client-side computation
 4. Audit UI/UX for compliance and improvements
 5. Document findings and actions in .specs_specialist or audit logs
@@ -41,11 +39,11 @@ Maintain a modern, efficient, and spec-compliant frontend that leverages backend
 
 ```
 for component in frontend:
-	check state management (atomic, backend-driven)
-	minimize client computation
-	audit UI/UX for spec compliance
-	collaborate with backend for data flow
-	document in .specs/audit logs
+    check state management (atomic, backend-driven)
+    minimize client computation
+    audit UI/UX for spec compliance
+    collaborate with backend for data flow
+    document in .specs_specialist/audit logs
 ```
 
 ## Contexts
@@ -58,10 +56,10 @@ for component in frontend:
 
 ## Extension/See Also
 
-- `.routines/audit_backend` for backend audits and collaboration
-- `.routines/correctness` for validation and anti-patterns
-- `.specs_specialist` for architecture, design, and protocol details
-- `.github/copilot-instructions.md` for global agent guidance
+- `.routines/audit_backend` — for backend audits and collaboration
+- `.routines/correctness` — for validation and anti-patterns
+- `.specs_specialist` — for architecture, design, and protocol details
+- `.github/copilot-instructions.md` — for global agent guidance
 
 ## Last Ran
 

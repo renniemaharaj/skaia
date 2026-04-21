@@ -1,43 +1,82 @@
 # Routine: correctness
 
-## Responsibilities
-- Periodically scan the Skaia project for inconsistencies, outdated documentation, orphaned files, or inefficient practices.
-- Focus on README and spec files, but also check code, migrations, and project structure for alignment with documentation.
-- Always find at least one actionable criticism per run.
+## Purpose
 
-## References
+To ensure the Skaia project remains consistent, up-to-date, and free of inefficiencies or documentation drift by regularly scanning for actionable issues and enforcing alignment between code, docs, and specs.
+
+## Responsibilities
+
+- Periodically scan the Skaia project for inconsistencies, outdated documentation, orphaned files, or inefficient practices
+- Focus on README and spec files, but also check code, migrations, and project structure for alignment with documentation
+- Always find at least one actionable criticism per run
+
+## Goal
+
+Prove the routine's value by always surfacing at least one actionable issue, even if minor, and drive continuous improvement.
+
+## Principles
+
+- Every run must surface at least one actionable issue
+- Documentation and code must always be in sync
+- Prioritize clarity, maintainability, and alignment with best practices
+- Communicate and document all findings and suggestions
+
+## Workflow
+
+1. Scan all README.md, .spec, .specs, and .spec.md files
+2. Check backend/internal/migrations/, backend/internal/utils/, backend/models/ for alignment with docs/specs
+3. Identify inconsistencies, outdated docs, orphaned files, or inefficient practices
+4. Document at least one actionable criticism per run
+5. Suggest improvements and prioritize them
+6. Communicate findings and update onboarding/developer docs as needed
+
+### Pseudocode
+
+```
+for doc in (README.md, .spec*, .specs*):
+   check alignment with code/migrations/models
+   find at least one actionable issue
+   document criticism, suggestion, priority, next steps
+update onboarding/dev docs if needed
+```
+
+## Contexts
+
 - All README.md files
 - All .spec, .specs, and .spec.md files in the project
 - backend/internal/migrations/
 - backend/internal/utils/
 - backend/models/
 
-## What's Expected
-- A report with the following fields:
-  - Last Run
-  - Criticism (at least one issue found)
-  - Suggestion
-  - Priority
-  - Next Steps
+## Extension/See Also
 
-## Goal
-- Prove the routine's value by always surfacing at least one actionable issue, even if minor.
+- `.routines/audit_backend` for backend audits
+- `.routines/audit_frontend` for frontend audits
+- `.specs_specialist` for architecture, design, and protocol details
+- `.github/copilot-instructions.md` for global agent guidance
 
 ## Last Run
+
 - 2026-04-20
 
 ## Criticism
+
 - The migration policy in `.specs/migrations_spec` states all schema changes must be applied by editing the existing migration files directly, with no incremental migration files. However, the codebase contains incremental migration files (`003_datasource_env_data.sql`, `004_datasource_files.sql`, etc.), which contradicts the documented policy.
 
 ## Suggestion
+
 - Update the migration policy in `.specs/migrations_spec` to reflect the actual practice of using incremental migration files, or consolidate all schema changes into the original files as per the current policy.
 
 ## Priority
+
 - High (Documentation and migration practices must align to avoid confusion and potential deployment issues.)
 
 ## Next Steps
+
 1. Decide on a single migration strategy:
-   - If incremental migrations are preferred, update `.specs/migrations_spec` to document this.
-   - If single-file/idempotent migrations are required, merge all changes into the original files and remove the incremental ones.
+
+- If incremental migrations are preferred, update `.specs/migrations_spec` to document this.
+- If single-file/idempotent migrations are required, merge all changes into the original files and remove the incremental ones.
+
 2. Communicate the chosen strategy to all contributors.
 3. Update onboarding and developer docs to match.

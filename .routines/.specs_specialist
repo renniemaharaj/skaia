@@ -1,8 +1,8 @@
-// File migrated to .specs_specialist. This file is deprecated.
+# Routine: specs_specialist
 
 ## Purpose
 
-To enforce and maintain up-to-date, comprehensive documentation for all major models and systems in the Skaia project, ensuring .specs is the single source of truth for project expertise and technical alignment.
+To enforce and maintain up-to-date, comprehensive documentation for all major models and systems in the Skaia project, ensuring .specs_specialist is the single source of truth for project expertise and technical alignment.
 
 ## Responsibilities
 
@@ -18,12 +18,12 @@ To enforce and maintain up-to-date, comprehensive documentation for all major mo
 
 ## Goal
 
-Maintain a battle-tested, modern, and fully documented codebase and UI, with .specs as the single source of truth for project expertise.
+Maintain a battle-tested, modern, and fully documented codebase and UI, with .specs_specialist as the single source of truth for project expertise.
 
 ## Principles
 
 - Documentation must be comprehensive, up-to-date, and authoritative
-- All new features and changes must be reflected in .specs
+- All new features and changes must be reflected in .specs_specialist
 - Identify and fill documentation gaps proactively
 - Solicit and incorporate feedback from contributors
 - Document all findings and actions for traceability
@@ -40,10 +40,10 @@ Maintain a battle-tested, modern, and fully documented codebase and UI, with .sp
 
 ```
 for doc in .specs_specialist/:
-  check for coverage of all major systems
-  update after every major change
-  solicit feedback
-  document all actions
+    check for coverage of all major systems
+    update after every major change
+    solicit feedback
+    document all actions
 ```
 
 ## Contexts
@@ -55,10 +55,10 @@ for doc in .specs_specialist/:
 
 ## Extension/See Also
 
-- `.routines/correctness` for validation and anti-patterns
-- `.routines/audit_backend` for backend audits
-- `.routines/audit_frontend` for frontend audits
-- `.github/copilot-instructions.md` for global agent guidance
+- `.routines/correctness` — for validation and anti-patterns
+- `.routines/audit_backend` — for backend audits
+- `.routines/audit_frontend` — for frontend audits
+- `.github/copilot-instructions.md` — for global agent guidance
 
 ## Last Ran
 
@@ -66,11 +66,11 @@ for doc in .specs_specialist/:
 
 ## Last Run Remarks
 
-- All major .specs documents are present and up to date, covering backend, frontend, real-time WebSocket flows, infrastructure, landing page logic, multiplayer editing, caching/CDN, and migration policy. No major documentation gaps detected. All new features and architectural patterns are reflected. No outdated practices found in reviewed specs.
+- All major .specs_specialist documents are present and up to date, covering backend, frontend, real-time WebSocket flows, infrastructure, landing page logic, multiplayer editing, caching/CDN, and migration policy. No major documentation gaps detected. All new features and architectural patterns are reflected. No outdated practices found in reviewed specs.
 
 ## Next Steps
 
-- Continue to review .specs after any major feature or architectural change.
-- Ensure .specs are updated immediately after backend/frontend protocol or model changes.
+- Continue to review .specs_specialist after any major feature or architectural change.
+- Ensure .specs_specialist is updated immediately after backend/frontend protocol or model changes.
 - Solicit feedback from contributors to identify any unclear or missing documentation.
-- Periodically audit .specs for completeness and alignment with current codebase and best practices.
+- Periodically audit .specs_specialist for completeness and alignment with current codebase and best practices.

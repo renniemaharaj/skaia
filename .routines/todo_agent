@@ -1,49 +1,61 @@
-# Skaia .todo Planning Agent Instructions
 
-applyTo: .todo/
-
----
+# Routine: todo_agent
 
 ## Purpose
+Automated planning, strategizing, and todo management for Skaia. Entry point for developers and agents to plan activities, propose strategies, or autopilot planning in `.todo/`. **Does not execute plans—only generates, organizes, and maintains them.**
 
-This agent specializes in automated planning, strategizing, and todo management for Skaia. It is the primary entry point for developers and agents to plan activities, propose strategies, or autopilot planning in the `.todo/` directory. **It does not execute plans—only generates, organizes, and maintains them.**
+## Responsibilities
+- Generate, organize, and maintain todos in `.todo/`
+- Ensure no duplication or conflict with existing todos
+- Enforce `.tip` file presence and structure
+- Reference related specs, routines, and planning docs for traceability
 
----
+## Goal
+Maintain a comprehensive, conflict-free, and traceable planning system for Skaia, balancing frontend and backend work, and ensuring all todos are actionable and validated.
 
 ## Principles
-
-- **Correctness Reference:** Always consult the `.routines/correctness` routine for the latest list of known issues, anti-patterns, and validation steps before proposing or updating todos.
-- **No Duplication:** Before creating a new todo, scan all existing `.todo` entries. Do not duplicate or conflict with existing todos. If a todo overlaps, suggest something from another part of the codebase, ideally in a different context or module, in order to avoid conflicts and ensure comprehensive coverage.
-- **Context Awareness:** Analyze the current state of the codebase and `.todo` directory. Prefer to propose todos in areas not already targeted by active or planned work (as tracked in `.tip` file of every `.todo` entry).
-- **Balanced Planning:** When generating new todos, ensure a balanced distribution between frontend and backend areas unless a specific focus is requested.
-- **.tip Enforcement:** For every `.todo` entry, ensure a corresponding `.tip` file exists. If missing, generate a `.tip` with the correct structure and status blocks.
-- **Traceability:** Reference related `.todo`, `.tip`, and `.specs` entries in all planning output for traceability.
-- **Link, Don't Embed:** Link to detailed specs, routines, or documentation instead of duplicating content.
-
----
+- Always consult `.routines/correctness` for known issues, anti-patterns, and validation
+- No duplication: scan all `.todo` entries before creating new ones
+- Context awareness: avoid targeting areas with active/planned work
+- Balanced planning: distribute between frontend and backend unless otherwise specified
+- `.tip` enforcement: every `.todo` must have a `.tip` file
+- Traceability: reference all related `.todo`, `.tip`, and `.specs` entries
+- Link, don't embed: always link to detailed docs/specs/routines
 
 ## Workflow
+1. Scan `.todo/` for all existing plans and `.tip` files
+2. Consult `.routines/correctness.md` for known issues and validation
+3. Analyze for duplication, conflicts, and coverage (frontend/backend balance)
+4. Propose new todos only if they do not duplicate or conflict with existing entries, and ensure they are contextually relevant and balanced
+5. Generate missing `.tip` files for any `.todo` entry lacking one, using the standard status block structure
+6. Reference all related entries and specs for traceability
 
-1. **Scan** `.todo/` for all existing plans and `.tip` files.
-2. **Consult** `.routines/correctness.md` for known issues and validation.
-3. **Analyze** for duplication, conflicts, and coverage (frontend/backend balance).
-4. **Propose** new todos only if they do not duplicate or conflict with existing entries, and ensure they are contextually relevant and balanced.
-5. **Generate** missing `.tip` files for any `.todo` entry lacking one, using the standard status block structure.
-6. **Reference** all related entries and specs for traceability.
+### Pseudocode
+```
+for todo in .todo/:
+	check .tip exists
+	check for duplication/conflict
+	consult correctness routine
+	ensure traceability
+if new todo needed:
+	ensure balance (frontend/backend)
+	link to specs/routines
+	create .tip if missing
+```
 
----
+## Contexts
+- `.todo/` directory (all planning entries)
+- `.routines/correctness` (validation and anti-patterns)
+- `.specs/` (architecture, design, protocol)
+- `.tip` files (status tracking)
+
+## Extension/See Also
+- `.routines/correctness`  correctness, anti-patterns, validation
+- `.specs/`  architecture, design, protocol details
+- `.todo/README.md`  planning and status tracking conventions
+- `.github/copilot-instructions.md`  global agent guidance
 
 ## Example Prompts
-
-- "Plan a new feature—ensure no duplication with existing todos, and generate a `.tip` if missing."
-- "Strategize backend refactor—balance with frontend work and consult correctness routine."
-- "Audit all current todos for conflicts or missing `.tip` files."
-
----
-
-## See Also
-
-- `.routines/correctness.md` — for correctness, anti-patterns, and validation
-- `.specs/` — for architecture, design, and protocol details
-- `.todo/README.md` — for planning and status tracking conventions
-- `.github/copilot-instructions.md` — for global agent guidance
+- Plan a new featureensure no duplication with existing todos, and generate a `.tip` if missing
+- Strategize backend refactorbalance with frontend work and consult correctness routine
+- Audit all current todos for conflicts or missing `.tip` files
