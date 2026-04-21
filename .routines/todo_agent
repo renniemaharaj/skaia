@@ -1,19 +1,22 @@
-
 # Routine: todo_agent
 
 ## Purpose
+
 Automated planning, strategizing, and todo management for Skaia. Entry point for developers and agents to plan activities, propose strategies, or autopilot planning in `.todo/`. **Does not execute plans—only generates, organizes, and maintains them.**
 
 ## Responsibilities
+
 - Generate, organize, and maintain todos in `.todo/`
 - Ensure no duplication or conflict with existing todos
 - Enforce `.tip` file presence and structure
 - Reference related specs, routines, and planning docs for traceability
 
 ## Goal
+
 Maintain a comprehensive, conflict-free, and traceable planning system for Skaia, balancing frontend and backend work, and ensuring all todos are actionable and validated.
 
 ## Principles
+
 - Always consult `.routines/correctness` for known issues, anti-patterns, and validation
 - No duplication: scan all `.todo` entries before creating new ones
 - Context awareness: avoid targeting areas with active/planned work
@@ -23,39 +26,67 @@ Maintain a comprehensive, conflict-free, and traceable planning system for Skaia
 - Link, don't embed: always link to detailed docs/specs/routines
 
 ## Workflow
+
+### Enhanced Workflow
+
 1. Scan `.todo/` for all existing plans and `.tip` files
-2. Consult `.routines/correctness.md` for known issues and validation
+2. For each todo:
+   - Check `.tip` exists and review its status
+   - Compare todo and `.tip` with current project state (code, tests, docs)
+   - If todo is already done:
+     - Remove both the todo and its `.tip` for cleanup
+   - Else if todo is partially complete:
+     - Update `.tip` with the current state and next steps
+   - Else if todo appears complete:
+     - Run relevant tests (backend/frontend as appropriate)
+     - Consult `.routines/correctness` for validation
+     - Start a worker routine to run verifications and tests for the todo
+     - If tests and correctness checks pass:
+       - Remove both the todo and its `.tip`
+     - Else:
+       - Update `.tip` with findings and current state
 3. Analyze for duplication, conflicts, and coverage (frontend/backend balance)
 4. Propose new todos only if they do not duplicate or conflict with existing entries, and ensure they are contextually relevant and balanced
 5. Generate missing `.tip` files for any `.todo` entry lacking one, using the standard status block structure
 6. Reference all related entries and specs for traceability
 
-### Pseudocode
+#### Pseudocode
+
 ```
 for todo in .todo/:
 	check .tip exists
-	check for duplication/conflict
-	consult correctness routine
-	ensure traceability
-if new todo needed:
-	ensure balance (frontend/backend)
-	link to specs/routines
-	create .tip if missing
+	check .tip status
+	compare with current project state (code, tests, docs)
+	if todo is already done:
+		remove todo and .tip
+	elif todo is partially complete:
+		update .tip with current state
+	elif todo appears complete:
+		run tests (backend/frontend as appropriate)
+		consult correctness routine
+		start worker routine for verification
+		if tests pass and correctness confirmed:
+			remove todo and .tip
+		else:
+			update .tip with findings
 ```
 
 ## Contexts
+
 - `.todo/` directory (all planning entries)
 - `.routines/correctness` (validation and anti-patterns)
 - `.specs/` (architecture, design, protocol)
 - `.tip` files (status tracking)
 
 ## Extension/See Also
-- `.routines/correctness`  correctness, anti-patterns, validation
-- `.specs/`  architecture, design, protocol details
-- `.todo/README.md`  planning and status tracking conventions
-- `.github/copilot-instructions.md`  global agent guidance
+
+- `.routines/correctness` correctness, anti-patterns, validation
+- `.specs/` architecture, design, protocol details
+- `.todo/README.md` planning and status tracking conventions
+- `.github/copilot-instructions.md` global agent guidance
 
 ## Example Prompts
+
 - Plan a new featureensure no duplication with existing todos, and generate a `.tip` if missing
 - Strategize backend refactorbalance with frontend work and consult correctness routine
 - Audit all current todos for conflicts or missing `.tip` files

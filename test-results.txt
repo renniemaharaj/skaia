@@ -1,0 +1,30 @@
+2026/04/20 23:33:34 JWT_SECRET is required
+FAIL	github.com/skaia/backend	0.005s
+?   	github.com/skaia/backend/database	[no test files]
+?   	github.com/skaia/backend/internal/analytics	[no test files]
+?   	github.com/skaia/backend/internal/auth	[no test files]
+2026/04/20 23:33:34 JWT_SECRET is required
+FAIL	github.com/skaia/backend/internal/config	0.007s
+?   	github.com/skaia/backend/internal/customsection	[no test files]
+?   	github.com/skaia/backend/internal/datasource	[no test files]
+?   	github.com/skaia/backend/internal/email	[no test files]
+ok  	github.com/skaia/backend/internal/events	(cached)
+2026/04/20 23:33:34 JWT_SECRET is required
+FAIL	github.com/skaia/backend/internal/forum	0.006s
+?   	github.com/skaia/backend/internal/grengo	[no test files]
+?   	github.com/skaia/backend/internal/inbox	[no test files]
+?   	github.com/skaia/backend/internal/integration	[no test files]
+ok  	github.com/skaia/backend/internal/middleware	(cached)
+?   	github.com/skaia/backend/internal/notification	[no test files]
+?   	github.com/skaia/backend/internal/page	[no test files]
+?   	github.com/skaia/backend/internal/ssr	[no test files]
+2026/04/20 23:33:35 JWT_SECRET is required
+FAIL	github.com/skaia/backend/internal/store	0.005s
+?   	github.com/skaia/backend/internal/testutil	[no test files]
+?   	github.com/skaia/backend/internal/upload	[no test files]
+2026/04/20 23:33:35 JWT_SECRET is required
+FAIL	github.com/skaia/backend/internal/user	0.004s
+?   	github.com/skaia/backend/internal/utils	[no test files]
+?   	github.com/skaia/backend/internal/ws	[no test files]
+?   	github.com/skaia/backend/models	[no test files]
+FAIL

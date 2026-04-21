@@ -1,0 +1,35 @@
+# Rollback Plan for Migration: landing → page
+
+If you need to revert the migration, perform the following steps:
+
+1. **Reverse Table Renames:**
+   ```sql
+   ALTER TABLE page_sections RENAME TO landing_sections;
+   ALTER TABLE page_items RENAME TO landing_items;
+   ```
+2. **Reverse Index Renames:**
+   ```sql
+   ALTER INDEX idx_page_sections_order RENAME TO idx_landing_sections_order;
+   ALTER INDEX idx_page_items_section RENAME TO idx_landing_items_section;
+   ```
+3. **Reverse Foreign Key and Column Rename:**
+   ```sql
+   ALTER TABLE landing_items RENAME COLUMN page_section_id TO section_id;
+   ALTER TABLE landing_items DROP CONSTRAINT page_items_page_section_id_fkey;
+   ALTER TABLE landing_items ADD CONSTRAINT landing_items_section_id_fkey FOREIGN KEY (section_id) REFERENCES landing_sections(id) ON DELETE CASCADE;
+   ```
+4. **Restore Backend Code:**
+   - Revert code changes in backend/internal/config/repository.go to reference landing_sections/landing_items and section_id.
+
+5. **Validation:**
+   - Run all backend tests: `go test ./...`
+   - Verify data and app logic are restored.
+
+---
+
+# Validation Steps
+
+- Ensure all backend tests pass after migration.
+- Manually verify page builder and section/item CRUD in the UI.
+- Confirm no references to landing_sections/items remain except for / route logic.
+- Check that landing_page_slug and homepage logic are preserved.
