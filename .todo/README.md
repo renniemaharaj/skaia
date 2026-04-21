@@ -54,6 +54,8 @@ This directory is used for collaborative planning and tracking of software engin
 
 - `.specs` files are now supported in this directory for collaborative, human-AI specification and design work.
 - All planning, status, and specification tracking for collaborative work should be kept in `.todo`, `.tip`, or `.specs` files here.
+- **Routines** for project maintenance, automation, and specialist roles are now kept in the top-level `.routines/` directory (migrated from `.todo/.routines`).
+  - See `.routines/README.md` for routine structure and usage.
 - Emoji use is strictly limited to this directory and the `.tip` file as described above.
 
 ---

@@ -92,20 +92,20 @@ cd backend/frontend && npm test
 
 ## Collaborative Planning & Specs
 
-All collaborative planning, status tracking, and specifications are now kept in the `.todo/` directory:
+## Collaborative Planning, Specs & Routines
+
+All collaborative planning, status tracking, specifications, and automation routines are now kept in the `.todo/` and `.routines/` directories:
 
 - `.todo/README.md` — Directory usage, rules, and emoji policy
 - `.todo/.tip` — Current status tracker and entrypoint for beginning any real work
 - `.todo/.specs` — Human-AI specifications and design docs
 - `.todo/*` — Individual todo plans (no extension)
+- `.routines/` — First-class directory for routine definitions (project maintenance, automation, specialist roles)
+  - `.routines/README.md` — Routine structure and usage
+  - `.routines/.specs` — Specialist for specs, technology, and infrastructure
+  - `.routines/.frontend_specialist`, `.routines/.backend_auditor`, etc. — Add more as needed
 
-Specs previously in `.specs/` are now in `.todo/.specs`:
-
-- **`ui_spec`** — Design system tokens, shared CSS classes, component rules
-- **`backend_spec`** — Architecture, handler/service/repository pattern, API routes, security
-- **`infrastructure_spec`** — Docker setup, nginx, grengo CLI, environment variables, tenant isolation
-- **`realtime_wss_spec`** — WebSocket protocol, message types, subscription lifecycle, atom ownership
-- **`migrations_spec`** — In-place schema update policy, idempotent SQL conventions
+Specs previously in `.specs/` are now in `.todo/.specs`.
 
 > Emoji use for status is strictly limited to `.todo/.status` as described in `.todo/README.md` and is forbidden elsewhere in the project.
 

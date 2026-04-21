@@ -1,6 +1,6 @@
-# .todo/.routines
+# routines
 
-This directory contains routine definitions for project maintenance and automation. Each file describes a routine that models can perform, including responsibilities, references, expectations, goals, last run info, remarks, and next steps.
+This directory contains routine definitions for project maintenance and automation. Each file describes a routine that models can perform, including responsibilities, references, expectations, goals, last run info, remarks, and next steps. This is now a first-class directory (migrated from `.todo/.routines`).
 
 ## Example Routines
 

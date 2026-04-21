@@ -1,0 +1,43 @@
+# Routine: correctness
+
+## Responsibilities
+- Periodically scan the Skaia project for inconsistencies, outdated documentation, orphaned files, or inefficient practices.
+- Focus on README and spec files, but also check code, migrations, and project structure for alignment with documentation.
+- Always find at least one actionable criticism per run.
+
+## References
+- All README.md files
+- All .spec, .specs, and .spec.md files in the project
+- backend/internal/migrations/
+- backend/internal/utils/
+- backend/models/
+
+## What's Expected
+- A report with the following fields:
+  - Last Run
+  - Criticism (at least one issue found)
+  - Suggestion
+  - Priority
+  - Next Steps
+
+## Goal
+- Prove the routine's value by always surfacing at least one actionable issue, even if minor.
+
+## Last Run
+- 2026-04-20
+
+## Criticism
+- The migration policy in `.specs/migrations_spec` states all schema changes must be applied by editing the existing migration files directly, with no incremental migration files. However, the codebase contains incremental migration files (`003_datasource_env_data.sql`, `004_datasource_files.sql`, etc.), which contradicts the documented policy.
+
+## Suggestion
+- Update the migration policy in `.specs/migrations_spec` to reflect the actual practice of using incremental migration files, or consolidate all schema changes into the original files as per the current policy.
+
+## Priority
+- High (Documentation and migration practices must align to avoid confusion and potential deployment issues.)
+
+## Next Steps
+1. Decide on a single migration strategy:
+   - If incremental migrations are preferred, update `.specs/migrations_spec` to document this.
+   - If single-file/idempotent migrations are required, merge all changes into the original files and remove the incremental ones.
+2. Communicate the chosen strategy to all contributors.
+3. Update onboarding and developer docs to match.
