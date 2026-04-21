@@ -1,9 +1,9 @@
 /**
  * ColumnMapper — drag-and-drop / select UI for mapping datasource columns
- * to LandingItem fields.
+ * to PageItem fields.
  *
  * Available columns (from evaluated rows) are shown as chips.
- * Target slots represent each LandingItem field (heading, subheading, etc.).
+ * Target slots represent each PageItem field (heading, subheading, etc.).
  * Users drag a chip onto a slot, or use the select dropdown.
  */
 import { useCallback, useState } from "react";

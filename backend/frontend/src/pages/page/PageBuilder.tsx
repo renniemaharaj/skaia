@@ -15,7 +15,7 @@ import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderPage } from "../../hooks/usePageData";
 import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
-import { LandingSkeleton } from "./LandingSkeleton";
+import { PageSkeleton } from "./PageSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
 import PageComments from "../../components/page/PageComments";
@@ -694,7 +694,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   if (loading || !sectionsSourced) {
     return (
       <div className="pb-container">
-        <LandingSkeleton />
+        <PageSkeleton />
       </div>
     );
   }

@@ -1,16 +1,11 @@
 /**
- * mapRows — transform datasource rows into LandingItem[] via a column map.
+ * mapRows — transform datasource rows into PageItem[] via a column map.
  *
- * Each row from the evaluated datasource becomes a LandingItem.
- * The column_map tells us which row field populates which LandingItem field.
+ * Each row from the evaluated datasource becomes a PageItem.
+ * The column_map tells us which row field populates which PageItem field.
  * Row overrides (per-row edits the user made to generated cards) are merged on top.
  */
-import type {
-  LandingItem,
-  ColumnMap,
-  RowOverrides,
-  MappableField,
-} from "./types";
+import type { PageItem, ColumnMap, RowOverrides, MappableField } from "./types";
 
 export interface RawRow {
   [key: string]: unknown;
@@ -28,7 +23,7 @@ export function rowKey(row: RawRow, index: number, keyColumn?: string): string {
 }
 
 /**
- * Convert a single datasource row into a LandingItem using the column map.
+ * Convert a single datasource row into a PageItem using the column map.
  */
 function mapSingleRow(
   row: RawRow,
@@ -36,8 +31,8 @@ function mapSingleRow(
   sectionId: number,
   index: number,
   override?: Partial<Record<MappableField, string>>,
-): LandingItem {
-  const item: LandingItem = {
+): PageItem {
+  const item: PageItem = {
     id: -(index + 1), // negative synthetic IDs so they don't collide with real DB items
     section_id: sectionId,
     display_order: index + 1,
@@ -71,7 +66,7 @@ function mapSingleRow(
 }
 
 /**
- * Transform an array of datasource rows into LandingItem[] using column mapping.
+ * Transform an array of datasource rows into PageItem[] using column mapping.
  */
 export function mapRowsToItems(
   rows: RawRow[],
@@ -79,7 +74,7 @@ export function mapRowsToItems(
   sectionId: number,
   rowOverrides?: RowOverrides,
   keyColumn?: string,
-): LandingItem[] {
+): PageItem[] {
   return rows.map((row, i) => {
     const key = rowKey(row, i, keyColumn);
     const override = rowOverrides?.[key];

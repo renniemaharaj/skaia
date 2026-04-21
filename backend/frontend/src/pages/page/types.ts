@@ -1,8 +1,8 @@
-/** Types for the landing page block system. */
+/** Types for the page block system. */
 
 /** Types for the landing page block system. */
 
-export interface LandingItem {
+export interface PageItem {
   id: number;
   section_id: number;
   display_order: number;
@@ -220,7 +220,7 @@ export const RENDERABLE_TYPE_LABELS: Record<RenderableSectionType, string> = {
   designed_card: "Designed Card",
 };
 
-/** Fields on a LandingItem that a datasource column can be mapped to. */
+/** Fields on a PageItem that a datasource column can be mapped to. */
 export const MAPPABLE_FIELDS = [
   "heading",
   "subheading",
@@ -238,7 +238,7 @@ export const MAPPABLE_FIELD_LABELS: Record<MappableField, string> = {
   link_url: "Link URL",
 };
 
-/** Maps LandingItem field => datasource column name. */
+/** Maps PageItem field => datasource column name. */
 export type ColumnMap = Partial<Record<MappableField, string>>;
 
 /** Per-row overrides keyed by a stable row identifier. */

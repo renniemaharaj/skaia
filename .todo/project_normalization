@@ -1,12 +1,31 @@
 # Project-wide Normalization: 'landing' vs 'page'
 
+**Status: ⚠️ Incomplete (2026-04-21)**
+
 ## Goal
+
 Ensure 'landing' is only used for the / route (site homepage) and not for generic page/section/item logic. Normalize all generic usage to 'page'.
 
+## Outstanding Violations & Required Actions
+
+- `LandingSkeleton.tsx` still exists and must be renamed to `PageSkeleton.tsx` with all imports/exports updated.
+- Several components and code comments still reference 'landing' generically (should be 'page' except for root route and landing-slug config).
+- `.specs/landing_page_spec` is misleading and must be renamed to `route_resolution_spec`, with content updated to clarify frontend/backend page resolution. All references to `landing_page_spec` in specs and docs must be updated.
+- **All .specs files need updating (CRITICAL):**
+  - Remove or clarify all generic 'landing' usage (except homepage/route resolution).
+  - Update all diagrams, tables, and endpoint docs to use 'page' for generic logic.
+  - Ensure the new `route_resolution_spec` covers both backend and frontend flows for page selection and real-time updates.
+- The main `README.md` and `.specs/README.md` still reference `landing_page_spec` and must be updated to reference `route_resolution_spec`.
+
 ## Steps
-1. Audit all comments, utility functions, and grengo CLI/tooling for use of the term 'landing'.
-2. Update comments, function names, and documentation to use 'page' instead of 'landing' for generic usage.
-3. Rename the LandingSkeleton component and its file to PageSkeleton (or similar), and update all imports/usages to match.
-4. Update any references to LandingSkeleton in the frontend (e.g., PageBuilder, error/loading states) to use the new 'page' terminology.
-5. Review all grengo commands, help text, and code for 'landing' usage and update to 'page' where appropriate.
-6. Add a test/validation step to ensure no generic usage of 'landing' remains outside of the / route context.
+
+1. Rename `LandingSkeleton.tsx` to `PageSkeleton.tsx` and update all imports/exports/usages.
+2. Refactor all remaining code, comments, and types to use 'page' instead of 'landing' for generic logic/components/blocks.
+3. Rename `.specs/landing_page_spec` to `.specs/route_resolution_spec` and update its content to clarify the frontend/backend page resolution flow.
+4. Update all references to `landing_page_spec` in `.specs/`, `.todo/`, and `README.md` files to `route_resolution_spec`.
+5. Audit and update all `.specs` files to ensure no outdated or misleading 'landing' terminology remains (except for homepage/route resolution).
+6. Update `.specs/README.md` and project `README.md` to reference `route_resolution_spec` instead of `landing_page_spec`.
+
+---
+
+**This status is incomplete until all above actions are finished and validated.**

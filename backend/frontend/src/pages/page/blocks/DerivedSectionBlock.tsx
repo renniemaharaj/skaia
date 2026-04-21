@@ -176,7 +176,7 @@ export const DerivedSectionBlock = ({
   // Detect available columns from raw rows
   const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
 
-  // Build LandingItem[] from raw rows + column map + overrides
+  // Build PageItem[] from raw rows + column map + overrides
   const mappedItems: PageItem[] = useMemo(() => {
     if (!cfg.column_map || rawRows.length === 0) return [];
     return mapRowsToItems(

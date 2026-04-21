@@ -1,5 +1,5 @@
 import { ICON_MAP, ICON_NAMES } from "./iconMap";
-import type { LandingItem } from "./types";
+import type { PageItem } from "./types";
 import "./page-builder-core.css";
 import {
   Pencil,
@@ -838,7 +838,7 @@ export const DeleteItemButton = ({ onClick }: { onClick: () => void }) => (
 export function blankItem(
   sectionId: number,
   order: number,
-): Omit<LandingItem, "id"> {
+): Omit<PageItem, "id"> {
   return {
     section_id: sectionId,
     display_order: order,
