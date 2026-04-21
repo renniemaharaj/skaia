@@ -19,9 +19,9 @@ Transition all generic 'landing' tables, columns, indexes, and references to 'pa
    - For legacy/backup, consider copying tables before renaming if needed.
 
 3. **Migration Steps**
-   - a. Rename tables: landing_sections → page_sections, landing_items → page_items
-   - b. Rename indexes: idx_landing_sections_order → idx_page_sections_order, etc.
-   - c. Update foreign keys: landing_items.section_id → page_items.page_section_id, update constraints
+   - a. Rename tables: landing_sections => page_sections, landing_items => page_items
+   - b. Rename indexes: idx_landing_sections_order => idx_page_sections_order, etc.
+   - c. Update foreign keys: landing_items.section_id => page_items.page_section_id, update constraints
    - d. Update any references in other tables (if any)
    - e. Update config keys/data in app logic (if not index route)
    - f. Update all SQL statements in backend/internal/config/repository.go and any other backend code to reference the new table/index/column names (e.g., change all `FROM landing_sections` to `FROM page_sections`, etc.)

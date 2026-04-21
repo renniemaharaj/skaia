@@ -126,8 +126,8 @@ Use existing Skaia endpoints and add registry metadata paths where needed:
 
 New registry metadata endpoints should be additive, not replace the current page routes:
 
-- GET `/config/sections` → list supported `section_type`s and schema
-- GET `/config/section-types/{type}` → props/config schema for each block type
+- GET `/config/sections` => list supported `section_type`s and schema
+- GET `/config/section-types/{type}` => props/config schema for each block type
 
 ---
 
