@@ -1,5 +1,5 @@
 /**
- * Icon map — a curated set of icons available for landing page blocks.
+ * Icon map — a curated set of icons available for page blocks.
  * We re-export Lucide components keyed by their string name so the
  * block renderer can look them up from the DB `icon` column.
  */

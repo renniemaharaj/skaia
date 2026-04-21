@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	ievents "github.com/skaia/backend/internal/events"
-	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -81,7 +80,7 @@ func (h *Handler) getFeature(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"allowed": true})
 }
 
-// Handler serves site-configuration and landing-page endpoints.
+// Handler serves site-configuration and page endpoints.
 type Handler struct {
 	svc        *Service
 	userSvc    *iuser.Service
@@ -97,12 +96,11 @@ func NewHandler(svc *Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *i
 // Mount registers routes.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.Route("/config", func(r chi.Router) {
-		// Public – anyone can read branding, SEO, landing layout, and feature toggles
+		// Public – anyone can read branding, SEO, footer, and feature toggles
 		r.Get("/branding", h.getBranding)
 		r.Get("/seo", h.getSEO)
 		r.Get("/footer", h.getFooter)
 		r.Get("/comment-slowmode", h.getCommentSlowMode)
-		r.Get("/landing", h.getLanding)
 		r.Get("/features", h.getFeatures)
 		r.Get("/feature/{feature}", h.getFeature)
 
@@ -113,18 +111,6 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 			r.Put("/seo", h.updateSEO)
 			r.Put("/footer", h.updateFooter)
 			r.Put("/comment-slowmode", h.updateCommentSlowMode)
-
-			// Sections
-			r.Post("/landing/sections", h.createSection)
-			r.Put("/landing/sections/{id}", h.updateSection)
-			r.Delete("/landing/sections/{id}", h.deleteSection)
-			r.Put("/landing/sections/reorder", h.reorderSections)
-
-			// Items
-			r.Post("/landing/sections/{sectionId}/items", h.createItem)
-			r.Put("/landing/items/{id}", h.updateItem)
-			r.Delete("/landing/items/{id}", h.deleteItem)
-			r.Put("/landing/sections/{sectionId}/items/reorder", h.reorderItems)
 		})
 	})
 }
@@ -319,318 +305,6 @@ func (h *Handler) updateCommentSlowMode(w http.ResponseWriter, r *http.Request) 
 		IP:       ievents.ClientIP(r),
 		Fn: func() {
 			h.hub.BroadcastConfig("comment_slowmode_updated", payload)
-		},
-	})
-}
-
-// ── landing page ────────────────────────────────────────────────────────────
-
-func (h *Handler) getLanding(w http.ResponseWriter, r *http.Request) {
-	sections, err := h.svc.ListSections()
-	if err != nil {
-		log.Printf("config.getLanding: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to load landing")
-		return
-	}
-	utils.WriteJSON(w, http.StatusOK, sections)
-}
-
-func (h *Handler) createSection(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	var s models.PageSection
-	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	if err := h.svc.CreateSection(&s); err != nil {
-		log.Printf("config.createSection: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "create failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusCreated, s)
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActSectionCreated,
-		Resource:   ievents.ResConfig,
-		ResourceID: s.ID,
-		IP:         ievents.ClientIP(r),
-		Meta:       map[string]interface{}{"section_type": s.SectionType},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_section_created", s)
-		},
-	})
-}
-
-func (h *Handler) updateSection(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	id, err := parseID(r, "id")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid id")
-		return
-	}
-	var s models.PageSection
-	if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	s.ID = id
-	if err := h.svc.UpdateSection(&s); err != nil {
-		log.Printf("config.updateSection: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "update failed")
-		return
-	}
-	updated, _ := h.svc.GetSection(id)
-	userID, _ := utils.UserIDFromCtx(r)
-	if updated != nil {
-		utils.WriteJSON(w, http.StatusOK, updated)
-		h.dispatcher.Dispatch(ievents.Job{
-			UserID:     userID,
-			Activity:   ievents.ActSectionUpdated,
-			Resource:   ievents.ResConfig,
-			ResourceID: id,
-			IP:         ievents.ClientIP(r),
-			Fn: func() {
-				h.hub.BroadcastConfig("landing_section_updated", updated)
-			},
-		})
-	} else {
-		utils.WriteJSON(w, http.StatusOK, s)
-		h.dispatcher.Dispatch(ievents.Job{
-			UserID:     userID,
-			Activity:   ievents.ActSectionUpdated,
-			Resource:   ievents.ResConfig,
-			ResourceID: id,
-			IP:         ievents.ClientIP(r),
-			Fn: func() {
-				h.hub.BroadcastConfig("landing_section_updated", s)
-			},
-		})
-	}
-}
-
-func (h *Handler) deleteSection(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	id, err := parseID(r, "id")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid id")
-		return
-	}
-
-	// Fetch section items before deleting so we can clean up their image files.
-	section, _ := h.svc.GetSection(id)
-
-	if err := h.svc.DeleteSection(id); err != nil {
-		log.Printf("config.deleteSection: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
-		return
-	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActSectionDeleted,
-		Resource:   ievents.ResConfig,
-		ResourceID: id,
-		IP:         ievents.ClientIP(r),
-		Fn: func() {
-			if section != nil {
-				for _, item := range section.Items {
-					if item.ImageURL != "" {
-						iupload.DeleteUploadFile(item.ImageURL)
-					}
-				}
-			}
-			h.hub.BroadcastConfig("landing_section_deleted", map[string]interface{}{"id": id})
-		},
-	})
-}
-
-func (h *Handler) reorderSections(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	var body struct {
-		IDs []int64 `json:"ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	if err := h.svc.ReorderSections(body.IDs); err != nil {
-		log.Printf("config.reorderSections: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "reorder failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:   userID,
-		Activity: ievents.ActSectionUpdated,
-		Resource: ievents.ResConfig,
-		IP:       ievents.ClientIP(r),
-		Meta:     map[string]interface{}{"action": "reorder"},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_reordered", map[string]interface{}{"ids": body.IDs})
-		},
-	})
-}
-
-// ── items ───────────────────────────────────────────────────────────────────
-
-func (h *Handler) createItem(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	secID, err := parseID(r, "sectionId")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid sectionId")
-		return
-	}
-	var item models.PageItem
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	item.SectionID = secID
-	if err := h.svc.CreateItem(&item); err != nil {
-		log.Printf("config.createItem: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "create failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusCreated, item)
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActSectionUpdated,
-		Resource:   ievents.ResConfig,
-		ResourceID: secID,
-		IP:         ievents.ClientIP(r),
-		Meta:       map[string]interface{}{"action": "item_created", "item_id": item.ID},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_item_created", item)
-		},
-	})
-}
-
-func (h *Handler) updateItem(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	id, err := parseID(r, "id")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid id")
-		return
-	}
-	var item models.PageItem
-	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	item.ID = id
-	if err := h.svc.UpdateItem(&item); err != nil {
-		log.Printf("config.updateItem: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "update failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusOK, item)
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActSectionUpdated,
-		Resource:   ievents.ResConfig,
-		ResourceID: item.SectionID,
-		IP:         ievents.ClientIP(r),
-		Meta:       map[string]interface{}{"action": "item_updated", "item_id": id},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_item_updated", item)
-		},
-	})
-}
-
-func (h *Handler) deleteItem(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	id, err := parseID(r, "id")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid id")
-		return
-	}
-
-	// Fetch the item first so we can clean up its image file.
-	item, _ := h.svc.GetItem(id)
-
-	if err := h.svc.DeleteItem(id); err != nil {
-		log.Printf("config.deleteItem: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
-		return
-	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:   userID,
-		Activity: ievents.ActSectionUpdated,
-		Resource: ievents.ResConfig,
-		IP:       ievents.ClientIP(r),
-		Meta:     map[string]interface{}{"action": "item_deleted", "item_id": id},
-		Fn: func() {
-			if item != nil && item.ImageURL != "" {
-				iupload.DeleteUploadFile(item.ImageURL)
-			}
-			h.hub.BroadcastConfig("landing_item_deleted", map[string]interface{}{"id": id})
-		},
-	})
-}
-
-func (h *Handler) reorderItems(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	secID, err := parseID(r, "sectionId")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid sectionId")
-		return
-	}
-	var body struct {
-		IDs []int64 `json:"ids"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	if err := h.svc.ReorderItems(secID, body.IDs); err != nil {
-		log.Printf("config.reorderItems: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "reorder failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActSectionUpdated,
-		Resource:   ievents.ResConfig,
-		ResourceID: secID,
-		IP:         ievents.ClientIP(r),
-		Meta:       map[string]interface{}{"action": "items_reordered"},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_items_reordered", map[string]interface{}{"section_id": secID, "ids": body.IDs})
 		},
 	})
 }

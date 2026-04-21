@@ -14,7 +14,7 @@ import {
   setSectionAnimationIntensity,
 } from "../EditControls";
 
-/** Lazy-load the heavy editor + viewer to keep the landing bundle small. */
+/** Lazy-load the heavy editor + viewer to keep the page bundle small. */
 const Editor = lazy(() => import("../../../components/forum/Editor"));
 const ViewThread = lazy(() => import("../../../components/forum/ViewThread"));
 

@@ -1,0 +1,118 @@
+# Route Resolution Spec
+
+## Overview
+
+This document replaces the previous `landing_page_spec` and clarifies the frontend/backend page and route resolution flow in Skaia. It covers both the homepage (landing page) and generic page selection, including real-time updates and cache strategies.
+
+---
+
+## Cold Load: User Visits `/`
+
+```
+Browser => GET /
+  └── nginx serves index.html (SSR-injected <title>, OG, favicon)
+        └── React mounts <Index /> => <PageBuilder /> (no slug prop)
+
+PageBuilder mounts:
+  └── usePageData(editingCount > 0).refresh() called with no slug
+
+refresh() — index mode (no slug):
+  1. GET /config/pages/landing-slug  =>  { "slug": "my-page" }
+  2. GET /config/pages/my-page       =>  full PageBuilderPage object
+
+Why two requests:
+  /config/pages/index is a SINGLE CDN cache key — when the landing page is
+  swapped, Cloudflare serves the old page from cache.
+  /config/pages/{slug} has a UNIQUE cache key per page — always fresh.
+
+  The landing-slug endpoint is tiny JSON (< 50 bytes), never worth caching.
+  The per-slug fetch gets the actual content from a cache key that matches
+  the page it returns.
+```
+
+## Hot Update: Landing Page Swapped (WS Connected)
+
+```
+Admin selects new landing page in PageBuilder toolbar:
+
+Frontend:
+  1. Cancel any queued BBR save timer (prevent stale sections write-back)
+  2. Clear pendingSectionsRef
+  3. PUT /config/pages/landing-page  { slug: "new-page" }
+  4. Clear sections + sectionsSourced
+  5. Call refresh() => two-step fetch (landing-slug => page by slug)
+
+Backend (setLandingPage handler):
+  1. Upsert "landing_page_slug" in site_config
+  2. Fetch full new page (enriched with owner/editors)
+  3. Dispatch two WS broadcasts:
+     a. page:update   { action: "landing_page_changed", data: <full page> }
+     b. config:update  { action: "landing_page_updated", data: { slug } }
+
+All other clients receive (via useWebSocketSync):
+
+  page:update => window "page:live:event":
+    usePageData handler sees action === "landing_page_changed"
+    If in index mode (no requestedSlugRef.current):
+      => setPage(data) directly — ZERO HTTP requests, completely cache-proof
+
+  config:update => window "config:live:event":
+    PageBuilder handler sees action === "landing_page_updated"
+    If !slug && editingCount === 0:
+      => refresh() — two-step fetch as fallback
+    CustomPages handler re-fetches browse => badge updates correctly
+```
+
+## Page Content Updated (Same Landing Page)
+
+```
+Editor saves a section on the landing page:
+
+Frontend:
+  BBR adaptive save pipeline => PUT /config/pages/{id}
+  HTTP response = updated page (authoritative for sender)
+
+Backend:
+  BroadcastPageExceptUser(userID, "page_updated", enrichedPage)
+  => page:update sent to all clients EXCEPT the one who saved
+
+Other clients:
+  page:live:event with action === "page_updated"
+  If data.slug matches currentSlugRef OR data.id matches page.id:
+    If editing => hold in pendingDataRef, set pendingIncoming flag
+    If not editing => applyIncomingData(data) directly (no HTTP)
+```
+
+## Key Endpoints
+
+| Method | Path                       | Auth     | Purpose                      |
+| ------ | -------------------------- | -------- | ---------------------------- |
+| GET    | /config/pages/landing-slug | none     | Resolve current landing slug |
+| GET    | /config/pages/index        | opt JWT  | Fetch landing page (legacy)  |
+| GET    | /config/pages/{slug}       | opt JWT  | Fetch page by slug           |
+| PUT    | /config/pages/landing-page | JWT+perm | Set landing page slug        |
+| PUT    | /config/pages/{id}         | JWT+perm | Update page content          |
+
+## WS Events
+
+| Channel       | Action               | Payload          | Triggered By   |
+| ------------- | -------------------- | ---------------- | -------------- |
+| page:update   | landing_page_changed | full Page object | setLandingPage |
+| config:update | landing_page_updated | { slug }         | setLandingPage |
+| page:update   | page_updated         | full Page object | updatePage     |
+| page:update   | page_deleted         | { id }           | deletePage     |
+
+## Invariants
+
+- **No `is_index` column.** Landing page is determined solely by `landing_page_slug` in `site_config`.
+- **Frontend NEVER calls `/config/pages/index` for the landing page.** It uses the two-step flow: landing-slug => fetch by slug. The index endpoint exists for backwards compatibility only.
+- **WS push is the primary update path.** HTTP is the fallback. `landing_page_changed` carries the full page object so clients can swap without any HTTP request.
+- **Save pipeline cancellation on swap.** When the landing page is changed, `saveTimerRef` is cleared and `pendingSectionsRef` is nulled to prevent stale sections from the old page being written to the new one.
+- **applyIncomingData preserves per-user fields.** `is_liked` and `can_delete` are not in the broadcast — the setter merges incoming data while keeping the local user's computed fields intact.
+
+## Anti-Patterns (Things That Broke Before)
+
+1. **Single cache key for index endpoint.** `/config/pages/index` returns different pages depending on config, but CDNs cache by URL. Swapping the landing page serves stale content. Fix: two-step slug resolution.
+2. **307 redirect from getIndex to getBySlug.** `fetch()` follows the redirect transparently, but the redirected response confused PageBuilder's page creation logic (null page => ensurePage => creates "landing" page). Fix: serve inline from getIndex, but frontend uses landing-slug endpoint.
+3. **Broadcasting only the slug on config:update.** The frontend needs the full page data to render sections. Sending just `{slug}` forced an HTTP refetch that hit the stale CDN cache. Fix: broadcast full page via page:update.
+4. **Not cancelling save timer on swap.** The old page's queued save would fire after the new page loaded, overwriting the new page's content with old sections. Fix: clear timer + pendingSectionsRef before the swap.

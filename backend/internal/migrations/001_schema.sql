@@ -321,7 +321,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id     ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read   ON notifications(user_id, is_read);
 
--- Site config: branding, SEO, and landing page blocks.
+-- Site config: branding, SEO, and page blocks.
 
 -- ── Site config (key-value) ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS site_config (
@@ -330,8 +330,8 @@ CREATE TABLE IF NOT EXISTS site_config (
     updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- ── Landing page sections (ordered blocks) ──────────────────────────────────
-CREATE TABLE IF NOT EXISTS landing_sections (
+-- ── Page sections (ordered blocks) ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS page_sections (
     id            BIGSERIAL    PRIMARY KEY,
     display_order INT          NOT NULL DEFAULT 0,
     section_type  VARCHAR(50)  NOT NULL,
@@ -341,12 +341,12 @@ CREATE TABLE IF NOT EXISTS landing_sections (
     created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_landing_sections_order ON landing_sections(display_order);
+CREATE INDEX IF NOT EXISTS idx_page_sections_order ON page_sections(display_order);
 
--- ── Landing section items (cards/tiles within a section) ────────────────────
-CREATE TABLE IF NOT EXISTS landing_items (
+-- ── Page section items (cards/tiles within a section) ────────────────────
+CREATE TABLE IF NOT EXISTS page_items (
     id            BIGSERIAL    PRIMARY KEY,
-    section_id    BIGINT       NOT NULL REFERENCES landing_sections(id) ON DELETE CASCADE,
+    section_id    BIGINT       NOT NULL REFERENCES page_sections(id) ON DELETE CASCADE,
     display_order INT          NOT NULL DEFAULT 0,
     icon          VARCHAR(100) NOT NULL DEFAULT '',
     heading       TEXT         NOT NULL DEFAULT '',
@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS landing_items (
     created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_landing_items_section ON landing_items(section_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_page_items_section ON page_items(section_id, display_order);
 
 -- ── Custom pages (block-builder content) ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pages (

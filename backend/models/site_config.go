@@ -86,7 +86,7 @@ type Link struct {
 	URL   string `json:"url"`
 }
 
-// SocialLink is an icon-key + URL pair used in footer and landing social sections.
+// SocialLink is an icon-key + URL pair used in footer and page social sections.
 type SocialLink struct {
 	Icon string `json:"icon"`
 	URL  string `json:"url"`

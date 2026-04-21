@@ -15,7 +15,7 @@ export interface PageBuilderPage {
   slug: string;
   title: string;
   description: string;
-  content: string; // JSON string of landing sections
+  content: string; // JSON string of page sections
   owner_id?: number | null;
   owner?: PageUser | null;
   editors?: PageUser[];

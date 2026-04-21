@@ -308,8 +308,8 @@ Components that use the shared card system:
 | New thread CTA | `.card .card--interactive .new-thread-card .feature-card` | `components/forum/Forum.tsx`           |
 | Product card   | `.card .card--interactive .card--store .product-card`     | `components/store/Store.tsx`           |
 | Empty state    | `.card .empty-state`                                      | `components/store/Store.tsx`           |
-| Feature card   | `.card .card--interactive .feature-card`                  | `landing/blocks/FeatureGridBlock.tsx`  |
-| Stat card      | `.card .card--interactive .stat-card`                     | `landing/blocks/StatCardsBlock.tsx`    |
+| Feature card   | `.card .card--interactive .feature-card`                  | `page/blocks/FeatureGridBlock.tsx`  |
+| Stat card      | `.card .card--interactive .stat-card`                     | `page/blocks/StatCardsBlock.tsx`    |
 | Grengo gate    | `.card .grengo-gate`                                      | `components/admin/GrengoDashboard.tsx` |
 | Grengo table   | `.card .grengo-table-wrap`                                | `components/admin/GrengoDashboard.tsx` |
 | Create form    | `.card .grengo-create-form`                               | `components/admin/GrengoDashboard.tsx` |
@@ -337,9 +337,9 @@ src/
 │   ├── forum/             # Forum domain components + layout CSS
 │   ├── store/             # Store domain components + layout CSS
 │   ├── admin/             # Admin dashboard components + layout CSS
-│   ├── layout/            # Header, Footer, Landing, PresencePanel
+│   ├── layout/            # Header, Footer, Page System, PresencePanel
 │   ├── auth/              # Auth forms
-│   ├── landing/           # Landing page block renderers
+│   ├── pages/            # Page block renderers
 │   ├── input/             # Input components
 │   └── notifications/     # Notification components
 ├── styles/

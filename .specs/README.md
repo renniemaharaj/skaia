@@ -8,7 +8,7 @@ This directory contains the authoritative specifications for all major systems, 
 - **frontend_spec** — Frontend UI design system, CSS tokens, and module accents
 - **realtime_wss_spec** — Real-time WebSocket flows and delivery strategies
 - **infrastructure_spec** — Container, deployment, and infrastructure details
-- **landing_page_spec** — Landing page data flow and update logic
+- **route_resolution_spec** — Frontend/backend route and page resolution flow
 - **custom_pages_multiplayer_spec** — Multiplayer editing and section-level reactivity
 - **caching_cdn_spec** — Caching, CDN, and cache-control policies
 - **migrations_spec** — Migration policy and schema update process

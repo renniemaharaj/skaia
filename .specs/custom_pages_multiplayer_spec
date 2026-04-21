@@ -31,8 +31,8 @@ The core mechanism is a section-level diff that returns old object references
 for sections whose data hasn't changed:
 
 ```
-mergeSections(current: LandingSection[], incoming: LandingSection[])
-  => LandingSection[]  (preserves old refs for unchanged sections)
+mergeSections(current: PageSection[], incoming: PageSection[])
+  => PageSection[]  (preserves old refs for unchanged sections)
 ```
 
 Each incoming section is matched by `id` against the current array. If the
@@ -52,7 +52,7 @@ save and re-fetch.
 
 ### Optional Field Normalization
 
-The `items` field on `LandingSection` is typed as `items?: LandingItem[]`.
+The `items` field on `PageSection` is typed as `items?: PageItem[]`.
 JSONB always returns `[]` for empty arrays, but locally-created sections may
 have `items: undefined`. The comparison must normalize both to `[]`:
 
@@ -125,7 +125,7 @@ is defeated and all sections re-render.
 - **applyIncomingData preserves per-user fields.** The broadcast doesn't
   carry `is_liked` or `can_delete` (user-specific). The setter merges incoming
   data while keeping these fields from the previous state.
-- **Save timer cancelled on landing swap.** When the landing page is changed
+- **Save timer cancelled on page swap.** When the custom page is changed
   via the dropdown, `saveTimerRef` is cleared and `pendingSectionsRef` is
   nulled BEFORE issuing the swap API call — otherwise the old page's queued
   save would fire and overwrite the new page's content.

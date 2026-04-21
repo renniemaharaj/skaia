@@ -8,7 +8,7 @@ Skaia is a self-hosted, multi-tenant web platform. Each tenant gets an isolated 
 - **Store** — products, cart, checkout (Stripe or demo provider), orders, subscriptions
 - **Inbox** — 1-to-1 direct messaging with real-time delivery
 - **Notifications** — typed, per-user, delivered via WebSocket
-- **CMS** — slug-based pages with JSONB block content, landing page builder
+- **CMS** — slug-based pages with JSONB block content, homepage (landing) and generic page builder (see route_resolution_spec)
 - **Real-time** — WebSocket presence, global chat, cursor sharing, admin teleport
 - **RBAC** — 4 default roles, 18 granular permissions, instant permission propagation
 - **SEO** — server-side meta injection, dynamic sitemap

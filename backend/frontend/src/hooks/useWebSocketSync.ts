@@ -857,7 +857,7 @@ export const useWebSocketSync = () => {
             if (ca === "branding_updated" && cd) setBrandingWs(cd);
             if (ca === "seo_updated" && cd) setSeoWs(cd);
             if (ca === "footer_updated" && cd) setFooterWs(cd);
-            // Landing section/item changes — let landing components re-fetch
+            // Page section/item changes — let page components re-fetch
             window.dispatchEvent(
               new CustomEvent("config:live:event", {
                 detail: { action: ca, data: cd },

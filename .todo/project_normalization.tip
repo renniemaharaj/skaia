@@ -5,7 +5,7 @@
 
 - `LandingSkeleton.tsx` still exists and must be renamed to `PageSkeleton.tsx` with all imports/exports updated.
 - Several components and code comments still reference 'landing' generically (should be 'page' except for root route and landing-slug config).
-- `.specs/landing_page_spec` is misleading and must be renamed to `route_resolution_spec`, with content updated to clarify frontend/backend page resolution. All references to `landing_page_spec` in specs and docs must be updated.
+- `.specs/landing_page_spec` is misleading and must be renamed to `route_resolution_spec`, with content updated to clarify frontend/backend page resolution. All references to `route_resolution_spec` in specs and docs must be updated.
 - **All .specs files need updating (CRITICAL):**
 	- Remove or clarify all generic 'landing' usage (except homepage/route resolution).
 	- Update all diagrams, tables, and endpoint docs to use 'page' for generic logic.

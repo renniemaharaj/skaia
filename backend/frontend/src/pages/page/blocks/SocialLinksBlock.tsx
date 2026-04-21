@@ -28,7 +28,7 @@ interface SocialLink {
   url: string;
 }
 
-/** Inline editor for a single social link in the landing block. */
+/** Inline editor for a single social link in the page block. */
 const BlockSocialLinkEditor = ({
   link,
   index,

@@ -237,7 +237,7 @@ All under `/config/pages` (chi subroute).
 
 **Critical: Landing page is config-driven.** The `landing_page_slug` key in
 `site_config` determines which page renders at `/`. There is no `is_index`
-column. See `landing_page_spec` for the full data flow.
+column. See `route_resolution_spec` for the full data flow.
 
 ## Security Checklist
 

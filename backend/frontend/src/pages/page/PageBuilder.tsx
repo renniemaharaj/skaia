@@ -195,7 +195,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const handleFactoryReset = useCallback(async () => {
     if (
       !window.confirm(
-        "Reset all pages?\n\nThis will permanently delete ALL custom pages, landing sections, and reset page allocations.\n\nThis cannot be undone.",
+        "Reset all pages?\n\nThis will permanently delete ALL custom pages, page section sections, and reset page allocations.\n\nThis cannot be undone.",
       )
     )
       return;
@@ -244,7 +244,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     }
   }, [page?.slug]);
 
-  // Load all pages for landing selector
+  // Load all pages for page selector
   useEffect(() => {
     if (isAdmin && showToolbar) {
       apiRequest<PageBuilderPage[]>("/config/pages/list")
@@ -255,7 +255,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleSetLandingPage = async (selectedSlug: string) => {
     try {
-      // Cancel queued saves so stale sections from the previous landing page
+      // Cancel queued saves so stale sections from the previous page
       // aren't written over the incoming page's content.
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -274,11 +274,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       );
       setLandingDropdownOpen(false);
 
-      // Clear old sections so the new landing page starts clean.
+      // Clear old sections so the new page starts clean.
       setSections([]);
       setSectionsSourced(false);
 
-      // Reload the landing page so the new selection is shown immediately.
+      // Reload the page so the new selection is shown immediately.
       if (!slug) {
         await refresh();
       }

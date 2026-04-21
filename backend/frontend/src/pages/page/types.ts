@@ -1,6 +1,6 @@
 /** Types for the page block system. */
 
-/** Types for the landing page block system. */
+/** Types for the page block system. */
 
 export interface PageItem {
   id: number;
