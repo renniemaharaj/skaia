@@ -85,7 +85,7 @@ export default function CustomPages() {
 
   useEffect(() => {
     apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
-      "/config/pages/browse",
+      "/pages/browse",
     )
       .then((data) => {
         setPages(data?.pages ?? []);
@@ -98,7 +98,7 @@ export default function CustomPages() {
   useEffect(() => {
     const handler = () => {
       apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
-        "/config/pages/browse",
+        "/pages/browse",
       )
         .then((data) => {
           setPages(data?.pages ?? []);
@@ -116,7 +116,7 @@ export default function CustomPages() {
 
   useEffect(() => {
     if (!currentUser) return;
-    apiRequest<Allocation>("/config/pages/my-allocation")
+    apiRequest<Allocation>("/pages/my-allocation")
       .then((data) => setAllocation(data))
       .catch(() => {});
   }, [currentUser]);
@@ -124,7 +124,7 @@ export default function CustomPages() {
   const handleClaimPage = useCallback(async () => {
     setClaiming(true);
     try {
-      const page = await apiRequest<PageBuilderPage>("/config/pages/claim", {
+      const page = await apiRequest<PageBuilderPage>("/pages/claim", {
         method: "POST",
       });
       toast.success("Page created!");
@@ -152,7 +152,7 @@ export default function CustomPages() {
     setRenaming(true);
     try {
       const updated = await apiRequest<PageBuilderPage>(
-        `/config/pages/${renamingPage.id}`,
+        `/pages/${renamingPage.id}`,
         {
           method: "PUT",
           body: JSON.stringify({
@@ -188,7 +188,7 @@ export default function CustomPages() {
     setDuplicating(true);
     try {
       const created = await apiRequest<PageBuilderPage>(
-        `/config/pages/${duplicatingPage.id}/duplicate`,
+        `/pages/${duplicatingPage.id}/duplicate`,
         {
           method: "POST",
           body: JSON.stringify({
@@ -198,7 +198,7 @@ export default function CustomPages() {
         },
       );
       setPages((prev) => [...prev, created]);
-      apiRequest<Allocation>("/config/pages/my-allocation")
+      apiRequest<Allocation>("/pages/my-allocation")
         .then((data) => setAllocation(data))
         .catch(() => {});
       toast.success("Page duplicated");
@@ -288,12 +288,12 @@ export default function CustomPages() {
       }
       setDeletingPageId(page.id);
       try {
-        await apiRequest(`/config/pages/${page.id}`, {
+        await apiRequest(`/pages/${page.id}`, {
           method: "DELETE",
         });
         setPages((prev) => prev.filter((p) => p.id !== page.id));
         // Refresh allocation count after deletion
-        apiRequest<Allocation>("/config/pages/my-allocation")
+        apiRequest<Allocation>("/pages/my-allocation")
           .then((data) => setAllocation(data))
           .catch(() => {});
         toast.success("Page deleted");

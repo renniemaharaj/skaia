@@ -1,0 +1,24 @@
+# Refactor: Move Page Endpoints to /pages
+
+## Status
+
+- not-started
+
+## Goal
+
+Move all custom page-related API endpoints from /config/pages/_ to top-level /pages/_ for clarity and RESTful convention. Update backend handler, routes, and document migration steps. Ensure all frontend and integration points are updated accordingly.
+
+## Steps
+
+1. Update backend/internal/page/handler.go to mount all page endpoints under /pages instead of /config/pages.
+2. Update any references in backend/internal/page/service.go, repository.go, and interface.go if route paths are hardcoded or referenced.
+3. Update frontend API calls and route references (src/hooks/usePageData.ts, src/pages/custom-pages/CustomPages.tsx, etc.) to use /pages/\*.
+4. Update documentation in backend/README.md and .specs/landing_page_spec if route paths are mentioned.
+5. Test all page CRUD, browse, engagement, and admin endpoints for correct behavior and permissions.
+6. Announce the change in .todo/.tip and notify frontend/backend contributors.
+
+## Notes
+
+- Keep config-only endpoints (e.g., landing page config, factory reset) under /config if not user-facing.
+- Ensure WebSocket events and permission checks are unaffected.
+- See /memories/repo/skaia_exploration.md for current endpoint mapping and frontend usage.

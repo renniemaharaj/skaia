@@ -143,17 +143,15 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     try {
       let endpoint: string;
       if (slug) {
-        endpoint = `/config/pages/${slug}`;
+        endpoint = `/pages/${slug}`;
       } else {
         // Index mode: resolve the landing slug first, then fetch by slug.
         // This avoids the single /config/pages/index cache key that CDNs
         // serve stale when the landing page is swapped — the per-slug URL
         // has a unique cache key per page.
-        const cfg = await apiRequest<{ slug: string }>(
-          "/config/pages/landing-slug",
-        );
+        const cfg = await apiRequest<{ slug: string }>("/pages/landing-slug");
         if (requestId !== requestIdRef.current) return;
-        endpoint = `/config/pages/${cfg.slug}`;
+        endpoint = `/pages/${cfg.slug}`;
       }
       const currentPage = await apiRequest<PageBuilderPage>(endpoint);
       if (requestId !== requestIdRef.current) return;
@@ -176,7 +174,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const createPage = useCallback(
     async (p: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">) => {
       try {
-        const created = await apiRequest<PageBuilderPage>("/config/pages", {
+        const created = await apiRequest<PageBuilderPage>("/pages", {
           method: "POST",
           body: JSON.stringify(p),
         });
@@ -187,7 +185,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         // apiRequest already consumed it. Fetch by slug instead.
         if (err instanceof Error && (err as any).status === 409) {
           const existing = await apiRequest<PageBuilderPage>(
-            `/config/pages/${encodeURIComponent(p.slug)}`,
+            `/pages/${encodeURIComponent(p.slug)}`,
           );
           return existing;
         }
@@ -199,13 +197,10 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
 
   const updatePage = useCallback(
     async (p: Omit<PageBuilderPage, "created_at" | "updated_at">) => {
-      const updated = await apiRequest<PageBuilderPage>(
-        `/config/pages/${p.id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(p),
-        },
-      );
+      const updated = await apiRequest<PageBuilderPage>(`/pages/${p.id}`, {
+        method: "PUT",
+        body: JSON.stringify(p),
+      });
       // The backend no longer echoes page:update back to the sender, so we
       // use the HTTP response as the authoritative update for local state.
       if (updated) setPage(updated);
@@ -215,20 +210,17 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   );
 
   const deletePage = useCallback(async (id: number) => {
-    await apiRequest(`/config/pages/${id}`, {
+    await apiRequest(`/pages/${id}`, {
       method: "DELETE",
     });
   }, []);
 
   const duplicatePage = useCallback(
     async (id: number, newSlug: string, newTitle?: string) => {
-      return await apiRequest<PageBuilderPage>(
-        `/config/pages/${id}/duplicate`,
-        {
-          method: "POST",
-          body: JSON.stringify({ slug: newSlug, title: newTitle }),
-        },
-      );
+      return await apiRequest<PageBuilderPage>(`/pages/${id}/duplicate`, {
+        method: "POST",
+        body: JSON.stringify({ slug: newSlug, title: newTitle }),
+      });
     },
     [],
   );

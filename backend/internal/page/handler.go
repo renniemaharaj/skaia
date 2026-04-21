@@ -33,9 +33,9 @@ func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service
 	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher, analyticsSvc: analyticsSvc}
 }
 
-// Mount registers page routes under /config/pages.
+// Mount registers page routes under /pages and config-only endpoints under /config.
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
-	r.Route("/config/pages", func(r chi.Router) {
+	r.Route("/pages", func(r chi.Router) {
 		// Public reads
 		r.With(optJWT).Get("/index", h.getIndex)
 		r.Get("/landing-slug", h.getLandingSlug)
@@ -70,17 +70,19 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.With(commentLimiter).Post("/comments/{commentId}/like", h.likeComment)
 			r.With(commentLimiter).Delete("/comments/{commentId}/like", h.unlikeComment)
 
-			// Landing page config
-			r.Put("/landing-page", h.setLandingPage)
-
-			// Factory reset
-			r.Post("/factory-reset", h.factoryResetHomepage)
-
 			// Admin: page allocation management
 			r.Get("/allocations", h.listAllocations)
 			r.Put("/allocations/{userId}", h.upsertAllocation)
 			r.Delete("/allocations/{userId}", h.deleteAllocation)
 		})
+	})
+
+	// Config-only endpoints (not user-facing) remain under /config
+	r.Route("/config/pages", func(r chi.Router) {
+		// Landing page config
+		r.Put("/landing-page", h.setLandingPage)
+		// Factory reset
+		r.Post("/factory-reset", h.factoryResetHomepage)
 	})
 }
 

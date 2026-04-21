@@ -39,7 +39,7 @@ internal/
   inbox/             conversations, messages
   notification/      notifications
   config/            site config (branding, SEO, footer, features)
-  page/              CMS pages (slug-based, JSONB blocks)
+  page/              CMS pages (slug-based, JSONB blocks, endpoints under /pages)
   customsection/     user-defined custom sections
   datasource/        data source definitions, compiler, TS runner
   events/            event dispatcher and activity logging
