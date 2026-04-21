@@ -1,8 +1,10 @@
-# Routine: todo_agent
+# Routine: .todos planner
 
 ## Purpose
 
 Automated planning, strategizing, and todo management for Skaia. Entry point for developers and agents to plan activities, propose strategies, or autopilot planning in `.todo/`. **Does not execute plans—only generates, organizes, and maintains them.**
+
+This routine describes the responsibilities and workflow for the ".todos planner" agent.
 
 ## Responsibilities
 
@@ -13,7 +15,7 @@ Automated planning, strategizing, and todo management for Skaia. Entry point for
 
 ## Goal
 
-Maintain a comprehensive, conflict-free, and traceable planning system for Skaia, balancing frontend and backend work, and ensuring all todos are actionable and validated.
+Maintain a comprehensive, conflict-free, and traceable planning system for Skaia, balancing frontend and backend work, and ensuring all todos are actionable and validated. The .todos planner is responsible for upholding these standards.
 
 ## Principles
 
@@ -27,7 +29,7 @@ Maintain a comprehensive, conflict-free, and traceable planning system for Skaia
 
 ## Workflow
 
-### Enhanced Workflow
+### Enhanced Workflow for .todos planner
 
 1. Scan `.todo/` for all existing plans and `.tip` files
 2. For each todo:
@@ -54,21 +56,21 @@ Maintain a comprehensive, conflict-free, and traceable planning system for Skaia
 
 ```
 for todo in .todo/:
-	check .tip exists
-	check .tip status
-	compare with current project state (code, tests, docs)
-	if todo is already done:
-		remove todo and .tip
-	elif todo is partially complete:
-		update .tip with current state
-	elif todo appears complete:
-		run tests (backend/frontend as appropriate)
-		consult correctness routine
-		start worker routine for verification
-		if tests pass and correctness confirmed:
-			remove todo and .tip
-		else:
-			update .tip with findings
+    check .tip exists
+    check .tip status
+    compare with current project state (code, tests, docs)
+    if todo is already done:
+        remove todo and .tip
+    elif todo is partially complete:
+        update .tip with current state
+    elif todo appears complete:
+        run tests (backend/frontend as appropriate)
+        consult correctness routine
+        start worker routine for verification
+        if tests pass and correctness confirmed:
+            remove todo and .tip
+        else:
+            update .tip with findings
 ```
 
 ## Contexts
@@ -87,6 +89,6 @@ for todo in .todo/:
 
 ## Example Prompts
 
-- Plan a new featureensure no duplication with existing todos, and generate a `.tip` if missing
-- Strategize backend refactorbalance with frontend work and consult correctness routine
+- Plan a new feature—ensure no duplication with existing todos, and generate a `.tip` if missing
+- Strategize backend refactor—balance with frontend work and consult correctness routine
 - Audit all current todos for conflicts or missing `.tip` files
