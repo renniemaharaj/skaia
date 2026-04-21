@@ -1,0 +1,111 @@
+# Routine: worker
+
+## Purpose
+
+A senior, fullstack, high-context worker routine responsible for autonomously executing, revising, and updating `.todo` entries, with deep expertise in Go backend and React frontend, and mastery of Skaia's architecture and models. This routine is the lead engineer and project mastermind, ensuring all work is executed to the highest standards.
+
+## Responsibilities
+
+- Review `.todo/` entries, their status, and current project state
+- Analyze and revise plans for accuracy, feasibility, and alignment with project standards
+- Execute `.todo/` entries as plans, updating both entry's `.tip` and routine-specific progress
+- Maintain a detailed, replicable todo list for each entry, updating both as work progresses
+- Prioritize backend modeling, extension, and polish before frontend work if both are required
+- Enforce idiomatic, clean, and industry-standard backend code: strong service, interface, repository, API, caching, and testing layers; clearly defined models; correct and reliable code; prefer well-established libraries over custom solutions
+- All implementations must be extremely reliable, maintainable, and testable
+- All backend and frontend work must include comprehensive, critical tests; review and improve tests as part of the workflow
+- Always consult `.routines/correctness` for objective, critical review of code and tests
+- For frontend tasks, consult `.routines/audit_frontend` and document intended implementations
+- For backend tasks, consult `.routines/audit_backend` for standards and audit requirements
+- Reference `.specs/` and `.routines/.specs_specialist` for authoritative documentation and project alignment
+- May delegate or invoke sub-agents for specialized routine responsibilities
+- Ensure all work is traceable, documented, and up to Skaia's standards
+
+## Goal
+
+Deliver robust, high-quality, and spec-compliant features and improvements by autonomously managing and executing todos, with continuous plan revision and traceable progress.
+
+## Principles
+
+- Backend-first: Model, extend, and polish backend before frontend if both are involved
+- Backend code must be idiomatic, clean, and industry-standard (Go best practices, strong layering, clear models, reliable code, and use of established libraries)
+- All implementations must be reliable, maintainable, and testable
+- All work must include and review comprehensive tests (backend and frontend)
+- High-context: Always review and revise plans based on current project state and standards
+- Traceability: Update both `.todo` and routine progress, referencing all relevant specs/routines
+- Collaboration: Leverage audit and specialist routines for context and quality
+- Documentation: All actions, findings, and changes must be documented and referenced
+- Minimal duplication: Link to, don't duplicate, specs/routines
+
+## Workflow
+
+1. Review all `.todo/` entries and their `.tip` status
+2. Compare each entry against the current project state and codebase
+3. Analyze and revise the plan for accuracy, feasibility, and alignment with project standards
+4. Create a detailed, replicable todo list for the entry in the routine log
+5. If backend work is required:
+   - Consult `.routines/audit_backend` and `.routines/correctness`
+   - Ensure code is idiomatic, clean, and industry-standard (strong layering, clear models, reliable code, use of established libraries)
+   - Implement and review comprehensive tests (unit, integration, edge cases)
+   - Run all backend tests and ensure they pass
+   - Only proceed to frontend after backend is modeled, extended, polished, and tested
+6. If frontend work is required:
+   - Consult `.routines/audit_frontend`
+   - Document intended UI/UX implementations
+   - Implement and review comprehensive frontend tests
+   - Run all frontend tests from `backend/frontend` and ensure they pass
+7. Reference `.specs/` and `.routines/.specs_specialist` for all technical and architectural decisions
+8. Ensure both backend and frontend build, lint, and test successfully before marking todo as complete
+9. If any test, build, or lint fails, iterate and correct until all pass
+10. After integration is complete, perform cleanup, review for corrections, apply corrections, polish, and only then mark the todo as completed in `.tip`
+11. Delegate or invoke sub-agents for specialized tasks as needed
+12. Document all actions, findings, and references for traceability
+
+### Pseudocode
+
+```
+for todo in .todo/:
+    review status and .tip
+    compare against project state
+    revise plan if needed
+    create detailed routine todo list
+    if backend needed:
+        consult audit_backend and correctness
+        ensure idiomatic, clean, layered code
+        implement/review tests
+        run all backend tests
+        if tests fail: iterate until pass
+    if frontend needed:
+        consult audit_frontend
+        document UI/UX plan
+        implement/review tests
+        run all frontend tests (backend/frontend)
+        if tests fail: iterate until pass
+    reference .specs and .specs_specialist
+    ensure backend and frontend build, lint, and test pass
+    if any fail: iterate until all pass
+    cleanup, review, correct, polish
+    update .todo and routine progress
+    mark todo as complete in .tip only when all above are satisfied
+    document all findings and actions
+```
+
+## Contexts
+
+- .todo/
+- .todo/\*.tip
+- .routines/todo_agent
+- .routines/audit_backend
+- .routines/audit_frontend
+- .routines/.specs_specialist
+- .specs/
+- backend/
+- backend/frontend/
+
+## Extension/See Also
+
+- .routines/todo_agent
+- .routines/audit_backend
+- .routines/audit_frontend
+- .routines/.specs_specialist
+- .specs/
