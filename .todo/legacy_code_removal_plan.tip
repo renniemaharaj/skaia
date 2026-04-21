@@ -1,0 +1,18 @@
+<--/------->
+
+## legacy_code_removal_plan
+
+### Current Progress
+- **Phase 1: Audit legacy code paths** — ⬜ not started
+- **Phase 2: Determine usage and dependencies** — ⬜ not started
+- **Phase 3: Propose deprecation/removal** — ⬜ not started
+- **Phase 4: Update docs/specs** — ⬜ not started
+- **Phase 5: Communicate changes** — ⬜ not started
+
+### Next Steps
+- [ ] Identify all code marked as legacy or fallback in backend/internal/datasource/ and backend/internal/integration/
+- [ ] For each, check if it is still used or required
+- [ ] If unused, propose deprecation/removal and update docs/specs
+- [ ] Communicate plan and changes to contributors
+
+<--/------->

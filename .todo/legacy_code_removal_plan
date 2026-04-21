@@ -1,0 +1,28 @@
+# Legacy Code Removal Plan
+
+## Context
+
+There are multiple references to legacy code paths and fallback logic in the Skaia backend, especially in:
+
+- backend/internal/datasource/
+- backend/internal/integration/
+
+These may indicate technical debt or code that could be removed if no longer needed. See findings in `.routines/correctness`.
+
+## Goal
+
+Audit and, if possible, remove or refactor legacy code paths and fallback logic to reduce maintenance burden and improve clarity.
+
+## References
+
+- .routines/correctness
+- .routines/todo_planner
+- .specs/caching_cdn_spec
+
+## Steps
+
+1. Audit all code marked as "legacy" or fallback in the above modules.
+2. Determine if each code path is still required (check for usage, tests, and production dependencies).
+3. Propose deprecation/removal for unused legacy code.
+4. Update documentation/specs to reflect any changes.
+5. Communicate changes to all contributors.
