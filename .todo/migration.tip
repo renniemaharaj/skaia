@@ -1,0 +1,14 @@
+### Current Progress
+
+- **Phase 1: Inventory and audit** — 🟡 In progress (plan drafted, inventory not started)
+- **Phase 2: Migration strategy and renaming** — ⬜ Not started
+- **Phase 3: Code and config updates** — ⬜ Not started
+- **Phase 4: Testing and validation** — ⬜ Not started
+- **Phase 5: Rollback and communication** — ⬜ Not started
+
+### Next Steps
+
+- [ ] Review and update migration plan
+- [ ] Inventory and rename tables, indexes, columns, and references
+- [ ] Update backend code and config
+- [ ] Test migration and document rollback

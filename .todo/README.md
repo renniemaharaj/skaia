@@ -5,6 +5,7 @@ This directory is used for collaborative planning and tracking of software engin
 ## Usage Rules
 
 - Each `.todo` file (no extension) should focus on a specific area (e.g., migrations, frontend refactor, backend normalization).
+- **Every todo entry must be initialized with a corresponding `.tip` file (e.g., `feature.tip`). No todo should exist without its `.tip`.**
 - `.specs` files in this directory are for detailed specifications, requirements, or design docs related to human-AI planning and collaboration.
 - Use clear, actionable entries and update them as progress is made.
 - Do not use file extensions for todo plans/specs (except `README.md`, `.status`, and `.specs`).

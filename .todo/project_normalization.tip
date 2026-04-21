@@ -1,0 +1,13 @@
+### Current Progress
+
+- **Phase 1: Audit usage of 'landing'** — 🟡 In progress (plan drafted, audit not started)
+- **Phase 2: Update code, comments, and docs** — ⬜ Not started
+- **Phase 3: Rename components and imports** — ⬜ Not started
+- **Phase 4: Validation and testing** — ⬜ Not started
+
+### Next Steps
+
+- [ ] Audit all code, comments, and CLI/tooling for 'landing' usage
+- [ ] Update to 'page' where appropriate
+- [ ] Rename components and update imports/usages
+- [ ] Add validation step for generic usage

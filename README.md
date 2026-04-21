@@ -94,19 +94,39 @@ cd backend/frontend && npm test
 
 ## Collaborative Planning, Specs & Routines
 
-All collaborative planning, status tracking, specifications, and automation routines are now kept in the `.todo/` and `.routines/` directories:
+All collaborative planning, status tracking, specifications, and automation routines are now kept in the `.todo/`, `.specs/`, and `.routines/` directories:
 
 - `.todo/README.md` — Directory usage, rules, and emoji policy
 - `.todo/.tip` — Current status tracker and entrypoint for beginning any real work
-- `.todo/.specs` — Human-AI specifications and design docs
+- `.specs/` — Human-AI specifications and design docs
 - `.todo/*` — Individual todo plans (no extension)
 - `.routines/` — First-class directory for routine definitions (project maintenance, automation, specialist roles)
   - `.routines/README.md` — Routine structure and usage
   - `.routines/.specs` — Specialist for specs, technology, and infrastructure
   - `.routines/.frontend_specialist`, `.routines/.backend_auditor`, etc. — Add more as needed
 
-Specs previously in `.specs/` are now in `.todo/.specs`.
+Specs previously in `.todo/.specs` are now in `.specs/`.
 
 > Emoji use for status is strictly limited to `.todo/.status` as described in `.todo/README.md` and is forbidden elsewhere in the project.
+
+---
+
+# Human-AI Planning & Integration
+
+This project uses a structured Human-AI planning and integration approach, with dedicated directories for incorporating artificial intelligence code, modeling acceleration, and maintaining high-quality documentation and routines. The system is designed to gatekeep and guide intelligence through:
+
+- `.routines/` — Automation, maintenance, and specialist routines, including routines for maintaining documentation and enforcing standards.
+- `.specs/` — Detailed, living specifications and design documents for all major features and integrations.
+- `.todo/` — Active planning, tracking, and iterative problem breakdown. Each entry in `.todo/` should have its own `.tip` file, enabling multiple agents to work independently on different todos without conflict. This promotes parallelism and clear ownership.
+- `.todo/.tip` — Entrypoint for implementing todos, providing a stateful, train-of-thought overview for the model. For best results, each todo should have a corresponding `.tip` file (e.g., `.todo/feature_x.tip`).
+
+This structure enables:
+
+- Stateful, collaborative planning and execution between humans and AI agents
+- Iterative refinement, finalization, and traceability of decisions
+- Clear separation of concerns between planning, specification, and automation
+- Parallel work by multiple agents on different tasks, reducing conflicts and improving velocity
+
+> Promote the use of individual `.tip` files for each todo to maximize agent collaboration and minimize merge conflicts.
 
 ---
