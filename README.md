@@ -14,7 +14,18 @@ Skaia is a self-hosted, multi-tenant web platform. Each tenant gets an isolated 
 - **SEO** — server-side meta injection, dynamic sitemap
 - **Collaborative Planning** — `.todo/` directory for human-AI planning, status, and specifications
 
-## Stack
+## Container Orchestration & Gateway
+
+Container management is split between the CLI and the project root Docker Compose file:
+
+- The CLI (`grengo` or `cli`) automates backend container scaling, per-tenant Postgres and Redis, and writes the default nginx config for multitenancy (routing by domain and tenant configuration).
+- The gateway (nginx) and shared services (nginx, postgres, redis) are started and managed directly through the root `compose.yml` file. To start the gateway and shared services, simply build and run `docker compose up` from the project root.
+- The CLI does not start or manage the gateway container itself; it only writes to the default nginx config and handles tenant routing logic.
+
+**Summary:**
+
+- Use the CLI for tenant lifecycle, backend scaling, and config generation.
+- Use `docker compose up` at the project root to start the gateway and shared infrastructure.
 
 | Layer      | Technology                                        |
 | ---------- | ------------------------------------------------- |
@@ -25,22 +36,28 @@ Skaia is a self-hosted, multi-tenant web platform. Each tenant gets an isolated 
 | Payments   | Stripe v82 (pluggable, ships with demo provider)  |
 | Proxy      | nginx (auto-generated config)                     |
 | Containers | Docker Compose                                    |
-| CLI        | grengo (Go binary)                                |
+| CLI        | grengo (Go binary, or 'cli' for simplicity)       |
 
 ## Quickstart
 
 ```bash
-# Build CLI
-cd cmd/grengo && go build -o ../../grengo .
+# Build CLI (from project root)
+go build -o grengo ./grengo
+# Or, for simplicity, build as 'cli'
+go build -o cli ./grengo
 
 # Configure (set POSTGRES_PASSWORD)
 cp .env.example .env
 
 # Create first tenant
 ./grengo new
+# Or, if built as 'cli'
+./cli new
 
 # Start everything
 ./grengo compose up
+# Or
+./cli compose up
 ```
 
 Access: `http://localhost` · Admin dashboard: `Ctrl+G` in browser · Management API: `:9100`
