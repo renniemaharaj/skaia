@@ -1,10 +1,10 @@
 ### Current Progress
 
-- **Phase 1: Investigate session/auth model** — ⬜ Not started
+- **Phase 1: Investigate session/auth model** — ⬜ Not started (no backend tests detected)
 - **Phase 2: Implement stateful session layer** — ⬜ Not started
 - **Phase 3: Add IP-aware validation** — ⬜ Not started
 - **Phase 4: Integrate Cloudflare Turnstile** — ⬜ Not started
-- **Phase 5: Test and validate** — ⬜ Not started
+- **Phase 5: Test and validate** — ⬜ Not started (no backend tests detected)
 
 ### Next Steps
 
@@ -12,4 +12,5 @@
 - [ ] Implement stateful session layer
 - [ ] Add IP-aware validation logic
 - [ ] Integrate Cloudflare Turnstile for step-up
+- [ ] Implement and verify backend tests
 - [ ] Test and validate end-to-end

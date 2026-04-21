@@ -1,8 +1,8 @@
 ### Current Progress
 
 - **Phase 1: Align with current Skaia page model** — ✅ Complete
-- **Phase 2: Add explicit section metadata** — 🟡 In progress (section types/constants in code, partial backend validation; section registry API and dynamic config schema not fully implemented)
-- **Phase 3: Enforce integration primitives** — 🟡 Started (integration block types present, stricter enforcement/validation ongoing)
+- **Phase 2: Add explicit section metadata** — ⬜ Not started (no backend/frontend tests detected)
+- **Phase 3: Enforce integration primitives** — ⬜ Not started
 - **Phase 4: Convert routes to dynamic page rendering** — ⬜ Not started
 - **Phase 5: Add versioning and migration** — ⬜ Not started
 
@@ -12,3 +12,4 @@
 - [ ] Complete backend and frontend enforcement for integration primitives (Phase 3)
 - [ ] Begin dynamic route rendering and registry-driven blocks (Phase 4)
 - [ ] Plan and implement versioning/migration for legacy data (Phase 5)
+- [ ] Implement and verify backend/frontend tests
