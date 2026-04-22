@@ -27,8 +27,9 @@ import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
+import { usePageData } from "../../hooks/usePageData";
 import { relativeTimeAgo } from "../../utils/serverTime";
-import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
+import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
@@ -59,24 +60,23 @@ interface Allocation {
 export default function CustomPages() {
   const currentUser = useAtomValue(currentUserAtom);
   const navigate = useNavigate();
-  const [pages, setPages] = useState<PageBuilderPage[]>([]);
+  const [pages, setPages] = useState<PageBuilderDoc[]>([]);
   const [landingPageSlug, setLandingPageSlug] = useState("");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [allocation, setAllocation] = useState<Allocation | null>(null);
   const [claiming, setClaiming] = useState(false);
-  const [renamingPage, setRenamingPage] = useState<PageBuilderPage | null>(
+  const [renamingPage, setRenamingPage] = useState<PageBuilderDoc | null>(null);
+  const [duplicatingPage, setDuplicatingPage] = useState<PageBuilderDoc | null>(
     null,
   );
-  const [duplicatingPage, setDuplicatingPage] =
-    useState<PageBuilderPage | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [renameSlug, setRenameSlug] = useState("");
   const [dupSlug, setDupSlug] = useState("");
   const [dupTitle, setDupTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [analyticsPage, setAnalyticsPage] = useState<PageBuilderPage | null>(
+  const [analyticsPage, setAnalyticsPage] = useState<PageBuilderDoc | null>(
     null,
   );
   // Homepage setting logic (shared hook)
@@ -84,6 +84,9 @@ export default function CustomPages() {
     landingPageSlug,
     setLandingPageSlug,
   );
+
+  // Permission logic for homepage management
+  const hasPermission = usePageData().isAdmin; // home.manage permission
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (
       (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
@@ -91,7 +94,7 @@ export default function CustomPages() {
   });
 
   useEffect(() => {
-    apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+    apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
       "/pages/browse",
     )
       .then((data) => {
@@ -104,7 +107,7 @@ export default function CustomPages() {
 
   useEffect(() => {
     const handler = () => {
-      apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+      apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
         "/pages/browse",
       )
         .then((data) => {
@@ -131,7 +134,7 @@ export default function CustomPages() {
   const handleClaimPage = useCallback(async () => {
     setClaiming(true);
     try {
-      const page = await apiRequest<PageBuilderPage>("/pages/claim", {
+      const page = await apiRequest<PageBuilderDoc>("/pages/claim", {
         method: "POST",
       });
       toast.success("Page created!");
@@ -144,7 +147,7 @@ export default function CustomPages() {
   }, [navigate]);
 
   const openRename = useCallback(
-    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
       e.preventDefault();
       e.stopPropagation();
       setRenameTitle(page.title || page.slug);
@@ -158,7 +161,7 @@ export default function CustomPages() {
     if (!renamingPage || !renameTitle.trim()) return;
     setRenaming(true);
     try {
-      const updated = await apiRequest<PageBuilderPage>(
+      const updated = await apiRequest<PageBuilderDoc>(
         `/pages/${renamingPage.id}`,
         {
           method: "PUT",
@@ -180,7 +183,7 @@ export default function CustomPages() {
   }, [renamingPage, renameTitle, renameSlug]);
 
   const openDuplicate = useCallback(
-    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+    (e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
       e.preventDefault();
       e.stopPropagation();
       setDupSlug(`${page.slug}-copy`);
@@ -194,7 +197,7 @@ export default function CustomPages() {
     if (!duplicatingPage || !dupSlug.trim()) return;
     setDuplicating(true);
     try {
-      const created = await apiRequest<PageBuilderPage>(
+      const created = await apiRequest<PageBuilderDoc>(
         `/pages/${duplicatingPage.id}/duplicate`,
         {
           method: "POST",
@@ -254,7 +257,7 @@ export default function CustomPages() {
     </span>
   );
 
-  const PageThumb = ({ page }: { page: PageBuilderPage }) => {
+  const PageThumb = ({ page }: { page: PageBuilderDoc }) => {
     const sections = useMemo(
       () => parsePageSections(page.content),
       [page.content],
@@ -286,7 +289,7 @@ export default function CustomPages() {
   const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
 
   const handleDeletePage = useCallback(
-    async (event: MouseEvent<HTMLButtonElement>, page: PageBuilderPage) => {
+    async (event: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
       event.preventDefault();
       event.stopPropagation();
       if (!page.id || !page.can_delete) return;
@@ -487,34 +490,29 @@ export default function CustomPages() {
               {page.slug === landingPageSlug && (
                 <span className="cp-card__badge">Landing Page</span>
               )}
-              {page.can_delete &&
-                currentUser?.id != undefined &&
-                [
-                  page.owner?.id,
-                  ...(page.editors?.map((e) => e.id) || []),
-                ].includes(parseInt(currentUser?.id as string)) && (
-                  <button
-                    type="button"
-                    className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
-                    title={
-                      page.slug === landingPageSlug
-                        ? "Current homepage"
-                        : "Set as homepage"
-                    }
-                    disabled={
-                      page.slug === landingPageSlug ||
-                      settingHomepageId === page.id
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSetHomepage(page);
-                    }}
-                    style={{ marginLeft: 8 }}
-                  >
-                    <Home size={14} />
-                  </button>
-                )}
+              {page.can_delete && hasPermission && (
+                <button
+                  type="button"
+                  className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+                  title={
+                    page.slug === landingPageSlug
+                      ? "Current homepage"
+                      : "Set as homepage"
+                  }
+                  disabled={
+                    page.slug === landingPageSlug ||
+                    settingHomepageId === page.id
+                  }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSetHomepage(page);
+                  }}
+                  style={{ marginLeft: 8 }}
+                >
+                  <Home size={14} />
+                </button>
+              )}
               {page.visibility === "private" && (
                 <span className="cp-card__badge cp-card__badge--private">
                   <EyeOff size={10} /> Private
@@ -552,34 +550,29 @@ export default function CustomPages() {
                     Landing Page
                   </span>
                 )}
-                {page.can_delete &&
-                  currentUser?.id != undefined &&
-                  ![
-                    page.owner?.id,
-                    ...(page.editors?.map((e) => e.id) || []),
-                  ].includes(parseInt(currentUser?.id as string)) && (
-                    <button
-                      type="button"
-                      className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
-                      title={
-                        page.slug === landingPageSlug
-                          ? "Current homepage"
-                          : "Set as homepage"
-                      }
-                      disabled={
-                        page.slug === landingPageSlug ||
-                        settingHomepageId === page.id
-                      }
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSetHomepage(page);
-                      }}
-                      style={{ marginLeft: 8 }}
-                    >
-                      <Home size={14} />
-                    </button>
-                  )}
+                {page.can_delete && hasPermission && (
+                  <button
+                    type="button"
+                    className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+                    title={
+                      page.slug === landingPageSlug
+                        ? "Current homepage"
+                        : "Set as homepage"
+                    }
+                    disabled={
+                      page.slug === landingPageSlug ||
+                      settingHomepageId === page.id
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSetHomepage(page);
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Home size={14} />
+                  </button>
+                )}
                 {page.visibility === "private" && (
                   <span className="cp-card__badge cp-card__badge--inline cp-card__badge--private">
                     <EyeOff size={10} /> Private

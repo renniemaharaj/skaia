@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "../utils/api";
-import type { PageBuilderPage } from "../hooks/usePageData";
+import type { PageBuilderDoc } from "../hooks/usePageData";
 
 export function useSetHomepage(
   landingPageSlug: string,
@@ -12,7 +12,7 @@ export function useSetHomepage(
   );
 
   const handleSetHomepage = useCallback(
-    async (page: PageBuilderPage) => {
+    async (page: PageBuilderDoc) => {
       if (!page.id || page.slug === landingPageSlug) return;
       setSettingHomepageId(page.id);
       try {

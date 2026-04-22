@@ -14,7 +14,7 @@ import { SaveStatusBar } from "./SaveStatusBar";
 import type { PageSection, PageItem, SectionEditor } from "./types";
 import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
-import type { PageBuilderPage } from "../../hooks/usePageData";
+import type { PageBuilderDoc } from "../../hooks/usePageData";
 import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import { PageSkeleton } from "./PageSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
@@ -131,7 +131,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     : undefined;
 
   // Landing page selector state
-  const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
+  const [allPages, setAllPages] = useState<PageBuilderDoc[]>([]);
   const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
   const [landingPageSlug, setLandingPageSlug] = useState("");
   const { handleSetHomepage, settingHomepageId } = useSetHomepage(
@@ -253,7 +253,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Load all pages for page selector and landing slug
   useEffect(() => {
     if (isAdmin && showToolbar) {
-      apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+      apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
         "/pages/browse",
       )
         .then((data) => {
@@ -295,7 +295,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   // Track whether the page needs to be created (404 + editable or sandbox enabled).
   const isNewPage = !!(slug && error && guestSandboxMode);
-  const pageRef = useRef<PageBuilderPage | null>(page);
+  const pageRef = useRef<PageBuilderDoc | null>(page);
   pageRef.current = page;
 
   /**
@@ -303,7 +303,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
    * we're on a 404 slug the user has permission to build.
    */
   const ensurePage = useCallback(
-    async (content: PageSection[]): Promise<PageBuilderPage | null> => {
+    async (content: PageSection[]): Promise<PageBuilderDoc | null> => {
       if (pageRef.current) return pageRef.current;
       const created = await createPage({
         slug: slug || "landing",

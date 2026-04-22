@@ -10,7 +10,7 @@ export interface PageUser {
   avatar_url: string;
 }
 
-export interface PageBuilderPage {
+export interface PageBuilderDoc {
   id: number;
   slug: string;
   title: string;
@@ -31,7 +31,7 @@ export interface PageBuilderPage {
 }
 
 interface UsePageDataReturn {
-  page: PageBuilderPage | null;
+  page: PageBuilderDoc | null;
   loading: boolean;
   error: string;
   errorStatus?: number;
@@ -43,17 +43,17 @@ interface UsePageDataReturn {
   pendingIncoming: boolean;
   refresh: (slug?: string) => Promise<void>;
   createPage: (
-    page: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">,
-  ) => Promise<PageBuilderPage>;
+    page: Omit<PageBuilderDoc, "id" | "created_at" | "updated_at">,
+  ) => Promise<PageBuilderDoc>;
   updatePage: (
-    page: Omit<PageBuilderPage, "created_at" | "updated_at">,
-  ) => Promise<PageBuilderPage>;
+    page: Omit<PageBuilderDoc, "created_at" | "updated_at">,
+  ) => Promise<PageBuilderDoc>;
   deletePage: (id: number) => Promise<void>;
   duplicatePage: (
     id: number,
     newSlug: string,
     newTitle?: string,
-  ) => Promise<PageBuilderPage>;
+  ) => Promise<PageBuilderDoc>;
 }
 
 export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
@@ -61,7 +61,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   const currentUser = useAtomValue(currentUserAtom);
   const isAdmin = hasPermission("home.manage");
 
-  const [page, setPage] = useState<PageBuilderPage | null>(null);
+  const [page, setPage] = useState<PageBuilderDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [errorStatus, setErrorStatus] = useState<number | undefined>(undefined);
@@ -153,7 +153,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         if (requestId !== requestIdRef.current) return;
         endpoint = `/pages/${cfg.slug}`;
       }
-      const currentPage = await apiRequest<PageBuilderPage>(endpoint);
+      const currentPage = await apiRequest<PageBuilderDoc>(endpoint);
       if (requestId !== requestIdRef.current) return;
       setPage(currentPage);
       currentSlugRef.current = currentPage?.slug ?? null;
@@ -172,9 +172,9 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   }, []);
 
   const createPage = useCallback(
-    async (p: Omit<PageBuilderPage, "id" | "created_at" | "updated_at">) => {
+    async (p: Omit<PageBuilderDoc, "id" | "created_at" | "updated_at">) => {
       try {
-        const created = await apiRequest<PageBuilderPage>("/pages", {
+        const created = await apiRequest<PageBuilderDoc>("/pages", {
           method: "POST",
           body: JSON.stringify(p),
         });
@@ -184,7 +184,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         // The backend returns the existing page in the response body, but
         // apiRequest already consumed it. Fetch by slug instead.
         if (err instanceof Error && (err as any).status === 409) {
-          const existing = await apiRequest<PageBuilderPage>(
+          const existing = await apiRequest<PageBuilderDoc>(
             `/pages/${encodeURIComponent(p.slug)}`,
           );
           return existing;
@@ -196,8 +196,8 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   );
 
   const updatePage = useCallback(
-    async (p: Omit<PageBuilderPage, "created_at" | "updated_at">) => {
-      const updated = await apiRequest<PageBuilderPage>(`/pages/${p.id}`, {
+    async (p: Omit<PageBuilderDoc, "created_at" | "updated_at">) => {
+      const updated = await apiRequest<PageBuilderDoc>(`/pages/${p.id}`, {
         method: "PUT",
         body: JSON.stringify(p),
       });
@@ -217,7 +217,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
 
   const duplicatePage = useCallback(
     async (id: number, newSlug: string, newTitle?: string) => {
-      return await apiRequest<PageBuilderPage>(`/pages/${id}/duplicate`, {
+      return await apiRequest<PageBuilderDoc>(`/pages/${id}/duplicate`, {
         method: "POST",
         body: JSON.stringify({ slug: newSlug, title: newTitle }),
       });
@@ -237,7 +237,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       if (action === "landing_page_changed" && data) {
         if (!requestedSlugRef.current) {
           // We're on the index route — swap to the new landing page.
-          setPage(data as PageBuilderPage);
+          setPage(data as PageBuilderDoc);
           currentSlugRef.current = data.slug ?? null;
           return;
         }
