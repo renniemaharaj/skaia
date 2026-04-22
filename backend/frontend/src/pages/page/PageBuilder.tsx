@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   Eye,
@@ -132,6 +133,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Landing page selector state
   const [allPages, setAllPages] = useState<PageBuilderPage[]>([]);
   const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
+  const [landingPageSlug, setLandingPageSlug] = useState("");
+  const { handleSetHomepage, settingHomepageId } = useSetHomepage(
+    landingPageSlug,
+    setLandingPageSlug,
+  );
   const [moreOpen, setMoreOpen] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
@@ -208,7 +214,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }
       pendingSectionsRef.current = null;
 
-      await apiRequest("/config/pages/factory-reset", { method: "POST" });
+      await apiRequest("/pages/factory-reset", { method: "POST" });
       toast.success("Reset complete — all pages removed.");
 
       // Clear local sections so the old content doesn't persist in state.
@@ -238,54 +244,27 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // Record page view
   useEffect(() => {
     if (page?.slug) {
-      apiRequest(`/config/pages/${page.slug}/view`, { method: "POST" }).catch(
+      apiRequest(`/pages/${page.slug}/view`, { method: "POST" }).catch(
         () => {},
       );
     }
   }, [page?.slug]);
 
-  // Load all pages for page selector
+  // Load all pages for page selector and landing slug
   useEffect(() => {
     if (isAdmin && showToolbar) {
-      apiRequest<PageBuilderPage[]>("/config/pages/list")
-        .then((data) => setAllPages(data ?? []))
+      apiRequest<{ pages: PageBuilderPage[]; landing_page_slug: string }>(
+        "/pages/browse",
+      )
+        .then((data) => {
+          setAllPages(data?.pages ?? []);
+          setLandingPageSlug(data?.landing_page_slug ?? "");
+        })
         .catch(() => {});
     }
   }, [isAdmin, showToolbar]);
 
-  const handleSetLandingPage = async (selectedSlug: string) => {
-    try {
-      // Cancel queued saves so stale sections from the previous page
-      // aren't written over the incoming page's content.
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-      pendingSectionsRef.current = null;
-
-      await apiRequest("/config/pages/landing-page", {
-        method: "PUT",
-        body: JSON.stringify({ slug: selectedSlug }),
-      });
-      toast.success(
-        selectedSlug
-          ? `Landing page set to "${selectedSlug}"`
-          : "Landing page cleared",
-      );
-      setLandingDropdownOpen(false);
-
-      // Clear old sections so the new page starts clean.
-      setSections([]);
-      setSectionsSourced(false);
-
-      // Reload the page so the new selection is shown immediately.
-      if (!slug) {
-        await refresh();
-      }
-    } catch {
-      toast.error("Failed to set landing page");
-    }
-  };
+  // Remove old handleSetLandingPage, use handleSetHomepage from hook
 
   const handleLikePage = async () => {
     if (!page?.id || !isAuthenticated) return;
@@ -293,7 +272,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     setPageIsLiked(!wasLiked);
     setPageLikes((prev) => prev + (wasLiked ? -1 : 1));
     try {
-      await apiRequest(`/config/pages/${page.id}/like`, {
+      await apiRequest(`/pages/${page.id}/like`, {
         method: wasLiked ? "DELETE" : "POST",
       });
     } catch {
@@ -794,9 +773,17 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                       <button
                         key={p.id}
                         className="page-admin-dropdown-item"
-                        onClick={() => handleSetLandingPage(p.slug)}
+                        onClick={() => {
+                          handleSetHomepage(p);
+                          setLandingDropdownOpen(false);
+                        }}
+                        disabled={
+                          settingHomepageId === p.id ||
+                          p.slug === landingPageSlug
+                        }
                       >
                         {p.title || p.slug}
+                        {p.slug === landingPageSlug && " (Current)"}
                       </button>
                     ))}
                   </div>

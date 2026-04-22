@@ -74,17 +74,55 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Get("/allocations", h.listAllocations)
 			r.Put("/allocations/{userId}", h.upsertAllocation)
 			r.Delete("/allocations/{userId}", h.deleteAllocation)
+
+			// New: Set homepage directly from page
+			r.Post("/{id}/set-homepage", h.setPageAsHomepage)
 		})
 	})
+}
 
-	// Config-only endpoints (not user-facing) remain under /config
-	r.Route("/config/pages", func(r chi.Router) {
-		// Landing page config
-		r.Put("/landing-page", h.setLandingPage)
-		// Factory reset
-		r.Post("/factory-reset", h.factoryResetHomepage)
+// setPageAsHomepage allows an admin to set a page as the homepage (landing-slug) directly by page ID.
+func (h *Handler) setPageAsHomepage(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	id, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	p, err := h.svc.GetByID(id)
+	if err != nil || p.Slug == "" {
+		utils.WriteError(w, http.StatusNotFound, "page not found")
+		return
+	}
+	val, _ := json.Marshal(p.Slug)
+	if err := h.configSvc.UpsertConfig("landing_page_slug", string(val)); err != nil {
+		log.Printf("page.setPageAsHomepage: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "slug": p.Slug})
+
+	// Broadcast landing page change
+	userID, _ := utils.UserIDFromCtx(r)
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:   userID,
+		Activity: ievents.ActPageUpdated,
+		Resource: ievents.ResConfig,
+		IP:       ievents.ClientIP(r),
+		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": p.Slug},
+		Fn: func() {
+			if p != nil {
+				h.hub.BroadcastPage("landing_page_changed", p)
+			}
+			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": p.Slug})
+		},
 	})
 }
+
+// Config-only endpoints (not user-facing) remain under /config
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -145,7 +183,7 @@ func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
 
 // getLandingSlug returns just the configured landing page slug.
 // The frontend uses this to resolve the slug, then fetches the page by slug
-// directly — avoiding the single /config/pages/index CDN cache key.
+// directly — avoiding the single /pages/index CDN cache key.
 func (h *Handler) getLandingSlug(w http.ResponseWriter, r *http.Request) {
 	sc, err := h.configSvc.GetConfig("landing_page_slug")
 	if err != nil || sc.Value == "" || sc.Value == `""` {

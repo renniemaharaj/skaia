@@ -208,7 +208,7 @@ All under `/api/`. JWT-protected unless noted.
 
 ### Page / Landing Endpoints
 
-All under `/config/pages` (chi subroute).
+All under `/pages` (chi subroute).
 
 | Method | Path                   | Auth      | Purpose                            |
 | ------ | ---------------------- | --------- | ---------------------------------- |
@@ -223,7 +223,7 @@ All under `/config/pages` (chi subroute).
 | PUT    | /{id}                  | JWT+perm  | Update page content                |
 | DELETE | /{id}                  | JWT+perm  | Delete page                        |
 | POST   | /{id}/duplicate        | JWT+perm  | Duplicate page                     |
-| PUT    | /landing-page          | JWT+perm  | Set landing page slug              |
+| PUT    | /set-homepage          | JWT+perm  | Set landing page slug              |
 | POST   | /factory-reset         | JWT+perm  | Delete all pages + reset config    |
 | PUT    | /{id}/owner            | JWT+perm  | Set page owner                     |
 | DELETE | /{id}/owner            | JWT+perm  | Clear page owner                   |

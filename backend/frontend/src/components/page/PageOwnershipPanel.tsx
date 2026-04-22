@@ -38,7 +38,7 @@ export default function PageOwnershipPanel({
 
   const handleSetOwner = async (user: User) => {
     try {
-      await apiRequest(`/config/pages/${pageId}/owner`, {
+      await apiRequest(`/pages/${pageId}/owner`, {
         method: "PUT",
         body: JSON.stringify({ user_id: Number(user.id) }),
       });
@@ -54,7 +54,7 @@ export default function PageOwnershipPanel({
 
   const handleClearOwner = async () => {
     try {
-      await apiRequest(`/config/pages/${pageId}/owner`, { method: "DELETE" });
+      await apiRequest(`/pages/${pageId}/owner`, { method: "DELETE" });
       toast.success("Ownership removed");
       onUpdate();
     } catch {
@@ -64,7 +64,7 @@ export default function PageOwnershipPanel({
 
   const handleAddEditor = async (user: User) => {
     try {
-      await apiRequest(`/config/pages/${pageId}/editors`, {
+      await apiRequest(`/pages/${pageId}/editors`, {
         method: "POST",
         body: JSON.stringify({ user_id: Number(user.id) }),
       });
@@ -78,7 +78,7 @@ export default function PageOwnershipPanel({
 
   const handleRemoveEditor = async (userId: number) => {
     try {
-      await apiRequest(`/config/pages/${pageId}/editors/${userId}`, {
+      await apiRequest(`/pages/${pageId}/editors/${userId}`, {
         method: "DELETE",
       });
       toast.success("Editor removed");

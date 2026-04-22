@@ -32,7 +32,7 @@ The backend owns the page/block schema and integration definitions. The frontend
 # Current Skaia Baseline
 
 - `backend/models.Page` stores custom page content as raw JSON in `Content`, typically a JSON array of page section/block objects.
-- Backend page APIs are already under `/config/pages/*`; root landing page resolution is controlled by `/config/pages/landing-slug`.
+- Backend page APIs are already under `/pages/*`; root landing page resolution is controlled by `/pages/landing-slug`.
 - Frontend uses `PageBuilder`, `BlockRenderer`, and typed blocks in `backend/frontend/src/pages/page/blocks/*`.
 - Integration-focused block types already exist: `data_sources`, `derived_section`, and `custom_section`.
 - Data sources and custom sections are managed through existing admin APIs under `/config/datasources` and `/config/custom-sections`.
@@ -64,7 +64,7 @@ The backend owns the page/block schema and integration definitions. The frontend
 
 3. React Frontend (Renderer + Builder)
    - Use the existing `PageBuilder` flow and `BlockRenderer` mapping from `section_type` to block component.
-   - Hydrate from `/config/pages/{slug}` or `/config/pages/index` and preserve `mergeSections` memoization.
+   - Hydrate from `/pages/{slug}` or `/pages/index` and preserve `mergeSections` memoization.
    - Render only supported block types and keep section metadata in-sync with backend definitions.
    - Let builder edit `section_type`, `config`, and integration settings for datasource / custom section blocks.
 
@@ -114,12 +114,12 @@ Integration-specific primitives:
 
 Use existing Skaia endpoints and add registry metadata paths where needed:
 
-- GET `/config/pages/landing-slug`
-- GET `/config/pages/{slug}`
-- GET `/config/pages/list`
-- POST `/config/pages`
-- PUT `/config/pages/{id}`
-- POST `/config/pages/{id}/duplicate`
+- GET `/pages/landing-slug`
+- GET `/pages/{slug}`
+- GET `/pages/list`
+- POST `/pages`
+- PUT `/pages/{id}`
+- POST `/pages/{id}/duplicate`
 - GET `/config/datasources`
 - POST `/config/datasources`
 - GET `/config/custom-sections`
@@ -134,7 +134,7 @@ New registry metadata endpoints should be additive, not replace the current page
 # Frontend Responsibilities
 
 1. Page Content Hydration
-   - Fetch page JSON from `/config/pages/{slug}` or landing slug lookup.
+   - Fetch page JSON from `/pages/{slug}` or landing slug lookup.
    - Parse `Content` into typed sections and render with `BlockRenderer`.
 
 2. Section Mapping
@@ -144,7 +144,7 @@ New registry metadata endpoints should be additive, not replace the current page
 3. Builder Editing
    - Use the existing page builder toolbar and section editor flows.
    - Provide controls for datasource selection, custom section selection, block config, and section items.
-   - Persist edits back to `/config/pages/{id}`.
+   - Persist edits back to `/pages/{id}`.
 
 4. Integration Metadata
    - Fetch `/config/datasources` and `/config/custom-sections` for builder dropdowns.
@@ -193,7 +193,7 @@ This project will extend the existing builder with a new programmable section ed
 2. Backend returns canonical `Page.Content` JSON, enriched with ownership and engagement data.
 3. Frontend renders sections via `BlockRenderer` and section-specific component code.
 4. Builder edits section JSON and integrates datasource/custom-section references.
-5. Frontend submits updates to `/config/pages/{id}`.
+5. Frontend submits updates to `/pages/{id}`.
 6. Backend validates, persists, and optionally broadcasts the page update.
 
 ---

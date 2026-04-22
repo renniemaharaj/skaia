@@ -1,0 +1,30 @@
+# Feature: Custom Pages with Homepage Toggle
+
+## Goal
+
+Enable admins to set any custom page as the homepage (landing-slug) directly from the custom pages UI, via a toggle or selection control. This should be secure, intuitive, and update the landing page in real time for all users.
+
+## Steps
+
+1. Backend: Expose/update an endpoint to set the landing-slug (homepage) to a given custom page slug. Ensure only admins can perform this action.
+2. Frontend: Add a toggle or selection control in the custom pages admin UI to set/unset a page as the homepage.
+3. Frontend: Visually indicate which page is currently the homepage.
+4. Backend: Broadcast landing page changes via WebSocket to all connected clients for real-time update.
+5. Frontend: Listen for landing page change events and update UI accordingly.
+6. Update documentation and specs as needed.
+7. Add/extend tests for backend and frontend to cover this feature.
+
+## References
+
+- .specs/custom_pages_multiplayer_spec
+- .specs/route_resolution_spec
+- .specs/backend_spec
+- .specs/frontend_spec
+- .todo/pages_endpoint_refactor
+
+---
+
+# Traceability
+
+- This plan references the multiplayer custom pages spec, route resolution, and backend/frontend specs for implementation details and requirements.
+- Ensure .tip file is created and kept up to date with progress.

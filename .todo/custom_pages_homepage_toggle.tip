@@ -1,0 +1,17 @@
+<--/------->
+
+## custom_pages_homepage_toggle
+
+### Current Progress
+- **Phase 1: Backend endpoint for landing-slug** — ⬜ Not started
+- **Phase 2: Frontend toggle in custom pages UI** — ⬜ Not started
+- **Phase 3: Real-time update/broadcast** — ⬜ Not started
+- **Phase 4: Documentation and tests** — ⬜ Not started
+
+### Next Steps
+- [ ] Implement backend endpoint for setting landing-slug (admin only)
+- [ ] Add toggle/selector to custom pages admin UI
+- [ ] Broadcast landing page changes via WebSocket
+- [ ] Update docs/specs and add tests
+
+<--/------->

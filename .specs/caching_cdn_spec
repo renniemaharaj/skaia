@@ -49,19 +49,19 @@ are not cached at the edge. However:
 
 **CDN caches by URL**, not by response content. This means:
 
-- `GET /config/pages/index` is ONE cache key regardless of which page is the
+- `GET /pages/index` is ONE cache key regardless of which page is the
   landing page. If cached before `no-store` headers were deployed, Cloudflare
   may serve stale content until the cache entry expires or is purged.
 
-- `GET /config/pages/{slug}` has a UNIQUE cache key per page. Changing the
+- `GET /pages/{slug}` has a UNIQUE cache key per page. Changing the
   landing page to a different slug hits a different URL.
 
 ### CDN-Proof Pattern: Two-Step Slug Resolution
 
 The frontend resolves the landing page in two steps:
 
-1. `GET /config/pages/landing-slug` => `{ "slug": "my-page" }` (tiny, never cached)
-2. `GET /config/pages/my-page` => full page data (unique URL per page)
+1. `GET /pages/landing-slug` => `{ "slug": "my-page" }` (tiny, never cached)
+2. `GET /pages/my-page` => full page data (unique URL per page)
 
 This avoids the single-cache-key problem entirely.
 
@@ -77,7 +77,7 @@ WebSocket is not subject to CDN caching.
 ## Anti-Patterns
 
 1. **Returning different resources from the same URL.** A single URL must
-   always return the same type of resource. `/config/pages/index` violates
+   always return the same type of resource. `/pages/index` violates
    this by returning whichever page is currently configured as landing.
    The frontend works around this with the two-step pattern above.
 

@@ -83,7 +83,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     setComments,
     loadPage: async (offset) => {
       const response = await apiRequest<PageComment[]>(
-        `/config/pages/${pageSlug}/comments?limit=50&offset=${offset}`,
+        `/pages/${pageSlug}/comments?limit=50&offset=${offset}`,
       );
       return response ?? [];
     },
@@ -137,7 +137,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     setSubmitting(true);
     try {
       const created = await apiRequest<PageComment>(
-        `/config/pages/${pageId}/comments`,
+        `/pages/${pageId}/comments`,
         {
           method: "POST",
           body: JSON.stringify({ content: trimmed }),
@@ -176,7 +176,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     );
     setComments(optimistic);
     try {
-      await apiRequest(`/config/pages/comments/${comment.id}/like`, {
+      await apiRequest(`/pages/comments/${comment.id}/like`, {
         method,
       });
     } catch {
@@ -188,7 +188,7 @@ export default function PageComments({ pageId, pageSlug }: Props) {
     const previousComments = comments;
     setComments((prev) => prev.filter((c) => c.id !== commentId));
     try {
-      await apiRequest(`/config/pages/comments/${commentId}`, {
+      await apiRequest(`/pages/comments/${commentId}`, {
         method: "DELETE",
       });
     } catch {

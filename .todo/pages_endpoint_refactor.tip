@@ -4,12 +4,12 @@ status: completed
 
 ## Summary
 
-- All custom page-related API endpoints have been moved from /config/pages/* to /pages/* for RESTful clarity.
+- All custom page-related API endpoints have been moved from /pages/* to /pages/* for RESTful clarity.
 - Backend handler and router updated; config-only endpoints remain under /config.
 - All frontend API calls and route references updated to /pages/*.
 - Documentation in backend/README.md updated to reflect new endpoint.
 - Backend tests pass; frontend build and integration confirmed (manual test recommended).
-- No hardcoded /config/pages references remain in backend service, repository, or interface layers.
+- No hardcoded /pages references remain in backend service, repository, or interface layers.
 - WebSocket events and permission checks unaffected.
 
 ## Next Steps

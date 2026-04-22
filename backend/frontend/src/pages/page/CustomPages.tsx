@@ -20,11 +20,13 @@ import {
   Copy,
   Pencil,
   BarChart3,
+  Home,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
+import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderPage, PageUser } from "../../hooks/usePageData";
 import type { PageSection } from "./types";
@@ -76,6 +78,11 @@ export default function CustomPages() {
   const [duplicating, setDuplicating] = useState(false);
   const [analyticsPage, setAnalyticsPage] = useState<PageBuilderPage | null>(
     null,
+  );
+  // Homepage setting logic (shared hook)
+  const { handleSetHomepage, settingHomepageId } = useSetHomepage(
+    landingPageSlug,
+    setLandingPageSlug,
   );
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     return (
@@ -480,6 +487,34 @@ export default function CustomPages() {
               {page.slug === landingPageSlug && (
                 <span className="cp-card__badge">Landing Page</span>
               )}
+              {page.can_delete &&
+                currentUser?.id != undefined &&
+                [
+                  page.owner?.id,
+                  ...(page.editors?.map((e) => e.id) || []),
+                ].includes(parseInt(currentUser?.id as string)) && (
+                  <button
+                    type="button"
+                    className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+                    title={
+                      page.slug === landingPageSlug
+                        ? "Current homepage"
+                        : "Set as homepage"
+                    }
+                    disabled={
+                      page.slug === landingPageSlug ||
+                      settingHomepageId === page.id
+                    }
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSetHomepage(page);
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Home size={14} />
+                  </button>
+                )}
               {page.visibility === "private" && (
                 <span className="cp-card__badge cp-card__badge--private">
                   <EyeOff size={10} /> Private
@@ -517,6 +552,34 @@ export default function CustomPages() {
                     Landing Page
                   </span>
                 )}
+                {page.can_delete &&
+                  currentUser?.id != undefined &&
+                  ![
+                    page.owner?.id,
+                    ...(page.editors?.map((e) => e.id) || []),
+                  ].includes(parseInt(currentUser?.id as string)) && (
+                    <button
+                      type="button"
+                      className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+                      title={
+                        page.slug === landingPageSlug
+                          ? "Current homepage"
+                          : "Set as homepage"
+                      }
+                      disabled={
+                        page.slug === landingPageSlug ||
+                        settingHomepageId === page.id
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSetHomepage(page);
+                      }}
+                      style={{ marginLeft: 8 }}
+                    >
+                      <Home size={14} />
+                    </button>
+                  )}
                 {page.visibility === "private" && (
                   <span className="cp-card__badge cp-card__badge--inline cp-card__badge--private">
                     <EyeOff size={10} /> Private

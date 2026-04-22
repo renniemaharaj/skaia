@@ -6,11 +6,11 @@
 
 ## Goal
 
-Move all custom page-related API endpoints from /config/pages/_ to top-level /pages/_ for clarity and RESTful convention. Update backend handler, routes, and document migration steps. Ensure all frontend and integration points are updated accordingly.
+Move all custom page-related API endpoints from /pages/_ to top-level /pages/_ for clarity and RESTful convention. Update backend handler, routes, and document migration steps. Ensure all frontend and integration points are updated accordingly.
 
 ## Steps
 
-1. Update backend/internal/page/handler.go to mount all page endpoints under /pages instead of /config/pages.
+1. Update backend/internal/page/handler.go to mount all page endpoints under /pages instead of /pages.
 2. Update any references in backend/internal/page/service.go, repository.go, and interface.go if route paths are hardcoded or referenced.
 3. Update frontend API calls and route references (src/hooks/usePageData.ts, src/pages/custom-pages/CustomPages.tsx, etc.) to use /pages/\*.
 4. Update documentation in backend/README.md and .specs/landing_page_spec if route paths are mentioned.
