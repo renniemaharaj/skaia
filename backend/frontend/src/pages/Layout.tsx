@@ -4,6 +4,8 @@ import { Footer } from "./page/layout/Footer";
 import { Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
+import { layoutModeAtom } from "../atoms/layoutMode";
+import { useAtom } from "jotai";
 import { useNavigate } from "react-router-dom";
 import {
   accessTokenAtom,
@@ -56,6 +58,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
     return false;
   });
+  const [layoutMode, setLayoutMode] = useAtom(layoutModeAtom);
 
   // Sync client clock against the server once so relative-time calculations
   // ("5m ago") are anchored to the authoritative UTC backend clock rather than
@@ -228,7 +231,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="layout">
+    <div
+      className={`layout${layoutMode === "application" ? " layout--application" : ""}`}
+    >
       {guestSandboxMode && (
         <div className="layout-guest-sandbox-banner">
           <Info size={16} className="layout-guest-sandbox-icon" />
@@ -242,9 +247,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         cartCount={cartCount}
         isDarkMode={isDarkMode}
         onDarkModeToggle={setIsDarkMode}
+        layoutMode={layoutMode as "application" | "web"}
+        onToggleLayoutMode={() =>
+          setLayoutMode(layoutMode === "application" ? "web" : "application")
+        }
       />
       <main className="layout-main">{children}</main>
-      <Footer />
+      {layoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? <PresencePanel /> : null}
       <CursorOverlay />
       <Toaster position="bottom-right" richColors closeButton />

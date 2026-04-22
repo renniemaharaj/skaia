@@ -44,12 +44,16 @@ interface HeaderProps {
   cartCount: number;
   isDarkMode: boolean;
   onDarkModeToggle: (isDark: boolean) => void;
+  layoutMode: "application" | "web";
+  onToggleLayoutMode: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   cartCount,
   isDarkMode,
   // onDarkModeToggle,
+  layoutMode,
+  onToggleLayoutMode,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -232,6 +236,8 @@ export const Header: React.FC<HeaderProps> = ({
               allItems={navItems}
               isActive={isActive}
               setMenuOpen={setMenuOpen}
+              layoutMode={layoutMode}
+              onToggleLayoutMode={onToggleLayoutMode}
             />
           </div>
 
@@ -292,10 +298,14 @@ function HeaderNavLinks({
   allItems,
   isActive,
   setMenuOpen,
+  layoutMode,
+  onToggleLayoutMode,
 }: {
   allItems: { to: string; label: string; isNew?: boolean }[];
   isActive: (path: string) => string;
   setMenuOpen: (v: boolean) => void;
+  layoutMode: "application" | "web";
+  onToggleLayoutMode: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -327,35 +337,47 @@ function HeaderNavLinks({
           {item.isNew && <span className="header-new-badge">New</span>}
         </Link>
       ))}
-      {overflowItems.length > 0 && (
-        <div className="header-more-wrap" ref={moreRef}>
-          <button
-            className="icon-btn icon-btn--sm header-more-btn"
-            title="More"
-            onClick={() => setMoreOpen((v) => !v)}
-          >
-            <MoreHorizontal size={18} />
-          </button>
-          {moreOpen && (
-            <div className="header-more-dropdown">
-              {overflowItems.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
-                  onClick={() => {
-                    setMoreOpen(false);
-                    setMenuOpen(false);
-                  }}
-                >
-                  {item.label}
-                  {item.isNew && <span className="header-new-badge">New</span>}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <div className="header-more-wrap" ref={moreRef}>
+        <button
+          className="icon-btn icon-btn--sm header-more-btn"
+          title="More"
+          onClick={() => setMoreOpen((v) => !v)}
+        >
+          <MoreHorizontal size={18} />
+        </button>
+        {moreOpen && (
+          <div className="header-more-dropdown">
+            {overflowItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
+                onClick={() => {
+                  setMoreOpen(false);
+                  setMenuOpen(false);
+                }}
+              >
+                {item.label}
+                {item.isNew && <span className="header-new-badge">New</span>}
+              </Link>
+            ))}
+            {/* Layout mode toggle always present in More menu */}
+            <button
+              className="header-more-item"
+              onClick={() => {
+                onToggleLayoutMode();
+                setMoreOpen(false);
+                setMenuOpen(false);
+              }}
+              style={{ width: "100%", textAlign: "left" }}
+            >
+              {layoutMode === "application"
+                ? "Exit Application Mode"
+                : "Enter Application Mode"}
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 }

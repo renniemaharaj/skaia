@@ -1,0 +1,20 @@
+# .tip for application_mode_toggle
+
+## Status
+
+- not-started
+
+## Progress
+
+- [ ] Plan created and reviewed
+- [ ] Layout updated for both modes
+- [ ] Toggle added to header's more menu
+- [ ] State management implemented
+- [ ] Responsive layout verified
+- [ ] Tests added and passing
+- [ ] UI/UX audited
+- [ ] Documentation and traceability updated
+
+## Next Steps
+
+- Begin implementation per plan

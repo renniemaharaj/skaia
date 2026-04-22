@@ -1,0 +1,31 @@
+# Feature: Application Mode / Web Page Mode Toggle
+
+## Goal
+
+Add a toggle in the header's "more" menu to switch between "Application Mode" (header + body full height, footer hidden) and "Web Page Mode" (normal layout). This enables professional, compact app presentation on all routes, responsive to user preference.
+
+## Steps
+
+1. Update layout to support both modes:
+   - Application Mode: header and body fill viewport, footer hidden
+   - Web Page Mode: normal layout
+2. Add toggle to header's "more" menu
+3. Implement state management for mode (context/global)
+4. Ensure layout is fully responsive
+5. Add tests for layout and toggle
+6. Audit UI/UX and code quality
+7. Update documentation and traceability
+
+## References
+
+- .routines/worker
+- .routines/audit_frontend
+- .specs/
+- .todo/ui_component_refactor_plan
+
+---
+
+# Traceability
+
+- This plan references audit routines and specs for implementation details and requirements.
+- Ensure .tip file is created and kept up to date with progress.
