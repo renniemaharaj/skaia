@@ -1,11 +1,12 @@
 -- Seed data: roles, permissions, admin account, default forum categories.
 
--- Roles
+
 INSERT INTO roles (id, name, description, power_level) VALUES
     (1, 'admin',     'Administrator with full access',                       100),
     (2, 'member',    'Regular member',                                        10),
     (3, 'banned',    'Banned user',                                            0),
-    (4, 'moderator', 'Can moderate forum content and manage users',           50)
+    (4, 'moderator', 'Can moderate forum content and manage users',           50),
+    (100, 'superuser', 'Superuser with unrestricted power',                  255)
 ON CONFLICT (id) DO UPDATE
     SET power_level = EXCLUDED.power_level;
 
@@ -50,13 +51,13 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
     (4, 9)    -- moderator: user.manage-others
 ON CONFLICT DO NOTHING;
 
--- admin: every permission
+
+-- superuser: every permission
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT (SELECT id FROM roles WHERE name = 'admin'), p.id
+SELECT (SELECT id FROM roles WHERE name = 'superuser'), p.id
 FROM   permissions p
 ON CONFLICT DO NOTHING;
 
--- Default admin account
 INSERT INTO users (id, username, email, password_hash, display_name, bio,
                    avatar_url, banner_url, photo_url,
                    is_suspended, created_at, updated_at)
@@ -68,9 +69,10 @@ WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 SELECT setval(pg_get_serial_sequence('users', 'id'),
               (SELECT COALESCE(MAX(id), 0) + 1 FROM users), false);
 
+-- Assign admin to superuser role
 INSERT INTO user_roles (user_id, role_id)
-SELECT 1, 1
-WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = 1);
+SELECT 1, 100
+WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = 100);
 
 -- Default forum categories
 INSERT INTO forum_categories (id, name, description, display_order) VALUES

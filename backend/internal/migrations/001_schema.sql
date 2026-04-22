@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id    ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
 
--- Roles and permissions
 CREATE TABLE IF NOT EXISTS roles (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(255) NOT NULL UNIQUE,
@@ -56,6 +55,11 @@ CREATE TABLE IF NOT EXISTS roles (
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS power_level INT NOT NULL DEFAULT 0;
+
+-- Insert superuser role for fresh DBs
+INSERT INTO roles (id, name, description, power_level)
+VALUES (100, 'superuser', 'Superuser with unrestricted power', 255)
+ON CONFLICT (id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS permissions (
     id          BIGSERIAL PRIMARY KEY,
