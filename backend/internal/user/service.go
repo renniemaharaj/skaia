@@ -16,6 +16,35 @@ import (
 
 const securePassChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 
+// RemoveAllRoles removes all roles from a user.
+func (s *Service) RemoveAllRoles(userID int64) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+	for _, role := range user.Roles {
+		if err := s.repo.RemoveRoleByName(userID, role); err != nil {
+			return err
+		}
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// GetRoleByIDName returns a role by its name (for handler logic).
+func (s *Service) GetRoleByIDName(name string) (*models.Role, error) {
+	roles, err := s.repo.GetAllRoles()
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range roles {
+		if r.Name == name {
+			return r, nil
+		}
+	}
+	return nil, fmt.Errorf("role not found")
+}
+
 func generateSecurePassword(length int) string {
 	b := make([]byte, length)
 	for i := range b {

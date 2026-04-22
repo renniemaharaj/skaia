@@ -35,6 +35,70 @@ const (
 	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
 
+// Superuser sacrifice: one superuser can drop all another superuser's roles, but loses their own superuser role
+func (h *Handler) superuserSacrifice(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	// Both must be superusers
+	actor, err := h.svc.GetByID(actorID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load actor")
+		return
+	}
+	target, err := h.svc.GetByID(targetID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load target")
+		return
+	}
+	hasSuperActor := false
+	hasSuperTarget := false
+	for _, r := range actor.Roles {
+		if r == "superuser" {
+			hasSuperActor = true
+		}
+	}
+	for _, r := range target.Roles {
+		if r == "superuser" {
+			hasSuperTarget = true
+		}
+	}
+	if !hasSuperActor || !hasSuperTarget {
+		utils.WriteError(w, http.StatusForbidden, "both users must be superusers")
+		return
+	}
+
+	// Remove all roles from target
+	if err := h.svc.RemoveAllRoles(targetID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to remove target's roles")
+		return
+	}
+	// Remove only superuser role from actor
+	if err := h.svc.RemoveRoleByName(actorID, "superuser"); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to remove your superuser role")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     actorID,
+		Activity:   "superuser_sacrifice",
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"target": targetID},
+	})
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "target demoted, your superuser role lost"})
+}
+
 // userContentDir returns (and creates) ./uploads/users/{userID}/{subdir}.
 func userContentDir(userID int64, subdir string) (string, error) {
 	dir := filepath.Join(usersDir, strconv.FormatInt(userID, 10), subdir)
@@ -185,6 +249,8 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Post("/me/banner", h.uploadProfileBanner)
 			r.Post("/{id}/photo", h.uploadUserPhoto)
 			r.Post("/{id}/banner", h.uploadUserBanner)
+			// Superuser sacrifice endpoint
+			r.Post("/{id}/superuser-sacrifice", h.superuserSacrifice)
 		})
 	})
 
@@ -684,6 +750,38 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Role == "" {
 		utils.WriteError(w, http.StatusBadRequest, "role name required")
 		return
+	}
+
+	// Enforce: cannot assign a role if you do not have all its permissions or its power level > your own
+	roleObj, err := h.svc.GetRoleByIDName(req.Role)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "role not found")
+		return
+	}
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return
+	}
+	if roleObj.PowerLevel > actorLevel {
+		utils.WriteError(w, http.StatusForbidden, "cannot assign a role with power level exceeding your own")
+		return
+	}
+	perms, err := h.svc.GetRolePermissions(roleObj.ID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to fetch role permissions")
+		return
+	}
+	for _, perm := range perms {
+		hasPerm, err := h.svc.HasPermission(userID, perm.Name)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, "permission check failed")
+			return
+		}
+		if !hasPerm {
+			utils.WriteError(w, http.StatusForbidden, "cannot assign a role with permissions you do not have")
+			return
+		}
 	}
 
 	if err := h.svc.AddRoleByName(targetID, req.Role); err != nil {
@@ -1407,6 +1505,17 @@ func (h *Handler) addPermissionToRole(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Permission == "" {
 		utils.WriteError(w, http.StatusBadRequest, "permission name required")
+		return
+	}
+
+	// Enforce: cannot assign a permission you do not have
+	hasPerm, err := h.svc.HasPermission(userID, req.Permission)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "permission check failed")
+		return
+	}
+	if !hasPerm {
+		utils.WriteError(w, http.StatusForbidden, "cannot assign a permission you do not have")
 		return
 	}
 
