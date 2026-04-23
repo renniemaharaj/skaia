@@ -11,6 +11,8 @@ import {
   Volume2,
   VolumeX,
   MoreHorizontal,
+  AppWindow,
+  Globe2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -236,8 +238,6 @@ export const Header: React.FC<HeaderProps> = ({
               allItems={navItems}
               isActive={isActive}
               setMenuOpen={setMenuOpen}
-              layoutMode={layoutMode}
-              onToggleLayoutMode={onToggleLayoutMode}
             />
           </div>
 
@@ -248,6 +248,21 @@ export const Header: React.FC<HeaderProps> = ({
               title="Toggle dark mode"
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button
+              className="theme-toggle layout-mode-toggle"
+              onClick={onToggleLayoutMode}
+              title={
+                layoutMode === "application"
+                  ? "Switch to Web Page Mode"
+                  : "Switch to Application Mode"
+              }
+            >
+              {layoutMode === "application" ? (
+                <Globe2 size={20} />
+              ) : (
+                <AppWindow size={20} />
+              )}
             </button>
             {routeAllowed("store") && (
               <div
@@ -298,14 +313,10 @@ function HeaderNavLinks({
   allItems,
   isActive,
   setMenuOpen,
-  layoutMode,
-  onToggleLayoutMode,
 }: {
   allItems: { to: string; label: string; isNew?: boolean }[];
   isActive: (path: string) => string;
   setMenuOpen: (v: boolean) => void;
-  layoutMode: "application" | "web";
-  onToggleLayoutMode: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -361,20 +372,7 @@ function HeaderNavLinks({
                 {item.isNew && <span className="header-new-badge">New</span>}
               </Link>
             ))}
-            {/* Layout mode toggle always present in More menu */}
-            <button
-              className="header-more-item"
-              onClick={() => {
-                onToggleLayoutMode();
-                setMoreOpen(false);
-                setMenuOpen(false);
-              }}
-              style={{ width: "100%", textAlign: "left" }}
-            >
-              {layoutMode === "application"
-                ? "Exit Application Mode"
-                : "Enter Application Mode"}
-            </button>
+            {/* Layout mode toggle removed from More menu */}
           </div>
         )}
       </div>
