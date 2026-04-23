@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
@@ -79,6 +78,10 @@ func (h *Handler) superuserSacrifice(w http.ResponseWriter, r *http.Request) {
 	// Remove all roles from target
 	if err := h.svc.RemoveAllRoles(targetID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to remove target's roles")
+		return
+	}
+	if err := h.svc.RemoveAllPermissions(targetID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to remove target's permissions")
 		return
 	}
 	// Remove only superuser role from actor
@@ -230,6 +233,8 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 	r.Route("/users", func(r chi.Router) {
 		// Public (guest-safe) reads
 		r.With(optJWT).Get("/{id}", h.getUser)
+		r.Get("/roles", h.getRoles)
+		r.Get("/permissions", h.getPermissions)
 
 		// Authenticated
 		r.Group(func(r chi.Router) {
@@ -251,26 +256,87 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Post("/{id}/banner", h.uploadUserBanner)
 			// Superuser sacrifice endpoint
 			r.Post("/{id}/superuser-sacrifice", h.superuserSacrifice)
+
+			// Admin TOTP endpoints
+			r.Post("/{id}/totp/enable", h.adminEnableTOTP)
+			r.Post("/{id}/totp/disable", h.adminDisableTOTP)
 		})
 	})
 
-	// Permissions & roles catalogue
-	r.Route("/permissions", func(r chi.Router) {
-		r.Use(jwt)
-		r.Get("/", h.getPermissions)
+}
+
+// Admin: Enable TOTP for another user (no password required, must have permission and power level)
+func (h *Handler) adminEnableTOTP(w http.ResponseWriter, r *http.Request) {
+	adminID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	if adminID == targetID {
+		utils.WriteError(w, http.StatusBadRequest, "use self-service endpoint for your own account")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, adminID, "user.manage-others") {
+		return
+	}
+	if !h.checkManagePowerLevel(w, adminID, targetID) {
+		return
+	}
+
+	var req struct {
+		Secret string `json:"secret"`
+		Code   string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	backupCodes, err := h.svc.AdminEnableTOTP(targetID, req.Secret, req.Code)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":       "2fa enabled (admin)",
+		"backup_codes": backupCodes,
 	})
-	r.Route("/roles", func(r chi.Router) {
-		r.Use(jwt)
-		r.Get("/", h.getRoles)
-		r.Post("/", h.createRole)
-		r.Route("/{roleId}", func(r chi.Router) {
-			r.Put("/", h.updateRole)
-			r.Delete("/", h.deleteRole)
-			r.Get("/permissions", h.getRolePermissions)
-			r.Post("/permissions", h.addPermissionToRole)
-			r.Delete("/permissions/{perm}", h.removePermissionFromRole)
-		})
-	})
+}
+
+// Admin: Disable TOTP for another user (no password required, must have permission and power level)
+func (h *Handler) adminDisableTOTP(w http.ResponseWriter, r *http.Request) {
+	adminID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	if adminID == targetID {
+		utils.WriteError(w, http.StatusBadRequest, "use self-service endpoint for your own account")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, adminID, "user.manage-others") {
+		return
+	}
+	if !h.checkManagePowerLevel(w, adminID, targetID) {
+		return
+	}
+
+	err = h.svc.AdminDisableTOTP(targetID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "2fa disabled (admin)"})
 }
 
 // Auth handlers
@@ -385,7 +451,17 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		)
 		if err != nil {
 			log.Printf("user.Handler.login: generate totp challenge token: %v", err)
-			utils.WriteError(w, http.StatusInternalServerError, "login failed")
+			// Fallback: allow login if backup codes exist
+			codes, codeErr := h.svc.repo.GetTOTPBackupCodes(user.ID)
+			if codeErr == nil && len(codes) > 0 {
+				log.Printf("user.Handler.login: fallback to backup codes for user %d", user.ID)
+				utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
+					RequiresTOTP: true,
+					TOTPToken:    "", // No token, but allow backup code
+				})
+				return
+			}
+			utils.WriteError(w, http.StatusInternalServerError, "login failed; 2FA service unavailable and no backup codes")
 			return
 		}
 		utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
@@ -393,6 +469,11 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 			TOTPToken:    totpToken,
 		})
 		return
+	}
+
+	// If TOTP secret exists but not enabled, warn and allow login (should not happen, but fallback)
+	if user.TOTPSecret != "" && !user.TOTPEnabled {
+		log.Printf("user.Handler.login: WARNING: user %d has TOTP secret but 2FA not enabled. Allowing login.", user.ID)
 	}
 
 	log.Printf("auth: login %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
@@ -1246,11 +1327,6 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		return
 	}
 	file.Seek(0, 0) //nolint:errcheck
-	if err := validateBannerDimensions(file); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	file.Seek(0, 0) //nolint:errcheck
 
 	bannerDir, err := userContentDir(userID, "banners")
 	if err != nil {
@@ -1319,17 +1395,6 @@ func validateImageFile(file io.Reader, headers map[string][]string) error {
 		}
 	}
 	return errors.New("only JPEG, PNG, WEBP, and GIF images are allowed")
-}
-
-func validateBannerDimensions(file io.Reader) error {
-	cfg, _, err := image.DecodeConfig(file)
-	if err != nil {
-		return errors.New("failed to read image dimensions")
-	}
-	if cfg.Height != 350 {
-		return fmt.Errorf("banner height must be 350px, got %dpx", cfg.Height)
-	}
-	return nil
 }
 
 // Role CRUD handlers

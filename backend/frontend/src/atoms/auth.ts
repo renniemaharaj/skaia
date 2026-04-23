@@ -31,19 +31,37 @@ export interface AuthState {
 }
 
 // Helper: Create an atom with custom localStorage storage (no JSON serialization)
+// In-memory fallback for test environments
+const memoryStore: Record<string, string> = {};
 function customStorageAtom<T extends string | null>(
   key: string,
   initialValue: T,
 ) {
-  const baseAtom = atom<T>((localStorage.getItem(key) as T) || initialValue);
+  const hasLocalStorage = typeof localStorage !== "undefined" && typeof localStorage.getItem === "function";
+  const getValue = () => {
+    if (hasLocalStorage) {
+      return (localStorage.getItem(key) as T) || initialValue;
+    } else {
+      return (memoryStore[key] as T) || initialValue;
+    }
+  };
+  const baseAtom = atom<T>(getValue());
 
   return atom(
     (get) => get(baseAtom),
     (_get, set, newValue: T) => {
-      if (newValue === null) {
-        localStorage.removeItem(key);
+      if (hasLocalStorage) {
+        if (newValue === null) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, newValue as string);
+        }
       } else {
-        localStorage.setItem(key, newValue as string);
+        if (newValue === null) {
+          delete memoryStore[key];
+        } else {
+          memoryStore[key] = newValue as string;
+        }
       }
       set(baseAtom, newValue);
     },

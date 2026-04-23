@@ -1,0 +1,23 @@
+# 2FA: Login Flow, Backup Codes, Admin Controls
+
+## Tasks
+
+1. **Fix 2FA login flow bug:**
+   - Ensure backend does not prompt for 2FA if not enabled.
+   - If 2FA is required but not enabled, fallback to backup code or allow login with warning.
+   - Make `/totp/enable` atomic and robust to failures.
+   - Add error handling for 2FA API failures.
+2. **Add download button for backup codes:**
+   - In the frontend, add a download icon/button to export backup codes as `.txt`.
+3. **Show 2FA management for power users:**
+   - Display 2FA cards for users with sufficient power level.
+   - Allow privileged users to enable/disable 2FA, generate backup codes, or set up email verification for others.
+4. **Testing:**
+   - Add/expand tests for all 2FA flows and admin override.
+5. **Documentation:**
+   - Reference this plan in `.tip` and update as progress is made.
+
+## References
+
+- See `.routines/worker`, `.routines/correctness`, `.routines/audit_backend`, `.routines/audit_frontend`, `.specs_specialist` for standards.
+- Link to this plan in all related PRs/commits.

@@ -33,7 +33,7 @@ const UserPermissionManager: React.FC = () => {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const data = await apiRequest<Permission[]>("/permissions", {
+        const data = await apiRequest<Permission[]>("/users/permissions", {
           method: "GET",
         });
         if (data && Array.isArray(data)) {

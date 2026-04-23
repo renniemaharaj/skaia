@@ -54,7 +54,7 @@ export function useGrengoShortcut() {
   // Check armed status on mount.
   useEffect(() => {
     let cancelled = false;
-    apiRequest<{ armed: boolean }>("/api/armed-status")
+    apiRequest<{ armed: boolean }>("/armed-status")
       .then((data) => {
         if (cancelled) return;
         if (data.armed) {
@@ -76,7 +76,7 @@ export function useGrengoShortcut() {
     setError("");
     try {
       const data = await apiRequest<{ session_id: string; expires_at: string }>(
-        "/api/grengo/session",
+        "/grengo/session",
         {
           method: "POST",
           body: JSON.stringify({ p1, p2 }),

@@ -186,15 +186,15 @@ func (h *Handler) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "missing claims")
 		return
 	}
-	isAdmin := false
+	isPrivileged := false
 	for _, role := range claims.Roles {
-		if role == "admin" {
-			isAdmin = true
+		if role == "admin" || role == "superuser" {
+			isPrivileged = true
 			break
 		}
 	}
-	if !isAdmin {
-		utils.WriteError(w, http.StatusForbidden, "admin role required")
+	if !isPrivileged {
+		utils.WriteError(w, http.StatusForbidden, "admin or superuser role required")
 		return
 	}
 

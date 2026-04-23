@@ -1,8 +1,7 @@
+import "./localStorage.mock";
 import "@testing-library/jest-dom";
 import { expect, afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
-
-// Setup localStorage mock
 const localStorageMock: Storage = {
   getItem: vi.fn((key) => {
     return (localStorageMock as any)._store[key] || null;

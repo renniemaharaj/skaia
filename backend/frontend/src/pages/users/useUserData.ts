@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import type { ProfileUser, Permission, Role } from "./types";
+import { toast } from "sonner";
 
 export function formatDate(s: string): string {
   try {
@@ -95,10 +96,10 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
     if (!canManage) return;
     const fetchCatalogues = async () => {
       const [perms, roles] = await Promise.all([
-        apiRequest<Permission[]>("/permissions").catch(
+        apiRequest<Permission[]>("/users/permissions").catch(
           () => [] as Permission[],
         ),
-        apiRequest<Role[]>("/roles").catch(() => [] as Role[]),
+        apiRequest<Role[]>("/users/roles").catch(() => [] as Role[]),
       ]);
       setAllPermissions(perms ?? []);
       setAllRoles(roles ?? []);
@@ -142,6 +143,8 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
             }
           : u,
       );
+
+      toast.error(`Failed to ${hasIt ? "remove" : "add"} permission`);
     } finally {
       setPermTogglingSet((s) => {
         const ns = new Set(s);
@@ -187,6 +190,10 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
             }
           : u,
       );
+
+      toast.error(
+        `Failed to ${hasIt ? "remove" : "add"} role. Make sure you have sufficient permissions and power level to manage this role.`,
+      );
     } finally {
       setRoleTogglingSet((s) => {
         const ns = new Set(s);
@@ -210,7 +217,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
       setSuspendDialogOpen(false);
       setSuspendReason("");
     } catch {
-      // noop
+      toast.error("Failed to suspend user");
     } finally {
       setSuspendLoading(false);
     }
@@ -225,7 +232,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
         u ? { ...u, is_suspended: false, suspended_reason: undefined } : u,
       );
     } catch {
-      // noop
+      toast.error("Failed to unsuspend user");
     } finally {
       setSuspendLoading(false);
     }

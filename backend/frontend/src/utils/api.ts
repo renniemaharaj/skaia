@@ -1,7 +1,3 @@
-/**
- * API service for centralized HTTP requests with authentication
- */
-
 import { getDefaultStore } from "jotai";
 import { toast } from "sonner";
 import { type User } from "../atoms/auth";
@@ -27,6 +23,41 @@ export interface AuthResponse {
   requires_totp?: boolean;
   totp_token?: string;
 }
+
+// ── Admin TOTP (2FA) Management ─────────────────────────────────────────────
+
+export interface AdminTOTPEnableResponse {
+  status: string;
+  backup_codes: string[];
+}
+
+/**
+ * Admin: Enable TOTP for another user
+ */
+export async function adminEnableTOTP(
+  userId: string,
+  secret: string,
+  code: string,
+): Promise<AdminTOTPEnableResponse> {
+  return apiRequest(`/users/${userId}/totp/enable`, {
+    method: "POST",
+    body: JSON.stringify({ secret, code }),
+  });
+}
+
+/**
+ * Admin: Disable TOTP for another user
+ */
+export async function adminDisableTOTP(
+  userId: string,
+): Promise<{ status: string }> {
+  return apiRequest(`/users/${userId}/totp/disable`, {
+    method: "POST",
+  });
+}
+/**
+ * API service for centralized HTTP requests with authentication
+ */
 
 /**
  * Get authorization headers with token

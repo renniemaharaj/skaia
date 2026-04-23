@@ -4,7 +4,9 @@ import type { Branding, SEOConfig, FooterConfig } from "../pages/page/types";
 export const apiBaseUrlAtom = atom("/api");
 
 export const wsBaseUrlAtom = atom(
-  `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`,
+  typeof window !== "undefined"
+    ? `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
+    : "ws://localhost/ws"
 );
 
 export type FeatureMap = Record<string, boolean>;

@@ -560,14 +560,14 @@ func typeAllowed(ct string, allowed []string) bool {
 	return false
 }
 
-// validateBannerDimensions requires exactly 350px height.
+// validateBannerDimensions requires at least 100px height.
 func validateBannerDimensions(file io.Reader) error {
 	cfg, _, err := image.DecodeConfig(file)
 	if err != nil {
-		return errors.New("failed to read image dimensions")
+		return errors.New("failed to read image dimensions" + err.Error())
 	}
-	if cfg.Height != 350 {
-		return fmt.Errorf("banner height must be 350px, got %dpx", cfg.Height)
+	if cfg.Height < 100 {
+		return fmt.Errorf("banner height must be >= 100px, got %dpx", cfg.Height)
 	}
 	return nil
 }

@@ -170,11 +170,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onResetPassword={handleResetPassword}
       />
 
-      {isOwnProfile && (
+      {(isOwnProfile || canManage) && (
         <SecuritySettings
           emailVerified={user.email_verified ?? false}
           totpEnabled={user.totp_enabled ?? false}
           onUpdate={() => setUser((u) => (u ? { ...u } : u))}
+          canManage={canManage && !isOwnProfile}
+          managedUserId={canManage && !isOwnProfile ? user.id : undefined}
+          managedUsername={
+            canManage && !isOwnProfile ? user.username : undefined
+          }
         />
       )}
 

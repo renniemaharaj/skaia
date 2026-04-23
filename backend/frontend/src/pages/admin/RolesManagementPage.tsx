@@ -39,8 +39,8 @@ export default function RolesManagementPage() {
       setLoading(true);
       try {
         const [fetchedRoles, fetchedPerms] = await Promise.all([
-          apiRequest<Role[]>("/roles"),
-          apiRequest<Permission[]>("/permissions"),
+          apiRequest<Role[]>("/users/roles"),
+          apiRequest<Permission[]>("/users/permissions"),
         ]);
         setRoles(
           (fetchedRoles ?? []).map((r) => ({

@@ -1,11 +1,22 @@
+import { useState } from "react";
+import { apiRequest } from "../../utils/api";
+import { toast } from "sonner";
+import type { Permission, ProfileUser, Role } from "./types";
 
 function SacrificeButton({ targetUserId }: { targetUserId: string | number }) {
   const [loading, setLoading] = useState(false);
   const handleSacrifice = async () => {
-    if (!window.confirm("Are you sure? This will remove ALL roles from the target, and you will lose your own superuser role. This cannot be undone.")) return;
+    if (
+      !window.confirm(
+        "Are you sure? This will remove ALL roles from the target, and you will lose your own superuser role. This cannot be undone.",
+      )
+    )
+      return;
     setLoading(true);
     try {
-      await apiRequest(`/users/${targetUserId}/superuser-sacrifice`, { method: "POST" });
+      await apiRequest(`/users/${targetUserId}/superuser-sacrifice`, {
+        method: "POST",
+      });
       toast.success("Target demoted. You lost your superuser role.");
       window.location.reload();
     } catch (e) {
@@ -15,19 +26,16 @@ function SacrificeButton({ targetUserId }: { targetUserId: string | number }) {
     }
   };
   return (
-    <button className="up-sacrifice-btn" onClick={handleSacrifice} disabled={loading} style={{ marginTop: 12 }}>
+    <button
+      className="up-sacrifice-btn"
+      onClick={handleSacrifice}
+      disabled={loading}
+      style={{ marginTop: 12 }}
+    >
       {loading ? "Sacrificing..." : "Sacrifice Superuser (Irrevocable)"}
     </button>
   );
 }
-
-import { useState } from "react";
-import { apiRequest } from "../../utils/api";
-import { toast } from "sonner";
-import type { Permission, ProfileUser, Role } from "./types";
-
-
-
 interface Props {
   user: ProfileUser;
   allRoles: Role[];
@@ -47,8 +55,6 @@ function maxPowerLevel(roleNames: string[], allRoles: Role[]): number {
     return r ? Math.max(max, r.power_level) : max;
   }, 0);
 }
-
-
 
 const UserManagePanel = ({
   user,
@@ -76,18 +82,18 @@ const UserManagePanel = ({
 
   return (
     <div className="up-manage-panel">
-
       {!canManageTarget && (
         <div className="up-manage-notice">
           <div>
-            You cannot modify this user — they have equal or greater power level than you.
+            You cannot modify this user — they have equal or greater power level
+            than you ({actorPower}⚡ is not greater than {targetPower}⚡).
           </div>
-          {currentUserRoles.includes("superuser") && (user.roles ?? []).includes("superuser") && (
-            <SacrificeButton targetUserId={user.id} />
-          )}
+          {currentUserRoles.includes("superuser") &&
+            (user.roles ?? []).includes("superuser") && (
+              <SacrificeButton targetUserId={user.id} />
+            )}
         </div>
       )}
-
 
       {/* Roles */}
       <section className="up-manage-section">

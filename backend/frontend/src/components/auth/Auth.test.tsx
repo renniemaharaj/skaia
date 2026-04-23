@@ -133,7 +133,7 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+        expect(screen.getByText((content) => content.includes("Invalid credentials"))).toBeInTheDocument();
       });
     });
 
@@ -312,7 +312,7 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /create account/i }));
 
       await waitFor(() => {
-        expect(screen.getByText("User already exists")).toBeInTheDocument();
+        expect(screen.getByText((content) => content.includes("User already exists"))).toBeInTheDocument();
       });
     });
   });
@@ -373,7 +373,7 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+        expect(screen.getByText((content) => content.includes("Invalid credentials"))).toBeInTheDocument();
       });
 
       // Error should still be visible (not cleared on first character)

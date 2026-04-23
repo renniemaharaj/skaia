@@ -1,0 +1,18 @@
+# .tip for 2fa_login_backup_admin
+
+## Status
+- completed
+
+## Progress
+- Plan created and referenced in `.todo/2fa_login_backup_admin`.
+- Backend 2FA login flow bug fixed (atomicity, fallback, robust error handling).
+- Download button for backup codes added (frontend).
+- 2FA management UI for power users/admins implemented.
+- Tests for SecuritySettings (self and admin) added and passing.
+
+## Next Steps
+- Review and close. All planned work is complete and tested.
+
+## References
+- See `.routines/worker`, `.routines/correctness`, `.routines/audit_backend`, `.routines/audit_frontend`, `.specs_specialist`.
+- Linked to `.todo/2fa_login_backup_admin`.

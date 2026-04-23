@@ -51,6 +51,45 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
     (4, 9)    -- moderator: user.manage-others
 ON CONFLICT DO NOTHING;
 
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+    (1, 1),   -- admin: forum.thread-new
+    (1, 2),   -- admin: forum.thread-delete
+    (1, 3),   -- admin: forum.thread-edit
+    (1, 4),   -- admin: forum.category-new
+    (1, 5),   -- admin: forum.category-delete
+    (1, 6),   -- admin: forum.category-edit
+    (1, 7),   -- admin: forum.thread-comment-new
+    (1, 8),   -- admin: forum.thread-comment-delete
+    (1, 9),   -- admin: user.manage-others
+    (1, 10),  -- admin: user.suspend
+    (1, 11),  -- admin: presence.tp-here
+    (1, 12),  -- admin: store.product-new
+    (1, 13),  -- admin: store.product-delete
+    (1, 14),  -- admin: store.product-edit
+    (1, 15),  -- admin: store.manageCategories
+    (1, 16),  -- admin: store.manageOrders
+    (1, 17)   -- admin: store.managePlans
+ON CONFLICT DO NOTHING;
+
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+    (100, 1),   -- superuser: forum.thread-new
+    (100, 2),   -- superuser: forum.thread-delete
+    (100, 3),   -- superuser: forum.thread-edit
+    (100, 4),   -- superuser: forum.category-new
+    (100, 5),   -- superuser: forum.category-delete
+    (100, 6),   -- superuser: forum.category-edit
+    (100, 7),   -- superuser: forum.thread-comment-new
+    (100, 8),   -- superuser: forum.thread-comment-delete
+    (100, 9),   -- superuser: user.manage-others
+    (100, 10),  -- superuser: user.suspend
+    (100, 11),  -- superuser: presence.tp-here
+    (100, 12),  -- superuser: store.product-new
+    (100, 13),  -- superuser: store.product-delete
+    (100, 14),  -- superuser: store.product-edit
+    (100, 15),  -- superuser: store.manageCategories
+    (100, 16),  -- superuser: store.manageOrders
+    (100, 17)   -- superuser: store.managePlans
+ON CONFLICT DO NOTHING;
 
 -- superuser: every permission
 INSERT INTO role_permissions (role_id, permission_id)
@@ -71,8 +110,12 @@ SELECT setval(pg_get_serial_sequence('users', 'id'),
 
 -- Assign admin to superuser role
 INSERT INTO user_roles (user_id, role_id)
-SELECT 1, 100
-WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = 100);
+SELECT 1, (SELECT id FROM roles WHERE name = 'superuser')
+WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = (SELECT id FROM roles WHERE name = 'superuser'));
+
+INSERT INTO user_roles (user_id, role_id)
+SELECT 1, (SELECT id FROM roles WHERE name = 'admin')
+WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = (SELECT id FROM roles WHERE name = 'admin'));
 
 -- Default forum categories
 INSERT INTO forum_categories (id, name, description, display_order) VALUES

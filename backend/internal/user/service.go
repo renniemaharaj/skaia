@@ -14,6 +14,60 @@ import (
 	"github.com/skaia/backend/models"
 )
 
+// AdminEnableTOTP allows an admin to enable TOTP for another user, optionally setting a secret and verifying a code.
+func (s *Service) AdminEnableTOTP(targetID int64, secret, code string) ([]string, error) {
+	user, err := s.repo.GetByID(targetID)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+	if user.TOTPEnabled {
+		return nil, errors.New("2FA is already enabled")
+	}
+	if secret != "" {
+		if err := s.repo.SetTOTPSecret(targetID, secret); err != nil {
+			return nil, errors.New("failed to set TOTP secret")
+		}
+	}
+	// If a code is provided, validate it (if secret is set or already present)
+	if code != "" {
+		u, err := s.repo.GetByID(targetID)
+		if err != nil {
+			return nil, errors.New("user not found")
+		}
+		if u.TOTPSecret == "" {
+			return nil, errors.New("TOTP secret not set for user")
+		}
+		if !validateTOTPCode(u.TOTPSecret, code) {
+			return nil, errors.New("invalid verification code")
+		}
+	}
+	backupCodes, err := s.EnableTOTP(targetID)
+	if err != nil {
+		return nil, err
+	}
+	// Optionally: log/admin audit here
+	s.cache.Invalidate(targetID)
+	return backupCodes, nil
+}
+
+// AdminDisableTOTP allows an admin to disable TOTP for another user.
+func (s *Service) AdminDisableTOTP(targetID int64) error {
+	user, err := s.repo.GetByID(targetID)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	if !user.TOTPEnabled {
+		return errors.New("2FA is not enabled")
+	}
+	if err := s.DisableTOTP(targetID); err != nil {
+		return err
+	}
+	// Optionally: log/admin audit here
+	s.cache.Invalidate(targetID)
+	return nil
+
+}
+
 const securePassChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
 
 // RemoveAllRoles removes all roles from a user.
@@ -256,6 +310,20 @@ func (s *Service) AddPermission(userID int64, permissionName string) error {
 func (s *Service) RemovePermission(userID int64, permissionName string) error {
 	if err := s.repo.RemovePermission(userID, permissionName); err != nil {
 		return err
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+func (s *Service) RemoveAllPermissions(userID int64) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+	for _, perm := range user.Permissions {
+		if err := s.repo.RemovePermission(userID, perm); err != nil {
+			return err
+		}
 	}
 	s.cache.Invalidate(userID)
 	return nil
