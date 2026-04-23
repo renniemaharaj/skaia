@@ -767,8 +767,16 @@
 /* ── Section animation classes (scroll-triggered) ────────────────────── */
 
 /* Sections with animation start invisible until scrolled into view */
-.pb-section-layout[data-animation]:not([data-in-view]) {
+
+/* Section is hidden before animation-in, or animating out */
+.pb-section-layout[data-animation]:not([data-in-view]):not([data-out-view]) {
   opacity: 0;
+}
+
+/* Section animates out (reverse) when leaving viewport */
+.pb-section-layout[data-animation][data-out-view]:not([data-in-view]) {
+  animation: var(--section-out-animation, sectionFadeOut)
+    var(--anim-duration, 0.6s) ease-in both;
 }
 
 /* Intensity variables — default to "normal" */
@@ -799,24 +807,125 @@
   animation: sectionFadeIn var(--anim-duration, 0.6s) ease-out both;
 }
 
+.pb-section-layout[data-animation="fade-in"][data-out-view]:not(
+    [data-in-view]
+  ) {
+  --section-out-animation: sectionFadeOut;
+}
+
 .pb-section-layout[data-animation="slide-up"][data-in-view] {
   animation: sectionSlideUp var(--anim-duration, 0.6s) ease-out both;
+}
+
+.pb-section-layout[data-animation="slide-up"][data-out-view]:not(
+    [data-in-view]
+  ) {
+  --section-out-animation: sectionSlideDown;
 }
 
 .pb-section-layout[data-animation="slide-left"][data-in-view] {
   animation: sectionSlideLeft var(--anim-duration, 0.6s) ease-out both;
 }
 
+.pb-section-layout[data-animation="slide-left"][data-out-view]:not(
+    [data-in-view]
+  ) {
+  --section-out-animation: sectionSlideRightOut;
+}
+
 .pb-section-layout[data-animation="slide-right"][data-in-view] {
   animation: sectionSlideRight var(--anim-duration, 0.6s) ease-out both;
+}
+
+.pb-section-layout[data-animation="slide-right"][data-out-view]:not(
+    [data-in-view]
+  ) {
+  --section-out-animation: sectionSlideLeftOut;
 }
 
 .pb-section-layout[data-animation="zoom-in"][data-in-view] {
   animation: sectionZoomIn var(--anim-duration, 0.5s) ease-out both;
 }
 
+.pb-section-layout[data-animation="zoom-in"][data-out-view]:not(
+    [data-in-view]
+  ) {
+  --section-out-animation: sectionZoomOut;
+}
+
 .pb-section-layout[data-animation="bounce"][data-in-view] {
   animation: sectionBounce calc(var(--anim-duration, 0.6s) * 1.33) ease-out both;
+}
+
+.pb-section-layout[data-animation="bounce"][data-out-view]:not([data-in-view]) {
+  --section-out-animation: sectionBounceOut;
+}
+@keyframes sectionFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sectionSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--anim-distance, 40px));
+  }
+}
+
+@keyframes sectionSlideRightOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(var(--anim-distance, 40px));
+  }
+}
+
+@keyframes sectionSlideLeftOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--anim-distance, 40px) * -1));
+  }
+}
+
+@keyframes sectionZoomOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(var(--anim-scale, 0.9));
+  }
+}
+
+@keyframes sectionBounceOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(var(--anim-bounce-back, 4px));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--anim-distance, 40px));
+  }
 }
 
 @keyframes sectionFadeIn {

@@ -117,19 +117,24 @@ const SectionBlock = memo(function SectionBlock({
 
   const sectionRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(animation === "none");
+  const [outView, setOutView] = useState(false);
 
   useEffect(() => {
     if (animation === "none") {
       setInView(true);
+      setOutView(false);
       return;
     }
     const el = sectionRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
+    const observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setInView(true);
-          observer.disconnect();
+          setOutView(false);
+        } else {
+          setOutView(true);
+          setInView(false);
         }
       },
       { threshold: 0.15 },
@@ -179,6 +184,7 @@ const SectionBlock = memo(function SectionBlock({
         data-animation={animation !== "none" ? animation : undefined}
         data-intensity={animation !== "none" ? intensity : undefined}
         data-in-view={inView ? "" : undefined}
+        data-out-view={outView && !inView ? "" : undefined}
       >
         <Block
           section={section}
