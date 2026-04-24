@@ -359,12 +359,9 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid email format")
 		return
 	}
-	if len(req.Password) < 8 {
-		utils.WriteError(w, http.StatusBadRequest, "password must be at least 8 characters")
-		return
-	}
-	if len(req.Password) > 72 {
-		utils.WriteError(w, http.StatusBadRequest, "password must be at most 72 characters")
+	err := auth.ValidatePassword(req.Password)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

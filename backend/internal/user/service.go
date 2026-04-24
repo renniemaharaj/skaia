@@ -178,7 +178,7 @@ func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, s
 		return nil, "", "", errors.New("email, password, and username required")
 	}
 
-	hashedPassword, err := auth.HashPassword(req.Password)
+	hashedPassword, err := auth.BcryptPassword(req.Password)
 	if err != nil {
 		log.Printf("user.Service.Register: hash error: %v", err)
 		return nil, "", "", errors.New(err.Error())
@@ -415,7 +415,7 @@ func (s *Service) Unsuspend(userID int64) error {
 // deliver it (e.g. via a noreply inbox message).
 func (s *Service) ResetPassword(targetID int64) (string, error) {
 	newPw := generateSecurePassword(16)
-	hash, err := auth.HashPassword(newPw)
+	hash, err := auth.BcryptPassword(newPw)
 	if err != nil {
 		return "", err
 	}
@@ -498,7 +498,7 @@ func (s *Service) ResetPasswordWithToken(token, newPassword string) error {
 	if time.Now().After(t.ExpiresAt) {
 		return errors.New("reset token has expired")
 	}
-	hash, err := auth.HashPassword(newPassword)
+	hash, err := auth.BcryptPassword(newPassword)
 	if err != nil {
 		return fmt.Errorf("hash password: %w", err)
 	}
