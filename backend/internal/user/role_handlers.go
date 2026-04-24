@@ -211,6 +211,46 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, role)
 }
 
+func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		PowerLevel  int    `json:"power_level"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		utils.WriteError(w, http.StatusBadRequest, "role name required")
+		return
+	}
+
+	// Actor cannot create a role with power level >= their own.
+	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
+		return
+	}
+	if req.PowerLevel >= actorLevel {
+		utils.WriteError(w, http.StatusForbidden, "cannot create a role with power level equal to or exceeding your own")
+		return
+	}
+
+	role, err := h.svc.CreateRole(req.Name, req.Description, req.PowerLevel)
+	if err != nil {
+		log.Printf("user.Handler.createRole: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to create role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, role)
+}
+
 func (h *Handler) deleteRole(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -258,7 +298,7 @@ func (h *Handler) getRolePermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "roleId")
+	roleID, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -286,7 +326,7 @@ func (h *Handler) addPermissionToRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "roleId")
+	roleID, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -329,7 +369,7 @@ func (h *Handler) removePermissionFromRole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	roleID, err := parseID(r, "roleId")
+	roleID, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return

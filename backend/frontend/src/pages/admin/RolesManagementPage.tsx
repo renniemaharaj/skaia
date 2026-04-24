@@ -61,7 +61,7 @@ export default function RolesManagementPage() {
 
   const loadRolePerms = async (roleId: string) => {
     const perms = await apiRequest<Permission[]>(
-      `/roles/${roleId}/permissions`,
+      `/users/roles/${roleId}/permissions`,
     );
     setRoles((rs) =>
       rs.map((r) => (r.id === roleId ? { ...r, loadedPerms: perms ?? [] } : r)),
@@ -92,7 +92,7 @@ export default function RolesManagementPage() {
   const saveEdit = async (roleId: string) => {
     setSavingId(roleId);
     try {
-      const updated = await apiRequest<Role>(`/roles/${roleId}`, {
+      const updated = await apiRequest<Role>(`/users/roles/${roleId}`, {
         method: "PUT",
         body: JSON.stringify({
           name: editName,
@@ -120,7 +120,7 @@ export default function RolesManagementPage() {
       return;
     setDeletingId(roleId);
     try {
-      await apiRequest(`/roles/${roleId}`, { method: "DELETE" });
+      await apiRequest(`/users/roles/${roleId}`, { method: "DELETE" });
       setRoles((rs) => rs.filter((r) => r.id !== roleId));
       toast.success("Role deleted");
     } catch (e: unknown) {
@@ -188,14 +188,18 @@ export default function RolesManagementPage() {
     try {
       if (currentlyHas) {
         await apiRequest(
-          `/roles/${roleId}/permissions/${encodeURIComponent(permName)}`,
+          `/users/roles/${roleId}/permissions/${encodeURIComponent(permName)}`,
           { method: "DELETE" },
         );
       } else {
-        await apiRequest(`/roles/${roleId}/permissions`, {
-          method: "POST",
-          body: JSON.stringify({ permission: permName }),
-        });
+        // This is the correct
+        await apiRequest(
+          `/users/roles/${roleId}/permissions/${encodeURIComponent(permName)}`,
+          {
+            method: "POST",
+            body: JSON.stringify({ permission: permName }),
+          },
+        );
       }
     } catch {
       // Revert

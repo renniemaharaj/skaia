@@ -106,7 +106,6 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Public (guest-safe) reads
 		r.With(optJWT).Get("/{id}", h.getUser)
 		r.Get("/roles", h.getRoles)
-		r.Get("/permissions", h.getPermissions)
 
 		// Authenticated
 		r.Group(func(r chi.Router) {
@@ -115,8 +114,6 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Get("/search", h.searchUsers)
 			r.Post("/", h.createUser)
 			r.Put("/{id}", h.updateUser)
-			r.Post("/{id}/permissions", h.addPermission)
-			r.Delete("/{id}/permissions/{perm}", h.removePermission)
 			r.Post("/{id}/roles", h.addRole)
 			r.Delete("/{id}/roles/{role}", h.removeRole)
 			r.Post("/{id}/suspend", h.suspendUser)
@@ -132,6 +129,20 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			// Admin TOTP endpoints
 			r.Post("/{id}/totp/enable", h.adminEnableTOTP)
 			r.Post("/{id}/totp/disable", h.adminDisableTOTP)
+
+			// Permission management endpoints
+			r.Get("/permissions", h.getPermissions)
+			r.Post("/{id}/permissions/{perm}", h.addPermission)
+			r.Delete("/{id}/permissions/{perm}", h.removePermission)
+
+			// Role management endpoints
+			r.Get("/roles", h.getRoles)
+			r.Post("/roles", h.createRole)
+			r.Put("/roles/{id}", h.updateRole)
+			r.Delete("/roles/{id}", h.deleteRole)
+			r.Get("/roles/{id}/permissions", h.getRolePermissions)
+			r.Delete("/roles/{id}/permissions/{perm}", h.removePermissionFromRole)
+			r.Post("/roles/{id}/permissions/{perm}", h.addPermissionToRole)
 		})
 	})
 

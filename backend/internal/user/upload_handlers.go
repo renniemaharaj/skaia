@@ -9,10 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	iupload "github.com/skaia/backend/internal/upload"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -317,12 +315,6 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 	utils.WriteJSON(w, http.StatusCreated, FileUploadResponse{URL: u.BannerURL, Filename: filename, Size: size, Type: header.Header.Get("Content-Type")})
 }
 
-// Internal utilities
-
-func parseID(r *http.Request, param string) (int64, error) {
-	return strconv.ParseInt(chi.URLParam(r, param), 10, 64)
-}
-
 func validateImageFile(file io.Reader, headers map[string][]string) error {
 	ct := ""
 	if vals, ok := headers["Content-Type"]; ok && len(vals) > 0 {
@@ -334,46 +326,4 @@ func validateImageFile(file io.Reader, headers map[string][]string) error {
 		}
 	}
 	return errors.New("only JPEG, PNG, WEBP, and GIF images are allowed")
-}
-
-// Role CRUD handlers
-
-func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
-	userID, ok := utils.UserIDFromCtx(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-	if !utils.CheckPerm(w, h.svc, userID, "user.manage-others") {
-		return
-	}
-
-	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		PowerLevel  int    `json:"power_level"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		utils.WriteError(w, http.StatusBadRequest, "role name required")
-		return
-	}
-
-	// Actor cannot create a role with power level >= their own.
-	actorLevel, err := h.svc.GetUserMaxPowerLevel(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
-		return
-	}
-	if req.PowerLevel >= actorLevel {
-		utils.WriteError(w, http.StatusForbidden, "cannot create a role with power level equal to or exceeding your own")
-		return
-	}
-
-	role, err := h.svc.CreateRole(req.Name, req.Description, req.PowerLevel)
-	if err != nil {
-		log.Printf("user.Handler.createRole: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to create role")
-		return
-	}
-	utils.WriteJSON(w, http.StatusCreated, role)
 }
