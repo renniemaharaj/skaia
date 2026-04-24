@@ -181,7 +181,7 @@ func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, s
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
 		log.Printf("user.Service.Register: hash error: %v", err)
-		return nil, "", "", errors.New("registration failed")
+		return nil, "", "", errors.New(err.Error())
 	}
 
 	displayName := req.DisplayName

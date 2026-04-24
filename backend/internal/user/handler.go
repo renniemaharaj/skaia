@@ -378,7 +378,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusConflict, "user already exists")
 		default:
 			log.Printf("user.Handler.register: %v", err)
-			utils.WriteError(w, http.StatusInternalServerError, "registration failed")
+			utils.WriteError(w, http.StatusInternalServerError, "registration failed: "+err.Error())
 		}
 		return
 	}
@@ -502,7 +502,7 @@ func (h *Handler) refreshToken(w http.ResponseWriter, r *http.Request) {
 
 	accessToken, err := h.svc.RefreshToken(req.RefreshToken)
 	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, err.Error())
+		utils.WriteError(w, http.StatusUnauthorized, "refresh token failed: "+err.Error())
 		return
 	}
 
