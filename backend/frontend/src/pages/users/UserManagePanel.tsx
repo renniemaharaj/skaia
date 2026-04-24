@@ -3,12 +3,16 @@ import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 import type { Permission, ProfileUser, Role } from "./types";
 
-function SacrificeButton({ targetUserId }: { targetUserId: string | number }) {
+function SuperUsersDemotionVoteButton({
+  targetUserId,
+}: {
+  targetUserId: string | number;
+}) {
   const [loading, setLoading] = useState(false);
-  const handleSacrifice = async () => {
+  const handleVote = async () => {
     if (
       !window.confirm(
-        "Are you sure? This will remove ALL roles from the target, and you will lose your own superuser role. This cannot be undone.",
+        "Are you sure? more than 50% of superusers must vote to demote",
       )
     )
       return;
@@ -17,10 +21,14 @@ function SacrificeButton({ targetUserId }: { targetUserId: string | number }) {
       await apiRequest(`/users/${targetUserId}/superuser-sacrifice`, {
         method: "POST",
       });
-      toast.success("Target demoted. You lost your superuser role.");
+      toast.success(
+        "You voted to demote this superuser. If more than 50% of superusers vote, they will be demoted.",
+      );
       window.location.reload();
     } catch (e) {
-      toast.error("Failed to perform superuser sacrifice");
+      toast.error(
+        "Failed to cast sacrifice vote. You may have already voted, or there may be a network error.",
+      );
     } finally {
       setLoading(false);
     }
@@ -28,11 +36,11 @@ function SacrificeButton({ targetUserId }: { targetUserId: string | number }) {
   return (
     <button
       className="up-sacrifice-btn"
-      onClick={handleSacrifice}
+      onClick={handleVote}
       disabled={loading}
       style={{ marginTop: 12 }}
     >
-      {loading ? "Sacrificing..." : "Sacrifice Superuser (Irrevocable)"}
+      {loading ? "Voting ..." : "Vote to Demote Superuser"}
     </button>
   );
 }
@@ -90,7 +98,7 @@ const UserManagePanel = ({
           </div>
           {currentUserRoles.includes("superuser") &&
             (user.roles ?? []).includes("superuser") && (
-              <SacrificeButton targetUserId={user.id} />
+              <SuperUsersDemotionVoteButton targetUserId={user.id} />
             )}
         </div>
       )}

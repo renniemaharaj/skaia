@@ -34,6 +34,8 @@ type Repository interface {
 
 	// Power level
 	GetUserMaxPowerLevel(userID int64) (int, error)
+	NewDistinctSuperuserDemotionVote(actorID, targetID int64) error
+	IsSuperUserVotedOut(targetID int64) (bool, error)
 
 	// Role CRUD
 	CreateRole(name, description string, powerLevel int) (*models.Role, error)

@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"math"
 
 	"github.com/skaia/backend/models"
 )
@@ -399,6 +400,53 @@ func (r *sqlRepository) GetUserMaxPowerLevel(userID int64) (int, error) {
 		userID,
 	).Scan(&level)
 	return level, err
+}
+
+func (r *sqlRepository) IsSuperUserVotedOut(targetID int64) (bool, error) {
+	var count int
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM superuser_demotion_votes WHERE target_id = $1`,
+		targetID,
+	).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	threshold := max(2, int(math.Floor(float64(count)/2))+1) // Example threshold: more than 50% of superusers must vote to demote
+	return count >= threshold, nil
+}
+
+func (r *sqlRepository) NewDistinctSuperuserDemotionVote(actorID, targetID int64) error {
+	_, err := r.db.Exec(
+		`INSERT INTO superuser_demotion_votes (actor_id, target_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		actorID, targetID,
+	)
+
+	return err
+}
+
+func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {
+	rows, err := r.db.Query(
+		`SELECT DISTINCT u.id, u.username, u.email, u.display_name, u.is_suspended, u.suspended_reason, u.created_at
+		 FROM users u
+		 JOIN user_roles ur ON u.id = ur.user_id
+		 JOIN roles r ON ur.role_id = r.id
+		 WHERE r.name = 'superuser'`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		u := &models.User{}
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.DisplayName, &u.IsSuspended, &u.SuspendedReason, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
 }
 
 func (r *sqlRepository) GetRoleByID(id int64) (*models.Role, error) {

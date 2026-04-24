@@ -93,6 +93,13 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     UNIQUE(user_id, permission_id)
 );
 
+CREATE TABLE IF NOT EXISTS superuser_demotion_votes (
+    id          BIGSERIAL PRIMARY KEY,
+    actor_id    BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    target_id   BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(actor_id, target_id)
+);
 -- Store
 CREATE TABLE IF NOT EXISTS store_categories (
     id            BIGSERIAL PRIMARY KEY,

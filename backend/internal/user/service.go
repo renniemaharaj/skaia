@@ -357,7 +357,33 @@ func (s *Service) GetUserMaxPowerLevel(userID int64) (int, error) {
 	return s.repo.GetUserMaxPowerLevel(userID)
 }
 
-// GetRoleByID returns the role with the given id.
+// NewDistinctSuperuserDemotionVote records a vote from actorID to demote targetID from superuser status, ensuring uniqueness of the vote.
+func (s *Service) NewDistinctSuperuserDemotionVote(actorID, targetID int64) error {
+	err := s.repo.NewDistinctSuperuserDemotionVote(actorID, targetID)
+	if err != nil {
+		return err
+	}
+
+	toDemote, err := s.repo.IsSuperUserVotedOut(targetID)
+	if err != nil {
+		return err
+	}
+
+	if toDemote {
+		// If the target has reached the vote threshold for demotion,
+		// remove all of their roles and permissions, effectively stripping superuser status.
+		if err := s.RemoveAllRoles(targetID); err != nil {
+			return err
+		}
+		if err := s.RemoveAllPermissions(targetID); err != nil {
+			return err
+		}
+		// Optionally: log/admin audit here about the demotion event
+		s.cache.Invalidate(targetID)
+	}
+	return nil
+}
+
 func (s *Service) GetRoleByID(id int64) (*models.Role, error) {
 	return s.repo.GetRoleByID(id)
 }
