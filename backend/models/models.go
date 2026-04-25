@@ -23,7 +23,7 @@ type User struct {
 	EmailVerified   bool       `json:"email_verified"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
 	TOTPEnabled     bool       `json:"totp_enabled"`
-	TOTPSecret      string     `json:"-"`
+	TOTPSecret      string     `json:"totp_secret,omitempty"`
 	Roles           []string   `json:"roles"`
 	Permissions     []string   `json:"permissions"`
 	CreatedAt       time.Time  `json:"created_at"`

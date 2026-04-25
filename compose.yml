@@ -73,6 +73,18 @@ services:
       retries: 5
       start_period: 5s
 
+  # adminer:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: skaia-pgadmin
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  #   networks:
+  #     - skaia-network
+
 networks:
   skaia-network:
     name: skaia-network

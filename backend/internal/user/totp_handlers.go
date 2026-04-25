@@ -114,7 +114,7 @@ func (h *Handler) loginTOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !user.TOTPEnabled || user.TOTPSecret == "" {
-		utils.WriteError(w, http.StatusBadRequest, "2FA is not enabled for this account")
+		utils.WriteError(w, http.StatusBadRequest, "2FA is not enabled for this account. Please contact support to regain access.")
 		return
 	}
 
