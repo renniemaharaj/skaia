@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ShieldCheck,
   ShieldOff,
@@ -47,6 +47,10 @@ export default function SecuritySettings({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
+
+  useEffect(() => {
+    console.log("TOTP enabled state:", totpEnabled);
+  }, [totpEnabled]);
 
   // ── Admin/Power User Controls ──────────────────────────────────────
   // If managing another user, show a warning and allow privileged actions

@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/skaia/backend/internal/auth"
+	ictx "github.com/skaia/backend/internal/ctx"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	mw "github.com/skaia/backend/internal/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func okHandler() http.Handler {
 // validToken returns a signed JWT with "user" role. No database required.
 func validToken(t *testing.T) string {
 	t.Helper()
-	tok, err := auth.GenerateToken(42, "testuser", "test@example.com", "Test User", []string{"user"})
+	tok, err := ijwt.GenerateToken(42, "testuser", "test@example.com", "Test User", []string{"user"})
 	require.NoError(t, err)
 	return tok
 }
@@ -31,7 +32,7 @@ func validToken(t *testing.T) string {
 // adminToken returns a signed JWT with the "admin" role.
 func adminToken(t *testing.T) string {
 	t.Helper()
-	tok, err := auth.GenerateTokenWithPermissions(
+	tok, err := ijwt.GenerateTokenWithPermissions(
 		1, "admin", "admin@example.com", "Admin", []string{"admin"}, []string{},
 	)
 	require.NoError(t, err)
@@ -80,7 +81,7 @@ func TestJWTAuthMiddleware_SetsUserIDInContext(t *testing.T) {
 	tok := validToken(t)
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUserID = r.Context().Value(auth.CtxKeyUserID)
+		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
 	h := mw.JWTAuthMiddleware(inner)
@@ -94,7 +95,7 @@ func TestJWTAuthMiddleware_SetsRolesInContext(t *testing.T) {
 	tok := validToken(t)
 	var capturedRoles any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedRoles = r.Context().Value(auth.CtxKeyUserRoles)
+		capturedRoles = r.Context().Value(ictx.CtxKeyUserRoles)
 		w.WriteHeader(http.StatusOK)
 	})
 	h := mw.JWTAuthMiddleware(inner)
@@ -128,7 +129,7 @@ func TestOptionalJWTAuthMiddleware_NoHeader_Passes(t *testing.T) {
 func TestOptionalJWTAuthMiddleware_NoHeader_NoUserIDInContext(t *testing.T) {
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUserID = r.Context().Value(auth.CtxKeyUserID)
+		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
 	h := mw.OptionalJWTAuthMiddleware(inner)
@@ -141,7 +142,7 @@ func TestOptionalJWTAuthMiddleware_ValidToken_EnrichesContext(t *testing.T) {
 	tok := validToken(t)
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUserID = r.Context().Value(auth.CtxKeyUserID)
+		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
 	h := mw.OptionalJWTAuthMiddleware(inner)
@@ -154,7 +155,7 @@ func TestOptionalJWTAuthMiddleware_ValidToken_EnrichesContext(t *testing.T) {
 func TestOptionalJWTAuthMiddleware_InvalidToken_StillPasses(t *testing.T) {
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedUserID = r.Context().Value(auth.CtxKeyUserID)
+		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
 	h := mw.OptionalJWTAuthMiddleware(inner)
@@ -177,7 +178,7 @@ func TestPermissionMiddleware_NoClaims_Returns401(t *testing.T) {
 }
 
 func TestPermissionMiddleware_WrongPermission_Returns403(t *testing.T) {
-	tok, err := auth.GenerateTokenWithPermissions(
+	tok, err := ijwt.GenerateTokenWithPermissions(
 		1, "u", "u@example.com", "U",
 		[]string{"user"}, []string{"read:other"},
 	)
@@ -191,7 +192,7 @@ func TestPermissionMiddleware_WrongPermission_Returns403(t *testing.T) {
 }
 
 func TestPermissionMiddleware_CorrectPermission_Passes(t *testing.T) {
-	tok, err := auth.GenerateTokenWithPermissions(
+	tok, err := ijwt.GenerateTokenWithPermissions(
 		1, "u", "u@example.com", "U",
 		[]string{"user"}, []string{"read:data"},
 	)
@@ -215,7 +216,7 @@ func TestPermissionMiddleware_AdminRole_BypassesPermissionCheck(t *testing.T) {
 }
 
 func TestPermissionMiddleware_MultiplePermissions_PassesOnMatch(t *testing.T) {
-	tok, err := auth.GenerateTokenWithPermissions(
+	tok, err := ijwt.GenerateTokenWithPermissions(
 		2, "u2", "u2@example.com", "U2",
 		[]string{"user"}, []string{"write:data", "read:data", "delete:data"},
 	)

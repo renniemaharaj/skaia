@@ -13,7 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/skaia/backend/internal/auth"
+	ictx "github.com/skaia/backend/internal/ctx"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
 )
 
@@ -136,7 +137,7 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 // requireAdmin checks that the JWT claims contain the "admin" role.
 func requireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+		claims, ok := r.Context().Value(ictx.CtxKeyClaims).(*ijwt.Claims)
 		if !ok {
 			utils.WriteError(w, http.StatusUnauthorized, "missing claims")
 			return
@@ -181,7 +182,7 @@ func (h *Handler) requireSession(next http.Handler) http.Handler {
 // handleCreateSession verifies admin + passcode, creates a temp session, returns the UUID.
 func (h *Handler) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 	// Require admin role.
-	claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+	claims, ok := r.Context().Value(ictx.CtxKeyClaims).(*ijwt.Claims)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "missing claims")
 		return

@@ -22,7 +22,9 @@ import (
 	"github.com/skaia/backend/database"
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
+	"github.com/skaia/backend/internal/authhandler"
 	icfg "github.com/skaia/backend/internal/config"
+	"github.com/skaia/backend/internal/ctx"
 	ics "github.com/skaia/backend/internal/customsection"
 	ids "github.com/skaia/backend/internal/datasource"
 	iemail "github.com/skaia/backend/internal/email"
@@ -30,6 +32,7 @@ import (
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
 	iinbox "github.com/skaia/backend/internal/inbox"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
@@ -188,25 +191,50 @@ func seedAdminPassword(db *sql.DB) {
 		log.Println("ADMIN_PASSWORD not set, skipping admin seed")
 		return
 	}
-	hash, err := auth.BcryptPassword(pw)
+	email := os.Getenv("ADMIN_EMAIL")
+
+	// Find admin user
+	var adminID int64
+	err := db.QueryRow(`SELECT id FROM users WHERE username = 'admin'`).Scan(&adminID)
 	if err != nil {
-		log.Printf("admin seed: hash failed: %v", err)
+		log.Printf("admin seed: could not find admin user: %v", err)
 		return
 	}
 
-	email := os.Getenv("ADMIN_EMAIL")
+	// Optionally update admin email
 	if email != "" {
-		if _, err := db.Exec(`UPDATE users SET password_hash = $1, email = $2 WHERE username = 'admin'`, hash, email); err != nil {
-			log.Printf("admin seed: update failed: %v", err)
+		if _, err := db.Exec(`UPDATE users SET email = $1 WHERE id = $2`, email, adminID); err != nil {
+			log.Printf("admin seed: failed to update admin email: %v", err)
 			return
 		}
-		log.Println("admin seed: password and email updated")
+	}
+
+	// Use auth service to update password hash in auth_credentials
+	repo := auth.NewSQLRepository(db)
+	userRepo := iuser.NewRepository(db)
+	userSvc := iuser.NewService(userRepo, nil)
+	authSvc := auth.NewService(repo, userSvc)
+	ctx := context.Background()
+	_, err = repo.GetCredentialByUserID(ctx, adminID)
+	if err == nil {
+		passwordHash, err := auth.BcryptPassword(pw)
+		if err != nil {
+			log.Printf("admin seed: failed to hash admin password: %v", err)
+			return
+		}
+		// Update existing credential
+		if err := repo.UpdatePasswordHash(ctx, adminID, passwordHash); err != nil {
+			log.Printf("admin seed: failed to update admin password hash: %v", err)
+			return
+		}
+		log.Println("admin seed: password updated in auth_credentials")
 	} else {
-		if _, err := db.Exec(`UPDATE users SET password_hash = $1 WHERE username = 'admin'`, hash); err != nil {
-			log.Printf("admin seed: update failed: %v", err)
+		// Create new credential
+		if _, err := authSvc.RegisterCredential(ctx, adminID, pw); err != nil {
+			log.Printf("admin seed: failed to create admin credential: %v", err)
 			return
 		}
-		log.Println("admin seed: password updated")
+		log.Println("admin seed: password created in auth_credentials")
 	}
 }
 
@@ -244,7 +272,6 @@ func removeArmedFile(armedDir, clientID string) error {
 }
 
 func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher) http.Handler {
-
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
@@ -408,7 +435,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			site.Use(imw.JWTAuthMiddleware, imw.PermissionMiddleware("home.manage"))
 
 			site.Post("/arm", func(w http.ResponseWriter, r *http.Request) {
-				claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+				claims, ok := r.Context().Value(ctx.CtxKeyClaims).(*ijwt.Claims)
 				if !ok || claims == nil {
 					http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 					return
@@ -439,7 +466,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			})
 
 			site.Post("/disarm", func(w http.ResponseWriter, r *http.Request) {
-				claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+				claims, ok := r.Context().Value(ctx.CtxKeyClaims).(*ijwt.Claims)
 				if !ok || claims == nil {
 					http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 					return
@@ -556,12 +583,18 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return true, time.Duration(payload.Interval) * time.Second
 		})
 
+		emailSender := iemail.NewSenderFromEnv()
+
 		inboxRepo := iinbox.NewRepository(db)
 		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
-		emailSender := iemail.NewSenderFromEnv()
 		analyticsRepo := ianalytics.NewRepository(db)
 		analyticsSvc := ianalytics.NewService(analyticsRepo)
 
+		authRepo := auth.NewSQLRepository(db)
+		authSvc := auth.NewService(authRepo, userSvc)
+		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
+		authHandlerSvc := auth.NewService(authRepo, userSvc)
+		authhandler.NewHandler(authHandlerSvc, authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)

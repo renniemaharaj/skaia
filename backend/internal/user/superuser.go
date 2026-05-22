@@ -27,7 +27,7 @@ func (h *Handler) newDistinctSuperuserDemotionVote(w http.ResponseWriter, r *htt
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return

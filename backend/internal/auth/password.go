@@ -1,12 +1,37 @@
 package auth
 
 import (
+	"crypto/rand"
 	"errors"
+	"math/big"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 const bcryptCost = 12
+
+// ── Token helpers ─────────────────────────────────────────────────────────
+
+const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func generateSecureToken(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
+		b[i] = tokenChars[n.Int64()]
+	}
+	return string(b)
+}
+
+func generateBackupCode() string {
+	const digits = "0123456789"
+	b := make([]byte, 8)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
+		b[i] = digits[n.Int64()]
+	}
+	return string(b[:4]) + "-" + string(b[4:])
+}
 
 // BcryptPassword generates a bcrypt hash at cost 12.
 func BcryptPassword(password string) (string, error) {

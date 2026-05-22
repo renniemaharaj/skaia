@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/skaia/backend/internal/auth"
 	ievents "github.com/skaia/backend/internal/events"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 )
@@ -24,7 +24,7 @@ func (h *Handler) propagatePermissions(userID int64) {
 		log.Printf("user.Handler.propagatePermissions: fetch user %d: %v", userID, err)
 		return
 	}
-	token, err := auth.GenerateTokenWithPermissions(
+	token, err := ijwt.GenerateTokenWithPermissions(
 		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
 	)
 	if err != nil {
@@ -65,12 +65,12 @@ func (h *Handler) addPermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 
@@ -113,12 +113,12 @@ func (h *Handler) removePermission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 	permName := chi.URLParam(r, "perm")

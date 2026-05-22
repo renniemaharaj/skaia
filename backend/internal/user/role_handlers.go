@@ -11,24 +11,15 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-// checkManagePowerLevel enforces that actorID's max power level is strictly
+// checkManagedPowerLevel enforces that actorID's max power level is strictly
 // greater than targetID's. Returns true (allowed) or writes a 403 and returns false.
-func (h *Handler) checkManagePowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
-	actorLevel, err := h.svc.GetUserMaxPowerLevel(actorID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
-		return false
+func (h *Handler) checkManagedPowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
+	allowed := h.svc.CheckManagePowerLevel(w, actorID, targetID)
+	if !allowed {
+		log.Printf("user.Handler.checkManagedPowerLevel: insufficient permissions")
+		return false // CheckManagePowerLevel already writes an error response
 	}
-	targetLevel, err := h.svc.GetUserMaxPowerLevel(targetID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "power level check failed")
-		return false
-	}
-	if actorLevel <= targetLevel {
-		utils.WriteError(w, http.StatusForbidden, "insufficient power level to manage this user")
-		return false
-	}
-	return true
+	return allowed
 }
 
 func (h *Handler) getRoles(w http.ResponseWriter, r *http.Request) {
@@ -51,12 +42,12 @@ func (h *Handler) addRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 
@@ -131,12 +122,12 @@ func (h *Handler) removeRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 	roleName := chi.URLParam(r, "role")
@@ -176,7 +167,7 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "roleId")
+	roleID, err := utils.ParseUserIdFromParam(r, "roleId")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -261,7 +252,7 @@ func (h *Handler) deleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "roleId")
+	roleID, err := utils.ParseUserIdFromParam(r, "roleId")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -298,7 +289,7 @@ func (h *Handler) getRolePermissions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "id")
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -326,7 +317,7 @@ func (h *Handler) addPermissionToRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := parseID(r, "id")
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -369,7 +360,7 @@ func (h *Handler) removePermissionFromRole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	roleID, err := parseID(r, "id")
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return

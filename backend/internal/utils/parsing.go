@@ -1,4 +1,4 @@
-package user
+package utils
 
 import (
 	"net/http"
@@ -7,6 +7,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func parseID(r *http.Request, param string) (int64, error) {
+func ParseUserIdFromParam(r *http.Request, param string) (int64, error) {
 	return strconv.ParseInt(chi.URLParam(r, param), 10, 64)
 }

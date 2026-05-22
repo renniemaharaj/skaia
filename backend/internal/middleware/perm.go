@@ -3,14 +3,15 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/skaia/backend/internal/auth"
+	ictx "github.com/skaia/backend/internal/ctx"
+	ijwt "github.com/skaia/backend/internal/jwt"
 )
 
 // PermissionMiddleware checks that the user holds a permission or the admin/superuser role.
 func PermissionMiddleware(permission string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			claims, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+			claims, ok := r.Context().Value(ictx.CtxKeyClaims).(*ijwt.Claims)
 			if !ok || claims == nil {
 				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 				return

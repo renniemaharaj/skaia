@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
@@ -15,7 +15,7 @@ import UserUploads from "./UserUploads";
 import EditProfileDialog from "./EditProfileDialog";
 import SuspendDialog from "./SuspendDialog";
 
-import { apiRequest } from "../../utils/api";
+import { apiRequest, totpStatus } from "../../utils/api";
 import SecuritySettings from "../../components/auth/SecuritySettings";
 import "./UserProfile.css";
 
@@ -41,6 +41,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
+
+  const [totpEnabled, setTotpEnabled] = useState<boolean>(false);
+  const [totpReload, setTotpReload] = useState(0);
 
   const canManage = hasPermission("user.manage-others");
   const canSuspend = hasPermission("user.suspend");
@@ -87,6 +90,31 @@ const UserProfile: React.FC<UserProfileProps> = ({
     isOwnProfile,
     onSaved: (updated) => setUser((u) => (u ? { ...u, ...updated } : u)),
   });
+
+  useEffect(() => {
+    if (!user) return;
+    let mounted = true;
+
+    const fetchTotpStatus = async () => {
+      try {
+        const status = await totpStatus(
+          canManage && !isOwnProfile ? String(user.id) : undefined,
+        );
+        if (mounted) {
+          setTotpEnabled(status.enabled);
+        }
+      } catch (err) {
+        if (mounted) {
+          setTotpEnabled(false);
+        }
+      }
+    };
+
+    fetchTotpStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id, canManage, isOwnProfile, totpReload]);
 
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const handleResetPassword = async () => {
@@ -173,8 +201,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
       {(isOwnProfile || canManage) && (
         <SecuritySettings
           emailVerified={user.email_verified ?? false}
-          totpEnabled={user.totp_enabled ?? false}
-          onUpdate={() => setUser((u) => (u ? { ...u } : u))}
+          totpEnabled={totpEnabled}
+          onUpdate={() => setTotpReload((n) => n + 1)}
           canManage={canManage && !isOwnProfile}
           managedUserId={canManage && !isOwnProfile ? user.id : undefined}
           managedUsername={

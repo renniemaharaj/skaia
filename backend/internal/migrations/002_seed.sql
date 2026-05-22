@@ -97,13 +97,19 @@ SELECT (SELECT id FROM roles WHERE name = 'superuser'), p.id
 FROM   permissions p
 ON CONFLICT DO NOTHING;
 
-INSERT INTO users (id, username, email, password_hash, display_name, bio,
+
+-- Insert admin user (without password_hash)
+INSERT INTO users (id, username, email, display_name, bio,
                    avatar_url, banner_url, photo_url,
                    is_suspended, created_at, updated_at)
-SELECT 1, 'admin', 'admin@skaiacraft.local', '$placeholder$',
+SELECT 1, 'admin', 'admin@skaiacraft.local',
        'Administrator', 'Default administrator account',
        '/banner.png', '/banner.png', '/banner.png', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
+
+INSERT INTO auth_credentials (user_id, password_hash, created_at, updated_at)
+SELECT 1, '$placeholder$', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM auth_credentials WHERE user_id = 1);
 
 SELECT setval(pg_get_serial_sequence('users', 'id'),
               (SELECT COALESCE(MAX(id), 0) + 1 FROM users), false);
@@ -237,11 +243,18 @@ VALUES ('landing_page_slug', '"get-started"'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- ── System "noreply" user for automated inbox messages ──────────────────────
-INSERT INTO users (username, email, password_hash, display_name, bio,
-                   avatar_url, banner_url, photo_url,
-                   is_suspended, created_at, updated_at)
+
+-- Insert noreply user (without password_hash)
+INSERT INTO users (username, email, display_name, bio,
+                                     avatar_url, banner_url, photo_url,
+                                     is_suspended, created_at, updated_at)
 SELECT 'noreply', 'noreply@system.local',
-       '$2a$12$000000000000000000000uGhostyLocked0000000000000000000',
-       'System', 'Automated system notifications — this account cannot be messaged.',
-       '', '', '', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+             'System', 'Automated system notifications — this account cannot be messaged.',
+             '', '', '', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'noreply');
+
+-- Insert noreply credentials in auth_credentials (locked/disabled password)
+INSERT INTO auth_credentials (user_id, password_hash, created_at, updated_at)
+SELECT id, '$2a$12$000000000000000000000uGhostyLocked0000000000000000000', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM users WHERE username = 'noreply'
+    AND NOT EXISTS (SELECT 1 FROM auth_credentials WHERE user_id = users.id);

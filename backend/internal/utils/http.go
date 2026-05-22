@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/skaia/backend/internal/auth"
+	ictx "github.com/skaia/backend/internal/ctx"
+	"github.com/skaia/backend/internal/jwt"
 )
 
 // Authorizer performs DB-backed permission checks so handlers never rely on
@@ -19,7 +20,7 @@ type Authorizer interface {
 // (populated by JWTAuthMiddleware). Returns (0, false) for unauthenticated
 // requests.
 func UserIDFromCtx(r *http.Request) (int64, bool) {
-	c, ok := r.Context().Value(auth.CtxKeyClaims).(*auth.Claims)
+	c, ok := r.Context().Value(ictx.CtxKeyClaims).(*jwt.Claims)
 	if !ok || c == nil {
 		return 0, false
 	}

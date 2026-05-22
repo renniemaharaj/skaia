@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/skaia/backend/internal/auth"
+	ictx "github.com/skaia/backend/internal/ctx"
+	ijwt "github.com/skaia/backend/internal/jwt"
 )
 
 // JWTAuthMiddleware validates the Bearer token in the Authorization header.
@@ -23,15 +24,15 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := auth.ValidateToken(parts[1])
+		claims, err := ijwt.ValidateToken(parts[1])
 		if err != nil {
 			http.Error(w, `{"error":"invalid token"}`, http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), auth.CtxKeyClaims, claims)
-		ctx = context.WithValue(ctx, auth.CtxKeyUserID, claims.UserID)
-		ctx = context.WithValue(ctx, auth.CtxKeyUserRoles, claims.Roles)
+		ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)
+		ctx = context.WithValue(ctx, ictx.CtxKeyUserID, claims.UserID)
+		ctx = context.WithValue(ctx, ictx.CtxKeyUserRoles, claims.Roles)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -44,10 +45,10 @@ func OptionalJWTAuthMiddleware(next http.Handler) http.Handler {
 		if authHeader != "" {
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) == 2 && parts[0] == "Bearer" {
-				if claims, err := auth.ValidateToken(parts[1]); err == nil {
-					ctx := context.WithValue(r.Context(), auth.CtxKeyClaims, claims)
-					ctx = context.WithValue(ctx, auth.CtxKeyUserID, claims.UserID)
-					ctx = context.WithValue(ctx, auth.CtxKeyUserRoles, claims.Roles)
+				if claims, err := ijwt.ValidateToken(parts[1]); err == nil {
+					ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)
+					ctx = context.WithValue(ctx, ictx.CtxKeyUserID, claims.UserID)
+					ctx = context.WithValue(ctx, ictx.CtxKeyUserRoles, claims.Roles)
 					r = r.WithContext(ctx)
 				}
 			}

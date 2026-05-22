@@ -100,7 +100,6 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	go iupload.DeleteUploadFile(oldPhotoURL)
 
 	if h.hub != nil {
-		u.PasswordHash = ""
 		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})
 		payload, _ := json.Marshal(map[string]interface{}{
 			"action": "user_updated",
@@ -131,7 +130,7 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -208,7 +207,6 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 	go iupload.DeleteUploadFile(oldPhotoURL)
 
 	if h.hub != nil {
-		u.PasswordHash = ""
 		go h.hub.PropagateUser(targetID, map[string]interface{}{"user": u})
 		payload, _ := json.Marshal(map[string]interface{}{
 			"action": "user_updated",
@@ -225,7 +223,7 @@ func (h *Handler) uploadUserBanner(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -304,7 +302,6 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 	// Remove old banner file.
 	go iupload.DeleteUploadFile(oldBannerURL)
 	if h.hub != nil {
-		u.PasswordHash = ""
 		go h.hub.PropagateUser(userID, map[string]interface{}{"user": u})
 		payload, _ := json.Marshal(map[string]interface{}{
 			"action": "user_updated",

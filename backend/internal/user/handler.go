@@ -11,10 +11,9 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/skaia/backend/internal/auth"
 	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
-	"github.com/skaia/backend/internal/middleware"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -53,54 +52,8 @@ func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, norep
 	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, noreply: noreply, email: emailSender}
 }
 
-// propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
-func (h *Handler) propagateUserSession(userID int64) {
-	if h.hub == nil {
-		return
-	}
-	u, err := h.svc.GetByID(userID)
-	if err != nil {
-		log.Printf("user.Handler.propagateUserSession: fetch user %d: %v", userID, err)
-		return
-	}
-	u.PasswordHash = ""
-	token, err := auth.GenerateTokenWithPermissions(
-		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
-	)
-	if err != nil {
-		log.Printf("user.Handler.propagateUserSession: generate token for %d: %v", userID, err)
-		return
-	}
-	h.hub.PropagateUser(userID, map[string]interface{}{
-		"user":      u,
-		"new_token": token,
-	})
-}
-
 // Mount registers all user-domain routes onto r.
 func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
-	// Auth
-	r.Route("/auth", func(r chi.Router) {
-		r.With(middleware.AuthLimitMiddleware()).Post("/register", h.register)
-		r.With(middleware.AuthLimitMiddleware()).Post("/login", h.login)
-		r.With(middleware.AuthLimitMiddleware()).Post("/login/totp", h.loginTOTP)
-		r.With(middleware.AuthLimitMiddleware()).Post("/refresh", h.refreshToken)
-		r.With(jwt).Post("/logout", h.logout)
-
-		// Email verification (public — token-authenticated)
-		r.With(middleware.AuthLimitMiddleware()).Post("/verify-email", h.verifyEmail)
-		r.With(jwt).Post("/resend-verification", h.resendVerification)
-
-		// Password recovery (public — no auth required)
-		r.With(middleware.AuthLimitMiddleware()).Post("/forgot-password", h.forgotPassword)
-		r.With(middleware.AuthLimitMiddleware()).Post("/reset-password", h.resetPasswordWithToken)
-
-		// 2FA / TOTP (requires auth)
-		r.With(jwt).Post("/totp/setup", h.totpSetup)
-		r.With(jwt).Post("/totp/enable", h.totpEnable)
-		r.With(jwt).Post("/totp/disable", h.totpDisable)
-	})
-
 	// Users
 	r.Route("/users", func(r chi.Router) {
 		// Public (guest-safe) reads
@@ -118,17 +71,12 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Delete("/{id}/roles/{role}", h.removeRole)
 			r.Post("/{id}/suspend", h.suspendUser)
 			r.Delete("/{id}/suspend", h.unsuspendUser)
-			r.Post("/{id}/reset-password", h.resetPassword)
 			r.Post("/me/photo", h.uploadProfilePhoto)
 			r.Post("/me/banner", h.uploadProfileBanner)
 			r.Post("/{id}/photo", h.uploadUserPhoto)
 			r.Post("/{id}/banner", h.uploadUserBanner)
 			// Superuser sacrifice endpoint
 			r.Post("/{id}/superuser-sacrifice", h.newDistinctSuperuserDemotionVote)
-
-			// Admin TOTP endpoints
-			r.Post("/{id}/totp/enable", h.adminEnableTOTP)
-			r.Post("/{id}/totp/disable", h.adminDisableTOTP)
 
 			// Permission management endpoints
 			r.Get("/permissions", h.getPermissions)
@@ -149,9 +97,31 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 }
 
 // User handlers
+// propagateUserSession refreshes a user's JWT and broadcasts it via WebSocket.
+func (h *Handler) propagateUserSession(userID int64) {
+	if h.hub == nil {
+		return
+	}
+	u, err := h.svc.GetByID(userID)
+	if err != nil {
+		log.Printf("user.Handler.propagateUserSession: fetch user %d: %v", userID, err)
+		return
+	}
+	token, err := ijwt.GenerateTokenWithPermissions(
+		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
+	)
+	if err != nil {
+		log.Printf("user.Handler.propagateUserSession: generate token for %d: %v", userID, err)
+		return
+	}
+	h.hub.PropagateUser(userID, map[string]interface{}{
+		"user":      u,
+		"new_token": token,
+	})
+}
 
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(r, "id")
+	id, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -163,7 +133,6 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.PasswordHash = ""
 	utils.WriteJSON(w, http.StatusOK, user)
 }
 
@@ -181,7 +150,6 @@ func (h *Handler) getProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.PasswordHash = ""
 	utils.WriteJSON(w, http.StatusOK, user)
 }
 
@@ -200,7 +168,7 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := parseID(r, "id")
+	id, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
@@ -212,7 +180,7 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if userID != id && canManage && !h.checkManagePowerLevel(w, userID, id) {
+	if userID != id && canManage && !h.checkManagedPowerLevel(w, userID, id) {
 		return
 	}
 
@@ -257,7 +225,6 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated.PasswordHash = ""
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     userID,
 		Activity:   ievents.ActUserUpdated,
@@ -309,9 +276,6 @@ func (h *Handler) searchUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, u := range users {
-		u.PasswordHash = ""
-	}
 	utils.WriteJSON(w, http.StatusOK, users)
 }
 
@@ -325,12 +289,12 @@ func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 
@@ -352,7 +316,7 @@ func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {
 		ResourceID: targetID,
 		IP:         ievents.ClientIP(r),
 		Meta:       map[string]interface{}{"reason": req.Reason},
-		Fn:         func() { h.propagateUserSession(targetID) },
+		// No propagateUserSession; handled by auth
 	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "user suspended"})
 }
@@ -367,12 +331,12 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	targetID, err := parseID(r, "id")
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
-	if !h.checkManagePowerLevel(w, userID, targetID) {
+	if !h.checkManagedPowerLevel(w, userID, targetID) {
 		return
 	}
 
@@ -388,7 +352,7 @@ func (h *Handler) unsuspendUser(w http.ResponseWriter, r *http.Request) {
 		Resource:   ievents.ResUser,
 		ResourceID: targetID,
 		IP:         ievents.ClientIP(r),
-		Fn:         func() { h.propagateUserSession(targetID) },
+		// No propagateUserSession; handled by auth
 	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "user unsuspended"})
 }

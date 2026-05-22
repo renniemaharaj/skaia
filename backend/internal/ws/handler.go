@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
-	"github.com/skaia/backend/internal/auth"
+	"github.com/skaia/backend/internal/jwt"
 )
 
 const maxMessageSize = 4096
@@ -75,7 +75,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		}
 	}
 	if tokenStr != "" {
-		if claims, err := auth.ValidateToken(tokenStr); err == nil {
+		if claims, err := jwt.ValidateToken(tokenStr); err == nil {
 			userID = claims.UserID
 			userName = claims.Username
 		}

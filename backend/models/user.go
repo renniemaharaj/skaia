@@ -7,7 +7,6 @@ type User struct {
 	ID              int64      `json:"id"`
 	Username        string     `json:"username"`
 	Email           string     `json:"email"`
-	PasswordHash    string     `json:"-"`
 	DisplayName     string     `json:"display_name"`
 	AvatarURL       string     `json:"avatar_url"`
 	BannerURL       string     `json:"banner_url"`
@@ -20,11 +19,12 @@ type User struct {
 	EmailVerified   bool       `json:"email_verified"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
 	TOTPEnabled     bool       `json:"totp_enabled"`
-	TOTPSecret      string     `json:"totp_secret,omitempty"`
-	Roles           []string   `json:"roles"`
-	Permissions     []string   `json:"permissions"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	// TOTPSecret      string     `json:"totp_secret,omitempty"`
+	// (auth fields removed; see internal/auth)
+	Roles       []string  `json:"roles"`
+	Permissions []string  `json:"permissions"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // UserBlock represents a user blocking another user.

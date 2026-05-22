@@ -1,74 +1,98 @@
 package user
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"fmt"
-	"log"
-	"math/big"
-	"time"
+	"net/http"
 
-	"github.com/skaia/backend/internal/auth"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
 
+// EnableTOTP enables 2FA for the user and generates backup codes.
+func (s *Service) EnableTOTP(userID int64) ([]string, error) {
+	// TODO: Delegate to auth package for TOTP enable and backup code generation
+	// Example: return s.authService.EnableTOTP(userID)
+	return nil, fmt.Errorf("EnableTOTP not implemented: delegate to auth package")
+}
+
+// VerifyTOTP checks if the provided code is valid for the user's TOTP secret.
+func (s *Service) VerifyTOTP(userID int64, code string) (bool, error) {
+	// TODO: Delegate to auth package for TOTP verification
+	return false, fmt.Errorf("VerifyTOTP not implemented: delegate to auth package")
+}
+
 // AdminEnableTOTP allows an admin to enable TOTP for another user, optionally setting a secret and verifying a code.
 func (s *Service) AdminEnableTOTP(targetID int64, secret, code string) ([]string, error) {
-	user, err := s.repo.GetByID(targetID)
-	if err != nil {
-		return nil, errors.New("user not found")
-	}
-	if user.TOTPEnabled {
-		return nil, errors.New("2FA is already enabled")
-	}
-	if secret != "" {
-		if err := s.repo.SetTOTPSecret(targetID, secret); err != nil {
-			return nil, errors.New("failed to set TOTP secret")
-		}
-	}
-	// If a code is provided, validate it (if secret is set or already present)
-	if code != "" {
-		u, err := s.repo.GetByID(targetID)
-		if err != nil {
-			return nil, errors.New("user not found")
-		}
-		if u.TOTPSecret == "" {
-			return nil, errors.New("TOTP secret not set for user")
-		}
-		if !validateTOTPCode(u.TOTPSecret, code) {
-			return nil, errors.New("invalid verification code")
-		}
-	}
-	backupCodes, err := s.EnableTOTP(targetID)
-	if err != nil {
-		return nil, err
-	}
-	// Optionally: log/admin audit here
-	s.cache.Invalidate(targetID)
-	return backupCodes, nil
+	// TODO: Delegate to auth package for admin TOTP enable
+	return nil, fmt.Errorf("AdminEnableTOTP not implemented: delegate to auth package")
 }
 
 // AdminDisableTOTP allows an admin to disable TOTP for another user.
 func (s *Service) AdminDisableTOTP(targetID int64) error {
 	user, err := s.repo.GetByID(targetID)
 	if err != nil {
-		return errors.New("user not found")
+		return fmt.Errorf("user not found")
 	}
 	if !user.TOTPEnabled {
-		return errors.New("2FA is not enabled")
+		return fmt.Errorf("2FA is not enabled")
 	}
 	if err := s.DisableTOTP(targetID); err != nil {
 		return err
 	}
-	// Optionally: log/admin audit here
 	s.cache.Invalidate(targetID)
 	return nil
-
 }
 
-const securePassChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+// DisableTOTP disables 2FA and removes backup codes.
+func (s *Service) DisableTOTP(userID int64) error {
+	// TODO: Delegate to auth package, not user repo
+	// Example: return s.authService.DisableTOTP(userID)
+	return fmt.Errorf("DisableTOTP not implemented: delegate to auth package")
+}
+
+// Helper to cast user repo to auth repo interface for TOTP/backup code methods
+// TODO: Remove this after full auth separation
+// func iauthRepo(r interface{}) iauth.Repository {
+//        if repo, ok := r.(iauth.Repository); ok {
+//                return repo
+//        }
+//        panic("user repo does not implement auth.Repository")
+// }
+
+// CheckManagePowerLevel enforces that actorID's max power level is strictly
+func (s *Service) CheckManagePowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
+	actorLevel, err := s.repo.GetUserMaxPowerLevel(actorID)
+	if err != nil {
+		fmt.Printf("Error fetching actor's max power level: %v\n", err)
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	targetLevel, err := s.repo.GetUserMaxPowerLevel(targetID)
+	if err != nil {
+		fmt.Printf("Error fetching target's max power level: %v\n", err)
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	if actorLevel <= targetLevel {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions to manage this user")
+		return false
+	}
+	return true
+}
+
+// CreateUserFromRegisterRequest creates a user from a RegisterRequest (without password).
+func (s *Service) CreateUserFromRegisterRequest(req *models.RegisterRequest) (*models.User, error) {
+	user := &models.User{
+		Username:    req.Username,
+		Email:       req.Email,
+		DisplayName: req.DisplayName,
+		// Other fields can be set as needed, e.g. AvatarURL, etc.
+	}
+	// Password is not handled here; auth will create credential after user is created.
+	return s.repo.Create(user, "")
+}
 
 // RemoveAllRoles removes all roles from a user.
 func (s *Service) RemoveAllRoles(userID int64) error {
@@ -97,15 +121,6 @@ func (s *Service) GetRoleByIDName(name string) (*models.Role, error) {
 		}
 	}
 	return nil, fmt.Errorf("role not found")
-}
-
-func generateSecurePassword(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(securePassChars))))
-		b[i] = securePassChars[n.Int64()]
-	}
-	return string(b)
 }
 
 // Service contains all business logic for the user domain.
@@ -172,106 +187,6 @@ func (s *Service) GetAllPermissions() ([]*models.Permission, error) {
 	return s.repo.GetAllPermissions()
 }
 
-// Register creates a new user account and returns JWT tokens on success.
-func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, string, error) {
-	if req.Email == "" || req.Password == "" || req.Username == "" {
-		return nil, "", "", errors.New("email, password, and username required")
-	}
-
-	hashedPassword, err := auth.BcryptPassword(req.Password)
-	if err != nil {
-		log.Printf("user.Service.Register: hash error: %v", err)
-		return nil, "", "", errors.New(err.Error())
-	}
-
-	displayName := req.DisplayName
-	if displayName == "" {
-		displayName = req.Username
-	}
-
-	newUser := &models.User{
-		Username:    req.Username,
-		Email:       req.Email,
-		DisplayName: displayName,
-	}
-
-	u, err := s.repo.Create(newUser, hashedPassword)
-	if err != nil {
-		return nil, "", "", err
-	}
-
-	accessToken, err := auth.GenerateTokenWithPermissions(
-		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
-	)
-	if err != nil {
-		return nil, "", "", errors.New("failed to generate token")
-	}
-
-	refreshToken, err := auth.GenerateRefreshToken(u.ID)
-	if err != nil {
-		return nil, "", "", errors.New("failed to generate token")
-	}
-
-	u.PasswordHash = ""
-	s.cache.SetByID(u.ID, u)
-	return u, accessToken, refreshToken, nil
-}
-
-// Login authenticates credentials and returns a user and access token on success.
-func (s *Service) Login(email, password string) (*models.User, string, error) {
-	if email == "" || password == "" {
-		return nil, "", errors.New("email and password required")
-	}
-
-	u, err := s.repo.GetByEmail(email)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if !auth.ComparePassword(u.PasswordHash, password) {
-		return nil, "", errors.New("invalid credentials")
-	}
-
-	if u.IsSuspended {
-		reason := ""
-		if u.SuspendedReason != nil {
-			reason = *u.SuspendedReason
-		}
-		return nil, "", &SuspendedError{Reason: reason}
-	}
-
-	accessToken, err := auth.GenerateTokenWithPermissions(
-		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
-	)
-	if err != nil {
-		return nil, "", errors.New("failed to generate token")
-	}
-
-	u.PasswordHash = ""
-	s.cache.SetByID(u.ID, u)
-	return u, accessToken, nil
-}
-
-// RefreshToken validates a refresh token and issues a new access token
-// with up-to-date roles and permissions loaded from the database.
-func (s *Service) RefreshToken(refreshToken string) (string, error) {
-	claims, err := auth.ValidateToken(refreshToken)
-	if err != nil {
-		return "", errors.New("invalid refresh token")
-	}
-
-	// Always reload from DB to pick up any role/permission changes.
-	u, err := s.repo.GetByID(claims.UserID)
-	if err != nil {
-		return "", errors.New("user not found")
-	}
-	s.cache.SetByID(u.ID, u)
-
-	return auth.GenerateTokenWithPermissions(
-		u.ID, u.Username, u.Email, u.DisplayName, u.Roles, u.Permissions,
-	)
-}
-
 // Update persists changes to a user record and invalidates the cache entry.
 func (s *Service) Update(u *models.User) (*models.User, error) {
 	updated, err := s.repo.Update(u)
@@ -280,6 +195,11 @@ func (s *Service) Update(u *models.User) (*models.User, error) {
 	}
 	s.cache.SetByID(updated.ID, updated)
 	return updated, nil
+}
+
+// InvalidateUser evicts a user from the cache, forcing a fresh database read on next access.
+func (s *Service) InvalidateUser(userID int64) {
+	s.cache.Invalidate(userID)
 }
 
 // Delete removes a user and evicts them from the cache.
@@ -434,197 +354,4 @@ func (s *Service) Unsuspend(userID int64) error {
 	}
 	s.cache.Invalidate(userID)
 	return nil
-}
-
-// ResetPassword generates a new secure random password for the target user,
-// hashes and stores it, then returns the plaintext password so the caller can
-// deliver it (e.g. via a noreply inbox message).
-func (s *Service) ResetPassword(targetID int64) (string, error) {
-	newPw := generateSecurePassword(16)
-	hash, err := auth.BcryptPassword(newPw)
-	if err != nil {
-		return "", err
-	}
-	if err := s.repo.UpdatePasswordHash(targetID, hash); err != nil {
-		return "", err
-	}
-	s.cache.Invalidate(targetID)
-	return newPw, nil
-}
-
-// SuspendedError is returned by Login when the account is suspended.
-type SuspendedError struct {
-	Reason string
-}
-
-func (e *SuspendedError) Error() string {
-	return "account suspended: " + e.Reason
-}
-
-// ── Email verification ────────────────────────────────────────────────────
-
-// CreateEmailVerificationToken generates a secure token and stores it.
-func (s *Service) CreateEmailVerificationToken(userID int64) (string, error) {
-	token := generateSecureToken(64)
-	expiresAt := time.Now().Add(24 * time.Hour)
-	if err := s.repo.CreateEmailVerificationToken(userID, token, expiresAt); err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-// VerifyEmail validates the token and marks the user's email as verified.
-func (s *Service) VerifyEmail(token string) error {
-	t, err := s.repo.GetEmailVerificationToken(token)
-	if err != nil {
-		return errors.New("invalid or expired verification token")
-	}
-	if time.Now().After(t.ExpiresAt) {
-		return errors.New("verification token has expired")
-	}
-	if err := s.repo.MarkEmailVerified(t.UserID); err != nil {
-		return err
-	}
-	s.cache.Invalidate(t.UserID)
-	_ = s.repo.DeleteEmailVerificationTokens(t.UserID)
-	return nil
-}
-
-// ResendVerificationToken deletes old tokens and creates a new one.
-func (s *Service) ResendVerificationToken(userID int64) (string, error) {
-	_ = s.repo.DeleteEmailVerificationTokens(userID)
-	return s.CreateEmailVerificationToken(userID)
-}
-
-// ── Password reset ────────────────────────────────────────────────────────
-
-// CreatePasswordResetToken generates a secure token for password recovery.
-func (s *Service) CreatePasswordResetToken(userID int64) (string, error) {
-	_ = s.repo.DeletePasswordResetTokens(userID) // revoke old tokens
-	token := generateSecureToken(64)
-	expiresAt := time.Now().Add(1 * time.Hour)
-	if err := s.repo.CreatePasswordResetToken(userID, token, expiresAt); err != nil {
-		return "", err
-	}
-	return token, nil
-}
-
-// ResetPasswordWithToken validates the reset token and sets a new password.
-func (s *Service) ResetPasswordWithToken(token, newPassword string) error {
-	if len(newPassword) < 8 || len(newPassword) > 72 {
-		return errors.New("password must be 8-72 characters")
-	}
-	t, err := s.repo.GetPasswordResetToken(token)
-	if err != nil {
-		return errors.New("invalid or expired reset token")
-	}
-	if t.Used {
-		return errors.New("reset token has already been used")
-	}
-	if time.Now().After(t.ExpiresAt) {
-		return errors.New("reset token has expired")
-	}
-	hash, err := auth.BcryptPassword(newPassword)
-	if err != nil {
-		return fmt.Errorf("hash password: %w", err)
-	}
-	if err := s.repo.UpdatePasswordHash(t.UserID, hash); err != nil {
-		return err
-	}
-	_ = s.repo.MarkPasswordResetTokenUsed(t.ID)
-	s.cache.Invalidate(t.UserID)
-	return nil
-}
-
-// GetPasswordResetTokenUser returns the user associated with a reset token (for email notifications).
-func (s *Service) GetPasswordResetTokenUser(token string) (*models.User, error) {
-	t, err := s.repo.GetPasswordResetToken(token)
-	if err != nil {
-		return nil, err
-	}
-	return s.GetByID(t.UserID)
-}
-
-// ── TOTP / 2FA ────────────────────────────────────────────────────────────
-
-// SetTOTPSecret stores a TOTP secret for the user (without enabling it yet).
-func (s *Service) SetTOTPSecret(userID int64, secret string) error {
-	if err := s.repo.SetTOTPSecret(userID, secret); err != nil {
-		return err
-	}
-	s.cache.Invalidate(userID)
-	return nil
-}
-
-// EnableTOTP enables 2FA for the user and generates backup codes.
-func (s *Service) EnableTOTP(userID int64) ([]string, error) {
-	if err := s.repo.EnableTOTP(userID); err != nil {
-		return nil, err
-	}
-	_ = s.repo.DeleteTOTPBackupCodes(userID)
-
-	plainCodes := make([]string, 10)
-	hashes := make([]string, 10)
-	for i := range plainCodes {
-		plainCodes[i] = generateBackupCode()
-		h := sha256.Sum256([]byte(plainCodes[i]))
-		hashes[i] = hex.EncodeToString(h[:])
-	}
-	if err := s.repo.CreateTOTPBackupCodes(userID, hashes); err != nil {
-		return nil, err
-	}
-	s.cache.Invalidate(userID)
-	return plainCodes, nil
-}
-
-// DisableTOTP disables 2FA and removes backup codes.
-func (s *Service) DisableTOTP(userID int64) error {
-	if err := s.repo.DisableTOTP(userID); err != nil {
-		return err
-	}
-	_ = s.repo.DeleteTOTPBackupCodes(userID)
-	s.cache.Invalidate(userID)
-	return nil
-}
-
-// ValidateTOTPBackupCode checks if a backup code matches and consumes it.
-func (s *Service) ValidateTOTPBackupCode(userID int64, code string) (bool, error) {
-	codes, err := s.repo.GetTOTPBackupCodes(userID)
-	if err != nil {
-		return false, err
-	}
-	h := sha256.Sum256([]byte(code))
-	hex := hex.EncodeToString(h[:])
-	for _, c := range codes {
-		if !c.Used && c.CodeHash == hex {
-			if err := s.repo.UseTOTPBackupCode(c.ID); err != nil {
-				return false, err
-			}
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// ── Token helpers ─────────────────────────────────────────────────────────
-
-const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func generateSecureToken(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
-		b[i] = tokenChars[n.Int64()]
-	}
-	return string(b)
-}
-
-func generateBackupCode() string {
-	const digits = "0123456789"
-	b := make([]byte, 8)
-	for i := range b {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(digits))))
-		b[i] = digits[n.Int64()]
-	}
-	return string(b[:4]) + "-" + string(b[4:])
 }

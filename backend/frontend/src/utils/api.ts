@@ -375,6 +375,14 @@ export async function totpEnable(code: string): Promise<TOTPEnableResponse> {
   });
 }
 
+export interface TOTPStatusResponse {
+  enabled: boolean;
+}
+
+export async function totpStatus(userId?: string): Promise<TOTPStatusResponse> {
+  return apiRequest(userId ? `/auth/totp/${userId}` : "/auth/totp");
+}
+
 export async function totpDisable(
   password: string,
 ): Promise<{ status: string }> {

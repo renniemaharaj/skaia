@@ -1,0 +1,72 @@
+# Auth/User Separation Specification
+
+## Purpose
+
+Define the architecture, models, and migration plan for decoupling authentication from the user model in Skaia. This ensures sensitive authentication data is managed in a dedicated `auth` package and database tables, improving security, maintainability, and extensibility.
+
+## Motivation
+
+- Reduce risk by isolating password hashes, TOTP secrets, and backup codes from the main user table.
+- Enable future support for multiple authentication providers and methods.
+- Enforce clear boundaries between user profile data and authentication logic.
+
+## Design
+
+### New Tables
+
+- `auth_credentials`:
+  - `id` (PK)
+  - `user_id` (unique, FK to users.id)
+  - `password_hash`
+  - `created_at`
+  - `updated_at`
+
+- `auth_totp_secrets`:
+  - `id` (PK)
+  - `user_id` (unique, FK to users.id)
+  - `totp_secret`
+  - `enabled` (bool)
+  - `created_at`
+  - `updated_at`
+
+- `auth_backup_codes`:
+  - `id` (PK)
+  - `user_id` (FK to users.id)
+  - `code_hash`
+  - `used` (bool)
+  - `created_at`
+
+### User Table Changes
+
+- Remove `password_hash`, `totp_secret`, `totp_enabled` from `users` table and `User` model.
+- All authentication data is accessed via the `auth` package and its tables.
+
+### Backend Refactor
+
+- All password, TOTP, and backup code logic moves to `internal/auth`.
+- `auth` exposes interfaces for authentication, TOTP, and backup code management.
+- User service delegates authentication to `auth`.
+- No username or email is stored in auth tables—only `user_id` links.
+
+### Migration Plan
+
+- Migrate all existing password hashes, TOTP secrets, and backup codes from `users` to new tables.
+- Ensure atomic migration and data integrity.
+- Remove sensitive fields from `users` table after migration.
+
+### API/Handler Changes
+
+- Update registration, login, 2FA, and backup code endpoints to use new interfaces.
+- Ensure all flows are tested and backward compatible.
+
+## Testing
+
+- Comprehensive unit and integration tests for all authentication flows.
+- Migration tests to ensure no data loss.
+
+## References
+
+- .todo/auth_user_separation
+- .routines/worker
+- .routines/correctness
+- .specs/backend_spec

@@ -2,6 +2,34 @@ package models
 
 import "time"
 
+// Credential represents a user's authentication credential (password hash).
+type Credential struct {
+	ID           int64     `json:"id"`
+	UserID       int64     `json:"user_id"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// TOTPSecret represents a user's TOTP secret for 2FA.
+type TOTPSecret struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	Secret    string    `json:"-"`
+	Enabled   bool      `json:"enabled"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// BackupCode represents a one-time-use backup code for 2FA.
+type BackupCode struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	CodeHash  string    `json:"-"`
+	Used      bool      `json:"used"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // RegisterRequest represents a user registration request.
 type RegisterRequest struct {
 	Username    string `json:"username"`

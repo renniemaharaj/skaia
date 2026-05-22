@@ -1,0 +1,23 @@
+<--/------->
+
+## auth_user_separation
+
+### Current Progress
+- **Phase 1: Design new auth models/tables** — ⬜ Not started
+- **Phase 2: Refactor backend/internal/auth** — ⬜ Not started
+- **Phase 3: Update user model/repository** — ⬜ Not started
+- **Phase 4: Migrate data** — ⬜ Not started
+- **Phase 5: Update handlers/APIs** — ⬜ Not started
+- **Phase 6: Testing and validation** — ⬜ Not started
+- **Phase 7: Documentation/traceability** — ⬜ Not started
+
+### Next Steps
+- [ ] Design new auth models and tables; draft `.specs/auth_user_separation_spec`
+- [ ] Refactor backend/internal/auth to manage all authentication logic and data
+- [ ] Remove auth fields from user model and users table
+- [ ] Write and test migration for auth data
+- [ ] Refactor handlers and APIs to use new interfaces
+- [ ] Add/expand tests for all affected flows
+- [ ] Update documentation/specs and reference in PRs/commits
+
+<--/------->

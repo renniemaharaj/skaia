@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
     id               BIGSERIAL PRIMARY KEY,
     username         VARCHAR(255) NOT NULL UNIQUE,
     email            VARCHAR(255) NOT NULL UNIQUE,
-    password_hash    VARCHAR(255) NOT NULL,
+    -- password_hash removed, now in auth_credentials
     display_name     VARCHAR(255),
     avatar_url       TEXT,
     banner_url       TEXT,
@@ -507,8 +507,7 @@ CREATE INDEX IF NOT EXISTS idx_events_resource   ON events(resource, resource_id
 -- ── Email verification & 2FA columns ───────────────────────────────────────
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified    BOOLEAN   DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret       VARCHAR(64)  DEFAULT '';
-ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled      BOOLEAN   DEFAULT false;
+-- totp_secret and totp_enabled removed, now in auth_totp_secrets
 
 -- ── Email verification tokens ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
@@ -535,12 +534,29 @@ CREATE INDEX IF NOT EXISTS idx_pw_reset_user   ON password_reset_tokens(user_id)
 CREATE INDEX IF NOT EXISTS idx_pw_reset_token  ON password_reset_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_pw_reset_expiry ON password_reset_tokens(expires_at);
 
--- ── TOTP backup codes ──────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS totp_backup_codes (
-    id         BIGSERIAL    PRIMARY KEY,
-    user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    code_hash  VARCHAR(255) NOT NULL,
-    used       BOOLEAN      DEFAULT false,
-    created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+
+-- ── Auth tables (moved from migration 009) ─────────────────────────────
+CREATE TABLE IF NOT EXISTS auth_credentials (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_totp_backup_user ON totp_backup_codes(user_id);
+
+CREATE TABLE IF NOT EXISTS auth_totp_secrets (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    totp_secret VARCHAR(255),
+    enabled     BOOLEAN DEFAULT false,
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS auth_backup_codes (
+    id        BIGSERIAL PRIMARY KEY,
+    user_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash VARCHAR(255) NOT NULL,
+    used      BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
