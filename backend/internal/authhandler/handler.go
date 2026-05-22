@@ -43,5 +43,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Expose TOTP status for the authenticated user and admin queries
 		r.With(jwt).Get("/totp", h.authHandler.TOTPStatus)
 		r.With(jwt).Get("/totp/{id}", h.authHandler.AdminTOTPStatus)
+
+		// Admin TOTP management (requires user.manage-others permission)
+		r.With(jwt).Post("/admin/totp/{id}/enable", h.authHandler.AdminEnableTOTP)
+		r.With(jwt).Post("/admin/totp/{id}/disable", h.authHandler.AdminDisableTOTP)
 	})
 }

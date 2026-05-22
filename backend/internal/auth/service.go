@@ -213,6 +213,37 @@ func (s *Service) DisableTOTP(userID int64, password string) error {
 	return s.repo.DeleteBackupCodes(context.Background(), userID)
 }
 
+// AdminEnableTOTP allows an admin to enable TOTP for a user with a given secret and code.
+func (s *Service) AdminEnableTOTP(userID int64, secret, code string) ([]string, error) {
+	// Store the secret
+	if err := s.repo.SetTOTPSecret(context.Background(), userID, secret); err != nil {
+		return nil, err
+	}
+	// Validate the code
+	if !totp.Validate(code, secret) {
+		return nil, ErrInvalidTOTPCode
+	}
+	// Generate backup codes
+	codes, err := s.GenerateBackupCodes(userID, 10)
+	if err != nil {
+		return nil, err
+	}
+	// Enable TOTP
+	if err := s.repo.SetTOTPEnabled(context.Background(), userID, true); err != nil {
+		_ = s.repo.DeleteBackupCodes(context.Background(), userID)
+		return nil, err
+	}
+	return codes, nil
+}
+
+// AdminDisableTOTP allows an admin to disable TOTP for a user without a password.
+func (s *Service) AdminDisableTOTP(userID int64) error {
+	if err := s.repo.SetTOTPEnabled(context.Background(), userID, false); err != nil {
+		return err
+	}
+	return s.repo.DeleteBackupCodes(context.Background(), userID)
+}
+
 var ErrInvalidPassword = errors.New("invalid password")
 var ErrInvalidTOTPCode = errors.New("invalid TOTP code")
 

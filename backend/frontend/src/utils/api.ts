@@ -39,7 +39,7 @@ export async function adminEnableTOTP(
   secret: string,
   code: string,
 ): Promise<AdminTOTPEnableResponse> {
-  return apiRequest(`/users/${userId}/totp/enable`, {
+  return apiRequest(`/auth/admin/totp/${userId}/enable`, {
     method: "POST",
     body: JSON.stringify({ secret, code }),
   });
@@ -51,7 +51,7 @@ export async function adminEnableTOTP(
 export async function adminDisableTOTP(
   userId: string,
 ): Promise<{ status: string }> {
-  return apiRequest(`/users/${userId}/totp/disable`, {
+  return apiRequest(`/auth/admin/totp/${userId}/disable`, {
     method: "POST",
   });
 }

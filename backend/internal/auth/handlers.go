@@ -719,3 +719,105 @@ func (h *Handler) TOTPDisable(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
+
+// AdminEnableTOTP allows an admin to enable TOTP for another user without requiring a password.
+func (h *Handler) AdminEnableTOTP(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	// Permission check
+	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	// Optional power-level guard
+	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
+		return
+	}
+	var req struct {
+		Secret string `json:"secret"`
+		Code   string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Secret == "" || req.Code == "" {
+		utils.WriteError(w, http.StatusBadRequest, "secret and code required")
+		return
+	}
+	// EnableTOTPWithSecret enables TOTP with a given secret and code (for admin use).
+	codes, err := h.svc.AdminEnableTOTP(targetID, req.Secret, req.Code)
+	if err != nil {
+		log.Printf("auth.Handler.AdminEnableTOTP: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if h.userSvc != nil {
+		h.userSvc.InvalidateUser(targetID)
+		if updatedUser, err := h.userSvc.GetByID(targetID); err == nil {
+			if _, enabled, err := h.svc.GetTOTPEnabled(targetID); err == nil {
+				updatedUser.TOTPEnabled = enabled
+			} else {
+				log.Printf("auth.Handler.AdminEnableTOTP: failed to load totp status for user %d: %v", targetID, err)
+			}
+			if h.hub != nil {
+				go h.hub.PropagateUser(targetID, map[string]interface{}{"user": updatedUser})
+			}
+		} else {
+			log.Printf("auth.Handler.AdminEnableTOTP: failed to refresh user %d: %v", targetID, err)
+		}
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":       "TOTP enabled",
+		"backup_codes": codes,
+	})
+}
+
+// AdminDisableTOTP allows an admin to disable TOTP for another user without requiring a password.
+func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	// Permission check
+	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	// Optional power-level guard
+	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
+		return
+	}
+	// Admin disable does not require password — call service method with empty password as sentinel.
+	if err := h.svc.AdminDisableTOTP(targetID); err != nil {
+		log.Printf("auth.Handler.AdminDisableTOTP: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if h.userSvc != nil {
+		h.userSvc.InvalidateUser(targetID)
+		if updatedUser, err := h.userSvc.GetByID(targetID); err == nil {
+			if _, enabled, err := h.svc.GetTOTPEnabled(targetID); err == nil {
+				updatedUser.TOTPEnabled = enabled
+			} else {
+				log.Printf("auth.Handler.AdminDisableTOTP: failed to load totp status for user %d: %v", targetID, err)
+			}
+			if h.hub != nil {
+				go h.hub.PropagateUser(targetID, map[string]interface{}{"user": updatedUser})
+			}
+		} else {
+			log.Printf("auth.Handler.AdminDisableTOTP: failed to refresh user %d: %v", targetID, err)
+		}
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
+}
