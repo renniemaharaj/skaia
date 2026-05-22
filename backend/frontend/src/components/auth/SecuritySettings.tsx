@@ -140,8 +140,32 @@ export default function SecuritySettings({
     }
   };
 
+  const copyAdminBackupCodes = () => {
+    if (!adminBackupCodes) return;
+    navigator.clipboard.writeText(adminBackupCodes.join("\n"));
+    toast.success("Backup codes copied to clipboard");
+  };
+
+  const downloadAdminBackupCodes = () => {
+    if (!adminBackupCodes) return;
+    const blob = new Blob([adminBackupCodes.join("\n")], {
+      type: "text/plain",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `skaia-backup-codes-${managedUsername}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }, 0);
+    toast.success("Backup codes downloaded");
+  };
+
   if (canManage && managedUserId) {
-    // Show backup codes after admin enables 2FA
+    // Show backup codes after admin enables 2FA or generates new codes
     if (adminBackupCodes) {
       return (
         <div className="sec-panel">
@@ -152,10 +176,10 @@ export default function SecuritySettings({
             }
           >
             <div className="sec-panel__dialog">
-              <h3>Save Backup Codes for {managedUsername}</h3>
+              <h3>Backup Codes for {managedUsername}</h3>
               <div className="sec-panel__warning">
                 Save these codes in a safe place. Each code can only be used
-                once.
+                once. Share these securely with the user if you generated them.
               </div>
               <div className="sec-panel__backup-codes">
                 {adminBackupCodes.map((code, i) => (
@@ -165,6 +189,20 @@ export default function SecuritySettings({
                 ))}
               </div>
               <div className="sec-panel__actions">
+                <button
+                  className="sec-panel__btn sec-panel__btn--primary"
+                  onClick={copyAdminBackupCodes}
+                >
+                  <Copy size={14} />
+                  Copy Codes
+                </button>
+                <button
+                  className="sec-panel__btn sec-panel__btn--primary"
+                  onClick={downloadAdminBackupCodes}
+                >
+                  <Download size={14} />
+                  Download Codes
+                </button>
                 <button
                   className="sec-panel__btn sec-panel__btn--primary"
                   onClick={() => setAdminBackupCodes(null)}
