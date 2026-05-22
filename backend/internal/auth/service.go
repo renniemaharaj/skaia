@@ -244,6 +244,20 @@ func (s *Service) AdminDisableTOTP(userID int64) error {
 	return s.repo.DeleteBackupCodes(context.Background(), userID)
 }
 
+// AdminGenerateBackupCodes allows an admin to regenerate backup codes for a user.
+func (s *Service) AdminGenerateBackupCodes(userID int64) ([]string, error) {
+	// Delete old codes
+	if err := s.repo.DeleteBackupCodes(context.Background(), userID); err != nil {
+		return nil, err
+	}
+	// Generate new codes
+	codes, err := s.GenerateBackupCodes(userID, 10)
+	if err != nil {
+		return nil, err
+	}
+	return codes, nil
+}
+
 var ErrInvalidPassword = errors.New("invalid password")
 var ErrInvalidTOTPCode = errors.New("invalid TOTP code")
 

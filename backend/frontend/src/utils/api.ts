@@ -55,6 +55,18 @@ export async function adminDisableTOTP(
     method: "POST",
   });
 }
+
+/**
+ * Admin: Generate backup codes for another user
+ */
+export async function adminGenerateBackupCodes(
+  userId: string,
+): Promise<{ backup_codes: string[] }> {
+  return apiRequest(`/auth/admin/totp/${userId}/generate-backup-codes`, {
+    method: "POST",
+  });
+}
+
 /**
  * API service for centralized HTTP requests with authentication
  */

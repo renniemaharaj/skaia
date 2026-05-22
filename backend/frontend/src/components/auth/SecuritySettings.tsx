@@ -16,6 +16,7 @@ import {
   resendVerificationEmail,
   adminEnableTOTP,
   adminDisableTOTP,
+  adminGenerateBackupCodes,
   type TOTPSetupResponse,
 } from "../../utils/api";
 import { toast } from "sonner";
@@ -116,6 +117,23 @@ export default function SecuritySettings({
     } catch (err) {
       setAdminError(
         err instanceof Error ? err.message : "Failed to disable 2FA",
+      );
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  const handleAdminGenerateBackupCodes = async () => {
+    setAdminLoading(true);
+    setAdminError(null);
+    try {
+      if (!managedUserId) throw new Error("Missing user id");
+      const res = await adminGenerateBackupCodes(managedUserId);
+      setAdminBackupCodes(res.backup_codes);
+      toast.success("New backup codes generated for user");
+    } catch (err) {
+      setAdminError(
+        err instanceof Error ? err.message : "Failed to generate backup codes",
       );
     } finally {
       setAdminLoading(false);
@@ -281,9 +299,7 @@ export default function SecuritySettings({
             {/* TODO: Implement backup code and email verification admin actions */}
             <button
               className="sec-panel__btn sec-panel__btn--primary"
-              onClick={() =>
-                toast.info("TODO: Generate new backup codes (admin)")
-              }
+              onClick={() => handleAdminGenerateBackupCodes()}
             >
               Generate Backup Codes
             </button>

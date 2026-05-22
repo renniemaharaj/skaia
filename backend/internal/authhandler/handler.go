@@ -47,5 +47,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Admin TOTP management (requires user.manage-others permission)
 		r.With(jwt).Post("/admin/totp/{id}/enable", h.authHandler.AdminEnableTOTP)
 		r.With(jwt).Post("/admin/totp/{id}/disable", h.authHandler.AdminDisableTOTP)
+
+		r.With(jwt).Post("/admin/totp/{id}/generate-backup-codes", h.authHandler.AdminGenerateBackupCodes)
 	})
 }

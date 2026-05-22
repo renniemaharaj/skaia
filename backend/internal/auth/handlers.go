@@ -821,3 +821,34 @@ func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
+
+func (h *Handler) AdminGenerateBackupCodes(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	// Permission check
+	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	// Optional power-level guard
+	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
+		return
+	}
+	codes, err := h.svc.AdminGenerateBackupCodes(targetID)
+	if err != nil {
+		log.Printf("auth.Handler.AdminGenerateBackupCodes: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to generate backup codes")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"backup_codes": codes,
+	})
+}
