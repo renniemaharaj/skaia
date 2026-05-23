@@ -1,0 +1,15 @@
+<--/------->
+
+## migration_rollback_validation
+
+### Current Progress
+- **Phase 1: Rollback instructions captured** — ✅ Complete
+- **Phase 2: Validation steps captured** — ✅ Complete
+- **Phase 3: Execution need** — ⬜ Not started
+
+### Next Steps
+- [ ] Keep this rollback reference until the landing-to-page migration is no longer considered reversible operational work
+- [ ] If rollback is required, execute `.todo/migration_rollback_validation` and then run `go test ./...`
+- [ ] Remove this todo pair once the migration rollback window is closed
+
+<--/------->

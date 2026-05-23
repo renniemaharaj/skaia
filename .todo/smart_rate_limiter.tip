@@ -1,12 +1,12 @@
 ### Current Progress
 
-- **Phase 1: Define rate limiter model** — ⬜ Not started (no backend tests detected)
+- **Phase 1: Define rate limiter model** — ⬜ Not started
 - **Phase 2: Implement grouping logic** — ⬜ Not started
 - **Phase 3: Record rate-limit events** — ⬜ Not started
 - **Phase 4: Build admin UI routes** — ⬜ Not started
 - **Phase 5: Admin controls** — ⬜ Not started
 - **Phase 6: Data/event policy** — ⬜ Not started
-- **Phase 7: Testing** — ⬜ Not started (no backend tests detected)
+- **Phase 7: Testing** — ⬜ Not started
 
 ### Next Steps
 
@@ -18,3 +18,4 @@
 - [ ] Enforce data/event policy
 - [ ] Implement and verify backend tests
 - [ ] Test all scenarios
+- [ ] Reviewed 2026-05-22: existing middleware rate limiter is present, but smart rooms/admin dashboard/event policy are not implemented

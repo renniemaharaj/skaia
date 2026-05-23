@@ -8,121 +8,6 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-// EnableTOTP enables 2FA for the user and generates backup codes.
-func (s *Service) EnableTOTP(userID int64) ([]string, error) {
-	// TODO: Delegate to auth package for TOTP enable and backup code generation
-	// Example: return s.authService.EnableTOTP(userID)
-	return nil, fmt.Errorf("EnableTOTP not implemented: delegate to auth package")
-}
-
-// VerifyTOTP checks if the provided code is valid for the user's TOTP secret.
-func (s *Service) VerifyTOTP(userID int64, code string) (bool, error) {
-	// TODO: Delegate to auth package for TOTP verification
-	return false, fmt.Errorf("VerifyTOTP not implemented: delegate to auth package")
-}
-
-// AdminEnableTOTP allows an admin to enable TOTP for another user, optionally setting a secret and verifying a code.
-func (s *Service) AdminEnableTOTP(targetID int64, secret, code string) ([]string, error) {
-	// TODO: Delegate to auth package for admin TOTP enable
-	return nil, fmt.Errorf("AdminEnableTOTP not implemented: delegate to auth package")
-}
-
-// AdminDisableTOTP allows an admin to disable TOTP for another user.
-func (s *Service) AdminDisableTOTP(targetID int64) error {
-	user, err := s.repo.GetByID(targetID)
-	if err != nil {
-		return fmt.Errorf("user not found")
-	}
-	if !user.TOTPEnabled {
-		return fmt.Errorf("2FA is not enabled")
-	}
-	if err := s.DisableTOTP(targetID); err != nil {
-		return err
-	}
-	s.cache.Invalidate(targetID)
-	return nil
-}
-
-// DisableTOTP disables 2FA and removes backup codes.
-func (s *Service) DisableTOTP(userID int64) error {
-	// TODO: Delegate to auth package, not user repo
-	// Example: return s.authService.DisableTOTP(userID)
-	return fmt.Errorf("DisableTOTP not implemented: delegate to auth package")
-}
-
-// Helper to cast user repo to auth repo interface for TOTP/backup code methods
-// TODO: Remove this after full auth separation
-// func iauthRepo(r interface{}) iauth.Repository {
-//        if repo, ok := r.(iauth.Repository); ok {
-//                return repo
-//        }
-//        panic("user repo does not implement auth.Repository")
-// }
-
-// CheckManagePowerLevel enforces that actorID's max power level is strictly
-func (s *Service) CheckManagePowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
-	actorLevel, err := s.repo.GetUserMaxPowerLevel(actorID)
-	if err != nil {
-		fmt.Printf("Error fetching actor's max power level: %v\n", err)
-		utils.WriteError(w, http.StatusInternalServerError, "internal error")
-		return false
-	}
-
-	targetLevel, err := s.repo.GetUserMaxPowerLevel(targetID)
-	if err != nil {
-		fmt.Printf("Error fetching target's max power level: %v\n", err)
-		utils.WriteError(w, http.StatusInternalServerError, "internal error")
-		return false
-	}
-
-	if actorLevel <= targetLevel {
-		utils.WriteError(w, http.StatusForbidden, "insufficient permissions to manage this user")
-		return false
-	}
-	return true
-}
-
-// CreateUserFromRegisterRequest creates a user from a RegisterRequest (without password).
-func (s *Service) CreateUserFromRegisterRequest(req *models.RegisterRequest) (*models.User, error) {
-	user := &models.User{
-		Username:    req.Username,
-		Email:       req.Email,
-		DisplayName: req.DisplayName,
-		// Other fields can be set as needed, e.g. AvatarURL, etc.
-	}
-	// Password is not handled here; auth will create credential after user is created.
-	return s.repo.Create(user, "")
-}
-
-// RemoveAllRoles removes all roles from a user.
-func (s *Service) RemoveAllRoles(userID int64) error {
-	user, err := s.repo.GetByID(userID)
-	if err != nil {
-		return err
-	}
-	for _, role := range user.Roles {
-		if err := s.repo.RemoveRoleByName(userID, role); err != nil {
-			return err
-		}
-	}
-	s.cache.Invalidate(userID)
-	return nil
-}
-
-// GetRoleByIDName returns a role by its name (for handler logic).
-func (s *Service) GetRoleByIDName(name string) (*models.Role, error) {
-	roles, err := s.repo.GetAllRoles()
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range roles {
-		if r.Name == name {
-			return r, nil
-		}
-	}
-	return nil, fmt.Errorf("role not found")
-}
-
 // Service contains all business logic for the user domain.
 // It sits between handlers and the repository, providing caching and
 // orchestrating multi-step operations such as registration and login.
@@ -354,4 +239,68 @@ func (s *Service) Unsuspend(userID int64) error {
 	}
 	s.cache.Invalidate(userID)
 	return nil
+}
+
+// CheckManagePowerLevel enforces that actorID's max power level is strictly
+func (s *Service) CheckManagePowerLevel(w http.ResponseWriter, actorID, targetID int64) bool {
+	actorLevel, err := s.repo.GetUserMaxPowerLevel(actorID)
+	if err != nil {
+		fmt.Printf("Error fetching actor's max power level: %v\n", err)
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	targetLevel, err := s.repo.GetUserMaxPowerLevel(targetID)
+	if err != nil {
+		fmt.Printf("Error fetching target's max power level: %v\n", err)
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return false
+	}
+
+	if actorLevel <= targetLevel {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions to manage this user")
+		return false
+	}
+	return true
+}
+
+// CreateUserFromRegisterRequest creates a user from a RegisterRequest (without password).
+func (s *Service) CreateUserFromRegisterRequest(req *models.RegisterRequest) (*models.User, error) {
+	user := &models.User{
+		Username:    req.Username,
+		Email:       req.Email,
+		DisplayName: req.DisplayName,
+		// Other fields can be set as needed, e.g. AvatarURL, etc.
+	}
+	// Password is not handled here; auth will create credential after user is created.
+	return s.repo.Create(user, "")
+}
+
+// RemoveAllRoles removes all roles from a user.
+func (s *Service) RemoveAllRoles(userID int64) error {
+	user, err := s.repo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+	for _, role := range user.Roles {
+		if err := s.repo.RemoveRoleByName(userID, role); err != nil {
+			return err
+		}
+	}
+	s.cache.Invalidate(userID)
+	return nil
+}
+
+// GetRoleByIDName returns a role by its name (for handler logic).
+func (s *Service) GetRoleByIDName(name string) (*models.Role, error) {
+	roles, err := s.repo.GetAllRoles()
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range roles {
+		if r.Name == name {
+			return r, nil
+		}
+	}
+	return nil, fmt.Errorf("role not found")
 }

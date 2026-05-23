@@ -2,7 +2,7 @@
 
 ## Context
 
-Currently, authentication logic, models, and database tables are tightly coupled with the user model in Skaia. The `User` struct contains authentication fields (e.g., `PasswordHash`, `TOTPSecret`, `TOTPEnabled`), and the user repository manages both user and authentication data. This coupling complicates security, maintainability, and future extensibility (e.g., supporting multiple auth providers).
+Authentication data has been moved into the auth package and auth-owned tables. The remaining separation work is cleanup and validation: `models.User` still exposes `TOTPEnabled` as hydrated response state, some tests still insert `users.password_hash` directly, and the auth migration needs review for backup-code migration/idempotency.
 
 ## Goal
 
@@ -10,24 +10,24 @@ Currently, authentication logic, models, and database tables are tightly coupled
 - Move all authentication-related code (handlers, repository, models, TOTP management) into a dedicated `auth` internal package.
 - Ensure the `auth` package manages its own tables (e.g., credentials, totp_secrets, backup codes) and exposes a clear interface for user authentication.
 - The user model should not contain direct authentication fields (e.g., `PasswordHash`, `TOTPSecret`, `TOTPEnabled`).
-- Auth should manage TOTP secrets and backup codes, but user-facing features (e.g., enabling/disabling 2FA) should remain accessible via user service APIs.
+- Auth should manage TOTP secrets and backup codes, while user-facing 2FA features remain available through auth handlers/APIs.
 
 ## Steps
 
 1. **Design new auth models and tables:**
    - Define `auth_credentials`, `auth_totp_secrets`, and `auth_backup_codes` tables.
    - Update `.specs/auth_user_separation_spec` with schema and migration plan.
-2. **Refactor backend/internal/auth:**
+2. **Refactor backend/internal/auth:** ✅ Complete
    - Move all authentication logic (password, TOTP, backup code, login, registration) into `auth` package.
    - Implement repository/service for new auth tables.
    - Expose interfaces for user service to interact with auth (e.g., `AuthenticateUser`, `SetTOTPSecret`).
-3. **Update user model and repository:**
+3. **Update user model and repository:** 🟡 In progress
    - Remove `PasswordHash`, `TOTPSecret`, `TOTPEnabled` from `User` struct and users table.
    - Update user repository to delegate auth operations to `auth` package.
 4. **Migrate data:**
    - Write migration to move existing auth data from users table to new auth tables.
    - Ensure no data loss and all users can still authenticate.
-5. **Update handlers and APIs:**
+5. **Update handlers and APIs:** ✅ Complete
    - Refactor user and auth handlers to use new interfaces.
    - Ensure all endpoints (login, register, 2FA, backup codes) work as before.
 6. **Testing and validation:**
@@ -40,6 +40,5 @@ Currently, authentication logic, models, and database tables are tightly coupled
 
 - .routines/todo_planner
 - .routines/correctness
-- .specs/auth_user_separation_spec (to be created)
-- .todo/2fa_login_backup_admin
+- .specs/auth_user_separation_spec
 - .todo/session_cookie_ip_val

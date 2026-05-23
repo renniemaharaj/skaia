@@ -3,21 +3,20 @@
 ## auth_user_separation
 
 ### Current Progress
-- **Phase 1: Design new auth models/tables** — ⬜ Not started
-- **Phase 2: Refactor backend/internal/auth** — ⬜ Not started
-- **Phase 3: Update user model/repository** — ⬜ Not started
-- **Phase 4: Migrate data** — ⬜ Not started
-- **Phase 5: Update handlers/APIs** — ⬜ Not started
-- **Phase 6: Testing and validation** — ⬜ Not started
-- **Phase 7: Documentation/traceability** — ⬜ Not started
+- **Phase 1: Design new auth models/tables** — ✅ Complete
+- **Phase 2: Refactor backend/internal/auth** — ✅ Complete
+- **Phase 3: Update user model/repository** — 🟡 In progress
+- **Phase 4: Migrate data** — 🟡 In progress
+- **Phase 5: Update handlers/APIs** — ✅ Complete
+- **Phase 6: Testing and validation** — 🟡 In progress
+- **Phase 7: Documentation/traceability** — ✅ Complete
 
 ### Next Steps
-- [ ] Design new auth models and tables; draft `.specs/auth_user_separation_spec`
-- [ ] Refactor backend/internal/auth to manage all authentication logic and data
-- [ ] Remove auth fields from user model and users table
-- [ ] Write and test migration for auth data
-- [ ] Refactor handlers and APIs to use new interfaces
-- [ ] Add/expand tests for all affected flows
-- [ ] Update documentation/specs and reference in PRs/commits
+- [ ] Decide whether `models.User.TOTPEnabled` should remain as hydrated response state or move to an auth/profile DTO; no unused user-service TOTP methods remain
+- [ ] Replace old test fixtures that insert `users.password_hash` directly with `auth_credentials`
+- [ ] Review `009_auth_user_separation.sql` for backup-code migration needs and idempotency
+- [ ] Add direct auth separation tests for registration, login, TOTP, backup codes, and migration behavior
+- [ ] Keep `go test ./...` green after the remaining refactor work; full backend suite passed on 2026-05-22 with `JWT_SECRET=test-secret`
+- [ ] Reviewed 2026-05-22: user-service TOTP stubs were removed and current auth/TOTP endpoints call `internal/auth`
 
 <--/------->

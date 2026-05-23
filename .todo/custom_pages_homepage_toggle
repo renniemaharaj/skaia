@@ -20,7 +20,6 @@ Enable admins to set any custom page as the homepage (landing-slug) directly fro
 - .specs/route_resolution_spec
 - .specs/backend_spec
 - .specs/frontend_spec
-- .todo/pages_endpoint_refactor
 
 ---
 

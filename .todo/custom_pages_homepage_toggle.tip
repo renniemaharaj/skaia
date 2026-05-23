@@ -3,15 +3,15 @@
 ## custom_pages_homepage_toggle
 
 ### Current Progress
-- **Phase 1: Backend endpoint for landing-slug** — ⬜ Not started
-- **Phase 2: Frontend toggle in custom pages UI** — ⬜ Not started
-- **Phase 3: Real-time update/broadcast** — ⬜ Not started
-- **Phase 4: Documentation and tests** — ⬜ Not started
+- **Phase 1: Backend endpoint for landing-slug** — ✅ Complete
+- **Phase 2: Frontend toggle in custom pages UI** — ✅ Complete
+- **Phase 3: Real-time update/broadcast** — ✅ Complete
+- **Phase 4: Documentation and tests** — 🟡 In progress
 
 ### Next Steps
-- [ ] Implement backend endpoint for setting landing-slug (admin only)
-- [ ] Add toggle/selector to custom pages admin UI
-- [ ] Broadcast landing page changes via WebSocket
-- [ ] Update docs/specs and add tests
+- [ ] Add backend tests for `POST /pages/{id}/set-homepage`, permission denial, missing page handling, and landing slug persistence
+- [ ] Add frontend tests for the Custom Pages homepage button and landing-page badge states
+- [ ] Keep backend and frontend checks green; `go test ./...`, `npm test -- --run SecuritySettings`, and `npm run build` passed on 2026-05-22
+- [ ] Close this todo pair once tests and docs are confirmed
 
 <--/------->
