@@ -104,8 +104,8 @@ verify references and formatting
 
 ## Last Run Remarks
 
-- Found routine-system drift: duplicate deprecated routine bodies, stale `todo_agent` references, and ambiguous `.specs_specialist` references. Optimized routines into trigger/input/verification contracts and redirects.
+- Found and fixed documentation drift: root `README.md` still referenced old `.todo/.status`, `.todo/.tip`, `.routines/.specs`, `.routines/.frontend_specialist`, and `.routines/.backend_auditor`; `.specs/migrations_spec` still forbade incremental migrations despite `003`-`009` existing; `.specs/backend_spec` listed stale model/package/migration names; `.specs/README.md` omitted `auth_user_separation_spec`.
 
 ## Next Steps
 
-- Keep checking routine references with `rg` after routine renames or deprecations.
+- Add a lightweight docs/reference check to future correctness runs: stale routine names, stale todo status paths, migration filename drift, and spec index coverage.

@@ -90,24 +90,22 @@ cd backend && go test ./...
 cd backend/frontend && npm test
 ```
 
-## Collaborative Planning & Specs
-
 ## Collaborative Planning, Specs & Routines
 
 All collaborative planning, status tracking, specifications, and automation routines are now kept in the `.todo/`, `.specs/`, and `.routines/` directories:
 
 - `.todo/README.md` — Directory usage, rules, and emoji policy
-- `.todo/.tip` — Current status tracker and entrypoint for beginning any real work
+- `.todo/<name>.tip` — Per-plan status tracker and entrypoint for beginning todo-backed work
 - `.specs/` — Human-AI specifications and design docs
 - `.todo/*` — Individual todo plans (no extension)
 - `.routines/` — First-class directory for routine definitions (project maintenance, automation, specialist roles)
   - `.routines/README.md` — Routine structure and usage
-  - `.routines/.specs` — Specialist for specs, technology, and infrastructure
-  - `.routines/.frontend_specialist`, `.routines/.backend_auditor`, etc. — Add more as needed
+  - `.routines/.specs_specialist` — Specialist for specs, technology, and infrastructure
+  - `.routines/audit_frontend`, `.routines/audit_backend`, `.routines/worker`, `.routines/todo_planner`, and `.routines/correctness` — Core project routines
 
 Specs previously in `.todo/.specs` are now in `.specs/`.
 
-> Emoji use for status is strictly limited to `.todo/.status` as described in `.todo/README.md` and is forbidden elsewhere in the project.
+> Emoji use for status is strictly limited to `.todo/*.tip` as described in `.todo/README.md` and is forbidden elsewhere in the project.
 
 ---
 
@@ -118,7 +116,7 @@ This project uses a structured Human-AI planning and integration approach, with 
 - `.routines/` — Automation, maintenance, and specialist routines, including routines for maintaining documentation and enforcing standards.
 - `.specs/` — Detailed, living specifications and design documents for all major features and integrations.
 - `.todo/` — Active planning, tracking, and iterative problem breakdown. Each entry in `.todo/` should have its own `.tip` file, enabling multiple agents to work independently on different todos without conflict. This promotes parallelism and clear ownership.
-- `.todo/.tip` — Entrypoint for implementing todos, providing a stateful, train-of-thought overview for the model. For best results, each todo should have a corresponding `.tip` file (e.g., `.todo/feature_x.tip`).
+- `.todo/<name>.tip` — Per-todo implementation entrypoint with phase status, next steps, and verification notes.
 
 This structure enables:
 

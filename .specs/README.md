@@ -12,6 +12,7 @@ This directory contains the authoritative specifications for all major systems, 
 - **custom_pages_multiplayer_spec** — Multiplayer editing and section-level reactivity
 - **caching_cdn_spec** — Caching, CDN, and cache-control policies
 - **migrations_spec** — Migration policy and schema update process
+- **auth_user_separation_spec** — Auth-owned credential, TOTP, and backup-code model separation
 
 ## Usage
 

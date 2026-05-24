@@ -11,15 +11,19 @@ backend/
 ├── main.go                    # Entry: router setup, middleware wiring, server start
 ├── database/db.go             # PostgreSQL + Redis client initialization
 ├── models/
-│   ├── models.go              # Shared data types (User, Thread, Product, Order, etc.)
-│   └── site_config.go         # SiteConfig types (branding, SEO, footer, features)
+│   ├── user.go                # Public user profile model
+│   ├── auth.go                # Auth response/credential/TOTP/backup-code models
+│   ├── commerce.go            # Store, order, payment, subscription models
+│   ├── page.go                # CMS page and allocation models
+│   └── *.go                   # Forum, datasource, inbox, notification, role, permission, analytics models
 └── internal/
-    ├── auth/                  # JWT (HS256), bcrypt passwords, context helpers
+    ├── auth/                  # Credentials, registration/login, TOTP, backup codes, email/password tokens
+    ├── jwt/                   # JWT (HS256) generation and validation
+    ├── ctx/                   # Context helpers
     ├── middleware/             # CORS, JWT auth, optional auth, RBAC, rate limit, armed guard
     ├── user/                  # User CRUD, roles, permissions, suspension, Redis cache
     ├── forum/                 # Categories, threads, comments, likes, Redis cache
     ├── store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
-    ├── cart/                  # Shopping cart API (add, remove, list, clear)
     ├── inbox/                 # 1-to-1 conversations + messages
     ├── notification/          # Per-user notifications (typed, routed, real-time)
     ├── config/                # site_config CRUD (branding, SEO, footer, features)
@@ -32,7 +36,7 @@ backend/
     ├── ssr/                   # index.html rewriting with SEO head tags
     ├── utils/                 # Shared HTTP helpers
     ├── grengo/                # Admin dashboard API proxy
-    ├── migrations/            # SQL schema (001), seed data (002), CMS schema (003)
+    ├── migrations/            # Idempotent ordered schema/seed/data migrations
     ├── integration/           # Integration test suite
     └── testutil/              # Test helpers (DB setup)
 ```
@@ -105,17 +109,17 @@ PostgreSQL 16 with per-tenant databases on a shared instance.
 
 ### Migration Strategy
 
-Idempotent SQL files in `internal/migrations/`:
+Idempotent ordered SQL files in `internal/migrations/`:
 
 - `001_schema.sql` — all tables with `IF NOT EXISTS`
 - `002_seed.sql` — default roles, permissions, admin user
-- `003_pages.sql` — CMS page schema
+- `003_*` and later — guarded incremental data/schema transitions for existing deployments
 
-Prices stored as `BIGINT` cents. Timestamps are `TIMESTAMPTZ` with `DEFAULT NOW()`.
+Prices stored as `BIGINT` cents. Timestamps are primarily `TIMESTAMP` with database defaults; new schema changes should preserve the convention already used by the affected table unless a spec explicitly requires otherwise.
 
 ### Key Tables
 
-- `users`, `user_sessions`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
+- `users`, `auth_credentials`, `auth_totp_secrets`, `auth_backup_codes`, `user_sessions`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
 - `forum_categories`, `forum_threads`, `thread_comments`, `thread_likes`, `thread_comment_likes`
 - `products`, `store_categories`, `cart_items`, `orders`, `order_items`, `payments`, `subscription_plans`, `subscriptions`
 - `inbox_conversations`, `inbox_messages`, `notifications`

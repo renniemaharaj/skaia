@@ -1,27 +1,39 @@
 # Migration Spec
 
-## Policy: In-Place Schema Updates
+## Policy: Idempotent Ordered Migrations
 
-**DO NOT create new migration files for every feature or change.**
+All schema changes must be idempotent and safe to re-run. The migration runner executes every `*.sql` file in sorted order and does not rely on a migration history table.
 
-All schema changes MUST be applied by editing the existing migration files directly:
+Use the existing files by default:
 
 - **`001_schema.sql`** — All table definitions, indexes, and constraints
 - **`002_seed.sql`** — All seed data (roles, permissions, default config, etc.)
-- **`003_pages.sql`** — Page-related seed data
+
+Use a numbered incremental file only when the change must migrate or reshape data on existing deployments, or when isolating a reversible operational migration improves safety. Incremental files must be idempotent and ordered with a zero-padded numeric prefix.
+
+Current incremental migrations:
+
+- `003_datasource_env_data.sql`
+- `004_datasource_files.sql`
+- `005_datasource_cache_ttl.sql`
+- `006_resource_views.sql`
+- `007_rename_landing_to_page.sql`
+- `008_superuser_admin.sql`
+- `009_auth_user_separation.sql`
 
 ### Rationale
 
 This project uses `grengo migrate all` to apply migrations across all site databases. The migration runner executes all `*.sql` files in sorted order. Since migrations are **not versioned or tracked** (no migration history table), they must be **idempotent** — using `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, etc.
 
-Because migrations are idempotent re-runs of the full schema, there is no reason to create incremental migration files. Adding new files creates unnecessary clutter and ordering confusion.
+Fresh schemas should be represented in `001_schema.sql` and `002_seed.sql`. Incremental files are reserved for existing-deployment data movement, compatibility bridges, or one-time operational transitions that cannot be represented solely by editing the base schema.
 
 ### How to Make Changes
 
 1. **New table** — Add the `CREATE TABLE IF NOT EXISTS` statement to `001_schema.sql` in the appropriate section.
-2. **Alter existing table** — Modify the `CREATE TABLE` statement directly in `001_schema.sql`. Since we use `IF NOT EXISTS`, existing tables won't be recreated, so also add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statement after the CREATE for existing deployments.
+2. **Alter existing table** — Modify the `CREATE TABLE` statement directly in `001_schema.sql`. Since we use `IF NOT EXISTS`, existing tables won't be recreated, so also add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statement after the CREATE for existing deployments, or create an incremental migration if data movement/compatibility logic is required.
 3. **New seed data** — Add to `002_seed.sql` using `ON CONFLICT DO NOTHING` or `INSERT ... ON CONFLICT DO UPDATE`.
 4. **New indexes** — Add `CREATE INDEX IF NOT EXISTS` to `001_schema.sql`.
+5. **Data migration or column removal** — Add a numbered incremental migration with guarded reads/writes and `IF EXISTS`/`ON CONFLICT` behavior.
 
 ### Running Migrations
 
