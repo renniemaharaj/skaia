@@ -52,12 +52,26 @@ type RefreshRequest struct {
 
 // AuthResponse represents the response after login/register.
 type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	User         *User  `json:"user"`
-	ExpiresIn    int    `json:"expires_in"`
-	RequiresTOTP bool   `json:"requires_totp,omitempty"`
-	TOTPToken    string `json:"totp_token,omitempty"`
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	User         *AuthUser `json:"user"`
+	ExpiresIn    int       `json:"expires_in"`
+	RequiresTOTP bool      `json:"requires_totp,omitempty"`
+	TOTPToken    string    `json:"totp_token,omitempty"`
+}
+
+// AuthUser is the user profile shape returned by auth flows. It deliberately
+// keeps auth-derived response state out of the core User model.
+type AuthUser struct {
+	User
+	TOTPEnabled bool `json:"totp_enabled"`
+}
+
+func NewAuthUser(user *User, totpEnabled bool) *AuthUser {
+	if user == nil {
+		return nil
+	}
+	return &AuthUser{User: *user, TOTPEnabled: totpEnabled}
 }
 
 // EmailVerificationToken is used to verify a user's email address.

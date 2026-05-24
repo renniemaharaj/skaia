@@ -2,7 +2,7 @@
 
 ## Context
 
-Authentication data has been moved into the auth package and auth-owned tables. The remaining separation work is cleanup and validation: `models.User` still exposes `TOTPEnabled` as hydrated response state, some tests still insert `users.password_hash` directly, and the auth migration needs review for backup-code migration/idempotency.
+Authentication data has been moved into the auth package and auth-owned tables. The remaining separation work is final validation and broader suite coverage: `models.User` is now profile-only, auth responses use `models.AuthUser` for response-only `totp_enabled`, old fixtures no longer insert `users.password_hash`, and migration 009 has been reviewed for idempotency and backup-code behavior.
 
 ## Goal
 
@@ -21,18 +21,21 @@ Authentication data has been moved into the auth package and auth-owned tables. 
    - Move all authentication logic (password, TOTP, backup code, login, registration) into `auth` package.
    - Implement repository/service for new auth tables.
    - Expose interfaces for user service to interact with auth (e.g., `AuthenticateUser`, `SetTOTPSecret`).
-3. **Update user model and repository:** 🟡 In progress
+3. **Update user model and repository:** ✅ Complete
    - Remove `PasswordHash`, `TOTPSecret`, `TOTPEnabled` from `User` struct and users table.
+   - Use `models.AuthUser` for auth response payloads that need `totp_enabled`.
    - Update user repository to delegate auth operations to `auth` package.
-4. **Migrate data:**
+4. **Migrate data:** ✅ Complete
    - Write migration to move existing auth data from users table to new auth tables.
    - Ensure no data loss and all users can still authenticate.
+   - `009_auth_user_separation.sql` now guards legacy-column reads, upserts by `user_id`, and documents that no legacy users backup-code column exists.
 5. **Update handlers and APIs:** ✅ Complete
    - Refactor user and auth handlers to use new interfaces.
    - Ensure all endpoints (login, register, 2FA, backup codes) work as before.
 6. **Testing and validation:**
    - Add/expand tests for all affected flows (login, registration, 2FA, backup codes).
    - Validate with `.routines/correctness` and run full backend test suite.
+   - Direct auth service tests now cover registration/login/TOTP/backup-code behavior.
 7. **Documentation and traceability:**
    - Update `.specs/auth_user_separation_spec` and reference this plan in all related PRs/commits.
 

@@ -18,13 +18,10 @@ type User struct {
 	SuspendedReason *string    `json:"suspended_reason"`
 	EmailVerified   bool       `json:"email_verified"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at,omitempty"`
-	TOTPEnabled     bool       `json:"totp_enabled"`
-	// TOTPSecret      string     `json:"totp_secret,omitempty"`
-	// (auth fields removed; see internal/auth)
-	Roles       []string  `json:"roles"`
-	Permissions []string  `json:"permissions"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	Roles           []string   `json:"roles"`
+	Permissions     []string   `json:"permissions"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 // UserBlock represents a user blocking another user.

@@ -49,6 +49,36 @@ func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, email
 	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, email: emailSender, inboxSvc: inboxSvc, userSvc: userSvc}
 }
 
+func (h *Handler) authUser(user *models.User) *models.AuthUser {
+	if user == nil {
+		return nil
+	}
+	_, enabled, err := h.svc.GetTOTPEnabled(user.ID)
+	if err != nil {
+		return models.NewAuthUser(user, false)
+	}
+	return models.NewAuthUser(user, enabled)
+}
+
+func (h *Handler) propagateAuthUser(userID int64, extra map[string]interface{}) {
+	if h.userSvc == nil {
+		return
+	}
+	h.userSvc.InvalidateUser(userID)
+	updatedUser, err := h.userSvc.GetByID(userID)
+	if err != nil {
+		log.Printf("auth.Handler.propagateAuthUser: failed to refresh user %d: %v", userID, err)
+		return
+	}
+	payload := map[string]interface{}{"user": h.authUser(updatedUser)}
+	for k, v := range extra {
+		payload[k] = v
+	}
+	if h.hub != nil {
+		go h.hub.PropagateUser(userID, payload)
+	}
+}
+
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -116,7 +146,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         user,
+		User:         h.authUser(user),
 	})
 }
 
@@ -181,17 +211,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		log.Printf("user.Handler.login: WARNING: user %d has TOTP secret but 2FA not enabled. Allowing login.", user.ID)
 	}
 
-	// Ensure the returned user has the correct TOTP flag and propagate the
-	// hydrated user so the UI updates immediately.
-	if totpSecret, enabled, _ := h.svc.GetTOTPEnabled(user.ID); totpSecret != "" || enabled {
-		user.TOTPEnabled = enabled
-	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(user.ID)
-	}
-	if h.hub != nil {
-		go h.hub.PropagateUser(user.ID, map[string]interface{}{"user": user, "new_token": accessToken})
-	}
+	h.propagateAuthUser(user.ID, map[string]interface{}{"new_token": accessToken})
 
 	log.Printf("auth: login %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	h.dispatcher.Dispatch(ievents.Job{
@@ -204,7 +224,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: "",
-		User:         user,
+		User:         h.authUser(user),
 	})
 }
 
@@ -512,14 +532,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.TOTPEnabled = enabled // include TOTP status in response
-	// Invalidate cache and propagate hydrated user so clients see updated totp state.
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(user.ID)
-	}
-	if h.hub != nil {
-		go h.hub.PropagateUser(user.ID, map[string]interface{}{"user": user, "new_token": accessToken})
-	}
+	h.propagateAuthUser(user.ID, map[string]interface{}{"new_token": accessToken})
 
 	log.Printf("auth: login+2fa %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	h.dispatcher.Dispatch(ievents.Job{
@@ -532,7 +545,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 	})
 	utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
 		AccessToken: accessToken,
-		User:        user,
+		User:        models.NewAuthUser(user, enabled),
 	})
 }
 
@@ -564,22 +577,7 @@ func (h *Handler) TOTPSetup(w http.ResponseWriter, r *http.Request) {
 		"qr_uri":  otpauth,
 	})
 
-	// Propagate user so UI clients refresh (authoritative TOTP state comes from auth)
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(userID)
-		if updatedUser, err := h.userSvc.GetByID(userID); err == nil {
-			if _, enabled, err := h.svc.GetTOTPEnabled(userID); err == nil {
-				updatedUser.TOTPEnabled = enabled
-			} else {
-				log.Printf("auth.Handler.TOTPSetup: failed to load totp status for user %d: %v", userID, err)
-			}
-			if h.hub != nil {
-				go h.hub.PropagateUser(userID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.TOTPSetup: failed to refresh user %d: %v", userID, err)
-		}
-	}
+	h.propagateAuthUser(userID, nil)
 }
 
 // TOTPStatus returns whether TOTP is enabled for the authenticated user.
@@ -595,17 +593,7 @@ func (h *Handler) TOTPStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to get TOTP status")
 		return
 	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(userID)
-		if updatedUser, err := h.userSvc.GetByID(userID); err == nil {
-			updatedUser.TOTPEnabled = enabled
-			if h.hub != nil {
-				go h.hub.PropagateUser(userID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.TOTPStatus: failed to refresh user %d: %v", userID, err)
-		}
-	}
+	h.propagateAuthUser(userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"enabled": enabled})
 }
 
@@ -658,21 +646,7 @@ func (h *Handler) TOTPEnable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(userID)
-		if updatedUser, err := h.userSvc.GetByID(userID); err == nil {
-			if _, enabled, err := h.svc.GetTOTPEnabled(userID); err == nil {
-				updatedUser.TOTPEnabled = enabled
-			} else {
-				log.Printf("auth.Handler.TOTPEnable: failed to load totp status for user %d: %v", userID, err)
-			}
-			if h.hub != nil {
-				go h.hub.PropagateUser(userID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.TOTPEnable: failed to refresh user %d: %v", userID, err)
-		}
-	}
+	h.propagateAuthUser(userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":       "TOTP enabled",
 		"backup_codes": codes,
@@ -702,21 +676,7 @@ func (h *Handler) TOTPDisable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(userID)
-		if updatedUser, err := h.userSvc.GetByID(userID); err == nil {
-			if _, enabled, err := h.svc.GetTOTPEnabled(userID); err == nil {
-				updatedUser.TOTPEnabled = enabled
-			} else {
-				log.Printf("auth.Handler.TOTPDisable: failed to load totp status for user %d: %v", userID, err)
-			}
-			if h.hub != nil {
-				go h.hub.PropagateUser(userID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.TOTPDisable: failed to refresh user %d: %v", userID, err)
-		}
-	}
+	h.propagateAuthUser(userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
 
@@ -756,21 +716,7 @@ func (h *Handler) AdminEnableTOTP(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(targetID)
-		if updatedUser, err := h.userSvc.GetByID(targetID); err == nil {
-			if _, enabled, err := h.svc.GetTOTPEnabled(targetID); err == nil {
-				updatedUser.TOTPEnabled = enabled
-			} else {
-				log.Printf("auth.Handler.AdminEnableTOTP: failed to load totp status for user %d: %v", targetID, err)
-			}
-			if h.hub != nil {
-				go h.hub.PropagateUser(targetID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.AdminEnableTOTP: failed to refresh user %d: %v", targetID, err)
-		}
-	}
+	h.propagateAuthUser(targetID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":       "TOTP enabled",
 		"backup_codes": codes,
@@ -804,21 +750,7 @@ func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if h.userSvc != nil {
-		h.userSvc.InvalidateUser(targetID)
-		if updatedUser, err := h.userSvc.GetByID(targetID); err == nil {
-			if _, enabled, err := h.svc.GetTOTPEnabled(targetID); err == nil {
-				updatedUser.TOTPEnabled = enabled
-			} else {
-				log.Printf("auth.Handler.AdminDisableTOTP: failed to load totp status for user %d: %v", targetID, err)
-			}
-			if h.hub != nil {
-				go h.hub.PropagateUser(targetID, map[string]interface{}{"user": updatedUser})
-			}
-		} else {
-			log.Printf("auth.Handler.AdminDisableTOTP: failed to refresh user %d: %v", targetID, err)
-		}
-	}
+	h.propagateAuthUser(targetID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
 

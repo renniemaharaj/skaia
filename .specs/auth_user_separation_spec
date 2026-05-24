@@ -40,6 +40,7 @@ Define the architecture, models, and migration plan for decoupling authenticatio
 
 - Remove `password_hash`, `totp_secret`, `totp_enabled` from `users` table and `User` model.
 - All authentication data is accessed via the `auth` package and its tables.
+- Auth endpoints that need to return 2FA state use `models.AuthUser`, which embeds the public user profile and adds response-only `totp_enabled`. The core `models.User` remains profile-only and must not be used to store or cache auth state.
 
 ### Backend Refactor
 
@@ -53,6 +54,7 @@ Define the architecture, models, and migration plan for decoupling authenticatio
 - Migrate all existing password hashes, TOTP secrets, and backup codes from `users` to new tables.
 - Ensure atomic migration and data integrity.
 - Remove sensitive fields from `users` table after migration.
+- Migration `009_auth_user_separation.sql` is idempotent across fresh and legacy schemas: it only reads legacy `users.password_hash`, `users.totp_secret`, and `users.totp_enabled` when those columns exist, upserts into auth-owned tables by `user_id`, then drops legacy sensitive columns. Skaia has no legacy `users` backup-code column; backup codes are generated into `auth_backup_codes` after TOTP enablement.
 
 ### API/Handler Changes
 
@@ -63,6 +65,7 @@ Define the architecture, models, and migration plan for decoupling authenticatio
 
 - Comprehensive unit and integration tests for all authentication flows.
 - Migration tests to ensure no data loss.
+- Direct auth service tests cover registration credential creation, login, TOTP secret enablement, backup code generation/use-once behavior, and TOTP disable cleanup.
 
 ## References
 

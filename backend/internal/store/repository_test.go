@@ -269,8 +269,8 @@ func createStoreTestUser(t *testing.T, db *sql.DB) int64 {
 	name := testutil.UniqueStr("store_user")
 	var id int64
 	err := db.QueryRow(
-		`INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3) RETURNING id`,
-		name, name+"@example.com", "hash",
+		`INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id`,
+		name, name+"@example.com",
 	).Scan(&id)
 	require.NoError(t, err)
 	return id

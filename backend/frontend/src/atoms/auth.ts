@@ -13,7 +13,7 @@ export interface User {
   discord_id?: string;
   is_suspended: boolean;
   email_verified: boolean;
-  totp_enabled: boolean;
+  totp_enabled?: boolean;
   roles: string[];
   permissions: string[];
   power_level?: number;
