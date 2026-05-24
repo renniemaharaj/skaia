@@ -1,64 +1,152 @@
-# Agent TODO & Specs System
+# Todo System
 
-This directory is used for collaborative planning and tracking of software engineering tasks by AI agents and developers. Only plain text files with no extension are allowed, except for `README.md`, `.tip`, and `.specs`.
+This directory stores agent-readable implementation plans and their current status. It is the handoff layer between planning, routines, specs, implementation, and verification.
 
-## Usage Rules
+Use `.todo/` for work that is planned but not fully complete. Use `.specs/` for durable architecture and protocol truth. Use `.routines/` for reusable operating procedures.
 
-- Each `.todo` file (no extension) should focus on a specific area (e.g., migrations, frontend refactor, backend normalization).
-- **Every todo entry must be initialized with a corresponding `.tip` file (e.g., `feature.tip`). No todo should exist without its `.tip`.**
-- `.specs` files in this directory are for detailed specifications, requirements, or design docs related to human-AI planning and collaboration.
-- Use clear, actionable entries and update them as progress is made.
-- Do not use file extensions for todo plans/specs (except `README.md`, `.tip`, and `.specs`).
-- Reference `.todo` and `.specs` entries in code comments or PRs to maintain traceability.
+## File Contract
 
-## Status Tracking
+Each active todo is a pair:
 
-- The `.tip` file tracks the current progress of each todo plan in this directory and is the entrypoint for beginning any real work.
-- Each tracked todo gets a block in `.tip` with the following structure:
+- `.todo/<name>` — the plan, scope, requirements, references, and execution notes
+- `.todo/<name>.tip` — the current status entrypoint and next action list
 
+Rules:
+
+- Use lowercase snake_case names, for example `auth_user_separation`.
+- Plan files have no extension.
+- Every plan file must have a sibling `.tip` file with the same basename.
+- Do not create a `.tip` without a matching plan file.
+- `README.md` is the only Markdown file in this directory.
+- Avoid local `.specs` files unless the spec is temporary and collaboration-specific; durable system specs belong in top-level `.specs/`.
+- Keep plans concise. Link to `.specs/`, `.routines/`, source files, and related todos instead of copying long context.
+
+## Agent Entrypoints
+
+Start from the file that matches the task:
+
+| Task | Start With | Routine |
+| --- | --- | --- |
+| Execute planned work | `.todo/<name>.tip`, then `.todo/<name>` | `.routines/worker` |
+| Create or reorganize plans | Existing `.todo/*` and `.todo/*.tip` | `.routines/todo_planner` |
+| Validate drift or contradictions | Related todo, specs, and code | `.routines/correctness` |
+| Update durable architecture docs | Related todo and changed code | `.routines/.specs_specialist` |
+
+For implementation work, `.tip` is always the first file to open. It answers: what is done, what is next, and what verification is still missing.
+
+## Plan File Structure
+
+Use this structure for `.todo/<name>`:
+
+```md
+# Human-Readable Plan Title
+
+## Context
+<Why this work exists and what current repo state motivated it.>
+
+## Goal
+- <Outcome the work must achieve>
+
+## Non-Goals
+- <Explicitly out-of-scope work>
+
+## Steps
+1. <Ordered implementation or planning step>
+2. <Next step>
+
+## Verification
+- <Expected backend/frontend/docs checks>
+
+## References
+- `.specs/<spec_name>`
+- `.routines/<routine_name>`
+- `<source/path>`
 ```
+
+Keep the plan stable. Update it when scope changes, not for every small progress note.
+
+## Tip File Structure
+
+Use this structure for `.todo/<name>.tip`:
+
+```md
 <--/------->
 
-## todo_name
+## <name>
 
 ### Current Progress
-- **Phase 1: ...** — [emoji] ...
-- **Phase 2: ...** — [emoji] ...
-... (as needed)
+- **Phase 1: ...** — ⬜ Not started
+- **Phase 2: ...** — 🟡 In progress
+- **Phase 3: ...** — ✅ Complete
 
 ### Next Steps
-- [ ] ...
-- [ ] ...
+- [ ] <Next concrete action>
+- [ ] <Verification or documentation action>
 
 <--/------->
 ```
 
-- Use compact, descriptive phase names and concise status lines.
-- Only the following emoji are allowed in this directory (and strictly forbidden elsewhere in the project):
-  - ✅ — complete
-  - 🟡 — in progress
-  - ⬜ — not started
+Rules:
 
-- After each emoji, add a dash and a short description of what the emoji means for that phase (e.g., `— ✅ Complete`, `— 🟡 In progress`, `— ⬜ Not started`).
-- Do not use emoji for any other purpose or in any other part of the project.
+- The heading must match the basename of the plan file.
+- Use compact phase names.
+- Keep next steps concrete enough for `.routines/worker` to execute.
+- Record verification commands and dates once they pass.
+- Keep durable implementation facts in specs or the plan, not only in `.tip`.
+- The marker lines are optional for legacy files but required for new `.tip` files.
 
-## Workflow
+## Status Vocabulary
 
-1. **Entrypoint**: Open `.tip` first to understand current status and what work should begin.
-2. **Planning**: Add high-level plans, migration steps, or refactor strategies as entries in `.todo` files.
-3. **Specs**: Use `.specs` files for detailed requirements, design, or interface documentation to support planning and implementation.
-4. **Iteration**: Update, refine, or split plans/specs as new requirements or insights emerge.
-5. **Implementation**: Once a plan is finalized, a powerful agent or human can implement the steps.
-6. **Validation**: Use `.todo` entries and `.tip` to track validation, testing, and review steps.
+Only these status markers are allowed in `.tip` files:
 
-## Project Additions
+- `⬜ Not started`
+- `🟡 In progress`
+- `✅ Complete`
 
-- `.specs` files are now supported in this directory for collaborative, human-AI specification and design work.
-- All planning, status, and specification tracking for collaborative work should be kept in `.todo`, `.tip`, or `.specs` files here.
-- **Routines** for project maintenance, automation, and specialist roles are now kept in the top-level `.routines/` directory (migrated from `.todo/.routines`).
-  - See `.routines/README.md` for routine structure and usage.
-- Emoji use is strictly limited to this directory and the `.tip` file as described above.
+Do not use emoji elsewhere in the project unless a local file explicitly requires it. In `.tip` files, use the exact status phrase after the marker.
 
----
+## Lifecycle
 
-_This system helps ensure all agents and contributors are aligned and can collaborate effectively on complex software engineering tasks. Emoji use is strictly limited to this directory and `.tip` files as described above._
+1. **Discover**: Check existing todos before creating a new plan.
+2. **Plan**: Create `.todo/<name>` and `.todo/<name>.tip` together.
+3. **Execute**: Use `.routines/worker`; update `.tip` as phases move.
+4. **Verify**: Run checks listed in the plan and record successful commands in `.tip`.
+5. **Document**: Update `.specs/` when architecture, models, migrations, protocols, or frontend contracts changed.
+6. **Retire**: Remove the plan pair only after completion and verification are recorded or no longer relevant.
+
+## Completion Rules
+
+A todo is complete only when:
+
+- All phases are `✅ Complete`.
+- The `Next Steps` list has no unchecked implementation or verification items.
+- Required backend/frontend/docs verification has passed or a skipped check is justified.
+- Related specs and routines have been updated if durable project knowledge changed.
+
+Completed todo pairs may be deleted by `.routines/todo_planner` after the verification basis is clear. If a completed todo documents important historical context, move that context to `.specs/` before deletion.
+
+## Maintenance Checks
+
+Use these quick checks during todo cleanup:
+
+```sh
+# list plan files without a matching .tip
+for f in .todo/*; do
+  base=${f##*/}
+  case "$base" in README.md|*.tip) ;; *) [ -f "$f.tip" ] || printf 'missing tip: %s\n' "$f" ;; esac
+done
+
+# list .tip files without a matching plan
+for f in .todo/*.tip; do
+  plan=${f%.tip}
+  [ -f "$plan" ] || printf 'missing plan: %s\n' "$f"
+done
+```
+
+## Related Systems
+
+- `.routines/README.md` — routine routing and invocation contract
+- `.routines/todo_planner` — todo creation, dedupe, split, and retirement
+- `.routines/worker` — todo execution and verification
+- `.routines/correctness` — drift and contradiction checks
+- `.specs/README.md` — durable project specification system
