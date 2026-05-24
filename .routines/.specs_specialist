@@ -2,63 +2,97 @@
 
 ## Purpose
 
-To enforce and maintain up-to-date, comprehensive documentation for all major models and systems in the Skaia project, ensuring .specs_specialist is the single source of truth for project expertise and technical alignment.
+Specification upkeep routine for keeping `.specs/` aligned with Skaia's implemented architecture, models, migrations, protocols, frontend contracts, and operational policies.
+
+## Triggers
+
+- User references `.routines/.specs_specialist` or `specs_specialist`
+- Backend/frontend protocol, model, route, migration, WebSocket, cache, auth, or infrastructure behavior changed
+- A worker/audit routine finds documentation drift
+- A new major system or cross-cutting pattern is introduced
+
+## Inputs
+
+- Changed code/tests/migrations
+- Relevant `.specs/*` files
+- `.specs/README.md`
+- Related `.todo/<entry>` and `.todo/<entry>.tip`
+- `.routines/correctness`
+- `.routines/audit_backend` or `.routines/audit_frontend` when domain-specific review is needed
 
 ## Responsibilities
 
-- Maintain and update documentation for all major models and systems
-- Heavily document:
-  - Pagebuilder (multi-interaction, fine-grained updates, layout)
-  - Event system and views system
-  - Backend service layer design and architecture
-  - WebSocket models and real-time communication flows
-  - Other critical infrastructure, technologies, or UI/UX complexities
-- Ensure the atomic, websocket-driven, realtime monolith is robust, modern, and well-documented
-- Be a project expert, demanding and critical of engineering and UI complexities
+- Keep `.specs/` authoritative and current
+- Document architecture/model/protocol decisions after code changes
+- Identify missing, stale, or conflicting specs
+- Link to related routines/todos for traceability
+- Keep run remarks concise and durable
+
+## Non-Goals
+
+- Do not execute implementation work; use `.routines/worker`
+- Do not use this hidden routine file as the main specs directory; `.specs/` is the source of truth
+- Do not paste full code or migration contents into specs when a concise contract summary is enough
 
 ## Goal
 
-Maintain a battle-tested, modern, and fully documented codebase and UI, with .specs_specialist as the single source of truth for project expertise.
+Ensure future agents and contributors can load `.specs/` and get accurate, current technical context without rediscovering project behavior from code.
 
 ## Principles
 
-- Documentation must be comprehensive, up-to-date, and authoritative
-- All new features and changes must be reflected in .specs_specialist
-- Identify and fill documentation gaps proactively
-- Solicit and incorporate feedback from contributors
-- Document all findings and actions for traceability
+- Specs must match the code that exists now
+- Update specs immediately after contract, schema, model, or protocol changes
+- Prefer concise authoritative statements and file links over long transcripts
+- Escalate contradictions to `.routines/correctness` when the right answer is unclear
 
 ## Workflow
 
-1. Review .specs_specialist documentation after any major feature or architectural change
-2. Ensure .specs_specialist is updated immediately after backend/frontend protocol or model changes
-3. Identify and fill documentation gaps for all major systems and models
-4. Solicit feedback from contributors for unclear or missing documentation
-5. Periodically audit .specs_specialist for completeness and alignment with codebase and best practices
+1. Identify changed behavior and affected specs
+2. Read the current spec plus relevant code/tests/migrations
+3. Update the spec with the durable contract or architectural decision
+4. Cross-link related todos/routines when useful
+5. Run reference checks with `rg` when names/paths changed
+6. Update this routine's run remarks when the specs pass was material
 
 ### Pseudocode
 
 ```
-for doc in .specs_specialist/:
-    check for coverage of all major systems
-    update after every major change
-    solicit feedback
-    document all actions
+for changed architecture/model/protocol:
+    read relevant .specs file and implementation
+    patch spec with current contract
+    verify stale references are gone
+    record concise run remark
 ```
+
+## Verification
+
+- Use `rg` to confirm old model/path/contract references are removed or intentionally retained
+- For docs-only changes, verify referenced files exist
+- For code-backed spec changes, cite the verification already run by worker/audit routines
+
+## Trace Outputs
+
+- Updated `.specs/*`
+- Updated `.routines/.specs_specialist` run remarks for material spec maintenance
+- `.todo/<entry>.tip` note when specs were part of an implementation todo
 
 ## Contexts
 
-- .specs_specialist directory (primary documentation location)
-- Project documentation
-- Source code (backend, frontend, infrastructure)
-- Industry best practices
+- `.specs/`
+- `.specs/README.md`
+- `.todo/`
+- `.routines/correctness`
+- `.routines/audit_backend`
+- `.routines/audit_frontend`
+- `backend/`
+- `backend/frontend/`
 
 ## Extension/See Also
 
-- `.routines/correctness` — for validation and anti-patterns
-- `.routines/audit_backend` — for backend audits
-- `.routines/audit_frontend` — for frontend audits
-- `.github/copilot-instructions.md` — for global agent guidance
+- `.routines/correctness` — drift and contradiction checks
+- `.routines/audit_backend` — backend architecture and migration standards
+- `.routines/audit_frontend` — frontend contract and UI standards
+- `.routines/worker` — implementation routine
 
 ## Last Ran
 
@@ -66,11 +100,8 @@ for doc in .specs_specialist/:
 
 ## Last Run Remarks
 
-- Reviewed auth/user separation work against `.specs/auth_user_separation_spec`, `.todo/auth_user_separation`, backend/frontend auth user models, migration 009, and related tests. Updated the spec to make `models.AuthUser` the response-only backend location for `totp_enabled`, documented migration idempotency and backup-code behavior, and recorded full backend plus frontend build validation.
+- Updated auth/user separation specs and then optimized the routine system itself: clarified routing, triggers, verification, trace outputs, and deprecated aliases.
 
 ## Next Steps
 
-- Continue to review .specs_specialist after any major feature or architectural change.
-- Ensure .specs_specialist is updated immediately after backend/frontend protocol or model changes.
-- Solicit feedback from contributors to identify any unclear or missing documentation.
-- Periodically audit .specs_specialist for completeness and alignment with current codebase and best practices.
+- Continue to update `.specs/` immediately after backend/frontend protocol, model, migration, route, or infrastructure changes.

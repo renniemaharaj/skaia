@@ -2,81 +2,110 @@
 
 ## Purpose
 
-To ensure the Skaia project remains consistent, up-to-date, and free of inefficiencies or documentation drift by regularly scanning for actionable issues and enforcing alignment between code, docs, and specs.
+Repository drift and anti-pattern detection routine. Use it to compare docs, specs, migrations, models, tests, and implementation facts, then surface or fix actionable inconsistencies.
+
+## Triggers
+
+- User references `.routines/correctness`
+- A routine asks for validation or an objective second pass
+- Specs/todos/migrations/models were changed
+- Documentation and code appear to disagree
+- A review request asks for risks, regressions, or missing tests
+
+## Inputs
+
+- Changed files
+- `README.md` files relevant to the touched area
+- `.specs/*`
+- `.todo/*` and `.todo/*.tip` related to the work
+- `backend/internal/migrations/`
+- `backend/models/`
+- Relevant tests and package files
 
 ## Responsibilities
 
-- Periodically scan the Skaia project for inconsistencies, outdated documentation, orphaned files, or inefficient practices
-- Focus on README and spec files, but also check code, migrations, and project structure for alignment with documentation
-- Always find at least one actionable criticism per run
+- Detect contradictions between specs, todos, migrations, models, and code
+- Identify orphaned/deprecated files, stale references, and inefficient routines
+- Find at least one actionable criticism or explicitly record that the requested scope had no material findings
+- Suggest targeted fixes with priority and verification
+- Update docs/specs/todos when the correction is safe and in scope
+
+## Non-Goals
+
+- Do not run broad implementation work; use `.routines/worker`
+- Do not create new feature plans; use `.routines/todo_planner`
+- Do not duplicate backend/frontend audit details when those routines are more specific
 
 ## Goal
 
-Prove the routine's value by always surfacing at least one actionable issue, even if minor, and drive continuous improvement.
+Keep Skaia internally consistent and reduce drift so agents can trust the local context they load.
 
 ## Principles
 
-- Every run must surface at least one actionable issue
-- Documentation and code must always be in sync
-- Prioritize clarity, maintainability, and alignment with best practices
-- Communicate and document all findings and suggestions
+- Prefer concrete file/line findings over broad advice
+- Favor small corrections that remove confusion for future agents
+- Link to source files/specs rather than copying large passages
+- Escalate cross-cutting implementation work into `.todo` when it cannot be fixed safely in the current task
 
 ## Workflow
 
-1. Scan all README.md, .spec, .specs, and .spec.md files
-2. Check backend/internal/migrations/, backend/internal/utils/, backend/models/ for alignment with docs/specs
-3. Identify inconsistencies, outdated docs, orphaned files, or inefficient practices
-4. Document at least one actionable criticism per run
-5. Suggest improvements and prioritize them
-6. Communicate findings and update onboarding/developer docs as needed
+1. Identify the scope from the triggering task
+2. Read relevant README/spec/todo files and changed code
+3. Compare stated policy against actual repo behavior
+4. Surface actionable contradictions, stale references, coverage gaps, or anti-patterns
+5. Apply small documentation or reference fixes when clearly safe
+6. Record durable findings in `.tip`, specs, or routine run remarks
 
 ### Pseudocode
 
 ```
-for doc in (README.md, .spec*, .specs*):
-   check alignment with code/migrations/models
-   find at least one actionable issue
-   document criticism, suggestion, priority, next steps
-update onboarding/dev docs if needed
+scope = changed files or requested area
+read docs/specs/todos/code for scope
+compare documented intent with implementation facts
+if safe small fix:
+    patch docs/references
+else:
+    record actionable finding and next step
+verify references and formatting
 ```
+
+## Verification
+
+- Use `rg` to confirm removed/renamed references are gone
+- Run relevant tests/builds only when code behavior changed
+- For docs-only corrections, verify links and file paths exist
+
+## Trace Outputs
+
+- Updated README/spec/todo/routine files for small drift fixes
+- `.todo/<entry>.tip` notes for implementation-related findings
+- This routine's run log for standalone correctness audits
 
 ## Contexts
 
-- All README.md files
-- All .spec, .specs, and .spec.md files in the project
-- backend/internal/migrations/
-- backend/internal/utils/
-- backend/models/
+- `README.md`
+- `.routines/`
+- `.specs/`
+- `.todo/`
+- `backend/internal/migrations/`
+- `backend/models/`
+- Relevant source/test files
 
 ## Extension/See Also
 
-- `.routines/audit_backend` for backend audits
-- `.routines/audit_frontend` for frontend audits
-- `.specs_specialist` for architecture, design, and protocol details
-- `.github/copilot-instructions.md` for global agent guidance
+- `.routines/audit_backend` — backend-specific correctness
+- `.routines/audit_frontend` — frontend-specific correctness
+- `.routines/.specs_specialist` — specs authority and upkeep
+- `.routines/todo_planner` — convert findings into plans
 
-## Last Run
+## Last Ran
 
-- 2026-04-20
+- 2026-05-24
 
-## Criticism
+## Last Run Remarks
 
-- The migration policy in `.specs/migrations_spec` states all schema changes must be applied by editing the existing migration files directly, with no incremental migration files. However, the codebase contains incremental migration files (`003_datasource_env_data.sql`, `004_datasource_files.sql`, etc.), which contradicts the documented policy.
-
-## Suggestion
-
-- Update the migration policy in `.specs/migrations_spec` to reflect the actual practice of using incremental migration files, or consolidate all schema changes into the original files as per the current policy.
-
-## Priority
-
-- High (Documentation and migration practices must align to avoid confusion and potential deployment issues.)
+- Found routine-system drift: duplicate deprecated routine bodies, stale `todo_agent` references, and ambiguous `.specs_specialist` references. Optimized routines into trigger/input/verification contracts and redirects.
 
 ## Next Steps
 
-1. Decide on a single migration strategy:
-
-- If incremental migrations are preferred, update `.specs/migrations_spec` to document this.
-- If single-file/idempotent migrations are required, merge all changes into the original files and remove the incremental ones.
-
-2. Communicate the chosen strategy to all contributors.
-3. Update onboarding and developer docs to match.
+- Keep checking routine references with `rg` after routine renames or deprecations.

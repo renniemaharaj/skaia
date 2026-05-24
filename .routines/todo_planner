@@ -1,94 +1,110 @@
-# Routine: .todos planner
+# Routine: todo_planner
 
 ## Purpose
 
-Automated planning, strategizing, and todo management for Skaia. Entry point for developers and agents to plan activities, propose strategies, or autopilot planning in `.todo/`. **Does not execute plans—only generates, organizes, and maintains them.**
+Automated planning, strategizing, and todo management for Skaia. Use this routine to create, split, dedupe, update, or retire `.todo/` entries. It does not execute implementation plans; execution belongs to `.routines/worker`.
 
-This routine describes the responsibilities and workflow for the ".todos planner" agent.
+## Triggers
+
+- User asks to plan, strategize, split, dedupe, organize, or retire todos
+- User references `.routines/todo_planner`
+- A todo lacks a `.tip` file or has stale status
+- Multiple todos overlap or conflict
+
+## Inputs
+
+- `.todo/README.md`
+- Relevant `.todo/*` and `.todo/*.tip` files
+- `.specs/` files for affected architecture or contracts
+- `.routines/correctness` for known drift/anti-patterns
 
 ## Responsibilities
 
 - Generate, organize, and maintain todos in `.todo/`
 - Ensure no duplication or conflict with existing todos
 - Enforce `.tip` file presence and structure
-- Reference related specs, routines, and planning docs for traceability
+- Keep todo entries actionable, scoped, and linked to relevant specs/routines
+- Retire stale or completed todos only after verification is documented
+
+## Non-Goals
+
+- Do not implement code changes; hand execution to `.routines/worker`
+- Do not delete completed todos until verification is documented or delegated to worker
+- Do not create broad duplicate plans when an existing todo can be updated
 
 ## Goal
 
-Maintain a comprehensive, conflict-free, and traceable planning system for Skaia, balancing frontend and backend work, and ensuring all todos are actionable and validated. The .todos planner is responsible for upholding these standards.
+Maintain a comprehensive, conflict-free, traceable planning system for Skaia so agents can begin precise implementation work with minimal rediscovery.
 
 ## Principles
 
 - Always consult `.routines/correctness` for known issues, anti-patterns, and validation
-- No duplication: scan all `.todo` entries before creating new ones
-- Context awareness: avoid targeting areas with active/planned work
-- Balanced planning: distribute between frontend and backend unless otherwise specified
-- `.tip` enforcement: every `.todo` must have a `.tip` file
-- Traceability: reference all related `.todo`, `.tip`, and `.specs` entries
-- Link, don't embed: always link to detailed docs/specs/routines
+- Scan existing `.todo` entries before creating a new one
+- Avoid targeting areas with active/planned work unless intentionally extending that plan
+- Keep `.tip` status compact and current
+- Link, do not embed, detailed specs/routines
 
 ## Workflow
 
-### Enhanced Workflow for .todos planner
+1. Scan `.todo/` for existing plans and `.tip` files
+2. For each relevant todo:
+   - Check that a `.tip` exists
+   - Compare todo and `.tip` with current project state when needed
+   - Update stale phase status and next steps
+   - Split or merge overlapping plans when it improves execution clarity
+3. Create new todos only when they do not duplicate or conflict with existing entries
+4. Generate missing `.tip` files using the `.todo/README.md` status format
+5. Reference related specs/routines for traceability
 
-1. Scan `.todo/` for all existing plans and `.tip` files
-2. For each todo:
-   - Check `.tip` exists and review its status
-   - Compare todo and `.tip` with current project state (code, tests, docs)
-   - If todo is already done:
-     - Remove both the todo and its `.tip` for cleanup
-   - Else if todo is partially complete:
-     - Update `.tip` with the current state and next steps
-   - Else if todo appears complete:
-     - Run relevant tests (backend/frontend as appropriate)
-     - Consult `.routines/correctness` for validation
-     - Start a worker routine to run verifications and tests for the todo
-     - If tests and correctness checks pass:
-       - Remove both the todo and its `.tip`
-     - Else:
-       - Update `.tip` with findings and current state
-3. Analyze for duplication, conflicts, and coverage (frontend/backend balance)
-4. Propose new todos only if they do not duplicate or conflict with existing entries, and ensure they are contextually relevant and balanced
-5. Generate missing `.tip` files for any `.todo` entry lacking one, using the standard status block structure
-6. Reference all related entries and specs for traceability
-
-#### Pseudocode
+### Pseudocode
 
 ```
-for todo in .todo/:
-    check .tip exists
-    check .tip status
-    compare with current project state (code, tests, docs)
-    if todo is already done:
-        remove todo and .tip
-    elif todo is partially complete:
-        update .tip with current state
-    elif todo appears complete:
-        run tests (backend/frontend as appropriate)
-        consult correctness routine
-        start worker routine for verification
-        if tests pass and correctness confirmed:
-            remove todo and .tip
-        else:
-            update .tip with findings
+scan .todo entries and .tip files
+for each relevant plan:
+    validate .tip presence and status
+    compare against specs and current code when needed
+    update, split, merge, or retire with documented basis
+if new plan needed:
+    create scoped .todo and matching .tip
 ```
+
+## Verification
+
+- Confirm every active todo has a matching `.tip`
+- Confirm new plans do not duplicate existing `.todo` entries
+- Confirm `.tip` files use the `.todo/README.md` phase/status format
+- For retired todos, record the verification basis in the final update before deletion
+
+## Trace Outputs
+
+- New or updated `.todo/<entry>` files
+- New or updated `.todo/<entry>.tip` files
+- Brief references to related specs/routines inside the plan
 
 ## Contexts
 
-- `.todo/` directory (all planning entries)
-- `.routines/correctness` (validation and anti-patterns)
-- `.specs/` (architecture, design, protocol)
-- `.tip` files (status tracking)
+- `.todo/`
+- `.todo/*.tip`
+- `.todo/README.md`
+- `.routines/correctness`
+- `.routines/worker`
+- `.specs/`
 
 ## Extension/See Also
 
-- `.routines/correctness` correctness, anti-patterns, validation
-- `.specs/` architecture, design, protocol details
-- `.todo/README.md` planning and status tracking conventions
-- `.github/copilot-instructions.md` global agent guidance
+- `.routines/worker` — execution of planned work
+- `.routines/correctness` — validation and anti-patterns
+- `.specs/` — architecture, design, and protocol details
+- `.todo/README.md` — planning and status conventions
 
-## Example Prompts
+## Last Ran
 
-- Plan a new feature—ensure no duplication with existing todos, and generate a `.tip` if missing
-- Strategize backend refactor—balance with frontend work and consult correctness routine
-- Audit all current todos for conflicts or missing `.tip` files
+- Not yet recorded
+
+## Last Run Remarks
+
+- None
+
+## Next Steps
+
+- Audit active todos for overlap before adding new entries.

@@ -8,7 +8,7 @@ This directory is used for collaborative planning and tracking of software engin
 - **Every todo entry must be initialized with a corresponding `.tip` file (e.g., `feature.tip`). No todo should exist without its `.tip`.**
 - `.specs` files in this directory are for detailed specifications, requirements, or design docs related to human-AI planning and collaboration.
 - Use clear, actionable entries and update them as progress is made.
-- Do not use file extensions for todo plans/specs (except `README.md`, `.status`, and `.specs`).
+- Do not use file extensions for todo plans/specs (except `README.md`, `.tip`, and `.specs`).
 - Reference `.todo` and `.specs` entries in code comments or PRs to maintain traceability.
 
 ## Status Tracking
@@ -61,4 +61,4 @@ This directory is used for collaborative planning and tracking of software engin
 
 ---
 
-_This system helps ensure all agents and contributors are aligned and can collaborate effectively on complex software engineering tasks. Emoji use is strictly limited to this directory and the `.status` file as described above._
+_This system helps ensure all agents and contributors are aligned and can collaborate effectively on complex software engineering tasks. Emoji use is strictly limited to this directory and `.tip` files as described above._

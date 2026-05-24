@@ -2,74 +2,115 @@
 
 ## Purpose
 
-To ensure the Skaia backend is secure, robust, high-performance, and well-tested, meeting modern Go engineering standards through regular audits, testing, and best practice enforcement.
+Backend audit and implementation-standard routine for Skaia's Go services, repositories, handlers, migrations, security boundaries, and tests.
+
+## Triggers
+
+- User references `.routines/audit_backend`
+- Backend code, models, migrations, auth/session logic, permissions, caching, uploads, WebSockets, or tests changed
+- A worker todo has backend scope
+- A review request targets backend correctness, security, or maintainability
+
+## Inputs
+
+- Changed backend files
+- `.specs/backend_spec`
+- `.specs/migrations_spec` for schema changes
+- Related `.specs/*` for affected contracts
+- `backend/go.mod` and `backend/go.sum` when dependencies changed
+- Existing tests around touched packages
+- `.routines/correctness`
 
 ## Responsibilities
 
-- Audit backend codebase, endpoints, services, repositories, and structure
-- Review libraries and internal packages for security, maintainability, and up-to-dateness
-- Perform `go build` and run all tests, including edge cases and coverage gaps
-- Identify complex logic for refactoring into utils or helpers
-- Enforce backend security best practices and audit for vulnerabilities
-- Ensure durability, high performance, and reliability under load/stress
-- Audit and update external libraries for vulnerabilities
-- Maintain expert-level Go backend and system administration standards
+- Audit backend package boundaries: handler, service, repository, model, cache, and integration layers
+- Check API contracts, auth/permission boundaries, validation, error handling, and sensitive data exposure
+- Review migrations for fresh-schema, legacy-schema, idempotency, rollback expectations, and testability
+- Prefer DB-authoritative and backend-driven behavior for shared state and security-sensitive logic
+- Identify coverage gaps and add focused tests when implementation changes are made
+- Verify relevant backend commands before completion
+
+## Non-Goals
+
+- Do not perform frontend UI review; use `.routines/audit_frontend`
+- Do not create new implementation plans; use `.routines/todo_planner`
+- Do not update specs blindly; use `.routines/.specs_specialist` when architecture or contracts changed
 
 ## Goal
 
-Maintain a secure, robust, high-performance, and well-tested backend that meets modern Go engineering standards.
+Maintain a secure, robust, high-performance, and well-tested backend that follows modern Go engineering standards and Skaia's documented architecture.
 
 ## Principles
 
 - Security and correctness are top priorities
-- All code and dependencies must be up-to-date and well-documented
-- Refactor complex logic for maintainability
-- Prefer backend-driven solutions for computation and data integrity
-- Document all findings and actions for traceability
+- Keep domain logic out of handlers where a service/repository layer already owns it
+- Keep models explicit and avoid leaking sensitive auth/payment/internal fields
+- Prefer established libraries over hand-rolled security, parsing, or protocol code
+- Document durable findings and fixes for traceability
 
 ## Workflow
 
-1. Audit backend codebase, endpoints, and services
-2. Review dependencies in go.mod/go.sum
-3. Run all tests, check coverage, and stress/load test
-4. Identify complex logic for refactoring
-5. Audit for vulnerabilities and outdated libraries
-6. Document findings and actions in .specs_specialist or audit logs
+1. Identify changed backend surface area and relevant specs
+2. Review package boundaries and data flow
+3. Check security, validation, authz/authn, sensitive fields, and error handling
+4. Review tests for success, edge, and failure paths
+5. Run targeted tests during iteration
+6. Run broader backend verification before completion when shared behavior changed
+7. Record findings, fixes, and remaining risks in `.tip`, specs, or run remarks
 
 ### Pseudocode
 
 ```
-for service in backend:
-    audit endpoints, repos, handlers
-    check dependencies
-    run tests (edge cases, coverage)
-    identify refactor candidates
-    check for vulnerabilities
-    document in .specs_specialist/audit logs
+for changed backend package:
+    read relevant spec and tests
+    audit boundaries, security, validation, data exposure
+    add or adjust tests for changed behavior
+run targeted tests
+if shared contracts changed:
+    run full backend test suite
+document durable findings
 ```
+
+## Verification
+
+- Standard full backend check: from `backend/`, `JWT_SECRET=test-secret go test ./...`
+- Targeted iteration: `JWT_SECRET=test-secret go test ./internal/<pkg>` or related package set
+- Dependency/security changes: review `go.mod`, `go.sum`, and known advisories when network/current data is needed
+- Migrations: verify idempotency and note DB-backed test requirements if `TEST_DATABASE_URL` is unavailable
+
+## Trace Outputs
+
+- `.todo/<entry>.tip` for implementation work
+- `.specs/*` plus `.routines/.specs_specialist` when architecture, schema, models, or protocols changed
+- This routine's run log for standalone backend audit findings
 
 ## Contexts
 
-- Backend source code (services, repositories, handlers, internal packages)
-- go.mod and go.sum for dependencies
-- Test suites and coverage reports
-- Security advisories and best practices
-- Project documentation
+- `backend/`
+- `backend/internal/`
+- `backend/models/`
+- `backend/internal/migrations/`
+- `backend/go.mod`
+- `backend/go.sum`
+- `.specs/backend_spec`
+- `.specs/migrations_spec`
+- `.routines/correctness`
 
 ## Extension/See Also
 
-- `.routines/correctness` — for validation and anti-patterns
-- `.specs_specialist` — for architecture, design, and protocol details
-- `.github/copilot-instructions.md` — for global agent guidance
+- `.routines/worker` — executes todo-backed backend changes
+- `.routines/correctness` — drift and anti-pattern checks
+- `.routines/.specs_specialist` — specs upkeep
+- `.routines/audit_frontend` — frontend contract consumers
 
 ## Last Ran
 
-- (To be updated by model)
+- Not yet recorded
 
 ## Last Run Remarks
 
-- (To be updated by model)
+- None
 
 ## Next Steps
 
-- (To be updated by model)
+- Record package-specific findings when the next backend audit runs.
