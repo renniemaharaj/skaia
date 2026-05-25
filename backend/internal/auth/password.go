@@ -14,14 +14,14 @@ const bcryptCost = 12
 
 const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-func generateSecureToken(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
-		b[i] = tokenChars[n.Int64()]
-	}
-	return string(b)
-}
+// func generateSecureToken(length int) string {
+// 	b := make([]byte, length)
+// 	for i := range b {
+// 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
+// 		b[i] = tokenChars[n.Int64()]
+// 	}
+// 	return string(b)
+// }
 
 func generateBackupCode() string {
 	const digits = "0123456789"
