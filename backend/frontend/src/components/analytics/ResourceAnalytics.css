@@ -127,7 +127,7 @@
 
 .ra-range-select {
   font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
+  /* padding: 0.25rem 0.5rem; */
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
@@ -227,11 +227,13 @@
   color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
+  align-items: baseline;
 }
 
 .ra-filter-toggle input[type="checkbox"] {
   accent-color: var(--primary-color);
   cursor: pointer;
+  width: 1rem;
 }
 
 .ra-filter-badge {
