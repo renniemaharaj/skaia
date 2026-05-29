@@ -1,19 +1,50 @@
 ### Current Progress
 
 - **Phase 1: Align with current Skaia page model** — ✅ Complete
-- **Phase 2: Add explicit section metadata** — 🟡 In progress
+  - `models.Page` with `Content` JSONB all set
+  - `models.PageSection` covers typed sections with `section_type` field
+  - Page CRUD endpoints at `/pages/*` exist
+  
+- **Phase 2: Add explicit section metadata** — 🟡 In progress  
+  - ✅ Frontend: 14 section types defined in `types.ts` (hero, card_group, data_sources, derived_section, custom_section, etc.)
+  - ✅ Frontend: `BLOCK_MAP` in `BlockRenderer.tsx` maps all section types to components
+  - ✅ Frontend: `SECTION_TYPE_GROUPS` for organized UI picker (featured, content, integration)
+  - ⚠️ Backend: `/config/datasources` and `/config/custom-sections` endpoints exist but NO `/config/sections` registry or `/config/section-types/{type}` schema endpoints yet
+  - ⚠️ Backend: No formal schema validation on page save yet
+  
 - **Phase 3: Enforce integration primitives** — 🟡 In progress
+  - ✅ Frontend: `DataSourcesBlock`, `DerivedSectionBlock`, `CustomSectionBlock` components implemented
+  - ✅ Frontend: Builder can create and edit all integration block types
+  - ⚠️ Backend: Datasource/custom-section refs not validated on page save; need to reject invalid IDs
+  
 - **Phase 4: Convert routes to dynamic page rendering** — ⬜ Not started
 - **Phase 5: Add versioning and migration** — ⬜ Not started
 
+### Frontend CSS & Component Consolidation (2026-05-29)
+
+✅ **Shared primitives added to `index.css`:**
+- `.btn-*` variants: primary, secondary, ghost, danger, warning + sizing (sm, lg, block)
+- `.badge-*` variants: secondary, success, warning, error, info
+- `.page-*` surface layout: shell, header, header__main, header__actions, title, subtitle
+- `.ui-*` tooling: panel, toolbar, actions, actions--center, actions--end, tabs, tab, tab--active, empty, dialog*
+- `.form-*` primitives: grid, actions, check
+- `.card` system: base, interactive, outlined, flat, compact, section, forum, store, highlight
+- `.section` system: block, header, content
+
+✅ **Form inputs standardized in `FormGroup.css`:**
+- Checkbox sizing reset to `1rem × 1rem` with `padding: 0`
+- Input/textarea focus state with `--primary-color` ring
+- Disabled state styling
+
+⚠️ **Ongoing migration:**
+- ErrorPage buttons, store empty state moved to primitives
+- High-drift components identified but not yet modularized: need continued migration as pages are touched
+
 ### Next Steps
 
-- [ ] Finish section registry API and dynamic config schema (Phase 2)
-- [ ] Complete backend and frontend enforcement for integration primitives (Phase 3)
-- [ ] Begin dynamic route rendering and registry-driven blocks (Phase 4)
-- [ ] Plan and implement versioning/migration for legacy data (Phase 5)
-- [ ] Implement and verify backend/frontend tests
-- [ ] Reviewed 2026-05-22: block types and integration blocks exist; backend registry endpoints and schema validation are still not complete
-- [x] Worker run 2026-05-29: reviewed latest UI checkbox fix and promoted checkbox sizing reset into shared frontend form primitives (`index.css` and `FormGroup.css`); verified `mise exec node@24.16.0 -- npm run build`
-- [x] Worker run 2026-05-29: reviewed component duplication surfaces and documented primitive consolidation direction in the plan; added reusable `.btn-*` and `.badge-*` variants in `index.css` without adding new React components
-- [ ] Continue migrating page-local button, badge, empty-state, and modal styles onto shared primitives as each UI area is touched
+- [ ] **Phase 2** — Add `/config/sections` (list types) and `/config/section-types/{type}` (get schema) backends
+- [ ] **Phase 3** — Add backend validation: reject page saves with unknown section_type or invalid datasource/custom-section IDs
+- [ ] **Phase 4** — Begin dynamic route rendering (migrate hardcoded pages to registry-driven)
+- [ ] **Phase 5** — Plan versioning/migration for legacy page data
+- [ ] Continue CSS consolidation: migrate remaining page-local styles to shared primitives as areas are touched
+- [ ] Add backend/frontend integration tests for schema validation

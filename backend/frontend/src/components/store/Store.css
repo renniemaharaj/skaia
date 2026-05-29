@@ -281,6 +281,10 @@
   }
 }
 
+.empty-state {
+  animation: fadeIn 0.6s ease-out;
+}
+
 .empty-state svg {
   margin-bottom: 16px;
   color: var(--primary-color);

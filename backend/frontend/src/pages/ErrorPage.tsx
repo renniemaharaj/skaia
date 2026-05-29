@@ -44,21 +44,15 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
 
         {details && <p className="error-details">{details}</p>}
 
-        <div className="error-actions">
+        <div className="ui-actions ui-actions--center ui-actions--stack-sm">
           {showBackButton && (
-            <button
-              className="error-btn error-btn--secondary"
-              onClick={handleBack}
-            >
+            <button className="btn btn-secondary" onClick={handleBack}>
               <ArrowLeft size={16} />
               Go Back
             </button>
           )}
           {showHomeButton && (
-            <button
-              className="error-btn error-btn--primary"
-              onClick={handleHome}
-            >
+            <button className="btn btn-primary" onClick={handleHome}>
               <Home size={16} />
               Return Home
             </button>

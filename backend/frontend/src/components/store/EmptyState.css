@@ -1,8 +1,0 @@
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  color: var(--text-secondary);
-  border: 2px dashed var(--border-color);
-  box-shadow: none;
-  animation: fadeIn 0.6s ease-out;
-}

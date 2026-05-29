@@ -192,6 +192,29 @@ Completed primitive moves:
 - Checkbox sizing reset now lives in `index.css` and `components/ui/FormGroup.css`.
 - Button size and semantic variants now live in `index.css`: `.btn-sm`, `.btn-lg`, `.btn-block`, `.btn-ghost`, `.btn-danger`, `.btn-warning`.
 - Badge semantic variants now live in `index.css`: `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info`.
+- Route/work-surface primitives now live in `index.css`: `.page-shell`, `.page-header`, `.page-title`, `.page-subtitle`, `.ui-panel`, `.ui-toolbar`, `.ui-actions`, `.ui-tabs`, `.ui-tab`, `.ui-empty`, `.ui-dialog-overlay`, `.ui-dialog`, `.form-grid`, `.form-actions`, `.form-check`.
+- `ErrorPage` uses shared `.btn` and `.ui-actions` instead of local error-button components.
+- Store empty state uses shared `.ui-empty` with only store-specific adornment styles remaining.
+
+Route CSS audit findings:
+
+- Low-drift routes already using primitives: cart, forum category/view thread surfaces, datasource list cards, custom pages, several page blocks using `.card`, `.btn`, `.icon-btn`, `.badge`, and skeleton helpers.
+- Medium-drift routes should migrate local controls to primitives as touched: store admin actions, activity feed badges/empty states, resource analytics panel tabs/toolbar/empty state, notification panel buttons, data source editor tabs/toolbars/forms, roles management action rows and permission cards.
+- High-drift route/components should be broken down before registry metadata work: `InboxPage`, `GrengoDashboard`, `UserProfile` plus profile subpanels, `SecuritySettings`, `PageBuilder`, `CardDesigner`, `TabbedEditor`, and integration blocks (`DataSourcesBlock`, `DerivedSectionBlock`, `CustomSectionBlock`, `CodeEditorBlock`). These files combine route orchestration, local primitives, data state, and repeated control patterns.
+
+Modular UI system extraction targets:
+
+- `RouteShell`: page header, title/subtitle, actions, toolbar, and empty state metadata.
+- `ActionButton` / primitive class metadata: maps to `.btn`, `.icon-btn`, semantic variants, sizes, disabled/loading state, and destructive action intent.
+- `StatusBadge`: maps semantic status names to `.badge-*` variants for registry-driven status rendering.
+- `DialogSurface`: overlay, shell, header/body/footer/action rows, close affordance, and fixed-width variants.
+- `TabSurface`: tab list, tab button, active/error/warning badge, overflow behavior.
+- `EditorField`: label, help text, input/select/textarea, checkbox row, grid layout, validation/error state.
+- `DataDisplay`: table wrapper, card grid, preview card, empty/loading/error states for datasource and custom-section outputs.
+
+Migration rule:
+
+- Route and block CSS may keep domain-specific layout and content classes, but primitive-shaped UI (`button`, `badge`, `card`, `dialog`, `tabs`, `toolbar`, `empty`, `field`, `grid`) should first use shared primitive classes. If a route needs a new visual state, extend the primitive class catalog and document it here before adding another page-local family.
 
 ---
 

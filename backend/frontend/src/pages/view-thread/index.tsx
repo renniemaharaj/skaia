@@ -23,7 +23,6 @@ import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 
 import "./index.css";
 import "../../components/forum/IconButton.css";
-import "./../../components/store/EmptyState.css";
 
 const ViewThreadPage = () => {
   const navigate = useNavigate();

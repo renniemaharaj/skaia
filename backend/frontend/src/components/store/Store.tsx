@@ -24,7 +24,6 @@ import { CreateStoreCategoryDialog } from "./CreateStoreCategoryDialog";
 import { CreateProductDialog } from "./CreateProductDialog";
 import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
-import "./EmptyState.css";
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -354,7 +353,7 @@ export const Store: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="card empty-state">
+          <div className="ui-empty empty-state">
             <Package size={48} />
             <h3>No items available</h3>
             <p>
