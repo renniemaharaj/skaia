@@ -11,7 +11,6 @@ import {
   Crown,
   Users,
   ExternalLink,
-  Search,
   LayoutGrid,
   List,
   Trash2,
@@ -34,6 +33,7 @@ import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
+import SearchField from "../../components/ui/SearchField";
 import "./CustomPages.css";
 
 const parsePageSections = (content: string) => {
@@ -362,15 +362,12 @@ export default function CustomPages() {
 
       {pages.length > 0 && (
         <div className="custom-pages__toolbar">
-          <div className="custom-pages__search">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Search pages…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <SearchField
+            className="custom-pages__search"
+            placeholder="Search pages…"
+            value={search}
+            onChange={setSearch}
+          />
           <span className="custom-pages__count">
             {filtered.length} custom page{filtered.length !== 1 ? "s" : ""}
             {search && ` matching "${search}"`}

@@ -5,31 +5,11 @@
 }
 
 .person-picker__input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-secondary);
-}
-
-.person-picker__icon {
-  color: var(--text-secondary);
-  flex-shrink: 0;
 }
 
 .person-picker__input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
   font-size: 0.875rem;
-  outline: none;
-}
-
-.person-picker__input::placeholder {
-  color: var(--text-secondary);
 }
 
 .person-picker__close {

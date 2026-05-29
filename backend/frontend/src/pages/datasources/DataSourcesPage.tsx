@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Database,
   Plus,
-  Search,
   Code2,
   Clock,
   UserCircle2,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../../components/user/UserAvatar";
+import SearchField from "../../components/ui/SearchField";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { DataSource, DataSourceCreator } from "../page/types";
 import { toast } from "sonner";
@@ -142,15 +142,12 @@ export default function DataSourcesPage() {
 
       {dataSources.length > 0 && (
         <div className="ds-page__toolbar">
-          <div className="ds-page__search">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Search data sources…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <SearchField
+            className="ds-page__search"
+            placeholder="Search data sources…"
+            value={search}
+            onChange={setSearch}
+          />
           <span className="ds-page__count">
             {filtered.length} data source{filtered.length !== 1 ? "s" : ""}
             {search && ` matching "${search}"`}

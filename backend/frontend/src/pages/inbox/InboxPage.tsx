@@ -4,7 +4,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   Plus,
   InboxIcon,
-  Search,
   X,
   Smile,
   Paperclip,
@@ -18,6 +17,7 @@ import {
 import { toast } from "sonner";
 import Picker from "@emoji-mart/react";
 import UserAvatar from "../../components/user/UserAvatar";
+import SearchField from "../../components/ui/SearchField";
 import data from "@emoji-mart/data";
 import {
   inboxConversationsAtom,
@@ -563,24 +563,26 @@ const InboxPage = () => {
 
           {showNewDm && (
             <div className="inbox-new-dm">
-              <div className="inbox-search-input-wrapper">
-                <Search size={14} className="inbox-search-icon" />
-                <input
-                  className="inbox-new-dm-input"
-                  placeholder="Search users…"
-                  value={newDmTarget}
-                  autoFocus
-                  onChange={(e) => setNewDmTarget(e.target.value)}
-                  onKeyDown={(e) => {
+              <SearchField
+                className="inbox-search-input-wrapper"
+                inputClassName="inbox-new-dm-input"
+                iconClassName="inbox-search-icon"
+                iconSize={14}
+                placeholder="Search users…"
+                value={newDmTarget}
+                autoFocus
+                onChange={setNewDmTarget}
+                onKeyDown={(e) => {
                     if (e.key === "Enter") startNewDm();
                     if (e.key === "Escape") {
                       setShowNewDm(false);
                       setNewDmTarget("");
                       setSearchResults([]);
                     }
-                  }}
-                />
+                }}
+              >
                 <button
+                  type="button"
                   className="inbox-search-clear"
                   onClick={() => {
                     setShowNewDm(false);
@@ -591,7 +593,7 @@ const InboxPage = () => {
                 >
                   <X size={14} />
                 </button>
-              </div>
+              </SearchField>
             </div>
           )}
 

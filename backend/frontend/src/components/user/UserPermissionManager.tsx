@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Search, X, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { apiRequest } from "../../utils/api";
+import SearchField from "../ui/SearchField";
 import "./UserPermissionManager.css";
 
 interface User {
@@ -50,8 +51,7 @@ const UserPermissionManager: React.FC = () => {
   }, []);
 
   // Search users
-  const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
 
     if (query.length < 2) {
@@ -181,16 +181,14 @@ const UserPermissionManager: React.FC = () => {
 
       {/* Search section */}
       <div className="upm-search-container">
-        <div className="upm-search-input-wrapper">
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="upm-search-input"
-          />
-        </div>
+        <SearchField
+          className="upm-search-input-wrapper"
+          inputClassName="upm-search-input"
+          iconSize={20}
+          placeholder="Search users by name or email..."
+          value={searchQuery}
+          onChange={handleSearch}
+        />
       </div>
 
       {/* Results section */}

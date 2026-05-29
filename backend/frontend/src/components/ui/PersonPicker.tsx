@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { currentUserAtom, type User } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../user/UserAvatar";
+import SearchField from "./SearchField";
 import "./PersonPicker.css";
 
 interface PersonPickerProps {
@@ -115,20 +116,22 @@ export default function PersonPicker({
 
   return (
     <div className={`person-picker ${className}`}>
-      <div className="person-picker__input-wrap">
-        <Search size={14} className="person-picker__icon" />
-        <input
-          className="person-picker__input"
-          placeholder={placeholder}
-          value={query}
-          autoFocus={autoFocus}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
+      <SearchField
+        className="person-picker__input-wrap"
+        inputClassName="person-picker__input"
+        iconClassName="person-picker__icon"
+        iconSize={14}
+        placeholder={placeholder}
+        value={query}
+        autoFocus={autoFocus}
+        onChange={setQuery}
+        onKeyDown={(e) => {
             if (e.key === "Escape" && onClose) onClose();
-          }}
-        />
+        }}
+      >
         {onClose && (
           <button
+            type="button"
             className="person-picker__close"
             onClick={onClose}
             title="Close"
@@ -136,7 +139,7 @@ export default function PersonPicker({
             <X size={14} />
           </button>
         )}
-      </div>
+      </SearchField>
       <div
         className="person-picker__results"
         ref={listRef}
@@ -148,6 +151,7 @@ export default function PersonPicker({
         )}
         {results.map((user) => (
           <button
+            type="button"
             key={user.id}
             className="person-picker__row"
             onClick={() => onSelect(user)}

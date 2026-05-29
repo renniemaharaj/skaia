@@ -23,36 +23,20 @@
 
 .upm-search-input-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
-  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 0 12px;
-  border: 1px solid var(--border-color);
 }
 
-.upm-search-input-wrapper svg {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
+/* .upm-search-input-wrapper svg {
+} */
 
 .upm-search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
   padding: 12px;
   font-size: 15px;
-  outline: none;
-  color: var(--text-primary);
-}
-
-.upm-search-input::placeholder {
-  color: var(--text-secondary);
 }
 
 .upm-search-input-wrapper:focus-within {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
   box-shadow: var(--focus-ring);
 }
 

@@ -73,50 +73,25 @@
 
 .inbox-search-input-wrapper {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   height: 34px;
   padding: 0 10px;
   border-radius: 10px;
-  border: 1px solid var(--border-color);
   background: var(--bg-color);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
 }
 
 .inbox-search-input-wrapper:focus-within {
-  border-color: var(--primary-color);
   box-shadow: 0 0 0 2px
     color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .inbox-search-icon {
-  color: var(--text-secondary);
   opacity: 0.5;
-  flex-shrink: 0;
-  line-height: 0;
 }
 
 .inbox-search-input-wrapper .inbox-new-dm-input {
-  flex: 1;
   height: 100%;
-  padding: 0;
-  margin: 0;
   font-size: 0.84rem;
   line-height: 34px;
-  border-radius: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  outline: none;
-  font-family: inherit;
-}
-
-.inbox-search-input-wrapper .inbox-new-dm-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.55;
 }
 
 .inbox-search-clear {

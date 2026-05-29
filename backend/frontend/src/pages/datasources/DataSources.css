@@ -100,34 +100,8 @@
 }
 
 .ds-page__search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.4rem 0.75rem;
   min-width: 240px;
   max-width: 360px;
-  transition: border-color 0.15s;
-}
-
-.ds-page__search:focus-within {
-  border-color: var(--primary-color);
-}
-
-.ds-page__search svg {
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.ds-page__search input {
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  outline: none;
-  width: 100%;
 }
 
 .ds-page__count {
