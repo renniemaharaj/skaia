@@ -23,6 +23,16 @@ const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567
 // 	return string(b)
 // }
 
+func generateSecurePassword() string {
+	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@$"
+	b := make([]byte, 12)
+	for i := range b {
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		b[i] = chars[n.Int64()]
+	}
+	return string(b)
+}
+
 func generateBackupCode() string {
 	const digits = "0123456789"
 	b := make([]byte, 8)

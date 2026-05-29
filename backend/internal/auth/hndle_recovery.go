@@ -153,3 +153,65 @@ func (h *Handler) ResetPasswordWithToken(w http.ResponseWriter, r *http.Request)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "password reset successfully"})
 }
+
+func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	// Permission check
+	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	newPw, err := h.svc.ResetPassword(targetID)
+	if err != nil {
+		log.Printf("user.Handler.adminResetPassword: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to reset password")
+		return
+	}
+
+	target, _ := h.svc.GetByID(targetID)
+	displayName := ""
+	if target != nil {
+		displayName = target.DisplayName
+		if displayName == "" {
+			displayName = target.Username
+		}
+	}
+	content := fmt.Sprintf(
+		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
+		displayName, newPw,
+	)
+	if err2 := h.inboxSvc.SendNoreplyToUser(targetID, content); err2 != nil {
+		log.Printf("user.Handler.adminResetPassword: noreply send failed: %v", err2)
+	}
+
+	content2 := fmt.Sprintf(
+		"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n— System",
+		displayName, newPw,
+	)
+
+	// Notify all other admins (best-effort).
+	if err2 := h.inboxSvc.SendNoreplyToUser(actorID, content2); err2 != nil {
+		log.Printf("user.Handler.adminResetPassword: noreply copy to actor failed: %v", err2)
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     targetID,
+		Activity:   ievents.ActUserUpdated,
+		Resource:   ievents.ResUser,
+		ResourceID: targetID,
+		IP:         ievents.ClientIP(r),
+	})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Password reset and sent to user's inbox"})
+}

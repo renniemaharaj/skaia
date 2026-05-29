@@ -44,6 +44,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Get("/totp", h.authHandler.TOTPStatus)
 		r.With(jwt).Get("/totp/{id}", h.authHandler.AdminTOTPStatus)
 
+		// Admin user management (requires user.manage-others permission)
+		r.With(jwt).Post("/admin/{id}/reset-password", h.authHandler.AdminResetPassword)
+
 		// Admin TOTP management (requires user.manage-others permission)
 		r.With(jwt).Post("/admin/totp/{id}/enable", h.authHandler.AdminEnableTOTP)
 		r.With(jwt).Post("/admin/totp/{id}/disable", h.authHandler.AdminDisableTOTP)

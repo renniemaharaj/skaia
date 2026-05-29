@@ -340,7 +340,7 @@ func (s *Service) generateRefreshToken(user *models.User) (string, error) {
 
 func (s *Service) ResetPassword(userID int64) (string, error) {
 	// Generate a new random password (for demo, use a static one)
-	newPw := "TempPass123!" // TODO: generate securely
+	newPw := generateSecurePassword()
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPw), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err

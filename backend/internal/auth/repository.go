@@ -64,7 +64,14 @@ func (r *SQLRepository) GetCredentialByUserID(ctx context.Context, userID int64)
 	return cred, nil
 }
 
+// This should then insert a new credentials if none exists, or update the existing
 func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, userID int64, newHash string) error {
+	if _, err := r.GetCredentialByUserID(ctx, userID); err != nil {
+		if err == sql.ErrNoRows {
+			_, err := r.CreateCredential(ctx, userID, newHash)
+			return err
+		}
+	}
 	_, err := r.db.ExecContext(ctx, `UPDATE auth_credentials SET password_hash = $1, updated_at = NOW() WHERE user_id = $2`, newHash, userID)
 	return err
 }
