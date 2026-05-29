@@ -14,3 +14,4 @@
 - [ ] Plan and implement versioning/migration for legacy data (Phase 5)
 - [ ] Implement and verify backend/frontend tests
 - [ ] Reviewed 2026-05-22: block types and integration blocks exist; backend registry endpoints and schema validation are still not complete
+- [x] Worker run 2026-05-29: reviewed latest UI checkbox fix and promoted checkbox sizing reset into shared frontend form primitives (`index.css` and `FormGroup.css`); verified `mise exec node@24.16.0 -- npm run build`

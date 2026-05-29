@@ -18,6 +18,16 @@
   font-size: 0.95rem;
 }
 
+.form-group input[type="checkbox"] {
+  width: 1rem;
+  max-width: 1rem;
+  height: 1rem;
+  padding: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  accent-color: var(--primary-color);
+}
+
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
