@@ -270,6 +270,10 @@ div#root {
 
 /* Buttons */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
@@ -279,6 +283,22 @@ div#root {
   transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+}
+
+.btn-lg {
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  gap: 12px;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .btn-primary {
@@ -302,9 +322,46 @@ div#root {
   background-color: var(--bg-tertiary);
 }
 
+.btn-ghost {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.btn-danger {
+  color: var(--error-color);
+  background: transparent;
+  border: 1px solid var(--error-color);
+}
+
+.btn-danger:hover {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
+.btn-warning {
+  color: var(--warning-color);
+  background: var(--warning-bg);
+  border: 1px solid color-mix(in srgb, var(--warning-color) 45%, transparent);
+}
+
+.btn-warning:hover {
+  background: var(--warning-color);
+  color: var(--bg-color);
+  border-color: var(--warning-color);
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Cards */
@@ -493,7 +550,9 @@ select:focus {
 
 /* Badge */
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 6px 12px;
   background-color: var(--primary-color);
   color: var(--bg-secondary);
@@ -507,6 +566,30 @@ select:focus {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--primary-color);
+}
+
+.badge-success {
+  background: var(--success-bg);
+  color: var(--success-color);
+  border: 1px solid var(--success-border);
+}
+
+.badge-warning {
+  background: var(--warning-bg);
+  color: var(--warning-color);
+  border: 1px solid color-mix(in srgb, var(--warning-color) 30%, transparent);
+}
+
+.badge-error {
+  background: var(--error-bg);
+  color: var(--error-color);
+  border: 1px solid var(--error-border);
+}
+
+.badge-info {
+  background: var(--info-bg);
+  color: var(--info-color);
+  border: 1px solid color-mix(in srgb, var(--info-color) 30%, transparent);
 }
 
 .status-badge,

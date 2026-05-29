@@ -168,6 +168,33 @@ This project will extend the existing builder with a new programmable section ed
 
 ---
 
+# Frontend Primitive Consolidation Review
+
+Reviewed 2026-05-29 against current `backend/frontend/src/components` and `backend/frontend/src/pages` usage.
+
+Shared primitive direction:
+
+- Prefer existing global CSS primitives before adding local component-specific UI: `.btn`, `.icon-btn`, `.badge`, `.card`, `.section`, `.form-group`, grid helpers, skeleton helpers, and semantic tokens in `index.css`.
+- Add variants to these primitives instead of introducing one-off React wrappers or page-local button/badge/card classes when behavior is the same.
+- Treat page blocks as composable UI building blocks for the registry-driven page system; block-specific classes should express layout/content differences, not duplicate primitive controls.
+- Keep `components/ui/*` focused on genuinely reusable interactive primitives such as pickers and skeletons. Do not add new component families until a repeated pattern cannot be handled through the existing primitive classes.
+
+Duplicate surfaces found:
+
+- Buttons: many local families repeat primary, secondary, danger, warning, ghost, compact, and large button behavior (`GrengoDashboard`, `SecuritySettings`, user profile dialogs, store admin actions, error pages, page admin controls).
+- Badges: local status badges repeat success, warning, error, info, enabled/disabled/running/stopped states.
+- Empty/loading states: repeated `*-empty` classes should converge on one shared empty-state primitive when designs are aligned.
+- Dialog/modal shells: forum, store, users, and admin dialogs repeat header/body/footer/close-button structure and should eventually share modal primitives.
+- Form rows and field controls: `.form-group` is already the shared field primitive and should absorb generic input fixes such as checkbox sizing.
+
+Completed primitive moves:
+
+- Checkbox sizing reset now lives in `index.css` and `components/ui/FormGroup.css`.
+- Button size and semantic variants now live in `index.css`: `.btn-sm`, `.btn-lg`, `.btn-block`, `.btn-ghost`, `.btn-danger`, `.btn-warning`.
+- Badge semantic variants now live in `index.css`: `.badge-success`, `.badge-warning`, `.badge-error`, `.badge-info`.
+
+---
+
 # Project-Specific Integration Rules
 
 - Data source blocks are integration primitives, not arbitrary code: they must reference a saved `DataSource` and execute through `/config/datasources/{id}/execute`.
