@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	ievents "github.com/skaia/backend/internal/events"
+	"github.com/skaia/backend/internal/s_registry"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -103,6 +104,8 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/comment-slowmode", h.getCommentSlowMode)
 		r.Get("/features", h.getFeatures)
 		r.Get("/feature/{feature}", h.getFeature)
+		r.Get("/sections", h.listSectionTypes)
+		r.Get("/section-types/{type}", h.getSectionType)
 
 		// Protected – requires home.manage
 		r.Group(func(r chi.Router) {
@@ -131,6 +134,20 @@ func parseID(r *http.Request, param string) (int64, error) {
 }
 
 // ── config endpoints ────────────────────────────────────────────────────────
+
+func (h *Handler) listSectionTypes(w http.ResponseWriter, r *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, s_registry.List())
+}
+
+func (h *Handler) getSectionType(w http.ResponseWriter, r *http.Request) {
+	typ := chi.URLParam(r, "type")
+	def, ok := s_registry.Get(typ)
+	if !ok {
+		utils.WriteError(w, http.StatusNotFound, "section type not found")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, def)
+}
 
 func (h *Handler) getBranding(w http.ResponseWriter, r *http.Request) {
 	sc, err := h.svc.GetConfig("branding")

@@ -7,25 +7,28 @@
 ### Current Progress
 
 - **Phase 1: Align with current Skaia page model** — ✅ Complete
-- **Phase 2: Add explicit section metadata** — 🟡 In progress (section types/constants in code, partial backend validation; section registry API and dynamic config schema not fully implemented)
-- **Phase 3: Enforce integration primitives** — 🟡 Started (integration block types present, stricter enforcement/validation ongoing)
-- **Phase 4: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 5: Add versioning and migration** — ⬜ Not started
+- **Phase 2: Add explicit section metadata** — ✅ Complete (section types/constants in code, backend section registry API, schema metadata, and save-time section type validation are implemented)
+- **Phase 3: Enforce integration primitives** — ✅ Complete (integration block types are present, and backend page saves reject invalid datasource/custom-section references)
+- **Phase 4: Add component registry and bind-point contracts** — ⬜ Not started
+- **Phase 5: Open derived/custom sections to registered primitive components** — ⬜ Not started
+- **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
+- **Phase 7: Add versioning and migration** — ⬜ Not started
 
 ### Next Steps
 
-- [ ] Finish section registry API and dynamic config schema (Phase 2)
-- [ ] Complete backend and frontend enforcement for integration primitives (Phase 3)
-- [ ] Begin dynamic route rendering and registry-driven blocks (Phase 4)
-- [ ] Plan and implement versioning/migration for legacy data (Phase 5)
+- [ ] Define the component registry contract for primitive, compound, and custom HTML components
+- [ ] Define bind-point metadata, supported data types, validation, and row replication semantics
+- [ ] Extend derived/custom sections so builders can choose registered components and bind datasource columns to component bind points
+- [ ] Begin dynamic route rendering and registry-driven blocks after component binding is modeled
+- [ ] Plan and implement versioning/migration for legacy data
 
-Create a Skaia-aligned schema-driven UI system where the backend owns canonical page content, section/block definitions, and integration primitives, while the frontend renders and edits those sections through an existing builder surface.
+Create a Skaia-aligned schema-driven UI system where the backend owns canonical page content, section/block definitions, component definitions, bind-point contracts, and integration primitives, while the frontend renders and edits those sections through an existing builder surface.
 
 ---
 
 # Core Principle
 
-The backend owns the page/block schema and integration definitions. The frontend renders page content dynamically and edits it through a section-aware builder.
+The backend owns the page/block schema, component registry metadata, bind-point contracts, and integration definitions. The frontend renders page content dynamically and edits it through a section/component-aware builder.
 
 ---
 
@@ -36,6 +39,7 @@ The backend owns the page/block schema and integration definitions. The frontend
 - Frontend uses `PageBuilder`, `BlockRenderer`, and typed blocks in `backend/frontend/src/pages/page/blocks/*`.
 - Integration-focused block types already exist: `data_sources`, `derived_section`, and `custom_section`.
 - Data sources and custom sections are managed through existing admin APIs under `/config/datasources` and `/config/custom-sections`.
+- Backend section registry endpoints now exist under `/config/sections` and `/config/section-types/{type}` via `backend/internal/s_registry`.
 - Existing page section/block code and page builder are the right foundation to extend rather than replace.
 
 ---
@@ -58,7 +62,7 @@ The backend owns the page/block schema and integration definitions. The frontend
 
 2. Go Backend (Authority Layer)
    - Validate saved page `Content` against supported `section_type`s and integration references.
-   - Serve page content, section metadata, and editor schema to the frontend.
+   - Serve page content, section metadata, component metadata, bind-point contracts, and editor schema to the frontend.
    - Keep current page CRUD plus landing slug resolution and page broadcast semantics.
    - Integrate datasource/custom-section references during save and ensure the backend rejects invalid IDs.
 
@@ -66,7 +70,7 @@ The backend owns the page/block schema and integration definitions. The frontend
    - Use the existing `PageBuilder` flow and `BlockRenderer` mapping from `section_type` to block component.
    - Hydrate from `/pages/{slug}` or `/pages/index` and preserve `mergeSections` memoization.
    - Render only supported block types and keep section metadata in-sync with backend definitions.
-   - Let builder edit `section_type`, `config`, and integration settings for datasource / custom section blocks.
+   - Let builder edit `section_type`, `config`, selected component, bind-point mappings, style overrides, and integration settings for datasource / custom section blocks.
 
 ---
 
@@ -129,6 +133,12 @@ New registry metadata endpoints should be additive, not replace the current page
 - GET `/config/sections` => list supported `section_type`s and schema
 - GET `/config/section-types/{type}` => props/config schema for each block type
 
+Component registry metadata endpoints should be additive and may initially be served from static backend definitions:
+
+- GET `/config/components` => list selectable primitive, compound, and custom component definitions
+- GET `/config/components/{type}` => one component definition including props, bind points, allowed child/slot behavior, and validation schema
+- POST `/config/components/inspect` => optional custom HTML/component inspector that returns detected bind points and editable style targets before save
+
 ---
 
 # Frontend Responsibilities
@@ -157,7 +167,10 @@ New registry metadata endpoints should be additive, not replace the current page
 This project will extend the existing builder with a new programmable section editor that exposes primitives, variants, configuration, and compile preview.
 
 - Section editor must provide users with the available UI primitives and variants as first-class choices, not as hard-coded page components.
+- Derived/custom section editors must let users choose a registered component to render each datasource row.
 - Each section should expose a schema-driven config surface for block-specific props, layout, and style options.
+- Component picker choices must include primitive elements such as `div`, text, button, checkbox, image/media, link, icon/status badge, card surfaces, and compound layouts made from those primitives.
+- Top-level repeatable components must document which bind points can receive row data and which value shapes they accept.
 - The builder will support `UI` and `Code` tabs, plus an `Events`/`Scripts` tab when applicable.
 - A shared Monaco editor will power TypeScript scripting for section-level logic, event handlers, and programmable compilation.
 - The editor experience should mirror the datasource editor model, with tabbed views and compile/run validation.
@@ -165,6 +178,72 @@ This project will extend the existing builder with a new programmable section ed
 - Section compilation should be referenceable from the editor: the code tab can compile into a section definition, while the UI tab edits schema-driven props.
 - Keep the code editor shared across the page builder so datasource scripts, custom section code, and event scripts use the same Monaco/TypeScript environment.
 - Where possible, preserve the current page builder’s live save semantics while allowing code compilation errors to be surfaced before persist.
+
+---
+
+# Component Registry and Bind-Point Model
+
+The next architecture step is to open `derived_section` and `custom_section` so a client can select any supported component as the repeated row renderer, then bind datasource columns to documented component bind points.
+
+Component definition shape:
+
+- `type`: stable component key, for example `primitive.button`, `primitive.checkbox`, `primitive.div`, `primitive.image`, `compound.card`, or `custom.<id>`.
+- `label`, `group`, `description`: display metadata for the builder picker.
+- `repeatable`: whether the component can be used as a row renderer.
+- `props_schema`: static component props that are edited once for the whole section.
+- `style_targets`: stable class/part keys that accept style overrides.
+- `bind_points`: named targets that can receive row data.
+- `slots` or `children`: allowed nested primitive/compound composition behavior.
+- `version`: schema version for migration and saved payload compatibility.
+
+Bind-point definition shape:
+
+- `key`: stable bind-point name such as `title`, `body`, `media`, `href`, `checked`, `disabled`, `icon`, `aria_label`, or `dataset`.
+- `label` and `description`: builder-facing documentation.
+- `kind`: data contract category such as `text`, `rich_text`, `number`, `boolean`, `url`, `media`, `image`, `video`, `object`, `array`, `action`, or `any`.
+- `required`: whether the component needs this binding to render.
+- `accepted_columns`: optional column type hints from datasource metadata.
+- `validation`: JSON schema or compact backend validation rules.
+- `fallback`: optional static value when no column is bound.
+- `transform`: optional supported transform key for formatting, not arbitrary runtime code at first.
+
+Saved section config should evolve toward:
+
+- `datasource_id` or `custom_section_id` as today.
+- `component_type`: selected registered component.
+- `component_version`: version used when saved.
+- `bindings`: map of bind-point key to datasource column path, literal value, object path, or transform.
+- `row_key_column`: stable row identity for replication.
+- `style_overrides`: map of component `style_targets` to allowed style properties.
+- `row_overrides`: per-row overrides by row key.
+
+Detection strategy:
+
+- Prefer explicit component metadata for first-party primitives and compound components. This keeps validation predictable and avoids coupling core behavior to DOM shape.
+- Add an inspector for custom HTML/custom components that detects semantic elements and emits proposed bind points:
+  - text-capable nodes become `text`/`rich_text` candidates.
+  - anchors become `text` plus `href`/`aria_label` candidates.
+  - buttons become `text`, `disabled`, and optional action candidates.
+  - checkboxes become `checked`, `disabled`, and label candidates.
+  - images/video/player elements become `media`, `image`, `video`, `poster`, `alt`, and caption candidates.
+  - containers become object/list/style target candidates when marked with data attributes.
+- Detection output is only a draft contract. Saved custom components should persist an explicit generated definition so future renders and validation do not depend on re-inspecting arbitrary markup.
+- Custom HTML should support optional `data-bind`, `data-bind-kind`, `data-style-target`, and `data-slot` attributes so clients can make detection precise.
+
+Validation rules:
+
+- Backend validation must reject unknown `component_type`s, unknown bind-point keys, incompatible datasource column/value types, missing required bind points, and unsafe style override properties.
+- Frontend validation should mirror backend metadata for fast feedback, but backend remains authoritative.
+- Complex datasource values must be supported through object paths and typed bind points, not just flat string columns.
+- Media bind points must distinguish image, video, generic media object, and URL-only values.
+- Link/action bind points must validate URL/action shape separately from display text.
+
+Rendering rules:
+
+- `derived_section` executes the datasource, resolves each row's configured bindings, validates/coerces values, and replicates the selected component per row.
+- `custom_section` can reference a saved custom component/template and use the same binding contract.
+- Primitive components should stay visually and behaviorally generic. Registry metadata and bind mappings decide how row data flows into them.
+- Style overrides apply through registered `style_targets`; arbitrary inline CSS should remain constrained.
 
 ---
 
@@ -268,15 +347,30 @@ Phase 3 — Enforce integration primitives
 - Ensure builder can only save those blocks when referenced backends exist.
 - Validate custom-section templates and datasource execution metadata.
 
-Phase 4 — Convert routes to dynamic page rendering
+Phase 4 — Add component registry and bind-point contracts
+
+- Introduce canonical component definitions for supported primitive and compound components.
+- Document bind points, value kinds, style targets, repeatability, and validation schemas.
+- Add backend validation for selected component type, bind mappings, required bind points, and style override safety.
+- Add registry API endpoints for component metadata and, later, custom component inspection.
+
+Phase 5 — Open derived/custom sections to registered primitive components
+
+- Let `derived_section` choose a row component from the component registry instead of assuming one fixed card layout.
+- Let `custom_section` choose or embed a saved custom component definition with explicit bind points.
+- Add builder UI for mapping datasource columns/object paths/literal values to component bind points.
+- Support media, link, text/rich text, boolean, object, and array bindings with clear validation feedback.
+- Replicate the selected component per datasource row using `row_key_column`, `bindings`, `row_overrides`, and `style_overrides`.
+
+Phase 6 — Convert routes to dynamic page rendering
 
 - Render landing page and custom pages fully from stored page content.
 - Replace hardcoded route UI with registry-driven page blocks where feasible.
 - Keep comments/likes and ownership flows intact.
 
-Phase 5 — Add versioning and migration
+Phase 7 — Add versioning and migration
 
-- Add version metadata for block schema.
+- Add version metadata for block and component schema.
 - Support fallback/render path for legacy saved section payloads.
 - Migrate legacy page section data into the new registry-driven shape.
 

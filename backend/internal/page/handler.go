@@ -2,6 +2,7 @@ package page
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -285,6 +286,10 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.Create(&p); err != nil {
+		if errors.Is(err, ErrInvalidContent) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		// Detect unique constraint violation on slug and return the existing page.
 		if strings.Contains(err.Error(), "pages_slug_key") || strings.Contains(err.Error(), "23505") {
 			existing, ferr := h.svc.GetBySlug(p.Slug)
@@ -380,6 +385,10 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	}
 	p.ID = id
 	if err := h.svc.Update(&p); err != nil {
+		if errors.Is(err, ErrInvalidContent) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		log.Printf("page.updatePage: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "update failed")
 		return

@@ -1,26 +1,88 @@
 package page
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/skaia/backend/internal/s_registry"
 	"github.com/skaia/backend/models"
 )
+
+var ErrInvalidContent = errors.New("invalid page content")
 
 // InboxSender is the minimal interface the page service needs to send an inbox message.
 type InboxSender interface {
 	SendSystemMessage(senderID, recipientID int64, content, messageType string) error
 }
 
+type DataSourceGetter interface {
+	GetByID(id int64) (*models.DataSource, error)
+}
+
+type CustomSectionGetter interface {
+	GetByID(id int64) (*models.CustomSection, error)
+}
+
+type contentResolver struct {
+	dataSources    DataSourceGetter
+	customSections CustomSectionGetter
+}
+
+func (r contentResolver) DataSourceExists(id int64) (bool, error) {
+	if r.dataSources == nil {
+		return true, nil
+	}
+	ds, err := r.dataSources.GetByID(id)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return false, err
+		}
+		return false, nil
+	}
+	return ds != nil, nil
+}
+
+func (r contentResolver) CustomSectionExists(id int64) (bool, error) {
+	if r.customSections == nil {
+		return true, nil
+	}
+	cs, err := r.customSections.GetByID(id)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return false, err
+		}
+		return false, nil
+	}
+	return cs != nil, nil
+}
+
+type Option func(*Service)
+
+func WithIntegrationResolvers(dataSources DataSourceGetter, customSections CustomSectionGetter) Option {
+	return func(s *Service) {
+		s.contentResolver = contentResolver{
+			dataSources:    dataSources,
+			customSections: customSections,
+		}
+	}
+}
+
 // Service wraps the page repository with business logic.
 type Service struct {
-	repo     Repository
-	inboxSvc InboxSender
+	repo            Repository
+	inboxSvc        InboxSender
+	contentResolver s_registry.Resolver
 }
 
 // NewService creates a new page Service.
-func NewService(repo Repository, inboxSvc InboxSender) *Service {
-	return &Service{repo: repo, inboxSvc: inboxSvc}
+func NewService(repo Repository, inboxSvc InboxSender, opts ...Option) *Service {
+	s := &Service{repo: repo, inboxSvc: inboxSvc}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *Service) GetBySlug(slug string) (*models.Page, error) {
@@ -46,6 +108,9 @@ func (s *Service) Create(p *models.Page) error {
 	if p.Visibility == "" {
 		p.Visibility = "public"
 	}
+	if err := s.validateContent(p.Content); err != nil {
+		return err
+	}
 	return s.repo.Create(p)
 }
 
@@ -53,7 +118,17 @@ func (s *Service) Update(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"
 	}
+	if err := s.validateContent(p.Content); err != nil {
+		return err
+	}
 	return s.repo.Update(p)
+}
+
+func (s *Service) validateContent(content string) error {
+	if err := s_registry.ValidateContent(content, s.contentResolver); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidContent, err)
+	}
+	return nil
 }
 
 // Duplicate creates a copy of an existing page under a new slug.

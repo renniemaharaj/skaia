@@ -609,10 +609,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		icfg.NewHandler(cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
-		pageRepo := ipage.NewRepository(db)
-		pageSvc := ipage.NewService(pageRepo, inboxSvc)
-		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
-
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
 		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher, dsExecuteCache)
@@ -621,6 +617,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		csRepo := ics.NewRepository(db)
 		csSvc := ics.NewService(csRepo)
 		ics.NewHandler(csSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		pageRepo := ipage.NewRepository(db)
+		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc))
+		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 
 		// Events log admin API.
 		eventsRepo := ievents.NewRepository(db)

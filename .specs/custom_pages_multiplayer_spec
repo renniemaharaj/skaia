@@ -147,3 +147,19 @@ is defeated and all sections re-render.
 | `hooks/usePageData.ts`              | Edit guard hold, `suppressLiveRefresh`, `refresh` |
 | `pages/page/SaveStatusBar.tsx`      | "Incoming changes held" indicator                 |
 | `pages/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit`          |
+
+## Backend Section Registry
+
+The backend exposes canonical section metadata through:
+
+- `GET /config/sections`
+- `GET /config/section-types/{type}`
+
+The registry lives in `backend/internal/s_registry` and is shared by the
+config API and page save validation. `POST /pages` and `PUT /pages/{id}` reject
+page content that is not a JSON section array, omits `section_type`, or uses an
+unsupported section type. Integration references are also validated on save:
+positive `derived_section.config.datasource_id` values must resolve to a saved
+data source, and positive `custom_section.config.custom_section_id` values must
+resolve to a saved custom section. Empty refs remain allowed so draft blocks can
+be saved while a user is still configuring them.
