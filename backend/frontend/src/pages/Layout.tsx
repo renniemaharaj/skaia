@@ -175,8 +175,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           setCurrentUser(profile);
           // Subscribe to own user channel via the shared WS so real-time
           // session updates (permissions, roles, suspension) arrive.
+          // Also subscribe to the user's inbox so message and conversation
+          // updates arrive even before the inbox page is opened.
           const id = Number(profile.id);
-          if (id) subscribe("user", id);
+          if (id) {
+            subscribe("user", id);
+            subscribe("inbox", id);
+          }
         }
       } catch {
         // Any error (401 from apiRequest already cleared localStorage; handle atom state here)

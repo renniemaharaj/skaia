@@ -5,7 +5,6 @@ import {
   Menu,
   X,
   LogOut,
-  Mail,
   Volume,
   Volume1,
   Volume2,
@@ -25,7 +24,6 @@ import {
   refreshTokenAtom,
   hasPermissionAtom,
 } from "../../../atoms/auth";
-import { inboxUnreadCountAtom } from "../../../atoms/inbox";
 import { brandingAtom, featuresAtom } from "../../../atoms/config";
 import { apiRequest } from "../../../utils/api";
 import { EditableText, ImagePickerButton } from "../EditControls";
@@ -41,6 +39,7 @@ import {
   setSoundVolume,
 } from "../../../utils/sound";
 import type { Branding } from "../types";
+import InboxMail from "../../../components/inbox/InboxMail";
 
 interface HeaderProps {
   cartCount: number;
@@ -67,7 +66,6 @@ export const Header: React.FC<HeaderProps> = ({
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
-  const inboxUnread = useAtomValue(inboxUnreadCountAtom);
 
   // Branding + edit permission
   const hasPermission = useAtomValue(hasPermissionAtom);
@@ -280,7 +278,6 @@ export const Header: React.FC<HeaderProps> = ({
             {isAuthenticated && user ? (
               <HeaderUserMenu
                 user={user}
-                inboxUnread={inboxUnread}
                 routeAllowed={routeAllowed}
                 setMenuOpen={setMenuOpen}
                 handleLogout={handleLogout}
@@ -459,13 +456,11 @@ function SoundControl() {
 
 function HeaderUserMenu({
   user,
-  inboxUnread,
   routeAllowed,
   setMenuOpen,
   handleLogout,
 }: {
   user: { id: string; username: string; display_name?: string };
-  inboxUnread: number;
   routeAllowed: (feature?: string) => boolean;
   setMenuOpen: (v: boolean) => void;
   handleLogout: () => void;
@@ -474,21 +469,7 @@ function HeaderUserMenu({
     <div className="user-menu">
       <SoundControl />
       <NotificationBell />
-      {routeAllowed("inbox") && (
-        <Link
-          to="/inbox"
-          className={`header-inbox-btn${inboxUnread > 0 ? " header-inbox-btn--unread" : ""}`}
-          title="Messages"
-          onClick={() => setMenuOpen(false)}
-        >
-          <Mail size={20} />
-          {inboxUnread > 0 && (
-            <span className="header-inbox-badge">
-              {inboxUnread > 99 ? "99+" : inboxUnread}
-            </span>
-          )}
-        </Link>
-      )}
+      {routeAllowed("inbox") && <InboxMail setMenuOpen={setMenuOpen} />}
       <UserLink
         userId={user.id}
         username={user.username}
