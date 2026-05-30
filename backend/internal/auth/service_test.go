@@ -22,7 +22,7 @@ func TestServiceRegisterAndLoginUseAuthCredentials(t *testing.T) {
 		Password:    "CorrectHorse1!",
 		DisplayName: "Tester",
 	}
-	user, accessToken, refreshToken, err := svc.Register(req)
+	user, accessToken, refreshToken, err := svc.Register(context.Background(), req)
 	require.NoError(t, err)
 	require.NotZero(t, user.ID)
 	require.NotEmpty(t, accessToken)
@@ -34,12 +34,12 @@ func TestServiceRegisterAndLoginUseAuthCredentials(t *testing.T) {
 	require.NoError(t, bcrypt.CompareHashAndPassword([]byte(cred.PasswordHash), []byte(req.Password)))
 	require.Equal(t, user.ID, users.byEmail[req.Email].ID)
 
-	loggedIn, loginToken, err := svc.Login(req.Email, req.Password)
+	loggedIn, loginToken, err := svc.Login(context.Background(), req.Email, req.Password)
 	require.NoError(t, err)
 	require.Equal(t, user.ID, loggedIn.ID)
 	require.NotEmpty(t, loginToken)
 
-	_, _, err = svc.Login(req.Email, "wrong-password")
+	_, _, err = svc.Login(context.Background(), req.Email, "wrong-password")
 	require.Error(t, err)
 }
 
@@ -47,33 +47,33 @@ func TestServiceTOTPAndBackupCodesStayInAuthStore(t *testing.T) {
 	svc, repo, users := newTestService()
 	user := users.mustCreate(t, "mfa@example.com")
 
-	secret, err := svc.GenerateTOTPSecret(user.ID)
+	secret, err := svc.GenerateTOTPSecret(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, secret)
 
 	code, err := totp.GenerateCode(secret, time.Now())
 	require.NoError(t, err)
-	backupCodes, err := svc.EnableTOTP(user.ID, code)
+	backupCodes, err := svc.EnableTOTP(context.Background(), user.ID, code)
 	require.NoError(t, err)
 	require.Len(t, backupCodes, 10)
 
-	storedSecret, enabled, err := svc.GetTOTPEnabled(user.ID)
+	storedSecret, enabled, err := svc.GetTOTPEnabled(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.Equal(t, secret, storedSecret)
 	require.True(t, enabled)
 	require.Len(t, repo.backupCodes[user.ID], 10)
 
-	ok, err := svc.ValidateTOTPBackupCode(user.ID, backupCodes[0])
+	ok, err := svc.ValidateTOTPBackupCode(context.Background(), user.ID, backupCodes[0])
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	ok, err = svc.ValidateTOTPBackupCode(user.ID, backupCodes[0])
+	ok, err = svc.ValidateTOTPBackupCode(context.Background(), user.ID, backupCodes[0])
 	require.NoError(t, err)
 	require.False(t, ok, "backup code must be one-time-use")
 
 	require.NoError(t, repo.CreateCredentialHash(user.ID, "CorrectHorse1!"))
-	require.NoError(t, svc.DisableTOTP(user.ID, "CorrectHorse1!"))
-	_, enabled, err = svc.GetTOTPEnabled(user.ID)
+	require.NoError(t, svc.DisableTOTP(context.Background(), user.ID, "CorrectHorse1!"))
+	_, enabled, err = svc.GetTOTPEnabled(context.Background(), user.ID)
 	require.NoError(t, err)
 	require.False(t, enabled)
 	require.Empty(t, repo.backupCodes[user.ID])

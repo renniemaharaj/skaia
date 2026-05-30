@@ -16,7 +16,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := h.svc.RefreshToken(req.RefreshToken)
+	accessToken, err := h.svc.RefreshToken(r.Context(), req.RefreshToken)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, "refresh token failed: "+err.Error())
 		return

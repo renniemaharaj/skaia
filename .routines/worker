@@ -116,11 +116,11 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-05-30T09:47:00-04:00
+- 2026-05-30T09:59:00-04:00
 
 ## Last Run Remarks
 
-- Executed `hotfix_security_and_schema`: fixed `HasPermission` bypassing security, fixed schema `section_id` mismatch and migration idempotency, fixed `UpdatePasswordHash` error swallowing, and fixed `assertMFACleared` zero-value timestamp edge case. Tests passed successfully.
+- Executed `auth_interface_context_refactor`: plumbed `context.Context` from HTTP handlers through middleware down to all 20+ methods in `auth.Service`. Removed the unused `AuthService` interface, replaced hardcoded token stubs with explicit errors, and verified with tests.
 
 ## Next Steps
 

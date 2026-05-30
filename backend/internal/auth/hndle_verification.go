@@ -18,7 +18,7 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.VerifyEmail(req.Token); err != nil {
+	if err := h.svc.VerifyEmail(r.Context(), req.Token); err != nil {
 		log.Printf("user.Handler.verifyEmail: %v", err)
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
@@ -33,7 +33,7 @@ func (h *Handler) ResendVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.svc.GetByID(userID)
+	user, err := h.svc.GetByID(r.Context(), userID)
 	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, "user not found")
 		return
@@ -47,7 +47,7 @@ func (h *Handler) ResendVerification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.svc.ResendVerificationToken(userID)
+	token, err := h.svc.ResendVerificationToken(r.Context(), userID)
 	if err != nil {
 		log.Printf("user.Handler.resendVerification: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create verification token")

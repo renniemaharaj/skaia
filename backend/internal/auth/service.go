@@ -16,12 +16,12 @@ import (
 )
 
 // SetTOTPSecret sets or updates the TOTP secret for a user (legacy compatibility).
-func (s *Service) SetTOTPSecret(userID int64, secret string) error {
-	return s.repo.SetTOTPSecret(context.Background(), userID, secret)
+func (s *Service) SetTOTPSecret(ctx context.Context, userID int64, secret string) error {
+	return s.repo.SetTOTPSecret(ctx, userID, secret)
 }
 
 // Register registers a new user and returns user, access token, and refresh token.
-func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, string, error) {
+func (s *Service) Register(ctx context.Context, req *models.RegisterRequest) (*models.User, string, string, error) {
 	// 1. Create user (without password) via user service
 	user, err := s.userService.CreateUserFromRegisterRequest(req)
 	if err != nil {
@@ -32,16 +32,16 @@ func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, s
 	if err != nil {
 		return nil, "", "", err
 	}
-	_, err = s.repo.CreateCredential(context.Background(), user.ID, string(hash))
+	_, err = s.repo.CreateCredential(ctx, user.ID, string(hash))
 	if err != nil {
 		return nil, "", "", err
 	}
 	// 3. Generate tokens using real JWT logic
-	accessToken, err := s.generateAccessToken(user)
+	accessToken, err := s.generateAccessToken(ctx, user)
 	if err != nil {
 		return nil, "", "", err
 	}
-	refreshToken, err := s.generateRefreshToken(user)
+	refreshToken, err := s.generateRefreshToken(ctx, user)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -49,20 +49,20 @@ func (s *Service) Register(req *models.RegisterRequest) (*models.User, string, s
 }
 
 // Login authenticates a user and returns user and access token.
-func (s *Service) Login(email, password string) (*models.User, string, error) {
+func (s *Service) Login(ctx context.Context, email, password string) (*models.User, string, error) {
 	// Lookup user by email using user service
 	user, err := s.userService.GetByEmail(email)
 	if err != nil {
 		return nil, "", errors.New("user not found")
 	}
-	cred, err := s.repo.GetCredentialByUserID(context.Background(), user.ID)
+	cred, err := s.repo.GetCredentialByUserID(ctx, user.ID)
 	if err != nil {
 		return nil, "", errors.New("invalid credentials")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(cred.PasswordHash), []byte(password)); err != nil {
 		return nil, "", errors.New("invalid credentials")
 	}
-	accessToken, err := s.generateAccessToken(user)
+	accessToken, err := s.generateAccessToken(ctx, user)
 	if err != nil {
 		return nil, "", err
 	}
@@ -70,8 +70,8 @@ func (s *Service) Login(email, password string) (*models.User, string, error) {
 }
 
 // VerifyTOTP verifies a TOTP code for a user.
-func (s *Service) VerifyTOTP(userID int64, code string) (bool, error) {
-	totpSecret, err := s.repo.GetTOTPSecretByUserID(context.Background(), userID)
+func (s *Service) VerifyTOTP(ctx context.Context, userID int64, code string) (bool, error) {
+	totpSecret, err := s.repo.GetTOTPSecretByUserID(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -83,11 +83,11 @@ func (s *Service) VerifyTOTP(userID int64, code string) (bool, error) {
 }
 
 // ValidateTOTPBackupCode validates a user-supplied recovery code, marks it used, and returns whether it was accepted.
-func (s *Service) ValidateTOTPBackupCode(userID int64, code string) (bool, error) {
+func (s *Service) ValidateTOTPBackupCode(ctx context.Context, userID int64, code string) (bool, error) {
 	if code == "" {
 		return false, nil
 	}
-	backupCodes, err := s.repo.GetBackupCodes(context.Background(), userID)
+	backupCodes, err := s.repo.GetBackupCodes(ctx, userID)
 	if err != nil {
 		return false, err
 	}
@@ -96,7 +96,7 @@ func (s *Service) ValidateTOTPBackupCode(userID int64, code string) (bool, error
 			continue
 		}
 		if bcrypt.CompareHashAndPassword([]byte(backupCode.CodeHash), []byte(code)) == nil {
-			if err := s.repo.UseBackupCode(context.Background(), backupCode.ID); err != nil {
+			if err := s.repo.UseBackupCode(ctx, backupCode.ID); err != nil {
 				return false, err
 			}
 			return true, nil
@@ -107,7 +107,7 @@ func (s *Service) ValidateTOTPBackupCode(userID int64, code string) (bool, error
 
 // GenerateBackupCodes creates a fresh set of one-time backup codes for the user.
 // Existing codes are deleted before storing new ones.
-func (s *Service) GenerateBackupCodes(userID int64, count int) ([]string, error) {
+func (s *Service) GenerateBackupCodes(ctx context.Context, userID int64, count int) ([]string, error) {
 	if count <= 0 {
 		count = 10
 	}
@@ -122,22 +122,22 @@ func (s *Service) GenerateBackupCodes(userID int64, count int) ([]string, error)
 		codes = append(codes, code)
 		hashes = append(hashes, hash)
 	}
-	if err := s.repo.DeleteBackupCodes(context.Background(), userID); err != nil {
+	if err := s.repo.DeleteBackupCodes(ctx, userID); err != nil {
 		return nil, err
 	}
-	if err := s.repo.CreateBackupCodes(context.Background(), userID, hashes); err != nil {
+	if err := s.repo.CreateBackupCodes(ctx, userID, hashes); err != nil {
 		return nil, err
 	}
 	return codes, nil
 }
 
 // DeleteBackupCodes removes all backup codes for the user.
-func (s *Service) DeleteBackupCodes(userID int64) error {
-	return s.repo.DeleteBackupCodes(context.Background(), userID)
+func (s *Service) DeleteBackupCodes(ctx context.Context, userID int64) error {
+	return s.repo.DeleteBackupCodes(ctx, userID)
 }
 
 // GenerateTOTPSecret creates and stores a new TOTP secret for the user, returns the base32 secret string.
-func (s *Service) GenerateTOTPSecret(userID int64) (string, error) {
+func (s *Service) GenerateTOTPSecret(ctx context.Context, userID int64) (string, error) {
 	// Generate random base32 secret
 	buf := make([]byte, 10)
 	if _, err := rand.Read(buf); err != nil {
@@ -145,7 +145,7 @@ func (s *Service) GenerateTOTPSecret(userID int64) (string, error) {
 	}
 	secret := strings.ToUpper(base32.StdEncoding.EncodeToString(buf))
 	// Store in DB (disabled by default)
-	_, err := s.repo.CreateTOTPSecret(context.Background(), userID, secret)
+	_, err := s.repo.CreateTOTPSecret(ctx, userID, secret)
 	if err != nil {
 		return "", err
 	}
@@ -162,12 +162,12 @@ func (s *Service) GetTOTPSecretByUserID(ctx context.Context, userID int64) (*mod
 }
 
 // GetTOTPEnabled returns the TOTP secret and whether it's enabled for the user.
-func (s *Service) GetTOTPEnabled(userID int64) (string, bool, error) {
-	totpSecret, err := s.repo.GetTOTPSecretByUserID(context.Background(), userID)
+func (s *Service) GetTOTPEnabled(ctx context.Context, userID int64) (string, bool, error) {
+	totpSecret, err := s.repo.GetTOTPSecretByUserID(ctx, userID)
 	if err != nil {
 		return "", false, err
 	}
-	enabled, err := s.repo.GetTOTPEnabled(context.Background(), userID)
+	enabled, err := s.repo.GetTOTPEnabled(ctx, userID)
 	if err != nil {
 		return "", false, err
 	}
@@ -175,8 +175,8 @@ func (s *Service) GetTOTPEnabled(userID int64) (string, bool, error) {
 }
 
 // EnableTOTP verifies the code, enables TOTP for the user, and returns one-time backup codes.
-func (s *Service) EnableTOTP(userID int64, code string) ([]string, error) {
-	totpSecret, err := s.repo.GetTOTPSecretByUserID(context.Background(), userID)
+func (s *Service) EnableTOTP(ctx context.Context, userID int64, code string) ([]string, error) {
+	totpSecret, err := s.repo.GetTOTPSecretByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,36 +187,36 @@ func (s *Service) EnableTOTP(userID int64, code string) ([]string, error) {
 	if !valid {
 		return nil, ErrInvalidTOTPCode
 	}
-	codes, err := s.GenerateBackupCodes(userID, 10)
+	codes, err := s.GenerateBackupCodes(ctx, userID, 10)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.repo.SetTOTPEnabled(context.Background(), userID, true); err != nil {
-		_ = s.repo.DeleteBackupCodes(context.Background(), userID)
+	if err := s.repo.SetTOTPEnabled(ctx, userID, true); err != nil {
+		_ = s.repo.DeleteBackupCodes(ctx, userID)
 		return nil, err
 	}
 	return codes, nil
 }
 
 // DisableTOTP disables TOTP for the user and removes any backup codes.
-func (s *Service) DisableTOTP(userID int64, password string) error {
-	valid, err := s.AuthenticateUser(context.Background(), userID, password)
+func (s *Service) DisableTOTP(ctx context.Context, userID int64, password string) error {
+	valid, err := s.AuthenticateUser(ctx, userID, password)
 	if err != nil {
 		return err
 	}
 	if !valid {
 		return ErrInvalidPassword
 	}
-	if err := s.repo.SetTOTPEnabled(context.Background(), userID, false); err != nil {
+	if err := s.repo.SetTOTPEnabled(ctx, userID, false); err != nil {
 		return err
 	}
-	return s.repo.DeleteBackupCodes(context.Background(), userID)
+	return s.repo.DeleteBackupCodes(ctx, userID)
 }
 
 // AdminEnableTOTP allows an admin to enable TOTP for a user with a given secret and code.
-func (s *Service) AdminEnableTOTP(userID int64, secret, code string) ([]string, error) {
+func (s *Service) AdminEnableTOTP(ctx context.Context, userID int64, secret, code string) ([]string, error) {
 	// Store the secret
-	if err := s.repo.SetTOTPSecret(context.Background(), userID, secret); err != nil {
+	if err := s.repo.SetTOTPSecret(ctx, userID, secret); err != nil {
 		return nil, err
 	}
 	// Validate the code
@@ -224,34 +224,34 @@ func (s *Service) AdminEnableTOTP(userID int64, secret, code string) ([]string, 
 		return nil, ErrInvalidTOTPCode
 	}
 	// Generate backup codes
-	codes, err := s.GenerateBackupCodes(userID, 10)
+	codes, err := s.GenerateBackupCodes(ctx, userID, 10)
 	if err != nil {
 		return nil, err
 	}
 	// Enable TOTP
-	if err := s.repo.SetTOTPEnabled(context.Background(), userID, true); err != nil {
-		_ = s.repo.DeleteBackupCodes(context.Background(), userID)
+	if err := s.repo.SetTOTPEnabled(ctx, userID, true); err != nil {
+		_ = s.repo.DeleteBackupCodes(ctx, userID)
 		return nil, err
 	}
 	return codes, nil
 }
 
 // AdminDisableTOTP allows an admin to disable TOTP for a user without a password.
-func (s *Service) AdminDisableTOTP(userID int64) error {
-	if err := s.repo.SetTOTPEnabled(context.Background(), userID, false); err != nil {
+func (s *Service) AdminDisableTOTP(ctx context.Context, userID int64) error {
+	if err := s.repo.SetTOTPEnabled(ctx, userID, false); err != nil {
 		return err
 	}
-	return s.repo.DeleteBackupCodes(context.Background(), userID)
+	return s.repo.DeleteBackupCodes(ctx, userID)
 }
 
 // AdminGenerateBackupCodes allows an admin to regenerate backup codes for a user.
-func (s *Service) AdminGenerateBackupCodes(userID int64) ([]string, error) {
+func (s *Service) AdminGenerateBackupCodes(ctx context.Context, userID int64) ([]string, error) {
 	// Delete old codes
-	if err := s.repo.DeleteBackupCodes(context.Background(), userID); err != nil {
+	if err := s.repo.DeleteBackupCodes(ctx, userID); err != nil {
 		return nil, err
 	}
 	// Generate new codes
-	codes, err := s.GenerateBackupCodes(userID, 10)
+	codes, err := s.GenerateBackupCodes(ctx, userID, 10)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +301,7 @@ func (s *Service) AuthenticateUser(ctx context.Context, userID int64, password s
 // --- Service methods for handlers ---
 
 // RefreshToken validates the refresh token and issues a new access token.
-func (s *Service) RefreshToken(refreshToken string) (string, error) {
+func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
 	if refreshToken == "" {
 		return "", errors.New("invalid refresh token")
 	}
@@ -316,7 +316,7 @@ func (s *Service) RefreshToken(refreshToken string) (string, error) {
 		return "", errors.New("user not found")
 	}
 	// Issue new access token
-	accessToken, err := s.generateAccessToken(user)
+	accessToken, err := s.generateAccessToken(ctx, user)
 	if err != nil {
 		return "", err
 	}
@@ -324,7 +324,7 @@ func (s *Service) RefreshToken(refreshToken string) (string, error) {
 }
 
 // --- Token helpers ---
-func (s *Service) generateAccessToken(user *models.User) (string, error) {
+func (s *Service) generateAccessToken(ctx context.Context, user *models.User) (string, error) {
 	return ijwt.GenerateTokenWithPermissions(
 		user.ID,
 		user.Username,
@@ -335,81 +335,64 @@ func (s *Service) generateAccessToken(user *models.User) (string, error) {
 	)
 }
 
-func (s *Service) generateRefreshToken(user *models.User) (string, error) {
+func (s *Service) generateRefreshToken(ctx context.Context, user *models.User) (string, error) {
 	return ijwt.GenerateRefreshToken(user.ID)
 }
 
-func (s *Service) ResetPassword(userID int64) (string, error) {
+func (s *Service) ResetPassword(ctx context.Context, userID int64) (string, error) {
 	// Generate a new random password (for demo, use a static one)
 	newPw := generateSecurePassword()
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPw), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
-	err = s.repo.UpdatePasswordHash(context.Background(), userID, string(hash))
+	err = s.repo.UpdatePasswordHash(ctx, userID, string(hash))
 	if err != nil {
 		return "", err
 	}
 	return newPw, nil
 }
 
-func (s *Service) HasPermission(userID int64, permission string) (bool, error) {
+func (s *Service) HasPermission(ctx context.Context, userID int64, permission string) (bool, error) {
 	return s.userService.HasPermission(userID, permission)
 }
 
-func (s *Service) GetByID(userID int64) (*models.User, error) {
+func (s *Service) GetByID(ctx context.Context, userID int64) (*models.User, error) {
 	return s.userService.GetByID(userID)
 }
 
-func (s *Service) GetByEmail(email string) (*models.User, error) {
+func (s *Service) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	return s.userService.GetByEmail(email)
 }
 
-func (s *Service) CreatePasswordResetToken(userID int64) (string, error) {
-	// TODO: Implement real token creation and storage
-	return "reset-token", nil
+func (s *Service) CreatePasswordResetToken(ctx context.Context, userID int64) (string, error) {
+	return "", errors.New("not implemented")
 }
 
-func (s *Service) ResetPasswordWithToken(token, newPassword string) error {
-	// TODO: Validate token, get user ID, update password
-	if token == "" || newPassword == "" {
-		return errors.New("invalid token or password")
-	}
-	// For demo, assume userID=1
-	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	return s.repo.UpdatePasswordHash(context.Background(), 1, string(hash))
+func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword string) error {
+	return errors.New("not implemented")
 }
 
-func (s *Service) GetPasswordResetTokenUser(token string) (*models.User, error) {
-	// TODO: Implement real lookup
-	return s.userService.GetByID(1)
+func (s *Service) GetPasswordResetTokenUser(ctx context.Context, token string) (*models.User, error) {
+	return nil, errors.New("not implemented")
 }
 
-func (s *Service) CreateEmailVerificationToken(userID int64) (string, error) {
-	// TODO: Implement real token creation and storage
-	return "verify-token", nil
+func (s *Service) CreateEmailVerificationToken(ctx context.Context, userID int64) (string, error) {
+	return "", errors.New("not implemented")
 }
 
-func (s *Service) VerifyEmail(token string) error {
-	// TODO: Implement real verification
-	if token == "" {
-		return errors.New("invalid token")
-	}
-	return nil
+func (s *Service) VerifyEmail(ctx context.Context, token string) error {
+	return errors.New("not implemented")
 }
 
-func (s *Service) ResendVerificationToken(userID int64) (string, error) {
-	// TODO: Implement real resend logic
-	return "verify-token", nil
+func (s *Service) ResendVerificationToken(ctx context.Context, userID int64) (string, error) {
+	return "", errors.New("not implemented")
 }
 
-func (s *Service) SetMFARequired(userID int64, required bool) error {
-	return s.repo.SetMFARequired(context.Background(), userID, required)
+func (s *Service) SetMFARequired(ctx context.Context, userID int64, required bool) error {
+	return s.repo.SetMFARequired(ctx, userID, required)
 }
 
-func (s *Service) GetMFARequired(userID int64) (models.MFAChallengeStatus, error) {
-	return s.repo.GetMFARequired(context.Background(), userID)
+func (s *Service) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
+	return s.repo.GetMFARequired(ctx, userID)
 }

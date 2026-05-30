@@ -60,7 +60,7 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 				return
 			}
 
-			_, totpEnabled, err := authSvc.GetTOTPEnabled(userID)
+			_, totpEnabled, err := authSvc.GetTOTPEnabled(r.Context(), userID)
 			if err != nil {
 				utils.WriteError(w, http.StatusInternalServerError, "internal server error")
 				return
@@ -96,16 +96,16 @@ func handleMFAChallenge(w http.ResponseWriter, r *http.Request, authSvc *auth.Se
 
 	var valid bool
 	if req.BackupCode != "" {
-		valid, err = authSvc.ValidateTOTPBackupCode(userID, req.BackupCode)
+		valid, err = authSvc.ValidateTOTPBackupCode(r.Context(), userID, req.BackupCode)
 	} else {
-		valid, err = authSvc.VerifyTOTP(userID, req.TOTPCode)
+		valid, err = authSvc.VerifyTOTP(r.Context(), userID, req.TOTPCode)
 	}
 	if err != nil || !valid {
 		utils.WriteError(w, http.StatusUnauthorized, "invalid verification code")
 		return
 	}
 
-	if err := authSvc.SetMFARequired(userID, false); err != nil {
+	if err := authSvc.SetMFARequired(r.Context(), userID, false); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update MFA status")
 		return
 	}
@@ -118,7 +118,7 @@ func handleMFAChallenge(w http.ResponseWriter, r *http.Request, authSvc *auth.Se
 // As a convenience, it also accepts an inline MFA code on the request body and clears
 // the challenge if valid — allowing clients to piggyback verification on their first request.
 func assertMFACleared(r *http.Request, authSvc *auth.Service, userID int64) error {
-	mfaStatus, err := authSvc.GetMFARequired(userID)
+	mfaStatus, err := authSvc.GetMFARequired(r.Context(), userID)
 	expired := !mfaStatus.UpdatedAt.IsZero() && time.Since(mfaStatus.UpdatedAt) > mfaSessionTTL
 	if err != nil || mfaStatus.Required || expired {
 		req, body, _ := readMFABody(r)
@@ -126,12 +126,12 @@ func assertMFACleared(r *http.Request, authSvc *auth.Service, userID int64) erro
 		if req != nil {
 			var valid bool
 			if req.BackupCode != "" {
-				valid, _ = authSvc.ValidateTOTPBackupCode(userID, req.BackupCode)
+				valid, _ = authSvc.ValidateTOTPBackupCode(r.Context(), userID, req.BackupCode)
 			} else {
-				valid, _ = authSvc.VerifyTOTP(userID, req.TOTPCode)
+				valid, _ = authSvc.VerifyTOTP(r.Context(), userID, req.TOTPCode)
 			}
 			if valid {
-				_ = authSvc.SetMFARequired(userID, false)
+				_ = authSvc.SetMFARequired(r.Context(), userID, false)
 				return nil
 			}
 		}

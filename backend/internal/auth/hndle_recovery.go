@@ -31,12 +31,12 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		"status": "if the email exists, a reset link has been sent",
 	})
 
-	user, err := h.svc.GetByEmail(req.Email)
+	user, err := h.svc.GetByEmail(r.Context(), req.Email)
 	if err != nil {
 		return // user not found — silent
 	}
 
-	token, err := h.svc.CreatePasswordResetToken(user.ID)
+	token, err := h.svc.CreatePasswordResetToken(r.Context(), user.ID)
 	if err != nil {
 		log.Printf("user.Handler.forgotPassword: create token: %v", err)
 		return
@@ -63,7 +63,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	isOwn := actorID == targetID
-	canManage, _ := h.svc.HasPermission(actorID, "user.manage-others")
+	canManage, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others")
 	if !isOwn && !canManage {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
@@ -73,14 +73,14 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newPw, err := h.svc.ResetPassword(targetID)
+	newPw, err := h.svc.ResetPassword(r.Context(), targetID)
 	if err != nil {
 		log.Printf("user.Handler.resetPassword: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to reset password")
 		return
 	}
 
-	target, _ := h.svc.GetByID(targetID)
+	target, _ := h.svc.GetByID(r.Context(), targetID)
 	displayName := ""
 	if target != nil {
 		displayName = target.DisplayName
@@ -133,7 +133,7 @@ func (h *Handler) ResetPasswordWithToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.svc.ResetPasswordWithToken(req.Token, req.NewPassword); err != nil {
+	if err := h.svc.ResetPasswordWithToken(r.Context(), req.Token, req.NewPassword); err != nil {
 		log.Printf("user.Handler.resetPasswordWithToken: %v", err)
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
@@ -142,7 +142,7 @@ func (h *Handler) ResetPasswordWithToken(w http.ResponseWriter, r *http.Request)
 	// Notify user via email (best-effort).
 	if h.email != nil && h.email.Configured() {
 		go func(tok string) {
-			u, err := h.svc.GetPasswordResetTokenUser(tok)
+			u, err := h.svc.GetPasswordResetTokenUser(r.Context(), tok)
 			if err != nil {
 				return
 			}
@@ -168,19 +168,19 @@ func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Permission check
-	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
 
-	newPw, err := h.svc.ResetPassword(targetID)
+	newPw, err := h.svc.ResetPassword(r.Context(), targetID)
 	if err != nil {
 		log.Printf("user.Handler.adminResetPassword: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to reset password")
 		return
 	}
 
-	target, _ := h.svc.GetByID(targetID)
+	target, _ := h.svc.GetByID(r.Context(), targetID)
 	displayName := ""
 	if target != nil {
 		displayName = target.DisplayName

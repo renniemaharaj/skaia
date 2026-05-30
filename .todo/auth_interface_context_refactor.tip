@@ -1,17 +1,17 @@
 <--/------>
 Phase 1: Interface Alignment
-- Status: ⬜ Not started
-- Notes: Update `AuthService` in `interface.go` to match the exact signatures needed by the service consumers, ensuring `context.Context` is the first parameter.
+- Status: ✅ Complete
+- Notes: Deleted unused `AuthService` interface from `interface.go` since consumers use the concrete `Service` struct directly.
 
 Phase 2: Service Context Propagation
-- Status: ⬜ Not started
-- Notes: Update all ~20 methods in `service.go` to accept and use `context.Context` rather than generating `context.Background()` internally.
+- Status: ✅ Complete
+- Notes: Updated all ~20 methods in `service.go` to accept and pass `context.Context` to the repository.
 
 Phase 3: Update Handlers
-- Status: ⬜ Not started
-- Notes: Update all calls from `handlers.go` and middleware to pass request context down to the service layer.
+- Status: ✅ Complete
+- Notes: Updated all HTTP handlers and `mfarequired` middleware to pass `r.Context()` to `auth.Service` methods.
 
 Phase 4: Stub Removal
-- Status: ⬜ Not started
-- Notes: Remove or implement hardcoded stub implementations for email/password reset tokens in `service.go`.
+- Status: ✅ Complete
+- Notes: Replaced hardcoded email/password stub implementations in `service.go` with `errors.New("not implemented")` to fail securely.
 <--/------>

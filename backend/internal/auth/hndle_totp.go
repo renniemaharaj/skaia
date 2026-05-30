@@ -34,13 +34,13 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.svc.GetByID(claims.UserID)
+	user, err := h.svc.GetByID(r.Context(), claims.UserID)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, "user not found")
 		return
 	}
 
-	_, enabled, err := h.svc.GetTOTPEnabled(user.ID)
+	_, enabled, err := h.svc.GetTOTPEnabled(r.Context(), user.ID)
 	if !enabled || err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "2FA is not enabled for this account. Please contact support to regain access.")
 		return
@@ -49,7 +49,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 	var valid bool
 	if req.BackupCode != "" {
 		// Try backup code.
-		valid, err = h.svc.ValidateTOTPBackupCode(user.ID, req.BackupCode)
+		valid, err = h.svc.ValidateTOTPBackupCode(r.Context(), user.ID, req.BackupCode)
 		if err != nil {
 			log.Printf("user.Handler.loginTOTP: backup code validation: %v", err)
 			utils.WriteError(w, http.StatusInternalServerError, "verification failed")
@@ -57,7 +57,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if req.TOTPCode != "" {
 		// Validate TOTP code using service method.
-		valid, err = h.svc.VerifyTOTP(user.ID, req.TOTPCode)
+		valid, err = h.svc.VerifyTOTP(r.Context(), user.ID, req.TOTPCode)
 		if err != nil {
 			utils.WriteError(w, http.StatusUnauthorized, "invalid verification code")
 			return
@@ -73,7 +73,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reset MFA challenge required state in DB for the session
-	if err := h.svc.SetMFARequired(user.ID, false); err != nil {
+	if err := h.svc.SetMFARequired(r.Context(), user.ID, false); err != nil {
 		log.Printf("auth: failed to reset MFA challenge status: %v", err)
 	}
 
@@ -86,7 +86,7 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.propagateAuthUser(user.ID, map[string]interface{}{"new_token": accessToken})
+	h.propagateAuthUser(r.Context(), user.ID, map[string]interface{}{"new_token": accessToken})
 
 	log.Printf("auth: login+2fa %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	h.dispatcher.Dispatch(ievents.Job{
@@ -110,7 +110,7 @@ func (h *Handler) TOTPSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Generate TOTP secret
-	secret, err := h.svc.GenerateTOTPSecret(userID)
+	secret, err := h.svc.GenerateTOTPSecret(r.Context(), userID)
 	if err != nil {
 		log.Printf("auth.Handler.TOTPSetup: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to generate TOTP secret")
@@ -131,7 +131,7 @@ func (h *Handler) TOTPSetup(w http.ResponseWriter, r *http.Request) {
 		"qr_uri":  otpauth,
 	})
 
-	h.propagateAuthUser(userID, nil)
+	h.propagateAuthUser(r.Context(), userID, nil)
 }
 
 // TOTPStatus returns whether TOTP is enabled for the authenticated user.
@@ -141,13 +141,13 @@ func (h *Handler) TOTPStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	_, enabled, err := h.svc.GetTOTPEnabled(userID)
+	_, enabled, err := h.svc.GetTOTPEnabled(r.Context(), userID)
 	if err != nil {
 		log.Printf("auth.Handler.TOTPStatus: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to get TOTP status")
 		return
 	}
-	h.propagateAuthUser(userID, nil)
+	h.propagateAuthUser(r.Context(), userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]bool{"enabled": enabled})
 }
 
@@ -164,7 +164,7 @@ func (h *Handler) AdminTOTPStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Permission check
-	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -172,7 +172,7 @@ func (h *Handler) AdminTOTPStatus(w http.ResponseWriter, r *http.Request) {
 	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
 		return
 	}
-	_, enabled, err := h.svc.GetTOTPEnabled(targetID)
+	_, enabled, err := h.svc.GetTOTPEnabled(r.Context(), targetID)
 	if err != nil {
 		log.Printf("auth.Handler.AdminTOTPStatus: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to get TOTP status")
@@ -194,13 +194,13 @@ func (h *Handler) TOTPEnable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "code required")
 		return
 	}
-	codes, err := h.svc.EnableTOTP(userID, req.Code)
+	codes, err := h.svc.EnableTOTP(r.Context(), userID, req.Code)
 	if err != nil {
 		log.Printf("auth.Handler.totpEnable: %v", err)
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	h.propagateAuthUser(userID, nil)
+	h.propagateAuthUser(r.Context(), userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":       "TOTP enabled",
 		"backup_codes": codes,
@@ -220,7 +220,7 @@ func (h *Handler) TOTPDisable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "password required")
 		return
 	}
-	err := h.svc.DisableTOTP(userID, req.Password)
+	err := h.svc.DisableTOTP(r.Context(), userID, req.Password)
 	if err != nil {
 		log.Printf("auth.Handler.TOTPDisable: %v", err)
 		if errors.Is(err, ErrInvalidPassword) {
@@ -230,7 +230,7 @@ func (h *Handler) TOTPDisable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	h.propagateAuthUser(userID, nil)
+	h.propagateAuthUser(r.Context(), userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
 
@@ -247,7 +247,7 @@ func (h *Handler) AdminEnableTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Permission check
-	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -264,13 +264,13 @@ func (h *Handler) AdminEnableTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// EnableTOTPWithSecret enables TOTP with a given secret and code (for admin use).
-	codes, err := h.svc.AdminEnableTOTP(targetID, req.Secret, req.Code)
+	codes, err := h.svc.AdminEnableTOTP(r.Context(), targetID, req.Secret, req.Code)
 	if err != nil {
 		log.Printf("auth.Handler.AdminEnableTOTP: %v", err)
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	h.propagateAuthUser(targetID, nil)
+	h.propagateAuthUser(r.Context(), targetID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":       "TOTP enabled",
 		"backup_codes": codes,
@@ -290,7 +290,7 @@ func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Permission check
-	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -299,12 +299,12 @@ func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Admin disable does not require password — call service method with empty password as sentinel.
-	if err := h.svc.AdminDisableTOTP(targetID); err != nil {
+	if err := h.svc.AdminDisableTOTP(r.Context(), targetID); err != nil {
 		log.Printf("auth.Handler.AdminDisableTOTP: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	h.propagateAuthUser(targetID, nil)
+	h.propagateAuthUser(r.Context(), targetID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "TOTP disabled"})
 }
 
@@ -320,7 +320,7 @@ func (h *Handler) AdminGenerateBackupCodes(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	// Permission check
-	if ok, _ := h.svc.HasPermission(actorID, "user.manage-others"); !ok {
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
@@ -328,7 +328,7 @@ func (h *Handler) AdminGenerateBackupCodes(w http.ResponseWriter, r *http.Reques
 	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
 		return
 	}
-	codes, err := h.svc.AdminGenerateBackupCodes(targetID)
+	codes, err := h.svc.AdminGenerateBackupCodes(r.Context(), targetID)
 	if err != nil {
 		log.Printf("auth.Handler.AdminGenerateBackupCodes: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to generate backup codes")

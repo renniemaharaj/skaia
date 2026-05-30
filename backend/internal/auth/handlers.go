@@ -48,11 +48,11 @@ func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, email
 }
 
 // newAuthUser converts a User to an AuthUser, including TOTP status.
-func (h *Handler) newAuthUser(user *models.User) *models.AuthUser {
+func (h *Handler) newAuthUser(ctx context.Context, user *models.User) *models.AuthUser {
 	if user == nil {
 		return nil
 	}
-	_, enabled, err := h.svc.GetTOTPEnabled(user.ID)
+	_, enabled, err := h.svc.GetTOTPEnabled(ctx, user.ID)
 	if err != nil {
 		return models.NewAuthUser(user, false)
 	}
@@ -60,7 +60,7 @@ func (h *Handler) newAuthUser(user *models.User) *models.AuthUser {
 }
 
 // propagateAuthUser invalidates the user's cache and propagates the updated user info to all sessions.
-func (h *Handler) propagateAuthUser(userID int64, extra map[string]interface{}) {
+func (h *Handler) propagateAuthUser(ctx context.Context, userID int64, extra map[string]interface{}) {
 	if h.userSvc == nil {
 		return
 	}
@@ -70,7 +70,7 @@ func (h *Handler) propagateAuthUser(userID int64, extra map[string]interface{}) 
 		log.Printf("auth.Handler.propagateAuthUser: failed to refresh user %d: %v", userID, err)
 		return
 	}
-	payload := map[string]interface{}{"user": h.newAuthUser(updatedUser)}
+	payload := map[string]interface{}{"user": h.newAuthUser(ctx, updatedUser)}
 	for k, v := range extra {
 		payload[k] = v
 	}
@@ -87,7 +87,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, accessToken, err := h.svc.Login(req.Email, req.Password)
+	user, accessToken, err := h.svc.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		log.Printf("user.Handler.login: %v", err)
 		var susp *SuspendedError
@@ -108,7 +108,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If TOTP is enabled, require a second step.
-	if _, enabled, _ := h.svc.GetTOTPEnabled(user.ID); enabled {
+	if _, enabled, _ := h.svc.GetTOTPEnabled(r.Context(), user.ID); enabled {
 		// Issue a short-lived TOTP challenge token (5 min).
 		totpToken, err := ijwt.GenerateTokenWithExpiration(
 			user.ID, user.Username, user.Email, user.DisplayName,
@@ -137,11 +137,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If TOTP secret exists but not enabled, warn and allow login (should not happen, but fallback)
-	if totpSecret, enabled, _ := h.svc.GetTOTPEnabled(user.ID); totpSecret != "" && !enabled {
+	if totpSecret, enabled, _ := h.svc.GetTOTPEnabled(r.Context(), user.ID); totpSecret != "" && !enabled {
 		log.Printf("user.Handler.login: WARNING: user %d has TOTP secret but 2FA not enabled. Allowing login.", user.ID)
 	}
 
-	h.propagateAuthUser(user.ID, map[string]interface{}{"new_token": accessToken})
+	h.propagateAuthUser(r.Context(), user.ID, map[string]interface{}{"new_token": accessToken})
 
 	log.Printf("auth: login %q (@%s, id=%d)", user.DisplayName, user.Username, user.ID)
 	h.dispatcher.Dispatch(ievents.Job{
@@ -154,7 +154,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: "",
-		User:         h.newAuthUser(user),
+		User:         h.newAuthUser(r.Context(), user),
 	})
 }
 
@@ -183,7 +183,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, accessToken, refreshToken, err := h.svc.Register(&req)
+	user, accessToken, refreshToken, err := h.svc.Register(r.Context(), &req)
 	if err != nil {
 		var pqErr *pq.Error
 		switch {
@@ -211,7 +211,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	// Send verification email (best-effort, non-blocking).
 	if h.email != nil && h.email.Configured() {
 		go func(uid int64, uname, uemail string) {
-			token, err := h.svc.CreateEmailVerificationToken(uid)
+			token, err := h.svc.CreateEmailVerificationToken(r.Context(), uid)
 			if err != nil {
 				log.Printf("user.Handler.register: create verification token: %v", err)
 				return
@@ -226,7 +226,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, models.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		User:         h.newAuthUser(user),
+		User:         h.newAuthUser(r.Context(), user),
 	})
 }
 
