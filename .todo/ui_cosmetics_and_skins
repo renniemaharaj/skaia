@@ -1,0 +1,33 @@
+# UI Cosmetics and Skins
+
+## Context
+We want to provide users with rich profile customization and site skins. These are cosmetic enhancements not tied to complex logic but allow visual flair like effects, custom backgrounds, and role-based aesthetics. These changes will happen in parallel with the current UI refactor (`ui_component_refactor_plan`).
+
+## Goal
+- Implement glowing profile cards and profile icons based on user roles.
+- Apply distinct colors throughout the UI based on profile roles.
+- Introduce site skins with the following features:
+  - Background image with position control.
+  - Video for background.
+  - Configurable custom fonts.
+  - Background art and profile card art.
+  - Avatar glowing effects based on roles.
+
+## Non-Goals
+- Logic-heavy profile redesign outside of visual/cosmetic changes.
+- Interfering with the `ui_component_refactor_plan` registry; changes should be layered or integrated smoothly.
+
+## Steps
+1. Define the schema/configuration structure for user skins and role cosmetics.
+2. Create CSS variables/design tokens that dynamically adjust based on role colors and skin configurations.
+3. Implement skin settings in the user profile (font selection, background image with position control, video upload/link for background).
+4. Build glowing effects and role-based colors for profile cards and avatars.
+5. Review and integrate with `ui_component_refactor_plan` (e.g., ensure cosmetic configs are passed down cleanly to refactored components).
+
+## Verification
+- Verify that users can configure their background (image + position / video) and font.
+- Ensure profile icons and cards exhibit role-based glowing effects and colors.
+- Verify that these cosmetic changes do not break existing UI component bindings.
+
+## References
+- `.todo/ui_component_refactor_plan`

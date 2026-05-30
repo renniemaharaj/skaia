@@ -1,0 +1,14 @@
+<--/------->
+
+## forum_and_global_features
+
+### Current Progress
+- **Phase 1: Counts & Search component integration** — ⬜ Not started
+- **Phase 2: Thread moving & notifications** — ⬜ Not started
+- **Phase 3: Rich text, HTML preview, & global mentions** — ⬜ Not started
+
+### Next Steps
+- [ ] Implement DB query updates for total thread count in categories.
+- [ ] Integrate shared search component for server-side fetching on the forum page.
+
+<--/------->

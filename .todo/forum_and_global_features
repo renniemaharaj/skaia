@@ -1,0 +1,37 @@
+# Forum Enhancements and Global Features
+
+## Context
+Various small fixes and features are needed across the forum and globally to improve usability, notifications, and interaction. This includes rich text comments, better category searching, accurate counts, and global mentions.
+
+## Goal
+- Implement global mentions with user selection site-wide.
+- Forum comments: Support rich text response. Display the thread viewer header card preview (dangerously setting HTML for preview instead of raw code) so users can reply to a thread with a thread link.
+- Forum category: Show the total DB count for threads, not just the loaded count.
+- Forum page: Integrate the shared search component to filter/fetch categories and threads by name from the DB instead of client-side filtering of loaded items.
+- Move threads: Allow moving a thread to a different category after creation, and notify the creator.
+- Comment notifications: Notify all unique contributors in a comment section when a new reply is made.
+- Category selection card: The slide-up category selector should behave like a full category card with all controls and the shared search component to search threads.
+
+## Non-Goals
+- Full rewrite of the forum data model.
+- Restructuring the entire notification system beyond adding these specific triggers.
+
+## Steps
+1. Update forum category queries to return total DB count.
+2. Integrate shared search component into the forum page and category slide-up card for server-side search.
+3. Modify the thread viewer header card to render HTML safely for thread previews (ensure XSS protection).
+4. Implement the rich text response for forum comments including thread linking.
+5. Add backend support and UI for moving a thread between categories, including notification dispatch to the creator.
+6. Implement notification logic for unique contributors in a comment section upon new replies.
+7. Implement global mentions with a site-wide user selection popover/dropdown.
+
+## Verification
+- Verify category counts reflect the DB total.
+- Test server-side search in forum page and category slide-up card.
+- Verify thread preview renders HTML safely.
+- Verify moving threads updates category and sends notification.
+- Test unique contributor notifications for new comments.
+- Test global mention autocomplete/selection.
+
+## References
+- `.specs/` (Notification system and Forum DB schema)
