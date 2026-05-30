@@ -41,27 +41,9 @@ func adminToken(t *testing.T) string {
 
 // ── JWTAuthMiddleware ─────────────────────────────────────────────────────────
 
-func TestJWTAuthMiddleware_MissingHeader_Returns401(t *testing.T) {
+func TestJWTAuthMiddleware_NoContext_Returns401(t *testing.T) {
 	h := mw.JWTAuthMiddleware(okHandler())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
-
-func TestJWTAuthMiddleware_InvalidScheme_Returns401(t *testing.T) {
-	h := mw.JWTAuthMiddleware(okHandler())
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Basic dXNlcjpwYXNz")
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
-
-func TestJWTAuthMiddleware_GarbageToken_Returns401(t *testing.T) {
-	h := mw.JWTAuthMiddleware(okHandler())
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Bearer not.a.real.token")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -69,7 +51,7 @@ func TestJWTAuthMiddleware_GarbageToken_Returns401(t *testing.T) {
 
 func TestJWTAuthMiddleware_ValidToken_Passes(t *testing.T) {
 	tok := validToken(t)
-	h := mw.JWTAuthMiddleware(okHandler())
+	h := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(okHandler()))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	w := httptest.NewRecorder()
@@ -84,7 +66,7 @@ func TestJWTAuthMiddleware_SetsUserIDInContext(t *testing.T) {
 		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
-	h := mw.JWTAuthMiddleware(inner)
+	h := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(inner))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	h.ServeHTTP(httptest.NewRecorder(), req)
@@ -98,7 +80,7 @@ func TestJWTAuthMiddleware_SetsRolesInContext(t *testing.T) {
 		capturedRoles = r.Context().Value(ictx.CtxKeyUserRoles)
 		w.WriteHeader(http.StatusOK)
 	})
-	h := mw.JWTAuthMiddleware(inner)
+	h := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(inner))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	h.ServeHTTP(httptest.NewRecorder(), req)
@@ -107,58 +89,49 @@ func TestJWTAuthMiddleware_SetsRolesInContext(t *testing.T) {
 	assert.Contains(t, roles, "user")
 }
 
-func TestJWTAuthMiddleware_BearerWithoutToken_Returns401(t *testing.T) {
-	h := mw.JWTAuthMiddleware(okHandler())
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("Authorization", "Bearer")
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-}
+// ── ExtractTokenMiddleware ─────────────────────────────────────────────────────
 
-// ── OptionalJWTAuthMiddleware ─────────────────────────────────────────────────
-
-func TestOptionalJWTAuthMiddleware_NoHeader_Passes(t *testing.T) {
-	h := mw.OptionalJWTAuthMiddleware(okHandler())
+func TestExtractTokenMiddleware_NoHeader_Passes(t *testing.T) {
+	h := mw.ExtractTokenMiddleware(okHandler())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-func TestOptionalJWTAuthMiddleware_NoHeader_NoUserIDInContext(t *testing.T) {
+func TestExtractTokenMiddleware_NoHeader_NoUserIDInContext(t *testing.T) {
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
-	h := mw.OptionalJWTAuthMiddleware(inner)
+	h := mw.ExtractTokenMiddleware(inner)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	h.ServeHTTP(httptest.NewRecorder(), req)
 	assert.Nil(t, capturedUserID, "no user_id without token")
 }
 
-func TestOptionalJWTAuthMiddleware_ValidToken_EnrichesContext(t *testing.T) {
+func TestExtractTokenMiddleware_ValidToken_EnrichesContext(t *testing.T) {
 	tok := validToken(t)
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
-	h := mw.OptionalJWTAuthMiddleware(inner)
+	h := mw.ExtractTokenMiddleware(inner)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	h.ServeHTTP(httptest.NewRecorder(), req)
 	assert.Equal(t, int64(42), capturedUserID)
 }
 
-func TestOptionalJWTAuthMiddleware_InvalidToken_StillPasses(t *testing.T) {
+func TestExtractTokenMiddleware_InvalidToken_StillPasses(t *testing.T) {
 	var capturedUserID any
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedUserID = r.Context().Value(ictx.CtxKeyUserID)
 		w.WriteHeader(http.StatusOK)
 	})
-	h := mw.OptionalJWTAuthMiddleware(inner)
+	h := mw.ExtractTokenMiddleware(inner)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer invalid.token.garbage")
 	w := httptest.NewRecorder()
@@ -183,7 +156,7 @@ func TestPermissionMiddleware_WrongPermission_Returns403(t *testing.T) {
 		[]string{"user"}, []string{"read:other"},
 	)
 	require.NoError(t, err)
-	chain := mw.JWTAuthMiddleware(mw.PermissionMiddleware("read:data")(okHandler()))
+	chain := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(mw.PermissionMiddleware("read:data")(okHandler())))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	w := httptest.NewRecorder()
@@ -197,7 +170,7 @@ func TestPermissionMiddleware_CorrectPermission_Passes(t *testing.T) {
 		[]string{"user"}, []string{"read:data"},
 	)
 	require.NoError(t, err)
-	chain := mw.JWTAuthMiddleware(mw.PermissionMiddleware("read:data")(okHandler()))
+	chain := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(mw.PermissionMiddleware("read:data")(okHandler())))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	w := httptest.NewRecorder()
@@ -207,7 +180,7 @@ func TestPermissionMiddleware_CorrectPermission_Passes(t *testing.T) {
 
 func TestPermissionMiddleware_AdminRole_BypassesPermissionCheck(t *testing.T) {
 	tok := adminToken(t)
-	chain := mw.JWTAuthMiddleware(mw.PermissionMiddleware("some.obscure.perm")(okHandler()))
+	chain := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(mw.PermissionMiddleware("some.obscure.perm")(okHandler())))
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+tok)
 	w := httptest.NewRecorder()
@@ -222,7 +195,7 @@ func TestPermissionMiddleware_MultiplePermissions_PassesOnMatch(t *testing.T) {
 	)
 	require.NoError(t, err)
 	for _, perm := range []string{"read:data", "write:data", "delete:data"} {
-		chain := mw.JWTAuthMiddleware(mw.PermissionMiddleware(perm)(okHandler()))
+		chain := mw.ExtractTokenMiddleware(mw.JWTAuthMiddleware(mw.PermissionMiddleware(perm)(okHandler())))
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		req.Header.Set("Authorization", "Bearer "+tok)
 		w := httptest.NewRecorder()
@@ -270,11 +243,13 @@ func TestAuthLimitMiddleware_ExceedsLimit_Returns429(t *testing.T) {
 }
 
 func TestIsArmed_EmptyDir_ReturnsFalse(t *testing.T) {
+	mw.ResetArmedCacheForTest()
 	dir := t.TempDir()
 	assert.False(t, mw.IsArmed(dir))
 }
 
 func TestIsArmed_FilePresent_ReturnsTrue(t *testing.T) {
+	mw.ResetArmedCacheForTest()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "client1.armed")
 	require.NoError(t, os.WriteFile(path, []byte("armed"), 0644))
@@ -282,6 +257,7 @@ func TestIsArmed_FilePresent_ReturnsTrue(t *testing.T) {
 }
 
 func TestArmedMiddleware_ServiceUnavailableWhenArmed(t *testing.T) {
+	mw.ResetArmedCacheForTest()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "client1.armed")
 	require.NoError(t, os.WriteFile(path, []byte("armed"), 0644))

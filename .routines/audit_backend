@@ -105,12 +105,12 @@ document durable findings
 
 ## Last Ran
 
-- Not yet recorded
+- 2026-05-30
 
 ## Last Run Remarks
 
-- None
+- Found severe performance and design anti-patterns in backend middleware: quadruple JWT parsing per request, per-request directory reading in `ArmedMiddleware`, DB writes triggered during rate-limiting bursts, and an unbounded global `sync.Map` in `ip_hopping.go` causing memory leaks. Also noted duplicated manual JWT extraction logic across middlewares.
 
 ## Next Steps
 
-- Record package-specific findings when the next backend audit runs.
+- Execute `.todo/middleware_performance_refactor` to resolve these issues.

@@ -1,5 +1,0 @@
-# Deprecated Routine: backend_auditor
-
-This file is a compatibility redirect.
-
-Use `.routines/audit_backend` instead. Do not copy or update this file with audit logic.

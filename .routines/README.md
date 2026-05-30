@@ -23,7 +23,6 @@ Use routines to keep work precise:
 
 Deprecated aliases:
 
-- `.routines/backend_auditor` redirects to `.routines/audit_backend`.
 - `.routines/frontend_specialist` redirects to `.routines/audit_frontend`.
 
 ## Invocation Contract

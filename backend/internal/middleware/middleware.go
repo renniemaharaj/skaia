@@ -20,13 +20,7 @@ type penaltyBox struct {
 	entries map[string]time.Time // key => penalty expiry
 }
 
-var (
-	ipPenalty        = newPenaltyBox()
-	clientPenalty    = newPenaltyBox()
-	authPenalty      = newPenaltyBox()
-	compileIPPen     = newPenaltyBox()
-	compileClientPen = newPenaltyBox()
-)
+// No global penalty boxes. Instantiate them per rate limiter.
 
 func newPenaltyBox() *penaltyBox {
 	pb := &penaltyBox{entries: make(map[string]time.Time)}

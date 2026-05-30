@@ -1,16 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/httprate"
 	"github.com/skaia/backend/internal/auth"
-	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
 )
 
@@ -28,23 +27,13 @@ func triggerMFA(r *http.Request, authSvc *auth.Service) {
 	if authSvc == nil {
 		return
 	}
-	userID, ok := utils.UserIDFromCtx(r)
-	if !ok {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader != "" {
-			parts := strings.SplitN(authHeader, " ", 2)
-			if len(parts) == 2 && parts[0] == "Bearer" {
-				if claims, err := ijwt.ValidateToken(parts[1]); err == nil {
-					userID = claims.UserID
-					ok = true
-				}
-			}
-		}
-	}
-	if ok {
+	if userID, ok := utils.UserIDFromCtx(r); ok {
 		_, enabled, _ := authSvc.GetTOTPEnabled(r.Context(), userID)
 		if enabled {
-			_ = authSvc.SetMFARequired(r.Context(), userID, true)
+			// Do not block rate limiter on DB write
+			go func() {
+				_ = authSvc.SetMFARequired(context.Background(), userID, true)
+			}()
 		}
 	}
 }
@@ -52,12 +41,13 @@ func triggerMFA(r *http.Request, authSvc *auth.Service) {
 func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
 	limit := envIntDefault("API_RATE_LIMIT_IP", 100)
 	penaltyDuration := time.Duration(envIntDefault("API_RATE_LIMIT_PENALTY_SECONDS", 15)) * time.Second
+	pb := newPenaltyBox()
 
 	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(httprate.KeyByRealIP),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			key, _ := httprate.KeyByRealIP(r)
-			ipPenalty.penalize(key, penaltyDuration)
+			pb.penalize(key, penaltyDuration)
 			triggerMFA(r, authSvc)
 			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
@@ -67,7 +57,7 @@ func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key, _ := httprate.KeyByRealIP(r)
-			if rem, active := ipPenalty.check(key); active {
+			if rem, active := pb.check(key); active {
 				triggerMFA(r, authSvc)
 				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
 				return
@@ -80,12 +70,13 @@ func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
 func RateLimitByClient() func(http.Handler) http.Handler {
 	limit := envIntDefault("API_RATE_LIMIT_CLIENT", 200)
 	penaltyDuration := time.Duration(envIntDefault("API_RATE_LIMIT_PENALTY_SECONDS", 15)) * time.Second
+	pb := newPenaltyBox()
 
 	rateLimiter := httprate.Limit(limit, time.Minute,
 		httprate.WithKeyFuncs(KeyByClientID),
 		httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
 			key, _ := KeyByClientID(r)
-			clientPenalty.penalize(key, penaltyDuration)
+			pb.penalize(key, penaltyDuration)
 			writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(penaltyDuration.Seconds()))
 		}),
 	)
@@ -94,7 +85,7 @@ func RateLimitByClient() func(http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			key, _ := KeyByClientID(r)
-			if rem, active := clientPenalty.check(key); active {
+			if rem, active := pb.check(key); active {
 				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
 				return
 			}

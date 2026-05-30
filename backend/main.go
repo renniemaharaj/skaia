@@ -420,7 +420,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
 		globalAuthSvc := auth.NewService(auth.NewSQLRepository(db), userSvc)
-		api.Use(imw.RateLimitByIP(globalAuthSvc), imw.RateLimitByClient(), imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
+		api.Use(imw.ExtractTokenMiddleware, imw.RateLimitByIP(globalAuthSvc), imw.RateLimitByClient(), imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")

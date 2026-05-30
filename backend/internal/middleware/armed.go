@@ -5,25 +5,63 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"time"
+)
+
+var (
+	armedCache struct {
+		mu          sync.RWMutex
+		isArmed     bool
+		lastChecked time.Time
+	}
 )
 
 // IsArmed checks whether any armed file exists in the given directory.
+// It caches the result for 2 seconds to avoid excessive disk I/O.
 func IsArmed(armedDir string) bool {
+	armedCache.mu.RLock()
+	if time.Since(armedCache.lastChecked) < 2*time.Second {
+		armed := armedCache.isArmed
+		armedCache.mu.RUnlock()
+		return armed
+	}
+	armedCache.mu.RUnlock()
+
+	armedCache.mu.Lock()
+	defer armedCache.mu.Unlock()
+	if time.Since(armedCache.lastChecked) < 2*time.Second {
+		return armedCache.isArmed
+	}
+
+	armedCache.lastChecked = time.Now()
+
 	entries, err := os.ReadDir(armedDir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			armedCache.isArmed = false
 			return false
 		}
 		// Fail safe: do not block on read errors, but log.
 		log.Printf("armed middleware: cannot read dir %q: %v", armedDir, err)
+		armedCache.isArmed = false
 		return false
 	}
 	for _, e := range entries {
 		if !e.IsDir() {
+			armedCache.isArmed = true
 			return true
 		}
 	}
+	armedCache.isArmed = false
 	return false
+}
+
+// ResetArmedCacheForTest is used in tests to clear the armed cache
+func ResetArmedCacheForTest() {
+	armedCache.mu.Lock()
+	armedCache.lastChecked = time.Time{}
+	armedCache.mu.Unlock()
 }
 
 // ArmedMiddleware rejects API requests when the backend has been armed.

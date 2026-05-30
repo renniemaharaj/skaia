@@ -6,11 +6,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/skaia/backend/internal/auth"
-	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
 )
 
@@ -41,23 +39,6 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 			}
 
 			userID, ok := utils.UserIDFromCtx(r)
-			if !ok {
-				// Note: Double JWT parsing occurs here because MFARequiredMiddleware
-				// is mounted globally on the router before route-specific auth middlewares
-				// (like JWTAuthMiddleware and OptionalJWTAuthMiddleware). We must parse
-				// it early to enforce MFA. Consider refactoring route mounting to reorder this in the future.
-				authHeader := r.Header.Get("Authorization")
-				if authHeader != "" {
-					parts := strings.SplitN(authHeader, " ", 2)
-					if len(parts) == 2 && parts[0] == "Bearer" {
-						if claims, err := ijwt.ValidateToken(parts[1]); err == nil {
-							userID = claims.UserID
-							ok = true
-						}
-					}
-				}
-			}
-
 			if !ok {
 				next.ServeHTTP(w, r)
 				return

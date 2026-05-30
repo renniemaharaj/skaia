@@ -1,0 +1,18 @@
+# Middleware Performance Refactor
+
+## Purpose
+Fix severe performance bottlenecks, memory leaks, and global state anti-patterns in the `backend/internal/middleware` package.
+
+## Scope
+- Refactor JWT extraction to happen once early in the middleware chain.
+- Fix the `os.ReadDir` I/O bottleneck in `ArmedMiddleware`.
+- Replace unbounded `lastIPs` map in `ip_hopping.go` with an LRU cache or Redis-backed cache.
+- Remove DB writes from the rate-limiting critical path (`triggerMFA`).
+- Remove global `penaltyBox` variables and replace with injected dependencies.
+- Remove redundant JWT extraction logic from `mfarequired.go`, `ip_hopping.go`, and `rate_limit.go`.
+
+## Context Files
+- `backend/internal/middleware/*.go`
+- `backend/main.go`
+- `.routines/audit_backend`
+- `.routines/correctness`
