@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
+import { apiRequest, uploadFile } from "../../utils/api";
 import type { ProfileUser } from "./types";
 
 interface UseProfileEditOptions {
@@ -29,6 +29,13 @@ export function useProfileEdit({
   const [avatarPreview, setAvatarPreview] = useState("");
   const [bannerPreview, setBannerPreview] = useState("");
 
+  const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
+  const [backgroundVideoFile, setBackgroundVideoFile] = useState<File | null>(null);
+  const [profileCardArtFile, setProfileCardArtFile] = useState<File | null>(null);
+  const [backgroundImagePreview, setBackgroundImagePreview] = useState("");
+  const [backgroundVideoPreview, setBackgroundVideoPreview] = useState("");
+  const [profileCardArtPreview, setProfileCardArtPreview] = useState("");
+
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -50,10 +57,19 @@ export function useProfileEdit({
     if (!editOpen) {
       if (avatarPreview) URL.revokeObjectURL(avatarPreview);
       if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+      if (backgroundImagePreview) URL.revokeObjectURL(backgroundImagePreview);
+      if (backgroundVideoPreview) URL.revokeObjectURL(backgroundVideoPreview);
+      if (profileCardArtPreview) URL.revokeObjectURL(profileCardArtPreview);
       setAvatarFile(null);
       setBannerFile(null);
+      setBackgroundImageFile(null);
+      setBackgroundVideoFile(null);
+      setProfileCardArtFile(null);
       setAvatarPreview("");
       setBannerPreview("");
+      setBackgroundImagePreview("");
+      setBackgroundVideoPreview("");
+      setProfileCardArtPreview("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editOpen]);
@@ -70,6 +86,24 @@ export function useProfileEdit({
     setBannerPreview(file ? URL.createObjectURL(file) : "");
   };
 
+  const handleBackgroundImageChange = (file: File | null) => {
+    if (backgroundImagePreview) URL.revokeObjectURL(backgroundImagePreview);
+    setBackgroundImageFile(file);
+    setBackgroundImagePreview(file ? URL.createObjectURL(file) : "");
+  };
+
+  const handleBackgroundVideoChange = (file: File | null) => {
+    if (backgroundVideoPreview) URL.revokeObjectURL(backgroundVideoPreview);
+    setBackgroundVideoFile(file);
+    setBackgroundVideoPreview(file ? URL.createObjectURL(file) : "");
+  };
+
+  const handleProfileCardArtChange = (file: File | null) => {
+    if (profileCardArtPreview) URL.revokeObjectURL(profileCardArtPreview);
+    setProfileCardArtFile(file);
+    setProfileCardArtPreview(file ? URL.createObjectURL(file) : "");
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setEditSaving(true);
@@ -77,6 +111,9 @@ export function useProfileEdit({
     try {
       let finalAvatarUrl = user.avatar_url ?? "";
       let finalBannerUrl = user.banner_url ?? "";
+      let finalBgImageUrl = editBackgroundImageUrl;
+      let finalBgVideoUrl = editBackgroundVideoUrl;
+      let finalCardArtUrl = editProfileCardArtUrl;
 
       if (avatarFile) {
         const fd = new FormData();
@@ -104,6 +141,21 @@ export function useProfileEdit({
         if (res?.url) finalBannerUrl = res.url;
       }
 
+      if (backgroundImageFile) {
+        const res = await uploadFile(backgroundImageFile, "/upload/image");
+        if (res?.url) finalBgImageUrl = res.url;
+      }
+
+      if (backgroundVideoFile) {
+        const res = await uploadFile(backgroundVideoFile, "/upload/video");
+        if (res?.url) finalBgVideoUrl = res.url;
+      }
+
+      if (profileCardArtFile) {
+        const res = await uploadFile(profileCardArtFile, "/upload/image");
+        if (res?.url) finalCardArtUrl = res.url;
+      }
+
       const updated = await apiRequest<ProfileUser>(`/users/${user.id}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -111,11 +163,11 @@ export function useProfileEdit({
           bio: editBio,
           avatar_url: finalAvatarUrl,
           banner_url: finalBannerUrl,
-          background_image_url: editBackgroundImageUrl || null,
-          background_video_url: editBackgroundVideoUrl || null,
+          background_image_url: finalBgImageUrl || null,
+          background_video_url: finalBgVideoUrl || null,
           background_position: editBackgroundPosition || null,
           font_family: editFontFamily || null,
-          profile_card_art_url: editProfileCardArtUrl || null,
+          profile_card_art_url: finalCardArtUrl || null,
         }),
       });
 
@@ -131,10 +183,21 @@ export function useProfileEdit({
       setEditSaving(false);
       if (avatarPreview) URL.revokeObjectURL(avatarPreview);
       if (bannerPreview) URL.revokeObjectURL(bannerPreview);
+      if (backgroundImagePreview) URL.revokeObjectURL(backgroundImagePreview);
+      if (backgroundVideoPreview) URL.revokeObjectURL(backgroundVideoPreview);
+      if (profileCardArtPreview) URL.revokeObjectURL(profileCardArtPreview);
       setAvatarFile(null);
       setBannerFile(null);
+      setBackgroundImageFile(null);
+      setBackgroundVideoFile(null);
+      setProfileCardArtFile(null);
       setAvatarPreview("");
       setBannerPreview("");
+      setBackgroundImagePreview("");
+      setBackgroundVideoPreview("");
+      setProfileCardArtPreview("");
+      // Notify uploads list to refresh
+      window.dispatchEvent(new Event("user:uploads:changed"));
     }
   };
 
@@ -162,5 +225,11 @@ export function useProfileEdit({
     setEditFontFamily,
     editProfileCardArtUrl,
     setEditProfileCardArtUrl,
+    backgroundImagePreview,
+    backgroundVideoPreview,
+    profileCardArtPreview,
+    handleBackgroundImageChange,
+    handleBackgroundVideoChange,
+    handleProfileCardArtChange,
   };
 }

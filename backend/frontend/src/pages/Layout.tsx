@@ -199,14 +199,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }
         }
       } catch (err) {
-        if (err instanceof Error && err.message === "MFA Required") {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        if (errorMessage === "MFA Required") {
           setMfaRequired(true);
           return;
         }
-        // Any error (401 from apiRequest already cleared localStorage; handle atom state here)
-        setAccessToken(null);
-        setRefreshToken(null);
-        setCurrentUser(null);
+        const shouldLogout = /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(errorMessage);
+        if (shouldLogout) {
+          // Only clear state if it's explicitly an auth failure, not a 500 or timeout
+          setAccessToken(null);
+          setRefreshToken(null);
+          setCurrentUser(null);
+        }
       }
     };
 

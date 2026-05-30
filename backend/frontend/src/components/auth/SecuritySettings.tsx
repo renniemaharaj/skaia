@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Copy,
   Download,
+  Key,
 } from "lucide-react";
 import {
   totpSetup,
@@ -17,8 +18,10 @@ import {
   adminEnableTOTP,
   adminDisableTOTP,
   adminGenerateBackupCodes,
+  apiRequest,
   type TOTPSetupResponse,
 } from "../../utils/api";
+import { customPrompt } from "../ui/Prompt";
 import { toast } from "sonner";
 import "./SecuritySettings.css";
 
@@ -43,11 +46,16 @@ export default function SecuritySettings({
   const [setupData, setSetupData] = useState<TOTPSetupResponse | null>(null);
   const [setupCode, setSetupCode] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
-  const [disablePassword, setDisablePassword] = useState("");
-  const [showDisable, setShowDisable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
+
+  // Password change states
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwError, setPwError] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
     console.log("TOTP enabled state:", totpEnabled);
@@ -376,6 +384,37 @@ export default function SecuritySettings({
     }
   };
 
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError("");
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPwError("Please fill out all fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    setPwLoading(true);
+    try {
+      await apiRequest("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword,
+        }),
+      });
+      toast.success("Password updated successfully!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      setPwError(err.message || "Failed to update password");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   // ── 2FA Setup ───────────────────────────────────────────────────────
   const handleStartSetup = async () => {
     setLoading(true);
@@ -412,16 +451,17 @@ export default function SecuritySettings({
   };
 
   const handleDisableTOTP = async () => {
-    if (!disablePassword) {
-      setError("Password is required");
-      return;
-    }
+    const password = await customPrompt(
+      "Enter your password to confirm disabling 2FA.",
+      "",
+      "Current password",
+      "password"
+    );
+    if (!password) return;
     setLoading(true);
     setError(null);
     try {
-      await totpDisable(disablePassword);
-      setShowDisable(false);
-      setDisablePassword("");
+      await totpDisable(password);
       toast.success("Two-factor authentication disabled");
       onUpdate?.();
     } catch (err) {
@@ -577,61 +617,7 @@ export default function SecuritySettings({
     );
   }
 
-  // ── Disable 2FA dialog ──────────────────────────────────────────────
-  if (showDisable) {
-    return (
-      <div className="sec-panel">
-        <div
-          className="sec-panel__overlay"
-          onClick={(e) => e.target === e.currentTarget && setShowDisable(false)}
-        >
-          <div className="sec-panel__dialog">
-            <h3>Disable Two-Factor Authentication</h3>
-            <p>Enter your password to confirm disabling 2FA.</p>
 
-            {error && (
-              <div className="sec-panel__error">
-                <AlertCircle size={14} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <input
-              className="sec-panel__input"
-              type="password"
-              placeholder="Current password"
-              value={disablePassword}
-              onChange={(e) => setDisablePassword(e.target.value)}
-              style={{ letterSpacing: "normal", textAlign: "left" }}
-              autoFocus
-            />
-
-            <div className="sec-panel__actions">
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
-                onClick={() => {
-                  setShowDisable(false);
-                  setDisablePassword("");
-                  setError(null);
-                }}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                className="sec-panel__btn sec-panel__btn--danger"
-                onClick={handleDisableTOTP}
-                disabled={loading || !disablePassword}
-              >
-                {loading ? <Loader size={14} className="spinning" /> : null}
-                Disable 2FA
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── Main panel ──────────────────────────────────────────────────────
   return (
@@ -705,10 +691,8 @@ export default function SecuritySettings({
         {totpEnabled ? (
           <button
             className="sec-panel__btn sec-panel__btn--danger"
-            onClick={() => {
-              setShowDisable(true);
-              setError(null);
-            }}
+            onClick={handleDisableTOTP}
+            disabled={loading}
           >
             <ShieldOff size={14} />
             Disable 2FA
@@ -728,6 +712,64 @@ export default function SecuritySettings({
           </button>
         )}
       </div>
+
+      {/* Change Password */}
+      {!canManage && (
+        <div className="sec-panel__section">
+          <div className="sec-panel__section-header">
+            <span className="sec-panel__section-title">
+              <Key size={16} />
+              Change Password
+            </span>
+          </div>
+          <p className="sec-panel__section-desc">
+            Update your password to keep your account secure.
+          </p>
+          <form onSubmit={handlePasswordSubmit} style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label htmlFor="old-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>Old Password</label>
+              <input
+                id="old-password"
+                type="password"
+                className="sec-panel__input"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                disabled={pwLoading}
+                required
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label htmlFor="new-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>New Password</label>
+              <input
+                id="new-password"
+                type="password"
+                className="sec-panel__input"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                disabled={pwLoading}
+                required
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label htmlFor="confirm-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>Confirm New Password</label>
+              <input
+                id="confirm-password"
+                type="password"
+                className="sec-panel__input"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={pwLoading}
+                required
+              />
+            </div>
+            {pwError && <div className="sec-panel__error"><AlertCircle size={14} /><span>{pwError}</span></div>}
+            <button type="submit" className="sec-panel__btn sec-panel__btn--primary" disabled={pwLoading} style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
+              {pwLoading ? <Loader size={14} className="spinning" /> : null}
+              Update Password
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

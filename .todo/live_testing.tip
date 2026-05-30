@@ -1,0 +1,15 @@
+<--/------->
+
+## live_testing
+
+### Current Progress
+- **Phase 1: Environment preparation & deployment** — ⬜ Not started
+- **Phase 2: Validation of session/IP step-up auth** — ⬜ Not started
+- **Phase 3: Validation of UI refactors & layout** — ⬜ Not started
+
+### Next Steps
+- [ ] Push local changes and deploy to staging/live.
+- [ ] Verify Cloudflare Turnstile token submission on IP mismatch.
+- [ ] Verify profile video and security settings UI integration in live context.
+
+<--/------->

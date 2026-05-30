@@ -172,9 +172,12 @@ export async function apiRequest<T>(
       throw new Error(errorMessage);
     }
 
-    // Handle 401 Unauthorized — attempt a token refresh before logging out
+    // Handle 401 Unauthorized
     if (response.status === 401) {
-      if (response.statusText === "MFA Required" || errorMessage === "MFA Required") {
+      if (
+        response.statusText === "MFA Required" ||
+        errorMessage === "MFA Required"
+      ) {
         toast.error(
           "Multi-factor authentication required. Please complete MFA challenge to continue.",
         );
@@ -184,57 +187,62 @@ export async function apiRequest<T>(
         throw new Error("MFA Required");
       }
 
-      const refreshToken = localStorage.getItem("auth.refreshToken");
+      // Check if this 401 is an actual auth/token failure or a business logic 401 (e.g. invalid password)
+      const isAuthFailure = /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(errorMessage);
 
-      if (refreshToken && !endpoint.includes("/auth/refresh")) {
-        try {
-          const refreshResp = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-          });
-          if (refreshResp.ok) {
-            const data: AuthResponse = await refreshResp.json();
-            localStorage.setItem("auth.accessToken", data.access_token);
-            if (data.refresh_token) {
-              localStorage.setItem("auth.refreshToken", data.refresh_token);
-            }
-            if (data.user) {
-              localStorage.setItem("auth.user", JSON.stringify(data.user));
-            }
+      if (isAuthFailure) {
+        const refreshToken = localStorage.getItem("auth.refreshToken");
 
-            // Retry the original request with the new token
-            const retryResp = await fetch(url, {
-              ...options,
-              headers: mergeHeaders(
-                getAuthHeaders(!isFormData),
-                options.headers,
-              ),
+        if (refreshToken && !endpoint.includes("/auth/refresh")) {
+          try {
+            const refreshResp = await fetch(`${API_BASE_URL}/auth/refresh`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refresh_token: refreshToken }),
             });
-            if (retryResp.ok) {
-              try {
-                return await retryResp.json();
-              } catch {
-                return null as T;
+            if (refreshResp.ok) {
+              const data: AuthResponse = await refreshResp.json();
+              localStorage.setItem("auth.accessToken", data.access_token);
+              if (data.refresh_token) {
+                localStorage.setItem("auth.refreshToken", data.refresh_token);
               }
+              if (data.user) {
+                localStorage.setItem("auth.user", JSON.stringify(data.user));
+              }
+
+              // Retry the original request with the new token
+              const retryResp = await fetch(url, {
+                ...options,
+                headers: mergeHeaders(
+                  getAuthHeaders(!isFormData),
+                  options.headers,
+                ),
+              });
+              if (retryResp.ok) {
+                try {
+                  return await retryResp.json();
+                } catch {
+                  return null as T;
+                }
+              }
+              // Retry also failed — fall through to clear auth
             }
-            // Retry also failed — fall through to clear auth
+          } catch {
+            // Refresh request failed — fall through to clear auth
           }
-        } catch {
-          // Refresh request failed — fall through to clear auth
         }
+
+        // Clear auth tokens from localStorage
+        localStorage.removeItem("auth.accessToken");
+        localStorage.removeItem("auth.refreshToken");
+        localStorage.removeItem("auth.user");
+        localStorage.removeItem("auth.isAuthenticated");
+
+        // Dispatch custom event that the app can listen to
+        window.dispatchEvent(
+          new CustomEvent("auth:unauthorized", { detail: { errorMessage } }),
+        );
       }
-
-      // Clear auth tokens from localStorage
-      localStorage.removeItem("auth.accessToken");
-      localStorage.removeItem("auth.refreshToken");
-      localStorage.removeItem("auth.user");
-      localStorage.removeItem("auth.isAuthenticated");
-
-      // Dispatch custom event that the app can listen to
-      window.dispatchEvent(
-        new CustomEvent("auth:unauthorized", { detail: { errorMessage } }),
-      );
     }
 
     const err = new Error(errorMessage) as Error & {

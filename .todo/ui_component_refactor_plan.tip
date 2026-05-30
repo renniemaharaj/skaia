@@ -15,5 +15,6 @@
 - [ ] Implement component registry & bind-point contracts
 - [ ] Update `backend_spec` for `/config/sections` and `/config/section-types/{type}` endpoints
 - [ ] Rename types in this plan from `LandingSection` to `PageSection`
+- [ ] Verify the newly refactored UI components as part of `.todo/live_testing`
 
 <--/------->

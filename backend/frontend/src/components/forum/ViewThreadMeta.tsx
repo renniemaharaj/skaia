@@ -10,6 +10,7 @@ import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../../atoms/forum";
 import UserLink from "../user/UserLink";
+import DOMPurify from "dompurify";
 
 type Author = {
   name: string;
@@ -44,10 +45,8 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
     status: currentThread?.is_locked ? "Closed" : "Open",
   };
 
-  const description = truncate(
-    (currentThread?.content || "").replace(/<[^>]*>?/gm, " ").replace(/\s+/g, ' ').trim(),
-    { length: 180 },
-  );
+  const rawHtml = currentThread?.content || "";
+  const sanitizedContent = DOMPurify.sanitize(rawHtml);
 
   const statusClass = `vtm-status vtm-status--${threadMeta.status.toLowerCase()}`;
 
@@ -76,6 +75,16 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
 
   return (
     <div className="card vtm-panel">
+      {currentThread?.user_background_video_url && (
+        <video
+          className="vtm-video-bg"
+          src={currentThread.user_background_video_url}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      )}
       <div className="vtm-header">
         <div className="vtm-icon">
           <FileText size={24} />
@@ -85,9 +94,14 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           <h1 className="vtm-title">
             {currentThread?.title || "Untitled Thread"}
           </h1>
-          <p className="vtm-description">
-            {description || "No description available."}
-          </p>
+          {sanitizedContent ? (
+            <div 
+              className="vtm-description"
+              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+            />
+          ) : (
+            <p className="vtm-description">No description available.</p>
+          )}
           <div className="vtm-meta-row">
             <div className="vtm-group">
               <span className="vtm-info-label">Author</span>

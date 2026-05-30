@@ -31,6 +31,7 @@ type ForumThread struct {
 	UserName               string       `json:"user_name,omitempty"`
 	UserRoles              []string     `json:"user_roles,omitempty"`
 	UserAvatar             string       `json:"user_avatar,omitempty"`
+	UserBackgroundVideoURL string       `json:"user_background_video_url,omitempty"`
 	Likes                  int          `json:"likes,omitempty"`
 	IsLiked                bool         `json:"is_liked,omitempty"`
 	CanEdit                bool         `json:"can_edit,omitempty"`

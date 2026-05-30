@@ -305,6 +305,10 @@
   }
 }
 
+.forum-controls {
+  margin-left: 2rem;
+}
+
 @media (max-width: 880px) {
   .forum-container {
     padding: 20px 0;

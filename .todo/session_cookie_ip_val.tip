@@ -3,13 +3,13 @@
 ## session_cookie_ip_val
 
 ### Current Progress
-- **Phase 1: Investigate** — ⬜ Not started
-- **Phase 2: Stateful Session Layer** — ⬜ Not started
-- **Phase 3: IP-Aware Validation** — ⬜ Not started
-- **Phase 4: Cloudflare Turnstile Integration** — ⬜ Not started
-- **Phase 5: Testing** — ⬜ Not started
+- **Phase 1: Stateful session tracking** — ✅ Complete
+- **Phase 2: Database schema for sessions** — ✅ Complete
+- **Phase 3: Integration primitives** — 🟡 In progress
+- **Phase 4: Live Testing Validation** — ⬜ Not started
 
 ### Next Steps
-- [ ] Review Cloudflare Turnstile docs
+- [ ] Run live testing on session-aware IP validation
+- [ ] Deploy and verify Cloudflare Turnstile behavior
 
 <--/------->

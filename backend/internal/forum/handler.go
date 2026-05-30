@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	ianalytics "github.com/skaia/backend/internal/analytics"
@@ -80,11 +81,8 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	var categories []*models.ForumCategory
 	var err error
-	if q != "" {
-		categories, err = h.svc.SearchCategories(q)
-	} else {
-		categories, err = h.svc.ListCategories()
-	}
+
+	categories, err = h.svc.ListCategories()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -96,13 +94,50 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var out []*CategoryWithThreads
-	for _, cat := range categories {
-		threads, err := h.svc.ListCategoryThreads(cat.ID, 5, 0)
+
+	if q != "" {
+		// Search both categories and threads
+		matchedThreads, err := h.svc.SearchThreads(q, 50, 0)
 		if err != nil {
-			threads = []*models.ForumThread{}
+			matchedThreads = []*models.ForumThread{}
 		}
-		out = append(out, &CategoryWithThreads{ForumCategory: cat, Threads: threads})
+
+		// Group threads by category
+		threadsByCat := make(map[int64][]*models.ForumThread)
+		for _, t := range matchedThreads {
+			threadsByCat[t.CategoryID] = append(threadsByCat[t.CategoryID], t)
+		}
+
+		lowerQ := strings.ToLower(q)
+		for _, cat := range categories {
+			hasThreads := len(threadsByCat[cat.ID]) > 0
+			matchesName := strings.Contains(strings.ToLower(cat.Name), lowerQ) || strings.Contains(strings.ToLower(cat.Description), lowerQ)
+			
+			if matchesName || hasThreads {
+				threads := threadsByCat[cat.ID]
+				if len(threads) == 0 {
+					// If it matched by name but no threads matched, just fetch the recent 5
+					if recent, err := h.svc.ListCategoryThreads(cat.ID, 5, 0); err == nil {
+						threads = recent
+					} else {
+						threads = []*models.ForumThread{}
+					}
+				} else if len(threads) > 5 {
+					threads = threads[:5]
+				}
+				out = append(out, &CategoryWithThreads{ForumCategory: cat, Threads: threads})
+			}
+		}
+	} else {
+		for _, cat := range categories {
+			threads, err := h.svc.ListCategoryThreads(cat.ID, 5, 0)
+			if err != nil {
+				threads = []*models.ForumThread{}
+			}
+			out = append(out, &CategoryWithThreads{ForumCategory: cat, Threads: threads})
+		}
 	}
+
 	utils.WriteJSON(w, http.StatusOK, out)
 }
 

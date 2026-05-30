@@ -1,0 +1,28 @@
+# Live Testing and Validation
+
+## Context
+Recent extensive updates to the application have been manually integrated. This includes UI components modernization (Forum, Security Settings, ViewThreadMeta), the introduction of stateful session layers, IP validation with Cloudflare Turnstile, and numerous UX improvements. These are now stable enough in development and must undergo live testing.
+
+## Goal
+- Validate all recently implemented UI changes, stateful sessions, and security features in a live/staging environment.
+- Confirm that session-aware IP validation and Cloudflare Turnstile logic do not break standard user flows.
+- Ensure the UI correctly displays the new video backgrounds, forum layouts, and security settings on production builds.
+
+## Non-Goals
+- Introducing new structural UI changes or backend features.
+- Modifying the underlying schema (unless breaking issues are discovered).
+
+## Steps
+1. Deploy recent commit containing the UI/Session changes to a live/staging environment.
+2. Perform manual validation of session creation, step-up authentication, and standard auth flow.
+3. Verify visual stability of the newly refactored components across breakpoints.
+4. Resolve any blocking bugs surfaced during live testing.
+
+## Verification
+- Staging logs confirm no anomalous panics in `internal/session/` or `internal/forum/`.
+- Frontend correctly prompts for Turnstile challenges when IP mismatch occurs.
+- Profile background videos render correctly on `vtm-panel`.
+
+## References
+- `.todo/session_cookie_ip_val`
+- `.todo/ui_component_refactor_plan`

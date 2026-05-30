@@ -379,7 +379,7 @@ export const Forum: React.FC = () => {
         />
 
         {/* Forum Categories */}
-        {(forumsLoading
+        {((forumsLoading && forums.length === 0)
           ? Array.from({ length: 3 }, (_, i) => ({
               id: `skeleton-${i}`,
               name: "",
@@ -392,7 +392,7 @@ export const Forum: React.FC = () => {
             }))
           : forums
         ).map((forum) => {
-          const loading = forumsLoading;
+          const loading = forumsLoading && forums.length === 0;
 
           return (
             <div

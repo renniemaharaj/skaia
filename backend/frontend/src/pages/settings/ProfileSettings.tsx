@@ -9,6 +9,30 @@ interface Props {
   setUser: React.Dispatch<React.SetStateAction<ProfileUser | null>>;
 }
 
+const BACKGROUND_POSITION_OPTIONS = [
+  { value: "", label: "Default" },
+  { value: "center", label: "Center" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "top left", label: "Top Left" },
+  { value: "top right", label: "Top Right" },
+  { value: "bottom left", label: "Bottom Left" },
+  { value: "bottom right", label: "Bottom Right" },
+  { value: "center top", label: "Center Top" },
+  { value: "center bottom", label: "Center Bottom" },
+];
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "0.5rem",
+  borderRadius: "var(--radius-md)",
+  border: "1px solid var(--border-color)",
+  background: "var(--bg-secondary)",
+  color: "var(--text-primary)",
+};
+
 export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) {
   const {
     editBio,
@@ -32,6 +56,12 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
     setEditFontFamily,
     editProfileCardArtUrl,
     setEditProfileCardArtUrl,
+    backgroundImagePreview,
+    backgroundVideoPreview,
+    profileCardArtPreview,
+    handleBackgroundImageChange,
+    handleBackgroundVideoChange,
+    handleProfileCardArtChange,
   } = useProfileEdit({
     user,
     isOwnProfile,
@@ -60,7 +90,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                   value={editDisplayName}
                   onChange={(e) => setEditDisplayName(e.target.value)}
                   placeholder="Display name"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  style={inputStyle}
                 />
               </div>
 
@@ -72,7 +102,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                   onChange={(e) => setEditBio(e.target.value)}
                   rows={3}
                   placeholder="Tell the community about yourself…"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  style={inputStyle}
                 />
               </div>
             </div>
@@ -114,67 +144,117 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
             </div>
 
             <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "1rem 0" }} />
-            <h4 style={{ margin: 0 }}>Cosmetics & Skins</h4>
+            <h4 style={{ margin: 0 }}>Cosmetics &amp; Skins</h4>
 
             <div className="grid grid-2" style={{ gap: "1.5rem" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", gridColumn: "1 / -1" }}>
-                <label style={{ fontWeight: 500 }}>Font Family (e.g. 'Comic Sans MS', sans-serif)</label>
+                <label style={{ fontWeight: 500 }}>Font Family</label>
                 <input
                   type="text"
                   className="input"
                   value={editFontFamily}
                   onChange={(e) => setEditFontFamily(e.target.value)}
-                  placeholder="Leave empty for default"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  placeholder="Inter, Roboto, Arial, 'Comic Sans MS', sans-serif"
+                  style={inputStyle}
                 />
               </div>
 
+              {/* Background Image — file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontWeight: 500 }}>Background Image URL</label>
+                <label style={{ fontWeight: 500 }}>Background Image</label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(e) => handleBackgroundImageChange(e.target.files?.[0] ?? null)}
+                  style={{ fontSize: "0.875rem" }}
+                />
                 <input
                   type="text"
                   className="input"
                   value={editBackgroundImageUrl}
                   onChange={(e) => setEditBackgroundImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  placeholder="Or paste a URL…"
+                  style={{ ...inputStyle, fontSize: "0.8125rem" }}
                 />
+                {(backgroundImagePreview || editBackgroundImageUrl) && (
+                  <img
+                    src={backgroundImagePreview || editBackgroundImageUrl}
+                    alt="Background preview"
+                    style={{ maxWidth: "100%", maxHeight: "120px", objectFit: "cover", borderRadius: "8px" }}
+                  />
+                )}
               </div>
 
+              {/* Background Video — file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontWeight: 500 }}>Background Video URL</label>
+                <label style={{ fontWeight: 500 }}>Background Video</label>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  onChange={(e) => handleBackgroundVideoChange(e.target.files?.[0] ?? null)}
+                  style={{ fontSize: "0.875rem" }}
+                />
                 <input
                   type="text"
                   className="input"
                   value={editBackgroundVideoUrl}
                   onChange={(e) => setEditBackgroundVideoUrl(e.target.value)}
-                  placeholder="https://... (mp4/webm)"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  placeholder="Or paste a URL… (mp4/webm)"
+                  style={{ ...inputStyle, fontSize: "0.8125rem" }}
                 />
+                {(backgroundVideoPreview || editBackgroundVideoUrl) && (
+                  <video
+                    src={backgroundVideoPreview || editBackgroundVideoUrl}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    style={{ maxWidth: "100%", maxHeight: "120px", objectFit: "cover", borderRadius: "8px" }}
+                  />
+                )}
               </div>
 
+              {/* Background Position — select dropdown */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={{ fontWeight: 500 }}>Background Position</label>
-                <input
-                  type="text"
+                <select
                   className="input"
                   value={editBackgroundPosition}
                   onChange={(e) => setEditBackgroundPosition(e.target.value)}
-                  placeholder="e.g. center, top left"
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
-                />
+                  style={inputStyle}
+                >
+                  {BACKGROUND_POSITION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
+              {/* Profile Card Art — file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <label style={{ fontWeight: 500 }}>Profile Card Art URL</label>
+                <label style={{ fontWeight: 500 }}>Profile Card Art</label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(e) => handleProfileCardArtChange(e.target.files?.[0] ?? null)}
+                  style={{ fontSize: "0.875rem" }}
+                />
                 <input
                   type="text"
                   className="input"
                   value={editProfileCardArtUrl}
                   onChange={(e) => setEditProfileCardArtUrl(e.target.value)}
-                  placeholder="https://..."
-                  style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)", background: "var(--bg-secondary)", color: "var(--text-primary)" }}
+                  placeholder="Or paste a URL…"
+                  style={{ ...inputStyle, fontSize: "0.8125rem" }}
                 />
+                {(profileCardArtPreview || editProfileCardArtUrl) && (
+                  <img
+                    src={profileCardArtPreview || editProfileCardArtUrl}
+                    alt="Card art preview"
+                    style={{ maxWidth: "100%", maxHeight: "120px", objectFit: "cover", borderRadius: "8px" }}
+                  />
+                )}
               </div>
             </div>
 

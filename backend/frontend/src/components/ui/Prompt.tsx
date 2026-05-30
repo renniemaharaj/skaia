@@ -6,6 +6,7 @@ export type PromptConfig = {
   defaultValue: string;
   placeholder?: string;
   isConfirm?: boolean;
+  type?: string;
   resolve: (value: any) => void;
 };
 
@@ -14,11 +15,12 @@ let setPromptConfigGlobal: ((config: PromptConfig | null) => void) | null = null
 export const customPrompt = (
   message: string,
   defaultValue = "",
-  placeholder?: string
+  placeholder?: string,
+  type?: string
 ): Promise<string | null> => {
   return new Promise((resolve) => {
     if (setPromptConfigGlobal) {
-      setPromptConfigGlobal({ message, defaultValue, placeholder, resolve });
+      setPromptConfigGlobal({ message, defaultValue, placeholder, type, resolve });
     } else {
       resolve(null);
     }
@@ -110,7 +112,7 @@ export const PromptContainer = () => {
             {!config.isConfirm && (
               <input
                 ref={inputRef}
-                type="text"
+                type={config.type || "text"}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={config.placeholder}

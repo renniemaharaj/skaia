@@ -130,13 +130,14 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 	t := &models.ForumThread{}
 	var roles sql.NullString
 	var origID sql.NullInt64
+	var bgVideo sql.NullString
 	err := r.db.QueryRow(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
@@ -145,12 +146,12 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 		 LEFT JOIN roles r ON ur.role_id = r.id
 		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
 		 WHERE ft.id = $1
-		 GROUP BY ft.id, u.id, u.username, u.avatar_url`, id,
+		 GROUP BY ft.id, u.id, u.username, u.avatar_url, u.background_video_url`, id,
 	).Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 		&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
 		&t.IsShared, &origID,
 		&t.CreatedAt, &t.UpdatedAt,
-		&t.UserName, &t.UserAvatar, &roles, &t.Likes)
+		&t.UserName, &t.UserAvatar, &bgVideo, &roles, &t.Likes)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("thread not found")
@@ -160,6 +161,9 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 	}
 	if origID.Valid {
 		t.OriginalThreadID = &origID.Int64
+	}
+	if bgVideo.Valid {
+		t.UserBackgroundVideoURL = bgVideo.String
 	}
 	if roles.Valid && roles.String != "" {
 		t.UserRoles = strings.Split(roles.String, ",")
@@ -174,7 +178,7 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
 		 LEFT JOIN users u ON ft.user_id = u.id
@@ -194,15 +198,19 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 	for rows.Next() {
 		t := &models.ForumThread{}
 		var origID sql.NullInt64
+		var bgVideo sql.NullString
 		if err := rows.Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 			&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
 			&t.IsShared, &origID,
 			&t.CreatedAt, &t.UpdatedAt,
-			&t.UserName, &t.UserAvatar, &t.Likes); err != nil {
+			&t.UserName, &t.UserAvatar, &bgVideo, &t.Likes); err != nil {
 			return nil, err
 		}
 		if origID.Valid {
 			t.OriginalThreadID = &origID.Int64
+		}
+		if bgVideo.Valid {
+			t.UserBackgroundVideoURL = bgVideo.String
 		}
 		threads = append(threads, t)
 	}
@@ -216,7 +224,7 @@ func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*mod
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
 		 LEFT JOIN users u ON ft.user_id = u.id
@@ -236,15 +244,19 @@ func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*mod
 	for rows.Next() {
 		t := &models.ForumThread{}
 		var origID sql.NullInt64
+		var bgVideo sql.NullString
 		if err := rows.Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 			&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
 			&t.IsShared, &origID,
 			&t.CreatedAt, &t.UpdatedAt,
-			&t.UserName, &t.UserAvatar, &t.Likes); err != nil {
+			&t.UserName, &t.UserAvatar, &bgVideo, &t.Likes); err != nil {
 			return nil, err
 		}
 		if origID.Valid {
 			t.OriginalThreadID = &origID.Int64
+		}
+		if bgVideo.Valid {
+			t.UserBackgroundVideoURL = bgVideo.String
 		}
 		threads = append(threads, t)
 	}
@@ -297,7 +309,7 @@ func (r *sqlThreadRepository) Search(query string, limit, offset int) ([]*models
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
 		 LEFT JOIN users u ON ft.user_id = u.id
@@ -317,15 +329,19 @@ func (r *sqlThreadRepository) Search(query string, limit, offset int) ([]*models
 	for rows.Next() {
 		t := &models.ForumThread{}
 		var origID sql.NullInt64
+		var bgVideo sql.NullString
 		if err := rows.Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 			&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
 			&t.IsShared, &origID,
 			&t.CreatedAt, &t.UpdatedAt,
-			&t.UserName, &t.UserAvatar, &t.Likes); err != nil {
+			&t.UserName, &t.UserAvatar, &bgVideo, &t.Likes); err != nil {
 			return nil, err
 		}
 		if origID.Valid {
 			t.OriginalThreadID = &origID.Int64
+		}
+		if bgVideo.Valid {
+			t.UserBackgroundVideoURL = bgVideo.String
 		}
 		threads = append(threads, t)
 	}
@@ -377,7 +393,7 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 	var roles sql.NullString
 	err := r.db.QueryRow(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles
 		 FROM thread_comments tc
 		 LEFT JOIN users u ON tc.user_id = u.id
@@ -402,7 +418,7 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 func (r *sqlCommentRepository) GetByThread(threadID int64, limit, offset int) ([]*models.ThreadComment, error) {
 	rows, err := r.db.Query(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url,
+		        u.username, u.avatar_url, u.background_video_url,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
 		        COUNT(DISTINCT tcl.id) AS likes
 		 FROM thread_comments tc
