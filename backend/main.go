@@ -419,7 +419,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			armedDir = "armed"
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
-		api.Use(imw.RateLimitByIP(), imw.RateLimitByClient(), imw.MFARequiredMiddleware(auth.NewService(auth.NewSQLRepository(db), userSvc)))
+		globalAuthSvc := auth.NewService(auth.NewSQLRepository(db), userSvc)
+		api.Use(imw.RateLimitByIP(globalAuthSvc), imw.RateLimitByClient(), imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -593,8 +594,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		authRepo := auth.NewSQLRepository(db)
 		authSvc := auth.NewService(authRepo, userSvc)
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
-		authHandlerSvc := auth.NewService(authRepo, userSvc)
-		authhandler.NewHandler(authHandlerSvc, authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)

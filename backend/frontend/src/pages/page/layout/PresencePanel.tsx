@@ -10,10 +10,11 @@ import {
   LocateFixed,
   MessageCircle,
   Gauge,
+  ShieldCheck,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
-import { apiRequest } from "../../../utils/api";
+import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
 import {
   currentUserAtom,
   socketAtom,
@@ -139,6 +140,23 @@ const PresencePanel = () => {
           duration: 4000,
           icon: "⚡",
         });
+      },
+    },
+    {
+      key: "mfa_challenge",
+      icon: <ShieldCheck size={11} />,
+      title: "Trigger MFA challenge",
+      hidden: (u) =>
+        !hasPermission("home.manage") ||
+        u.user_id < 0 ||
+        (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
+      handler: async (u) => {
+        try {
+          await adminTriggerMFAChallenge(String(u.user_id));
+          toast.success(`MFA challenge sent to ${u.user_name || "User"}`);
+        } catch (err: any) {
+          toast.error(err.message || "Failed to trigger MFA challenge");
+        }
       },
     },
   ];

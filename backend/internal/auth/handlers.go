@@ -108,7 +108,8 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If TOTP is enabled, require a second step.
-	if _, enabled, _ := h.svc.GetTOTPEnabled(r.Context(), user.ID); enabled {
+	totpSecret, enabled, _ := h.svc.GetTOTPEnabled(r.Context(), user.ID)
+	if enabled {
 		// Issue a short-lived TOTP challenge token (5 min).
 		totpToken, err := ijwt.GenerateTokenWithExpiration(
 			user.ID, user.Username, user.Email, user.DisplayName,
@@ -137,7 +138,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If TOTP secret exists but not enabled, warn and allow login (should not happen, but fallback)
-	if totpSecret, enabled, _ := h.svc.GetTOTPEnabled(r.Context(), user.ID); totpSecret != "" && !enabled {
+	if totpSecret != "" && !enabled {
 		log.Printf("user.Handler.login: WARNING: user %d has TOTP secret but 2FA not enabled. Allowing login.", user.ID)
 	}
 

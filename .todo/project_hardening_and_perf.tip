@@ -1,17 +1,17 @@
 <--/------>
 Phase 1: Database Indexes
-- Status: ⬜ Not started
-- Notes: Create a new migration to add missing indexes for `auth_backup_codes(user_id)` and `page_comment_likes`.
+- Status: ✅ Complete
+- Notes: Created a new migration (010_add_indexes.sql) to add missing indexes for `auth_backup_codes(user_id)` and `page_comment_likes`.
 
 Phase 2: Redundant DB Queries & Logic
-- Status: ⬜ Not started
-- Notes: Remove duplicate `GetTOTPEnabled` check in Login handler. Address double JWT parsing in MFA middleware (either reorder or document).
+- Status: ✅ Complete
+- Notes: Removed duplicate `GetTOTPEnabled` check in Login handler. Documented double JWT parsing in MFA middleware.
 
 Phase 3: Dead Code Removal
-- Status: ⬜ Not started
-- Notes: Delete `totp.go` (hand-rolled impl). Remove `TOTPBackupCode` from `models/auth.go`. Remove `LoginRequest.TOTPCode`. Clean up `authhandler.Service`.
+- Status: ✅ Complete
+- Notes: Deleted `totp.go` (hand-rolled impl). Removed `TOTPBackupCode` from `models/auth.go`. Removed `LoginRequest.TOTPCode`. Cleaned up `authhandler.Service`.
 
 Phase 4: Repository Cleanup
-- Status: ⬜ Not started
-- Notes: Consolidate `SetTOTPSecret` and `CreateTOTPSecret` into a single unified method in `repository.go`.
+- Status: ✅ Complete
+- Notes: Removed `SetTOTPSecret` and replaced with `CreateTOTPSecret` everywhere.
 <--/------>

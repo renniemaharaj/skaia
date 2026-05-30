@@ -8,21 +8,16 @@ import {
   AlertCircle,
   Loader,
   CheckCircle,
-  ShieldCheck,
 } from "lucide-react";
 import {
   currentUserAtom,
   accessTokenAtom,
   refreshTokenAtom,
 } from "../../atoms/auth";
-import {
-  loginUser,
-  loginTOTP,
-  registerUser,
-  type AuthResponse,
-} from "../../utils/api";
+import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
+import MFAChallenge from "../../pages/MFAChallenge";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
@@ -46,8 +41,6 @@ export const Auth: React.FC<AuthPageProps> = ({
 
   // TOTP challenge state
   const [totpToken, setTotpToken] = useState<string | null>(null);
-  const [totpCode, setTotpCode] = useState("");
-  const [useBackupCode, setUseBackupCode] = useState(false);
 
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
@@ -96,24 +89,6 @@ export const Auth: React.FC<AuthPageProps> = ({
     navigate(redirectTo);
   };
 
-  const handleTOTPSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      const data = await loginTOTP(
-        totpToken!,
-        useBackupCode ? undefined : totpCode,
-        useBackupCode ? totpCode : undefined,
-      );
-      completeLogin(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -131,7 +106,6 @@ export const Auth: React.FC<AuthPageProps> = ({
         // 2FA required — show TOTP challenge
         if (data.requires_totp && data.totp_token) {
           setTotpToken(data.totp_token);
-          setTotpCode("");
           setLoading(false);
           return;
         }
@@ -169,109 +143,15 @@ export const Auth: React.FC<AuthPageProps> = ({
   // ── TOTP challenge screen ──────────────────────────────────────────────
   if (totpToken) {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
-          <div className="auth-card">
-            <div className="auth-header">
-              <ShieldCheck
-                size={40}
-                style={{ color: "var(--primary-color)", marginBottom: 8 }}
-              />
-              <h1>Two-Factor Authentication</h1>
-              <p>
-                {useBackupCode
-                  ? "Enter one of your backup codes"
-                  : "Enter the 6-digit code from your authenticator app"}
-              </p>
-            </div>
-
-            {error && (
-              <div className="auth-error">
-                <AlertCircle size={20} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleTOTPSubmit} className="auth-form">
-              <div className="form-group">
-                <label htmlFor="totp_code">
-                  {useBackupCode ? "Backup Code" : "Verification Code"}
-                </label>
-                <div className="input-wrapper">
-                  <ShieldCheck size={20} className="input-icon" />
-                  <input
-                    id="totp_code"
-                    type="text"
-                    inputMode={useBackupCode ? "text" : "numeric"}
-                    autoComplete="one-time-code"
-                    placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
-                    maxLength={useBackupCode ? 9 : 6}
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    required
-                    disabled={loading}
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="auth-button" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader size={20} className="spinning" />
-                    Verifying...
-                  </>
-                ) : (
-                  "Verify"
-                )}
-              </button>
-            </form>
-
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            <div className="auth-toggle">
-              <p>
-                <button
-                  type="button"
-                  className="auth-toggle-btn"
-                  onClick={() => {
-                    setUseBackupCode(!useBackupCode);
-                    setTotpCode("");
-                    setError(null);
-                  }}
-                  disabled={loading}
-                >
-                  {useBackupCode
-                    ? "Use authenticator code"
-                    : "Use a backup code"}
-                </button>
-              </p>
-              <p style={{ marginTop: 8 }}>
-                <button
-                  type="button"
-                  className="auth-toggle-btn"
-                  onClick={() => {
-                    setTotpToken(null);
-                    setTotpCode("");
-                    setError(null);
-                  }}
-                  disabled={loading}
-                >
-                  Back to login
-                </button>
-              </p>
-            </div>
-          </div>
-
-          <div className="auth-bg-decoration">
-            <div className="decoration-circle decoration-circle-1"></div>
-            <div className="decoration-circle decoration-circle-2"></div>
-            <div className="decoration-circle decoration-circle-3"></div>
-          </div>
-        </div>
-      </div>
+      <MFAChallenge
+        totpToken={totpToken}
+        onBack={() => setTotpToken(null)}
+        onAuthSuccess={(_, data) => {
+          if (data) {
+            completeLogin(data);
+          }
+        }}
+      />
     );
   }
 

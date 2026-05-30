@@ -57,6 +57,17 @@ export async function adminDisableTOTP(
 }
 
 /**
+ * Admin: Trigger MFA Challenge for another user
+ */
+export async function adminTriggerMFAChallenge(
+  userId: string,
+): Promise<{ status: string }> {
+  return apiRequest(`/auth/admin/totp/${userId}/challenge`, {
+    method: "POST",
+  });
+}
+
+/**
  * Admin: Generate backup codes for another user
  */
 export async function adminGenerateBackupCodes(

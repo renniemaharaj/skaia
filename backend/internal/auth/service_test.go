@@ -209,10 +209,7 @@ func (r *fakeAuthRepository) UpdatePasswordHash(ctx context.Context, userID int6
 	return nil
 }
 
-func (r *fakeAuthRepository) SetTOTPSecret(ctx context.Context, userID int64, secret string) error {
-	_, err := r.CreateTOTPSecret(ctx, userID, secret)
-	return err
-}
+
 
 func (r *fakeAuthRepository) CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error) {
 	existing, ok := r.totpSecrets[userID]

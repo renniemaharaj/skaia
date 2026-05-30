@@ -279,17 +279,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     return () => window.removeEventListener("api:rate-limit-cleared", handler);
   }, [errorStatus, refresh]);
 
-  useEffect(() => {
-    const handler = () => {
-      if (errorStatus === 401) {
-        void refresh(requestedSlugRef.current);
-      }
-    };
-    window.addEventListener("auth:mfa-required", handler);
-    return () => {
-      window.removeEventListener("auth:mfa-required", handler);
-    };
-  }, [errorStatus, refresh]);
+
 
   return {
     page,

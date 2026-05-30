@@ -200,11 +200,57 @@ func (h *Handler) TOTPEnable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	
+	// Since the user successfully provided a valid TOTP code to set it up,
+	// clear any pending MFA requirement for their current session.
+	_ = h.svc.SetMFARequired(r.Context(), userID, false)
+
 	h.propagateAuthUser(r.Context(), userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"status":       "TOTP enabled",
 		"backup_codes": codes,
 	})
+}
+
+// AdminTriggerMFAChallenge allows an admin to trigger an MFA challenge for another user.
+func (h *Handler) AdminTriggerMFAChallenge(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	targetID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+	// Permission check
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	// Optional power-level guard
+	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
+		return
+	}
+	// Verify target user actually has TOTP enabled
+	_, enabled, err := h.svc.GetTOTPEnabled(r.Context(), targetID)
+	if err != nil || !enabled {
+		utils.WriteError(w, http.StatusBadRequest, "target user does not have 2FA enabled")
+		return
+	}
+
+	// Set MFA required in the DB
+	if err := h.svc.SetMFARequired(r.Context(), targetID, true); err != nil {
+		log.Printf("auth.Handler.AdminTriggerMFAChallenge: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to trigger challenge")
+		return
+	}
+
+	// Dispatch websocket event to the target user via propagateAuthUser
+	h.propagateAuthUser(r.Context(), targetID, map[string]interface{}{"mfa_challenge_triggered": true})
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "challenge triggered"})
 }
 
 func (h *Handler) TOTPDisable(w http.ResponseWriter, r *http.Request) {

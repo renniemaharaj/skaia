@@ -42,7 +42,6 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	TOTPCode string `json:"totp_code,omitempty"`
 }
 
 // RefreshRequest represents a token refresh request.
@@ -93,13 +92,7 @@ type PasswordResetToken struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// TOTPBackupCode is a one-time-use recovery code for 2FA.
-type TOTPBackupCode struct {
-	ID       int64  `json:"id"`
-	UserID   int64  `json:"user_id"`
-	CodeHash string `json:"-"`
-	Used     bool   `json:"used"`
-}
+
 
 type MFAChallengeStatus struct {
 	UserID    int64     `json:"user_id"`

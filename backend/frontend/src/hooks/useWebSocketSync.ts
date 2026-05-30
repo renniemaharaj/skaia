@@ -243,6 +243,12 @@ export const useWebSocketSync = () => {
               const updatedUser = payload.data.user as User;
               const newToken = payload.data.new_token as string | undefined;
 
+              if (payload?.data?.mfa_challenge_triggered) {
+                if (currentUserIdRef.current && String(updatedUser.id) === String(currentUserIdRef.current)) {
+                  window.dispatchEvent(new CustomEvent("auth:mfa-required"));
+                }
+              }
+
               // Notify profile pages displaying this user
               window.dispatchEvent(
                 new CustomEvent("user:profile:updated", {
@@ -306,6 +312,11 @@ export const useWebSocketSync = () => {
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
             }
+          }
+
+          // ── MFA Required ──────────────────────────────────────────────────
+          if (message.type === "mfa:required") {
+            window.dispatchEvent(new CustomEvent("auth:mfa-required"));
           }
 
           // Handle forum update propagation

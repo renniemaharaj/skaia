@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { ShieldCheck, AlertCircle, Loader } from "lucide-react";
-import { useSetAtom } from "jotai";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  currentUserAtom,
-  accessTokenAtom,
-  refreshTokenAtom,
-} from "../atoms/auth";
+
 import { loginTOTP, verifyMFAChallenge, type AuthResponse } from "../utils/api";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
@@ -14,7 +8,7 @@ import "../components/auth/Auth.css";
 interface MFAChallengeProps {
   totpToken: string;
   onBack?: () => void;
-  onAuthSuccess?: (token: string) => void;
+  onAuthSuccess?: (token: string, data?: AuthResponse) => void;
 }
 
 const MFAChallenge = ({
@@ -27,27 +21,7 @@ const MFAChallenge = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setCurrentUser = useSetAtom(currentUserAtom);
-  const setAccessToken = useSetAtom(accessTokenAtom);
-  const setRefreshToken = useSetAtom(refreshTokenAtom);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const completeLogin = (data: AuthResponse) => {
-    setAccessToken(data.access_token);
-    if (data.refresh_token) {
-      setRefreshToken(data.refresh_token);
-    }
-    setCurrentUser(data.user);
-    if (onAuthSuccess) {
-      onAuthSuccess(data.access_token);
-    }
-    const from = (location.state as any)?.from?.pathname;
-    const redirectTo =
-      from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
-    navigate(redirectTo);
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -60,7 +34,9 @@ const MFAChallenge = ({
           useBackupCode ? undefined : totpCode,
           useBackupCode ? totpCode : undefined,
         );
-        completeLogin(data);
+        if (onAuthSuccess) {
+          onAuthSuccess(data.access_token, data);
+        }
       } else {
         await verifyMFAChallenge(
           useBackupCode ? undefined : totpCode,

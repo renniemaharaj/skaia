@@ -8,14 +8,12 @@ import (
 	mw "github.com/skaia/backend/internal/middleware"
 )
 
-type Service interface{}
 type Handler struct {
-	svc         Service
 	authHandler *auth.Handler
 }
 
-func NewHandler(svc Service, authHandler *auth.Handler) *Handler {
-	return &Handler{svc: svc, authHandler: authHandler}
+func NewHandler(authHandler *auth.Handler) *Handler {
+	return &Handler{authHandler: authHandler}
 }
 
 // RegisterRoutes mounts the /auth routes on r.
@@ -56,6 +54,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Admin TOTP management (requires user.manage-others permission)
 		r.With(jwt).Post("/admin/totp/{id}/enable", h.authHandler.AdminEnableTOTP)
 		r.With(jwt).Post("/admin/totp/{id}/disable", h.authHandler.AdminDisableTOTP)
+		r.With(jwt).Post("/admin/totp/{id}/challenge", h.authHandler.AdminTriggerMFAChallenge)
 
 		r.With(jwt).Post("/admin/totp/{id}/generate-backup-codes", h.authHandler.AdminGenerateBackupCodes)
 	})

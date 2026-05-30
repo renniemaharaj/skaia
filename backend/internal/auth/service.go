@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base32"
 	"errors"
 	"fmt"
@@ -15,10 +16,7 @@ import (
 	ijwt "github.com/skaia/backend/internal/jwt"
 )
 
-// SetTOTPSecret sets or updates the TOTP secret for a user (legacy compatibility).
-func (s *Service) SetTOTPSecret(ctx context.Context, userID int64, secret string) error {
-	return s.repo.SetTOTPSecret(ctx, userID, secret)
-}
+
 
 // Register registers a new user and returns user, access token, and refresh token.
 func (s *Service) Register(ctx context.Context, req *models.RegisterRequest) (*models.User, string, string, error) {
@@ -165,10 +163,13 @@ func (s *Service) GetTOTPSecretByUserID(ctx context.Context, userID int64) (*mod
 func (s *Service) GetTOTPEnabled(ctx context.Context, userID int64) (string, bool, error) {
 	totpSecret, err := s.repo.GetTOTPSecretByUserID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", false, nil
+		}
 		return "", false, err
 	}
 	enabled, err := s.repo.GetTOTPEnabled(ctx, userID)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return "", false, err
 	}
 	return totpSecret.Secret, enabled, nil
@@ -216,7 +217,7 @@ func (s *Service) DisableTOTP(ctx context.Context, userID int64, password string
 // AdminEnableTOTP allows an admin to enable TOTP for a user with a given secret and code.
 func (s *Service) AdminEnableTOTP(ctx context.Context, userID int64, secret, code string) ([]string, error) {
 	// Store the secret
-	if err := s.repo.SetTOTPSecret(ctx, userID, secret); err != nil {
+	if _, err := s.repo.CreateTOTPSecret(ctx, userID, secret); err != nil {
 		return nil, err
 	}
 	// Validate the code

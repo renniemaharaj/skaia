@@ -12,8 +12,6 @@ type Repository interface {
 	GetCredentialByUserID(ctx context.Context, userID int64) (*models.Credential, error)
 	UpdatePasswordHash(ctx context.Context, userID int64, newHash string) error
 
-	SetTOTPSecret(ctx context.Context, userID int64, secret string) error
-
 	CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error)
 	GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error)
 	SetTOTPEnabled(ctx context.Context, userID int64, enabled bool) error
@@ -29,16 +27,6 @@ type Repository interface {
 }
 
 // SQLRepository implements Repository using a SQL database.
-// SetTOTPSecret sets or updates the TOTP secret for a user (legacy compatibility).
-func (r *SQLRepository) SetTOTPSecret(ctx context.Context, userID int64, secret string) error {
-	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO auth_totp_secrets (user_id, totp_secret, enabled)
-		VALUES ($1, $2, false)
-		ON CONFLICT (user_id) DO UPDATE SET totp_secret = EXCLUDED.totp_secret, enabled = false, updated_at = NOW()
-	`, userID, secret)
-	return err
-}
-
 type SQLRepository struct {
 	db *sql.DB
 }

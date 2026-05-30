@@ -42,7 +42,10 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 
 			userID, ok := utils.UserIDFromCtx(r)
 			if !ok {
-				// Try to extract from Authorization header directly (since JWTAuthMiddleware runs later)
+				// Note: Double JWT parsing occurs here because MFARequiredMiddleware
+				// is mounted globally on the router before route-specific auth middlewares
+				// (like JWTAuthMiddleware and OptionalJWTAuthMiddleware). We must parse
+				// it early to enforce MFA. Consider refactoring route mounting to reorder this in the future.
 				authHeader := r.Header.Get("Authorization")
 				if authHeader != "" {
 					parts := strings.SplitN(authHeader, " ", 2)

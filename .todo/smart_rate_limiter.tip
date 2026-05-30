@@ -26,4 +26,8 @@ Phase 6: Integration
 Phase 7: Testing
 - Status: ⬜ Not started
 - Notes: Load testing and unit tests.
+
+Phase 8: MFA Challenge Integration
+- Status: ✅ Complete
+- Notes: Triggered an MFA challenge instead of rate-limiting first, implemented in RateLimitByIP in rate_limit.go. Implemented IP hopping check in IPHoppingMiddleware.
 <--/------>
