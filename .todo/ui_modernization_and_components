@@ -1,0 +1,33 @@
+# UI Modernization and Core Components
+
+## Context
+We need to remove reliance on native browser components (like `window.prompt`) and elevate the site's design language. The goal is an absolute modern, superset-like design drawing inspiration from Frappe and in-house industry standards, focusing heavily on spacing, layout, flow, typography, and premium visual appeal.
+
+## Goal
+- Replace native browser prompts with a custom, dedicated prompt component.
+  - Must blur the background/screen.
+  - Must support closing via "X" button or the "Escape" key.
+  - Must include forms to accept user responses.
+  - Must be styled consistently with the toasts component.
+- Update the Toasts component to fully support both dark and light modes.
+- Consolidate and reconsider styles across the app for a "superset-like" modern design.
+- Improve typography, spacing, layout, and visual flow to reach an industry-standard, premium UI design.
+
+## Non-Goals
+- Rewriting underlying business logic for components not related to presentation.
+
+## Steps
+1. Audit existing typography, spacing, and layout to identify areas for modern consolidation.
+2. Update the Toasts component CSS/state to cleanly toggle between light and dark modes.
+3. Build the new Custom Prompt component (backdrop blur, escape key listener, focus trapping, form integration).
+4. Replace all instances of native browser prompts with the new Custom Prompt.
+5. Apply the consolidated "superset-like/frappe" design system tokens (spacing, typography, flow) across major layouts.
+
+## Verification
+- Verify the Custom Prompt renders correctly, captures input, and closes on Escape/X.
+- Verify Toasts adapt seamlessly to light and dark theme toggles.
+- Verify overall site aesthetics reflect the new consolidated typography and spacing tokens.
+
+## References
+- `.todo/ui_component_refactor_plan`
+- `.todo/ui_cosmetics_and_skins`

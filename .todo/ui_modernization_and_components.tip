@@ -1,0 +1,14 @@
+<--/------->
+
+## ui_modernization_and_components
+
+### Current Progress
+- **Phase 1: Toasts light/dark mode support** — ⬜ Not started
+- **Phase 2: Custom Prompt component** — ⬜ Not started
+- **Phase 3: Styles consolidation & modern design overhaul** — ⬜ Not started
+
+### Next Steps
+- [ ] Update Toasts component to support light/dark modes.
+- [ ] Implement the new Custom Prompt component with backdrop blur and form support.
+
+<--/------->
