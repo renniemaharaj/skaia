@@ -116,11 +116,11 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-05-30T15:37:00-04:00
+- 2026-05-30T13:17:40-04:00
 
 ## Last Run Remarks
 
-- Executed `middleware_performance_refactor`: implemented `ExtractTokenMiddleware` for global early JWT extraction, replaced `ArmedMiddleware` disk checks with a time-based cache, migrated `ip_hopping.go` to a bounded `lruCache`, decentralized rate-limiter penalty boxes, and pushed `triggerMFA` DB writes to an async goroutine. Verified via backend test suite.
+- Executed `user_settings_expansion.tip`: Migrated `EditProfileDialog` to a dedicated `ProfileSettings.tsx` route under `/settings/users/:id`. Redesigned the settings interface to use primitive aesthetic classes and mobile-friendly grid layouts. Updated `routes.tsx` to handle ID-specific settings paths and linked `UserProfile.tsx` to the new route. Verified via `npm run build`.
 
 ## Next Steps
 

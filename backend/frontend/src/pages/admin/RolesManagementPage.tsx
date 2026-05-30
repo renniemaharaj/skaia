@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -116,7 +117,7 @@ export default function RolesManagementPage() {
   };
 
   const deleteRole = async (roleId: string) => {
-    if (!confirm("Delete this role? Users with only this role will lose it."))
+    if (!await customConfirm("Delete this role? Users with only this role will lose it."))
       return;
     setDeletingId(roleId);
     try {

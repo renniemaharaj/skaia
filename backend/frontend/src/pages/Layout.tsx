@@ -26,9 +26,11 @@ import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
 import PresencePanel from "./page/layout/PresencePanel";
 import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
+import { PromptContainer } from "../components/ui/Prompt";
 import { syncServerTime } from "../utils/serverTime";
 import RateLimitedPage from "./RateLimitedPage";
 import MFAChallenge from "./MFAChallenge";
+import type { Role } from "./users/types";
 
 interface LayoutProps {
   children: ReactNode;
@@ -140,6 +142,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
+  const currentUser = useAtomValue(currentUserAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -252,6 +255,23 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [pendingTpRoute, navigate, clearTpRoute]);
 
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  useEffect(() => {
+    if (!currentUser) return;
+    apiRequest<Role[]>("/users/roles")
+      .then((roles) => {
+        if (roles) setAllRoles(roles);
+      })
+      .catch(console.error);
+  }, [currentUser?.id]);
+
+  const userRoles = currentUser?.roles ?? [];
+  const rolesWithDetails = allRoles
+    .filter((r) => userRoles.includes(r.name))
+    .sort((a, b) => b.power_level - a.power_level);
+  const topRole = rolesWithDetails[0];
+  const themeColor = topRole?.theme_color;
+
   if (holdingSeconds !== undefined) {
     return <RateLimitedPage retrySeconds={holdingSeconds} />;
   }
@@ -276,6 +296,63 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div
       className={`layout${layoutMode === "application" ? " layout--application" : ""}`}
     >
+      {currentUser?.font_family && (
+        <style>{`
+          :root {
+            --font-sans: ${currentUser.font_family}, "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif !important;
+          }
+        `}</style>
+      )}
+      {themeColor && (
+        <style>{`
+          :root {
+            --primary-color: ${themeColor} !important;
+            --primary-light: ${themeColor} !important;
+            --primary-dark: ${themeColor} !important;
+          }
+        `}</style>
+      )}
+      {currentUser?.background_image_url && (
+        <style>{`
+          body {
+            background-image: url("${currentUser.background_image_url}") !important;
+            background-size: cover !important;
+            background-position: ${currentUser.background_position || "center"} !important;
+            background-attachment: fixed !important;
+          }
+          .layout-main, .up-container, .card, .panel, .forum-container {
+             background-color: rgba(var(--bg-color-rgb), 0.85);
+             backdrop-filter: blur(10px);
+          }
+        `}</style>
+      )}
+      {currentUser?.background_video_url && (
+        <video
+          src={currentUser.background_video_url}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            objectFit: "cover",
+            zIndex: -1,
+            pointerEvents: "none"
+          }}
+        />
+      )}
+      {currentUser?.background_video_url && (
+        <style>{`
+          .layout-main, .up-container, .card, .panel, .forum-container {
+             background-color: rgba(var(--bg-color-rgb), 0.85);
+             backdrop-filter: blur(10px);
+          }
+        `}</style>
+      )}
       {guestSandboxMode && (
         <div className="layout-guest-sandbox-banner">
           <Info size={16} className="layout-guest-sandbox-icon" />
@@ -298,7 +375,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {layoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? <PresencePanel /> : null}
       <CursorOverlay />
-      <Toaster position="bottom-right" richColors closeButton />
+      <Toaster position="bottom-right" richColors closeButton theme={isDarkMode ? "dark" : "light"} />
+      <PromptContainer />
     </div>
   );
 };

@@ -145,6 +145,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       highlightedCommentId={highlightedCommentId}
       onCommentsScroll={handleScroll}
       disabled={isSubmitting}
+      useRichText={true}
     />
   );
 };

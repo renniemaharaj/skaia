@@ -4,9 +4,14 @@ import { X, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { forumCategoriesAtom } from "../../../atoms/forum";
+import { currentUserAtom } from "../../../atoms/auth";
+import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
+import { apiRequest } from "../../../utils/api";
 import { useThreadsFeed } from "../../../hooks/useThreadsFeed";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "../../../components/forum/Forum";
+import SearchField from "../../../components/ui/SearchField";
+import { Trash2, Lock, Unlock } from "lucide-react";
 
 import "../../../components/forum/NewThread.css";
 import "../../../components/forum/ThreadActions.css";
@@ -19,14 +24,57 @@ const CategoryThreadsPage = () => {
   const [forumExpanded, setForumExpanded] = useState(true);
 
   const category = categories.find((c) => String(c.id) === String(categoryId));
+  const currentUser = useAtomValue(currentUserAtom);
+  const [guestSandboxMode] = useGuestSandboxMode();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   const { threads, isLoading, loading, feedRef, sentinelRef, handleScroll } =
-    useThreadsFeed({ categoryId });
+    useThreadsFeed({ categoryId, searchQuery: debouncedSearch });
 
   // Show the forum briefly on mount, then retract so the transition is visible
   useEffect(() => {
     const t = setTimeout(() => setForumExpanded(false), 700);
     return () => clearTimeout(t);
   }, []);
+
+  const canDeleteCategory =
+    currentUser?.permissions?.includes("forum.category-delete") ||
+    guestSandboxMode;
+  const canEditCategories =
+    currentUser?.permissions?.includes("forum.category-edit") ||
+    currentUser?.roles?.includes("admin") ||
+    guestSandboxMode;
+
+  const handleDeleteCategory = async () => {
+    if (!category) return;
+    try {
+      await apiRequest(`/forum/categories/${category.id}`, {
+        method: "DELETE",
+      });
+      navigate("/forum");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
+  };
+
+  const handleToggleCategoryLock = async () => {
+    if (!category) return;
+    try {
+      await apiRequest(`/forum/categories/${category.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ is_locked: !category.is_locked }),
+      });
+      // The websocket will sync the categories array
+    } catch (error) {
+      console.error("Error toggling category lock:", error);
+    }
+  };
 
   return (
     <>
@@ -97,13 +145,39 @@ const CategoryThreadsPage = () => {
               </div>
             </div>
           </div>
-          <button
-            className="thread-action-btn btn-close"
-            onClick={() => navigate("/forum")}
-            title="Back to Forum"
-          >
-            <X size={20} />
-          </button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <SearchField
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search threads..."
+              className="forum-search-field"
+            />
+            {canEditCategories && category && (
+              <button
+                className={`thread-action-btn lock-btn${category.is_locked ? " locked" : ""}`}
+                onClick={handleToggleCategoryLock}
+                title={category.is_locked ? "Unlock category" : "Lock category"}
+              >
+                {category.is_locked ? <Unlock size={16} /> : <Lock size={16} />}
+              </button>
+            )}
+            {canDeleteCategory && category && (
+              <button
+                className="thread-action-btn delete-btn"
+                onClick={handleDeleteCategory}
+                title="Delete category"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            <button
+              className="thread-action-btn btn-close"
+              onClick={() => navigate("/forum")}
+              title="Back to Forum"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Thread feed */}

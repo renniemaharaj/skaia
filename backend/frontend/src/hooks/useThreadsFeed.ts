@@ -17,6 +17,7 @@ interface Options {
   authorId?: string;
   /** Filter threads by category */
   categoryId?: string;
+  searchQuery?: string;
   limit?: number;
 }
 
@@ -25,10 +26,11 @@ const DEFAULT_LIMIT = 15;
 export function useThreadsFeed({
   authorId,
   categoryId,
+  searchQuery,
   limit = DEFAULT_LIMIT,
 }: Options) {
   const isCategory = Boolean(categoryId);
-  const filterKey = categoryId ?? authorId;
+  const filterKey = `${categoryId ?? authorId ?? ""}-${searchQuery ?? ""}`;
 
   // Pick the correct atom pair based on filter type
   const threads = useAtomValue(
@@ -82,9 +84,13 @@ export function useThreadsFeed({
       const param = categoryId
         ? `category_id=${categoryId}`
         : `author_id=${authorId}`;
-      return `/forum/threads?${param}&limit=${limit}&offset=${offset}`;
+      let url = `/forum/threads?${param}&limit=${limit}&offset=${offset}`;
+      if (searchQuery) {
+        url += `&q=${encodeURIComponent(searchQuery)}`;
+      }
+      return url;
     },
-    [categoryId, authorId, limit],
+    [categoryId, authorId, searchQuery, limit],
   );
 
   // ── Initial load ──────────────────────────────────────────────────────────

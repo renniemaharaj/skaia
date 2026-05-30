@@ -19,9 +19,10 @@ import { useThemeContext } from "../../hooks/theme/useThemeContext";
 interface EditorProps {
   value: string;
   onChange: (content: string) => void;
+  minHeight?: string;
 }
 
-function Editor({ value, onChange }: EditorProps) {
+function Editor({ value, onChange, minHeight }: EditorProps) {
   const [localContent, setLocalContent] = useState(value || "");
   const { theme } = useThemeContext();
   const [editorKey, setEditorKey] = useState(1);
@@ -63,7 +64,7 @@ function Editor({ value, onChange }: EditorProps) {
   };
 
   return (
-    <main>
+    <main className="editor-wrapper" style={{ "--editor-min-height": minHeight || "200px" } as React.CSSProperties}>
       <div className="editor-toolbar">
         <button
           type="button"

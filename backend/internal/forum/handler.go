@@ -77,7 +77,14 @@ func (h *Handler) parseID(r *http.Request, param string) (int64, error) {
 // Category handlers
 
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.svc.ListCategories()
+	q := r.URL.Query().Get("q")
+	var categories []*models.ForumCategory
+	var err error
+	if q != "" {
+		categories, err = h.svc.SearchCategories(q)
+	} else {
+		categories, err = h.svc.ListCategories()
+	}
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -314,6 +321,20 @@ func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if query := q.Get("q"); query != "" {
+		threads, err := h.svc.SearchThreads(query, limit, offset)
+		if err != nil {
+			log.Printf("forum.listThreads(search): %v", err)
+			utils.WriteError(w, http.StatusInternalServerError, "failed to search threads")
+			return
+		}
+		if threads == nil {
+			threads = []*models.ForumThread{}
+		}
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
+		return
+	}
+
 	// Filter by author
 	if authorStr := q.Get("author_id"); authorStr != "" {
 		authorID, err := strconv.ParseInt(authorStr, 10, 64)
@@ -515,8 +536,9 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
+		Title      string  `json:"title"`
+		Content    string  `json:"content"`
+		CategoryID *string `json:"category_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -524,6 +546,20 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 	}
 	thread.Title = req.Title
 	thread.Content = req.Content
+
+	var oldCategoryID int64 = thread.CategoryID
+	var newCategoryID int64 = thread.CategoryID
+	categoryMoved := false
+	if req.CategoryID != nil && *req.CategoryID != "" {
+		if cid, err := strconv.ParseInt(*req.CategoryID, 10, 64); err == nil && cid != oldCategoryID {
+			// verify category exists
+			if _, err := h.svc.GetCategory(cid); err == nil {
+				thread.CategoryID = cid
+				newCategoryID = cid
+				categoryMoved = true
+			}
+		}
+	}
 
 	updated, err := h.svc.UpdateThread(thread)
 	if err != nil {
@@ -541,16 +577,36 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		Meta:       map[string]interface{}{"title": thread.Title},
 		Fn: func() {
 			h.hub.PropagateForumThread(id, updated, "thread_updated")
-			if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0); err == nil && len(recentThreads) > 0 {
-				h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
-			}
-			if h.notifSvc != nil && thread.UserID != userID {
-				_, _ = h.notifSvc.Send(
-					thread.UserID,
-					"thread_edited",
-					fmt.Sprintf("Your thread \"%.60s\" was edited by a moderator", thread.Title),
-					"/view-thread/"+strconv.FormatInt(id, 10),
-				)
+			
+			if categoryMoved {
+				// update both categories
+				if recentThreads, err := h.svc.ListCategoryThreads(oldCategoryID, 5, 0); err == nil {
+					h.hub.PropagateForumCategories(oldCategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+				}
+				if recentThreads, err := h.svc.ListCategoryThreads(newCategoryID, 5, 0); err == nil {
+					h.hub.PropagateForumCategories(newCategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+				}
+				// notify the creator
+				if h.notifSvc != nil && thread.UserID != userID {
+					_, _ = h.notifSvc.Send(
+						thread.UserID,
+						"thread_moved",
+						fmt.Sprintf("Your thread \"%.60s\" was moved to a different category", thread.Title),
+						"/view-thread/"+strconv.FormatInt(id, 10),
+					)
+				}
+			} else {
+				if recentThreads, err := h.svc.ListCategoryThreads(thread.CategoryID, 5, 0); err == nil && len(recentThreads) > 0 {
+					h.hub.PropagateForumCategories(thread.CategoryID, map[string]interface{}{"threads": recentThreads}, "category_threads_updated")
+				}
+				if h.notifSvc != nil && thread.UserID != userID {
+					_, _ = h.notifSvc.Send(
+						thread.UserID,
+						"thread_edited",
+						fmt.Sprintf("Your thread \"%.60s\" was edited by a moderator", thread.Title),
+						"/view-thread/"+strconv.FormatInt(id, 10),
+					)
+				}
 			}
 		},
 	})
@@ -831,13 +887,28 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		Fn: func() {
 			h.hub.PropagateForumThread(id, map[string]interface{}{"new_comment": created}, "comment_created")
 			if h.notifSvc != nil {
-				if thread, err := h.svc.GetThread(id); err == nil && thread.UserID != userID {
-					_, _ = h.notifSvc.Send(
-						thread.UserID,
-						"comment_on_thread",
-						fmt.Sprintf("Someone commented on your thread: %s", thread.Title),
-						"/view-thread/"+strconv.FormatInt(id, 10),
-					)
+				if thread, err := h.svc.GetThread(id); err == nil {
+					toNotify := make(map[int64]bool)
+					toNotify[thread.UserID] = true
+					if contributors, err := h.svc.GetThreadContributors(id); err == nil {
+						for _, c := range contributors {
+							toNotify[c] = true
+						}
+					}
+					delete(toNotify, userID) // don't notify the commenter
+					
+					for uid := range toNotify {
+						message := fmt.Sprintf("Someone commented on your thread: %s", thread.Title)
+						if uid != thread.UserID {
+							message = fmt.Sprintf("Someone replied to a thread you contributed to: %s", thread.Title)
+						}
+						_, _ = h.notifSvc.Send(
+							uid,
+							"comment_on_thread",
+							message,
+							"/view-thread/"+strconv.FormatInt(id, 10),
+						)
+					}
 				}
 			}
 		},

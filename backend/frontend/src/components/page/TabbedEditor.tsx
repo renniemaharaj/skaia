@@ -1,3 +1,4 @@
+import { customConfirm } from "../ui/Prompt";
 import {
   useCallback,
   useEffect,
@@ -394,7 +395,7 @@ export default function TabbedEditor({
   };
 
   const handleEnvClear = async () => {
-    if (!window.confirm("Remove all environment variables?")) return;
+    if (!await customConfirm("Remove all environment variables?")) return;
     if (datasourceId > 0) {
       setEnvSaving(true);
       try {

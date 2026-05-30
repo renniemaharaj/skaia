@@ -18,6 +18,11 @@ export function useProfileEdit({
   const [editDisplayName, setEditDisplayName] = useState(
     user?.display_name ?? "",
   );
+  const [editBackgroundImageUrl, setEditBackgroundImageUrl] = useState(user?.background_image_url ?? "");
+  const [editBackgroundVideoUrl, setEditBackgroundVideoUrl] = useState(user?.background_video_url ?? "");
+  const [editBackgroundPosition, setEditBackgroundPosition] = useState(user?.background_position ?? "");
+  const [editFontFamily, setEditFontFamily] = useState(user?.font_family ?? "");
+  const [editProfileCardArtUrl, setEditProfileCardArtUrl] = useState(user?.profile_card_art_url ?? "");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -32,6 +37,11 @@ export function useProfileEdit({
     if (user) {
       setEditBio(user.bio ?? "");
       setEditDisplayName(user.display_name ?? "");
+      setEditBackgroundImageUrl(user.background_image_url ?? "");
+      setEditBackgroundVideoUrl(user.background_video_url ?? "");
+      setEditBackgroundPosition(user.background_position ?? "");
+      setEditFontFamily(user.font_family ?? "");
+      setEditProfileCardArtUrl(user.profile_card_art_url ?? "");
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -101,6 +111,11 @@ export function useProfileEdit({
           bio: editBio,
           avatar_url: finalAvatarUrl,
           banner_url: finalBannerUrl,
+          background_image_url: editBackgroundImageUrl || null,
+          background_video_url: editBackgroundVideoUrl || null,
+          background_position: editBackgroundPosition || null,
+          font_family: editFontFamily || null,
+          profile_card_art_url: editProfileCardArtUrl || null,
         }),
       });
 
@@ -137,5 +152,15 @@ export function useProfileEdit({
     editSaving,
     editError,
     handleSave,
+    editBackgroundImageUrl,
+    setEditBackgroundImageUrl,
+    editBackgroundVideoUrl,
+    setEditBackgroundVideoUrl,
+    editBackgroundPosition,
+    setEditBackgroundPosition,
+    editFontFamily,
+    setEditFontFamily,
+    editProfileCardArtUrl,
+    setEditProfileCardArtUrl,
   };
 }

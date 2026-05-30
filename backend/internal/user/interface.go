@@ -40,8 +40,8 @@ type Repository interface {
 	IsSuperUserVotedOut(targetID int64) (bool, error)
 
 	// Role CRUD
-	CreateRole(name, description string, powerLevel int) (*models.Role, error)
-	UpdateRole(id int64, name, description string, powerLevel int) (*models.Role, error)
+	CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error)
+	UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error)
 	DeleteRole(id int64) error
 	GetRoleByID(id int64) (*models.Role, error)
 	GetRolePermissions(roleID int64) ([]*models.Permission, error)

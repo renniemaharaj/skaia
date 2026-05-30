@@ -191,11 +191,16 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var patch struct {
-		DisplayName string  `json:"display_name"`
-		Bio         string  `json:"bio"`
-		AvatarURL   string  `json:"avatar_url"`
-		BannerURL   string  `json:"banner_url"`
-		DiscordID   *string `json:"discord_id"`
+		DisplayName        string  `json:"display_name"`
+		Bio                string  `json:"bio"`
+		AvatarURL          string  `json:"avatar_url"`
+		BannerURL          string  `json:"banner_url"`
+		DiscordID          *string `json:"discord_id"`
+		BackgroundImageURL *string `json:"background_image_url"`
+		BackgroundVideoURL *string `json:"background_video_url"`
+		BackgroundPosition *string `json:"background_position"`
+		FontFamily         *string `json:"font_family"`
+		ProfileCardArtURL  *string `json:"profile_card_art_url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -216,6 +221,21 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if patch.DiscordID != nil {
 		existing.DiscordID = patch.DiscordID
+	}
+	if patch.BackgroundImageURL != nil {
+		existing.BackgroundImageURL = patch.BackgroundImageURL
+	}
+	if patch.BackgroundVideoURL != nil {
+		existing.BackgroundVideoURL = patch.BackgroundVideoURL
+	}
+	if patch.BackgroundPosition != nil {
+		existing.BackgroundPosition = patch.BackgroundPosition
+	}
+	if patch.FontFamily != nil {
+		existing.FontFamily = patch.FontFamily
+	}
+	if patch.ProfileCardArtURL != nil {
+		existing.ProfileCardArtURL = patch.ProfileCardArtURL
 	}
 
 	updated, err := h.svc.Update(existing)

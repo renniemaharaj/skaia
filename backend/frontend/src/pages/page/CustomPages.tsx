@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import {
   useCallback,
   useEffect,
@@ -293,7 +294,7 @@ export default function CustomPages() {
       event.preventDefault();
       event.stopPropagation();
       if (!page.id || !page.can_delete) return;
-      if (!window.confirm("Delete this page? This cannot be undone.")) {
+      if (!await customConfirm("Delete this page? This cannot be undone.")) {
         return;
       }
       setDeletingPageId(page.id);

@@ -1,3 +1,4 @@
+import { customConfirm } from "../ui/Prompt";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
@@ -405,7 +406,7 @@ export default function GrengoDashboard() {
   };
 
   const handleDelete = async (name: string) => {
-    if (!confirm(`Permanently delete site "${name}" and all its data?`)) return;
+    if (!await customConfirm(`Permanently delete site "${name}" and all its data?`)) return;
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
       await grengoRequest(`/sites/${name}`, { method: "DELETE" });
@@ -1398,7 +1399,7 @@ function ImportNodeForm({
   const handleImport = async () => {
     if (!file) return;
     if (
-      !confirm(
+      !await customConfirm(
         "Import a full node archive? This will add all clients from the archive.",
       )
     )

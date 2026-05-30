@@ -1,0 +1,16 @@
+<--/------->
+
+## user_settings_expansion
+
+### Current Progress
+- **Phase 1: ID routing & Profile linking** — ✅ Completed
+- **Phase 2: UI migration from EditProfileDialog** — ✅ Completed
+- **Phase 3: Mobile wrapping & aesthetic adjustments** — ✅ Completed
+
+### Next Steps
+- [x] Update `UserProfile.tsx` to link to settings.
+- [x] Refactor `SettingsPage` to support an ID param and load that user.
+- [x] Migrate `EditProfileDialog` to `ProfileSettings.tsx`.
+- [x] Apply primitive aesthetic classes and mobile-friendly grid wrapping.
+
+<--/------->

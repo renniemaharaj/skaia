@@ -1,22 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { customConfirm } from "../../components/ui/Prompt";
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAtomValue } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { toast } from "sonner";
 
 import { useUserData } from "./useUserData";
-import { useProfileEdit } from "./useProfileEdit";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 
 import UserProfileCard from "./UserProfileCard";
 import UserManagePanel from "./UserManagePanel";
 import UserThreadsFeed from "./UserThreadsFeed";
 import UserUploads from "./UserUploads";
-import EditProfileDialog from "./EditProfileDialog";
 import SuspendDialog from "./SuspendDialog";
 
-import { apiRequest, totpStatus } from "../../utils/api";
-import SecuritySettings from "../../components/auth/SecuritySettings";
+import { apiRequest } from "../../utils/api";
 import "./UserProfile.css";
 
 interface UserProfileProps {
@@ -37,13 +35,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
   handlePermissions,
 }) => {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   const effectiveUserId = userIdOverride || userId;
 
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
-
-  const [totpEnabled, setTotpEnabled] = useState<boolean>(false);
-  const [totpReload, setTotpReload] = useState(0);
 
   const canManage = hasPermission("user.manage-others");
   const canSuspend = hasPermission("user.suspend");
@@ -53,7 +49,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   const {
     user,
-    setUser,
+
     loading,
     error,
     allPermissions,
@@ -71,56 +67,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
     handleUnsuspend,
   } = useUserData(effectiveUserId, canManage);
 
-  const {
-    editOpen,
-    setEditOpen,
-    editBio,
-    setEditBio,
-    editDisplayName,
-    setEditDisplayName,
-    avatarPreview,
-    bannerPreview,
-    handleAvatarChange,
-    handleBannerChange,
-    editSaving,
-    editError,
-    handleSave,
-  } = useProfileEdit({
-    user,
-    isOwnProfile,
-    onSaved: (updated) => setUser((u) => (u ? { ...u, ...updated } : u)),
-  });
-
-  useEffect(() => {
-    if (!user) return;
-    let mounted = true;
-
-    const fetchTotpStatus = async () => {
-      try {
-        const status = await totpStatus(
-          canManage && !isOwnProfile ? String(user.id) : undefined,
-        );
-        if (mounted) {
-          setTotpEnabled(status.enabled);
-        }
-      } catch (err) {
-        if (mounted) {
-          setTotpEnabled(false);
-        }
-      }
-    };
-
-    fetchTotpStatus();
-    return () => {
-      mounted = false;
-    };
-  }, [user?.id, canManage, isOwnProfile, totpReload]);
-
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const handleResetPassword = async () => {
     if (!user?.id) return;
     if (
-      !window.confirm(
+      !await customConfirm(
         `Reset password for ${user.display_name || user.username}? A new password will be sent to their inbox.`,
       )
     )
@@ -186,6 +137,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     <div className="up-container">
       <UserProfileCard
         user={user}
+        allRoles={allRoles}
         displayAvatar={displayAvatar}
         displayBanner={displayBanner}
         canEdit={canEdit}
@@ -194,24 +146,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
         isOwnProfile={isOwnProfile}
         suspendLoading={suspendLoading}
         resetPasswordLoading={resetPasswordLoading}
-        onEditOpen={() => setEditOpen(true)}
+        onEditOpen={() => navigate(`/settings/users/${user.id}/profile`)}
         onSuspendOpen={() => setSuspendDialogOpen(true)}
         onUnsuspend={handleUnsuspend}
         onResetPassword={handleResetPassword}
       />
-
-      {(isOwnProfile || canManage) && (
-        <SecuritySettings
-          emailVerified={user.email_verified ?? false}
-          totpEnabled={totpEnabled}
-          onUpdate={() => setTotpReload((n) => n + 1)}
-          canManage={canManage && !isOwnProfile}
-          managedUserId={canManage && !isOwnProfile ? user.id : undefined}
-          managedUsername={
-            canManage && !isOwnProfile ? user.username : undefined
-          }
-        />
-      )}
 
       {handlePermissions
         ? handlePermissions(permissionPanel)
@@ -227,25 +166,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
       )}
 
       {handleThreads ? handleThreads(threadsPanel) : threadsPanel}
-
-      {editOpen && (
-        <EditProfileDialog
-          editDisplayName={editDisplayName}
-          setEditDisplayName={setEditDisplayName}
-          editBio={editBio}
-          setEditBio={setEditBio}
-          avatarPreview={avatarPreview}
-          bannerPreview={bannerPreview}
-          currentAvatarUrl={displayAvatar}
-          currentBannerUrl={displayBanner}
-          editSaving={editSaving}
-          editError={editError}
-          onAvatarChange={handleAvatarChange}
-          onBannerChange={handleBannerChange}
-          onSave={handleSave}
-          onClose={() => setEditOpen(false)}
-        />
-      )}
 
       {suspendDialogOpen && (
         <SuspendDialog

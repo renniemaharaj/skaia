@@ -1,3 +1,4 @@
+import { customConfirm } from "../../../components/ui/Prompt";
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import type { PageSection, DataSource } from "../types";
@@ -164,7 +165,7 @@ export const DataSourcesBlock = ({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this data source?")) return;
+    if (!await customConfirm("Delete this data source?")) return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");

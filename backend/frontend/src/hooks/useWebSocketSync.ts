@@ -572,17 +572,18 @@ export const useWebSocketSync = () => {
 
                 case "category_deleted": {
                   return prevCategories.filter(
-                    (c) => String(c.id) !== String(id),
+                    (c) => String(c.id) !== String(id ?? data?.id),
                   );
                 }
 
                 case "category_updated": {
                   return prevCategories.map((c) =>
-                    String(c.id) === String(id)
+                    String(c.id) === String(id ?? data?.id)
                       ? {
                           ...c,
                           name: data.name || c.name,
                           description: data.description || c.description,
+                          is_locked: data.is_locked ?? c.is_locked,
                           thread_count: data.thread_count ?? c.thread_count,
                           updated_at: data.updated_at || c.updated_at,
                           threads: c.threads,
@@ -593,7 +594,7 @@ export const useWebSocketSync = () => {
 
                 case "category_threads_updated": {
                   return prevCategories.map((c) =>
-                    String(c.id) === String(id)
+                    String(c.id) === String(id ?? data?.id)
                       ? {
                           ...c,
                           threads: data.threads ?? c.threads,

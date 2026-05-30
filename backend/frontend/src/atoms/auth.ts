@@ -19,6 +19,11 @@ export interface User {
   power_level?: number;
   created_at: string;
   updated_at: string;
+  background_image_url?: string;
+  background_video_url?: string;
+  background_position?: string;
+  font_family?: string;
+  profile_card_art_url?: string;
 }
 
 export interface AuthState {

@@ -25,6 +25,8 @@ import VerifyEmailPage from "./verify-email/index.tsx";
 import ForgotPasswordPage from "./forgot-password/index.tsx";
 import ResetPasswordPage from "./reset-password/index.tsx";
 
+import SettingsPage from "./settings/index.tsx";
+
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
   {
@@ -42,6 +44,8 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },
   { path: "activity", element: <ActivityPage /> },
+  { path: "settings/users/:userId/*", element: <SettingsPage /> },
+  { path: "settings/*", element: <SettingsPage /> },
 ];
 
 /** Routes accessible to both guests and authenticated users. */

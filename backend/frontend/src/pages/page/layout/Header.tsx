@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   AppWindow,
   Globe2,
+  Settings,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -470,6 +471,14 @@ function HeaderUserMenu({
       <SoundControl />
       <NotificationBell />
       {routeAllowed("inbox") && <InboxMail setMenuOpen={setMenuOpen} />}
+      <Link
+        to="/settings"
+        className="icon-btn icon-btn--sm"
+        title="Settings"
+        onClick={() => setMenuOpen(false)}
+      >
+        <Settings size={20} />
+      </Link>
       <UserLink
         userId={user.id}
         username={user.username}

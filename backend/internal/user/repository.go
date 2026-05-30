@@ -75,7 +75,8 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 
 const scanCols = `id, username, email, display_name, avatar_url, banner_url, photo_url,
 				  bio, discord_id, is_suspended, suspended_at, suspended_reason,
-				  email_verified, email_verified_at, created_at, updated_at`
+				  email_verified, email_verified_at, created_at, updated_at,
+				  background_image_url, background_video_url, background_position, font_family, profile_card_art_url`
 
 func scanUser(row interface {
 	Scan(dest ...any) error
@@ -87,6 +88,7 @@ func scanUser(row interface {
 		&u.IsSuspended, &u.SuspendedAt, &u.SuspendedReason,
 		&u.EmailVerified, &u.EmailVerifiedAt,
 		&u.CreatedAt, &u.UpdatedAt,
+		&u.BackgroundImageURL, &u.BackgroundVideoURL, &u.BackgroundPosition, &u.FontFamily, &u.ProfileCardArtURL,
 	)
 	return u, err
 }
@@ -135,12 +137,14 @@ func (r *sqlRepository) Create(user *models.User, passwordHash string) (*models.
 	inserted, err := scanUser(r.db.QueryRow(
 		`INSERT INTO users
 		  (username, email, display_name, avatar_url,
-		       banner_url, photo_url, bio, discord_id, is_suspended, suspended_at, suspended_reason)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		       banner_url, photo_url, bio, discord_id, is_suspended, suspended_at, suspended_reason,
+		       background_image_url, background_video_url, background_position, font_family, profile_card_art_url)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 		RETURNING `+scanCols,
 		user.Username, user.Email, user.DisplayName,
 		user.AvatarURL, user.BannerURL, user.PhotoURL, user.Bio, user.DiscordID,
 		user.IsSuspended, user.SuspendedAt, user.SuspendedReason,
+		user.BackgroundImageURL, user.BackgroundVideoURL, user.BackgroundPosition, user.FontFamily, user.ProfileCardArtURL,
 	))
 	if err != nil {
 		return nil, err
@@ -164,10 +168,14 @@ func (r *sqlRepository) Update(user *models.User) (*models.User, error) {
 		`UPDATE users
 		 SET display_name=$1, avatar_url=$2, banner_url=$3, photo_url=$4,
 		     bio=$5, discord_id=$6, is_suspended=$7, suspended_at=$8,
-		     suspended_reason=$9, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$10`,
+		     suspended_reason=$9, updated_at=CURRENT_TIMESTAMP,
+		     background_image_url=$10, background_video_url=$11, background_position=$12,
+		     font_family=$13, profile_card_art_url=$14
+		 WHERE id=$15`,
 		user.DisplayName, user.AvatarURL, user.BannerURL, user.PhotoURL,
 		user.Bio, user.DiscordID, user.IsSuspended, user.SuspendedAt, user.SuspendedReason,
+		user.BackgroundImageURL, user.BackgroundVideoURL, user.BackgroundPosition,
+		user.FontFamily, user.ProfileCardArtURL,
 		user.ID,
 	)
 	if err != nil {
@@ -273,7 +281,7 @@ func (r *sqlRepository) RemoveRoleByName(userID int64, roleName string) error {
 }
 
 func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
-	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, created_at FROM roles ORDER BY power_level DESC, id`)
+	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at FROM roles ORDER BY power_level DESC, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +290,7 @@ func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
 	var roles []*models.Role
 	for rows.Next() {
 		ro := &models.Role{}
-		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt); err != nil {
+		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt); err != nil {
 			return nil, err
 		}
 		roles = append(roles, ro)
@@ -442,29 +450,29 @@ func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {
 func (r *sqlRepository) GetRoleByID(id int64) (*models.Role, error) {
 	ro := &models.Role{}
 	err := r.db.QueryRow(
-		`SELECT id, name, COALESCE(description, ''), power_level, created_at FROM roles WHERE id = $1`, id,
-	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt)
+		`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at FROM roles WHERE id = $1`, id,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return ro, nil
 }
 
-func (r *sqlRepository) CreateRole(name, description string, powerLevel int) (*models.Role, error) {
+func (r *sqlRepository) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
 	ro := &models.Role{}
 	err := r.db.QueryRow(
-		`INSERT INTO roles (name, description, power_level)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, name, COALESCE(description, ''), power_level, created_at`,
-		name, description, powerLevel,
-	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.CreatedAt)
+		`INSERT INTO roles (name, description, power_level, theme_color, glow_color)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at`,
+		name, description, powerLevel, themeColor, glowColor,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt)
 	return ro, err
 }
 
-func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLevel int) (*models.Role, error) {
+func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
 	_, err := r.db.Exec(
-		`UPDATE roles SET name=$1, description=$2, power_level=$3 WHERE id=$4`,
-		name, description, powerLevel, id,
+		`UPDATE roles SET name=$1, description=$2, power_level=$3, theme_color=$4, glow_color=$5 WHERE id=$6`,
+		name, description, powerLevel, themeColor, glowColor, id,
 	)
 	if err != nil {
 		return nil, err

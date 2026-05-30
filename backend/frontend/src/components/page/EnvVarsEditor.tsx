@@ -1,3 +1,4 @@
+import { customConfirm } from "../ui/Prompt";
 import { lazy, Suspense, useCallback, useState } from "react";
 import { Lock, Unlock, Save, Trash2 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
@@ -44,7 +45,7 @@ export default function EnvVarsEditor({
 
   const handleClear = useCallback(async () => {
     if (
-      !window.confirm("Remove all environment variables for this datasource?")
+      !await customConfirm("Remove all environment variables for this datasource?")
     )
       return;
     if (isPersisted) {

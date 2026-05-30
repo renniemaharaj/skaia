@@ -8,6 +8,7 @@ interface UserAvatarProps {
   size?: number;
   className?: string;
   initials?: string;
+  style?: React.CSSProperties;
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({
@@ -16,23 +17,25 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   size = 40,
   className = "",
   initials,
+  style,
 }) => {
   const sharedClasses = `user-avatar ${className}`.trim();
-  const style: React.CSSProperties = {
+  const baseStyle: React.CSSProperties = {
     width: `${size}px`,
     height: `${size}px`,
     fontSize: `${Math.max(12, Math.floor(size / 2.3))}px`,
+    ...style,
   };
 
   if (src) {
-    return <img src={src} alt={alt} className={sharedClasses} style={style} />;
+    return <img src={src} alt={alt} className={sharedClasses} style={baseStyle} />;
   }
 
   if (initials) {
     return (
       <span
         className={`${sharedClasses} user-avatar-placeholder`}
-        style={style}
+        style={baseStyle}
       >
         {initials}
       </span>
@@ -40,7 +43,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   }
 
   return (
-    <span className={`${sharedClasses} user-avatar-placeholder`} style={style}>
+    <span className={`${sharedClasses} user-avatar-placeholder`} style={baseStyle}>
       <UserCog2Icon size={Math.max(14, Math.floor(size * 0.5))} />
     </span>
   );

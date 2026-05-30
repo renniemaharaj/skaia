@@ -45,7 +45,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   };
 
   const description = truncate(
-    (currentThread?.content || "").replace(/[#*_>~`\[\]]/g, " "),
+    (currentThread?.content || "").replace(/<[^>]*>?/gm, " ").replace(/\s+/g, ' ').trim(),
     { length: 180 },
   );
 

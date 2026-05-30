@@ -3,12 +3,14 @@
 ## user_settings_and_security
 
 ### Current Progress
-- **Phase 1: Settings menu structure & routing** — ⬜ Not started
-- **Phase 2: Security settings & Change Password UI** — ⬜ Not started
-- **Phase 3: Backend integration for password change** — ⬜ Not started
+- **Phase 1: Settings menu structure & routing** — ✅ Completed
+- **Phase 2: Security settings & Change Password UI** — ✅ Completed
+- **Phase 3: Backend integration for password change** — ✅ Completed
 
 ### Next Steps
-- [ ] Implement the dedicated user settings menu layout and routing.
-- [ ] Create the Change Password UI form.
+- [x] Implement the dedicated user settings menu layout and routing.
+- [x] Create the Change Password UI form.
+- [x] Backend endpoint for change password.
+- [x] Ready for review/merge.
 
 <--/------->

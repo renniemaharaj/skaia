@@ -19,6 +19,7 @@ import { apiRequest } from "../../utils/api";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import SearchField from "../ui/SearchField";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
@@ -28,6 +29,127 @@ import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
 import UserLink from "../user/UserLink";
 
+const CategoryThreadsPreview = ({
+  forum,
+  currentUser,
+  guestSandboxMode,
+  navigate,
+  handleDeleteThread,
+}: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const threadsToDisplay = [...(forum.threads || [])].slice(0, 5).reverse();
+  const prevCountRef = useRef(threadsToDisplay.length);
+  const isAtBottomRef = useRef(true);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 10;
+  };
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const prev = prevCountRef.current;
+    prevCountRef.current = threadsToDisplay.length;
+    // Auto scroll to bottom if we are already at the bottom, or if a new thread just came in
+    if (threadsToDisplay.length > prev || isAtBottomRef.current || scrollRef.current.scrollTop === 0) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [threadsToDisplay.length]);
+
+  return (
+    <div className="threads-list-scroll" ref={scrollRef} onScroll={handleScroll}>
+      {threadsToDisplay.map((thread) => {
+        const isThreadOwner =
+          currentUser != null &&
+          thread.user_id != null &&
+          String(currentUser.id) === String(thread.user_id);
+        const canEditThread =
+          isThreadOwner ||
+          currentUser?.permissions?.includes("forum.thread-edit") ||
+          guestSandboxMode;
+        const canDeleteThread =
+          isThreadOwner ||
+          currentUser?.permissions?.includes("forum.thread-delete") ||
+          guestSandboxMode;
+
+        return (
+          <div
+            key={thread.id}
+            className="thread-item"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/view-thread/${thread.id}`);
+            }}
+          >
+            <div className="thread-title-wrapper">
+              <div className="thread-title">{thread.title}</div>
+              <div className="thread-actions">
+                <button
+                  className="thread-action-btn view-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/view-thread/${thread.id}`);
+                  }}
+                  title="View"
+                >
+                  <Eye size={14} />
+                </button>
+                {canEditThread && (
+                  <button
+                    className="thread-action-btn edit-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/edit-thread/${thread.id}`);
+                    }}
+                    title="Edit"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                )}
+                {canDeleteThread && (
+                  <button
+                    className="thread-action-btn delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteThread(thread.id, forum.id);
+                    }}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="thread-meta">
+              {thread.user_id && (
+                <span
+                  className="thread-stat thread-author-stat"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <UserLink
+                    userId={String(thread.user_id)}
+                    displayName={thread.user_name}
+                    variant="subtle"
+                  />
+                </span>
+              )}
+              <span className="thread-stat">
+                <Eye size={14} />
+                {thread.view_count} views
+              </span>
+              <span className="thread-stat">
+                <MessageSquare size={14} />
+                {thread.reply_count} replies
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
   const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
@@ -35,6 +157,8 @@ export const Forum: React.FC = () => {
   const [hoveredSection, setHoveredSection] = useState<
     "discussion" | "category" | null
   >(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const navigate = useNavigate();
   const currentUser = useAtomValue(currentUserAtom);
@@ -48,10 +172,11 @@ export const Forum: React.FC = () => {
   const [guestSandboxMode] = useGuestSandboxMode();
 
   // Load forums from API
-  const loadForums = useCallback(async () => {
+  const loadForums = useCallback(async (query?: string) => {
     try {
       setForumsLoading(true);
-      const response = await apiRequest("/forum/categories");
+      const url = query ? `/forum/categories?q=${encodeURIComponent(query)}` : "/forum/categories";
+      const response = await apiRequest(url);
       if (response && Array.isArray(response)) {
         // Convert API response to ForumCategory format
         const categories = response.map((cat: any) => ({
@@ -142,6 +267,20 @@ export const Forum: React.FC = () => {
 
   return (
     <div className="forum-container">
+      <div className="forum-controls" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-start' }}>
+        <SearchField
+          value={searchQuery}
+          onChange={(val) => {
+            setSearchQuery(val);
+            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+            searchDebounceRef.current = setTimeout(() => {
+              loadForums(val);
+            }, 300);
+          }}
+          placeholder="Search categories..."
+          className="forum-search-field"
+        />
+      </div>
       <div className="forums-grid">
         {/* New Thread & Create Category Card */}
         {isAuthenticated && (
@@ -296,10 +435,7 @@ export const Forum: React.FC = () => {
                   ) : (
                     <>
                       <span className="forum-threads-count">
-                        {
-                          (forum.threads || []).filter((t) => !t.is_locked)
-                            .length
-                        }
+                        {forum.thread_count}
                       </span>
                       {canEditCategories && !loading && (
                         <button
@@ -372,99 +508,13 @@ export const Forum: React.FC = () => {
                 </div>
               ) : (forum.threads || []).length > 0 ? (
                 <div className="threads-list">
-                  <div className="threads-list-scroll">
-                    {(forum.threads || []).slice(0, 5).map((thread) => {
-                      const isThreadOwner =
-                        currentUser != null &&
-                        thread.user_id != null &&
-                        String(currentUser.id) === String(thread.user_id);
-                      const canEditThread =
-                        isThreadOwner ||
-                        currentUser?.permissions?.includes(
-                          "forum.thread-edit",
-                        ) ||
-                        guestSandboxMode;
-                      const canDeleteThread =
-                        isThreadOwner ||
-                        currentUser?.permissions?.includes(
-                          "forum.thread-delete",
-                        ) ||
-                        guestSandboxMode;
-
-                      return (
-                        <div
-                          key={thread.id}
-                          className="thread-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/view-thread/${thread.id}`);
-                          }}
-                        >
-                          <div className="thread-title-wrapper">
-                            <div className="thread-title">{thread.title}</div>
-                            <div className="thread-actions">
-                              <button
-                                className="thread-action-btn view-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/view-thread/${thread.id}`);
-                                }}
-                                title="View"
-                              >
-                                <Eye size={14} />
-                              </button>
-                              {canEditThread && (
-                                <button
-                                  className="thread-action-btn edit-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/edit-thread/${thread.id}`);
-                                  }}
-                                  title="Edit"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                              )}
-                              {canDeleteThread && (
-                                <button
-                                  className="thread-action-btn delete-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteThread(thread.id, forum.id);
-                                  }}
-                                  title="Delete"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="thread-meta">
-                            {thread.user_id && (
-                              <span
-                                className="thread-stat thread-author-stat"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <UserLink
-                                  userId={String(thread.user_id)}
-                                  displayName={thread.user_name}
-                                  variant="subtle"
-                                />
-                              </span>
-                            )}
-                            <span className="thread-stat">
-                              <Eye size={14} />
-                              {thread.view_count} views
-                            </span>
-                            <span className="thread-stat">
-                              <MessageSquare size={14} />
-                              {thread.reply_count} replies
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <CategoryThreadsPreview
+                    forum={forum}
+                    currentUser={currentUser}
+                    guestSandboxMode={guestSandboxMode}
+                    navigate={navigate}
+                    handleDeleteThread={handleDeleteThread}
+                  />
                   <div
                     className="threads-see-more"
                     onClick={(e) => {

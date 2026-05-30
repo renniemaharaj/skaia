@@ -14,6 +14,11 @@ export interface ProfileUser {
   permissions: string[];
   roles: string[];
   created_at: string;
+  background_image_url?: string;
+  background_video_url?: string;
+  background_position?: string;
+  font_family?: string;
+  profile_card_art_url?: string;
 }
 
 export interface Permission {
@@ -28,4 +33,6 @@ export interface Role {
   name: string;
   description: string;
   power_level: number;
+  theme_color?: string;
+  glow_color?: string;
 }

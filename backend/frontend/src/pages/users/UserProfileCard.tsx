@@ -10,12 +10,13 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ProfileUser } from "./types";
+import type { ProfileUser, Role } from "./types";
 import { formatDate } from "./useUserData";
 import UserAvatar from "../../components/user/UserAvatar";
 
 interface Props {
   user: ProfileUser;
+  allRoles: Role[];
   displayAvatar: string | null;
   displayBanner: string | null;
   canEdit: boolean;
@@ -32,6 +33,7 @@ interface Props {
 
 const UserProfileCard = ({
   user,
+  allRoles,
   displayAvatar,
   displayBanner,
   canEdit,
@@ -62,6 +64,23 @@ const UserProfileCard = ({
 
   const hasMoreActions = (canSuspend && !isOwnProfile) || canResetPassword;
 
+  const userRoles = user.roles ?? [];
+  const rolesWithDetails = allRoles.filter(r => userRoles.includes(r.name)).sort((a, b) => b.power_level - a.power_level);
+  const topRole = rolesWithDetails[0];
+  const glowColor = topRole?.glow_color;
+  const themeColor = topRole?.theme_color;
+
+  const cardStyle: React.CSSProperties = {
+    ...(themeColor ? { borderColor: themeColor } : {}),
+    ...(user.profile_card_art_url
+      ? {
+          backgroundImage: `linear-gradient(rgba(var(--bg-color-rgb), 0.85), rgba(var(--bg-color-rgb), 0.95)), url("${user.profile_card_art_url}")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : {}),
+  };
+
   return (
     <>
       {/* Banner */}
@@ -84,7 +103,7 @@ const UserProfileCard = ({
       </div>
 
       {/* Profile card */}
-      <div className="up-card">
+      <div className="up-card" style={cardStyle}>
         {user.is_suspended && (
           <div className="up-suspended-banner">
             <ShieldOff size={16} />
@@ -107,6 +126,7 @@ const UserProfileCard = ({
                 user.username ||
                 "?")[0]?.toUpperCase()}
               className="up-avatar"
+              style={glowColor ? { boxShadow: `0 0 20px ${glowColor}, 0 0 10px ${glowColor}`, border: `2px solid ${glowColor}` } : {}}
             />
           </div>
 
@@ -119,11 +139,15 @@ const UserProfileCard = ({
               <p className="up-email">{user.email}</p>
             )}
             <div className="up-roles">
-              {(user.roles ?? []).map((r) => (
-                <span key={r} className={`up-badge up-badge-${r}`}>
-                  {r}
-                </span>
-              ))}
+              {(user.roles ?? []).map((r) => {
+                const roleDetails = allRoles.find(ar => ar.name === r);
+                const color = roleDetails?.theme_color || roleDetails?.glow_color;
+                return (
+                  <span key={r} className={`up-badge up-badge-${r}`} style={color ? { backgroundColor: color, color: '#fff' } : {}}>
+                    {r}
+                  </span>
+                );
+              })}
             </div>
           </div>
 

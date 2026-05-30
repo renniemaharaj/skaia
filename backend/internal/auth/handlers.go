@@ -250,3 +250,35 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		"status":  "success",
 	})
 }
+
+// ChangePassword handles a user's request to change their password.
+func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.svc.ChangePassword(r.Context(), userID, req.OldPassword, req.NewPassword); err != nil {
+		if errors.Is(err, ErrInvalidPassword) {
+			utils.WriteError(w, http.StatusUnauthorized, "incorrect old password")
+			return
+		}
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"status": "success",
+		"message": "password updated successfully",
+	})
+}

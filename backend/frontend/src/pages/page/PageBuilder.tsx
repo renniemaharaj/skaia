@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { useNavigate, useParams, Link } from "react-router-dom";
@@ -179,7 +180,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     const label = isArmed
       ? "Disarm the site? This will restore normal operation."
       : "Arm the site? This will enable maintenance mode and block API requests.";
-    if (!window.confirm(label)) return;
+    if (!await customConfirm(label)) return;
     setArmInProgress(true);
     try {
       await apiRequest(`/api/site/${action}`, { method: "POST" });
@@ -200,7 +201,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleFactoryReset = useCallback(async () => {
     if (
-      !window.confirm(
+      !await customConfirm(
         "Reset all pages?\n\nThis will permanently delete ALL custom pages, page section sections, and reset page allocations.\n\nThis cannot be undone.",
       )
     )
@@ -283,7 +284,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleDeletePage = useCallback(async () => {
     if (!page?.id) return;
-    if (!window.confirm("Delete this page? This cannot be undone.")) return;
+    if (!await customConfirm("Delete this page? This cannot be undone.")) return;
     try {
       await deletePage(page.id);
       toast.success("Page deleted");

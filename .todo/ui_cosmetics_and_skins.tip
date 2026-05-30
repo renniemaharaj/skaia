@@ -3,13 +3,13 @@
 ## ui_cosmetics_and_skins
 
 ### Current Progress
-- **Phase 1: Define schema & design tokens** — ⬜ Not started
-- **Phase 2: User profile skin settings** — ⬜ Not started
-- **Phase 3: Role-based glowing effects & colors** — ⬜ Not started
-- **Phase 4: Integration with UI refactor** — ⬜ Not started
+- **Phase 1: Define schema & design tokens** — ✅ Completed
+- **Phase 2: User profile skin settings** — ✅ Completed
+- **Phase 3: Role-based glowing effects & colors** — ✅ Completed
+- **Phase 4: Integration with UI refactor** — ✅ Completed
 
 ### Next Steps
-- [ ] Draft spec or schema for user cosmetic settings (backgrounds, fonts, role effects).
-- [ ] Define dynamic CSS variables implementation for skinning.
+- [x] Draft spec or schema for user cosmetic settings (backgrounds, fonts, role effects).
+- [x] Define dynamic CSS variables implementation for skinning.
 
 <--/------->

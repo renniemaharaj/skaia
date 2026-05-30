@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { Link, useSearchParams } from "react-router-dom";
@@ -463,7 +464,7 @@ const InboxPage = () => {
 
   const handleDeleteConversation = async () => {
     if (!activeId) return;
-    if (!confirm("Delete this conversation and all messages?")) return;
+    if (!await customConfirm("Delete this conversation and all messages?")) return;
     try {
       await apiRequest(`/inbox/conversations/${activeId}`, {
         method: "DELETE",
@@ -482,7 +483,7 @@ const InboxPage = () => {
     const otherUserId = activeConv?.other_user?.id;
     if (!otherUserId) return;
     if (
-      !confirm(
+      !await customConfirm(
         `Block ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
       )
     )
@@ -511,7 +512,7 @@ const InboxPage = () => {
     const otherUserId = activeConv?.other_user?.id;
     if (!otherUserId) return;
     if (
-      !confirm(
+      !await customConfirm(
         `Unblock ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
       )
     )

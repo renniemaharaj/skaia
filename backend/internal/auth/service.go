@@ -299,6 +299,25 @@ func (s *Service) AuthenticateUser(ctx context.Context, userID int64, password s
 	return true, nil
 }
 
+// ChangePassword changes a user's password if the old one matches.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, oldPassword, newPassword string) error {
+	valid, err := s.AuthenticateUser(ctx, userID, oldPassword)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return ErrInvalidPassword
+	}
+	if err := ValidatePassword(newPassword); err != nil {
+		return err
+	}
+	hash, err := BcryptPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdatePasswordHash(ctx, userID, hash)
+}
+
 // --- Service methods for handlers ---
 
 // RefreshToken validates the refresh token and issues a new access token.

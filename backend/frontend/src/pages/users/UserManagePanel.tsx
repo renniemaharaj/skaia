@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ function SuperUsersDemotionVoteButton({
   const [loading, setLoading] = useState(false);
   const handleVote = async () => {
     if (
-      !window.confirm(
+      !await customConfirm(
         "Are you sure? more than 50% of superusers must vote to demote",
       )
     )

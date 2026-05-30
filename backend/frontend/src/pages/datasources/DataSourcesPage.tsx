@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -53,7 +54,7 @@ export default function DataSourcesPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!confirm("Delete this data source?")) return;
+    if (!await customConfirm("Delete this data source?")) return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");

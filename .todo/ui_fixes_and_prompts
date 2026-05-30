@@ -1,0 +1,27 @@
+# UI Fixes and Prompts
+
+## Context
+There are a few lingering UI bugs on the forum and a major architectural gap where `window.confirm` and native prompts are still actively used across the site. The custom `Prompt` component was built but is missing a confirmation equivalent, and many files still trigger native browser modals.
+
+## Goal
+1. Fix forum search component placement so it sits on the left with appropriate margin (consistent with custom pages).
+2. Fix category locking/unlocking from the slide-up card so it propagates live (like the delete functionality does).
+3. Expand `Prompt.tsx` to include a `customConfirm` modal.
+4. Replace all instances of `window.confirm` and `confirm` in the frontend with the new `customConfirm`.
+
+## Non-Goals
+- Refactoring how data sources or blocks are deleted functionally, just changing the confirmation prompt.
+
+## Steps
+1. Adjust CSS/Layout in `Forum.tsx` for the search field.
+2. Update `CategoryThreadsPage.tsx` or related slide-up to trigger live websocket sync on lock/unlock.
+3. Update `Prompt.tsx` to export `customConfirm` and render a confirmation-only UI without an input box when invoked.
+4. Search for `confirm(` and `window.confirm(` across the frontend and replace them with `await customConfirm(...)`.
+
+## Verification
+- Forum search is on the left.
+- Locking a category from the slide-up card updates the UI immediately.
+- Attempting to delete an item triggers the custom modal instead of the browser native alert.
+
+## References
+- `backend/frontend/src/components/ui/Prompt.tsx`

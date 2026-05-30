@@ -55,8 +55,19 @@
   --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
-  /* Typography */
+  /* Typography & Modern Layout Tokens */
+  --font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #3b82f6;
@@ -134,8 +145,13 @@ html[data-theme="dark"] {
   --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
 
-  /* Typography */
+  /* Typography & Modern Layout Tokens */
+  --font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #60a5fa;
@@ -164,14 +180,13 @@ html[data-theme="dark"] {
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-color);
   color: var(--text-primary);
   line-height: 1.6;
+  letter-spacing: -0.01em;
   transition:
     background-color 0.3s ease,
     color 0.3s ease;
@@ -313,8 +328,8 @@ div#root {
 .ui-panel {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .ui-toolbar {
@@ -405,6 +420,14 @@ div#root {
   justify-content: center;
   padding: 1rem;
   background: var(--overlay-dark);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: dialogOverlayFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dialogOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .ui-dialog {
@@ -414,7 +437,13 @@ div#root {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-xl);
+  animation: dialogSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dialogSlideUp {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .ui-dialog__header,
@@ -440,15 +469,14 @@ div#root {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 12px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: var(--font-sans);
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-sm {
@@ -474,8 +502,8 @@ div#root {
 
 .btn-primary:hover {
   background-color: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {

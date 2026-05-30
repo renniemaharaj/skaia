@@ -1,9 +1,11 @@
 import { ThumbsUp, Trash2 } from "lucide-react";
-import { useMemo, type RefObject } from "react";
+import { useMemo, type RefObject, useState } from "react";
 import ComposerInput from "../input/Input";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
 import { formatDate } from "../../utils/serverTime";
+import Editor from "../forum/Editor";
+import ViewThread from "../forum/ViewThread";
 import "./CommentSection.css";
 
 type CommentSectionComment = {
@@ -44,6 +46,7 @@ interface CommentSectionProps {
   slowModeEnabled?: boolean;
   slowModeInterval?: number;
   onToggleSlowMode?: () => Promise<void> | void;
+  useRichText?: boolean;
 }
 
 const CommentSection = ({
@@ -69,8 +72,10 @@ const CommentSection = ({
   slowModeEnabled = false,
   slowModeInterval,
   onToggleSlowMode,
+  useRichText = false,
 }: CommentSectionProps) => {
   const hasComments = comments.length > 0;
+  const [richTextContent, setRichTextContent] = useState("");
 
   const headerCount = useMemo(
     () => (showCount ? `(${comments.length})` : ""),
@@ -163,7 +168,13 @@ const CommentSection = ({
                     )}
                   </div>
 
-                  <div className="comment-content">{comment.content}</div>
+                  {useRichText ? (
+                    <div className="comment-content rich-text-comment">
+                      <ViewThread content={comment.content} />
+                    </div>
+                  ) : (
+                    <div className="comment-content">{comment.content}</div>
+                  )}
 
                   <div className="comment-actions">
                     {currentUserId && onLike && (
@@ -206,16 +217,38 @@ const CommentSection = ({
 
       {canComment && (
         <div className="comment-composer">
-          <ComposerInput
-            handleSend={async (text) => {
-              if (disabled) return;
-              await onSubmit(text);
-            }}
-            disabled={disabled}
-            placeholder={placeholder}
-            minRows={1}
-            maxRows={5}
-          />
+          {useRichText ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Editor
+                value={richTextContent}
+                onChange={setRichTextContent}
+                minHeight="80px"
+              />
+              <button
+                className="thread-action-btn btn-submit"
+                style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
+                disabled={disabled || !richTextContent.trim() || richTextContent === "<p></p>"}
+                onClick={async () => {
+                  if (disabled) return;
+                  await onSubmit(richTextContent);
+                  setRichTextContent("");
+                }}
+              >
+                Send
+              </button>
+            </div>
+          ) : (
+            <ComposerInput
+              handleSend={async (text) => {
+                if (disabled) return;
+                await onSubmit(text);
+              }}
+              disabled={disabled}
+              placeholder={placeholder}
+              minRows={1}
+              maxRows={5}
+            />
+          )}
         </div>
       )}
     </div>

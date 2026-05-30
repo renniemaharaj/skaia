@@ -36,6 +36,10 @@ func (s *Service) ListCategories() ([]*models.ForumCategory, error) {
 	return s.categories.List()
 }
 
+func (s *Service) SearchCategories(query string) ([]*models.ForumCategory, error) {
+	return s.categories.Search(query)
+}
+
 func (s *Service) CreateCategory(cat *models.ForumCategory) (*models.ForumCategory, error) {
 	return s.categories.Create(cat)
 }
@@ -68,6 +72,10 @@ func (s *Service) ListCategoryThreads(categoryID int64, limit, offset int) ([]*m
 
 func (s *Service) ListUserThreads(userID int64, limit, offset int) ([]*models.ForumThread, error) {
 	return s.threads.GetByUser(userID, limit, offset)
+}
+
+func (s *Service) SearchThreads(query string, limit, offset int) ([]*models.ForumThread, error) {
+	return s.threads.Search(query, limit, offset)
 }
 
 func (s *Service) CreateThread(thread *models.ForumThread) (*models.ForumThread, error) {
@@ -118,6 +126,10 @@ func (s *Service) GetComment(id int64) (*models.ThreadComment, error) {
 
 func (s *Service) ListThreadComments(threadID int64, limit, offset int) ([]*models.ThreadComment, error) {
 	return s.comments.GetByThread(threadID, limit, offset)
+}
+
+func (s *Service) GetThreadContributors(threadID int64) ([]int64, error) {
+	return s.comments.GetThreadContributors(threadID)
 }
 
 func (s *Service) CreateComment(comment *models.ThreadComment) (*models.ThreadComment, error) {

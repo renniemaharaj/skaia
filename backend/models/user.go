@@ -22,6 +22,11 @@ type User struct {
 	Permissions     []string   `json:"permissions"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
+	BackgroundImageURL *string `json:"background_image_url,omitempty"`
+	BackgroundVideoURL *string `json:"background_video_url,omitempty"`
+	BackgroundPosition *string `json:"background_position,omitempty"`
+	FontFamily      *string    `json:"font_family,omitempty"`
+	ProfileCardArtURL *string  `json:"profile_card_art_url,omitempty"`
 }
 
 // UserBlock represents a user blocking another user.

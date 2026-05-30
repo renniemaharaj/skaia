@@ -174,9 +174,11 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		PowerLevel  int    `json:"power_level"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		PowerLevel  int     `json:"power_level"`
+		ThemeColor  *string `json:"theme_color"`
+		GlowColor   *string `json:"glow_color"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		utils.WriteError(w, http.StatusBadRequest, "role name required")
@@ -193,7 +195,7 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := h.svc.UpdateRole(roleID, req.Name, req.Description, req.PowerLevel)
+	role, err := h.svc.UpdateRole(roleID, req.Name, req.Description, req.PowerLevel, req.ThemeColor, req.GlowColor)
 	if err != nil {
 		log.Printf("user.Handler.updateRole: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update role")
@@ -213,9 +215,11 @@ func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		PowerLevel  int    `json:"power_level"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		PowerLevel  int     `json:"power_level"`
+		ThemeColor  *string `json:"theme_color"`
+		GlowColor   *string `json:"glow_color"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		utils.WriteError(w, http.StatusBadRequest, "role name required")
@@ -233,7 +237,7 @@ func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := h.svc.CreateRole(req.Name, req.Description, req.PowerLevel)
+	role, err := h.svc.CreateRole(req.Name, req.Description, req.PowerLevel, req.ThemeColor, req.GlowColor)
 	if err != nil {
 		log.Printf("user.Handler.createRole: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create role")

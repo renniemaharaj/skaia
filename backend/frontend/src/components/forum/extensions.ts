@@ -36,6 +36,7 @@ import { TextUnderline } from "reactjs-tiptap-editor/textunderline";
 import { Video } from "reactjs-tiptap-editor/video";
 
 import { uploadEditorFile } from "../../utils/upload";
+import { apiRequest } from "../../utils/api";
 
 const extensions = [
   BaseKit.configure({
@@ -97,7 +98,19 @@ const extensions = [
   //     ),
   // }),
   TextDirection,
-  Mention,
+  Mention.configure({
+    suggestion: {
+      items: async ({ query }: { query: string }) => {
+        try {
+          const users = await apiRequest(`/users?q=${encodeURIComponent(query)}&limit=5`);
+          if (!users || !Array.isArray(users)) return [];
+          return users.map((u: any) => ({ id: u.id, label: u.username }));
+        } catch {
+          return [];
+        }
+      },
+    },
+  }),
   Attachment.configure({
     upload: (file: File) => uploadEditorFile(file, "file"),
   }),

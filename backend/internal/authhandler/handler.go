@@ -30,6 +30,9 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(mw.AuthLimitMiddleware()).Post("/verify-email", h.authHandler.VerifyEmail)
 		r.With(jwt).Post("/resend-verification", h.authHandler.ResendVerification)
 
+		// Password management
+		r.With(jwt).Post("/change-password", h.authHandler.ChangePassword)
+
 		// Password recovery (public — no auth required)
 		r.With(mw.AuthLimitMiddleware()).Post("/forgot-password", h.authHandler.ForgotPassword)
 		r.With(mw.AuthLimitMiddleware()).Post("/reset-password", h.authHandler.ResetPasswordWithToken)

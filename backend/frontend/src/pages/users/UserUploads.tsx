@@ -1,3 +1,4 @@
+import { customConfirm } from "../../components/ui/Prompt";
 import { useState, useEffect, useCallback } from "react";
 import { useAtomValue } from "jotai";
 import {
@@ -102,7 +103,7 @@ const UserUploads = ({ userId, displayName }: Props) => {
 
   const handleDelete = useCallback(
     async (url: string) => {
-      if (!confirm("Delete this upload permanently?")) return;
+      if (!await customConfirm("Delete this upload permanently?")) return;
       setDeletingSet((prev) => new Set(prev).add(url));
       try {
         await apiRequest("/upload/file", {

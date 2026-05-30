@@ -1,0 +1,32 @@
+# User Settings Expansion
+
+## Context
+The newly added User Settings menu looks great structurally, but needs to fully replace the old `EditProfileDialog`. The `EditProfileDialog` must route users to this settings page instead. The settings page must be visually upgraded to match the `EditProfileDialog` aesthetic, support mobile tile wrapping, and handle arbitrary user IDs for admins.
+
+## Goal
+- Migrate all configuration fields from `EditProfileDialog` to the new User Settings page.
+- Apply the `EditProfileDialog` style/presentation to the User Settings page.
+- Ensure settings tiles wrap correctly for mobile support.
+- Make the settings route ID-specific (e.g. `/settings/users/:id`), falling back to the current user. Admins should be able to configure other users.
+- Connect the "Edit Profile" button on the `UserProfile` to redirect to this new settings menu.
+- Ensure the cosmetics configuration (fonts, background) is included in the new menu.
+
+## Non-Goals
+- Altering the backend `UpdateUser` endpoint; just routing it through the new UI.
+
+## Steps
+1. Update `routes.tsx` or `SettingsPage` to accept an optional ID parameter.
+2. Migrate UI logic and fields from `EditProfileDialog.tsx` into `SettingsPage` or a new `ProfileSettings` sub-route.
+3. Apply modern card/tile styling (wrapping flex/grid) to the settings forms.
+4. Update `UserProfile.tsx` to link to `/settings/users/${id}` when editing a profile.
+5. Ensure `useProfileEdit.ts` or similar hooks are utilized cleanly by the new settings forms.
+
+## Verification
+- The Edit Profile button redirects to settings.
+- The settings page visually resembles the old modal.
+- Changing cosmetics and core fields works via the settings page.
+- Layout wraps gracefully on small screens.
+
+## References
+- `.todo/user_settings_and_security`
+- `backend/frontend/src/pages/settings/`
