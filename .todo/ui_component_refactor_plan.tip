@@ -1,29 +1,19 @@
-<--/------>
-Phase 1: Align with page model
-- Status: ✅ Complete
-- Notes: Page model aligned.
+<--/------->
 
-Phase 2: Section metadata
-- Status: ✅ Complete
-- Notes: Section metadata implemented.
+## ui_component_refactor_plan
 
-Phase 3: Integration primitives
-- Status: ✅ Complete
-- Notes: Shared primitives in index.css complete.
+### Current Progress
+- **Phase 1: Align with page model** — ✅ Complete
+- **Phase 2: Section metadata** — ✅ Complete
+- **Phase 3: Integration primitives** — ✅ Complete
+- **Phase 4: Component registry & bind-point contracts** — ⬜ Not started
+- **Phase 5: Open derived/custom sections to registered components** — ⬜ Not started
+- **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
+- **Phase 7: Add versioning and migration** — ⬜ Not started
 
-Phase 4: Component registry & bind-point contracts
-- Status: ⬜ Not started
-- Notes: Needs implementation. Drift: `backend_spec` needs updating for `/config/sections` and `/config/section-types/{type}` endpoints. Types in this plan need to be renamed from `LandingSection` to `PageSection`.
+### Next Steps
+- [ ] Implement component registry & bind-point contracts
+- [ ] Update `backend_spec` for `/config/sections` and `/config/section-types/{type}` endpoints
+- [ ] Rename types in this plan from `LandingSection` to `PageSection`
 
-Phase 5: Open derived/custom sections to registered components
-- Status: ⬜ Not started
-- Notes: Requires Phase 4.
-
-Phase 6: Convert routes to dynamic page rendering
-- Status: ⬜ Not started
-- Notes: Requires Phase 5.
-
-Phase 7: Add versioning and migration
-- Status: ⬜ Not started
-- Notes: Final phase.
-<--/------>
+<--/------->

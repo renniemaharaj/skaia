@@ -1,17 +1,16 @@
-<--/------>
-Phase 1: Backend Endpoint
-- Status: ✅ Complete
-- Notes: Implemented POST /pages/{id}/set-homepage. (Note: Drift from backend_spec which says PUT /set-homepage)
+<--/------->
 
-Phase 2: Frontend Toggle
-- Status: ✅ Complete
-- Notes: Homepage selection UI built.
+## custom_pages_homepage_toggle
 
-Phase 3: Real-time Broadcast
-- Status: ✅ Complete
-- Notes: Configured.
+### Current Progress
+- **Phase 1: Backend Endpoint** — ✅ Complete
+- **Phase 2: Frontend Toggle** — ✅ Complete
+- **Phase 3: Real-time Broadcast** — ✅ Complete
+- **Phase 4: Documentation and Tests** — 🟡 In progress
 
-Phase 4: Documentation and Tests
-- Status: 🟡 In progress
-- Notes: Needs backend tests for POST /pages/{id}/set-homepage, frontend tests for homepage button/badge, keep checks green, close todo pair. Reconcile spec drift.
-<--/------>
+### Next Steps
+- [ ] Write backend tests for POST /pages/{id}/set-homepage
+- [ ] Write frontend tests for homepage button/badge
+- [ ] Reconcile spec drift (backend_spec says PUT /set-homepage)
+
+<--/------->

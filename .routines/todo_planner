@@ -99,13 +99,15 @@ if new plan needed:
 
 ## Last Ran
 
-- 2026-05-30T09:34:00-04:00
+- 2026-05-30T11:19:00-04:00
 
 ## Last Run Remarks
 
-- Reconciled existing tips (auth_user_separation, custom_pages_homepage_toggle, project_normalization, session_cookie_ip_val, smart_rate_limiter, ui_component_refactor_plan) by fixing formatting and noting spec drift.
-- Created 4 new plans capturing codebase review findings: hotfix_security_and_schema, project_hardening_and_perf, auth_interface_context_refactor, frontend_mfa_ui_cleanup.
+- Formatted all `.tip` files to strictly match `.todo/README.md` conventions (`<--/------->` bounds, `### Current Progress`, `### Next Steps`).
+- Deleted completed todo plans (`project_hardening_and_perf`, `auth_interface_context_refactor`, `hotfix_security_and_schema`) after verifying backend tests pass and all phases were complete.
+- Updated `smart_rate_limiter`, `ui_component_refactor_plan`, `project_normalization`, `auth_user_separation`, `session_cookie_ip_val`, and `custom_pages_homepage_toggle` with accurate progress, next steps, and formatting.
 
 ## Next Steps
 
 - Audit active todos for overlap before adding new entries.
+- Ensure any new work has a matching `.todo` and `.tip` pair.

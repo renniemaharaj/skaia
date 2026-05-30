@@ -1,22 +1,15 @@
-<--/------>
-Phase 1: Investigate
-- Status: ⬜ Not started
-- Notes: Review Cloudflare Turnstile docs.
+<--/------->
 
-Phase 2: Stateful Session Layer
-- Status: ⬜ Not started
-- Notes: Plan requires moving beyond current JWT-only auth.
+## session_cookie_ip_val
 
-Phase 3: IP-Aware Validation
-- Status: ⬜ Not started
-- Notes: Bind session to IP and user-agent.
+### Current Progress
+- **Phase 1: Investigate** — ⬜ Not started
+- **Phase 2: Stateful Session Layer** — ⬜ Not started
+- **Phase 3: IP-Aware Validation** — ⬜ Not started
+- **Phase 4: Cloudflare Turnstile Integration** — ⬜ Not started
+- **Phase 5: Testing** — ⬜ Not started
 
-Phase 4: Cloudflare Turnstile Integration
-- Status: ⬜ Not started
-- Notes: Implement step-up auth flow.
+### Next Steps
+- [ ] Review Cloudflare Turnstile docs
 
-Phase 5: Testing
-- Status: ⬜ Not started
-- Notes: E2E and unit tests.
-
-<--/------>
+<--/------->
