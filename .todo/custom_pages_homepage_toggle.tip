@@ -1,17 +1,17 @@
-<--/------->
+<--/------>
+Phase 1: Backend Endpoint
+- Status: ✅ Complete
+- Notes: Implemented POST /pages/{id}/set-homepage. (Note: Drift from backend_spec which says PUT /set-homepage)
 
-## custom_pages_homepage_toggle
+Phase 2: Frontend Toggle
+- Status: ✅ Complete
+- Notes: Homepage selection UI built.
 
-### Current Progress
-- **Phase 1: Backend endpoint for landing-slug** — ✅ Complete
-- **Phase 2: Frontend toggle in custom pages UI** — ✅ Complete
-- **Phase 3: Real-time update/broadcast** — ✅ Complete
-- **Phase 4: Documentation and tests** — 🟡 In progress
+Phase 3: Real-time Broadcast
+- Status: ✅ Complete
+- Notes: Configured.
 
-### Next Steps
-- [ ] Add backend tests for `POST /pages/{id}/set-homepage`, permission denial, missing page handling, and landing slug persistence
-- [ ] Add frontend tests for the Custom Pages homepage button and landing-page badge states
-- [ ] Keep backend and frontend checks green; `go test ./...`, `npm test -- --run SecuritySettings`, and `npm run build` passed on 2026-05-22
-- [ ] Close this todo pair once tests and docs are confirmed
-
-<--/------->
+Phase 4: Documentation and Tests
+- Status: 🟡 In progress
+- Notes: Needs backend tests for POST /pages/{id}/set-homepage, frontend tests for homepage button/badge, keep checks green, close todo pair. Reconcile spec drift.
+<--/------>

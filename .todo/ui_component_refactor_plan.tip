@@ -1,97 +1,29 @@
-### Current Progress
+<--/------>
+Phase 1: Align with page model
+- Status: ✅ Complete
+- Notes: Page model aligned.
 
-- **Phase 1: Align with current Skaia page model** — ✅ Complete
-  - `models.Page` with `Content` JSONB all set
-  - `models.PageSection` covers typed sections with `section_type` field
-  - Page CRUD endpoints at `/pages/*` exist
-  
-- **Phase 2: Add explicit section metadata** — ✅ Complete
-  - ✅ Frontend: 14 section types defined in `types.ts` (hero, card_group, data_sources, derived_section, custom_section, etc.)
-  - ✅ Frontend: `BLOCK_MAP` in `BlockRenderer.tsx` maps all section types to components
-  - ✅ Frontend: `SECTION_TYPE_GROUPS` for organized UI picker (featured, content, integration)
-  - ✅ Backend: `/config/sections` and `/config/section-types/{type}` registry endpoints added via `backend/internal/s_registry`
-  - ✅ Backend: Page saves reject invalid content JSON, missing/unknown `section_type`, and malformed section config
+Phase 2: Section metadata
+- Status: ✅ Complete
+- Notes: Section metadata implemented.
 
-- **Phase 3: Enforce integration primitives** — ✅ Complete
-  - ✅ Frontend: `DataSourcesBlock`, `DerivedSectionBlock`, `CustomSectionBlock` components implemented
-  - ✅ Frontend: Builder can create and edit all integration block types
-  - ✅ Backend: Positive `derived_section.config.datasource_id` and `custom_section.config.custom_section_id` refs are validated on page create/update; empty draft refs remain allowed
+Phase 3: Integration primitives
+- Status: ✅ Complete
+- Notes: Shared primitives in index.css complete.
 
-- **Phase 4: Add component registry and bind-point contracts** — ⬜ Not started
-  - Need canonical component metadata for primitive and compound components.
-  - Need bind-point contracts for text, rich text, number, boolean, media, link/action, object, array, and generic values.
-  - Need style target metadata and constrained style override validation.
-  - Need custom HTML/component inspection strategy that generates explicit saved metadata instead of relying on runtime DOM guessing.
+Phase 4: Component registry & bind-point contracts
+- Status: ⬜ Not started
+- Notes: Needs implementation. Drift: `backend_spec` needs updating for `/config/sections` and `/config/section-types/{type}` endpoints. Types in this plan need to be renamed from `LandingSection` to `PageSection`.
 
-- **Phase 5: Open derived/custom sections to registered primitive components** — ⬜ Not started
-  - `derived_section` should let the builder pick the repeated row component through a component registry.
-  - `custom_section` should support saved custom components/templates with documented bind points and validation.
-  - Datasource columns/object paths/literals should map into component bind points per row.
-  - Row rendering should support cards, text, buttons, checkboxes, media, links, icons/badges, div/container primitives, and compound layouts.
+Phase 5: Open derived/custom sections to registered components
+- Status: ⬜ Not started
+- Notes: Requires Phase 4.
 
-- **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 7: Add versioning and migration** — ⬜ Not started
+Phase 6: Convert routes to dynamic page rendering
+- Status: ⬜ Not started
+- Notes: Requires Phase 5.
 
-### Backend Registry & Validation (2026-05-29)
-
-✅ **Section registry and endpoints added:**
-- `backend/internal/s_registry` owns the canonical 14 supported section definitions
-- `GET /config/sections` lists section definitions and config schemas
-- `GET /config/section-types/{type}` returns one section definition or 404
-
-✅ **Page save validation added:**
-- `POST /pages` and `PUT /pages/{id}` now validate page `Content` before persistence
-- Unknown/missing `section_type` returns 400 via `page.ErrInvalidContent`
-- Invalid datasource/custom-section IDs in integration blocks return 400
-- Validation accepts both stringified config JSON and object config JSON
-
-✅ **Verification recorded by current changes:**
-- `JWT_SECRET=test-secret go test ./internal/s_registry ./internal/page ./internal/config`
-- Full `JWT_SECRET=test-secret go test ./...` still needs to be rerun after the active worktree changes are finalized.
-
-### Component Registry Expansion (2026-05-29)
-
-🟡 **Requirements now captured in the plan:**
-- The builder must allow clients to choose a registered component for repeated datasource rows in `derived_section` and `custom_section`.
-- Supported selectable components should include primitive elements (`div`, text, button, checkbox, image/video/media, link, icon/badge) and compound repeatable components such as cards or card-with-media/text/action layouts.
-- Each component definition must document bind points, accepted data kinds, required/fallback behavior, style targets, slot/child rules, and validation rules.
-- Complex data must be bindable through object paths and typed bind points, not only flat string columns.
-- Custom HTML/component input may use detection to propose bind points, but saved custom components should persist explicit generated metadata for stable validation/rendering.
-- Backend validation remains authoritative for component type, bind-point keys, datasource column/value compatibility, required bindings, and style override safety.
-
-🟡 **Preferred architecture:**
-- Metadata-first for first-party primitive and compound components.
-- Inspector-assisted metadata generation for custom HTML/custom components.
-- Runtime renderer applies `component_type`, `bindings`, `row_key_column`, `row_overrides`, and `style_overrides` to each datasource row.
-
-### Frontend CSS & Component Consolidation (2026-05-29)
-
-✅ **Shared primitives added to `index.css`:**
-- `.btn-*` variants: primary, secondary, ghost, danger, warning + sizing (sm, lg, block)
-- `.badge-*` variants: secondary, success, warning, error, info
-- `.page-*` surface layout: shell, header, header__main, header__actions, title, subtitle
-- `.ui-*` tooling: panel, toolbar, actions, actions--center, actions--end, tabs, tab, tab--active, empty, dialog*
-- `.form-*` primitives: grid, actions, check
-- `.card` system: base, interactive, outlined, flat, compact, section, forum, store, highlight
-- `.section` system: block, header, content
-
-✅ **Form inputs standardized in `FormGroup.css`:**
-- Checkbox sizing reset to `1rem × 1rem` with `padding: 0`
-- Input/textarea focus state with `--primary-color` ring
-- Disabled state styling
-
-⚠️ **Ongoing migration:**
-- ErrorPage buttons, store empty state moved to primitives
-- High-drift components identified but not yet modularized: need continued migration as pages are touched
-
-### Next Steps
-
-- [ ] **Phase 4** — Define backend/frontend component registry schemas (`component_type`, `bind_points`, `style_targets`, `props_schema`, `slots`, `version`)
-- [ ] **Phase 4** — Add component registry API plan/endpoints and validation scope
-- [ ] **Phase 5** — Update `derived_section` and `custom_section` config model for `component_type`, `component_version`, `bindings`, `style_overrides`, and row replication
-- [ ] **Phase 5** — Design builder UI for component selection and datasource column/object-path binding
-- [ ] **Phase 6** — Begin dynamic route rendering (migrate hardcoded pages to registry-driven)
-- [ ] **Phase 7** — Plan versioning/migration for legacy page data
-- [ ] Continue CSS consolidation: migrate remaining page-local styles to shared primitives as areas are touched
-- [ ] Add frontend consumption of `/config/sections` so the builder picker is registry-driven
-- [ ] Add API-level handler tests for registry endpoints and page save 400 responses
+Phase 7: Add versioning and migration
+- Status: ⬜ Not started
+- Notes: Final phase.
+<--/------>

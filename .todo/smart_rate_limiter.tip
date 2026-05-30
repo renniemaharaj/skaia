@@ -1,21 +1,29 @@
-### Current Progress
+<--/------>
+Phase 1: Design
+- Status: ⬜ Not started
+- Notes: Design rooms and event policy.
 
-- **Phase 1: Define rate limiter model** — ⬜ Not started
-- **Phase 2: Implement grouping logic** — ⬜ Not started
-- **Phase 3: Record rate-limit events** — ⬜ Not started
-- **Phase 4: Build admin UI routes** — ⬜ Not started
-- **Phase 5: Admin controls** — ⬜ Not started
-- **Phase 6: Data/event policy** — ⬜ Not started
-- **Phase 7: Testing** — ⬜ Not started
+Phase 2: Core Limiter Implementation
+- Status: ⬜ Not started
+- Notes: Update existing simple IP limiter to support rooms.
 
-### Next Steps
+Phase 3: Room Management
+- Status: ⬜ Not started
+- Notes: API for dynamically managing rooms.
 
-- [ ] Define rate limiter model
-- [ ] Implement grouping logic
-- [ ] Record rate-limit events
-- [ ] Build admin UI routes
-- [ ] Implement admin controls
-- [ ] Enforce data/event policy
-- [ ] Implement and verify backend tests
-- [ ] Test all scenarios
-- [ ] Reviewed 2026-05-22: existing middleware rate limiter is present, but smart rooms/admin dashboard/event policy are not implemented
+Phase 4: Event Logging
+- Status: ⬜ Not started
+- Notes: Track rate limit events.
+
+Phase 5: Admin Dashboard
+- Status: ⬜ Not started
+- Notes: UI for viewing rate limit metrics.
+
+Phase 6: Integration
+- Status: ⬜ Not started
+- Notes: Apply smart limiter to routes.
+
+Phase 7: Testing
+- Status: ⬜ Not started
+- Notes: Load testing and unit tests.
+<--/------>

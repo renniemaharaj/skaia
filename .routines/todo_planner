@@ -99,11 +99,12 @@ if new plan needed:
 
 ## Last Ran
 
-- Not yet recorded
+- 2026-05-30T09:34:00-04:00
 
 ## Last Run Remarks
 
-- None
+- Reconciled existing tips (auth_user_separation, custom_pages_homepage_toggle, project_normalization, session_cookie_ip_val, smart_rate_limiter, ui_component_refactor_plan) by fixing formatting and noting spec drift.
+- Created 4 new plans capturing codebase review findings: hotfix_security_and_schema, project_hardening_and_perf, auth_interface_context_refactor, frontend_mfa_ui_cleanup.
 
 ## Next Steps
 

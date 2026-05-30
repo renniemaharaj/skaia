@@ -1,0 +1,15 @@
+Hotfix: Security and Database Schema Fixes
+
+This plan tracks high-priority critical fixes identified during the 2026-05-30 codebase review.
+
+## Objectives
+- Secure Admin API routes by fixing the `HasPermission` mock implementation that currently always returns `true`.
+- Resolve schema drift causing fresh database migrations to fail due to the `page_items.section_id` vs `page_section_id` naming conflict in `001_schema.sql` and `007_rename_landing_to_page.sql`.
+- Fix the `UpdatePasswordHash` error handling in the repository that silently swallows non-ErrNoRows database connection issues, risking data corruption.
+- Fix the zero-value timestamp edge case in `assertMFACleared`.
+
+## Scope
+- `backend/internal/auth/service.go`: `HasPermission` method
+- `backend/internal/migrations/001_schema.sql` and `007_rename_landing_to_page.sql`
+- `backend/internal/auth/repository.go`: `UpdatePasswordHash`
+- `backend/internal/middleware/mfarequired.go`: `assertMFACleared`

@@ -1,0 +1,17 @@
+<--/------>
+Phase 1: Admin Permission Security Fix
+- Status: ⬜ Not started
+- Notes: Update `HasPermission` in `service.go` to properly validate admin status (e.g., via JWT claims or DB roles) instead of returning `true` unconditionally.
+
+Phase 2: Database Schema Idempotency
+- Status: ⬜ Not started
+- Notes: Update `001_schema.sql` line 360 to `page_section_id` and fix the index. Make `007_rename_landing_to_page.sql` idempotent (`IF EXISTS` or `DO` block).
+
+Phase 3: Repository Error Handling
+- Status: ⬜ Not started
+- Notes: Fix `UpdatePasswordHash` in `repository.go` to return non-ErrNoRows errors properly instead of falling through to the `UPDATE` query.
+
+Phase 4: Middleware Edge Cases
+- Status: ⬜ Not started
+- Notes: Fix zero-value timestamp issue in `assertMFACleared` in `mfarequired.go`.
+<--/------>

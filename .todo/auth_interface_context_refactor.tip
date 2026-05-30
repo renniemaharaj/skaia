@@ -1,0 +1,17 @@
+<--/------>
+Phase 1: Interface Alignment
+- Status: ⬜ Not started
+- Notes: Update `AuthService` in `interface.go` to match the exact signatures needed by the service consumers, ensuring `context.Context` is the first parameter.
+
+Phase 2: Service Context Propagation
+- Status: ⬜ Not started
+- Notes: Update all ~20 methods in `service.go` to accept and use `context.Context` rather than generating `context.Background()` internally.
+
+Phase 3: Update Handlers
+- Status: ⬜ Not started
+- Notes: Update all calls from `handlers.go` and middleware to pass request context down to the service layer.
+
+Phase 4: Stub Removal
+- Status: ⬜ Not started
+- Notes: Remove or implement hardcoded stub implementations for email/password reset tokens in `service.go`.
+<--/------>

@@ -1,17 +1,21 @@
-### Current Progress
+<--/------>
+Phase 1: Investigate
+- Status: ⬜ Not started
+- Notes: Review Cloudflare Turnstile docs.
 
-- **Phase 1: Investigate session/auth model** — ⬜ Not started
-- **Phase 2: Implement stateful session layer** — ⬜ Not started
-- **Phase 3: Add IP-aware validation** — ⬜ Not started
-- **Phase 4: Integrate Cloudflare Turnstile** — ⬜ Not started
-- **Phase 5: Test and validate** — ⬜ Not started
+Phase 2: Stateful Session Layer
+- Status: ⬜ Not started
+- Notes: Plan requires moving beyond current JWT-only auth.
 
-### Next Steps
+Phase 3: IP-Aware Validation
+- Status: ⬜ Not started
+- Notes: Bind session to IP and user-agent.
 
-- [ ] Investigate current session/auth model
-- [ ] Implement stateful session layer
-- [ ] Add IP-aware validation logic
-- [ ] Integrate Cloudflare Turnstile for step-up
-- [ ] Implement and verify backend tests
-- [ ] Test and validate end-to-end
-- [ ] Reviewed 2026-05-22: no Turnstile/session step-up implementation detected
+Phase 4: Cloudflare Turnstile Integration
+- Status: ⬜ Not started
+- Notes: Implement step-up auth flow.
+
+Phase 5: Testing
+- Status: ⬜ Not started
+- Notes: E2E and unit tests.
+<--/------>

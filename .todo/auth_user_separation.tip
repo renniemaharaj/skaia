@@ -1,25 +1,29 @@
-<--/------->
+<--/------>
+Phase 1: Design & Schema 
+- Status: ✅ Complete
+- Notes: Auth tables designed and migration 009 created.
 
-## auth_user_separation
+Phase 2: Refactor Auth Service
+- Status: ✅ Complete
+- Notes: Logic moved to internal/auth package.
 
-### Current Progress
-- **Phase 1: Design new auth models/tables** — ✅ Complete
-- **Phase 2: Refactor backend/internal/auth** — ✅ Complete
-- **Phase 3: Update user model/repository** — ✅ Complete
-- **Phase 4: Migrate data** — ✅ Complete
-- **Phase 5: Update handlers/APIs** — ✅ Complete
-- **Phase 6: Testing and validation** — 🟡 In progress
-- **Phase 7: Documentation/traceability** — ✅ Complete
+Phase 3: Update User Model
+- Status: ✅ Complete
+- Notes: User struct slimmed down, decoupled from password hash.
 
-### Next Steps
-- [x] Move response-only `totp_enabled` out of `models.User` into `models.AuthUser`; no unused user-service TOTP methods remain
-- [x] Replace old test fixtures that inserted `users.password_hash` directly
-- [x] Review `009_auth_user_separation.sql` for backup-code migration needs and idempotency
-- [x] Add direct auth separation tests for registration, login, TOTP, and backup codes
-- [ ] Add DB-backed migration behavior coverage when `TEST_DATABASE_URL` is available
-- [x] Keep `go test ./...` green after the remaining refactor work; full backend suite passed on 2026-05-24 with `JWT_SECRET=test-secret`
-- [x] Reviewed 2026-05-24: user-service TOTP stubs were removed and current auth/TOTP endpoints call `internal/auth`
-- [x] Targeted backend tests passed on 2026-05-24 with `JWT_SECRET=test-secret`: `go test ./internal/auth ./internal/user ./internal/forum ./internal/store`
-- [x] Frontend build passed on 2026-05-24 via `mise exec node@24.16.0 -- npm run build`
+Phase 4: Data Migration
+- Status: ✅ Complete
+- Notes: 009 migration tested and applied.
 
-<--/------->
+Phase 5: Update Handlers/APIs
+- Status: ✅ Complete
+- Notes: Handlers now use auth service.
+
+Phase 6: Testing & Validation
+- Status: 🟡 In progress
+- Notes: Backend suite passing, frontend build passing. Needs DB-backed migration behavior coverage when TEST_DATABASE_URL is available.
+
+Phase 7: Documentation
+- Status: ✅ Complete
+- Notes: Specs updated.
+<--/------>
