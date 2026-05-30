@@ -136,6 +136,9 @@ func (s *fakeUserService) GetByEmail(email string) (*models.User, error) {
 	}
 	return user, nil
 }
+func (s *fakeUserService) HasPermission(userID int64, permission string) (bool, error) {
+	return true, nil // For tests, just return true
+}
 
 func newTestService() (*Service, *fakeAuthRepository, *fakeUserService) {
 	repo := newFakeAuthRepository()

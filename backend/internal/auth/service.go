@@ -265,6 +265,7 @@ type UserService interface {
 	GetByID(id int64) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
 	CreateUserFromRegisterRequest(req *models.RegisterRequest) (*models.User, error)
+	HasPermission(userID int64, permission string) (bool, error)
 }
 
 type Service struct {
@@ -353,8 +354,7 @@ func (s *Service) ResetPassword(userID int64) (string, error) {
 }
 
 func (s *Service) HasPermission(userID int64, permission string) (bool, error) {
-	// TODO: Implement real permission check, possibly via userService
-	return true, nil
+	return s.userService.HasPermission(userID, permission)
 }
 
 func (s *Service) GetByID(userID int64) (*models.User, error) {

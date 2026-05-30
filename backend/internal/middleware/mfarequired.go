@@ -119,7 +119,8 @@ func handleMFAChallenge(w http.ResponseWriter, r *http.Request, authSvc *auth.Se
 // the challenge if valid — allowing clients to piggyback verification on their first request.
 func assertMFACleared(r *http.Request, authSvc *auth.Service, userID int64) error {
 	mfaStatus, err := authSvc.GetMFARequired(userID)
-	if err != nil || mfaStatus.Required || time.Since(mfaStatus.UpdatedAt) > mfaSessionTTL {
+	expired := !mfaStatus.UpdatedAt.IsZero() && time.Since(mfaStatus.UpdatedAt) > mfaSessionTTL
+	if err != nil || mfaStatus.Required || expired {
 		req, body, _ := readMFABody(r)
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 		if req != nil {

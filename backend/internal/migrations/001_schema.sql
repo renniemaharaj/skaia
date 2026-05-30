@@ -356,9 +356,9 @@ CREATE INDEX IF NOT EXISTS idx_page_sections_order ON page_sections(display_orde
 
 -- ── Page section items (cards/tiles within a section) ────────────────────
 CREATE TABLE IF NOT EXISTS page_items (
-    id            BIGSERIAL    PRIMARY KEY,
-    section_id    BIGINT       NOT NULL REFERENCES page_sections(id) ON DELETE CASCADE,
-    display_order INT          NOT NULL DEFAULT 0,
+    id                BIGSERIAL    PRIMARY KEY,
+    page_section_id   BIGINT       NOT NULL REFERENCES page_sections(id) ON DELETE CASCADE,
+    display_order     INT          NOT NULL DEFAULT 0,
     icon          VARCHAR(100) NOT NULL DEFAULT '',
     heading       TEXT         NOT NULL DEFAULT '',
     subheading    TEXT         NOT NULL DEFAULT '',
@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS page_items (
     created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_page_items_section ON page_items(section_id, display_order);
+CREATE INDEX IF NOT EXISTS idx_page_items_section ON page_items(page_section_id, display_order);
 
 -- ── Custom pages (block-builder content) ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS pages (
