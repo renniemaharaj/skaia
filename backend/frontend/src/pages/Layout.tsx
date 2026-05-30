@@ -28,6 +28,7 @@ import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
 import { syncServerTime } from "../utils/serverTime";
 import RateLimitedPage from "./RateLimitedPage";
+import MFAChallenge from "./MFAChallenge";
 
 interface LayoutProps {
   children: ReactNode;
@@ -77,6 +78,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
   );
 
+  const [mfaRequired, setMfaRequired] = useState(false);
+
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
       const detail = (event as CustomEvent<{ retryAfter?: number }>).detail;
@@ -117,6 +120,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }, 1000);
     return () => window.clearInterval(interval);
   }, [holdingSeconds]);
+
+  useEffect(() => {
+    const handleMfaRequired = () => {
+      setMfaRequired(true);
+    };
+    window.addEventListener("auth:mfa-required", handleMfaRequired);
+    return () =>
+      window.removeEventListener("auth:mfa-required", handleMfaRequired);
+  }, []);
 
   usePresence(features?.presence ?? true);
   useCursorTracking();
@@ -183,7 +195,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             subscribe("inbox", id);
           }
         }
-      } catch {
+      } catch (err) {
+        if (err instanceof Error && err.message === "MFA Required") {
+          setMfaRequired(true);
+          return;
+        }
         // Any error (401 from apiRequest already cleared localStorage; handle atom state here)
         setAccessToken(null);
         setRefreshToken(null);
@@ -197,9 +213,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Listen for unauthorized (401) errors and logout
   useEffect(() => {
     const handleUnauthorized = (event: Event) => {
+      const detail = (event as CustomEvent<{ errorMessage?: string }>).detail;
+      if (detail?.errorMessage === "MFA Required") {
+        setMfaRequired(true);
+        return;
+      }
       console.warn(
         "Unauthorized access detected, clearing auth state",
-        (event as CustomEvent).detail,
+        detail,
       );
       setAccessToken(null);
       setRefreshToken(null);
@@ -233,6 +254,22 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   if (holdingSeconds !== undefined) {
     return <RateLimitedPage retrySeconds={holdingSeconds} />;
+  }
+
+  if (mfaRequired) {
+    return (
+      <MFAChallenge
+        totpToken=""
+        onAuthSuccess={() => setMfaRequired(false)}
+        onBack={() => {
+          setAccessToken(null);
+          setRefreshToken(null);
+          setCurrentUser(null);
+          setMfaRequired(false);
+          navigate("/login");
+        }}
+      />
+    );
   }
 
   return (

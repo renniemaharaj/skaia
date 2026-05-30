@@ -23,6 +23,9 @@ type Repository interface {
 	GetBackupCodes(ctx context.Context, userID int64) ([]*models.BackupCode, error)
 	UseBackupCode(ctx context.Context, codeID int64) error
 	DeleteBackupCodes(ctx context.Context, userID int64) error
+
+	SetMFARequired(ctx context.Context, userID int64, required bool) error
+	GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error)
 }
 
 // SQLRepository implements Repository using a SQL database.
@@ -150,4 +153,25 @@ func (r *SQLRepository) UseBackupCode(ctx context.Context, codeID int64) error {
 func (r *SQLRepository) DeleteBackupCodes(ctx context.Context, userID int64) error {
 	_, err := r.db.ExecContext(ctx, `DELETE FROM auth_backup_codes WHERE user_id = $1`, userID)
 	return err
+}
+
+func (r *SQLRepository) SetMFARequired(ctx context.Context, userID int64, required bool) error {
+	_, err := r.db.ExecContext(ctx, `INSERT INTO mfa_challenge_required (user_id, required) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET required = EXCLUDED.required, updated_at = NOW()`, userID, required)
+	return err
+}
+
+func (r *SQLRepository) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
+	row := r.db.QueryRowContext(ctx, `SELECT required, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
+	var status models.MFAChallengeStatus
+	status.UserID = userID
+	if err := row.Scan(&status.Required, &status.CreatedAt, &status.UpdatedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return models.MFAChallengeStatus{
+				UserID:   userID,
+				Required: true,
+			}, nil
+		}
+		return models.MFAChallengeStatus{}, err
+	}
+	return status, nil
 }

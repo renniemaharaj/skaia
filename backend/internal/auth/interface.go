@@ -22,4 +22,7 @@ type AuthService interface {
 	GetBackupCodes(ctx context.Context, userID int64) ([]*models.BackupCode, error)
 	UseBackupCode(ctx context.Context, codeID int64) error
 	DeleteBackupCodes(ctx context.Context, userID int64) error
+
+	SetMFARequired(ctx context.Context, userID int64, required bool) error
+	GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error)
 }

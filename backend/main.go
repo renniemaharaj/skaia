@@ -419,7 +419,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			armedDir = "armed"
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
-		api.Use(imw.RateLimitByIP(), imw.RateLimitByClient())
+		api.Use(imw.RateLimitByIP(), imw.RateLimitByClient(), imw.MFARequiredMiddleware(auth.NewService(auth.NewSQLRepository(db), userSvc)))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")

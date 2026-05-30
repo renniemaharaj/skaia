@@ -405,3 +405,11 @@ func (s *Service) ResendVerificationToken(userID int64) (string, error) {
 	// TODO: Implement real resend logic
 	return "verify-token", nil
 }
+
+func (s *Service) SetMFARequired(userID int64, required bool) error {
+	return s.repo.SetMFARequired(context.Background(), userID, required)
+}
+
+func (s *Service) GetMFARequired(userID int64) (models.MFAChallengeStatus, error) {
+	return s.repo.GetMFARequired(context.Background(), userID)
+}

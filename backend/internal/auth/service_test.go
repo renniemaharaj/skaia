@@ -148,6 +148,7 @@ type fakeAuthRepository struct {
 	credentials map[int64]*models.Credential
 	totpSecrets map[int64]*models.TOTPSecret
 	backupCodes map[int64][]*models.BackupCode
+	mfaStatuses map[int64]models.MFAChallengeStatus
 }
 
 func newFakeAuthRepository() *fakeAuthRepository {
@@ -156,6 +157,7 @@ func newFakeAuthRepository() *fakeAuthRepository {
 		credentials: map[int64]*models.Credential{},
 		totpSecrets: map[int64]*models.TOTPSecret{},
 		backupCodes: map[int64][]*models.BackupCode{},
+		mfaStatuses: map[int64]models.MFAChallengeStatus{},
 	}
 }
 
@@ -288,4 +290,24 @@ func (r *fakeAuthRepository) UseBackupCode(ctx context.Context, codeID int64) er
 func (r *fakeAuthRepository) DeleteBackupCodes(ctx context.Context, userID int64) error {
 	delete(r.backupCodes, userID)
 	return nil
+}
+
+func (r *fakeAuthRepository) SetMFARequired(ctx context.Context, userID int64, required bool) error {
+	r.mfaStatuses[userID] = models.MFAChallengeStatus{
+		UserID:    userID,
+		Required:  required,
+		UpdatedAt: time.Now(),
+	}
+	return nil
+}
+
+func (r *fakeAuthRepository) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
+	status, ok := r.mfaStatuses[userID]
+	if !ok {
+		return models.MFAChallengeStatus{
+			UserID:   userID,
+			Required: true,
+		}, nil
+	}
+	return status, nil
 }

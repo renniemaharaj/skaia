@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { type User } from "../atoms/auth";
 import { apiBaseUrlAtom } from "../atoms/config";
 
-const API_BASE_URL = getDefaultStore().get(apiBaseUrlAtom); // should be "" or "/" for same-origin
+const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
 
 export interface ApiError {
   error: string;
@@ -130,7 +130,7 @@ export async function apiRequest<T>(
       // Use default error message
     }
 
-    const retryHeader = response.headers.get("Retry-After");
+    const retryHeader = response.headers?.get("Retry-After");
     if (retryHeader) {
       const retry = parseInt(retryHeader, 10);
       if (!Number.isNaN(retry)) {
@@ -163,6 +163,16 @@ export async function apiRequest<T>(
 
     // Handle 401 Unauthorized — attempt a token refresh before logging out
     if (response.status === 401) {
+      if (response.statusText === "MFA Required" || errorMessage === "MFA Required") {
+        toast.error(
+          "Multi-factor authentication required. Please complete MFA challenge to continue.",
+        );
+        window.dispatchEvent(
+          new CustomEvent("auth:mfa-required", { detail: {} }),
+        );
+        throw new Error("MFA Required");
+      }
+
       const refreshToken = localStorage.getItem("auth.refreshToken");
 
       if (refreshToken && !endpoint.includes("/auth/refresh")) {
@@ -401,5 +411,18 @@ export async function totpDisable(
   return apiRequest("/auth/totp/disable", {
     method: "POST",
     body: JSON.stringify({ password }),
+  });
+}
+
+export async function verifyMFAChallenge(
+  totpCode?: string,
+  backupCode?: string,
+): Promise<{ status: string }> {
+  return apiRequest("/auth/mfa-challenge", {
+    method: "POST",
+    body: JSON.stringify({
+      totp_code: totpCode,
+      backup_code: backupCode,
+    }),
   });
 }

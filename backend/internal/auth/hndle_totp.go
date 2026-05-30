@@ -72,6 +72,11 @@ func (h *Handler) LoginTOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reset MFA challenge required state in DB for the session
+	if err := h.svc.SetMFARequired(user.ID, false); err != nil {
+		log.Printf("auth: failed to reset MFA challenge status: %v", err)
+	}
+
 	// Issue full access token.
 	accessToken, err := jwt.GenerateTokenWithPermissions(
 		user.ID, user.Username, user.Email, user.DisplayName, user.Roles, user.Permissions,

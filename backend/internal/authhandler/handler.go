@@ -40,6 +40,12 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Post("/totp/setup", h.authHandler.TOTPSetup)
 		r.With(jwt).Post("/totp/enable", h.authHandler.TOTPEnable)
 		r.With(jwt).Post("/totp/disable", h.authHandler.TOTPDisable)
+		r.With(jwt).Post("/mfa-challenge", func(w http.ResponseWriter, r *http.Request) {
+			// Handled by MFARequiredMiddleware, but defined here as a registered route.
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status":"success"}`))
+		})
 		// Expose TOTP status for the authenticated user and admin queries
 		r.With(jwt).Get("/totp", h.authHandler.TOTPStatus)
 		r.With(jwt).Get("/totp/{id}", h.authHandler.AdminTOTPStatus)

@@ -100,3 +100,10 @@ type TOTPBackupCode struct {
 	CodeHash string `json:"-"`
 	Used     bool   `json:"used"`
 }
+
+type MFAChallengeStatus struct {
+	UserID    int64     `json:"user_id"`
+	Required  bool      `json:"required"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
