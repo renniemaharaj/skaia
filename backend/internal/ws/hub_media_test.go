@@ -54,3 +54,25 @@ func TestHandleMediaTransitionStartAndComplete(t *testing.T) {
 		t.Fatalf("history = %+v, want current item", state.History)
 	}
 }
+
+func TestHandleMediaUpdateRejectsCrossRouteActions(t *testing.T) {
+	h := NewHub()
+	client := &Client{UserID: 1, UserName: "User", Route: "/room-a", Send: make(chan *Message, 1)}
+
+	payload, err := json.Marshal(MediaClientAction{Route: "/room-b", VideoID: "aaaaaaaaaaa"})
+	if err != nil {
+		t.Fatalf("marshal add payload: %v", err)
+	}
+
+	h.handleMediaUpdate(MediaUpdateAction{
+		Client:  client,
+		Message: Message{Type: MediaAdd, Payload: payload},
+	})
+
+	if _, exists := h.mediaRoutes["/room-b"]; exists {
+		t.Fatal("cross-route media action created state for /room-b")
+	}
+	if _, exists := h.mediaRoutes["/room-a"]; exists {
+		t.Fatal("cross-route media action mutated the client's own route")
+	}
+}

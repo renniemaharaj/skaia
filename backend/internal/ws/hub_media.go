@@ -24,7 +24,10 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 	}
 
 	route := action.Route
-	if route == "" {
+	h.mu.RLock()
+	clientRoute := mu.Client.Route
+	h.mu.RUnlock()
+	if route == "" || route != clientRoute {
 		return // Ignore updates without a route
 	}
 
