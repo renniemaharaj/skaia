@@ -36,6 +36,12 @@ const (
 	Cursor             MessageType = "cursor:update"       // client => server => same-route clients: cursor position
 	EventsUpdate       MessageType = "events:update"       // server => admin clients: new audit event
 	VoiceControl       MessageType = "voice:control"       // client => server => client: admin voice chat controls
+	MediaAdd           MessageType = "media:add"           // client => server: add youtube video
+	MediaRemove        MessageType = "media:remove"        // client => server: remove queue item
+	MediaAction        MessageType = "media:action"        // client => server: pause/resume queue
+	MediaEnded         MessageType = "media:ended"         // client => server: current video ended
+	MediaHistoryClear  MessageType = "media:history:clear" // client => server: clear route history
+	MediaSync          MessageType = "media:sync"          // server => client: full queue sync
 	ErrorMessage       MessageType = "error"
 )
 
@@ -91,4 +97,33 @@ type VoiceControlPayload struct {
 	Route        string `json:"route"`
 	Action       string `json:"action"` // "mute", "unmute", "kick", "enable", "disable"
 	TargetUserID int64  `json:"target_user_id,omitempty"`
+}
+
+// MediaItem represents a single video in the queue or history.
+type MediaItem struct {
+	ID        string `json:"id"`
+	VideoID   string `json:"video_id"`
+	AddedBy   int64  `json:"added_by"`
+	UserName  string `json:"user_name"`
+	Loop      bool   `json:"loop"`
+	CreatedAt string `json:"created_at"`
+}
+
+// MediaState payload represents the current playback queue and history for a route.
+type MediaState struct {
+	Route           string      `json:"route"`
+	Queue           []MediaItem `json:"queue"`
+	History         []MediaItem `json:"history"`
+	IsPaused        bool        `json:"is_paused"`
+	CurrentPosition float64     `json:"current_position"`
+	UpdatedAt       string      `json:"updated_at"`
+}
+
+// MediaClientAction represents an action requested by a client (add, remove, etc).
+type MediaClientAction struct {
+	Route    string  `json:"route"`
+	VideoID  string  `json:"video_id,omitempty"`
+	ItemID   string  `json:"item_id,omitempty"`
+	Loop     bool    `json:"loop,omitempty"`
+	Position float64 `json:"position,omitempty"`
 }

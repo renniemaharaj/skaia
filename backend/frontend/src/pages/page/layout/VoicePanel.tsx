@@ -1,7 +1,11 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Mic, MicOff, Play, Pause, Settings } from "lucide-react";
-import { useCallback, useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { globalVolumeAtom, voicePermissionsAtom } from "../../../atoms/voice";
+import { mediaStateAtom } from "../../../atoms/media";
+import YouTubePlayer from "./YouTubePlayer";
+import type { YouTubePlayerRef } from "./YouTubePlayer";
+import { Plus, X, Trash2, ListVideo, History as HistoryIcon } from "lucide-react";
 import {
   socketAtom,
   currentUserAtom,
@@ -130,29 +134,6 @@ function createVoiceStreamPlayer(
   return player;
 }
 
-function getYouTubeEmbedUrl(rawUrl: string): string | null {
-  try {
-    const url = new URL(rawUrl);
-    const host = url.hostname.replace(/^www\./, "");
-    const videoId =
-      host === "youtu.be"
-        ? url.pathname.slice(1)
-        : url.pathname.startsWith("/embed/")
-          ? url.pathname.split("/")[2]
-          : url.searchParams.get("v");
-
-    if (
-      !videoId ||
-      !["youtube.com", "m.youtube.com", "youtu.be"].includes(host)
-    ) {
-      return null;
-    }
-
-    return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1`;
-  } catch {
-    return null;
-  }
-}
 
 export default function VoicePanel() {
   const [globalVolume, setGlobalVolume] = useAtom(globalVolumeAtom);
@@ -160,23 +141,79 @@ export default function VoicePanel() {
   const socket = useAtomValue(socketAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
+  const mediaState = useAtomValue(mediaStateAtom);
   const location = useLocation();
+  const playerRef = useRef<YouTubePlayerRef>(null);
+
+  const [inputUrl, setInputUrl] = useState("");
+
+  const extractYouTubeId = (url: string) => {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes("youtube.com")) return u.searchParams.get("v");
+      if (u.hostname === "youtu.be") return u.pathname.slice(1);
+    } catch {
+      return url.length === 11 ? url : null;
+    }
+    return null;
+  };
+
+  const handleAddMedia = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const vid = extractYouTubeId(inputUrl);
+    if (!vid) {
+      toast.error("Invalid YouTube URL");
+      return;
+    }
+    socket?.send(JSON.stringify({
+      type: "media:add",
+      payload: { route: location.pathname, video_id: vid, loop: false }
+    }));
+    setInputUrl("");
+  };
+
+  const handleRemoveMedia = (itemId: string) => {
+    socket?.send(JSON.stringify({
+      type: "media:remove",
+      payload: { route: location.pathname, item_id: itemId }
+    }));
+  };
+
+  const handleClearHistory = () => {
+    socket?.send(JSON.stringify({
+      type: "media:history:clear",
+      payload: { route: location.pathname }
+    }));
+  };
+
+  const handlePauseToggle = async () => {
+    let position = 0;
+    if (playerRef.current) {
+      position = await playerRef.current.getCurrentTime();
+    }
+    socket?.send(JSON.stringify({
+      type: "media:action",
+      payload: { route: location.pathname, position }
+    }));
+  };
+
+  const handleEnded = useCallback(() => {
+    if (mediaState?.queue && mediaState.queue.length > 0) {
+      socket?.send(JSON.stringify({
+        type: "media:ended",
+        payload: { route: location.pathname, item_id: mediaState.queue[0].id }
+      }));
+    }
+  }, [mediaState, socket, location.pathname]);
 
   const [micActive, setMicActive] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const voicePlayersRef = useRef<Map<string, VoiceStreamPlayer>>(new Map());
-  const youtubeEmbedUrl = useMemo(
-    () => getYouTubeEmbedUrl(mediaUrl),
-    [mediaUrl],
-  );
-
   const isMutedByAdmin =
     currentUser && permissions.mutedUsers[Number(currentUser.id)];
   const isKicked =
@@ -378,43 +415,93 @@ export default function VoicePanel() {
         </div>
       </div>
 
-      <div
-        className="vp-media-section ui-panel"
-        style={{ opacity: 0.5, pointerEvents: "none", position: "relative" }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <h4 style={{ margin: 0 }}>Media Player</h4>
-          <span style={{ fontSize: "0.7rem", fontWeight: "bold", textTransform: "uppercase", background: "var(--bg-tertiary, rgba(0,0,0,0.2))", padding: "2px 6px", borderRadius: "4px" }}>Coming Soon</span>
-        </div>
-        <div className="vp-media-input">
-          <input
-            type="text"
-            placeholder="YouTube URL or Audio Link..."
-            value={mediaUrl}
-            onChange={(e) => setMediaUrl(e.target.value)}
-            disabled
-          />
-          <button
-            className="btn btn-sm btn-primary vp-play-btn"
-            onClick={() => setIsPlaying(!isPlaying)}
-            disabled
-          >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-          </button>
+      <div className="vp-media-section ui-panel">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h4>Media Queue</h4>
+          {hasManagePermission && (
+            <button className="btn btn-sm btn-ghost" onClick={handlePauseToggle} style={{ padding: "2px 6px", fontSize: "0.75rem" }}>
+              {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
+              {mediaState?.is_paused ? " Resume" : " Pause"}
+            </button>
+          )}
         </div>
 
-        {isPlaying && youtubeEmbedUrl ? (
-          <div className="vp-iframe-wrapper">
-            <iframe
-              src={youtubeEmbedUrl}
-              frameBorder="0"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
+        <form className="vp-media-input" onSubmit={handleAddMedia}>
+          <input
+            type="text"
+            placeholder="YouTube URL..."
+            value={inputUrl}
+            onChange={(e) => setInputUrl(e.target.value)}
+          />
+          <button type="submit" className="btn btn-sm btn-primary vp-play-btn" disabled={!inputUrl}>
+            <Plus size={14} />
+          </button>
+        </form>
+
+        {mediaState?.queue && mediaState.queue.length > 0 && (
+          <>
+            <div className="vp-active-player">
+              <YouTubePlayer 
+                ref={playerRef}
+                videoId={mediaState.queue[0].video_id} 
+                isPaused={mediaState.is_paused} 
+                currentPosition={mediaState.current_position || 0}
+                updatedAt={mediaState.updated_at || ""}
+                onEnded={handleEnded} 
+              />
+            </div>
+            
+            {mediaState.queue.length > 1 && (
+              <div className="vp-queue-list">
+                <div className="vp-queue-header">
+                  <ListVideo size={12} /> Up Next
+                </div>
+                <div className="vp-queue-scroll">
+                  {mediaState.queue.slice(1).map(item => (
+                    <div key={item.id} className="vp-queue-item">
+                      <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="Thumbnail" />
+                      <div className="vp-queue-item-overlay">
+                        <button onClick={() => handleRemoveMedia(item.id)} className="btn btn-ghost" style={{ padding: "0.25rem", borderRadius: "50%" }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {mediaState?.history && mediaState.history.length > 0 && (
+          <div className="vp-queue-list">
+            <div className="vp-queue-header" style={{ display: "flex", justifyContent: "space-between" }}>
+              <span><HistoryIcon size={12} /> History</span>
+              {hasManagePermission && (
+                <button className="btn btn-ghost text-error" onClick={handleClearHistory} style={{ padding: "0.1rem 0.25rem" }}>
+                  <Trash2 size={12} />
+                </button>
+              )}
+            </div>
+            <div className="vp-queue-scroll">
+              {mediaState.history.map(item => (
+                <div key={item.id} className="vp-queue-item">
+                  <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="Thumbnail" />
+                  <div className="vp-queue-item-overlay">
+                    <button onClick={() => {
+                       socket?.send(JSON.stringify({
+                         type: "media:add",
+                         payload: { route: location.pathname, video_id: item.video_id, loop: false }
+                       }));
+                    }} className="btn btn-ghost" style={{ padding: "0.25rem", borderRadius: "50%" }} title="Play Again">
+                      <Play size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        ) : isPlaying && mediaUrl ? (
-          <audio ref={audioRef} src={mediaUrl} autoPlay loop />
-        ) : null}
+        )}
       </div>
 
       {hasManagePermission && (

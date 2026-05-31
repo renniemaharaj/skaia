@@ -171,3 +171,99 @@
 }
 
 /* No longer needed .vp-admin-section styles */
+
+/* Media Queue Styles */
+.vp-active-player {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: black;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.vp-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.vp-queue-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.vp-queue-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.vp-queue-item {
+  position: relative;
+  flex: 0 0 100px;
+  height: 56px; /* 16:9 for 100px width approx */
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+}
+
+.vp-queue-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vp-queue-item-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.vp-queue-item:hover .vp-queue-item-overlay {
+  opacity: 1;
+}
+
+.vp-btn-icon {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.vp-btn-icon:hover {
+  background: rgba(255,255,255,0.4);
+}
+
+.vp-btn-text {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0;
+}
+.vp-btn-text:hover {
+  opacity: 1;
+}

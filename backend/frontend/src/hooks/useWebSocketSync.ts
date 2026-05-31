@@ -50,6 +50,7 @@ import {
   playChatSound,
 } from "../utils/sound";
 import { voicePermissionsAtom } from "../atoms/voice";
+import { mediaStateAtom } from "../atoms/media";
 
 import {
   productsAtom,
@@ -96,6 +97,7 @@ export const useWebSocketSync = () => {
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
+  const setMediaState = useSetAtom(mediaStateAtom);
   const wsUrl = useAtomValue(wsBaseUrlAtom);
   // Tracks all active subscriptions so they can be replayed on reconnect
   const subscriptionsRef = useRef<Set<string>>(new Set());
@@ -321,6 +323,11 @@ export const useWebSocketSync = () => {
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
             }
+          }
+
+          // Handle media queue sync
+          if (message.type === "media:sync") {
+            setMediaState(payload as any);
           }
 
           // ── MFA Required ──────────────────────────────────────────────────

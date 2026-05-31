@@ -110,6 +110,8 @@ func (c *Client) ReadPump() {
 			// nothing — client keepalive only
 		case VoiceControl:
 			c.handleVoiceControlMsg(msg)
+		case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaHistoryClear:
+			c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 		default:
 			if c.broadcastLimit.allow() {
 				c.Hub.Broadcast(&msg)

@@ -1,0 +1,39 @@
+# Media Queue Implementation Plan
+
+## 1. Backend Architecture (`internal/ws`)
+- [ ] **Define State Structures**
+  - Create `MediaItem` struct (ID, VideoID, AddedBy, Loop, CreatedAt).
+  - Create `MediaState` struct (Queue array, History array, IsPaused).
+  - Update `Hub` to store a map of `Route -> *MediaState`.
+- [ ] **Handle WebSocket Events** (e.g. in a new `hub_media.go` or `hub_propagate.go`)
+  - `media:add`: Parse incoming YouTube URL/ID, append to route's queue, broadcast `media:sync`.
+  - `media:remove`: Find item by ID in queue, remove it, broadcast `media:sync`.
+  - `media:action`: Toggle `IsPaused` state for the route, broadcast `media:sync`.
+  - `media:ended`: Called by the frontend player when video finishes. Pop item from queue. If `Loop` is true, append to end of queue. Otherwise, prepend to History. Broadcast `media:sync`.
+  - `media:history_clear`: Empty the history array for the route.
+- [ ] **Sync on Join**
+  - When a user joins or changes route (in `hub_presence.go`), immediately send them the `media:sync` payload for their new route.
+
+## 2. Frontend State Management (`atoms/media.ts` or in `atoms/presence.ts`)
+- [ ] Define Types: `MediaItem`, `MediaState`.
+- [ ] Create Jotai atoms to hold the current route's queue and history.
+- [ ] In the global socket listener, listen for `media:sync` and update the atom.
+
+## 3. Frontend Player Component
+- [ ] Build a `React.memo` wrapped player component.
+- [ ] Load the YouTube Iframe API.
+- [ ] Listen for `onStateChange`. When it reaches `0` (Ended), send `media:ended` to the WebSocket.
+- [ ] Ensure the iframe only remounts/reloads if the `videoId` prop changes. 
+
+## 4. Frontend UI (`VoicePanel.tsx` & `VoicePanel.css`)
+- [ ] **Input Section**: Text input for YouTube links and an "Add to Queue" button.
+- [ ] **Player Section**: Render the `YouTubePlayer` using the top item in the queue.
+- [ ] **Queue Section**:
+  - Horizontal scrolling list of neat squares (using `https://img.youtube.com/vi/<ID>/mqdefault.jpg`).
+  - Add hover overlay with "X" to remove item and a "Loop" toggle icon.
+- [ ] **History Section**:
+  - Horizontal scrolling list similar to queue.
+  - Hover overlay features a "Play" icon in the center to add it back to the queue.
+  - "Clear History" button next to section title.
+- [ ] **Admin Controls**:
+  - Pause/Resume queue button.

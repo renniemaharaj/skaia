@@ -84,6 +84,12 @@ type TeleportRequest struct {
 	Route        string // route the target should navigate to
 }
 
+// MediaUpdateAction carries a media queue action from a client.
+type MediaUpdateAction struct {
+	Client  *Client
+	Message Message
+}
+
 // sessionChatRing is a per-session circular buffer for chat history.
 type sessionChatRing struct {
 	ring  []GlobalChatMessage
@@ -146,10 +152,15 @@ type Hub struct {
 	globalChat      chan GlobalChatMessage
 	audioUpdates    chan AudioBroadcast
 	voiceControl    chan VoiceControlAction
+	mediaUpdates    chan MediaUpdateAction
 
 	// voice permissions — protected by voiceMu
 	voiceMu     sync.RWMutex
 	voiceRoutes map[string]*VoicePermissions
+
+	// media queues — protected by mediaMu
+	mediaMu     sync.RWMutex
+	mediaRoutes map[string]*MediaState
 
 	// clients + subscriptions — protected by mu
 	mu sync.RWMutex
@@ -202,7 +213,9 @@ func NewHub() *Hub {
 		cursorUpdates:   make(chan CursorBroadcast, 2048),
 		audioUpdates:    make(chan AudioBroadcast, 4096),
 		voiceControl:    make(chan VoiceControlAction, 256),
+		mediaUpdates:    make(chan MediaUpdateAction, 256),
 		voiceRoutes:     make(map[string]*VoicePermissions),
+		mediaRoutes:     make(map[string]*MediaState),
 		sessions:        make(map[int64]int),
 		chatRings:       make(map[int64]*sessionChatRing),
 		workerSem:       make(chan struct{}, cfg.MaxWorkers),
@@ -279,6 +292,7 @@ func (h *Hub) Run() {
 				cp.Client.Avatar = cp.Avatar
 				h.mu.Unlock()
 				h.markPresenceDirty()
+				h.sendMediaSyncToClient(cp.Client)
 			})
 		case req := <-h.teleport:
 			h.dispatch(func() { h.handleTeleport(req) })
@@ -290,6 +304,8 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleAudioBroadcast(ab) })
 		case vc := <-h.voiceControl:
 			h.dispatch(func() { h.handleVoiceControl(vc) })
+		case mu := <-h.mediaUpdates:
+			h.dispatch(func() { h.handleMediaUpdate(mu) })
 		}
 	}
 }
