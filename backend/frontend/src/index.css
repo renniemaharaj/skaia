@@ -485,6 +485,12 @@ div#root {
   letter-spacing: 0.03em;
 }
 
+.btn-xs {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  gap: 4px;
+}
+
 .btn-lg {
   padding: 16px 32px;
   font-size: 1.1rem;
@@ -560,6 +566,36 @@ div#root {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.btn-icon {
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  position: relative;
+}
+
+.btn-icon-sm {
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  position: relative;
+}
+
+.btn-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 9px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 1px 4px;
+  border-radius: 6px;
+  line-height: 1;
+  pointer-events: none;
 }
 
 /* Cards */

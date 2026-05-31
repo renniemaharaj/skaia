@@ -5,6 +5,7 @@ import type { YouTubeProps } from "react-youtube";
 interface PlayerProps {
   videoId: string;
   isPaused: boolean;
+  isMuted: boolean;
   currentPosition: number;
   updatedAt: string;
   onEnded: () => void;
@@ -24,7 +25,7 @@ const YOUTUBE_OPTS: YouTubeProps["opts"] = {
   },
 };
 
-const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>(({ videoId, isPaused, currentPosition, updatedAt, onEnded }, ref) => {
+const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>(({ videoId, isPaused, isMuted, currentPosition, updatedAt, onEnded }, ref) => {
   const playerRef = useRef<any>(null);
 
   React.useImperativeHandle(ref, () => ({
@@ -49,6 +50,12 @@ const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>
     }
     event.target.seekTo(seekTo, true);
 
+    if (isMuted) {
+      event.target.mute();
+    } else {
+      event.target.unMute();
+    }
+
     if (isPaused) {
       event.target.pauseVideo();
     } else {
@@ -62,6 +69,16 @@ const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>
       onEnded();
     }
   };
+
+  useEffect(() => {
+    if (playerRef.current) {
+      if (isMuted) {
+        playerRef.current.mute();
+      } else {
+        playerRef.current.unMute();
+      }
+    }
+  }, [isMuted]);
 
   // Keep track of parent's pause state vs internal state to prevent loop
   useEffect(() => {

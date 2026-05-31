@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { Mic, MicOff, Play, Pause, Settings } from "lucide-react";
+import { Mic, MicOff, Play, Pause, Settings, Volume2, VolumeX } from "lucide-react";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
@@ -147,6 +147,7 @@ function createVoiceStreamPlayer(
 
 export default function VoicePanel() {
   const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
+  const [isPlayerMuted, setIsPlayerMuted] = useState(true);
 
   useEffect(() => {
     const handleVolumeChange = (e: Event) => {
@@ -190,6 +191,7 @@ export default function VoicePanel() {
   }, [globalVolume]);
 
   const playSoundEffect = useCallback((type: 'swoosh' | 'ding' | 'boop' | 'chime') => {
+    if (isPlayerMuted) return;
     try {
       const { audioContext, gainNode } = ensureAudioGraph();
       if (!audioContext || !gainNode) return;
@@ -243,7 +245,7 @@ export default function VoicePanel() {
     } catch (e) {
       // Ignore audio errors if context cannot be created/resumed
     }
-  }, [ensureAudioGraph]);
+  }, [ensureAudioGraph, isPlayerMuted]);
 
   const playTransitionSound = useCallback(() => playSoundEffect('swoosh'), [playSoundEffect]);
 
@@ -720,34 +722,42 @@ export default function VoicePanel() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
+              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
                 <Wind size={16} />
-                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>1</span>
+                <span className="btn-badge">1</span>
               </button>
-              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
+              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
                 <Bell size={16} />
-                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>2</span>
+                <span className="btn-badge">2</span>
               </button>
-              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
+              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
                 <Bot size={16} />
-                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>3</span>
+                <span className="btn-badge">3</span>
               </button>
-              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
+              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
                 <Sparkles size={16} />
-                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>4</span>
+                <span className="btn-badge">4</span>
               </button>
             </div>
           </div>
-          {hasManagePermission && (
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
-              className="btn btn-sm btn-ghost"
-              onClick={handlePauseToggle}
-              style={{ padding: "2px 6px", fontSize: "0.75rem" }}
+              className="btn btn-ghost btn-icon-sm"
+              onClick={() => setIsPlayerMuted(!isPlayerMuted)}
+              title={isPlayerMuted ? "Unmute Music" : "Mute Music"}
             >
-              {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
-              {mediaState?.is_paused ? " Resume" : " Pause"}
+              {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
             </button>
-          )}
+            {hasManagePermission && (
+              <button
+                className="btn btn-xs btn-ghost"
+                onClick={handlePauseToggle}
+              >
+                {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
+                {mediaState?.is_paused ? " Resume" : " Pause"}
+              </button>
+            )}
+          </div>
         </div>
 
         <form className="vp-media-input" onSubmit={handleAddMedia}>
@@ -828,6 +838,7 @@ export default function VoicePanel() {
                         ref={isPrimary ? playerRef : (!isRetired ? transitionPlayerRef : null)}
                         videoId={item.video_id}
                         isPaused={isPrimary ? mediaState.is_paused : (isRetired ? true : false)}
+                        isMuted={isPlayerMuted}
                         currentPosition={isPrimary ? mediaState.current_position || 0 : 0}
                         updatedAt={isPrimary ? mediaState.updated_at || "" : new Date().toISOString()}
                         onEnded={isPrimary ? handleEnded : () => {}}
