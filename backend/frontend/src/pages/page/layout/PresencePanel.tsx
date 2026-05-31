@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Gauge,
   ShieldCheck,
+  Mic,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
@@ -28,6 +29,7 @@ import { toast } from "sonner";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../../components/input/Input";
 import "./PresencePanel.css";
+import VoicePanel from "./VoicePanel";
 
 /**
  * Extensible per-row action. Add new actions to the rowActions array below.
@@ -46,7 +48,7 @@ const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
     typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
   );
-  const [chatMode, setChatMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice'>('members');
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth <= 720,
@@ -165,10 +167,10 @@ const PresencePanel = () => {
 
   // Auto-scroll chat feed to bottom when new messages arrive
   useEffect(() => {
-    if (chatMode && expanded) {
+    if (activeTab === 'chat' && expanded) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [chatMessages, chatMode, expanded]);
+  }, [chatMessages, activeTab, expanded]);
 
   // Track unread count while on the members tab.
   // Only count a delta of exactly 1 — history loads arrive as a big batch
@@ -176,10 +178,10 @@ const PresencePanel = () => {
   useEffect(() => {
     const delta = chatMessages.length - prevChatLenRef.current;
     prevChatLenRef.current = chatMessages.length;
-    if (delta === 1 && !chatMode) {
+    if (delta === 1 && activeTab !== 'chat') {
       setChatUnread((n) => n + 1);
     }
-  }, [chatMessages.length, chatMode]);
+  }, [chatMessages.length, activeTab]);
 
   // Ensure the mobile expanded panel resizes with the viewport
   useEffect(() => {
@@ -389,27 +391,34 @@ const PresencePanel = () => {
       <div className="pp-controls">
         <div className="pp-tabs">
           <button
-            className={`pp-tab${!chatMode ? " pp-tab--active" : ""}`}
-            onClick={() => setChatMode(false)}
+            className={`pp-tab${activeTab === 'members' ? " pp-tab--active" : ""}`}
+            onClick={() => setActiveTab('members')}
             title="Online members"
           >
             <Users size={13} />
             <span className="pp-count">{total}</span>
           </button>
           <button
-            className={`pp-tab${chatMode ? " pp-tab--active" : ""}${chatUnread > 0 && !chatMode ? " pp-tab--has-unread" : ""}`}
+            className={`pp-tab${activeTab === 'chat' ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== 'chat' ? " pp-tab--has-unread" : ""}`}
             onClick={() => {
-              setChatMode(true);
+              setActiveTab('chat');
               setChatUnread(0);
             }}
             title="Global chat"
           >
             <MessageCircle size={13} />
-            {chatUnread > 0 && !chatMode && (
+            {chatUnread > 0 && activeTab !== 'chat' && (
               <span className="pp-chat-badge">
                 {chatUnread > 9 ? "9+" : chatUnread}
               </span>
             )}
+          </button>
+          <button
+            className={`pp-tab${activeTab === 'voice' ? " pp-tab--active" : ""}`}
+            onClick={() => setActiveTab('voice')}
+            title="Voice & Media"
+          >
+            <Mic size={13} strokeWidth={2.5} />
           </button>
         </div>
         {canManagePresenceSettings && (
@@ -440,9 +449,9 @@ const PresencePanel = () => {
 
       {/* Expanded panel */}
       <div
-        className={`pp-body${expanded ? " pp-open" : ""}${chatMode ? " pp-body--chat" : ""}`}
+        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === 'chat' ? " pp-body--chat" : ""}${activeTab === 'voice' ? " pp-body--voice" : ""}`}
       >
-        {!chatMode ? (
+        {activeTab === 'members' ? (
           /* ── Members tab ── */
           <div className="pp-scroll">
             {here.length > 0 && (
@@ -469,7 +478,7 @@ const PresencePanel = () => {
               <p className="pp-empty">No one online right now.</p>
             )}
           </div>
-        ) : (
+        ) : activeTab === 'chat' ? (
           /* ── Chat tab ── */
           <>
             <div className="pp-chat-feed">
@@ -499,7 +508,11 @@ const PresencePanel = () => {
               />
             </div>
           </>
-        )}
+        ) : activeTab === 'voice' ? (
+          <div className="pp-scroll pp-scroll--flush">
+            <VoicePanel />
+          </div>
+        ) : null}
       </div>
     </div>
   );

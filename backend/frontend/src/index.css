@@ -495,6 +495,10 @@ div#root {
   width: 100%;
 }
 
+.btn-pill {
+  border-radius: var(--radius-full);
+}
+
 .btn-primary {
   background-color: var(--primary-color);
   color: var(--bg-color);
@@ -535,7 +539,7 @@ div#root {
 
 .btn-danger:hover {
   background: var(--error-color);
-  color: white;
+  color: var(--bg-color);
   border-color: var(--error-color);
 }
 
@@ -750,6 +754,12 @@ input[type="checkbox"] {
   padding: 0;
   margin-bottom: 0;
   flex-shrink: 0;
+  accent-color: var(--primary-color);
+}
+
+.form-range {
+  padding: 0;
+  margin-bottom: 0;
   accent-color: var(--primary-color);
 }
 

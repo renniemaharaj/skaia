@@ -49,6 +49,7 @@ import {
   playMessageSound,
   playChatSound,
 } from "../utils/sound";
+import { voicePermissionsAtom } from "../atoms/voice";
 
 import {
   productsAtom,
@@ -141,6 +142,9 @@ export const useWebSocketSync = () => {
   const setStoreCategories = useSetAtom(productCategoriesAtom);
   const setStoreCartItems = useSetAtom(storeCartItemsAtom);
 
+  // ── Voice ─────────────────────────────────────────────────────────────────
+  const setVoicePermissions = useSetAtom(voicePermissionsAtom);
+
   // ── Activity events ───────────────────────────────────────────────────────
   const setActivityEvents = useSetAtom(activityEventsAtom);
 
@@ -185,6 +189,11 @@ export const useWebSocketSync = () => {
 
       ws.onmessage = (event) => {
         try {
+          if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+             window.dispatchEvent(new CustomEvent("voice:binary", { detail: event.data }));
+             return;
+          }
+
           const message: WebSocketMessage = JSON.parse(event.data);
           // Parse payload since it's a JSON-encoded string from backend
           const payload =
@@ -877,6 +886,39 @@ export const useWebSocketSync = () => {
                 detail: { action: ca, data: cd },
               }),
             );
+          }
+
+          // ── Voice Controls ────────────────────────────────────────────────
+          if (message.type === "voice:control") {
+            const vp = payload as {
+              route: string;
+              action: string;
+              target_user_id?: number;
+            };
+            setVoicePermissions(prev => {
+              const next = { ...prev };
+              if (prev.route !== vp.route) {
+                 next.route = vp.route;
+                 next.mutedUsers = {};
+                 next.kickedUsers = {};
+                 next.voiceEnabled = true;
+              }
+              if (vp.action === "enable") next.voiceEnabled = true;
+              if (vp.action === "disable") next.voiceEnabled = false;
+              if (vp.action === "mute" && vp.target_user_id) {
+                next.mutedUsers = { ...next.mutedUsers, [vp.target_user_id]: true };
+              }
+              if (vp.action === "unmute" && vp.target_user_id) {
+                const newMuted = { ...next.mutedUsers };
+                delete newMuted[vp.target_user_id];
+                next.mutedUsers = newMuted;
+              }
+              if (vp.action === "kick" && vp.target_user_id) {
+                next.kickedUsers = { ...next.kickedUsers, [vp.target_user_id]: true };
+                next.mutedUsers = { ...next.mutedUsers, [vp.target_user_id]: true };
+              }
+              return next;
+            });
           }
 
           // ── CMS pages ─────────────────────────────────────────────────────

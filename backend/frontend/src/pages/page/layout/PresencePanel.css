@@ -113,11 +113,20 @@
   max-height: 500px;
 }
 
+.pp-body.pp-open.pp-body--voice {
+  width: min(95vw, 320px);
+  max-width: 100%;
+}
+
 /* Fixed-height scrollable inner area */
 .pp-scroll {
   max-height: 340px;
   overflow-y: auto;
   padding: 8px 0;
+}
+
+.pp-scroll--flush {
+  padding: 0;
 }
 
 /* Section labels */

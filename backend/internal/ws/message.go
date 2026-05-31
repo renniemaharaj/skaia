@@ -35,6 +35,7 @@ const (
 	PageUpdate         MessageType = "page:update"         // server => all: CMS page created/updated/deleted
 	Cursor             MessageType = "cursor:update"       // client => server => same-route clients: cursor position
 	EventsUpdate       MessageType = "events:update"       // server => admin clients: new audit event
+	VoiceControl       MessageType = "voice:control"       // client => server => client: admin voice chat controls
 	ErrorMessage       MessageType = "error"
 )
 
@@ -83,4 +84,11 @@ type ResourceSubscription struct {
 	Client       *Client
 	ResourceType string
 	ResourceID   int64
+}
+
+// VoiceControlPayload carries admin actions for voice chat on a specific route.
+type VoiceControlPayload struct {
+	Route        string `json:"route"`
+	Action       string `json:"action"` // "mute", "unmute", "kick", "enable", "disable"
+	TargetUserID int64  `json:"target_user_id,omitempty"`
 }

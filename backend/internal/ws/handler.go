@@ -12,7 +12,7 @@ import (
 	"github.com/skaia/backend/internal/jwt"
 )
 
-const maxMessageSize = 4096
+const maxMessageSize = 1 << 20
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -66,6 +66,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	// authenticate via token query param or Authorization header
 	var userID int64
 	var userName string
+	var permissions []string
 
 	tokenStr := r.URL.Query().Get("token")
 	if tokenStr == "" {
@@ -78,6 +79,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		if claims, err := jwt.ValidateToken(tokenStr); err == nil {
 			userID = claims.UserID
 			userName = claims.Username
+			permissions = claims.Permissions
 		}
 	}
 
@@ -101,8 +103,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		Hub:            hub,
 		Conn:           conn,
 		Send:           make(chan *Message, 256),
+		AudioSend:      make(chan []byte, 256),
 		UserID:         userID,
 		UserName:       userName,
+		Permissions:    permissions,
 		chatLimit:      newRateBucket(chatRate, chatBurst),
 		cursorLimit:    newRateBucket(30, 30),
 		presenceLimit:  newRateBucket(5, 5),

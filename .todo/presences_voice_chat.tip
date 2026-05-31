@@ -3,18 +3,43 @@
 ## presences_voice_chat
 
 ### Current Progress
-- **Phase 1: Architecture & Spec** — ⬜ Not started
-- **Phase 2: Backend Core** — ⬜ Not started
-- **Phase 3: Backend Control** — ⬜ Not started
-- **Phase 4: Backend Extensibility** — ⬜ Not started
-- **Phase 5: Frontend UI** — ⬜ Not started
-- **Phase 6: Frontend Integration** — ⬜ Not started
-- **Phase 7: Frontend Playback** — ⬜ Not started
-- **Phase 8: Frontend Media** — ⬜ Not started
-- **Phase 9: Final Polish** — ⬜ Not started
+- **Phase 1: Architecture & Spec** — ✅ Complete
+- **Phase 2: Backend Core** — ✅ Complete
+- **Phase 3: Backend Control** — ✅ Complete
+- **Phase 4: Backend Extensibility** — ✅ Complete
+- **Phase 5: Frontend UI** — ✅ Complete
+- **Phase 6: Frontend Integration** — ✅ Complete
+- **Phase 7: Frontend Playback** — ✅ Complete
+- **Phase 8: Frontend Media** — ✅ Complete
+- **Phase 9: Final Polish** — 🟡 In progress
 
 ### Next Steps
-- [ ] Create a `.specs/voice_chat_architecture.md` defining the WebSocket binary streaming format and backend routing logic.
-- [ ] Scaffold Go backend structures for audio rooms bound to presence routes, including admin permissions.
+- [x] Create a `.specs/voice_chat_architecture.md` defining the WebSocket binary streaming format and backend routing logic.
+- [x] Implement `AudioBroadcast` struct and a dedicated `audioUpdates` channel in `backend/internal/ws/hub.go`.
+- [x] Add `AudioSend` channel to `Client` struct in `backend/internal/ws/client.go` to handle binary payloads.
+- [x] Modify `ReadPump` and `WritePump` in `client.go` to handle `websocket.BinaryMessage` reading and writing.
+- [x] Implement the audio broadcast routing logic in `hub.go` to route binary frames to clients on the same route.
+- [x] Scaffold Go backend structures for audio rooms bound to presence routes, including admin permissions.
+- [x] Define JSON message payloads for `voice:control` (mute, kick, disable).
+- [x] Add `handleVoiceControl` method in `hub.go` to update `voiceRoutes` permissions safely.
+- [x] Implement `voiceControl` handling in `ReadPump` for admin commands.
+- [x] Create React atoms for voice state (`voicePermissionsAtom`, `globalVolumeAtom`).
+- [x] Update `PresencePanel` to show a "Voice & Media" tab.
+- [x] Build `VoicePanel` with Microphone toggle, Volume slider, and Admin toggles.
+- [x] Intercept websocket binary frames for incoming audio packets (emitted as `voice:binary` event).
+- [x] Setup Web Audio API `AudioContext` and packet queue to decode and play incoming Opus/WebM streams.
+- [x] Embed media player for YouTube links syncing with global volume controls.
+- [x] Enforce `home.manage` on backend `voice:control` messages using JWT permissions stored on the WebSocket client.
+- [x] Raise the WebSocket read limit to support microphone chunk sizes beyond the previous 4 KiB JSON-era cap.
+- [x] Add focused backend coverage for same-route audio fan-out, disabled/muted/kicked drops, and admin authorization.
+
+### Verification
+- [x] `JWT_SECRET=test-secret go test ./internal/ws` with local Go cache.
+- [x] `mise exec node@24.16.0 -- npm run build` from `backend/frontend/`.
+- [x] `JWT_SECRET=test-secret go test ./...` with local Go cache. Initial sandbox run could not open `httptest` sockets; rerun with approved local socket permission passed.
+
+### Remaining Polish
+- [ ] Add route-state bootstrap for voice permissions so newly joined clients see an already-disabled route before the next admin control event.
+- [ ] Add per-user admin UI actions for mute, unmute, and kick from the presence member list.
 
 <--/------->

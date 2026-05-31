@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"strconv"
 	"time"
@@ -11,12 +12,14 @@ import (
 
 // Client represents a single WebSocket connection managed by the Hub.
 type Client struct {
-	Hub       *Hub
-	Conn      *websocket.Conn
-	Send      chan *Message
-	ClientID  int64 // unique per connection, assigned by Hub at registration
-	UserID    int64
-	SessionID int64 // session bucket for chat, presence & cursor fan-out
+	Hub         *Hub
+	Conn        *websocket.Conn
+	Send        chan *Message
+	AudioSend   chan []byte
+	ClientID    int64 // unique per connection, assigned by Hub at registration
+	UserID      int64
+	Permissions []string
+	SessionID   int64 // session bucket for chat, presence & cursor fan-out
 	// Presence fields — written under Hub.mu.Lock via presenceUpdates.
 	Route    string
 	UserName string
@@ -55,8 +58,29 @@ func (c *Client) ReadPump() {
 		return nil
 	})
 	for {
+		messageType, reader, err := c.Conn.NextReader()
+		if err != nil {
+			return
+		}
+
+		if messageType == websocket.BinaryMessage {
+			data, err := io.ReadAll(reader)
+			if err != nil || len(data) == 0 {
+				continue
+			}
+			// Route to Hub audioUpdates if type is known
+			frameType := data[0]
+			if frameType == 0x01 || frameType == 0x02 {
+				select {
+				case c.Hub.audioUpdates <- AudioBroadcast{Client: c, Type: frameType, Data: data[1:]}:
+				default:
+				}
+			}
+			continue
+		}
+
 		var msg Message
-		if err := c.Conn.ReadJSON(&msg); err != nil {
+		if err := json.NewDecoder(reader).Decode(&msg); err != nil {
 			return
 		}
 
@@ -84,6 +108,8 @@ func (c *Client) ReadPump() {
 			}
 		case Ping:
 			// nothing — client keepalive only
+		case VoiceControl:
+			c.handleVoiceControlMsg(msg)
 		default:
 			if c.broadcastLimit.allow() {
 				c.Hub.Broadcast(&msg)
@@ -119,6 +145,15 @@ func (c *Client) WritePump() {
 				return
 			}
 			w.Close()
+		case audioData, ok := <-c.AudioSend:
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.BinaryMessage, audioData); err != nil {
+				return
+			}
 		case <-ticker.C:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -228,6 +263,34 @@ func (c *Client) handleTp(msg Message) {
 	c.Hub.SendTeleport(p.TargetUserID, p.Route)
 }
 
+// handleVoiceControlMsg forwards admin voice control actions to the hub.
+func (c *Client) handleVoiceControlMsg(msg Message) {
+	var p VoiceControlPayload
+	if err := json.Unmarshal(msg.Payload, &p); err != nil {
+		return
+	}
+	if p.Route == "" || p.Action == "" {
+		return
+	}
+	if !c.hasPermission("home.manage") {
+		c.sendClientErrorAction("forbidden", "You do not have permission to manage route voice chat.", 0)
+		return
+	}
+	select {
+	case c.Hub.voiceControl <- VoiceControlAction{Client: c, Payload: p}:
+	default:
+	}
+}
+
+func (c *Client) hasPermission(permission string) bool {
+	for _, p := range c.Permissions {
+		if p == permission {
+			return true
+		}
+	}
+	return false
+}
+
 // handleGlobalChat validates and enqueues a global chat message from this client.
 func (c *Client) handleGlobalChat(msg Message) {
 	type chatPayload struct {
@@ -306,8 +369,12 @@ func (c *Client) chatRetryAfter() time.Duration {
 }
 
 func (c *Client) sendClientError(message string, retryAfter time.Duration) {
+	c.sendClientErrorAction("rate_limited", message, retryAfter)
+}
+
+func (c *Client) sendClientErrorAction(action string, message string, retryAfter time.Duration) {
 	payload, err := json.Marshal(map[string]any{
-		"action":      "rate_limited",
+		"action":      action,
 		"message":     message,
 		"retry_after": int(retryAfter.Seconds()),
 	})

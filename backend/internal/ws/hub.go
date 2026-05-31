@@ -64,6 +64,20 @@ type CursorBroadcast struct {
 	Y      float64
 }
 
+// AudioBroadcast carries a binary audio frame from a client to be relayed to others on the same route.
+type AudioBroadcast struct {
+	Client *Client
+	Type   byte
+	Data   []byte
+}
+
+// VoicePermissions holds the admin state for voice chat on a specific route.
+type VoicePermissions struct {
+	VoiceEnabled bool
+	MutedUsers   map[int64]bool
+	KickedUsers  map[int64]bool
+}
+
 // TeleportRequest asks the hub to forward a tp message to a specific user.
 type TeleportRequest struct {
 	TargetUserID int64  // positive for authenticated users, negative (presence ID) for guests
@@ -130,6 +144,12 @@ type Hub struct {
 	teleport        chan TeleportRequest
 	cursorUpdates   chan CursorBroadcast
 	globalChat      chan GlobalChatMessage
+	audioUpdates    chan AudioBroadcast
+	voiceControl    chan VoiceControlAction
+
+	// voice permissions — protected by voiceMu
+	voiceMu     sync.RWMutex
+	voiceRoutes map[string]*VoicePermissions
 
 	// clients + subscriptions — protected by mu
 	mu sync.RWMutex
@@ -180,6 +200,9 @@ func NewHub() *Hub {
 		teleport:        make(chan TeleportRequest, 256),
 		globalChat:      make(chan GlobalChatMessage, 1024),
 		cursorUpdates:   make(chan CursorBroadcast, 2048),
+		audioUpdates:    make(chan AudioBroadcast, 4096),
+		voiceControl:    make(chan VoiceControlAction, 256),
+		voiceRoutes:     make(map[string]*VoicePermissions),
 		sessions:        make(map[int64]int),
 		chatRings:       make(map[int64]*sessionChatRing),
 		workerSem:       make(chan struct{}, cfg.MaxWorkers),
@@ -263,6 +286,10 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleCursorBroadcast(cu) })
 		case cm := <-h.globalChat:
 			h.dispatch(func() { h.handleGlobalChat(cm) })
+		case ab := <-h.audioUpdates:
+			h.dispatch(func() { h.handleAudioBroadcast(ab) })
+		case vc := <-h.voiceControl:
+			h.dispatch(func() { h.handleVoiceControl(vc) })
 		}
 	}
 }
