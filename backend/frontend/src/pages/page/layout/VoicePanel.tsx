@@ -185,7 +185,7 @@ export default function VoicePanel() {
     };
   }, [globalVolume]);
 
-  const playTransitionSound = useCallback(() => {
+  const playSoundEffect = useCallback((type: 'swoosh' | 'ding' | 'boop' | 'chime') => {
     try {
       const { audioContext, gainNode } = ensureAudioGraph();
       if (!audioContext || !gainNode) return;
@@ -200,21 +200,65 @@ export default function VoicePanel() {
       osc.connect(soundGain);
       soundGain.connect(gainNode);
       
-      // "Swoosh" / warp sound
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800, t);
-      osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
-      
-      soundGain.gain.setValueAtTime(0, t);
-      soundGain.gain.linearRampToValueAtTime(0.5, t + 0.05);
-      soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-      
-      osc.start(t);
-      osc.stop(t + 0.3);
+      if (type === 'swoosh') {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, t);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+        soundGain.gain.setValueAtTime(0, t);
+        soundGain.gain.linearRampToValueAtTime(0.5, t + 0.05);
+        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      } else if (type === 'ding') {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1200, t);
+        soundGain.gain.setValueAtTime(0, t);
+        soundGain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+        osc.start(t);
+        osc.stop(t + 0.5);
+      } else if (type === 'boop') {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(300, t);
+        soundGain.gain.setValueAtTime(0, t);
+        soundGain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      } else if (type === 'chime') {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.setValueAtTime(800, t + 0.1);
+        osc.frequency.setValueAtTime(1000, t + 0.2);
+        soundGain.gain.setValueAtTime(0, t);
+        soundGain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
+        osc.start(t);
+        osc.stop(t + 1.0);
+      }
     } catch (e) {
       // Ignore audio errors if context cannot be created/resumed
     }
   }, [ensureAudioGraph]);
+
+  const playTransitionSound = useCallback(() => playSoundEffect('swoosh'), [playSoundEffect]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input field
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+      switch (e.key) {
+        case '1': playSoundEffect('swoosh'); break;
+        case '2': playSoundEffect('ding'); break;
+        case '3': playSoundEffect('boop'); break;
+        case '4': playSoundEffect('chime'); break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [playSoundEffect]);
 
   const transitioningItemId = mediaState?.transitioning_item_id || null;
   const [transitionProgress, setTransitionProgress] = useState(0);
@@ -644,9 +688,31 @@ export default function VoicePanel() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
+            gap: "8px"
           }}
         >
-          <h4>Media Queue</h4>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <h4>Media Queue</h4>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('swoosh'); }} title="Swoosh (1)">
+                <span style={{ fontSize: "16px", lineHeight: 1 }}>💨</span>
+                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>1</span>
+              </button>
+              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('ding'); }} title="Ding (2)">
+                <span style={{ fontSize: "16px", lineHeight: 1 }}>🔔</span>
+                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>2</span>
+              </button>
+              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('boop'); }} title="Boop (3)">
+                <span style={{ fontSize: "16px", lineHeight: 1 }}>🤖</span>
+                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>3</span>
+              </button>
+              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('chime'); }} title="Chime (4)">
+                <span style={{ fontSize: "16px", lineHeight: 1 }}>✨</span>
+                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>4</span>
+              </button>
+            </div>
+          </div>
           {hasManagePermission && (
             <button
               className="btn btn-sm btn-ghost"
