@@ -32,11 +32,16 @@
 - [x] Enforce `home.manage` on backend `voice:control` messages using JWT permissions stored on the WebSocket client.
 - [x] Raise the WebSocket read limit to support microphone chunk sizes beyond the previous 4 KiB JSON-era cap.
 - [x] Add focused backend coverage for same-route audio fan-out, disabled/muted/kicked drops, and admin authorization.
+- [x] Route `media:transition:start` through the WebSocket media handler so transition countdown state syncs to clients.
+- [x] Lazy-mount the voice/media panel on first Voice tab activation, then keep it mounted while hidden so media playback survives tab switches/minimize.
+- [x] Verify the media transition path and frontend build after the fix.
 
 ### Verification
 - [x] `JWT_SECRET=test-secret go test ./internal/ws` with local Go cache.
 - [x] `mise exec node@24.16.0 -- npm run build` from `backend/frontend/`.
 - [x] `JWT_SECRET=test-secret go test ./...` with local Go cache. Initial sandbox run could not open `httptest` sockets; rerun with approved local socket permission passed.
+- [x] 2026-05-31: `JWT_SECRET=test-secret go test ./internal/ws`.
+- [x] 2026-05-31: `mise exec node@24.16.0 -- npm run build` from `backend/frontend/`.
 
 ### Remaining Polish
 - [ ] Add route-state bootstrap for voice permissions so newly joined clients see an already-disabled route before the next admin control event.

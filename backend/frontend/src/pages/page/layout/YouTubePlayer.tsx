@@ -15,6 +15,15 @@ export interface YouTubePlayerRef {
   getDuration: () => Promise<number>;
 }
 
+const YOUTUBE_OPTS: YouTubeProps["opts"] = {
+  height: "100%",
+  width: "100%",
+  playerVars: {
+    autoplay: 1,
+    controls: 1,
+  },
+};
+
 const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>(({ videoId, isPaused, currentPosition, updatedAt, onEnded }, ref) => {
   const playerRef = useRef<any>(null);
 
@@ -73,14 +82,7 @@ const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>
     <div className="vp-iframe-wrapper">
       <YouTube
         videoId={videoId}
-        opts={{
-          height: "100%",
-          width: "100%",
-          playerVars: {
-            autoplay: 1,
-            controls: 1,
-          },
-        }}
+        opts={YOUTUBE_OPTS}
         onReady={onReady}
         onStateChange={onStateChange}
         className="vp-youtube-container"

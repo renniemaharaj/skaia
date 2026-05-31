@@ -16,6 +16,7 @@ export interface MediaState {
   is_paused: boolean;
   current_position: number;
   updated_at: string;
+  transitioning_item_id?: string;
 }
 
 export const mediaStateAtom = atom<MediaState | null>(null);

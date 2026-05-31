@@ -161,9 +161,7 @@ export default function VoicePanel() {
   const location = useLocation();
   const playerRef = useRef<YouTubePlayerRef>(null);
 
-  const [transitioningItemId, setTransitioningItemId] = useState<string | null>(
-    null,
-  );
+  const transitioningItemId = mediaState?.transitioning_item_id || null;
   const [transitionProgress, setTransitionProgress] = useState(0);
   const transitionPlayerRef = useRef<YouTubePlayerRef>(null);
 
@@ -190,12 +188,14 @@ export default function VoicePanel() {
         },
       }),
     );
-    setTransitioningItemId(null);
     transitioningItemIdRef.current = null;
   }, [socket, location.pathname]);
 
   useEffect(() => {
-    if (!transitioningItemId) return;
+    if (!transitioningItemId) {
+      setTransitionProgress(0);
+      return;
+    }
     transitioningItemIdRef.current = transitioningItemId;
 
     const duration = 20000;
@@ -762,7 +762,17 @@ export default function VoicePanel() {
                             </button>
                           ) : (
                             <button
-                              onClick={() => setTransitioningItemId(item.id)}
+                              onClick={() => {
+                                socket?.send(
+                                  JSON.stringify({
+                                    type: "media:transition:start",
+                                    payload: {
+                                      route: location.pathname,
+                                      item_id: item.id,
+                                    },
+                                  })
+                                );
+                              }}
                               className="btn btn-ghost"
                               style={{
                                 padding: "0.25rem",

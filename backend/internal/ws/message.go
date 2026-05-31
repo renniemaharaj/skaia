@@ -10,40 +10,41 @@ import (
 type MessageType string
 
 const (
-	StoreSync          MessageType = "store:sync"
-	StoreUpdate        MessageType = "store:update"
-	ForumSync          MessageType = "forum:sync"
-	ForumUpdate        MessageType = "forum:update"
-	UserUpdate         MessageType = "user:update"
-	UserJoin           MessageType = "user:join"
-	UserLeave          MessageType = "user:leave"
-	Subscribe          MessageType = "subscribe"
-	Unsubscribe        MessageType = "unsubscribe"
-	Ping               MessageType = "ping"
-	Presence           MessageType = "presence"            // client => server: announce route
-	PresenceSync       MessageType = "presence:update"     // server => client: online list
-	Tp                 MessageType = "tp"                  // client => server => target: teleport request
-	GlobalChat         MessageType = "global:chat"         // bidirectional: send / receive global chat
-	GlobalChatHistory  MessageType = "global:chat:history" // server => client on connect: recent history
-	InboxUpdate        MessageType = "inbox:update"        // server => subscribed clients: conversation changed
-	InboxMsg           MessageType = "inbox:message"       // server => recipient: unread badge ping
-	NotificationMsg    MessageType = "notification"        // server => client: incoming user notification
-	NotificationUpdate MessageType = "notification:update" // server => client: notification read/deleted
-	NotificationSync   MessageType = "notification:sync"   // server => client on connect: notification bootstrap
-	CartUpdate         MessageType = "cart:update"         // server => client: user's cart changed
-	ConfigUpdate       MessageType = "config:update"       // server => all: branding/seo/footer/landing changed
-	PageUpdate         MessageType = "page:update"         // server => all: CMS page created/updated/deleted
-	Cursor             MessageType = "cursor:update"       // client => server => same-route clients: cursor position
-	EventsUpdate       MessageType = "events:update"       // server => admin clients: new audit event
-	VoiceControl       MessageType = "voice:control"       // client => server => client: admin voice chat controls
-	MediaAdd           MessageType = "media:add"           // client => server: add youtube video
-	MediaRemove        MessageType = "media:remove"        // client => server: remove queue item
-	MediaAction        MessageType = "media:action"        // client => server: pause/resume queue
-	MediaEnded         MessageType = "media:ended"         // client => server: current video ended
-	MediaTransition    MessageType = "media:transition"    // client => server: manual transition
-	MediaHistoryClear  MessageType = "media:history:clear" // client => server: clear route history
-	MediaSync          MessageType = "media:sync"          // server => client: full queue sync
-	ErrorMessage       MessageType = "error"
+	StoreSync            MessageType = "store:sync"
+	StoreUpdate          MessageType = "store:update"
+	ForumSync            MessageType = "forum:sync"
+	ForumUpdate          MessageType = "forum:update"
+	UserUpdate           MessageType = "user:update"
+	UserJoin             MessageType = "user:join"
+	UserLeave            MessageType = "user:leave"
+	Subscribe            MessageType = "subscribe"
+	Unsubscribe          MessageType = "unsubscribe"
+	Ping                 MessageType = "ping"
+	Presence             MessageType = "presence"               // client => server: announce route
+	PresenceSync         MessageType = "presence:update"        // server => client: online list
+	Tp                   MessageType = "tp"                     // client => server => target: teleport request
+	GlobalChat           MessageType = "global:chat"            // bidirectional: send / receive global chat
+	GlobalChatHistory    MessageType = "global:chat:history"    // server => client on connect: recent history
+	InboxUpdate          MessageType = "inbox:update"           // server => subscribed clients: conversation changed
+	InboxMsg             MessageType = "inbox:message"          // server => recipient: unread badge ping
+	NotificationMsg      MessageType = "notification"           // server => client: incoming user notification
+	NotificationUpdate   MessageType = "notification:update"    // server => client: notification read/deleted
+	NotificationSync     MessageType = "notification:sync"      // server => client on connect: notification bootstrap
+	CartUpdate           MessageType = "cart:update"            // server => client: user's cart changed
+	ConfigUpdate         MessageType = "config:update"          // server => all: branding/seo/footer/landing changed
+	PageUpdate           MessageType = "page:update"            // server => all: CMS page created/updated/deleted
+	Cursor               MessageType = "cursor:update"          // client => server => same-route clients: cursor position
+	EventsUpdate         MessageType = "events:update"          // server => admin clients: new audit event
+	VoiceControl         MessageType = "voice:control"          // client => server => client: admin voice chat controls
+	MediaAdd             MessageType = "media:add"              // client => server: add youtube video
+	MediaRemove          MessageType = "media:remove"           // client => server: remove queue item
+	MediaAction          MessageType = "media:action"           // client => server: pause/resume queue
+	MediaEnded           MessageType = "media:ended"            // client => server: current video ended
+	MediaTransitionStart MessageType = "media:transition:start" // client => server: start transition mixing
+	MediaTransition      MessageType = "media:transition"       // client => server: manual transition
+	MediaHistoryClear    MessageType = "media:history:clear"    // client => server: clear route history
+	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
+	ErrorMessage         MessageType = "error"
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.
@@ -118,6 +119,7 @@ type MediaState struct {
 	IsPaused        bool        `json:"is_paused"`
 	CurrentPosition float64     `json:"current_position"`
 	UpdatedAt       string      `json:"updated_at"`
+	TransitioningID string      `json:"transitioning_item_id"`
 }
 
 // MediaClientAction represents an action requested by a client (add, remove, etc).

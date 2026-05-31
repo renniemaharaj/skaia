@@ -125,6 +125,12 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 			stateChanged = true
 		}
 
+	case MediaTransitionStart:
+		if len(state.Queue) > 1 && state.Queue[1].ID == action.ItemID {
+			state.TransitioningID = action.ItemID
+			stateChanged = true
+		}
+
 	case MediaTransition:
 		if len(state.Queue) > 0 && state.Queue[0].ID == action.ItemID {
 			top := state.Queue[0]
@@ -143,6 +149,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 			}
 			state.CurrentPosition = action.Position
 			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+			state.TransitioningID = ""
 			stateChanged = true
 		}
 

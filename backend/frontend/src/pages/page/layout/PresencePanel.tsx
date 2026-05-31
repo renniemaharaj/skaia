@@ -49,6 +49,7 @@ const PresencePanel = () => {
     typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
   );
   const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice'>('members');
+  const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth <= 720,
@@ -433,7 +434,10 @@ const PresencePanel = () => {
           </button>
           <button
             className={`pp-tab${activeTab === 'voice' ? " pp-tab--active" : ""}`}
-            onClick={() => setActiveTab('voice')}
+            onClick={() => {
+              setHasOpenedVoice(true);
+              setActiveTab('voice');
+            }}
             title="Voice & Media"
           >
             <Mic size={13} strokeWidth={2.5} />
@@ -469,68 +473,64 @@ const PresencePanel = () => {
       <div
         className={`pp-body${expanded ? " pp-open" : ""}${activeTab === 'chat' ? " pp-body--chat" : ""}${activeTab === 'voice' ? " pp-body--voice" : ""}`}
       >
-        {activeTab === 'members' ? (
-          /* ── Members tab ── */
-          <div className="pp-scroll">
-            {here.length > 0 && (
-              <>
-                <p className="pp-section-label">On this page</p>
-                {here.map((u) => (
-                  <UserRow key={u.user_id} u={u} />
-                ))}
-              </>
-            )}
-
-            {elsewhere.length > 0 && (
-              <>
-                <p className="pp-section-label pp-section-label--elsewhere">
-                  Elsewhere
-                </p>
-                {elsewhere.map((u) => (
-                  <UserRow key={u.user_id} u={u} dim />
-                ))}
-              </>
-            )}
-
-            {total === 0 && (
-              <p className="pp-empty">No one online right now.</p>
-            )}
-          </div>
-        ) : activeTab === 'chat' ? (
-          /* ── Chat tab ── */
-          <>
-            <div className="pp-chat-feed">
-              {chatMessages.length === 0 && (
-                <p className="pp-empty">No messages yet. Say hi!</p>
-              )}
-              {chatMessages.map((msg) => (
-                <ChatBubble key={msg.id} msg={msg} />
+        <div style={{ display: activeTab === 'members' ? 'block' : 'none' }} className="pp-scroll">
+          {here.length > 0 && (
+            <>
+              <p className="pp-section-label">On this page</p>
+              {here.map((u) => (
+                <UserRow key={u.user_id} u={u} />
               ))}
-              <div ref={chatEndRef} />
-            </div>
-            <div className="pp-chat-input-row">
-              <ComposerInput
-                handleSend={(msg) => {
-                  if (!socket || socket.readyState !== WebSocket.OPEN) return;
-                  socket.send(
-                    JSON.stringify({
-                      type: "global:chat",
-                      payload: { content: msg },
-                    }),
-                  );
-                }}
-                placeholder="Say something…"
-                maxLength={500}
-                maxRows={3}
-                compact
-              />
-            </div>
-          </>
-        ) : activeTab === 'voice' ? (
-          <div className="pp-scroll pp-scroll--flush">
-            <VoicePanel />
+            </>
+          )}
+
+          {elsewhere.length > 0 && (
+            <>
+              <p className="pp-section-label pp-section-label--elsewhere">
+                Elsewhere
+              </p>
+              {elsewhere.map((u) => (
+                <UserRow key={u.user_id} u={u} dim />
+              ))}
+            </>
+          )}
+
+          {total === 0 && (
+            <p className="pp-empty">No one online right now.</p>
+          )}
+        </div>
+
+        <div style={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', height: '100%', minHeight: 0, flex: 1 }}>
+          <div className="pp-chat-feed">
+            {chatMessages.length === 0 && (
+              <p className="pp-empty">No messages yet. Say hi!</p>
+            )}
+            {chatMessages.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
+            ))}
+            <div ref={chatEndRef} />
           </div>
-        ) : null}
+          <div className="pp-chat-input-row">
+            <ComposerInput
+              handleSend={(msg) => {
+                if (!socket || socket.readyState !== WebSocket.OPEN) return;
+                socket.send(
+                  JSON.stringify({
+                    type: "global:chat",
+                    payload: { content: msg },
+                  }),
+                );
+              }}
+              placeholder="Say something…"
+              maxLength={500}
+              maxRows={3}
+              compact
+            />
+          </div>
+        </div>
+
+        <div style={{ display: activeTab === 'voice' ? 'block' : 'none' }} className="pp-scroll pp-scroll--flush">
+          {hasOpenedVoice && <VoicePanel />}
+        </div>
       </div>
     </div>
   );
