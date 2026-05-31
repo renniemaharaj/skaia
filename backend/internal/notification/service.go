@@ -2,6 +2,8 @@ package notification
 
 import (
 	"encoding/json"
+	"log"
+	"strconv"
 
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -59,4 +61,52 @@ func (s *Service) DeleteAll(userID int64) error {
 
 func (s *Service) UnreadCount(userID int64) (int, error) {
 	return s.repo.UnreadCount(userID)
+}
+
+// ProcessMentions extracts mentions and sends notifications.
+func (s *Service) ProcessMentions(ids []string, senderID int64, message string, route string) {
+	notified := make(map[int64]bool)
+
+	for _, idStr := range ids {
+		if idStr == "special-everyone" || idStr == "special-here" {
+			users, _ := s.repo.GetAllUserIDs()
+			for _, u := range users {
+				if !notified[u] {
+					_, err := s.Send(u, "mentioned", message, route)
+					if err != nil {
+						log.Printf("ProcessMentions: failed to send everyone notif to %d: %v", u, err)
+					}
+					notified[u] = true
+				}
+			}
+			break
+		}
+
+		if len(idStr) > 5 && idStr[:5] == "role-" {
+			roleID, _ := strconv.ParseInt(idStr[5:], 10, 64)
+			users, _ := s.repo.GetUsersByRoleID(roleID)
+			for _, u := range users {
+				if !notified[u] {
+					_, err := s.Send(u, "mentioned", message, route)
+					if err != nil {
+						log.Printf("ProcessMentions: failed to send role notif to %d: %v", u, err)
+					}
+					notified[u] = true
+				}
+			}
+			continue
+		}
+
+		if len(idStr) > 5 && idStr[:5] == "user-" {
+			uID, _ := strconv.ParseInt(idStr[5:], 10, 64)
+			if !notified[uID] {
+				_, err := s.Send(uID, "mentioned", message, route)
+				if err != nil {
+					log.Printf("ProcessMentions: failed to send user notif to %d: %v", uID, err)
+				}
+				notified[uID] = true
+			}
+			continue
+		}
+	}
 }

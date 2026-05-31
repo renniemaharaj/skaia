@@ -1,0 +1,14 @@
+<--/------->
+
+## global_mentions
+
+### Current Progress
+- **Phase 1: TipTap Mention Extension** — ✅ Complete
+- **Phase 2: Global Badge Rendering Component** — ✅ Complete
+- **Phase 3: Backend Parsing & Notification Routing** — ✅ Complete
+- **Phase 4: Site-wide Integration** — ✅ Complete
+
+### Next Steps
+- [ ] Move on to inbox group chats.
+
+<--/------->

@@ -1,0 +1,31 @@
+# Forum Pinning
+
+## Context
+Users need the ability to pin important threads to the top of categories, and administrators need the ability to pin important categories to the top of the forum list (even when filtered).
+
+## Goal
+- Implement pinning for forum threads to the top of the category.
+- Implement pinning for forum categories to the top of the category list (and keeping them at the top when filtered).
+
+## Non-Goals
+- Complex expiration logic for pins (time-based unpinning).
+- Global pinned threads across all categories.
+
+## Steps
+1. **Backend**: 
+   - Verify `is_pinned` exists in `forum_threads` schema and is returned in API.
+   - Verify `is_pinned` exists in `forum_categories` schema, or add it via a new migration.
+   - Update `repository.go` sorting logic: Threads should sort by `is_pinned DESC, created_at DESC`. Categories should sort by `is_pinned DESC, name ASC` (or relevant sort).
+   - Update API endpoints to allow pinning/unpinning categories (and verify thread pinning exists).
+2. **Frontend**:
+   - Add "Pin" / "Unpin" actions to Thread UI (if permission allows).
+   - Add "Pin" / "Unpin" actions to Category UI (if permission allows).
+   - Visually distinguish pinned threads and categories (e.g., pin icon, different background or border).
+
+## Verification
+- Pinned threads appear above unpinned threads.
+- Pinned categories appear above unpinned categories.
+
+## References
+- `backend/internal/forum/repository.go`
+- `backend/frontend/src/components/forum/`

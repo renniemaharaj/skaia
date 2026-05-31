@@ -8,6 +8,7 @@ type ForumCategory struct {
 	Name         string    `json:"name"`
 	Description  string    `json:"description"`
 	DisplayOrder int       `json:"display_order"`
+	IsPinned     bool      `json:"is_pinned"`
 	IsLocked     bool      `json:"is_locked"`
 	ThreadCount  int       `json:"thread_count"`
 	CreatedAt    time.Time `json:"created_at"`

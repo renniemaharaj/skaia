@@ -35,6 +35,7 @@ const CategoryThreadsPreview = ({
   guestSandboxMode,
   navigate,
   handleDeleteThread,
+  handleToggleThreadPin,
 }: any) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const threadsToDisplay = [...(forum.threads || [])].slice(0, 5).reverse();
@@ -83,7 +84,14 @@ const CategoryThreadsPreview = ({
             }}
           >
             <div className="thread-title-wrapper">
-              <div className="thread-title">{thread.title}</div>
+              <div className="thread-title">
+                {thread.is_pinned && (
+                  <span className="threads-feed-pinned-badge" title="Pinned" style={{ color: "var(--color-primary)" }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'text-bottom' }}><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+                  </span>
+                )}
+                {thread.title}
+              </div>
               <div className="thread-actions">
                 <button
                   className="thread-action-btn view-btn"
@@ -105,6 +113,19 @@ const CategoryThreadsPreview = ({
                     title="Edit"
                   >
                     <Edit2 size={14} />
+                  </button>
+                )}
+                {canEditThread && (
+                  <button
+                    className={`thread-action-btn pin-btn${thread.is_pinned ? " pinned" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleThreadPin(thread.id, !thread.is_pinned);
+                    }}
+                    title={thread.is_pinned ? "Unpin thread" : "Pin thread"}
+                    style={thread.is_pinned ? { color: "var(--color-primary)" } : {}}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
                   </button>
                 )}
                 {canDeleteThread && (
@@ -184,6 +205,8 @@ export const Forum: React.FC = () => {
           name: cat.name,
           description: cat.description || "",
           is_locked: cat.is_locked || false,
+          is_pinned: cat.is_pinned || false,
+          display_order: cat.display_order || 0,
           thread_count: cat.thread_count || 0,
           created_at: cat.created_at,
           updated_at: cat.updated_at,
@@ -243,6 +266,36 @@ export const Forum: React.FC = () => {
       loadForums();
     } catch (error) {
       console.error("Error toggling category lock:", error);
+    }
+  };
+
+  const handleToggleCategoryPin = async (
+    categoryId: string,
+    pinned: boolean,
+  ) => {
+    try {
+      await apiRequest(`/forum/categories/${categoryId}/pin`, {
+        method: "PUT",
+        body: JSON.stringify({ is_pinned: pinned }),
+      });
+      loadForums();
+    } catch (error) {
+      console.error("Error toggling category pin:", error);
+    }
+  };
+
+  const handleToggleThreadPin = async (
+    threadId: string,
+    pinned: boolean,
+  ) => {
+    try {
+      await apiRequest(`/forum/threads/${threadId}/pin`, {
+        method: "PUT",
+        body: JSON.stringify({ is_pinned: pinned }),
+      });
+      loadForums();
+    } catch (error) {
+      console.error("Error toggling thread pin:", error);
     }
   };
 
@@ -385,6 +438,8 @@ export const Forum: React.FC = () => {
               name: "",
               description: "",
               is_locked: false,
+              is_pinned: false,
+              display_order: 0,
               thread_count: 0,
               created_at: "",
               updated_at: "",
@@ -414,6 +469,11 @@ export const Forum: React.FC = () => {
                   />
                 ) : (
                   <h3 className="forum-category-title">
+                    {forum.is_pinned && (
+                      <span className="threads-feed-pinned-badge" title="Pinned" style={{ color: "var(--color-primary)", marginRight: '8px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'text-bottom' }}><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+                      </span>
+                    )}
                     {forum.is_locked && (
                       <Lock size={14} className="category-lock-icon" />
                     )}
@@ -438,6 +498,25 @@ export const Forum: React.FC = () => {
                         {forum.thread_count}
                       </span>
                       {canEditCategories && !loading && (
+                        <>
+                          <button
+                            className={`thread-action-btn pin-btn${forum.is_pinned ? " pinned" : ""}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleCategoryPin(
+                                forum.id,
+                                !forum.is_pinned,
+                              );
+                            }}
+                            title={
+                              forum.is_pinned
+                                ? "Unpin category"
+                                : "Pin category"
+                            }
+                            style={forum.is_pinned ? { color: "var(--color-primary)" } : {}}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+                          </button>
                         <button
                           className={`thread-action-btn lock-btn${forum.is_locked ? " locked" : ""}`}
                           onClick={(e) => {
@@ -459,6 +538,7 @@ export const Forum: React.FC = () => {
                             <Lock size={14} />
                           )}
                         </button>
+                        </>
                       )}
                       {canDeleteCategory && (
                         <button
@@ -514,6 +594,7 @@ export const Forum: React.FC = () => {
                     guestSandboxMode={guestSandboxMode}
                     navigate={navigate}
                     handleDeleteThread={handleDeleteThread}
+                    handleToggleThreadPin={handleToggleThreadPin}
                   />
                   <div
                     className="threads-see-more"

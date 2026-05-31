@@ -12,4 +12,6 @@ type Repository interface {
 	Delete(id, userID int64) error
 	DeleteAll(userID int64) error
 	UnreadCount(userID int64) (int, error)
+	GetAllUserIDs() ([]int64, error)
+	GetUsersByRoleID(roleID int64) ([]int64, error)
 }

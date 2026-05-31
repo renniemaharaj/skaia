@@ -40,6 +40,7 @@ import (
 	istore "github.com/skaia/backend/internal/store"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 )
 
@@ -395,6 +396,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return nil
 		}
 		return map[string]interface{}{"notifications": notifs}
+	}
+
+	hub.MentionProcessor = func(content string, senderID int64, message string, route string) {
+		mentions := utils.ExtractMentions(content)
+		if len(mentions) > 0 {
+			notifSvc.ProcessMentions(mentions, senderID, message, route)
+		}
 	}
 
 	cfgRepo := icfg.NewRepository(db)

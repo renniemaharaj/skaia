@@ -17,10 +17,12 @@
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "@monaco-editor/react": "^4.7.0",
+    "@tiptap/react": "^2.27.2",
     "@tiptap/starter-kit": "^3.20.0",
     "@types/dompurify": "^3.0.5",
     "dompurify": "^3.4.7",
     "emoji-mart": "^5.6.0",
+    "html-react-parser": "^6.1.2",
     "jotai": "^2.18.0",
     "lodash": "^4.17.23",
     "lucide-react": "^0.575.0",
@@ -33,7 +35,8 @@
     "react-textarea-autosize": "^8.5.9",
     "reactjs-tiptap-editor": "^0.3.31",
     "recharts": "^3.8.1",
-    "sonner": "^2.0.7"
+    "sonner": "^2.0.7",
+    "tippy.js": "^6.3.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

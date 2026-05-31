@@ -9,7 +9,9 @@ import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../../atoms/forum";
+// import { formatDate } from "../../utils/serverTime";
 import UserLink from "../user/UserLink";
+import { RichTextRenderer } from "../ui/RichTextRenderer";
 import DOMPurify from "dompurify";
 
 type Author = {
@@ -95,9 +97,9 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
             {currentThread?.title || "Untitled Thread"}
           </h1>
           {sanitizedContent ? (
-            <div 
+            <RichTextRenderer
               className="vtm-description"
-              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+              html={sanitizedContent}
             />
           ) : (
             <p className="vtm-description">No description available.</p>

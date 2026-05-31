@@ -14,6 +14,7 @@ import {
   X,
   CheckCheck,
   Trash,
+  AtSign,
 } from "lucide-react";
 import {
   notificationsAtom,
@@ -52,6 +53,8 @@ const typeIcon = (type: NotificationType) => {
       return <UserCheck size={14} />;
     case "direct_message":
       return <Mail size={14} />;
+    case "mentioned":
+      return <AtSign size={14} />;
     default:
       return <Bell size={14} />;
   }

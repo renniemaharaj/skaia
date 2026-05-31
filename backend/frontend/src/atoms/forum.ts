@@ -54,11 +54,13 @@ export interface ForumThread {
 export interface ForumCategory {
   id: string;
   name: string;
-  description?: string;
+  description: string;
+  display_order: number;
   is_locked: boolean;
-  thread_count: number;
+  is_pinned: boolean;
   created_at: string;
   updated_at: string;
+  thread_count?: number;
   threads?: ForumThread[];
 }
 

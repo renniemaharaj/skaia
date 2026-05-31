@@ -20,6 +20,7 @@ import (
 // NotifSender is the minimal interface the forum handler needs to send user notifications.
 type NotifSender interface {
 	Send(userID int64, notifType, message, route string) (*models.Notification, error)
+	ProcessMentions(ids []string, senderID int64, message string, route string)
 }
 
 // Handler exposes all forum HTTP endpoints.
@@ -44,6 +45,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(optJWT).Get("/categories", h.listCategories)
 		r.With(jwt).Post("/categories", h.createCategory)
 		r.With(jwt).Put("/categories/{id}", h.updateCategory)
+		r.With(jwt).Put("/categories/{id}/pin", h.pinCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
 		// Category-scoped thread listing
@@ -55,6 +57,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(optJWT).Get("/threads/{id}", h.getThread)
 		r.With(jwt).Put("/threads/{id}", h.updateThread)
 		r.With(jwt).Put("/threads/{id}/lock", h.lockThread)
+		r.With(jwt).Put("/threads/{id}/pin", h.pinThread)
 		r.With(jwt).Delete("/threads/{id}", h.deleteThread)
 		r.With(jwt).Post("/threads/{threadId}/like", h.likeThread)
 		r.With(jwt).Delete("/threads/{threadId}/like", h.unlikeThread)
@@ -465,6 +468,11 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mentions := utils.ExtractMentions(req.Content)
+	if len(mentions) > 0 {
+		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a thread: "+created.Title, "/forum/thread/"+strconv.FormatInt(created.ID, 10))
+	}
+
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     userID,
 		Activity:   ievents.ActThreadCreated,
@@ -601,6 +609,12 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		log.Printf("forum.updateThread: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update thread")
 		return
+	}
+
+	mentions := utils.ExtractMentions(thread.Content)
+	log.Printf("DEBUG: Extracted mentions: %v from content: %s", mentions, thread.Content)
+	if len(mentions) > 0 {
+		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a thread: "+updated.Title, "/forum/thread/"+strconv.FormatInt(updated.ID, 10))
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
@@ -907,6 +921,11 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mentions := utils.ExtractMentions(req.Content)
+	if len(mentions) > 0 {
+		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a comment", "/view-thread/"+strconv.FormatInt(id, 10))
+	}
+
 	// Enrich with user info for the WS payload
 	if enriched, err := h.svc.GetComment(created.ID); err == nil {
 		created = enriched
@@ -991,6 +1010,11 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		log.Printf("forum.updateComment: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update comment")
 		return
+	}
+
+	mentions := utils.ExtractMentions(req.Content)
+	if len(mentions) > 0 {
+		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a comment", "/forum/thread/"+strconv.FormatInt(updated.ThreadID, 10))
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
@@ -1285,4 +1309,117 @@ func (h *Handler) shareThread(w http.ResponseWriter, r *http.Request) {
 func marshalPayload(v interface{}) json.RawMessage {
 	data, _ := json.Marshal(v)
 	return data
+}
+
+func (h *Handler) pinCategory(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "forum.category-edit") {
+		return
+	}
+
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
+		return
+	}
+
+	cat, err := h.svc.GetCategory(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "category not found")
+		return
+	}
+
+	var req struct {
+		IsPinned bool `json:"is_pinned"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	cat.IsPinned = req.IsPinned
+	updated, err := h.svc.UpdateCategory(cat)
+	if err != nil {
+		log.Printf("forum.pinCategory: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to pin category")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActCategoryUpdated,
+		Resource:   ievents.ResForumCategory,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"is_pinned": updated.IsPinned},
+		Fn: func() {
+			h.hub.Broadcast(&ws.Message{
+				Type: ws.ForumUpdate,
+				Payload: marshalPayload(map[string]interface{}{
+					"action": "category_updated",
+					"data":   updated,
+				}),
+			})
+		},
+	})
+	utils.WriteJSON(w, http.StatusOK, updated)
+}
+
+func (h *Handler) pinThread(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		return
+	}
+
+	thread, err := h.svc.GetThread(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
+		return
+	}
+
+	canEdit, _ := h.authz.HasPermission(userID, "forum.thread-edit")
+	if thread.UserID != userID && !canEdit {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+
+	var req struct {
+		IsPinned bool `json:"is_pinned"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	thread.IsPinned = req.IsPinned
+	updated, err := h.svc.UpdateThread(thread)
+	if err != nil {
+		log.Printf("forum.pinThread: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to pin thread")
+		return
+	}
+
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActThreadUpdated,
+		Resource:   ievents.ResForum,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"is_pinned": updated.IsPinned},
+		Fn: func() {
+			h.hub.PropagateForumThread(id, map[string]interface{}{"is_pinned": updated.IsPinned}, "thread_pinned")
+		},
+	})
+	utils.WriteJSON(w, http.StatusOK, updated)
 }

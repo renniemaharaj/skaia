@@ -19,10 +19,10 @@ func NewCategoryRepository(db *sql.DB) CategoryRepository {
 func (r *sqlCategoryRepository) GetByID(id int64) (*models.ForumCategory, error) {
 	c := &models.ForumCategory{}
 	err := r.db.QueryRow(
-		`SELECT c.id, c.name, c.description, c.display_order, c.is_locked, c.created_at,
+		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
 		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
 		 FROM forum_categories c WHERE c.id = $1`, id,
-	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
+	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsPinned, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
 	}
@@ -32,10 +32,10 @@ func (r *sqlCategoryRepository) GetByID(id int64) (*models.ForumCategory, error)
 func (r *sqlCategoryRepository) GetByName(name string) (*models.ForumCategory, error) {
 	c := &models.ForumCategory{}
 	err := r.db.QueryRow(
-		`SELECT c.id, c.name, c.description, c.display_order, c.is_locked, c.created_at,
+		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
 		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
 		 FROM forum_categories c WHERE c.name = $1`, name,
-	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
+	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsPinned, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
 	}
@@ -44,22 +44,22 @@ func (r *sqlCategoryRepository) GetByName(name string) (*models.ForumCategory, e
 
 func (r *sqlCategoryRepository) Create(cat *models.ForumCategory) (*models.ForumCategory, error) {
 	err := r.db.QueryRow(
-		`INSERT INTO forum_categories (name, description, display_order, is_locked)
-		 VALUES ($1, $2, $3, $4)
-		 RETURNING id, name, description, display_order, is_locked, created_at`,
-		cat.Name, cat.Description, cat.DisplayOrder, cat.IsLocked,
-	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.IsLocked, &cat.CreatedAt)
+		`INSERT INTO forum_categories (name, description, display_order, is_pinned, is_locked)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, name, description, display_order, is_pinned, is_locked, created_at`,
+		cat.Name, cat.Description, cat.DisplayOrder, cat.IsPinned, cat.IsLocked,
+	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.IsPinned, &cat.IsLocked, &cat.CreatedAt)
 	cat.ThreadCount = 0
 	return cat, err
 }
 
 func (r *sqlCategoryRepository) Update(cat *models.ForumCategory) (*models.ForumCategory, error) {
 	err := r.db.QueryRow(
-		`UPDATE forum_categories SET name=$1, description=$2, display_order=$3, is_locked=$4
-		 WHERE id=$5
-		 RETURNING id, name, description, display_order, is_locked, created_at`,
-		cat.Name, cat.Description, cat.DisplayOrder, cat.IsLocked, cat.ID,
-	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.IsLocked, &cat.CreatedAt)
+		`UPDATE forum_categories SET name=$1, description=$2, display_order=$3, is_pinned=$4, is_locked=$5
+		 WHERE id=$6
+		 RETURNING id, name, description, display_order, is_pinned, is_locked, created_at`,
+		cat.Name, cat.Description, cat.DisplayOrder, cat.IsPinned, cat.IsLocked, cat.ID,
+	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.IsPinned, &cat.IsLocked, &cat.CreatedAt)
 	// Fetch thread count since we're returning the updated struct
 	if err == nil {
 		r.db.QueryRow(`SELECT COUNT(*) FROM forum_threads WHERE category_id = $1`, cat.ID).Scan(&cat.ThreadCount)
@@ -74,9 +74,9 @@ func (r *sqlCategoryRepository) Delete(id int64) error {
 
 func (r *sqlCategoryRepository) List() ([]*models.ForumCategory, error) {
 	rows, err := r.db.Query(
-		`SELECT c.id, c.name, c.description, c.display_order, c.is_locked, c.created_at,
+		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
 		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c ORDER BY c.display_order ASC`,
+		 FROM forum_categories c ORDER BY c.is_pinned DESC, c.display_order ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (r *sqlCategoryRepository) List() ([]*models.ForumCategory, error) {
 	var cats []*models.ForumCategory
 	for rows.Next() {
 		c := &models.ForumCategory{}
-		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsLocked, &c.CreatedAt, &c.ThreadCount); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsPinned, &c.IsLocked, &c.CreatedAt, &c.ThreadCount); err != nil {
 			return nil, err
 		}
 		cats = append(cats, c)
@@ -97,9 +97,9 @@ func (r *sqlCategoryRepository) List() ([]*models.ForumCategory, error) {
 func (r *sqlCategoryRepository) Search(query string) ([]*models.ForumCategory, error) {
 	searchPattern := "%" + query + "%"
 	rows, err := r.db.Query(
-		`SELECT c.id, c.name, c.description, c.display_order, c.is_locked, c.created_at,
+		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
 		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c WHERE c.name ILIKE $1 ORDER BY c.display_order ASC`,
+		 FROM forum_categories c WHERE c.name ILIKE $1 ORDER BY c.is_pinned DESC, c.display_order ASC`,
 		searchPattern,
 	)
 	if err != nil {

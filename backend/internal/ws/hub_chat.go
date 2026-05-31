@@ -18,6 +18,10 @@ func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
 	}
 	h.chatMu.Unlock()
 
+	if h.MentionProcessor != nil && cm.UserID > 0 {
+		h.MentionProcessor(cm.Content, cm.UserID, "You were mentioned in global chat", "/forum")
+	}
+
 	payload, _ := json.Marshal(cm)
 	msg := &Message{Type: GlobalChat, Payload: payload}
 

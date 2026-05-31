@@ -95,3 +95,39 @@ func (r *sqlRepository) UnreadCount(userID int64) (int, error) {
 	).Scan(&count)
 	return count, err
 }
+
+func (r *sqlRepository) GetAllUserIDs() ([]int64, error) {
+	rows, err := r.db.Query(`SELECT id FROM users`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func (r *sqlRepository) GetUsersByRoleID(roleID int64) ([]int64, error) {
+	rows, err := r.db.Query(`SELECT user_id FROM user_roles WHERE role_id = $1`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}

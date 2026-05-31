@@ -1,0 +1,32 @@
+# Inbox Group Chats
+
+## Context
+The inbox currently supports direct messages. It needs to be extended to support group chats where multiple users can participate.
+
+## Goal
+- Implement group chats within the inbox.
+- Allow group management:
+  - Add users to the group.
+  - Kick users from the group.
+  - Make users editors/admins of the group.
+
+## Non-Goals
+- Global public channels (group chats are private to invited members).
+
+## Steps
+1. **Schema Updates**: 
+   - Ensure the inbox system supports multi-user participants. Might need a `chat_threads` and `chat_participants` table with roles (e.g. `member`, `editor`, `admin`).
+2. **Backend API**:
+   - Create endpoints to manage group chats (create group, add/remove members, update roles).
+3. **Frontend Integration**:
+   - Update Inbox UI to show group chat creation and management interfaces.
+   - Support rendering multiple avatars and names for group chats.
+
+## Verification
+- User can create a group chat and invite members.
+- Group editor can add or kick members.
+- Messages broadcast to all group members.
+
+## References
+- `backend/internal/inbox/`
+- `backend/frontend/src/pages/inbox/`

@@ -1,0 +1,15 @@
+<--/------->
+
+## forum_pinning
+
+### Current Progress
+- **Phase 1: DB Schema & Backend Sorting** — ✅ Complete
+- **Phase 2: API Endpoints (Pin/Unpin)** — ✅ Complete
+- **Phase 3: Frontend UI & Rendering** — ✅ Complete
+
+### Next Steps
+- [x] Check schema for `is_pinned` in threads and categories.
+- [x] Update backend repository queries for sorting.
+- [x] Implement toggle pin endpoints and frontend UI buttons.
+
+<--/------->

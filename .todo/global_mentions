@@ -1,0 +1,28 @@
+# Global Mentions
+
+## Context
+The application requires a robust mention system across all inputs (comments, threads, global chat, inbox). Users need the ability to mention specific users (`@user`), roles (`@role`), `@here`, and `@everyone`. These mentions must render inline as rich badges globally.
+
+## Goal
+- Enhance TipTap editor to support mentions (`@user`, `@role`, `@here`, `@everyone`).
+- Implement text rendering and rich input reconciliation to parse mentions from raw text or rich text and render them as inline badges.
+- Mentioning a role/group should notify all members of that role.
+- Support site-wide application of this feature (forum, chat, inbox).
+
+## Non-Goals
+- Real-time pop-up notifications for mentions (out of scope if not specified, focus on text rendering and badge reconciliation first).
+
+## Steps
+1. **TipTap Extension**: Configure/extend TipTap's mention extension to query users, roles, `here`, and `everyone` from the backend.
+2. **Backend Parsing/Notification**: When an entity containing mentions is saved, the backend needs to parse mentions, resolve them to specific user IDs, and dispatch notification events.
+3. **Frontend Rendering**: Implement a global text renderer or sanitization wrapper that identifies mention formats (e.g. `<span data-type="mention" data-id="...">@username</span>` or regex `@[a-zA-Z0-9_]+`) and transforms them into rich inline badges (React components).
+4. **Integration**: Apply the renderer to Thread viewer, Comments, Inbox, and Global Chat.
+
+## Verification
+- Typing `@` opens a suggestion list with users and roles.
+- Mentioning `@everyone` notifies all users.
+- Mentions render as highlighted badges in read-only views across the site.
+
+## References
+- `backend/frontend/src/components/forum/extensions.ts` (TipTap config)
+- Notifications dispatcher in `backend/internal/events/`

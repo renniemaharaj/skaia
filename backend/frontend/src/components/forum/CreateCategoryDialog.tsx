@@ -35,10 +35,12 @@ interface CreateCategoryDialogProps {
 interface ForumCategory {
   id: string;
   name: string;
-  description: string;
-  threads: [];
-  created_at?: string;
-  display_order?: number;
+  description?: string;
+  is_locked: boolean;
+  is_pinned: boolean;
+  thread_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export const CreateCategoryDialog: React.FC<CreateCategoryDialogProps> = ({

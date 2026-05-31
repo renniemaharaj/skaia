@@ -15,6 +15,7 @@ const (
 	NotifUnsuspended     = "unsuspended"
 	NotifBanned          = "banned"
 	NotifDirectMessage   = "direct_message"
+	NotifMentioned       = "mentioned"
 )
 
 // Notification is a user-facing notification.

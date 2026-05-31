@@ -1,0 +1,15 @@
+<--/------->
+
+## inbox_group_chats
+
+### Current Progress
+- **Phase 1: Database Schema** — ⬜ Not started
+- **Phase 2: API Management Endpoints** — ⬜ Not started
+- **Phase 3: Frontend Inbox Group UI** — ⬜ Not started
+
+### Next Steps
+- [ ] Review current inbox schema in `backend/models/inbox.go`.
+- [ ] Add support for group participants and roles.
+- [ ] Implement group creation and member management logic.
+
+<--/------->

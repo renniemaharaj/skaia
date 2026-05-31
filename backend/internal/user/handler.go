@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	iemail "github.com/skaia/backend/internal/email"
@@ -65,6 +66,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Use(jwt)
 			r.Get("/profile", h.getProfile)
 			r.Get("/search", h.searchUsers)
+			r.Get("/mentions", h.searchMentions)
 			r.Post("/", h.createUser)
 			r.Put("/{id}", h.updateUser)
 			r.Post("/{id}/roles", h.addRole)
@@ -297,6 +299,52 @@ func (h *Handler) searchUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, users)
+}
+
+func (h *Handler) searchMentions(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	
+	type MentionItem struct {
+		ID     string `json:"id"`
+		Type   string `json:"type"` // "user", "role", "special"
+		Name   string `json:"name"`
+		Avatar string `json:"avatar,omitempty"`
+	}
+	
+	var items []MentionItem
+	
+	// Add special tags
+	qLower := strings.ToLower(q)
+	if q == "" || strings.HasPrefix("here", qLower) {
+		items = append(items, MentionItem{ID: "special-here", Type: "special", Name: "here"})
+	}
+	if q == "" || strings.HasPrefix("everyone", qLower) {
+		items = append(items, MentionItem{ID: "special-everyone", Type: "special", Name: "everyone"})
+	}
+	
+	// Add roles
+	roles, err := h.svc.GetAllRoles()
+	if err == nil {
+		for _, role := range roles {
+			if q == "" || strings.HasPrefix(strings.ToLower(role.Name), qLower) {
+				items = append(items, MentionItem{ID: "role-" + strconv.FormatInt(role.ID, 10), Type: "role", Name: role.Name})
+			}
+		}
+	}
+	
+	// Add users
+	var users []*models.User
+	if q == "" {
+		users, _ = h.svc.List(5, 0)
+	} else {
+		users, _ = h.svc.Search(q, 5, 0)
+	}
+	
+	for _, u := range users {
+		items = append(items, MentionItem{ID: "user-" + strconv.FormatInt(u.ID, 10), Type: "user", Name: u.Username, Avatar: u.AvatarURL})
+	}
+	
+	utils.WriteJSON(w, http.StatusOK, items)
 }
 
 func (h *Handler) suspendUser(w http.ResponseWriter, r *http.Request) {

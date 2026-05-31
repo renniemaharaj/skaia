@@ -113,6 +113,10 @@ type Hub struct {
 	// before the first connection arrives.
 	NotificationFetcher func(userID int64) interface{}
 
+	// MentionProcessor, when set, is called on global chat messages to
+	// extract mentions and dispatch notifications.
+	MentionProcessor func(content string, senderID int64, message string, route string)
+
 	// channels
 	clients         map[*Client]bool
 	broadcast       chan *Message
