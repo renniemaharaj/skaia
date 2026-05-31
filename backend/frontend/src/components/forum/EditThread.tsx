@@ -52,7 +52,7 @@ const EditThread = () => {
           setCurrentThread(response);
           setEditTitle(response.title);
           setEditContent(response.content);
-          setSelectedCategory(response.category_id);
+          setSelectedCategory(String(response.category_id));
           setLastUpdated(response.updated_at);
           // Subscribe to thread updates to detect changes from other users
           subscribe("thread", Number(threadId));
@@ -82,7 +82,7 @@ const EditThread = () => {
     ) {
       setEditTitle(currentThread.title);
       setEditContent(currentThread.content);
-      setSelectedCategory(currentThread.category_id);
+      setSelectedCategory(String(currentThread.category_id));
       setLastUpdated(currentThread.updated_at);
     }
   }, [currentThread]);
@@ -113,7 +113,7 @@ const EditThread = () => {
           body: JSON.stringify({
             title: editTitle,
             content: editContent,
-            category_id: selectedCategory,
+            category_id: String(selectedCategory),
           }),
         },
       );
