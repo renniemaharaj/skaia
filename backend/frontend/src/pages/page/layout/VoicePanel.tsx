@@ -397,27 +397,39 @@ export default function VoicePanel() {
 
     setIsSearching(true);
     const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(inputUrl)}&filter=videos`,
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setSearchResults(
-            data.items.slice(0, 5).map((item: any) => ({
-              id: item.url.split("?v=")[1] || item.url.split("/watch?v=")[1],
-              title: item.title,
-              thumbnail: item.thumbnail,
-            })),
+      const instances = [
+        "https://api.piped.private.coffee",
+        "https://pipedapi.smnz.de",
+        "https://pipedapi.kavin.rocks"
+      ];
+      let success = false;
+
+      for (const instance of instances) {
+        try {
+          const res = await fetch(
+            `${instance}/search?q=${encodeURIComponent(inputUrl)}&filter=videos`,
           );
-        } else {
-          setSearchResults([]);
+          if (res.ok) {
+            const data = await res.json();
+            setSearchResults(
+              data.items.slice(0, 5).map((item: any) => ({
+                id: item.url.split("?v=")[1] || item.url.split("/watch?v=")[1],
+                title: item.title,
+                thumbnail: item.thumbnail,
+              })),
+            );
+            success = true;
+            break;
+          }
+        } catch {
+          // Try next instance
         }
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
       }
+
+      if (!success) {
+        setSearchResults([]);
+      }
+      setIsSearching(false);
     }, 500);
 
     return () => clearTimeout(timer);
