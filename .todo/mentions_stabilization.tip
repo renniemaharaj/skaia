@@ -1,0 +1,21 @@
+<--/------->
+
+## mentions_stabilization
+
+### Current Progress
+- **Phase 1: Root cause analysis (data-id vs id)** — ✅ Complete
+- **Phase 2: Fix regex or editor output** — ✅ Complete
+- **Phase 3: Remove inline styles** — ✅ Complete
+- **Phase 4: Remove debug log** — ✅ Complete
+- **Phase 5: Deduplicate notifications on edits** — ✅ Complete
+- **Phase 6: Restore sender exclusion** — ✅ Complete
+- **Phase 7: Normalize routes & debounce** — ✅ Complete
+
+### Next Steps
+- [x] Instrument `onChangeContent` in `Editor.tsx` to log raw HTML and compare with backend receipt
+- [x] Determine where `data-id` becomes `id`
+- [x] Fix inline styles in `RichTextRenderer.tsx`
+- [x] Remove debug log from `forum/handler.go`
+- [x] Update global_mentions to complete
+
+<--/------->

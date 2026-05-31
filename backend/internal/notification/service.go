@@ -71,7 +71,7 @@ func (s *Service) ProcessMentions(ids []string, senderID int64, message string, 
 		if idStr == "special-everyone" || idStr == "special-here" {
 			users, _ := s.repo.GetAllUserIDs()
 			for _, u := range users {
-				if !notified[u] {
+				if u != senderID && !notified[u] {
 					_, err := s.Send(u, "mentioned", message, route)
 					if err != nil {
 						log.Printf("ProcessMentions: failed to send everyone notif to %d: %v", u, err)
@@ -86,7 +86,7 @@ func (s *Service) ProcessMentions(ids []string, senderID int64, message string, 
 			roleID, _ := strconv.ParseInt(idStr[5:], 10, 64)
 			users, _ := s.repo.GetUsersByRoleID(roleID)
 			for _, u := range users {
-				if !notified[u] {
+				if u != senderID && !notified[u] {
 					_, err := s.Send(u, "mentioned", message, route)
 					if err != nil {
 						log.Printf("ProcessMentions: failed to send role notif to %d: %v", u, err)
@@ -99,7 +99,7 @@ func (s *Service) ProcessMentions(ids []string, senderID int64, message string, 
 
 		if len(idStr) > 5 && idStr[:5] == "user-" {
 			uID, _ := strconv.ParseInt(idStr[5:], 10, 64)
-			if !notified[uID] {
+			if uID != senderID && !notified[uID] {
 				_, err := s.Send(uID, "mentioned", message, route)
 				if err != nil {
 					log.Printf("ProcessMentions: failed to send user notif to %d: %v", uID, err)

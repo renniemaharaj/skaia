@@ -11,5 +11,6 @@
 - [x] Check schema for `is_pinned` in threads and categories.
 - [x] Update backend repository queries for sorting.
 - [x] Implement toggle pin endpoints and frontend UI buttons.
+- [x] Audited 2026-05-31: all phases verified complete. Ready to retire.
 
 <--/------->

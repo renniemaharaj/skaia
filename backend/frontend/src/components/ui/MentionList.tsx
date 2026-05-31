@@ -14,7 +14,7 @@ export const MentionList = forwardRef((props: any, ref) => {
     let active = true;
     setLoading(true);
 
-    const fetchMentions = async () => {
+    const timer = setTimeout(async () => {
       try {
         const data = await apiRequest(`/users/mentions?q=${encodeURIComponent(query)}`);
         if (active) {
@@ -30,10 +30,12 @@ export const MentionList = forwardRef((props: any, ref) => {
       } finally {
         if (active) setLoading(false);
       }
-    };
+    }, 250);
 
-    fetchMentions();
-    return () => { active = false; };
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [query]);
 
   const selectItem = (index: number) => {

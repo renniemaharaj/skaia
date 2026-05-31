@@ -25,3 +25,19 @@ func ExtractMentions(htmlContent string) []string {
 	}
 	return ids
 }
+
+// DiffMentions returns the mentions that are in newMentions but not in oldMentions
+func DiffMentions(oldMentions, newMentions []string) []string {
+	oldSet := make(map[string]bool)
+	for _, id := range oldMentions {
+		oldSet[id] = true
+	}
+	
+	var added []string
+	for _, id := range newMentions {
+		if !oldSet[id] {
+			added = append(added, id)
+		}
+	}
+	return added
+}

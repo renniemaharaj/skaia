@@ -54,17 +54,7 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
         }
 
         return (
-          <span
-            className={badgeClass}
-            style={{
-              fontWeight: 600,
-              color: "var(--color-primary)",
-              background: "rgba(var(--color-primary-rgb), 0.1)",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              margin: "0 2px",
-            }}
-          >
+          <span className={badgeClass}>
             {text}
           </span>
         );

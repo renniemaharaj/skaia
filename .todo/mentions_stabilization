@@ -1,0 +1,43 @@
+# Mentions Stabilization
+
+## Context
+The `global_mentions` integration was rapidly iterated through 3+ regex revisions, revealing that the TipTap Mention extension outputs `data-id` and `data-label` in its `renderHTML`, but the HTML arriving at the backend uses bare `id` and `label` attributes. The root cause of this attribute stripping has not been identified — suspects include `reactjs-tiptap-editor` wrapper behavior or the `onChangeContent` callback serialization.
+
+Additionally, the integration accumulated several quality issues: inline styles in violation of project CSS guidelines, debug logs left in production code, missing notification deduplication on edits, removed sender exclusion, inconsistent notification route paths, and no API call debounce in the mention dropdown.
+
+## Goal
+- Identify and fix the root cause of the `data-id` → `id` attribute transformation
+- Fix all 7 issues documented in the audit report
+- Bring `global_mentions` to a genuinely complete state
+
+## Non-Goals
+- Expanding mentions to inbox/chat (tracked separately)
+- Mention notification preferences or muting
+
+## Steps
+1. **Root cause analysis**: Instrument the editor's `onChangeContent` to log raw HTML output and compare with what the backend receives. Determine where `data-id` becomes `id`.
+2. **Fix regex or fix source**: Either fix the editor/wrapper to emit `data-id`, or canonicalize the regex to handle both forms safely without false positives on unrelated `id` attributes.
+3. **Remove inline styles**: Remove the `style={{...}}` prop from `RichTextRenderer.tsx` L57-L66 — the `.mention-badge` CSS class already covers it.
+4. **Remove debug log**: Remove `log.Printf("DEBUG: ...")` from `forum/handler.go` L615.
+5. **Deduplicate notifications on edits**: Before calling `ProcessMentions` in `updateThread`/`updateComment`, diff old content mentions against new content mentions; only notify for newly added mentions.
+6. **Restore sender exclusion**: Add `u != senderID` back to `ProcessMentions` in `notification/service.go`.
+7. **Normalize routes**: Ensure all mention notification routes use `/forum/thread/{id}` consistently.
+8. **Debounce mention API calls**: Add ~200ms debounce to the `useEffect` in `MentionList.tsx`.
+
+## Verification
+- Typing `@` in editor → dropdown opens, at most 1 API call per ~200ms
+- Saving a thread with mentions → correct `data-id` values extracted, notifications sent
+- Editing a thread without changing mentions → no duplicate notifications
+- Author not notified for their own mentions
+- No inline styles in `RichTextRenderer.tsx`
+- No `DEBUG:` lines in backend logs
+- All mention notification routes resolve correctly
+
+## References
+- `backend/internal/utils/mentions.go`
+- `backend/internal/notification/service.go`
+- `backend/internal/forum/handler.go` (createThread, updateThread, createComment, updateComment)
+- `backend/frontend/src/components/ui/RichTextRenderer.tsx`
+- `backend/frontend/src/components/ui/MentionList.tsx`
+- `backend/frontend/src/components/forum/extensions.ts`
+- `.todo/global_mentions`

@@ -470,7 +470,7 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 
 	mentions := utils.ExtractMentions(req.Content)
 	if len(mentions) > 0 {
-		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a thread: "+created.Title, "/forum/thread/"+strconv.FormatInt(created.ID, 10))
+		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a thread: "+created.Title, "/view-thread/"+strconv.FormatInt(created.ID, 10))
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
@@ -587,6 +587,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	oldMentions := utils.ExtractMentions(thread.Content)
 	thread.Title = req.Title
 	thread.Content = req.Content
 
@@ -611,10 +612,10 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mentions := utils.ExtractMentions(thread.Content)
-	log.Printf("DEBUG: Extracted mentions: %v from content: %s", mentions, thread.Content)
-	if len(mentions) > 0 {
-		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a thread: "+updated.Title, "/forum/thread/"+strconv.FormatInt(updated.ID, 10))
+	newMentions := utils.ExtractMentions(thread.Content)
+	addedMentions := utils.DiffMentions(oldMentions, newMentions)
+	if len(addedMentions) > 0 {
+		h.notifSvc.ProcessMentions(addedMentions, userID, "You were mentioned in a thread: "+updated.Title, "/view-thread/"+strconv.FormatInt(updated.ID, 10))
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
@@ -1003,6 +1004,7 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "content required")
 		return
 	}
+	oldMentions := utils.ExtractMentions(comment.Content)
 	comment.Content = req.Content
 
 	updated, err := h.svc.UpdateComment(comment)
@@ -1012,9 +1014,10 @@ func (h *Handler) updateComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mentions := utils.ExtractMentions(req.Content)
-	if len(mentions) > 0 {
-		h.notifSvc.ProcessMentions(mentions, userID, "You were mentioned in a comment", "/forum/thread/"+strconv.FormatInt(updated.ThreadID, 10))
+	newMentions := utils.ExtractMentions(req.Content)
+	addedMentions := utils.DiffMentions(oldMentions, newMentions)
+	if len(addedMentions) > 0 {
+		h.notifSvc.ProcessMentions(addedMentions, userID, "You were mentioned in a comment", "/view-thread/"+strconv.FormatInt(updated.ThreadID, 10))
 	}
 
 	h.dispatcher.Dispatch(ievents.Job{
