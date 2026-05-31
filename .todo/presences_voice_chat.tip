@@ -1,0 +1,20 @@
+<--/------->
+
+## presences_voice_chat
+
+### Current Progress
+- **Phase 1: Architecture & Spec** — ⬜ Not started
+- **Phase 2: Backend Core** — ⬜ Not started
+- **Phase 3: Backend Control** — ⬜ Not started
+- **Phase 4: Backend Extensibility** — ⬜ Not started
+- **Phase 5: Frontend UI** — ⬜ Not started
+- **Phase 6: Frontend Integration** — ⬜ Not started
+- **Phase 7: Frontend Playback** — ⬜ Not started
+- **Phase 8: Frontend Media** — ⬜ Not started
+- **Phase 9: Final Polish** — ⬜ Not started
+
+### Next Steps
+- [ ] Create a `.specs/voice_chat_architecture.md` defining the WebSocket binary streaming format and backend routing logic.
+- [ ] Scaffold Go backend structures for audio rooms bound to presence routes, including admin permissions.
+
+<--/------->
