@@ -15,5 +15,3 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
   kickedUsers: {},
 });
 
-// User's global volume (0.0 to 1.0)
-export const globalVolumeAtom = atom<number>(0.8);

@@ -1,11 +1,18 @@
-import { useAtom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { Mic, MicOff, Play, Pause, Settings } from "lucide-react";
 import { useCallback, useState, useRef, useEffect } from "react";
-import { globalVolumeAtom, voicePermissionsAtom } from "../../../atoms/voice";
+import { voicePermissionsAtom } from "../../../atoms/voice";
+import { getSoundVolume } from "../../../utils/sound";
 import { mediaStateAtom } from "../../../atoms/media";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
-import { Plus, X, Trash2, ListVideo, History as HistoryIcon } from "lucide-react";
+import {
+  Plus,
+  X,
+  Trash2,
+  ListVideo,
+  History as HistoryIcon,
+} from "lucide-react";
 import {
   socketAtom,
   currentUserAtom,
@@ -134,9 +141,18 @@ function createVoiceStreamPlayer(
   return player;
 }
 
-
 export default function VoicePanel() {
-  const [globalVolume, setGlobalVolume] = useAtom(globalVolumeAtom);
+  const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
+
+  useEffect(() => {
+    const handleVolumeChange = (e: Event) => {
+      setGlobalVolume((e as CustomEvent<number>).detail);
+    };
+    window.addEventListener("sound:volume-change", handleVolumeChange);
+    return () =>
+      window.removeEventListener("sound:volume-change", handleVolumeChange);
+  }, []);
+
   const permissions = useAtomValue(voicePermissionsAtom);
   const socket = useAtomValue(socketAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -165,25 +181,31 @@ export default function VoicePanel() {
       toast.error("Invalid YouTube URL");
       return;
     }
-    socket?.send(JSON.stringify({
-      type: "media:add",
-      payload: { route: location.pathname, video_id: vid, loop: false }
-    }));
+    socket?.send(
+      JSON.stringify({
+        type: "media:add",
+        payload: { route: location.pathname, video_id: vid, loop: false },
+      }),
+    );
     setInputUrl("");
   };
 
   const handleRemoveMedia = (itemId: string) => {
-    socket?.send(JSON.stringify({
-      type: "media:remove",
-      payload: { route: location.pathname, item_id: itemId }
-    }));
+    socket?.send(
+      JSON.stringify({
+        type: "media:remove",
+        payload: { route: location.pathname, item_id: itemId },
+      }),
+    );
   };
 
   const handleClearHistory = () => {
-    socket?.send(JSON.stringify({
-      type: "media:history:clear",
-      payload: { route: location.pathname }
-    }));
+    socket?.send(
+      JSON.stringify({
+        type: "media:history:clear",
+        payload: { route: location.pathname },
+      }),
+    );
   };
 
   const handlePauseToggle = async () => {
@@ -191,18 +213,25 @@ export default function VoicePanel() {
     if (playerRef.current) {
       position = await playerRef.current.getCurrentTime();
     }
-    socket?.send(JSON.stringify({
-      type: "media:action",
-      payload: { route: location.pathname, position }
-    }));
+    socket?.send(
+      JSON.stringify({
+        type: "media:action",
+        payload: { route: location.pathname, position },
+      }),
+    );
   };
 
   const handleEnded = useCallback(() => {
     if (mediaState?.queue && mediaState.queue.length > 0) {
-      socket?.send(JSON.stringify({
-        type: "media:ended",
-        payload: { route: location.pathname, item_id: mediaState.queue[0].id }
-      }));
+      socket?.send(
+        JSON.stringify({
+          type: "media:ended",
+          payload: {
+            route: location.pathname,
+            item_id: mediaState.queue[0].id,
+          },
+        }),
+      );
     }
   }, [mediaState, socket, location.pathname]);
 
@@ -392,34 +421,42 @@ export default function VoicePanel() {
       <div className="ui-panel vp-settings-panel">
         <div className="vp-setting-row">
           <span className="vp-setting-label">
-            {micActive ? <Mic size={14} className="vp-text-primary" /> : <MicOff size={14} className="vp-text-secondary" />}
+            {micActive ? (
+              <Mic size={14} className="vp-text-primary" />
+            ) : (
+              <MicOff size={14} className="vp-text-secondary" />
+            )}
             Microphone
           </span>
           <label className="vp-switch">
-            <input type="checkbox" checked={micActive} onChange={toggleMic} disabled={!canSpeak} />
-            <div className="vp-switch-track"><div className="vp-switch-thumb" /></div>
+            <input
+              type="checkbox"
+              checked={micActive}
+              onChange={toggleMic}
+              disabled={!canSpeak}
+            />
+            <div className="vp-switch-track">
+              <div className="vp-switch-thumb" />
+            </div>
           </label>
-        </div>
-        
-        <div className="vp-setting-row">
-          <span className="vp-setting-label vp-vol-label">Volume</span>
-          <input
-            className="form-range vp-vol-slider"
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={globalVolume}
-            onChange={(e) => setGlobalVolume(parseFloat(e.target.value))}
-          />
         </div>
       </div>
 
       <div className="vp-media-section ui-panel">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <h4>Media Queue</h4>
           {hasManagePermission && (
-            <button className="btn btn-sm btn-ghost" onClick={handlePauseToggle} style={{ padding: "2px 6px", fontSize: "0.75rem" }}>
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={handlePauseToggle}
+              style={{ padding: "2px 6px", fontSize: "0.75rem" }}
+            >
               {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
               {mediaState?.is_paused ? " Resume" : " Pause"}
             </button>
@@ -433,7 +470,11 @@ export default function VoicePanel() {
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
           />
-          <button type="submit" className="btn btn-sm btn-primary vp-play-btn" disabled={!inputUrl}>
+          <button
+            type="submit"
+            className="btn btn-sm btn-primary vp-play-btn"
+            disabled={!inputUrl}
+          >
             <Plus size={14} />
           </button>
         </form>
@@ -441,27 +482,34 @@ export default function VoicePanel() {
         {mediaState?.queue && mediaState.queue.length > 0 && (
           <>
             <div className="vp-active-player">
-              <YouTubePlayer 
+              <YouTubePlayer
                 ref={playerRef}
-                videoId={mediaState.queue[0].video_id} 
-                isPaused={mediaState.is_paused} 
+                videoId={mediaState.queue[0].video_id}
+                isPaused={mediaState.is_paused}
                 currentPosition={mediaState.current_position || 0}
                 updatedAt={mediaState.updated_at || ""}
-                onEnded={handleEnded} 
+                onEnded={handleEnded}
               />
             </div>
-            
+
             {mediaState.queue.length > 1 && (
               <div className="vp-queue-list">
                 <div className="vp-queue-header">
                   <ListVideo size={12} /> Up Next
                 </div>
                 <div className="vp-queue-scroll">
-                  {mediaState.queue.slice(1).map(item => (
+                  {mediaState.queue.slice(1).map((item) => (
                     <div key={item.id} className="vp-queue-item">
-                      <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="Thumbnail" />
+                      <img
+                        src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                        alt="Thumbnail"
+                      />
                       <div className="vp-queue-item-overlay">
-                        <button onClick={() => handleRemoveMedia(item.id)} className="btn btn-ghost" style={{ padding: "0.25rem", borderRadius: "50%" }}>
+                        <button
+                          onClick={() => handleRemoveMedia(item.id)}
+                          className="btn btn-ghost"
+                          style={{ padding: "0.25rem", borderRadius: "50%" }}
+                        >
                           <X size={14} />
                         </button>
                       </div>
@@ -475,25 +523,48 @@ export default function VoicePanel() {
 
         {mediaState?.history && mediaState.history.length > 0 && (
           <div className="vp-queue-list">
-            <div className="vp-queue-header" style={{ display: "flex", justifyContent: "space-between" }}>
-              <span><HistoryIcon size={12} /> History</span>
+            <div
+              className="vp-queue-header"
+              style={{ display: "flex", justifyContent: "space-between" }}
+            >
+              <span>
+                <HistoryIcon size={12} /> History
+              </span>
               {hasManagePermission && (
-                <button className="btn btn-ghost text-error" onClick={handleClearHistory} style={{ padding: "0.1rem 0.25rem" }}>
+                <button
+                  className="btn btn-ghost text-error"
+                  onClick={handleClearHistory}
+                  style={{ padding: "0.1rem 0.25rem" }}
+                >
                   <Trash2 size={12} />
                 </button>
               )}
             </div>
             <div className="vp-queue-scroll">
-              {mediaState.history.map(item => (
+              {mediaState.history.map((item) => (
                 <div key={item.id} className="vp-queue-item">
-                  <img src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`} alt="Thumbnail" />
+                  <img
+                    src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                    alt="Thumbnail"
+                  />
                   <div className="vp-queue-item-overlay">
-                    <button onClick={() => {
-                       socket?.send(JSON.stringify({
-                         type: "media:add",
-                         payload: { route: location.pathname, video_id: item.video_id, loop: false }
-                       }));
-                    }} className="btn btn-ghost" style={{ padding: "0.25rem", borderRadius: "50%" }} title="Play Again">
+                    <button
+                      onClick={() => {
+                        socket?.send(
+                          JSON.stringify({
+                            type: "media:add",
+                            payload: {
+                              route: location.pathname,
+                              video_id: item.video_id,
+                              loop: false,
+                            },
+                          }),
+                        );
+                      }}
+                      className="btn btn-ghost"
+                      style={{ padding: "0.25rem", borderRadius: "50%" }}
+                      title="Play Again"
+                    >
                       <Play size={14} />
                     </button>
                   </div>
@@ -527,7 +598,9 @@ export default function VoicePanel() {
                   );
                 }}
               />
-              <div className="vp-switch-track vp-switch-track--danger"><div className="vp-switch-thumb" /></div>
+              <div className="vp-switch-track vp-switch-track--danger">
+                <div className="vp-switch-thumb" />
+              </div>
             </label>
           </div>
         </div>

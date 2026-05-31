@@ -61,6 +61,7 @@ export function setSoundVolume(level: number) {
   try {
     localStorage.setItem(VOLUME_KEY, String(clamped));
     setSoundEnabled(clamped > 0);
+    window.dispatchEvent(new CustomEvent("sound:volume-change", { detail: clamped }));
   } catch {
     // ignore
   }
