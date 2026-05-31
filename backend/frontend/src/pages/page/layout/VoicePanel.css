@@ -141,7 +141,7 @@
 .vp-media-input input {
   flex-grow: 1;
   min-width: 0;
-  margin-bottom: 0;
+  margin-bottom: 0.75rem;
   padding: 0.5rem 0.625rem;
   font-size: 0.8125rem;
 }
@@ -266,6 +266,11 @@
 }
 .vp-btn-text:hover {
   opacity: 1;
+}
+
+.vp-btn-danger:hover,
+.text-error:hover {
+  color: var(--error-color);
 }
 
 .vp-media-stats {

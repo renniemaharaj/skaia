@@ -245,3 +245,16 @@ func (h *Hub) sendMediaSyncToClient(client *Client) {
 	default:
 	}
 }
+
+// cleanupInactiveMedia removes media state for routes that have been paused/empty and inactive for over 2 hours.
+func (h *Hub) cleanupInactiveMedia() {
+	h.mediaMu.Lock()
+	defer h.mediaMu.Unlock()
+	now := time.Now().UTC()
+	for route, state := range h.mediaRoutes {
+		t, err := time.Parse(time.RFC3339, state.UpdatedAt)
+		if err == nil && now.Sub(t) > 2*time.Hour && (state.IsPaused || len(state.Queue) == 0) {
+			delete(h.mediaRoutes, route)
+		}
+	}
+}

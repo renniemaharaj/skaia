@@ -261,6 +261,15 @@ func (h *Hub) Run() {
 		}
 	}()
 
+	// Media cleanup: periodically remove inactive media routes
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			h.cleanupInactiveMedia()
+		}
+	}()
+
 	for {
 		select {
 		case client := <-h.register:

@@ -358,6 +358,26 @@ export default function VoicePanel() {
     );
   };
 
+  const [retiredItems, setRetiredItems] = useState<any[]>([]);
+  const prevQueueRef = useRef(mediaState?.queue || []);
+
+  useEffect(() => {
+    if (!mediaState?.queue) return;
+    const currentIds = new Set(mediaState.queue.map((i: any) => i.id));
+    const removed = prevQueueRef.current.filter((i: any) => !currentIds.has(i.id) && i.id !== transitioningItemId);
+    
+    if (removed.length > 0) {
+      setRetiredItems((prev) => [
+        ...prev,
+        ...removed.map((r: any) => ({ ...r, _retired: true }))
+      ]);
+      setTimeout(() => {
+        setRetiredItems((prev) => prev.filter((i: any) => !removed.find((r: any) => r.id === i.id)));
+      }, 5000);
+    }
+    prevQueueRef.current = mediaState.queue;
+  }, [mediaState?.queue, transitioningItemId]);
+
   const handleEnded = useCallback(() => {
     if (mediaState?.queue && mediaState.queue.length > 0) {
       socket?.send(
@@ -673,16 +693,19 @@ export default function VoicePanel() {
             <div className="vp-active-player" style={{ display: "flex", gap: "8px" }}>
               {mediaState.queue
                 .filter((item, idx) => idx === 0 || item.id === transitioningItemId)
-                .map((item, idx) => {
+                .concat(retiredItems)
+                .map((item: any, idx) => {
+                  const isRetired = item._retired;
+                  const isPrimary = !isRetired && idx === 0;
                   return (
-                    <div key={item.id} style={{ flex: 1, minWidth: 0, height: "100%" }}>
+                    <div key={item.id} style={{ flex: 1, minWidth: 0, height: "100%", display: isRetired ? "none" : "block" }}>
                       <YouTubePlayer
-                        ref={idx === 0 ? playerRef : transitionPlayerRef}
+                        ref={isPrimary ? playerRef : (!isRetired ? transitionPlayerRef : null)}
                         videoId={item.video_id}
-                        isPaused={idx === 0 ? mediaState.is_paused : false}
-                        currentPosition={idx === 0 ? mediaState.current_position || 0 : 0}
-                        updatedAt={idx === 0 ? mediaState.updated_at || "" : new Date().toISOString()}
-                        onEnded={idx === 0 ? handleEnded : () => {}}
+                        isPaused={isPrimary ? mediaState.is_paused : (isRetired ? true : false)}
+                        currentPosition={isPrimary ? mediaState.current_position || 0 : 0}
+                        updatedAt={isPrimary ? mediaState.updated_at || "" : new Date().toISOString()}
+                        onEnded={isPrimary ? handleEnded : () => {}}
                       />
                     </div>
                   );
@@ -799,9 +822,35 @@ export default function VoicePanel() {
                               </svg>
                             </button>
                           ))}
+                        
+                        {index === 0 && transitioningItemId !== item.id && (
+                          <button
+                            onClick={() => {
+                              socket?.send(
+                                JSON.stringify({
+                                  type: "media:transition",
+                                  payload: {
+                                    route: location.pathname,
+                                    item_id: mediaState.queue[0].id,
+                                    position: 0,
+                                  },
+                                })
+                              );
+                            }}
+                            className="btn btn-ghost"
+                            style={{
+                              padding: "0.25rem",
+                              borderRadius: "50%",
+                              marginRight: "4px",
+                            }}
+                            title="Play Now"
+                          >
+                            <Play size={14} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleRemoveMedia(item.id)}
-                          className="btn btn-ghost"
+                          className="btn btn-ghost vp-btn-danger"
                           style={{ padding: "0.25rem", borderRadius: "50%" }}
                         >
                           <X size={14} />
