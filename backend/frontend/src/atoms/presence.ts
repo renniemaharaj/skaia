@@ -11,8 +11,8 @@ export interface CursorPosition {
   user_id: number;
   user_name: string;
   avatar: string;
-  x: number; // 0–1 fraction of viewport width
-  y: number; // 0–1 fraction of viewport height
+  x: number; // 0–1 fraction of document scrollWidth
+  y: number; // 0–1 fraction of document scrollHeight
   updatedAt: number; // Date.now() timestamp for expiry
 }
 
