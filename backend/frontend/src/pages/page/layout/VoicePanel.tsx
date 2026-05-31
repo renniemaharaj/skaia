@@ -698,7 +698,7 @@ export default function VoicePanel() {
                   const isRetired = item._retired;
                   const isPrimary = !isRetired && idx === 0;
                   return (
-                    <div key={item.id} style={{ flex: 1, minWidth: 0, height: "100%", display: isRetired ? "none" : "block" }}>
+                    <div key={`${item.id}${isPrimary ? '-primary' : ''}`} style={{ flex: 1, minWidth: 0, height: "100%", display: isRetired ? "none" : "block" }}>
                       <YouTubePlayer
                         ref={isPrimary ? playerRef : (!isRetired ? transitionPlayerRef : null)}
                         videoId={item.video_id}
