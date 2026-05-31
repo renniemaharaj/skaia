@@ -295,10 +295,6 @@
   opacity: 1;
 }
 
-.vp-btn-danger:hover,
-.text-error:hover {
-  color: var(--error-color);
-}
 
 .vp-media-stats {
   display: flex;

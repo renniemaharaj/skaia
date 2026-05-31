@@ -734,19 +734,19 @@ export default function VoicePanel() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
+              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
                 <Wind size={16} />
                 <span className="btn-badge">1</span>
               </button>
-              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
+              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
                 <Bell size={16} />
                 <span className="btn-badge">2</span>
               </button>
-              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
+              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
                 <Bot size={16} />
                 <span className="btn-badge">3</span>
               </button>
-              <button className="btn btn-ghost btn-icon" onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
+              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
                 <Sparkles size={16} />
                 <span className="btn-badge">4</span>
               </button>
@@ -754,7 +754,7 @@ export default function VoicePanel() {
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
-              className="btn btn-ghost btn-icon-sm"
+              className="icon-btn icon-btn--sm icon-btn--ghost"
               onClick={() => setIsPlayerMuted(!isPlayerMuted)}
               title={isPlayerMuted ? "Unmute Music" : "Mute Music"}
             >
@@ -762,7 +762,8 @@ export default function VoicePanel() {
             </button>
             {hasManagePermission && (
               <button
-                className="btn btn-xs btn-ghost"
+                className="btn btn-sm btn-ghost"
+                style={{ padding: "4px 8px", fontSize: "0.75rem" }}
                 onClick={handlePauseToggle}
               >
                 {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
@@ -998,8 +999,8 @@ export default function VoicePanel() {
                         )}
                         <button
                           onClick={() => handleRemoveMedia(item.id)}
-                          className="btn btn-ghost vp-btn-danger"
-                          style={{ padding: "0.25rem", borderRadius: "50%" }}
+                          className="icon-btn icon-btn--sm icon-btn--danger"
+                          title="Remove from queue"
                         >
                           <X size={14} />
                         </button>
@@ -1025,9 +1026,9 @@ export default function VoicePanel() {
               </span>
               {hasManagePermission && (
                 <button
-                  className="btn btn-ghost text-error"
+                  className="icon-btn icon-btn--xs icon-btn--danger"
                   onClick={handleClearHistory}
-                  style={{ padding: "0.1rem 0.25rem" }}
+                  title="Clear history"
                 >
                   <Trash2 size={12} />
                 </button>

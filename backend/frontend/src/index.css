@@ -485,11 +485,6 @@ div#root {
   letter-spacing: 0.03em;
 }
 
-.btn-xs {
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  gap: 4px;
-}
 
 .btn-lg {
   padding: 16px 32px;
@@ -568,21 +563,6 @@ div#root {
   box-shadow: none;
 }
 
-.btn-icon {
-  padding: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  position: relative;
-}
-
-.btn-icon-sm {
-  padding: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  position: relative;
-}
 
 .btn-badge {
   position: absolute;
