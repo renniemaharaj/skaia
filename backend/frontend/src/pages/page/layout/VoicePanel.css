@@ -136,20 +136,47 @@
 .vp-media-input {
   display: flex;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: stretch;
 }
 
 .vp-media-input input {
   flex-grow: 1;
   min-width: 0;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0 !important;
   padding: 0.5rem 0.625rem;
   font-size: 0.8125rem;
+  height: 36px;
 }
 
 .vp-play-btn {
-  width: 2.25rem;
-  min-width: 2.25rem;
-  padding-inline: 0;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  margin-bottom: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yt-animate-btn {
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.yt-animate-btn:hover:not(:disabled) {
+  background-color: #ff0000 !important;
+  border-color: #ff0000 !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
+.yt-animate-btn .yt-icon {
+  transition: transform 0.3s ease;
+}
+
+.yt-animate-btn:hover:not(:disabled) .yt-icon {
+  transform: scale(1.15);
 }
 
 .vp-iframe-wrapper {

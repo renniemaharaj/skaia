@@ -7,7 +7,7 @@ import { mediaStateAtom } from "../../../atoms/media";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {
-  Plus,
+  Youtube,
   X,
   Trash2,
   ListVideo,
@@ -769,13 +769,13 @@ export default function VoicePanel() {
           />
           <button
             type="submit"
-            className="btn btn-sm btn-primary vp-play-btn"
+            className="btn btn-sm btn-primary vp-play-btn yt-animate-btn"
             disabled={!inputUrl || isSearching}
           >
             {isSearching ? (
               <span style={{ fontSize: "10px" }}>...</span>
             ) : (
-              <Plus size={14} />
+              <Youtube size={16} className="yt-icon" />
             )}
           </button>
         </form>
