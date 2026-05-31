@@ -161,7 +161,93 @@ export default function VoicePanel() {
   const location = useLocation();
   const playerRef = useRef<YouTubePlayerRef>(null);
 
+  const [transitioningItemId, setTransitioningItemId] = useState<string | null>(
+    null,
+  );
+  const [transitionProgress, setTransitionProgress] = useState(0);
+  const transitionPlayerRef = useRef<YouTubePlayerRef>(null);
+
+  const transitioningItemIdRef = useRef<string | null>(null);
+  const mediaStateRef = useRef(mediaState);
+  mediaStateRef.current = mediaState;
+
+  const completeTransition = useCallback(async () => {
+    const id = transitioningItemIdRef.current;
+    if (!id || !mediaStateRef.current?.queue[0]) return;
+
+    let pos = 0;
+    if (transitionPlayerRef.current) {
+      pos = await transitionPlayerRef.current.getCurrentTime();
+    }
+
+    socket?.send(
+      JSON.stringify({
+        type: "media:transition",
+        payload: {
+          route: location.pathname,
+          item_id: mediaStateRef.current.queue[0].id,
+          position: pos,
+        },
+      }),
+    );
+    setTransitioningItemId(null);
+    transitioningItemIdRef.current = null;
+  }, [socket, location.pathname]);
+
+  useEffect(() => {
+    if (!transitioningItemId) return;
+    transitioningItemIdRef.current = transitioningItemId;
+
+    const duration = 20000;
+    const interval = 50;
+    let elapsed = 0;
+
+    const timer = setInterval(() => {
+      elapsed += interval;
+      setTransitionProgress((elapsed / duration) * 100);
+      if (elapsed >= duration) {
+        clearInterval(timer);
+        completeTransition();
+      }
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [transitioningItemId, completeTransition]);
+
+  const [currentProgress, setCurrentProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [sessionPlayTime, setSessionPlayTime] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      if (playerRef.current && mediaState?.queue?.length) {
+        const time = await playerRef.current.getCurrentTime();
+        const dur = await playerRef.current.getDuration();
+        setCurrentProgress(time);
+        setDuration(dur);
+        if (!mediaState.is_paused) {
+          setSessionPlayTime((p) => p + 1);
+        }
+      } else {
+        setCurrentProgress(0);
+        setDuration(0);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [mediaState?.queue?.length, mediaState?.is_paused]);
+
+  const formatTime = (secs: number) => {
+    if (!secs || isNaN(secs)) return "0:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
   const [inputUrl, setInputUrl] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    { id: string; title: string; thumbnail: string }[]
+  >([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const extractYouTubeId = (url: string) => {
     try {
@@ -174,11 +260,61 @@ export default function VoicePanel() {
     return null;
   };
 
+  useEffect(() => {
+    const isUrl = extractYouTubeId(inputUrl);
+    if (!inputUrl || isUrl) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(inputUrl)}&filter=videos`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(
+            data.items.slice(0, 5).map((item: any) => ({
+              id: item.url.split("?v=")[1] || item.url.split("/watch?v=")[1],
+              title: item.title,
+              thumbnail: item.thumbnail,
+            })),
+          );
+        } else {
+          setSearchResults([]);
+        }
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [inputUrl]);
+
   const handleAddMedia = (e?: React.FormEvent) => {
     e?.preventDefault();
     const vid = extractYouTubeId(inputUrl);
     if (!vid) {
-      toast.error("Invalid YouTube URL");
+      if (searchResults.length > 0) {
+        socket?.send(
+          JSON.stringify({
+            type: "media:add",
+            payload: {
+              route: location.pathname,
+              video_id: searchResults[0].id,
+              loop: false,
+            },
+          }),
+        );
+        setInputUrl("");
+        setSearchResults([]);
+      } else {
+        toast.error("Invalid YouTube URL");
+      }
       return;
     }
     socket?.send(
@@ -188,6 +324,7 @@ export default function VoicePanel() {
       }),
     );
     setInputUrl("");
+    setSearchResults([]);
   };
 
   const handleRemoveMedia = (itemId: string) => {
@@ -320,6 +457,9 @@ export default function VoicePanel() {
           frame[0] = 0x01; // Audio Frame
           frame.set(new Uint8Array(buffer), 1);
           socket.send(frame.buffer);
+          if (currentUser) {
+            window.dispatchEvent(new CustomEvent("voice:speaking", { detail: String(currentUser.id) }));
+          }
         }
       };
 
@@ -373,6 +513,8 @@ export default function VoicePanel() {
       if (frameType !== 0x01 && frameType !== 0x02) return;
 
       const senderID = view.getBigInt64(1, true).toString();
+      window.dispatchEvent(new CustomEvent("voice:speaking", { detail: senderID }));
+
       const payload = new Uint8Array(buffer.slice(9));
       const { audioContext, gainNode } = ensureAudioGraph();
       if (!audioContext || !gainNode) return;
@@ -466,30 +608,85 @@ export default function VoicePanel() {
         <form className="vp-media-input" onSubmit={handleAddMedia}>
           <input
             type="text"
-            placeholder="YouTube URL..."
+            placeholder="Search or YouTube URL..."
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
           />
           <button
             type="submit"
             className="btn btn-sm btn-primary vp-play-btn"
-            disabled={!inputUrl}
+            disabled={!inputUrl || isSearching}
           >
-            <Plus size={14} />
+            {isSearching ? (
+              <span style={{ fontSize: "10px" }}>...</span>
+            ) : (
+              <Plus size={14} />
+            )}
           </button>
         </form>
 
+        {searchResults.length > 0 && (
+          <div className="vp-search-results">
+            {searchResults.map((res) => (
+              <div
+                key={res.id}
+                className="vp-search-result-item"
+                onClick={() => {
+                  socket?.send(
+                    JSON.stringify({
+                      type: "media:add",
+                      payload: {
+                        route: location.pathname,
+                        video_id: res.id,
+                        loop: false,
+                      },
+                    }),
+                  );
+                  setInputUrl("");
+                  setSearchResults([]);
+                }}
+              >
+                <img src={res.thumbnail} alt="" />
+                <span>{res.title}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {mediaState?.queue && mediaState.queue.length > 0 && (
           <>
-            <div className="vp-active-player">
-              <YouTubePlayer
-                ref={playerRef}
-                videoId={mediaState.queue[0].video_id}
-                isPaused={mediaState.is_paused}
-                currentPosition={mediaState.current_position || 0}
-                updatedAt={mediaState.updated_at || ""}
-                onEnded={handleEnded}
-              />
+            <div className="vp-media-stats">
+              <div>
+                <span className="vp-text-secondary">Prog:</span>{" "}
+                {formatTime(currentProgress)}
+              </div>
+              <div>
+                <span className="vp-text-secondary">Left:</span>{" "}
+                {formatTime(Math.max(0, duration - currentProgress))}
+              </div>
+              <div>
+                <span className="vp-text-secondary">Session:</span>{" "}
+                {formatTime(sessionPlayTime)}
+              </div>
+            </div>
+
+            <div className="vp-active-player" style={{ display: "flex", gap: "8px" }}>
+              {mediaState.queue
+                .filter((item, idx) => idx === 0 || item.id === transitioningItemId)
+                .map((item, idx) => {
+                  return (
+                    <div key={item.id} style={{ flex: 1, minWidth: 0, height: "100%" }}>
+                      <YouTubePlayer
+                        ref={idx === 0 ? playerRef : transitionPlayerRef}
+                        videoId={item.video_id}
+                        isPaused={idx === 0 ? mediaState.is_paused : false}
+                        currentPosition={idx === 0 ? mediaState.current_position || 0 : 0}
+                        updatedAt={idx === 0 ? mediaState.updated_at || "" : new Date().toISOString()}
+                        onEnded={idx === 0 ? handleEnded : () => {}}
+                      />
+                    </div>
+                  );
+                })}
             </div>
 
             {mediaState.queue.length > 1 && (
@@ -498,13 +695,100 @@ export default function VoicePanel() {
                   <ListVideo size={12} /> Up Next
                 </div>
                 <div className="vp-queue-scroll">
-                  {mediaState.queue.slice(1).map((item) => (
+                  {mediaState.queue.slice(1).map((item, index) => (
                     <div key={item.id} className="vp-queue-item">
                       <img
                         src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
                         alt="Thumbnail"
                       />
                       <div className="vp-queue-item-overlay">
+                        {index === 0 &&
+                          (transitioningItemId === item.id ? (
+                            <button
+                              onClick={completeTransition}
+                              className="btn btn-ghost"
+                              style={{
+                                padding: "0",
+                                borderRadius: "50%",
+                                position: "relative",
+                                width: "24px",
+                                height: "24px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: "4px",
+                              }}
+                              title="Complete transition immediately"
+                            >
+                              <svg
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                style={{ transform: "rotate(-90deg)" }}
+                              >
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="rgba(255,255,255,0.2)"
+                                  strokeWidth="2"
+                                  fill="none"
+                                />
+                                <circle
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="#fff"
+                                  strokeWidth="2"
+                                  fill="none"
+                                  strokeDasharray="62.8"
+                                  strokeDashoffset={
+                                    62.8 - (62.8 * transitionProgress) / 100
+                                  }
+                                />
+                              </svg>
+                              <span
+                                style={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  fontSize: "10px",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                {Math.ceil(20 - (transitionProgress / 100) * 20)}
+                              </span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setTransitioningItemId(item.id)}
+                              className="btn btn-ghost"
+                              style={{
+                                padding: "0.25rem",
+                                borderRadius: "50%",
+                                marginRight: "4px",
+                              }}
+                              title="Start transition"
+                            >
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M16 3h5v5"></path>
+                                <path d="M4 20L21 3"></path>
+                                <path d="M21 16v5h-5"></path>
+                                <path d="M15 15l6 6"></path>
+                                <path d="M4 4l5 5"></path>
+                              </svg>
+                            </button>
+                          ))}
                         <button
                           onClick={() => handleRemoveMedia(item.id)}
                           className="btn btn-ghost"
@@ -525,9 +809,11 @@ export default function VoicePanel() {
           <div className="vp-queue-list">
             <div
               className="vp-queue-header"
-              style={{ display: "flex", justifyContent: "space-between" }}
+              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
             >
-              <span>
+              <span
+                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              >
                 <HistoryIcon size={12} /> History
               </span>
               {hasManagePermission && (

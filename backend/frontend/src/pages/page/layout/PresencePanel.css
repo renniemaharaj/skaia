@@ -192,6 +192,16 @@
   object-fit: cover;
 }
 
+.pp-avatar--speaking {
+  box-shadow: 0 0 0 2px var(--success-color);
+  animation: ppPulse 1.5s infinite;
+}
+
+@keyframes ppPulse {
+  0% { box-shadow: 0 0 0 0px color-mix(in srgb, var(--success-color) 80%, transparent); }
+  100% { box-shadow: 0 0 0 5px transparent; }
+}
+
 .pp-name {
   flex: 1;
   white-space: nowrap;

@@ -40,6 +40,7 @@ const (
 	MediaRemove        MessageType = "media:remove"        // client => server: remove queue item
 	MediaAction        MessageType = "media:action"        // client => server: pause/resume queue
 	MediaEnded         MessageType = "media:ended"         // client => server: current video ended
+	MediaTransition    MessageType = "media:transition"    // client => server: manual transition
 	MediaHistoryClear  MessageType = "media:history:clear" // client => server: clear route history
 	MediaSync          MessageType = "media:sync"          // server => client: full queue sync
 	ErrorMessage       MessageType = "error"

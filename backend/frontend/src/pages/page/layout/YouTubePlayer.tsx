@@ -12,6 +12,7 @@ interface PlayerProps {
 
 export interface YouTubePlayerRef {
   getCurrentTime: () => Promise<number>;
+  getDuration: () => Promise<number>;
 }
 
 const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>(({ videoId, isPaused, currentPosition, updatedAt, onEnded }, ref) => {
@@ -19,7 +20,11 @@ const YouTubePlayer = React.memo(React.forwardRef<YouTubePlayerRef, PlayerProps>
 
   React.useImperativeHandle(ref, () => ({
     getCurrentTime: async () => {
-      if (playerRef.current) return await playerRef.current.getCurrentTime();
+      if (playerRef.current && playerRef.current.getCurrentTime) return await playerRef.current.getCurrentTime();
+      return 0;
+    },
+    getDuration: async () => {
+      if (playerRef.current && playerRef.current.getDuration) return await playerRef.current.getDuration();
       return 0;
     }
   }));

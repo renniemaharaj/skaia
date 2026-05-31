@@ -283,6 +283,24 @@ const PresencePanel = () => {
     const isMe = !isGuest && String(u.user_id) === String(currentUser?.id);
     const visibleActions = rowActions.filter((a) => !a.hidden?.(u));
 
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
+    useEffect(() => {
+      let timeout: any;
+      const handleSpeaking = (e: any) => {
+        if (e.detail === String(u.user_id)) {
+          setIsSpeaking(true);
+          clearTimeout(timeout);
+          timeout = setTimeout(() => setIsSpeaking(false), 300);
+        }
+      };
+      window.addEventListener("voice:speaking", handleSpeaking);
+      return () => {
+        window.removeEventListener("voice:speaking", handleSpeaking);
+        clearTimeout(timeout);
+      };
+    }, [u.user_id]);
+
     const actions = visibleActions.length > 0 && (
       <span
         className="pp-actions"
@@ -310,7 +328,7 @@ const PresencePanel = () => {
 
     const inner = (
       <>
-        <span className="pp-avatar">
+        <span className={`pp-avatar${isSpeaking ? " pp-avatar--speaking" : ""}`}>
           {isGuest ? (
             <GhostIcon size={14} />
           ) : (

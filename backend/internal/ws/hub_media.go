@@ -125,6 +125,27 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 			stateChanged = true
 		}
 
+	case MediaTransition:
+		if len(state.Queue) > 0 && state.Queue[0].ID == action.ItemID {
+			top := state.Queue[0]
+			state.Queue = state.Queue[1:]
+
+			if top.Loop {
+				// Put back in queue at the bottom
+				state.Queue = append(state.Queue, top)
+			} else {
+				// Prepend to history
+				state.History = append([]MediaItem{top}, state.History...)
+				// Cap history size to e.g. 50 items
+				if len(state.History) > 50 {
+					state.History = state.History[:50]
+				}
+			}
+			state.CurrentPosition = action.Position
+			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+			stateChanged = true
+		}
+
 	case MediaHistoryClear:
 		hasAdmin := false
 		for _, p := range mu.Client.Permissions {
