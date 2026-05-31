@@ -44,6 +44,7 @@ const (
 	MediaTransition      MessageType = "media:transition"       // client => server: manual transition
 	MediaHistoryClear    MessageType = "media:history:clear"    // client => server: clear route history
 	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
+	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
 	ErrorMessage         MessageType = "error"
 )
 

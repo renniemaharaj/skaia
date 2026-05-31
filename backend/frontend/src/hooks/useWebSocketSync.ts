@@ -330,6 +330,10 @@ export const useWebSocketSync = () => {
             setMediaState(payload as any);
           }
 
+          if (message.type === "media:sfx") {
+            window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
+          }
+
           // ── MFA Required ──────────────────────────────────────────────────
           if (message.type === "mfa:required") {
             window.dispatchEvent(new CustomEvent("auth:mfa-required"));

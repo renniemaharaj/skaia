@@ -12,6 +12,10 @@ import {
   Trash2,
   ListVideo,
   History as HistoryIcon,
+  Wind,
+  Bell,
+  Bot,
+  Sparkles
 } from "lucide-react";
 import {
   socketAtom,
@@ -243,6 +247,27 @@ export default function VoicePanel() {
 
   const playTransitionSound = useCallback(() => playSoundEffect('swoosh'), [playSoundEffect]);
 
+  const triggerSoundEffect = useCallback((type: 'swoosh' | 'ding' | 'boop' | 'chime') => {
+    playSoundEffect(type);
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          type: "media:sfx",
+          payload: { route: location.pathname, sfx_type: type },
+        })
+      );
+    }
+  }, [playSoundEffect, socket, location.pathname]);
+
+  useEffect(() => {
+    const handleSfx = (e: Event) => {
+      const type = (e as CustomEvent<string>).detail;
+      if (type) playSoundEffect(type as any);
+    };
+    window.addEventListener("media:sfx", handleSfx);
+    return () => window.removeEventListener("media:sfx", handleSfx);
+  }, [playSoundEffect]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input field
@@ -250,15 +275,15 @@ export default function VoicePanel() {
         return;
       }
       switch (e.key) {
-        case '1': playSoundEffect('swoosh'); break;
-        case '2': playSoundEffect('ding'); break;
-        case '3': playSoundEffect('boop'); break;
-        case '4': playSoundEffect('chime'); break;
+        case '1': triggerSoundEffect('swoosh'); break;
+        case '2': triggerSoundEffect('ding'); break;
+        case '3': triggerSoundEffect('boop'); break;
+        case '4': triggerSoundEffect('chime'); break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [playSoundEffect]);
+  }, [triggerSoundEffect]);
 
   const transitioningItemId = mediaState?.transitioning_item_id || null;
   const [transitionProgress, setTransitionProgress] = useState(0);
@@ -694,22 +719,22 @@ export default function VoicePanel() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('swoosh'); }} title="Swoosh (1)">
-                <span style={{ fontSize: "16px", lineHeight: 1 }}>💨</span>
-                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>1</span>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
+                <Wind size={16} />
+                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>1</span>
               </button>
-              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('ding'); }} title="Ding (2)">
-                <span style={{ fontSize: "16px", lineHeight: 1 }}>🔔</span>
-                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>2</span>
+              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
+                <Bell size={16} />
+                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>2</span>
               </button>
-              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('boop'); }} title="Boop (3)">
-                <span style={{ fontSize: "16px", lineHeight: 1 }}>🤖</span>
-                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>3</span>
+              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
+                <Bot size={16} />
+                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>3</span>
               </button>
-              <button className="btn btn-ghost" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "4px", minHeight: 0, height: "auto", gap: "2px" }} onClick={(e) => { e.preventDefault(); playSoundEffect('chime'); }} title="Chime (4)">
-                <span style={{ fontSize: "16px", lineHeight: 1 }}>✨</span>
-                <span style={{ fontSize: "9px", color: "var(--vp-text-secondary, #888)", opacity: 0.8 }}>4</span>
+              <button className="btn btn-ghost" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: "0", height: "32px", width: "32px" }} onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
+                <Sparkles size={16} />
+                <span style={{ position: "absolute", top: "-4px", right: "-6px", fontSize: "9px", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "var(--text-primary, #fff)", padding: "1px 4px", borderRadius: "6px", lineHeight: 1, pointerEvents: "none" }}>4</span>
               </button>
             </div>
           </div>

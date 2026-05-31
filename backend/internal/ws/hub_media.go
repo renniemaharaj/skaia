@@ -165,6 +165,19 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 			state.History = []MediaItem{}
 			stateChanged = true
 		}
+
+	case MediaSfx:
+		// Broadcast the SFX message directly to all clients on this route (except sender)
+		h.mu.RLock()
+		for client := range h.clients {
+			if client.Route == route && client.ClientID != mu.Client.ClientID {
+				select {
+				case client.Send <- &mu.Message:
+				default:
+				}
+			}
+		}
+		h.mu.RUnlock()
 	}
 
 	h.mediaMu.Unlock()
