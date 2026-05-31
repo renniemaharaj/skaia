@@ -352,19 +352,22 @@ export default function VoicePanel() {
         </div>
       )}
 
-      <div className="vp-controls-row">
-        <button
-          className={`btn btn-sm btn-pill ${micActive ? "btn-primary vp-mic-btn--active" : "btn-ghost"}`}
-          onClick={toggleMic}
-          disabled={!canSpeak}
-        >
-          {micActive ? <Mic size={20} /> : <MicOff size={20} />}
-        </button>
-
-        <div className="vp-volume-control">
-          <label>Volume</label>
+      <div className="ui-panel vp-settings-panel">
+        <div className="vp-setting-row">
+          <span className="vp-setting-label">
+            {micActive ? <Mic size={14} className="vp-text-primary" /> : <MicOff size={14} className="vp-text-secondary" />}
+            Microphone
+          </span>
+          <label className="vp-switch">
+            <input type="checkbox" checked={micActive} onChange={toggleMic} disabled={!canSpeak} />
+            <div className="vp-switch-track"><div className="vp-switch-thumb" /></div>
+          </label>
+        </div>
+        
+        <div className="vp-setting-row">
+          <span className="vp-setting-label vp-vol-label">Volume</span>
           <input
-            className="form-range"
+            className="form-range vp-vol-slider"
             type="range"
             min="0"
             max="1"
@@ -415,27 +418,31 @@ export default function VoicePanel() {
       </div>
 
       {hasManagePermission && (
-        <div className="vp-admin-section">
-          <h4>Admin Controls</h4>
-          <button
-            className="btn btn-sm btn-danger"
-            onClick={() => {
-              socket?.send(
-                JSON.stringify({
-                  type: "voice:control",
-                  payload: {
-                    route: location.pathname,
-                    action: permissions.voiceEnabled ? "disable" : "enable",
-                  },
-                }),
-              );
-            }}
-          >
-            <Settings size={12} />
-            {permissions.voiceEnabled
-              ? "Disable Route Voice"
-              : "Enable Route Voice"}
-          </button>
+        <div className="ui-panel vp-settings-panel vp-admin-settings">
+          <div className="vp-setting-row">
+            <span className="vp-setting-label vp-text-error">
+              <Settings size={14} />
+              Route Voice
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={permissions.voiceEnabled}
+                onChange={() => {
+                  socket?.send(
+                    JSON.stringify({
+                      type: "voice:control",
+                      payload: {
+                        route: location.pathname,
+                        action: permissions.voiceEnabled ? "disable" : "enable",
+                      },
+                    }),
+                  );
+                }}
+              />
+              <div className="vp-switch-track vp-switch-track--danger"><div className="vp-switch-thumb" /></div>
+            </label>
+          </div>
         </div>
       )}
     </div>
