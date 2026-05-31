@@ -161,6 +161,61 @@ export default function VoicePanel() {
   const location = useLocation();
   const playerRef = useRef<YouTubePlayerRef>(null);
 
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+
+  const ensureAudioGraph = useCallback(() => {
+    if (!audioContextRef.current) {
+      const AudioContextCtor =
+        window.AudioContext ||
+        (window as typeof window & { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      const audioContext = new AudioContextCtor();
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = globalVolume;
+      gainNode.connect(audioContext.destination);
+      audioContextRef.current = audioContext;
+      gainNodeRef.current = gainNode;
+    }
+
+    return {
+      audioContext: audioContextRef.current,
+      gainNode: gainNodeRef.current,
+    };
+  }, [globalVolume]);
+
+  const playTransitionSound = useCallback(() => {
+    try {
+      const { audioContext, gainNode } = ensureAudioGraph();
+      if (!audioContext || !gainNode) return;
+      if (audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+      
+      const t = audioContext.currentTime;
+      const osc = audioContext.createOscillator();
+      const soundGain = audioContext.createGain();
+      
+      osc.connect(soundGain);
+      soundGain.connect(gainNode);
+      
+      // "Swoosh" / warp sound
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(800, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+      
+      soundGain.gain.setValueAtTime(0, t);
+      soundGain.gain.linearRampToValueAtTime(0.5, t + 0.05);
+      soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      
+      osc.start(t);
+      osc.stop(t + 0.3);
+    } catch (e) {
+      // Ignore audio errors if context cannot be created/resumed
+    }
+  }, [ensureAudioGraph]);
+
   const transitioningItemId = mediaState?.transitioning_item_id || null;
   const [transitionProgress, setTransitionProgress] = useState(0);
   const transitionPlayerRef = useRef<YouTubePlayerRef>(null);
@@ -172,6 +227,8 @@ export default function VoicePanel() {
   const completeTransition = useCallback(async () => {
     const id = transitioningItemIdRef.current;
     if (!id || !mediaStateRef.current?.queue[0]) return;
+
+    playTransitionSound();
 
     let pos = 0;
     if (transitionPlayerRef.current) {
@@ -396,9 +453,6 @@ export default function VoicePanel() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
   const voicePlayersRef = useRef<Map<string, VoiceStreamPlayer>>(new Map());
   const isMutedByAdmin =
     currentUser && permissions.mutedUsers[Number(currentUser.id)];
@@ -406,26 +460,6 @@ export default function VoicePanel() {
     currentUser && permissions.kickedUsers[Number(currentUser.id)];
 
   const canSpeak = permissions.voiceEnabled && !isMutedByAdmin && !isKicked;
-
-  const ensureAudioGraph = useCallback(() => {
-    if (!audioContextRef.current) {
-      const AudioContextCtor =
-        window.AudioContext ||
-        (window as typeof window & { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      const audioContext = new AudioContextCtor();
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = globalVolume;
-      gainNode.connect(audioContext.destination);
-      audioContextRef.current = audioContext;
-      gainNodeRef.current = gainNode;
-    }
-
-    return {
-      audioContext: audioContextRef.current,
-      gainNode: gainNodeRef.current,
-    };
-  }, [globalVolume]);
 
   const toggleMic = async () => {
     if (micActive) {
