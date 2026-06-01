@@ -7,6 +7,7 @@ import {
   Trash2,
   Lock,
   Unlock,
+  Clock,
 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
@@ -28,6 +29,9 @@ import "../ui/FormGroup.css";
 import "./ThreadActions.css";
 import { useNavigate } from "react-router-dom";
 import UserLink from "../user/UserLink";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import { relativeTimeAgo } from "../../utils/serverTime";
 
 const CategoryThreadsPreview = ({
   forum,
@@ -148,13 +152,22 @@ const CategoryThreadsPreview = ({
                   className="thread-stat thread-author-stat"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <UserLink
-                    userId={String(thread.user_id)}
-                    displayName={thread.user_name}
-                    variant="subtle"
-                  />
+                  <UserProfileOverlay userId={thread.user_id} fallbackName={thread.user_name} fallbackAvatar={thread.user_avatar || undefined}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <UserAvatar src={thread.user_avatar || undefined} alt={thread.user_name || "Unknown"} size={16} initials={thread.user_name?.[0]?.toUpperCase()} />
+                      <UserLink
+                        userId={String(thread.user_id)}
+                        displayName={thread.user_name}
+                        variant="subtle"
+                      />
+                    </div>
+                  </UserProfileOverlay>
                 </span>
               )}
+              <span className="thread-stat">
+                <Clock size={14} />
+                {relativeTimeAgo(thread.created_at)}
+              </span>
               <span className="thread-stat">
                 <Eye size={14} />
                 {thread.view_count} views
