@@ -393,7 +393,7 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 	var roles sql.NullString
 	err := r.db.QueryRow(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url, u.background_video_url,
+		        u.username, u.avatar_url,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles
 		 FROM thread_comments tc
 		 LEFT JOIN users u ON tc.user_id = u.id
@@ -418,7 +418,7 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 func (r *sqlCommentRepository) GetByThread(threadID int64, limit, offset int) ([]*models.ThreadComment, error) {
 	rows, err := r.db.Query(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url, u.background_video_url,
+		        u.username, u.avatar_url,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
 		        COUNT(DISTINCT tcl.id) AS likes
 		 FROM thread_comments tc
