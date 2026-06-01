@@ -70,7 +70,7 @@ func (c *Client) ReadPump() {
 			}
 			// Route to Hub audioUpdates if type is known
 			frameType := data[0]
-			if frameType == 0x01 || frameType == 0x02 {
+			if frameType == 0x01 || frameType == 0x02 || frameType == 0x03 {
 				select {
 				case c.Hub.audioUpdates <- AudioBroadcast{Client: c, Type: frameType, Data: data[1:]}:
 				default:

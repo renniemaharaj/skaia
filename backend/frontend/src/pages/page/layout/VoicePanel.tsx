@@ -12,7 +12,6 @@ import { useCallback, useState, useRef, useEffect } from "react";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
-import { onlineUsersAtom } from "../../../atoms/presence";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {
@@ -90,6 +89,7 @@ interface VoiceStreamPlayer {
 function createVoiceStreamPlayer(
   audioContext: AudioContext,
   gainNode: GainNode,
+  onError: () => void
 ): VoiceStreamPlayer | null {
   const playbackMimeType = getSupportedPlaybackMimeType();
   if (!playbackMimeType) {
@@ -111,8 +111,12 @@ function createVoiceStreamPlayer(
     if (audio.buffered.length > 0) {
       const latestTime = audio.buffered.end(audio.buffered.length - 1);
       const lag = latestTime - audio.currentTime;
-      if (lag > 1.5) {
+      if (lag > 2.0) {
         audio.currentTime = latestTime - 0.2;
+      } else if (lag > 0.5) {
+        audio.playbackRate = 1.2;
+      } else {
+        audio.playbackRate = 1.0;
       }
     }
   });
@@ -135,6 +139,7 @@ function createVoiceStreamPlayer(
     } catch (e) {
       console.warn("Audio buffer error, clearing queue", e);
       player.queue = [];
+      onError();
     }
   };
 
@@ -183,7 +188,6 @@ export default function VoicePanel() {
   const currentUser = useAtomValue(currentUserAtom);
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
   const mediaState = useAtomValue(mediaStateAtom);
-  const rawUsers = useAtomValue(onlineUsersAtom);
   const location = useLocation();
   const playerRef = useRef<YouTubePlayerRef>(null);
 
@@ -191,18 +195,12 @@ export default function VoicePanel() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const hereCount = rawUsers.filter(u => u.route === location.pathname).length;
-  const prevHereCount = useRef(hereCount);
-
   useEffect(() => {
-    if (hereCount > prevHereCount.current && micActive && mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      try {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.start(100);
-      } catch (e) {}
+    if (socket?.readyState === WebSocket.OPEN && permissions.voiceEnabled) {
+      const buffer = new Uint8Array([0x03]);
+      socket.send(buffer.buffer);
     }
-    prevHereCount.current = hereCount;
-  }, [hereCount, micActive]);
+  }, [socket, permissions.voiceEnabled, location.pathname]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -658,6 +656,17 @@ export default function VoicePanel() {
 
       const view = new DataView(buffer);
       const frameType = view.getUint8(0);
+      
+      if (frameType === 0x03) {
+        if (micActive && mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+          try {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current.start(100);
+          } catch (e) {}
+        }
+        return;
+      }
+
       if (frameType !== 0x01 && frameType !== 0x02) return;
 
       const senderID = view.getBigInt64(1, true).toString();
@@ -675,7 +684,12 @@ export default function VoicePanel() {
 
       let player = voicePlayersRef.current.get(senderID);
       if (!player) {
-        player = createVoiceStreamPlayer(audioContext, gainNode) ?? undefined;
+        player = createVoiceStreamPlayer(audioContext, gainNode, () => {
+          if (socket?.readyState === WebSocket.OPEN) {
+            socket.send(new Uint8Array([0x03]).buffer);
+          }
+          voicePlayersRef.current.delete(senderID);
+        }) || undefined;
         if (!player) {
           toast.error("This browser cannot play the incoming voice stream.");
           return;
