@@ -132,6 +132,14 @@ func (s *Service) GetThreadContributors(threadID int64) ([]int64, error) {
 	return s.comments.GetThreadContributors(threadID)
 }
 
+func (s *Service) GetThreadLikers(threadID int64, limit, offset int) ([]*models.User, error) {
+	return s.threads.GetThreadLikers(threadID, limit, offset)
+}
+
+func (s *Service) GetThreadViewers(threadID int64, limit, offset int) ([]*models.User, error) {
+	return s.threads.GetThreadViewers(threadID, limit, offset)
+}
+
 func (s *Service) CreateComment(comment *models.ThreadComment) (*models.ThreadComment, error) {
 	c, err := s.comments.Create(comment)
 	if err == nil {

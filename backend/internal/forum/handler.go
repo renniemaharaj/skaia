@@ -61,6 +61,8 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/threads/{id}", h.deleteThread)
 		r.With(jwt).Post("/threads/{threadId}/like", h.likeThread)
 		r.With(jwt).Delete("/threads/{threadId}/like", h.unlikeThread)
+		r.With(optJWT).Get("/threads/{id}/likers", h.listThreadLikers)
+		r.With(optJWT).Get("/threads/{id}/viewers", h.listThreadViewers)
 		r.With(jwt).Post("/threads/{threadId}/share", h.shareThread)
 
 		// Comment routes
@@ -1241,6 +1243,54 @@ func (h *Handler) lockThread(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	utils.WriteJSON(w, http.StatusOK, updated)
+}
+
+func (h *Handler) listThreadLikers(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid thread ID")
+		return
+	}
+	limit, offset := 50, 0
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 100 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	users, err := h.svc.GetThreadLikers(id, limit, offset)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get thread likers")
+		return
+	}
+	if users == nil {
+		users = []*models.User{}
+	}
+	utils.WriteJSON(w, http.StatusOK, users)
+}
+
+func (h *Handler) listThreadViewers(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid thread ID")
+		return
+	}
+	limit, offset := 50, 0
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 100 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	users, err := h.svc.GetThreadViewers(id, limit, offset)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get thread viewers")
+		return
+	}
+	if users == nil {
+		users = []*models.User{}
+	}
+	utils.WriteJSON(w, http.StatusOK, users)
 }
 
 func (h *Handler) shareThread(w http.ResponseWriter, r *http.Request) {

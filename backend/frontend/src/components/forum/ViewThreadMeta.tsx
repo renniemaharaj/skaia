@@ -3,7 +3,6 @@ import {
   MessageCircleIcon,
   ClockIcon,
   EyeIcon,
-  FileText,
 } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
@@ -11,8 +10,13 @@ import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../../atoms/forum";
 // import { formatDate } from "../../utils/serverTime";
 import UserLink from "../user/UserLink";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import UserAvatar from "../user/UserAvatar";
 import { RichTextRenderer } from "../ui/RichTextRenderer";
 import DOMPurify from "dompurify";
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../utils/api";
+import type { ProfileUser, Role } from "../../pages/users/types";
 
 type Author = {
   name: string;
@@ -31,10 +35,23 @@ type ThreadMeta = {
 
 const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
   const currentThread = useAtomValue(currentThreadAtom);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [authorProfile, setAuthorProfile] = useState<ProfileUser | null>(null);
+
+  useEffect(() => {
+    if (currentThread?.user_id) {
+      apiRequest<Role[]>("/users/roles")
+        .then((res) => res && setAllRoles(res))
+        .catch(() => {});
+      apiRequest<ProfileUser>(`/users/${currentThread.user_id}`)
+        .then((res) => res && setAuthorProfile(res))
+        .catch(() => {});
+    }
+  }, [currentThread?.user_id]);
 
   const author: Author = {
-    name: currentThread?.user_name || "Unknown User",
-    profilePicture: currentThread?.user_avatar || "",
+    name: authorProfile?.display_name || currentThread?.user_name || "Unknown User",
+    profilePicture: authorProfile?.avatar_url || currentThread?.user_avatar || "",
     role: currentThread?.user_roles?.join(", ") || "Member",
   };
 
@@ -75,8 +92,18 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
     },
   ];
 
+  const cardStyle: React.CSSProperties = {
+    ...(authorProfile?.profile_card_art_url
+      ? {
+          backgroundImage: `linear-gradient(rgba(var(--bg-color-rgb), 0.85), rgba(var(--bg-color-rgb), 0.95)), url("${authorProfile.profile_card_art_url}")`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : {}),
+  };
+
   return (
-    <div className="card vtm-panel">
+    <div className="card vtm-panel" style={cardStyle}>
       {currentThread?.user_background_video_url && (
         <video
           className="vtm-video-bg"
@@ -88,9 +115,21 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
         />
       )}
       <div className="vtm-header">
-        <div className="vtm-icon">
-          <FileText size={24} />
-        </div>
+        <UserProfileOverlay 
+          userId={currentThread?.user_id || ""}
+          fallbackName={author.name}
+          fallbackAvatar={author.profilePicture}
+          fallbackRoles={currentThread?.user_roles}
+        >
+          <div className="vtm-icon" style={{ padding: 0, overflow: 'hidden', background: 'transparent' }}>
+            <UserAvatar 
+              src={author.profilePicture} 
+              alt={author.name} 
+              size={48} 
+              initials={author.name[0]?.toUpperCase()} 
+            />
+          </div>
+        </UserProfileOverlay>
         <div className="vtm-info">
           <div className="vtm-label">Thread Viewer</div>
           <h1 className="vtm-title">
@@ -100,6 +139,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
             <RichTextRenderer
               className="vtm-description"
               html={sanitizedContent}
+              previewMode={true}
             />
           ) : (
             <p className="vtm-description">No description available.</p>
@@ -107,11 +147,22 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           <div className="vtm-meta-row">
             <div className="vtm-group">
               <span className="vtm-info-label">Author</span>
-              <UserLink
-                userId={currentThread?.user_id || ""}
-                displayName={author.name}
-                className="vtm-author-link"
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <UserLink
+                  userId={currentThread?.user_id || ""}
+                  displayName={author.name}
+                  className="vtm-author-link"
+                />
+                {currentThread?.user_roles && currentThread.user_roles.map((r) => {
+                  const roleDetails = allRoles.find(ar => ar.name === r);
+                  const color = roleDetails?.theme_color || roleDetails?.glow_color;
+                  return (
+                    <span key={r} className={`upo-badge upo-badge-${r}`} style={color ? { backgroundColor: color, color: '#fff' } : {}}>
+                      {r}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
             <div className="vtm-group">
               <span className={statusClass}>{threadMeta.status}</span>

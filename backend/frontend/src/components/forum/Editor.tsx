@@ -27,9 +27,17 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
   const { theme } = useThemeContext();
   const [editorKey, setEditorKey] = useState(1);
 
+  const prevValueRef = useRef(value);
+
   // Sync external value changes
   useEffect(() => {
-    setLocalContent(value || "");
+    if (value === "" && prevValueRef.current !== "") {
+      setLocalContent("");
+      setEditorKey((k) => k + 1);
+    } else if (value !== "" && value !== prevValueRef.current) {
+      setLocalContent(value || "");
+    }
+    prevValueRef.current = value;
   }, [value]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);

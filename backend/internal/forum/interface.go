@@ -28,6 +28,8 @@ type ThreadRepository interface {
 	Like(threadID, userID int64) (int64, error)
 	Unlike(threadID, userID int64) (int64, error)
 	IsLikedByUser(threadID, userID int64) (bool, error)
+	GetThreadLikers(threadID int64, limit, offset int) ([]*models.User, error)
+	GetThreadViewers(threadID int64, limit, offset int) ([]*models.User, error)
 }
 
 // CommentRepository is the storage contract for thread comments.

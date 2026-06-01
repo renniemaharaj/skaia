@@ -5,10 +5,11 @@ import {
   Trash2,
   X,
   ThumbsUp,
-  Lock,
   Unlock,
   Share2,
   BarChart3,
+  BookOpen,
+  Lock,
 } from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 
@@ -20,6 +21,11 @@ import { currentUserAtom } from "../../atoms/auth";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
+import TableOfContentsTile from "../../components/forum/TableOfContentsTile";
+import RecentThreadsTile from "../../components/forum/RecentThreadsTile";
+import { ThreadUserTiles } from "../../components/forum/ThreadUserTiles";
+import VoicePanel from "../page/layout/VoicePanel";
+import type { Role } from "../users/types";
 
 import "./index.css";
 import "../../components/forum/IconButton.css";
@@ -34,6 +40,8 @@ const ViewThreadPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [authorColor, setAuthorColor] = useState<string | null>(null);
+  const [readingMode, setReadingMode] = useState(false);
 
   const [isMobile, setIsMobile] = useState(
     window.matchMedia("(max-width: 880px)").matches,
@@ -83,6 +91,26 @@ const ViewThreadPage = () => {
       }
     };
   }, [threadId, setCurrentThread, subscribe, unsubscribe]);
+
+  // Load author role color for background
+  useEffect(() => {
+    if (!currentThread?.user_id || !currentThread?.user_roles) return;
+    const fetchColor = async () => {
+      try {
+        const roles = await apiRequest<Role[]>("/users/roles");
+        if (roles) {
+          const userRoles = currentThread.user_roles || [];
+          const matchedRoles = roles.filter(r => userRoles.includes(r.name)).sort((a, b) => b.power_level - a.power_level);
+          if (matchedRoles.length > 0 && matchedRoles[0].theme_color) {
+            setAuthorColor(matchedRoles[0].theme_color);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load roles for thread color", err);
+      }
+    };
+    fetchColor();
+  }, [currentThread?.user_id, currentThread?.user_roles]);
 
   const handleEdit = () => {
     navigate(`/edit-thread/${threadId}`);
@@ -240,6 +268,15 @@ const ViewThreadPage = () => {
               </button>
             )}
 
+            {/* Reading Mode */}
+            <button
+              className={`thread-action-btn ${readingMode ? 'active' : ''}`}
+              onClick={() => setReadingMode(!readingMode)}
+              title={readingMode ? "Disable Reading Mode" : "Enable Reading Mode"}
+            >
+              <BookOpen size={16} />
+            </button>
+
             {/* Share */}
             {currentUser && (
               <button
@@ -316,27 +353,45 @@ const ViewThreadPage = () => {
         </div>
 
         {/* Body */}
-        <div className="view-thread-page">
-          <ViewThreadMeta threadId={threadId} />
-          <div>
-            {currentThread.is_shared && currentThread.original_thread && (
-              <div
-                className="reshared-banner"
-                onClick={() =>
-                  navigate(`/view-thread/${currentThread.original_thread_id}`)
-                }
-              >
-                <Share2 size={14} />
-                <span>
-                  Reshared from{" "}
-                  <strong>{currentThread.original_thread.title}</strong> by{" "}
-                  {currentThread.original_thread.user_name ?? "unknown"}
-                </span>
-              </div>
-            )}
-            <ViewThread content={currentThread.content} />
-            <ViewThreadComments threadId={threadId} />
+        <div 
+          className={`view-thread-page ${readingMode ? 'view-thread-page--reading-mode' : ''}`} 
+          style={authorColor ? { 
+            background: `linear-gradient(to bottom, ${authorColor}15, transparent)`, 
+            borderTop: `2px solid ${authorColor}` 
+          } : {}}
+        >
+          <div className="view-thread-main">
+            <ViewThreadMeta threadId={threadId} />
+            <div>
+              {currentThread.is_shared && currentThread.original_thread && (
+                <div
+                  className="reshared-banner"
+                  onClick={() =>
+                    navigate(`/view-thread/${currentThread.original_thread_id}`)
+                  }
+                >
+                  <Share2 size={14} />
+                  <span>
+                    Reshared from{" "}
+                    <strong>{currentThread.original_thread.title}</strong> by{" "}
+                    {currentThread.original_thread.user_name ?? "unknown"}
+                  </span>
+                </div>
+              )}
+              <ViewThread content={currentThread.content} />
+              <ViewThreadComments threadId={threadId} />
+            </div>
           </div>
+          
+          {!readingMode && (
+            <aside className="view-thread-sidebar">
+              <VoicePanel mediaOnly={true} />
+              <TableOfContentsTile htmlContent={currentThread.content} />
+              <RecentThreadsTile currentCategoryId={currentThread.category_id} currentThreadId={currentThread.id} />
+              <ThreadUserTiles threadId={threadId!} type="likers" />
+              <ThreadUserTiles threadId={threadId!} type="viewers" />
+            </aside>
+          )}
         </div>
       </div>
 

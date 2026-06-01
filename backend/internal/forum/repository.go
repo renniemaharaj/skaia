@@ -380,6 +380,70 @@ func (r *sqlThreadRepository) IsLikedByUser(threadID, userID int64) (bool, error
 	return exists, err
 }
 
+func (r *sqlThreadRepository) GetThreadLikers(threadID int64, limit, offset int) ([]*models.User, error) {
+	rows, err := r.db.Query(
+		`SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.is_suspended, u.created_at
+		 FROM users u
+		 JOIN thread_likes tl ON u.id = tl.user_id
+		 WHERE tl.thread_id = $1
+		 ORDER BY tl.created_at DESC
+		 LIMIT $2 OFFSET $3`,
+		threadID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var likers []*models.User
+	for rows.Next() {
+		u := &models.User{}
+		var avatar sql.NullString
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.DisplayName, &avatar, &u.IsSuspended, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		if avatar.Valid {
+			u.AvatarURL = avatar.String
+		}
+		likers = append(likers, u)
+	}
+	return likers, rows.Err()
+}
+
+func (r *sqlThreadRepository) GetThreadViewers(threadID int64, limit, offset int) ([]*models.User, error) {
+	rows, err := r.db.Query(
+		`SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.is_suspended, u.created_at
+		 FROM users u
+		 JOIN (
+		     SELECT user_id, MAX(created_at) as last_viewed
+		     FROM resource_views
+		     WHERE resource='thread' AND resource_id=$1 AND user_id IS NOT NULL
+		     GROUP BY user_id
+		 ) rv ON u.id = rv.user_id
+		 ORDER BY rv.last_viewed DESC
+		 LIMIT $2 OFFSET $3`,
+		threadID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var viewers []*models.User
+	for rows.Next() {
+		u := &models.User{}
+		var avatar sql.NullString
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.DisplayName, &avatar, &u.IsSuspended, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		if avatar.Valid {
+			u.AvatarURL = avatar.String
+		}
+		viewers = append(viewers, u)
+	}
+	return viewers, rows.Err()
+}
+
 // Comment repository
 
 type sqlCommentRepository struct{ db *sql.DB }

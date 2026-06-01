@@ -22,6 +22,7 @@ export default function RolesManagementPage() {
   const [createName, setCreateName] = useState("");
   const [createDesc, setCreateDesc] = useState("");
   const [createPower, setCreatePower] = useState(0);
+  const [createThemeColor, setCreateThemeColor] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Per-role edit state
@@ -29,6 +30,7 @@ export default function RolesManagementPage() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editPower, setEditPower] = useState(0);
+  const [editThemeColor, setEditThemeColor] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -86,6 +88,7 @@ export default function RolesManagementPage() {
     setEditName(role.name);
     setEditDesc(role.description);
     setEditPower(role.power_level);
+    setEditThemeColor(role.theme_color || "");
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -99,6 +102,7 @@ export default function RolesManagementPage() {
           name: editName,
           description: editDesc,
           power_level: editPower,
+          theme_color: editThemeColor || undefined,
         }),
       });
       if (updated) {
@@ -142,6 +146,7 @@ export default function RolesManagementPage() {
           name: createName.trim(),
           description: createDesc,
           power_level: createPower,
+          theme_color: createThemeColor || undefined,
         }),
       });
       if (role) {
@@ -153,6 +158,7 @@ export default function RolesManagementPage() {
         setCreateName("");
         setCreateDesc("");
         setCreatePower(0);
+        setCreateThemeColor("");
         setShowCreate(false);
       }
     } catch (e: unknown) {
@@ -287,6 +293,24 @@ export default function RolesManagementPage() {
                 onChange={(e) => setCreatePower(Number(e.target.value))}
               />
             </div>
+            <div className="rmp-field rmp-field--narrow">
+              <label className="rmp-label">Color</label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={createThemeColor || "#ffffff"}
+                  onChange={(e) => setCreateThemeColor(e.target.value)}
+                  style={{ width: '32px', height: '32px', padding: 0, border: 'none', background: 'none' }}
+                />
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setCreateThemeColor("")}
+                  style={{ padding: '4px 8px', fontSize: '12px' }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
           </div>
           <div className="rmp-field">
             <label className="rmp-label">Description</label>
@@ -353,10 +377,28 @@ export default function RolesManagementPage() {
                           onChange={(e) => setEditPower(Number(e.target.value))}
                         />
                       </div>
+                      <div className="rmp-power-field" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span className="rmp-label">Color</span>
+                        <input
+                          type="color"
+                          value={editThemeColor || "#ffffff"}
+                          onChange={(e) => setEditThemeColor(e.target.value)}
+                          style={{ width: '24px', height: '24px', padding: 0, border: 'none', background: 'none' }}
+                        />
+                        {editThemeColor && (
+                           <button 
+                             className="btn btn-secondary" 
+                             onClick={() => setEditThemeColor("")}
+                             style={{ padding: '2px 6px', fontSize: '10px' }}
+                           >
+                             Clear
+                           </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <>
-                      <span className="rmp-role-name">{role.name}</span>
+                      <span className="rmp-role-name" style={{ color: role.theme_color || 'inherit' }}>{role.name}</span>
                       {role.description && (
                         <span className="rmp-role-desc">
                           {role.description}

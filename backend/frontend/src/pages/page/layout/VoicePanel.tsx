@@ -169,7 +169,12 @@ function createVoiceStreamPlayer(
   return player;
 }
 
-export default function VoicePanel() {
+interface VoicePanelProps {
+  mediaOnly?: boolean;
+  voiceOnly?: boolean;
+}
+
+export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: VoicePanelProps = {}) {
   const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
   const [isPlayerMuted, setIsPlayerMuted] = useAtom(playerMutedAtom);
   const [historyViewMode, setHistoryViewMode] = useState<"list" | "playlists">("list");
@@ -717,38 +722,41 @@ export default function VoicePanel() {
   }, [ensureAudioGraph]);
 
   return (
-    <div className="vp-container">
-      {!permissions.voiceEnabled && (
+    <div className={`vp-container ${mediaOnly ? 'vp-container-media-only' : ''}`}>
+      {!mediaOnly && !permissions.voiceEnabled && (
         <div className="vp-disabled-banner">
           Voice chat is disabled on this route.
         </div>
       )}
 
-      <div className="ui-panel vp-settings-panel">
-        <div className="vp-setting-row">
-          <span className="vp-setting-label">
-            {micActive ? (
-              <Mic size={14} className="vp-text-primary" />
-            ) : (
-              <MicOff size={14} className="vp-text-secondary" />
-            )}
-            Microphone
-          </span>
-          <label className="vp-switch">
-            <input
-              type="checkbox"
-              checked={micActive}
-              onChange={toggleMic}
-              disabled={!canSpeak}
-            />
-            <div className="vp-switch-track">
-              <div className="vp-switch-thumb" />
-            </div>
-          </label>
+      {!mediaOnly && (
+        <div className="ui-panel vp-settings-panel">
+          <div className="vp-setting-row">
+            <span className="vp-setting-label">
+              {micActive ? (
+                <Mic size={14} className="vp-text-primary" />
+              ) : (
+                <MicOff size={14} className="vp-text-secondary" />
+              )}
+              Microphone
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={micActive}
+                onChange={toggleMic}
+                disabled={!canSpeak}
+              />
+              <div className="vp-switch-track">
+                <div className="vp-switch-thumb" />
+              </div>
+            </label>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="vp-media-section ui-panel">
+      {!voiceOnly && (
+        <div className="vp-media-section ui-panel">
         <div
           style={{
             display: "flex",
@@ -1182,8 +1190,9 @@ export default function VoicePanel() {
           </div>
         )}
       </div>
+      )}
 
-      {hasManagePermission && (
+      {!mediaOnly && hasManagePermission && (
         <div className="ui-panel vp-settings-panel vp-admin-settings">
           <div className="vp-setting-row">
             <span className="vp-setting-label vp-text-error">

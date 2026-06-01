@@ -6,17 +6,25 @@ import UserLink from "../user/UserLink";
 interface RichTextRendererProps {
   html: string;
   className?: string;
+  previewMode?: boolean;
 }
 
 export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   html,
   className = "",
+  previewMode = false,
 }) => {
   // Sanitize HTML
   const sanitized = DOMPurify.sanitize(html);
 
   const options = {
     replace: (domNode: DOMNode) => {
+      if (previewMode && domNode instanceof Element && /^h[1-6]$/i.test(domNode.name)) {
+        if (domNode.attribs && domNode.attribs.id) {
+          delete domNode.attribs.id;
+        }
+      }
+
       if (
         domNode instanceof Element &&
         domNode.name === "span" &&

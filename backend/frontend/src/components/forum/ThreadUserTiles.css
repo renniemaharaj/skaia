@@ -1,0 +1,51 @@
+.thread-user-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: var(--bg-color-alt, #1e1e1e);
+}
+
+.tut-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary, #fff);
+  border-bottom: 1px solid var(--border-color, #333);
+  padding-bottom: 0.5rem;
+}
+
+.tut-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.tut-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  align-items: center;
+}
+
+.tut-user-icon {
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.tut-user-icon:hover {
+  transform: scale(1.1);
+}
+
+.tut-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+  color: var(--text-secondary, #888);
+}
