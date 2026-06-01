@@ -1,9 +1,17 @@
-import { useAtomValue } from "jotai";
-import { Mic, MicOff, Play, Pause, Settings, Volume2, VolumeX } from "lucide-react";
+import { useAtom, useAtomValue } from "jotai";
+import {
+  Mic,
+  MicOff,
+  Play,
+  Pause,
+  Settings,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useCallback, useState, useRef, useEffect } from "react";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
-import { mediaStateAtom } from "../../../atoms/media";
+import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {
@@ -15,7 +23,7 @@ import {
   Wind,
   Bell,
   Bot,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import {
   socketAtom,
@@ -147,7 +155,7 @@ function createVoiceStreamPlayer(
 
 export default function VoicePanel() {
   const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
-  const [isPlayerMuted, setIsPlayerMuted] = useState(true);
+  const [isPlayerMuted, setIsPlayerMuted] = useAtom(playerMutedAtom);
 
   useEffect(() => {
     const handleVolumeChange = (e: Event) => {
@@ -190,76 +198,85 @@ export default function VoicePanel() {
     };
   }, [globalVolume]);
 
-  const playSoundEffect = useCallback((type: 'swoosh' | 'ding' | 'boop' | 'chime') => {
-    if (isPlayerMuted) return;
-    try {
-      const { audioContext, gainNode } = ensureAudioGraph();
-      if (!audioContext || !gainNode) return;
-      if (audioContext.state === "suspended") {
-        audioContext.resume();
-      }
-      
-      const t = audioContext.currentTime;
-      const osc = audioContext.createOscillator();
-      const soundGain = audioContext.createGain();
-      
-      osc.connect(soundGain);
-      soundGain.connect(gainNode);
-      
-      if (type === 'swoosh') {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(800, t);
-        osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
-        soundGain.gain.setValueAtTime(0, t);
-        soundGain.gain.linearRampToValueAtTime(0.5, t + 0.05);
-        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
-        osc.start(t);
-        osc.stop(t + 0.3);
-      } else if (type === 'ding') {
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(1200, t);
-        soundGain.gain.setValueAtTime(0, t);
-        soundGain.gain.linearRampToValueAtTime(0.3, t + 0.02);
-        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
-        osc.start(t);
-        osc.stop(t + 0.5);
-      } else if (type === 'boop') {
-        osc.type = "square";
-        osc.frequency.setValueAtTime(300, t);
-        soundGain.gain.setValueAtTime(0, t);
-        soundGain.gain.linearRampToValueAtTime(0.2, t + 0.02);
-        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
-        osc.start(t);
-        osc.stop(t + 0.2);
-      } else if (type === 'chime') {
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(600, t);
-        osc.frequency.setValueAtTime(800, t + 0.1);
-        osc.frequency.setValueAtTime(1000, t + 0.2);
-        soundGain.gain.setValueAtTime(0, t);
-        soundGain.gain.linearRampToValueAtTime(0.3, t + 0.05);
-        soundGain.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
-        osc.start(t);
-        osc.stop(t + 1.0);
-      }
-    } catch (e) {
-      // Ignore audio errors if context cannot be created/resumed
-    }
-  }, [ensureAudioGraph, isPlayerMuted]);
+  const playSoundEffect = useCallback(
+    (type: "swoosh" | "ding" | "boop" | "chime") => {
+      if (isPlayerMuted) return;
+      try {
+        const { audioContext, gainNode } = ensureAudioGraph();
+        if (!audioContext || !gainNode) return;
+        if (audioContext.state === "suspended") {
+          audioContext.resume();
+        }
 
-  const playTransitionSound = useCallback(() => playSoundEffect('swoosh'), [playSoundEffect]);
+        const t = audioContext.currentTime;
+        const osc = audioContext.createOscillator();
+        const soundGain = audioContext.createGain();
 
-  const triggerSoundEffect = useCallback((type: 'swoosh' | 'ding' | 'boop' | 'chime') => {
-    playSoundEffect(type);
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(
-        JSON.stringify({
-          type: "media:sfx",
-          payload: { route: location.pathname, sfx_type: type },
-        })
-      );
-    }
-  }, [playSoundEffect, socket, location.pathname]);
+        osc.connect(soundGain);
+        soundGain.connect(gainNode);
+
+        if (type === "swoosh") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(800, t);
+          osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+          soundGain.gain.setValueAtTime(0, t);
+          soundGain.gain.linearRampToValueAtTime(0.5, t + 0.05);
+          soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+          osc.start(t);
+          osc.stop(t + 0.3);
+        } else if (type === "ding") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(1200, t);
+          soundGain.gain.setValueAtTime(0, t);
+          soundGain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+          soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+          osc.start(t);
+          osc.stop(t + 0.5);
+        } else if (type === "boop") {
+          osc.type = "square";
+          osc.frequency.setValueAtTime(300, t);
+          soundGain.gain.setValueAtTime(0, t);
+          soundGain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+          soundGain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+          osc.start(t);
+          osc.stop(t + 0.2);
+        } else if (type === "chime") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(600, t);
+          osc.frequency.setValueAtTime(800, t + 0.1);
+          osc.frequency.setValueAtTime(1000, t + 0.2);
+          soundGain.gain.setValueAtTime(0, t);
+          soundGain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+          soundGain.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
+          osc.start(t);
+          osc.stop(t + 1.0);
+        }
+      } catch (e) {
+        // Ignore audio errors if context cannot be created/resumed
+      }
+    },
+    [ensureAudioGraph, isPlayerMuted],
+  );
+
+  const playTransitionSound = useCallback(
+    () => playSoundEffect("swoosh"),
+    [playSoundEffect],
+  );
+
+  const triggerSoundEffect = useCallback(
+    (type: "swoosh" | "ding" | "boop" | "chime") => {
+      playSoundEffect(type);
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            type: "media:sfx",
+            payload: { route: location.pathname, sfx_type: type },
+          }),
+        );
+      }
+    },
+    [playSoundEffect, socket, location.pathname],
+  );
 
   useEffect(() => {
     const handleSfx = (e: Event) => {
@@ -273,18 +290,26 @@ export default function VoicePanel() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input field
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) {
         return;
       }
       switch (e.key) {
-        case '1': triggerSoundEffect('swoosh'); break;
-        case '2': triggerSoundEffect('ding'); break;
-        case '3': triggerSoundEffect('boop'); break;
-        case '4': triggerSoundEffect('chime'); break;
+        case "1":
+          triggerSoundEffect("swoosh");
+          break;
+        case "2":
+          triggerSoundEffect("ding");
+          break;
+        case "3":
+          triggerSoundEffect("boop");
+          break;
+        case "4":
+          triggerSoundEffect("chime");
+          break;
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [triggerSoundEffect]);
 
   const transitioningItemId = mediaState?.transitioning_item_id || null;
@@ -400,7 +425,7 @@ export default function VoicePanel() {
       const instances = [
         "https://api.piped.private.coffee",
         "https://pipedapi.smnz.de",
-        "https://pipedapi.kavin.rocks"
+        "https://pipedapi.kavin.rocks",
       ];
       let success = false;
 
@@ -504,15 +529,19 @@ export default function VoicePanel() {
   useEffect(() => {
     if (!mediaState?.queue) return;
     const currentIds = new Set(mediaState.queue.map((i: any) => i.id));
-    const removed = prevQueueRef.current.filter((i: any) => !currentIds.has(i.id) && i.id !== transitioningItemId);
-    
+    const removed = prevQueueRef.current.filter(
+      (i: any) => !currentIds.has(i.id) && i.id !== transitioningItemId,
+    );
+
     if (removed.length > 0) {
       setRetiredItems((prev) => [
         ...prev,
-        ...removed.map((r: any) => ({ ...r, _retired: true }))
+        ...removed.map((r: any) => ({ ...r, _retired: true })),
       ]);
       setTimeout(() => {
-        setRetiredItems((prev) => prev.filter((i: any) => !removed.find((r: any) => r.id === i.id)));
+        setRetiredItems((prev) =>
+          prev.filter((i: any) => !removed.find((r: any) => r.id === i.id)),
+        );
       }, 5000);
     }
     prevQueueRef.current = mediaState.queue;
@@ -595,7 +624,11 @@ export default function VoicePanel() {
           frame.set(new Uint8Array(buffer), 1);
           socket.send(frame.buffer);
           if (currentUser) {
-            window.dispatchEvent(new CustomEvent("voice:speaking", { detail: String(currentUser.id) }));
+            window.dispatchEvent(
+              new CustomEvent("voice:speaking", {
+                detail: String(currentUser.id),
+              }),
+            );
           }
         }
       };
@@ -650,7 +683,9 @@ export default function VoicePanel() {
       if (frameType !== 0x01 && frameType !== 0x02) return;
 
       const senderID = view.getBigInt64(1, true).toString();
-      window.dispatchEvent(new CustomEvent("voice:speaking", { detail: senderID }));
+      window.dispatchEvent(
+        new CustomEvent("voice:speaking", { detail: senderID }),
+      );
 
       const payload = new Uint8Array(buffer.slice(9));
       const { audioContext, gainNode } = ensureAudioGraph();
@@ -728,27 +763,55 @@ export default function VoicePanel() {
             justifyContent: "space-between",
             alignItems: "center",
             flexWrap: "wrap",
-            gap: "8px"
+            gap: "8px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
             <div style={{ display: "flex", gap: "10px" }}>
-              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('swoosh'); }} title="Swoosh (1)">
+              <button
+                className="icon-btn icon-btn--md icon-btn--ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerSoundEffect("swoosh");
+                }}
+                title="Swoosh (1)"
+              >
                 <Wind size={16} />
-                <span className="btn-badge">1</span>
+                {/* <span className="btn-badge">1</span> */}
               </button>
-              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('ding'); }} title="Ding (2)">
+              <button
+                className="icon-btn icon-btn--md icon-btn--ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerSoundEffect("ding");
+                }}
+                title="Ding (2)"
+              >
                 <Bell size={16} />
-                <span className="btn-badge">2</span>
+                {/* <span className="btn-badge">2</span> */}
               </button>
-              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('boop'); }} title="Boop (3)">
+              <button
+                className="icon-btn icon-btn--md icon-btn--ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerSoundEffect("boop");
+                }}
+                title="Boop (3)"
+              >
                 <Bot size={16} />
-                <span className="btn-badge">3</span>
+                {/* <span className="btn-badge">3</span> */}
               </button>
-              <button className="icon-btn icon-btn--md icon-btn--ghost" onClick={(e) => { e.preventDefault(); triggerSoundEffect('chime'); }} title="Chime (4)">
+              <button
+                className="icon-btn icon-btn--md icon-btn--ghost"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerSoundEffect("chime");
+                }}
+                title="Chime (4)"
+              >
                 <Sparkles size={16} />
-                <span className="btn-badge">4</span>
+                {/* <span className="btn-badge">4</span> */}
               </button>
             </div>
           </div>
@@ -766,7 +829,11 @@ export default function VoicePanel() {
                 style={{ padding: "4px 8px", fontSize: "0.75rem" }}
                 onClick={handlePauseToggle}
               >
-                {mediaState?.is_paused ? <Play size={12} /> : <Pause size={12} />}
+                {mediaState?.is_paused ? (
+                  <Play size={12} />
+                ) : (
+                  <Pause size={12} />
+                )}
                 {mediaState?.is_paused ? " Resume" : " Pause"}
               </button>
             )}
@@ -838,22 +905,53 @@ export default function VoicePanel() {
               </div>
             </div>
 
-            <div className="vp-active-player" style={{ display: "flex", gap: "8px" }}>
+            <div
+              className="vp-active-player"
+              style={{ display: "flex", gap: "8px" }}
+            >
               {mediaState.queue
-                .filter((item, idx) => idx === 0 || item.id === transitioningItemId)
+                .filter(
+                  (item, idx) => idx === 0 || item.id === transitioningItemId,
+                )
                 .concat(retiredItems)
                 .map((item: any, idx) => {
                   const isRetired = item._retired;
                   const isPrimary = !isRetired && idx === 0;
                   return (
-                    <div key={`${item.id}${isPrimary ? '-primary' : ''}`} style={{ flex: 1, minWidth: 0, height: "100%", display: isRetired ? "none" : "block" }}>
+                    <div
+                      key={`${item.id}${isPrimary ? "-primary" : ""}`}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        height: "100%",
+                        display: isRetired ? "none" : "block",
+                      }}
+                    >
                       <YouTubePlayer
-                        ref={isPrimary ? playerRef : (!isRetired ? transitionPlayerRef : null)}
+                        ref={
+                          isPrimary
+                            ? playerRef
+                            : !isRetired
+                              ? transitionPlayerRef
+                              : null
+                        }
                         videoId={item.video_id}
-                        isPaused={isPrimary ? mediaState.is_paused : (isRetired ? true : false)}
+                        isPaused={
+                          isPrimary
+                            ? mediaState.is_paused
+                            : isRetired
+                              ? true
+                              : false
+                        }
                         isMuted={isPlayerMuted}
-                        currentPosition={isPrimary ? mediaState.current_position || 0 : 0}
-                        updatedAt={isPrimary ? mediaState.updated_at || "" : new Date().toISOString()}
+                        currentPosition={
+                          isPrimary ? mediaState.current_position || 0 : 0
+                        }
+                        updatedAt={
+                          isPrimary
+                            ? mediaState.updated_at || ""
+                            : new Date().toISOString()
+                        }
                         onEnded={isPrimary ? handleEnded : () => {}}
                       />
                     </div>
@@ -929,7 +1027,9 @@ export default function VoicePanel() {
                                   fontWeight: "bold",
                                 }}
                               >
-                                {Math.ceil(20 - (transitionProgress / 100) * 20)}
+                                {Math.ceil(
+                                  20 - (transitionProgress / 100) * 20,
+                                )}
                               </span>
                             </button>
                           ) : (
@@ -942,7 +1042,7 @@ export default function VoicePanel() {
                                       route: location.pathname,
                                       item_id: item.id,
                                     },
-                                  })
+                                  }),
                                 );
                               }}
                               className="btn btn-ghost"
@@ -971,7 +1071,7 @@ export default function VoicePanel() {
                               </svg>
                             </button>
                           ))}
-                        
+
                         {index === 0 && transitioningItemId !== item.id && (
                           <button
                             onClick={() => {
@@ -983,7 +1083,7 @@ export default function VoicePanel() {
                                     item_id: mediaState.queue[0].id,
                                     position: 0,
                                   },
-                                })
+                                }),
                               );
                             }}
                             className="btn btn-ghost"
@@ -1017,7 +1117,11 @@ export default function VoicePanel() {
           <div className="vp-queue-list">
             <div
               className="vp-queue-header"
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
               <span
                 style={{ display: "flex", alignItems: "center", gap: "4px" }}

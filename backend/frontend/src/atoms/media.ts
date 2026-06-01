@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 export interface MediaItem {
   id: string;
@@ -20,3 +21,5 @@ export interface MediaState {
 }
 
 export const mediaStateAtom = atom<MediaState | null>(null);
+
+export const playerMutedAtom = atomWithStorage<boolean>("playerMuted", true);
