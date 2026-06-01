@@ -12,6 +12,7 @@ import { useCallback, useState, useRef, useEffect } from "react";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
+import { onlineUsersAtom } from "../../../atoms/presence";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {
@@ -106,6 +107,16 @@ function createVoiceStreamPlayer(
   audio.crossOrigin = "anonymous";
   audioContext.createMediaElementSource(audio).connect(gainNode);
 
+  audio.addEventListener("timeupdate", () => {
+    if (audio.buffered.length > 0) {
+      const latestTime = audio.buffered.end(audio.buffered.length - 1);
+      const lag = latestTime - audio.currentTime;
+      if (lag > 1.5) {
+        audio.currentTime = latestTime - 0.2;
+      }
+    }
+  });
+
   const pump = () => {
     const sourceBuffer = player.sourceBuffer;
     if (!sourceBuffer || sourceBuffer.updating || player.queue.length === 0) {
@@ -121,8 +132,9 @@ function createVoiceStreamPlayer(
         chunk.byteOffset + chunk.byteLength,
       ) as ArrayBuffer;
       sourceBuffer.appendBuffer(buffer);
-    } catch {
-      player.queue.unshift(chunk);
+    } catch (e) {
+      console.warn("Audio buffer error, clearing queue", e);
+      player.queue = [];
     }
   };
 
@@ -171,8 +183,26 @@ export default function VoicePanel() {
   const currentUser = useAtomValue(currentUserAtom);
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
   const mediaState = useAtomValue(mediaStateAtom);
+  const rawUsers = useAtomValue(onlineUsersAtom);
   const location = useLocation();
   const playerRef = useRef<YouTubePlayerRef>(null);
+
+  const [micActive, setMicActive] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const hereCount = rawUsers.filter(u => u.route === location.pathname).length;
+  const prevHereCount = useRef(hereCount);
+
+  useEffect(() => {
+    if (hereCount > prevHereCount.current && micActive && mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      try {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.start(100);
+      } catch (e) {}
+    }
+    prevHereCount.current = hereCount;
+  }, [hereCount, micActive]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -512,10 +542,6 @@ export default function VoicePanel() {
       );
     }
   }, [mediaState, socket, location.pathname]);
-
-  const [micActive, setMicActive] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   const voicePlayersRef = useRef<Map<string, VoiceStreamPlayer>>(new Map());
   const isMutedByAdmin =
