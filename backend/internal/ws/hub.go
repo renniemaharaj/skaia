@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -190,6 +191,8 @@ type Hub struct {
 	// chat slow mode — updated dynamically by SetChatSlowMode
 	chatSlowModeEnabled  atomic.Bool
 	chatSlowModeInterval atomic.Int64 // seconds; 0 means use default burst rate
+
+	mediaRepo *MediaHistoryRepo
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -219,7 +222,13 @@ func NewHub() *Hub {
 		sessions:        make(map[int64]int),
 		chatRings:       make(map[int64]*sessionChatRing),
 		workerSem:       make(chan struct{}, cfg.MaxWorkers),
+		mediaRepo:       &MediaHistoryRepo{},
 	}
+}
+
+// SetDB sets the database for the hub.
+func (h *Hub) SetDB(db *sql.DB) {
+	h.mediaRepo.DB = db
 }
 
 // clientLabel returns a human-readable string for a Client suitable for log output.

@@ -20,10 +20,9 @@ import {
   Trash2,
   ListVideo,
   History as HistoryIcon,
-  Wind,
-  Bell,
-  Bot,
-  Sparkles,
+  LayoutGrid,
+  List,
+  Calendar,
 } from "lucide-react";
 import {
   socketAtom,
@@ -156,6 +155,7 @@ function createVoiceStreamPlayer(
 export default function VoicePanel() {
   const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
   const [isPlayerMuted, setIsPlayerMuted] = useAtom(playerMutedAtom);
+  const [historyViewMode, setHistoryViewMode] = useState<"list" | "playlists">("list");
 
   useEffect(() => {
     const handleVolumeChange = (e: Event) => {
@@ -263,54 +263,6 @@ export default function VoicePanel() {
     [playSoundEffect],
   );
 
-  const triggerSoundEffect = useCallback(
-    (type: "swoosh" | "ding" | "boop" | "chime") => {
-      playSoundEffect(type);
-      if (socket?.readyState === WebSocket.OPEN) {
-        socket.send(
-          JSON.stringify({
-            type: "media:sfx",
-            payload: { route: location.pathname, sfx_type: type },
-          }),
-        );
-      }
-    },
-    [playSoundEffect, socket, location.pathname],
-  );
-
-  useEffect(() => {
-    const handleSfx = (e: Event) => {
-      const type = (e as CustomEvent<string>).detail;
-      if (type) playSoundEffect(type as any);
-    };
-    window.addEventListener("media:sfx", handleSfx);
-    return () => window.removeEventListener("media:sfx", handleSfx);
-  }, [playSoundEffect]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input field
-      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) {
-        return;
-      }
-      switch (e.key) {
-        case "1":
-          triggerSoundEffect("swoosh");
-          break;
-        case "2":
-          triggerSoundEffect("ding");
-          break;
-        case "3":
-          triggerSoundEffect("boop");
-          break;
-        case "4":
-          triggerSoundEffect("chime");
-          break;
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [triggerSoundEffect]);
 
   const transitioningItemId = mediaState?.transitioning_item_id || null;
   const [transitionProgress, setTransitionProgress] = useState(0);
@@ -768,52 +720,6 @@ export default function VoicePanel() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                className="icon-btn icon-btn--md icon-btn--ghost"
-                onClick={(e) => {
-                  e.preventDefault();
-                  triggerSoundEffect("swoosh");
-                }}
-                title="Swoosh (1)"
-              >
-                <Wind size={16} />
-                {/* <span className="btn-badge">1</span> */}
-              </button>
-              <button
-                className="icon-btn icon-btn--md icon-btn--ghost"
-                onClick={(e) => {
-                  e.preventDefault();
-                  triggerSoundEffect("ding");
-                }}
-                title="Ding (2)"
-              >
-                <Bell size={16} />
-                {/* <span className="btn-badge">2</span> */}
-              </button>
-              <button
-                className="icon-btn icon-btn--md icon-btn--ghost"
-                onClick={(e) => {
-                  e.preventDefault();
-                  triggerSoundEffect("boop");
-                }}
-                title="Boop (3)"
-              >
-                <Bot size={16} />
-                {/* <span className="btn-badge">3</span> */}
-              </button>
-              <button
-                className="icon-btn icon-btn--md icon-btn--ghost"
-                onClick={(e) => {
-                  e.preventDefault();
-                  triggerSoundEffect("chime");
-                }}
-                title="Chime (4)"
-              >
-                <Sparkles size={16} />
-                {/* <span className="btn-badge">4</span> */}
-              </button>
-            </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -1128,47 +1034,111 @@ export default function VoicePanel() {
               >
                 <HistoryIcon size={12} /> History
               </span>
-              {hasManagePermission && (
+              <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
                 <button
-                  className="icon-btn icon-btn--xs icon-btn--danger"
-                  onClick={handleClearHistory}
-                  title="Clear history"
+                  className={`icon-btn icon-btn--xs ${historyViewMode === "list" ? "active" : ""}`}
+                  onClick={() => setHistoryViewMode("list")}
+                  title="List View"
                 >
-                  <Trash2 size={12} />
+                  <List size={12} />
                 </button>
-              )}
+                <button
+                  className={`icon-btn icon-btn--xs ${historyViewMode === "playlists" ? "active" : ""}`}
+                  onClick={() => setHistoryViewMode("playlists")}
+                  title="Playlist View"
+                >
+                  <LayoutGrid size={12} />
+                </button>
+                {hasManagePermission && (
+                  <button
+                    className="icon-btn icon-btn--xs icon-btn--danger"
+                    onClick={handleClearHistory}
+                    title="Clear history"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="vp-queue-scroll">
-              {mediaState.history.map((item) => (
-                <div key={item.id} className="vp-queue-item">
-                  <img
-                    src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
-                    alt="Thumbnail"
-                  />
-                  <div className="vp-queue-item-overlay">
-                    <button
-                      onClick={() => {
-                        socket?.send(
-                          JSON.stringify({
-                            type: "media:add",
-                            payload: {
-                              route: location.pathname,
-                              video_id: item.video_id,
-                              loop: false,
-                            },
-                          }),
-                        );
-                      }}
-                      className="btn btn-ghost"
-                      style={{ padding: "0.25rem", borderRadius: "50%" }}
-                      title="Play Again"
-                    >
-                      <Play size={14} />
-                    </button>
+
+            {historyViewMode === "playlists" && mediaState.playlists && mediaState.playlists.length > 0 ? (
+              <div className="vp-playlists-container" style={{ marginTop: "8px" }}>
+                {mediaState.playlists.map(playlist => (
+                  <div key={playlist.id} className="vp-playlist-card">
+                    <div className="vp-playlist-header">
+                       <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                         <Calendar size={10} /> 
+                         {new Date(playlist.start_time).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                       </span>
+                       <span>{playlist.items.length} items</span>
+                    </div>
+                    <div className="vp-playlist-items">
+                       {playlist.items.map(item => (
+                          <img 
+                            key={item.id} 
+                            src={`https://img.youtube.com/vi/${item.video_id}/default.jpg`} 
+                            title={`${item.user_name} - ${new Date(item.created_at).toLocaleTimeString()}`}
+                            onClick={() => {
+                              socket?.send(JSON.stringify({ type: "media:add", payload: { route: location.pathname, video_id: item.video_id, loop: false } }));
+                            }}
+                          />
+                       ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="vp-queue-scroll" style={{ marginTop: "8px" }}>
+                {mediaState.history.map((item) => (
+                  <div key={item.id} className="vp-queue-item">
+                    <img
+                      src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                      alt="Thumbnail"
+                    />
+                    <div className="vp-queue-item-info">
+                      <span>{new Date(item.created_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                    </div>
+                    <div className="vp-queue-item-overlay">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          socket?.send(
+                            JSON.stringify({
+                              type: "media:remove",
+                              payload: { route: location.pathname, item_id: item.id },
+                            }),
+                          );
+                        }}
+                        className="btn btn-ghost"
+                        style={{ padding: "0.25rem", borderRadius: "50%", position: "absolute", top: 2, right: 2, background: "rgba(255,0,0,0.7)" }}
+                        title="Remove from history"
+                      >
+                        <X size={10} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          socket?.send(
+                            JSON.stringify({
+                              type: "media:add",
+                              payload: {
+                                route: location.pathname,
+                                video_id: item.video_id,
+                                loop: false,
+                              },
+                            }),
+                          );
+                        }}
+                        className="btn btn-ghost"
+                        style={{ padding: "0.25rem", borderRadius: "50%" }}
+                        title="Play Again"
+                      >
+                        <Play size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

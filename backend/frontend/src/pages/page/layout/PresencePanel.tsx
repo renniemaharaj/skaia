@@ -25,6 +25,7 @@ import {
   globalChatMessagesAtom,
   type GlobalChatMessage,
 } from "../../../atoms/chat";
+import { mediaStateAtom } from "../../../atoms/media";
 import { toast } from "sonner";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../../components/input/Input";
@@ -69,6 +70,8 @@ const PresencePanel = () => {
   const socket = useAtomValue(socketAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
   const chatMessages = useAtomValue(globalChatMessagesAtom);
+  const mediaState = useAtomValue(mediaStateAtom);
+  const isMediaActive = mediaState && mediaState.queue && mediaState.queue.length > 0;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -471,7 +474,7 @@ const PresencePanel = () => {
 
       {/* Expanded panel */}
       <div
-        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === 'chat' ? " pp-body--chat" : ""}${activeTab === 'voice' ? " pp-body--voice" : ""}`}
+        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === 'chat' ? " pp-body--chat" : ""}${activeTab === 'voice' ? " pp-body--voice" : ""}${activeTab === 'voice' && isMediaActive ? " pp-body--voice-media-active" : ""}`}
       >
         <div style={{ display: activeTab === 'members' ? 'block' : 'none' }} className="pp-scroll">
           {here.length > 0 && (

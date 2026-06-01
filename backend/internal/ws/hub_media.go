@@ -31,19 +31,9 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		return // Ignore updates without a route
 	}
 
+	state := h.getOrCreateMediaState(route)
+
 	h.mediaMu.Lock()
-	state, exists := h.mediaRoutes[route]
-	if !exists {
-		state = &MediaState{
-			Route:           route,
-			Queue:           []MediaItem{},
-			History:         []MediaItem{},
-			IsPaused:        false,
-			CurrentPosition: 0,
-			UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
-		}
-		h.mediaRoutes[route] = state
-	}
 	stateChanged := false
 
 	switch mu.Message.Type {
@@ -81,6 +71,11 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		// Also allow removing from History
 		for i, item := range state.History {
 			if item.ID == action.ItemID {
+				if item.HistoryID > 0 {
+					go h.mediaRepo.DeleteHistoryItem(item.HistoryID)
+				} else {
+					go h.mediaRepo.DeleteHistoryItemByData(route, item.VideoID, item.CreatedAt)
+				}
 				state.History = append(state.History[:i], state.History[i+1:]...)
 				stateChanged = true
 				break
@@ -122,6 +117,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 				if len(state.History) > 50 {
 					state.History = state.History[:50]
 				}
+				go h.mediaRepo.SaveHistory(route, top)
 			}
 			state.CurrentPosition = 0
 			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -149,6 +145,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 				if len(state.History) > 50 {
 					state.History = state.History[:50]
 				}
+				go h.mediaRepo.SaveHistory(route, top)
 			}
 			state.CurrentPosition = action.Position
 			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -167,6 +164,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		if hasAdmin {
 			state.History = []MediaItem{}
 			stateChanged = true
+			go h.mediaRepo.ClearHistory(route)
 		}
 
 	case MediaSfx:
@@ -187,6 +185,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 
 	// Broadcast sync if state was modified
 	if stateChanged {
+		recalculatePlaylists(state)
 		h.broadcastMediaSync(route)
 	}
 }
@@ -235,20 +234,9 @@ func (h *Hub) sendMediaSyncToClient(client *Client) {
 		return
 	}
 
+	state := h.getOrCreateMediaState(route)
 	h.mediaMu.RLock()
-	state, exists := h.mediaRoutes[route]
-	h.mediaMu.RUnlock()
-
-	if !exists {
-		state = &MediaState{
-			Route:           route,
-			Queue:           []MediaItem{},
-			History:         []MediaItem{},
-			IsPaused:        false,
-			CurrentPosition: 0,
-			UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
-		}
-	}
+	defer h.mediaMu.RUnlock()
 
 	payload, err := json.Marshal(state)
 	if err != nil {
@@ -272,5 +260,89 @@ func (h *Hub) cleanupInactiveMedia() {
 		if err == nil && now.Sub(t) > 2*time.Hour && (state.IsPaused || len(state.Queue) == 0) {
 			delete(h.mediaRoutes, route)
 		}
+	}
+}
+
+// getOrCreateMediaState safely fetches or creates media state for a route.
+func (h *Hub) getOrCreateMediaState(route string) *MediaState {
+	h.mediaMu.RLock()
+	state, exists := h.mediaRoutes[route]
+	h.mediaMu.RUnlock()
+
+	if exists {
+		return state
+	}
+
+	// Not found, lock for write
+	h.mediaMu.Lock()
+	defer h.mediaMu.Unlock()
+	
+	// Double-check
+	state, exists = h.mediaRoutes[route]
+	if exists {
+		return state
+	}
+
+	history, err := h.mediaRepo.LoadHistory(route)
+	if err != nil {
+		log.Printf("ws: failed to load media history for route %s: %v", route, err)
+		history = []MediaItem{}
+	}
+
+	state = &MediaState{
+		Route:           route,
+		Queue:           []MediaItem{},
+		History:         history,
+		IsPaused:        false,
+		CurrentPosition: 0,
+		UpdatedAt:       time.Now().UTC().Format(time.RFC3339),
+	}
+	recalculatePlaylists(state)
+	h.mediaRoutes[route] = state
+	return state
+}
+
+// recalculatePlaylists groups history items into playlists based on a 30-minute interval.
+func recalculatePlaylists(state *MediaState) {
+	state.Playlists = []MediaPlaylist{}
+	if len(state.History) == 0 {
+		return
+	}
+
+	var currentPlaylist *MediaPlaylist
+	var lastTime time.Time
+
+	for _, item := range state.History {
+		t, err := time.Parse(time.RFC3339, item.CreatedAt)
+		if err != nil {
+			t = time.Now()
+		}
+
+		if currentPlaylist == nil {
+			currentPlaylist = &MediaPlaylist{
+				ID:        generateID(),
+				StartTime: item.CreatedAt,
+				Items:     []MediaItem{item},
+			}
+			lastTime = t
+		} else {
+			diff := lastTime.Sub(t)
+			if diff <= 30*time.Minute && diff >= -30*time.Minute {
+				currentPlaylist.Items = append(currentPlaylist.Items, item)
+				currentPlaylist.StartTime = item.CreatedAt
+				lastTime = t
+			} else {
+				state.Playlists = append(state.Playlists, *currentPlaylist)
+				currentPlaylist = &MediaPlaylist{
+					ID:        generateID(),
+					StartTime: item.CreatedAt,
+					Items:     []MediaItem{item},
+				}
+				lastTime = t
+			}
+		}
+	}
+	if currentPlaylist != nil {
+		state.Playlists = append(state.Playlists, *currentPlaylist)
 	}
 }

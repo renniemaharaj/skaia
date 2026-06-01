@@ -118,6 +118,10 @@
   max-width: 100%;
 }
 
+.pp-body.pp-open.pp-body--voice-media-active {
+  width: min(95vw, 480px);
+}
+
 /* Fixed-height scrollable inner area */
 .pp-scroll {
   max-height: 340px;

@@ -135,6 +135,7 @@ func main() {
 	seedAdminPassword(database.DB)
 
 	hub := ws.NewHub()
+	hub.SetDB(database.DB)
 	go hub.Run()
 
 	dispatcher := ievents.NewDispatcher(database.DB)

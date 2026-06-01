@@ -105,6 +105,7 @@ type VoiceControlPayload struct {
 // MediaItem represents a single video in the queue or history.
 type MediaItem struct {
 	ID        string `json:"id"`
+	HistoryID int64  `json:"history_id,omitempty"`
 	VideoID   string `json:"video_id"`
 	AddedBy   int64  `json:"added_by"`
 	UserName  string `json:"user_name"`
@@ -112,13 +113,20 @@ type MediaItem struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type MediaPlaylist struct {
+	ID        string      `json:"id"`
+	StartTime string      `json:"start_time"`
+	Items     []MediaItem `json:"items"`
+}
+
 // MediaState payload represents the current playback queue and history for a route.
 type MediaState struct {
-	Route           string      `json:"route"`
-	Queue           []MediaItem `json:"queue"`
-	History         []MediaItem `json:"history"`
-	IsPaused        bool        `json:"is_paused"`
-	CurrentPosition float64     `json:"current_position"`
+	Route           string          `json:"route"`
+	Queue           []MediaItem     `json:"queue"`
+	History         []MediaItem     `json:"history"`
+	Playlists       []MediaPlaylist `json:"playlists"`
+	IsPaused        bool            `json:"is_paused"`
+	CurrentPosition float64         `json:"current_position"`
 	UpdatedAt       string      `json:"updated_at"`
 	TransitioningID string      `json:"transitioning_item_id"`
 }

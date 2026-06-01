@@ -10,10 +10,17 @@ export interface MediaItem {
   created_at: string;
 }
 
+export interface MediaPlaylist {
+  id: string;
+  start_time: string;
+  items: MediaItem[];
+}
+
 export interface MediaState {
   route: string;
   queue: MediaItem[];
   history: MediaItem[];
+  playlists: MediaPlaylist[];
   is_paused: boolean;
   current_position: number;
   updated_at: string;
