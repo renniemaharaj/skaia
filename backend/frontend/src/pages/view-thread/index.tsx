@@ -379,7 +379,7 @@ const ViewThreadPage = () => {
                 </div>
               )}
               <ViewThread content={currentThread.content} />
-              <ViewThreadComments threadId={threadId} />
+              {readingMode && <ViewThreadComments threadId={threadId} />}
             </div>
           </div>
           
@@ -390,6 +390,9 @@ const ViewThreadPage = () => {
               <RecentThreadsTile currentCategoryId={currentThread.category_id} currentThreadId={currentThread.id} />
               <ThreadUserTiles threadId={threadId!} type="likers" />
               <ThreadUserTiles threadId={threadId!} type="viewers" />
+              <div className="card view-thread-sidebar-comments" style={{ padding: 0, marginTop: '0.5rem', display: 'flex', flexDirection: 'column' }}>
+                <ViewThreadComments threadId={threadId} />
+              </div>
             </aside>
           )}
         </div>
