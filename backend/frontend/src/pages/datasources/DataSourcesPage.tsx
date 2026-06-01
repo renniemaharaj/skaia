@@ -86,7 +86,7 @@ export default function DataSourcesPage() {
             <UserAvatar
               src={creator.avatar_url || undefined}
               alt={creator.display_name || creator.username}
-              size={14}
+              size={18}
               initials={(creator.display_name ||
                 creator.username)?.[0]?.toUpperCase()}
             />

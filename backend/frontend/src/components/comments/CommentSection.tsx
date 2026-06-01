@@ -135,20 +135,18 @@ const CommentSection = ({
                 <div className="comment-avatar">
                   {comment.author_id ? (
                     <UserProfileOverlay userId={comment.author_id} fallbackName={authorDisplay} fallbackAvatar={comment.author_avatar || undefined}>
-                      <div>
-                        <UserAvatar
-                          src={comment.author_avatar || undefined}
-                          alt={authorDisplay}
-                          size={32}
-                          initials={authorDisplay?.[0]?.toUpperCase()}
-                        />
-                      </div>
+                      <UserAvatar
+                        src={comment.author_avatar || undefined}
+                        alt={authorDisplay}
+                        size={30}
+                        initials={authorDisplay?.[0]?.toUpperCase()}
+                      />
                     </UserProfileOverlay>
                   ) : (
                     <UserAvatar
                       src={comment.author_avatar || undefined}
                       alt={authorDisplay}
-                      size={32}
+                      size={30}
                       initials={authorDisplay?.[0]?.toUpperCase()}
                     />
                   )}

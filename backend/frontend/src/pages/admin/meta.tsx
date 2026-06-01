@@ -12,7 +12,8 @@ export function AdminMetaSettings() {
       initialConfig={{
         description:
           seo.description || branding.tagline || branding.header_subtitle || "",
-        og_image: seo.og_image,
+        og_image: seo.og_image || "",
+        dom_skin: seo.dom_skin || "",
       }}
       onUpdate={() => window.location.reload()}
     />

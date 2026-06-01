@@ -5,6 +5,7 @@ import "./MetaControlPanel.css";
 interface MetaConfigForm {
   description: string;
   og_image: string;
+  dom_skin: string;
 }
 
 export default function MetaControlPanel({
@@ -16,6 +17,7 @@ export default function MetaControlPanel({
 }) {
   const [form, setForm] = useState<MetaConfigForm>(initialConfig);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
+  const [domSkinFile, setDomSkinFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +29,11 @@ export default function MetaControlPanel({
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setOgImageFile(file);
+    if (e.target.name === "og_image_file") {
+      setOgImageFile(file);
+    } else if (e.target.name === "dom_skin_file") {
+      setDomSkinFile(file);
+    }
   };
 
   async function uploadFile(file: File): Promise<string> {
@@ -48,14 +54,17 @@ export default function MetaControlPanel({
     try {
       let og_image = form.og_image;
       if (ogImageFile) og_image = await uploadFile(ogImageFile);
+      let dom_skin = form.dom_skin;
+      if (domSkinFile) dom_skin = await uploadFile(domSkinFile);
       await apiRequest("/config/seo", {
         method: "PUT",
         body: JSON.stringify({
           description: form.description,
           og_image,
+          dom_skin,
         }),
       });
-      onUpdate?.({ ...form, og_image });
+      onUpdate?.({ ...form, og_image, dom_skin });
     } catch (err: any) {
       setError(err.message || "Failed to save");
     } finally {
@@ -84,7 +93,18 @@ export default function MetaControlPanel({
           onChange={handleInput}
           placeholder="Image URL or upload below"
         />
-        <input type="file" accept="image/*" onChange={handleFile} />
+        <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} />
+      </label>
+      <label>
+        DOM Skin Background Image
+        <input
+          type="text"
+          name="dom_skin"
+          value={form.dom_skin}
+          onChange={handleInput}
+          placeholder="Image URL or upload below (e.g. Minecraft texture)"
+        />
+        <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} />
       </label>
       {error && <div className="error">{error}</div>}
       <div className="actions">

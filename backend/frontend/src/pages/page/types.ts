@@ -60,6 +60,7 @@ export interface SEOConfig {
   title: string;
   description: string;
   og_image: string;
+  dom_skin: string;
 }
 
 export interface FooterLink {

@@ -93,14 +93,12 @@ export default function Activity() {
               <div className="activity-event-avatar">
                 {evt.user_id ? (
                   <UserProfileOverlay userId={evt.user_id} fallbackName={evt.username || "System"} fallbackAvatar={evt.avatar_url || undefined}>
-                    <div>
-                      <UserAvatar
-                        src={evt.avatar_url || undefined}
-                        alt={evt.username || "System"}
-                        size={28}
-                        initials={(evt.username || "S")[0].toUpperCase()}
-                      />
-                    </div>
+                    <UserAvatar
+                      src={evt.avatar_url || undefined}
+                      alt={evt.username || "System"}
+                      size={28}
+                      initials={(evt.username || "S")[0].toUpperCase()}
+                    />
                   </UserProfileOverlay>
                 ) : (
                   <UserAvatar

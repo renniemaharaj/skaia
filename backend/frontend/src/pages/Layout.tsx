@@ -13,7 +13,7 @@ import {
   currentUserAtom,
   type User,
 } from "../atoms/auth";
-import { featuresAtom } from "../atoms/config";
+import { featuresAtom, seoAtom } from "../atoms/config";
 import { pendingTpRouteAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { apiRequest } from "../utils/api";
@@ -139,6 +139,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const pendingTpRoute = useAtomValue(pendingTpRouteAtom);
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
+  const seo = useAtomValue(seoAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
@@ -349,8 +350,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         />
       )}
-      {currentUser?.background_video_url && (
+      {(currentUser?.background_video_url || seo?.dom_skin) && (
         <style>{`
+          html, body, #root, .app, .main-content {
+             background-color: transparent !important;
+          }
+          ${seo?.dom_skin ? `
+          :root {
+             background-image: url("${seo.dom_skin}");
+             background-size: repeat;
+             background-attachment: fixed;
+             background-position: center;
+          }
+          ` : ''}
           .layout-main, .up-container, .card, .panel, .forum-container {
              background-color: rgba(var(--bg-color-rgb), 0.85);
              backdrop-filter: blur(10px);

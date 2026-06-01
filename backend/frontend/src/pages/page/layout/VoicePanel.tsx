@@ -800,6 +800,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 return (
                   <UserProfileOverlay key={uid} userId={uid} fallbackName={user.user_name} fallbackAvatar={user.avatar || undefined}>
                     <div style={{
+                      display: 'flex',
                       borderRadius: '50%',
                       transition: 'box-shadow 0.15s ease',
                       boxShadow: isSpeaking ? '0 0 0 2px var(--primary-color), 0 0 8px var(--primary-color)' : 'none'
@@ -848,7 +849,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         if (!user) return null;
                         return (
                           <UserProfileOverlay key={`unmute-${uid}`} userId={uid} fallbackName={user.user_name} fallbackAvatar={user.avatar || undefined}>
-                            <div>
+                            <div style={{ display: 'flex' }}>
                               <UserAvatar src={user.avatar || undefined} alt={user.user_name} size={20} />
                             </div>
                           </UserProfileOverlay>

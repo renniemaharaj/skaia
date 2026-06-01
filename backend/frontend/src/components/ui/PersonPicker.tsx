@@ -159,15 +159,13 @@ export default function PersonPicker({
           >
             <span className="person-picker__avatar">
               <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url || undefined} disableClick={true}>
-                <div>
                   <UserAvatar
                     src={user.avatar_url || undefined}
                     alt={user.display_name || user.username}
-                    size={18}
+                    size={32}
                     initials={(user.display_name ||
                       user.username)?.[0]?.toUpperCase()}
                   />
-                </div>
               </UserProfileOverlay>
             </span>
             <span className="person-picker__info">

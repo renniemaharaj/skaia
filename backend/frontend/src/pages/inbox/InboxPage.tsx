@@ -801,11 +801,11 @@ function UserSearchResult({
     >
       <span className="inbox-conv-avatar">
         <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url || undefined} disableClick={true}>
-          <div>
+          <div style={{ display: 'flex', width: '100%', height: '100%' }}>
             <UserAvatar
               src={user.avatar_url || undefined}
               alt={user.display_name || user.username}
-              size={18}
+              size={36}
               initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
             />
           </div>
@@ -844,11 +844,11 @@ function ConversationRow({
       <span className="inbox-conv-avatar">
         {other ? (
           <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
-            <div>
+            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
               <UserAvatar
                 src={other.avatar_url || undefined}
                 alt={other.display_name || other.username}
-                size={18}
+                size={36}
                 initials={(other.display_name ||
                   other.username)?.[0]?.toUpperCase()}
               />
@@ -858,7 +858,7 @@ function ConversationRow({
           <UserAvatar
             src={undefined}
             alt="Unknown"
-            size={18}
+            size={36}
             initials="?"
           />
         )}
@@ -931,14 +931,14 @@ function InboxChatHeader({
           >
             <span className="inbox-chat-avatar">
               <UserProfileOverlay userId={activeConv.other_user.id} fallbackName={activeConv.other_user.display_name || activeConv.other_user.username} fallbackAvatar={activeConv.other_user.avatar_url || undefined} disableClick={true}>
-                <div>
+                <div style={{ display: 'flex', width: '100%', height: '100%' }}>
                   <UserAvatar
                     src={activeConv.other_user.avatar_url || undefined}
                     alt={
                       activeConv.other_user.display_name ||
                       activeConv.other_user.username
                     }
-                    size={18}
+                    size={32}
                   />
                 </div>
               </UserProfileOverlay>
@@ -1006,11 +1006,11 @@ function MessageBubble({
       {!isMe && (
         <span className="inbox-msg-avatar">
           <UserProfileOverlay userId={m.sender_id} fallbackName={m.sender_name} fallbackAvatar={m.sender_avatar || undefined}>
-            <div>
+            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
               <UserAvatar
                 src={m.sender_avatar || undefined}
                 alt={m.sender_name}
-                size={16}
+                size={28}
                 initials={m.sender_name?.[0]?.toUpperCase()}
               />
             </div>

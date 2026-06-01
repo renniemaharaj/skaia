@@ -338,11 +338,11 @@ const PresencePanel = () => {
             <GhostIcon size={14} />
           ) : (
             <UserProfileOverlay userId={u.user_id} fallbackName={u.user_name} fallbackAvatar={u.avatar || undefined} disableClick={true}>
-              <div>
+              <div style={{ display: 'flex', width: '100%', height: '100%' }}>
                 <UserAvatar
                   src={u.avatar || undefined}
                   alt={u.user_name}
-                  size={16}
+                  size={22}
                   initials={u.user_name?.[0]?.toUpperCase()}
                 />
               </div>

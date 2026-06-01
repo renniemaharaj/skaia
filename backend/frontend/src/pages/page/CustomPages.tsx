@@ -250,7 +250,7 @@ export default function CustomPages() {
           <UserAvatar
             src={user.avatar_url || undefined}
             alt={user.display_name || user.username}
-            size={12}
+            size={16}
             initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
           />
         </span>

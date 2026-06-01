@@ -86,6 +86,7 @@ type SEO struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	OGImage     string `json:"og_image"`
+	DomSkin     string `json:"dom_skin"`
 }
 
 // Footer holds the customisable footer content from site_config.

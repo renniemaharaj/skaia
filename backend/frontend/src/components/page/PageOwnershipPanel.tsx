@@ -106,15 +106,13 @@ export default function PageOwnershipPanel({
           <div className="page-ownership__user">
             <span className="page-ownership__avatar">
               <UserProfileOverlay userId={owner.id} fallbackName={owner.display_name || owner.username} fallbackAvatar={owner.avatar_url || undefined}>
-                <div>
                   <UserAvatar
                     src={owner.avatar_url || undefined}
                     alt={owner.display_name || owner.username}
-                    size={16}
+                    size={24}
                     initials={(owner.display_name ||
                       owner.username)?.[0]?.toUpperCase()}
                   />
-                </div>
               </UserProfileOverlay>
             </span>
             <span className="page-ownership__name">
@@ -185,15 +183,13 @@ export default function PageOwnershipPanel({
               <div key={editor.id} className="page-ownership__user">
                 <span className="page-ownership__avatar">
                   <UserProfileOverlay userId={editor.id} fallbackName={editor.display_name || editor.username} fallbackAvatar={editor.avatar_url || undefined}>
-                    <div>
                       <UserAvatar
                         src={editor.avatar_url || undefined}
                         alt={editor.display_name || editor.username}
-                        size={16}
+                        size={24}
                         initials={(editor.display_name ||
                           editor.username)?.[0]?.toUpperCase()}
                       />
-                    </div>
                   </UserProfileOverlay>
                 </span>
                 <span className="page-ownership__name">
