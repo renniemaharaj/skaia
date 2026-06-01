@@ -32,6 +32,7 @@ import UserLink from "../user/UserLink";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { relativeTimeAgo } from "../../utils/serverTime";
+import SpotlightCard from "../ui/SpotlightCard";
 
 const CategoryThreadsPreview = ({
   forum,
@@ -79,9 +80,10 @@ const CategoryThreadsPreview = ({
           guestSandboxMode;
 
         return (
-          <div
+          <SpotlightCard
             key={thread.id}
             className="thread-item"
+            style={{ padding: '0.75rem', marginBottom: '0.5rem', cursor: 'pointer', flexShrink: 0 }}
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/view-thread/${thread.id}`);
@@ -177,7 +179,7 @@ const CategoryThreadsPreview = ({
                 {thread.reply_count} replies
               </span>
             </div>
-          </div>
+          </SpotlightCard>
         );
       })}
     </div>

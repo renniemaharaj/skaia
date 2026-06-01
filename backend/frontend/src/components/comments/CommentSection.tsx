@@ -7,6 +7,7 @@ import UserProfileOverlay from "../user/UserProfileOverlay";
 import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
+import SpotlightCard from "../ui/SpotlightCard";
 import "./CommentSection.css";
 
 type CommentSectionComment = {
@@ -124,13 +125,14 @@ const CommentSection = ({
             const authorDisplay =
               comment.author_name || comment.author_username || "Unknown";
             return (
-              <div
+              <SpotlightCard
                 key={comment.id}
                 className={`comment-card${
                   String(comment.id) === String(highlightedCommentId)
                     ? " new-comment"
                     : ""
                 }`}
+                spotlightColor="rgba(255,255,255,0.1)"
               >
                 <div className="comment-avatar">
                   {comment.author_id ? (
@@ -217,7 +219,7 @@ const CommentSection = ({
                     )}
                   </div>
                 </div>
-              </div>
+              </SpotlightCard>
             );
           })
         )}

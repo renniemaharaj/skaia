@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import type { ProfileUser, Role } from "./types";
 import { formatDate } from "./useUserData";
 import UserAvatar from "../../components/user/UserAvatar";
+import SpotlightCard from "../../components/ui/SpotlightCard";
 
 interface Props {
   user: ProfileUser;
@@ -68,10 +69,8 @@ const UserProfileCard = ({
   const rolesWithDetails = allRoles.filter(r => userRoles.includes(r.name)).sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const glowColor = topRole?.glow_color;
-  const themeColor = topRole?.theme_color;
 
   const cardStyle: React.CSSProperties = {
-    ...(themeColor ? { borderColor: themeColor } : {}),
     ...(user.profile_card_art_url
       ? {
           backgroundImage: `linear-gradient(rgba(var(--bg-color-rgb), 0.85), rgba(var(--bg-color-rgb), 0.95)), url("${user.profile_card_art_url}")`,
@@ -103,7 +102,7 @@ const UserProfileCard = ({
       </div>
 
       {/* Profile card */}
-      <div className="up-card" style={cardStyle}>
+      <SpotlightCard className="up-card" spotlightColor={glowColor || 'var(--primary-color, rgba(255, 255, 255, 0.25))'} style={cardStyle}>
         {user.is_suspended && (
           <div className="up-suspended-banner">
             <ShieldOff size={16} />
@@ -232,7 +231,7 @@ const UserProfileCard = ({
             Member since {formatDate(user.created_at)}
           </span>
         </div>
-      </div>
+      </SpotlightCard>
     </>
   );
 };

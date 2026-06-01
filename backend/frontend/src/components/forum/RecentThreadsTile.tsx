@@ -6,6 +6,7 @@ import type { ForumThread } from "../../atoms/forum";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
 import { relativeTimeAgo } from "../../utils/serverTime";
+import SpotlightCard from "../ui/SpotlightCard";
 
 interface RecentThreadsTileProps {
   currentCategoryId?: string | number;
@@ -44,7 +45,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
   if (loading || threads.length === 0) return null;
 
   return (
-    <div className="card toc-tile" style={{ marginTop: '1rem' }}>
+    <SpotlightCard className="card toc-tile" style={{ marginTop: '1rem', padding: '1rem' }}>
       <div className="toc-header">
         <Clock size={16} />
         <h3>Recent Threads</h3>
@@ -77,7 +78,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
           </Link>
         ))}
       </div>
-    </div>
+    </SpotlightCard>
   );
 };
 

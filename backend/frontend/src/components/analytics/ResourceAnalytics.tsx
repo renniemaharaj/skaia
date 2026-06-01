@@ -12,6 +12,7 @@ import {
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
+import CountUp from "../ui/CountUp/CountUp";
 import "./ResourceAnalytics.css";
 
 /* ── types ─────────────────────────────────────────────── */
@@ -306,19 +307,19 @@ export default function ResourceAnalytics({
             <div className="ra-stats">
               <div className="ra-stat">
                 <div className="ra-stat__value">
-                  {(data?.total_views ?? 0).toLocaleString()}
+                  <CountUp to={data?.total_views ?? 0} direction="up" duration={1.5} />
                 </div>
                 <div className="ra-stat__label">Total Views</div>
               </div>
               <div className="ra-stat">
                 <div className="ra-stat__value">
-                  {(data?.unique_viewers ?? 0).toLocaleString()}
+                  <CountUp to={data?.unique_viewers ?? 0} direction="up" duration={1.5} />
                 </div>
                 <div className="ra-stat__label">Unique Users</div>
               </div>
               <div className="ra-stat">
                 <div className="ra-stat__value">
-                  {(data?.unique_ips ?? 0).toLocaleString()}
+                  <CountUp to={data?.unique_ips ?? 0} direction="up" duration={1.5} />
                 </div>
                 <div className="ra-stat__label">Unique IPs</div>
               </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ShoppingCart, Package, Plus, Edit2, Trash2, Tag } from "lucide-react";
+import { Package, Plus, Edit2, Trash2, Tag } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 
@@ -20,6 +20,8 @@ import {
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { SkeletonCard } from "../ui/SkeletonCard";
+import SpotlightCard from "../ui/SpotlightCard";
+import BlurText from "../ui/BlurText/BlurText";
 import { CreateStoreCategoryDialog } from "./CreateStoreCategoryDialog";
 import { CreateProductDialog } from "./CreateProductDialog";
 import { EditProductDialog } from "./EditProductDialog";
@@ -234,12 +236,11 @@ export const Store: React.FC = () => {
       {/* ── Products ──────────────────────────────────────────────────── */}
       <div className="products-section">
         <div className="products-header">
-          <h2>
-            <ShoppingCart size={24} className="header-icon" />
-            {selectedCategoryId
+          <h2 className="page-title">
+            <BlurText text={selectedCategoryId
               ? (categories.find((c) => c.id === selectedCategoryId)?.name ??
                 "Products")
-              : "Featured Items"}
+              : "Featured Items"} delay={50} animateBy="letters" direction="top" />
           </h2>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             {canCreateProduct && (
@@ -263,9 +264,11 @@ export const Store: React.FC = () => {
         ) : products.length > 0 ? (
           <div className="products-grid">
             {products.map((product) => (
-              <div
+              <SpotlightCard
                 key={product.id}
                 className="card card--interactive card--store product-card"
+                spotlightColor="rgba(255,255,255,0.15)"
+                style={{ padding: 0 }}
               >
                 {product.image_url ? (
                   <div className="product-image">
@@ -349,7 +352,7 @@ export const Store: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </SpotlightCard>
             ))}
           </div>
         ) : (

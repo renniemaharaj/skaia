@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
+import SpotlightCard from "../ui/SpotlightCard";
 import { apiRequest } from "../../utils/api";
 import type { ProfileUser, Role } from "../../pages/users/types";
 import UserAvatar from "./UserAvatar";
@@ -39,25 +40,26 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
       const rect = wrapperRef.current.getBoundingClientRect();
       const cardWidth = 320;
       let left = rect.left;
-      
+
       // Prevent overflowing right edge of screen
       if (left + cardWidth > window.innerWidth - 16) {
         left = window.innerWidth - cardWidth - 16;
       }
       if (left < 16) left = 16;
-      
+
       let top = rect.bottom + 8;
-      
+
       // Prevent overflowing bottom edge of screen
-      if (top + 200 > window.innerHeight) { // 200 is rough height
+      if (top + 200 > window.innerHeight) {
+        // 200 is rough height
         top = rect.top - 8 - 200; // open upwards if not enough space (will rely on actual height if possible, but rough guess is okay for fixed)
       }
 
       setPopoverStyle({
-        position: 'fixed',
+        position: "fixed",
         top: top,
         left: left,
-        zIndex: 9999
+        zIndex: 9999,
       });
     }
   };
@@ -65,11 +67,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   useEffect(() => {
     if (showOverlay) {
       updatePosition();
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
       return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
       };
     }
   }, [showOverlay]);
@@ -111,25 +113,24 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   };
 
   // Compute visual details based on fetched user OR fallbacks
-  const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";
+  const displayName =
+    user?.display_name || user?.username || fallbackName || "Unknown User";
   const avatarUrl = user?.avatar_url || fallbackAvatar;
   const bannerUrl = user?.banner_url || "/banner_7783x7783.png";
   const roles = user?.roles || fallbackRoles || [];
-  
-  const rolesWithDetails = allRoles.filter(r => roles.includes(r.name)).sort((a, b) => b.power_level - a.power_level);
+
+  const rolesWithDetails = allRoles
+    .filter((r) => roles.includes(r.name))
+    .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const themeColor = topRole?.theme_color;
   const glowColor = topRole?.glow_color;
 
-  const cardStyle: React.CSSProperties = {
-    ...(themeColor ? { borderColor: themeColor } : {}),
-  };
-
   return (
-    <div 
-      className="upo-wrapper" 
+    <div
+      className="upo-wrapper"
       ref={wrapperRef}
-      onMouseEnter={handleMouseEnter} 
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={(e) => {
         if (disableClick) return;
@@ -137,68 +138,91 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
         e.preventDefault();
         navigate(`/users/${userId}`);
       }}
-      style={!disableClick ? { cursor: 'pointer' } : undefined}
+      style={!disableClick ? { cursor: "pointer" } : undefined}
     >
       {children}
 
-      {showOverlay && document.body && createPortal(
-        <div 
-          className="upo-popover" 
-          style={popoverStyle}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="upo-card" style={cardStyle}>
-            <div className="upo-banner">
-              <img src={bannerUrl} alt="Banner" className="upo-banner-img" />
-            </div>
-            
-            <div className="upo-content">
-              <div className="upo-avatar-wrapper">
-                <UserAvatar
-                  src={avatarUrl}
-                  alt={displayName}
-                  size={64}
-                  initials={displayName[0]?.toUpperCase()}
-                  style={glowColor ? { boxShadow: `0 0 10px ${glowColor}`, border: `2px solid ${glowColor}` } : {}}
-                />
+      {showOverlay &&
+        document.body &&
+        createPortal(
+          <div
+            className="upo-popover"
+            style={popoverStyle}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <SpotlightCard
+              className="upo-card"
+              spotlightColor={
+                themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
+              }
+            >
+              <div className="upo-banner">
+                <img src={bannerUrl} alt="Banner" className="upo-banner-img" />
               </div>
 
-              <div className="upo-info">
-                <h3 className="upo-display-name">{displayName}</h3>
-                {user?.username && <p className="upo-username">@{user.username}</p>}
-                
-                <div className="upo-roles">
-                  {roles.map((r) => {
-                    const roleDetails = allRoles.find(ar => ar.name === r);
-                    const color = roleDetails?.theme_color || roleDetails?.glow_color;
-                    return (
-                      <span key={r} className="upo-badge" style={color ? { backgroundColor: color, color: '#fff' } : {}}>
-                        {r}
-                      </span>
-                    );
-                  })}
+              <div className="upo-content">
+                <div className="upo-avatar-wrapper">
+                  <UserAvatar
+                    src={avatarUrl}
+                    alt={displayName}
+                    size={64}
+                    initials={displayName[0]?.toUpperCase()}
+                    style={
+                      glowColor
+                        ? {
+                            boxShadow: `0 0 10px ${glowColor}`,
+                            border: `2px solid ${glowColor}`,
+                          }
+                        : {}
+                    }
+                  />
                 </div>
 
-                {user?.bio && (
-                  <p className="upo-bio">{user.bio}</p>
-                )}
-              </div>
+                <div className="upo-info">
+                  <h3 className="upo-display-name">{displayName}</h3>
+                  {user?.username && (
+                    <p className="upo-username">@{user.username}</p>
+                  )}
 
-              <div className="upo-actions">
-                <button 
-                  className="btn btn-primary upo-action-btn"
-                  onClick={() => navigate(`/users/${userId}`)}
-                >
-                  View Profile
-                </button>
+                  <div className="upo-roles">
+                    {roles.map((r) => {
+                      const roleDetails = allRoles.find((ar) => ar.name === r);
+                      const color =
+                        roleDetails?.theme_color || roleDetails?.glow_color;
+                      return (
+                        <span
+                          key={r}
+                          className="upo-badge"
+                          style={
+                            color
+                              ? { backgroundColor: color, color: "#fff" }
+                              : {}
+                          }
+                        >
+                          {r}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  {user?.bio && <p className="upo-bio">{user.bio}</p>}
+                </div>
+
+                <div className="upo-actions">
+                  <button
+                    className="btn btn-primary upo-action-btn"
+                    onClick={() => navigate(`/users/${userId}`)}
+                  >
+                    View Profile
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+            </SpotlightCard>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

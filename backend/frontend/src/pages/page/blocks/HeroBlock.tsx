@@ -12,6 +12,7 @@ import {
   setSectionLayout,
 } from "../EditControls";
 import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import BlurText from "../../../components/ui/BlurText/BlurText";
 
 const HERO_VARIANTS = 2;
 
@@ -243,7 +244,9 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
             </>
           ) : (
             <>
-              <h1>{section.heading}</h1>
+              <h1>
+                <BlurText text={section.heading} delay={150} animateBy="words" direction="top" />
+              </h1>
               <p>{section.subheading}</p>
             </>
           )}

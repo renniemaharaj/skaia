@@ -33,6 +33,7 @@ import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
+import SpotlightCard from "../../components/ui/SpotlightCard";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import SearchField from "../../components/ui/SearchField";
@@ -398,11 +399,12 @@ export default function CustomPages() {
       {!loading && filtered.length > 0 && viewMode === "grid" && (
         <div className="custom-pages__grid">
           {filtered.map((page) => (
-            <Link
-              key={page.id}
-              to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
-              className="cp-card card card--interactive"
-            >
+            <SpotlightCard key={page.id} className="card card--interactive" style={{ display: 'flex', padding: 0, margin: 0 }} spotlightColor="rgba(var(--primary-color-rgb), 0.15)">
+              <Link
+                to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
+                className="cp-card"
+                style={{ flex: 1, margin: 0, border: 'none', background: 'transparent', boxShadow: 'none' }}
+              >
               <div className="cp-card__top">
                 <div className="cp-card__top-left">
                   <h3 className="cp-card__title">{page.title || page.slug}</h3>
@@ -525,6 +527,7 @@ export default function CustomPages() {
                 </span>
               )}
             </Link>
+          </SpotlightCard>
           ))}
         </div>
       )}
@@ -539,113 +542,115 @@ export default function CustomPages() {
             <span className="cp-list__col cp-list__col--action">Action</span>
           </div>
           {filtered.map((page) => (
-            <Link
-              key={page.id}
-              to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
-              className="cp-list__row"
-            >
-              <span className="cp-list__col cp-list__col--name">
-                <span className="cp-list__name">{page.title || page.slug}</span>
-                {page.slug === landingPageSlug && (
-                  <span className="cp-card__badge cp-card__badge--inline">
-                    Landing Page
-                  </span>
-                )}
-                {page.can_delete && hasPermission && (
-                  <button
-                    type="button"
-                    className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
-                    title={
-                      page.slug === landingPageSlug
-                        ? "Current homepage"
-                        : "Set as homepage"
-                    }
-                    disabled={
-                      page.slug === landingPageSlug ||
-                      settingHomepageId === page.id
-                    }
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSetHomepage(page);
-                    }}
-                    style={{ marginLeft: 8 }}
-                  >
-                    <Home size={14} />
-                  </button>
-                )}
-                {page.visibility === "private" && (
-                  <span className="cp-card__badge cp-card__badge--inline cp-card__badge--private">
-                    <EyeOff size={10} /> Private
-                  </span>
-                )}
-                {page.visibility === "unlisted" && (
-                  <span className="cp-card__badge cp-card__badge--inline cp-card__badge--unlisted">
-                    <EyeOff size={10} /> Unlisted
-                  </span>
-                )}
-              </span>
-              <span className="cp-list__col cp-list__col--desc">
-                {page.description || "—"}
-              </span>
-              <span className="cp-list__col cp-list__col--owner">
-                {page.owner ? (
-                  <UserChip user={page.owner} />
-                ) : (
-                  <span className="cp-list__none">—</span>
-                )}
-              </span>
-              <span className="cp-list__col cp-list__col--updated">
-                {relativeTimeAgo(page.updated_at)}
-              </span>
-              <span className="cp-list__col cp-list__col--action">
-                {page.can_delete && (
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
-                    onClick={(e) => openRename(e, page)}
-                    title="Rename page"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
-                  onClick={(e) => openDuplicate(e, page)}
-                  title="Duplicate page"
-                >
-                  <Copy size={14} />
-                </button>
-                {(page.can_delete || page.can_edit) && (
+            <SpotlightCard key={page.id} className="card card--interactive" style={{ marginBottom: 8, padding: 0 }} spotlightColor="rgba(var(--primary-color-rgb), 0.1)">
+              <Link
+                to={page.slug === landingPageSlug ? "/" : `/page/${page.slug}`}
+                className="cp-list__row"
+                style={{ margin: 0, border: 'none', background: 'transparent' }}
+              >
+                <span className="cp-list__col cp-list__col--name">
+                  <span className="cp-list__name">{page.title || page.slug}</span>
+                  {page.slug === landingPageSlug && (
+                    <span className="cp-card__badge cp-card__badge--inline">
+                      Landing Page
+                    </span>
+                  )}
+                  {page.can_delete && hasPermission && (
+                    <button
+                      type="button"
+                      className={`icon-btn icon-btn--sm cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+                      title={
+                        page.slug === landingPageSlug
+                          ? "Current homepage"
+                          : "Set as homepage"
+                      }
+                      disabled={
+                        page.slug === landingPageSlug ||
+                        settingHomepageId === page.id
+                      }
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSetHomepage(page);
+                      }}
+                      style={{ marginLeft: 8 }}
+                    >
+                      <Home size={14} />
+                    </button>
+                  )}
+                  {page.visibility === "private" && (
+                    <span className="cp-card__badge cp-card__badge--inline cp-card__badge--private">
+                      <EyeOff size={10} /> Private
+                    </span>
+                  )}
+                  {page.visibility === "unlisted" && (
+                    <span className="cp-card__badge cp-card__badge--inline cp-card__badge--unlisted">
+                      <EyeOff size={10} /> Unlisted
+                    </span>
+                  )}
+                </span>
+                <span className="cp-list__col cp-list__col--desc">
+                  {page.description || "—"}
+                </span>
+                <span className="cp-list__col cp-list__col--owner">
+                  {page.owner ? (
+                    <UserChip user={page.owner} />
+                  ) : (
+                    <span className="cp-list__none">—</span>
+                  )}
+                </span>
+                <span className="cp-list__col cp-list__col--updated">
+                  {relativeTimeAgo(page.updated_at)}
+                </span>
+                <span className="cp-list__col cp-list__col--action">
+                  {page.can_delete && (
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                      onClick={(e) => openRename(e, page)}
+                      title="Rename page"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
-                    onClick={(e: MouseEvent) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setAnalyticsPage(page);
-                    }}
-                    title="Analytics"
+                    onClick={(e) => openDuplicate(e, page)}
+                    title="Duplicate page"
                   >
-                    <BarChart3 size={14} />
+                    <Copy size={14} />
                   </button>
-                )}
-                {page.can_delete ? (
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn--sm icon-btn--danger cp-delete-btn"
-                    onClick={(event) => handleDeletePage(event, page)}
-                    disabled={deletingPageId === page.id}
-                    title="Delete page"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                ) : (
-                  <span className="cp-list__none">—</span>
-                )}
-              </span>
-            </Link>
+                  {(page.can_delete || page.can_edit) && (
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--sm icon-btn--subtle cp-action-btn"
+                      onClick={(e: MouseEvent) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setAnalyticsPage(page);
+                      }}
+                      title="Analytics"
+                    >
+                      <BarChart3 size={14} />
+                    </button>
+                  )}
+                  {page.can_delete ? (
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--sm icon-btn--danger cp-delete-btn"
+                      onClick={(event) => handleDeletePage(event, page)}
+                      disabled={deletingPageId === page.id}
+                      title="Delete page"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : (
+                    <span className="cp-list__none">—</span>
+                  )}
+                </span>
+              </Link>
+            </SpotlightCard>
           ))}
         </div>
       )}

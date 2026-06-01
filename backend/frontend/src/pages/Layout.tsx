@@ -28,6 +28,7 @@ import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
 import { PromptContainer } from "../components/ui/Prompt";
 import { syncServerTime } from "../utils/serverTime";
+import Particles from "../components/ui/Particles/Particles";
 import RateLimitedPage from "./RateLimitedPage";
 import MFAChallenge from "./MFAChallenge";
 import type { Role } from "./users/types";
@@ -378,6 +379,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -2, pointerEvents: 'none' }}>
+        <Particles
+          particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
+          particleCount={200}
+          particleSpread={10}
+          speed={0.1}
+          moveParticlesOnHover={true}
+          particleHoverFactor={1}
+          alphaParticles={true}
+          particleBaseSize={100}
+          sizeRandomness={1}
+          cameraDistance={20}
+          disableRotation={false}
+        />
+      </div>
       <Header
         cartCount={cartCount}
         isDarkMode={isDarkMode}
