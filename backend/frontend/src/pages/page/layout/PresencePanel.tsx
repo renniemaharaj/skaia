@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
+import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
 import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
 import {
   currentUserAtom,
@@ -336,12 +337,16 @@ const PresencePanel = () => {
           {isGuest ? (
             <GhostIcon size={14} />
           ) : (
-            <UserAvatar
-              src={u.avatar || undefined}
-              alt={u.user_name}
-              size={16}
-              initials={u.user_name?.[0]?.toUpperCase()}
-            />
+            <UserProfileOverlay userId={u.user_id} fallbackName={u.user_name} fallbackAvatar={u.avatar || undefined} disableClick={true}>
+              <div>
+                <UserAvatar
+                  src={u.avatar || undefined}
+                  alt={u.user_name}
+                  size={16}
+                  initials={u.user_name?.[0]?.toUpperCase()}
+                />
+              </div>
+            </UserProfileOverlay>
           )}
         </span>
         <span className="pp-name pp-guest">

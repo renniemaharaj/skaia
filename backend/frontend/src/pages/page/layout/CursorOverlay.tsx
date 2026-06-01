@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { cursorPositionsAtom } from "../../../atoms/presence";
 import { currentUserAtom } from "../../../atoms/auth";
 import UserAvatar from "../../../components/user/UserAvatar";
+import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
 import "./CursorOverlay.css";
 
 const CURSOR_EXPIRY_MS = 4000;
@@ -226,13 +227,17 @@ const CursorOverlay = () => {
               />
             ))}
           <div className="cursor-avatar-img-container">
-            <UserAvatar
-              src={cursor.avatar || undefined}
-              alt={cursor.user_name}
-              size={24}
-              initials={cursor.user_name?.[0]?.toUpperCase()}
-              className="cursor-avatar-img"
-            />
+            <UserProfileOverlay userId={cursor.user_id} fallbackName={cursor.user_name} fallbackAvatar={cursor.avatar || undefined} disableClick={true}>
+              <div>
+                <UserAvatar
+                  src={cursor.avatar || undefined}
+                  alt={cursor.user_name}
+                  size={24}
+                  initials={cursor.user_name?.[0]?.toUpperCase()}
+                  className="cursor-avatar-img"
+                />
+              </div>
+            </UserProfileOverlay>
           </div>
         </div>
       ))}

@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import "./ResourceAnalytics.css";
 
 /* ── types ─────────────────────────────────────────────── */
@@ -223,17 +224,19 @@ export default function ResourceAnalytics({
     }
 
     return (
-      <>
-        <UserAvatar
-          src={effective.avatar_url}
-          alt={effective.display_name || effective.username || "User"}
-          size={18}
-          initials={(effective.display_name || effective.username || "?")
-            .charAt(0)
-            .toUpperCase()}
-        />
-        <span>{effective.display_name || effective.username || "User"}</span>
-      </>
+      <UserProfileOverlay userId={effective.user_id} fallbackName={effective.display_name || effective.username || "User"} fallbackAvatar={effective.avatar_url || undefined}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <UserAvatar
+            src={effective.avatar_url || undefined}
+            alt={effective.display_name || effective.username || "User"}
+            size={18}
+            initials={(effective.display_name || effective.username || "?")
+              .charAt(0)
+              .toUpperCase()}
+          />
+          <span>{effective.display_name || effective.username || "User"}</span>
+        </div>
+      </UserProfileOverlay>
     );
   };
 

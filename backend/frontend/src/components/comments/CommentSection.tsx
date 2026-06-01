@@ -3,6 +3,7 @@ import { useMemo, type RefObject, useState } from "react";
 import ComposerInput from "../input/Input";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
@@ -132,12 +133,25 @@ const CommentSection = ({
                 }`}
               >
                 <div className="comment-avatar">
-                  <UserAvatar
-                    src={comment.author_avatar || undefined}
-                    alt={authorDisplay}
-                    size={32}
-                    initials={authorDisplay?.[0]?.toUpperCase()}
-                  />
+                  {comment.author_id ? (
+                    <UserProfileOverlay userId={comment.author_id} fallbackName={authorDisplay} fallbackAvatar={comment.author_avatar || undefined}>
+                      <div>
+                        <UserAvatar
+                          src={comment.author_avatar || undefined}
+                          alt={authorDisplay}
+                          size={32}
+                          initials={authorDisplay?.[0]?.toUpperCase()}
+                        />
+                      </div>
+                    </UserProfileOverlay>
+                  ) : (
+                    <UserAvatar
+                      src={comment.author_avatar || undefined}
+                      alt={authorDisplay}
+                      size={32}
+                      initials={authorDisplay?.[0]?.toUpperCase()}
+                    />
+                  )}
                 </div>
 
                 <div className="comment-body">

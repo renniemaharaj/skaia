@@ -21,6 +21,7 @@ import {
 import type { SectionEditor } from "./types";
 import { Link } from "react-router-dom";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { debounce } from "lodash";
 import { usePageBuilderContext } from "./PageBuilderContext";
@@ -708,28 +709,30 @@ function formatRelativeTime(iso: string): string {
 
 /** Small avatar + name chip showing who last edited this section. */
 const LastEditedByBadge = ({ editor }: { editor: SectionEditor }) => (
-  <Link
-    to={`/u/${editor.username}`}
-    className="pb-last-edited-badge"
-    title={`Last edited by ${editor.display_name || editor.username}${editor.edited_at ? ` · ${new Date(editor.edited_at).toLocaleString()}` : ""}`}
-    onClick={(e) => e.stopPropagation()}
-  >
-    <UserAvatar
-      src={editor.avatar_url || undefined}
-      alt={editor.display_name || editor.username}
-      size={18}
-      initials={(editor.display_name || editor.username)?.[0]?.toUpperCase()}
-      className="pb-last-edited-avatar"
-    />
-    <span className="pb-last-edited-name">
-      {editor.display_name || editor.username}
-    </span>
-    {editor.edited_at && (
-      <span className="pb-last-edited-time">
-        {formatRelativeTime(editor.edited_at)}
+  <UserProfileOverlay userId={editor.user_id} fallbackName={editor.display_name || editor.username} fallbackAvatar={editor.avatar_url || undefined} disableClick={true}>
+    <Link
+      to={`/users/${editor.user_id}`}
+      className="pb-last-edited-badge"
+      title={`Last edited by ${editor.display_name || editor.username}${editor.edited_at ? ` · ${new Date(editor.edited_at).toLocaleString()}` : ""}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <UserAvatar
+        src={editor.avatar_url || undefined}
+        alt={editor.display_name || editor.username}
+        size={18}
+        initials={(editor.display_name || editor.username)?.[0]?.toUpperCase()}
+        className="pb-last-edited-avatar"
+      />
+      <span className="pb-last-edited-name">
+        {editor.display_name || editor.username}
       </span>
-    )}
-  </Link>
+      {editor.edited_at && (
+        <span className="pb-last-edited-time">
+          {formatRelativeTime(editor.edited_at)}
+        </span>
+      )}
+    </Link>
+  </UserProfileOverlay>
 );
 
 /** Toolbar for a section: delete, collapsed info, optional extra actions. */

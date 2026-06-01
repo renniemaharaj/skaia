@@ -6,6 +6,7 @@ import { apiRequest } from "../../utils/api";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import "./Activity.css";
 
 interface EventsResponse {
@@ -90,12 +91,25 @@ export default function Activity() {
               }`}
             >
               <div className="activity-event-avatar">
-                <UserAvatar
-                  src={evt.avatar_url || undefined}
-                  alt={evt.username || "System"}
-                  size={28}
-                  initials={(evt.username || "S")[0].toUpperCase()}
-                />
+                {evt.user_id ? (
+                  <UserProfileOverlay userId={evt.user_id} fallbackName={evt.username || "System"} fallbackAvatar={evt.avatar_url || undefined}>
+                    <div>
+                      <UserAvatar
+                        src={evt.avatar_url || undefined}
+                        alt={evt.username || "System"}
+                        size={28}
+                        initials={(evt.username || "S")[0].toUpperCase()}
+                      />
+                    </div>
+                  </UserProfileOverlay>
+                ) : (
+                  <UserAvatar
+                    src={evt.avatar_url || undefined}
+                    alt={evt.username || "System"}
+                    size={28}
+                    initials={(evt.username || "S")[0].toUpperCase()}
+                  />
+                )}
               </div>
               <div className="activity-event-body">
                 <div className="activity-event-meta">

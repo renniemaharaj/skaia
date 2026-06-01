@@ -11,6 +11,7 @@ interface UserProfileOverlayProps {
   fallbackName?: string;
   fallbackAvatar?: string;
   fallbackRoles?: string[];
+  disableClick?: boolean;
   children: React.ReactNode;
 }
 
@@ -19,6 +20,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   fallbackName,
   fallbackAvatar,
   fallbackRoles,
+  disableClick,
   children,
 }) => {
   const navigate = useNavigate();
@@ -129,6 +131,13 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
       ref={wrapperRef}
       onMouseEnter={handleMouseEnter} 
       onMouseLeave={handleMouseLeave}
+      onClick={(e) => {
+        if (disableClick) return;
+        e.stopPropagation();
+        e.preventDefault();
+        navigate(`/users/${userId}`);
+      }}
+      style={!disableClick ? { cursor: 'pointer' } : undefined}
     >
       {children}
 

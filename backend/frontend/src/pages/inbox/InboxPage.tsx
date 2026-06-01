@@ -16,9 +16,10 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import Picker from "@emoji-mart/react";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import SearchField from "../../components/ui/SearchField";
+import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
   inboxConversationsAtom,
@@ -799,12 +800,16 @@ function UserSearchResult({
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
-        <UserAvatar
-          src={user.avatar_url || undefined}
-          alt={user.display_name || user.username}
-          size={18}
-          initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
-        />
+        <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url || undefined} disableClick={true}>
+          <div>
+            <UserAvatar
+              src={user.avatar_url || undefined}
+              alt={user.display_name || user.username}
+              size={18}
+              initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
+            />
+          </div>
+        </UserProfileOverlay>
       </span>
       <span className="inbox-conv-info">
         <span className="inbox-conv-name">
@@ -837,13 +842,26 @@ function ConversationRow({
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
-        <UserAvatar
-          src={other?.avatar_url || undefined}
-          alt={other?.display_name || other?.username}
-          size={18}
-          initials={(other?.display_name ||
-            other?.username)?.[0]?.toUpperCase()}
-        />
+        {other ? (
+          <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
+            <div>
+              <UserAvatar
+                src={other.avatar_url || undefined}
+                alt={other.display_name || other.username}
+                size={18}
+                initials={(other.display_name ||
+                  other.username)?.[0]?.toUpperCase()}
+              />
+            </div>
+          </UserProfileOverlay>
+        ) : (
+          <UserAvatar
+            src={undefined}
+            alt="Unknown"
+            size={18}
+            initials="?"
+          />
+        )}
       </span>
       <span className="inbox-conv-info">
         <span className="inbox-conv-name">
@@ -912,14 +930,18 @@ function InboxChatHeader({
             className="inbox-chat-user-link"
           >
             <span className="inbox-chat-avatar">
-              <UserAvatar
-                src={activeConv.other_user.avatar_url || undefined}
-                alt={
-                  activeConv.other_user.display_name ||
-                  activeConv.other_user.username
-                }
-                size={18}
-              />
+              <UserProfileOverlay userId={activeConv.other_user.id} fallbackName={activeConv.other_user.display_name || activeConv.other_user.username} fallbackAvatar={activeConv.other_user.avatar_url || undefined} disableClick={true}>
+                <div>
+                  <UserAvatar
+                    src={activeConv.other_user.avatar_url || undefined}
+                    alt={
+                      activeConv.other_user.display_name ||
+                      activeConv.other_user.username
+                    }
+                    size={18}
+                  />
+                </div>
+              </UserProfileOverlay>
             </span>
             <span className="inbox-chat-username">
               {activeConv.other_user.display_name ||
@@ -983,12 +1005,16 @@ function MessageBubble({
     <div className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}>
       {!isMe && (
         <span className="inbox-msg-avatar">
-          <UserAvatar
-            src={m.sender_avatar || undefined}
-            alt={m.sender_name}
-            size={16}
-            initials={m.sender_name?.[0]?.toUpperCase()}
-          />
+          <UserProfileOverlay userId={m.sender_id} fallbackName={m.sender_name} fallbackAvatar={m.sender_avatar || undefined}>
+            <div>
+              <UserAvatar
+                src={m.sender_avatar || undefined}
+                alt={m.sender_name}
+                size={16}
+                initials={m.sender_name?.[0]?.toUpperCase()}
+              />
+            </div>
+          </UserProfileOverlay>
         </span>
       )}
       <div className="inbox-msg-body">

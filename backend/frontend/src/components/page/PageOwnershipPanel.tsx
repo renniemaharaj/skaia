@@ -6,6 +6,7 @@ import { hasPermissionAtom, currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
 import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import type { User } from "../../atoms/auth";
 import type { PageUser } from "../../hooks/usePageData";
 import "./PageOwnershipPanel.css";
@@ -104,13 +105,17 @@ export default function PageOwnershipPanel({
         {owner ? (
           <div className="page-ownership__user">
             <span className="page-ownership__avatar">
-              <UserAvatar
-                src={owner.avatar_url || undefined}
-                alt={owner.display_name || owner.username}
-                size={16}
-                initials={(owner.display_name ||
-                  owner.username)?.[0]?.toUpperCase()}
-              />
+              <UserProfileOverlay userId={owner.id} fallbackName={owner.display_name || owner.username} fallbackAvatar={owner.avatar_url || undefined}>
+                <div>
+                  <UserAvatar
+                    src={owner.avatar_url || undefined}
+                    alt={owner.display_name || owner.username}
+                    size={16}
+                    initials={(owner.display_name ||
+                      owner.username)?.[0]?.toUpperCase()}
+                  />
+                </div>
+              </UserProfileOverlay>
             </span>
             <span className="page-ownership__name">
               {owner.display_name || owner.username}
@@ -179,13 +184,17 @@ export default function PageOwnershipPanel({
             {editors.map((editor) => (
               <div key={editor.id} className="page-ownership__user">
                 <span className="page-ownership__avatar">
-                  <UserAvatar
-                    src={editor.avatar_url || undefined}
-                    alt={editor.display_name || editor.username}
-                    size={16}
-                    initials={(editor.display_name ||
-                      editor.username)?.[0]?.toUpperCase()}
-                  />
+                  <UserProfileOverlay userId={editor.id} fallbackName={editor.display_name || editor.username} fallbackAvatar={editor.avatar_url || undefined}>
+                    <div>
+                      <UserAvatar
+                        src={editor.avatar_url || undefined}
+                        alt={editor.display_name || editor.username}
+                        size={16}
+                        initials={(editor.display_name ||
+                          editor.username)?.[0]?.toUpperCase()}
+                      />
+                    </div>
+                  </UserProfileOverlay>
                 </span>
                 <span className="page-ownership__name">
                   {editor.display_name || editor.username}

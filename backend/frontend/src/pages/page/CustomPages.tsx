@@ -33,6 +33,7 @@ import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import SearchField from "../../components/ui/SearchField";
 import "./CustomPages.css";
@@ -243,19 +244,21 @@ export default function CustomPages() {
   }, []);
 
   const UserChip = ({ user }: { user: PageUser }) => (
-    <span className="cp-user-chip">
-      <span className="cp-user-chip__avatar">
-        <UserAvatar
-          src={user.avatar_url || undefined}
-          alt={user.display_name || user.username}
-          size={12}
-          initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
-        />
+    <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url || undefined}>
+      <span className="cp-user-chip">
+        <span className="cp-user-chip__avatar">
+          <UserAvatar
+            src={user.avatar_url || undefined}
+            alt={user.display_name || user.username}
+            size={12}
+            initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
+          />
+        </span>
+        <span className="cp-user-chip__name">
+          {user.display_name || user.username}
+        </span>
       </span>
-      <span className="cp-user-chip__name">
-        {user.display_name || user.username}
-      </span>
-    </span>
+    </UserProfileOverlay>
   );
 
   const PageThumb = ({ page }: { page: PageBuilderDoc }) => {

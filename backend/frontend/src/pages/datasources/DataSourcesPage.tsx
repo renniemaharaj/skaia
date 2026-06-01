@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import SearchField from "../../components/ui/SearchField";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import type { DataSource, DataSourceCreator } from "../page/types";
@@ -79,20 +80,22 @@ export default function DataSourcesPage() {
   const CreatorChip = ({ creator }: { creator?: DataSourceCreator }) => {
     if (!creator) return <span className="ds-meta-value">System</span>;
     return (
-      <span className="ds-creator-chip">
-        <span className="ds-creator-chip__avatar">
-          <UserAvatar
-            src={creator.avatar_url || undefined}
-            alt={creator.display_name || creator.username}
-            size={14}
-            initials={(creator.display_name ||
-              creator.username)?.[0]?.toUpperCase()}
-          />
+      <UserProfileOverlay userId={creator.id} fallbackName={creator.display_name || creator.username} fallbackAvatar={creator.avatar_url || undefined}>
+        <span className="ds-creator-chip">
+          <span className="ds-creator-chip__avatar">
+            <UserAvatar
+              src={creator.avatar_url || undefined}
+              alt={creator.display_name || creator.username}
+              size={14}
+              initials={(creator.display_name ||
+                creator.username)?.[0]?.toUpperCase()}
+            />
+          </span>
+          <span className="ds-creator-chip__name">
+            {creator.display_name || creator.username}
+          </span>
         </span>
-        <span className="ds-creator-chip__name">
-          {creator.display_name || creator.username}
-        </span>
-      </span>
+      </UserProfileOverlay>
     );
   };
 
