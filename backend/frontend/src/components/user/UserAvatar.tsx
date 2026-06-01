@@ -24,6 +24,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     width: `${size}px`,
     height: `${size}px`,
     fontSize: `${Math.max(12, Math.floor(size / 2.3))}px`,
+    flexShrink: 0,
     ...style,
   };
 

@@ -38,6 +38,7 @@ func (h *Hub) doPresenceBroadcast() {
 			UserName: client.UserName,
 			Avatar:   client.Avatar,
 			Route:    client.Route,
+			IsMuted:  client.IsMuted,
 		}
 		existing, exists := sd.seen[presenceID]
 		if !exists || (pu.UserName != "" && existing.UserName == "") {

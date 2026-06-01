@@ -56,6 +56,7 @@ type ClientPresence struct {
 	Route    string
 	UserName string
 	Avatar   string
+	IsMuted  bool
 }
 
 // CursorBroadcast carries a cursor position from a client to be relayed to others on the same route.
@@ -301,13 +302,11 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleBroadcast(msg) })
 		case cp := <-h.presenceUpdates:
 			h.dispatch(func() {
-				// Write client presence fields under mu so concurrent
-				// readers in doPresenceBroadcast / handleCursorBroadcast
-				// always see a consistent snapshot.
 				h.mu.Lock()
 				cp.Client.Route = cp.Route
 				cp.Client.UserName = cp.UserName
 				cp.Client.Avatar = cp.Avatar
+				cp.Client.IsMuted = cp.IsMuted
 				h.mu.Unlock()
 				h.markPresenceDirty()
 				h.sendMediaSyncToClient(cp.Client)

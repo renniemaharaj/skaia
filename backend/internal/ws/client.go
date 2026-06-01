@@ -24,6 +24,7 @@ type Client struct {
 	Route    string
 	UserName string
 	Avatar   string
+	IsMuted  bool
 	// Per-client rate limiters — used only from ReadPump (single goroutine).
 	chatLimit      rateBucket
 	cursorLimit    rateBucket
@@ -207,13 +208,15 @@ func (c *Client) handlePresence(msg Message) {
 		Route    string `json:"route"`
 		UserName string `json:"user_name"`
 		Avatar   string `json:"avatar"`
+		IsMuted  bool   `json:"is_muted"`
 	}
+
 	var p presencePayload
 	if err := json.Unmarshal(msg.Payload, &p); err != nil {
 		return
 	}
 	select {
-	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar}:
+	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar, IsMuted: p.IsMuted}:
 	default:
 	}
 }

@@ -12,6 +12,9 @@ import { useCallback, useState, useRef, useEffect } from "react";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
+import { onlineUsersAtom } from "../../../atoms/presence";
+import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
+import UserAvatar from "../../../components/user/UserAvatar";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {
@@ -191,6 +194,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const permissions = useAtomValue(voicePermissionsAtom);
   const socket = useAtomValue(socketAtom);
   const currentUser = useAtomValue(currentUserAtom);
+  const onlineUsers = useAtomValue(onlineUsersAtom);
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
   const mediaState = useAtomValue(mediaStateAtom);
   const location = useLocation();
@@ -199,6 +203,24 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const [micActive, setMicActive] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const [remoteMicUsers, setRemoteMicUsers] = useState<string[]>([]);
+  const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const handleSpeaking = (e: any) => {
+      const senderID = String(e.detail);
+      setActiveSpeakers((prev) => ({ ...prev, [senderID]: Date.now() }));
+    };
+    window.addEventListener("voice:speaking", handleSpeaking);
+    return () => window.removeEventListener("voice:speaking", handleSpeaking);
+  }, []);
+
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 150);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (socket?.readyState === WebSocket.OPEN && permissions.voiceEnabled) {
@@ -694,12 +716,14 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             socket.send(new Uint8Array([0x03]).buffer);
           }
           voicePlayersRef.current.delete(senderID);
+          setRemoteMicUsers(Array.from(voicePlayersRef.current.keys()));
         }) || undefined;
         if (!player) {
           toast.error("This browser cannot play the incoming voice stream.");
           return;
         }
         voicePlayersRef.current.set(senderID, player);
+        setRemoteMicUsers(Array.from(voicePlayersRef.current.keys()));
       }
 
       player.queue.push(payload);
@@ -718,8 +742,14 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         URL.revokeObjectURL(player.objectUrl);
       }
       voicePlayersRef.current.clear();
+      setRemoteMicUsers([]);
     };
   }, [ensureAudioGraph]);
+
+  const activeMicUserIds = new Set<string>(remoteMicUsers);
+  if (micActive && currentUser?.id) {
+    activeMicUserIds.add(String(currentUser.id));
+  }
 
   return (
     <div className={`vp-container ${mediaOnly ? 'vp-container-media-only' : ''}`}>
@@ -730,8 +760,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       )}
 
       {!mediaOnly && (
-        <div className="ui-panel vp-settings-panel">
-          <div className="vp-setting-row">
+        <div className="ui-panel vp-settings-panel" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
             <span className="vp-setting-label">
               {micActive ? (
                 <Mic size={14} className="vp-text-primary" />
@@ -752,6 +782,35 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               </div>
             </label>
           </div>
+          {activeMicUserIds.size > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', paddingTop: '0.25rem', borderTop: '1px solid var(--border-color)' }}>
+              {Array.from(activeMicUserIds).map(uid => {
+                const isCurrentUser = uid === String(currentUser?.id);
+                // The current user speaks if their local activeSpeakers was updated recently
+                const isSpeaking = now - (activeSpeakers[uid] || 0) < 300;
+                let user;
+                if (isCurrentUser && currentUser) {
+                  user = { user_name: currentUser.display_name || currentUser.username, avatar: currentUser.avatar_url };
+                } else {
+                  user = onlineUsers.find(u => String(u.user_id) === uid);
+                }
+                
+                if (!user) return null;
+
+                return (
+                  <UserProfileOverlay key={uid} userId={uid} fallbackName={user.user_name} fallbackAvatar={user.avatar || undefined}>
+                    <div style={{
+                      borderRadius: '50%',
+                      transition: 'box-shadow 0.15s ease',
+                      boxShadow: isSpeaking ? '0 0 0 2px var(--primary-color), 0 0 8px var(--primary-color)' : 'none'
+                    }}>
+                      <UserAvatar src={user.avatar || undefined} alt={user.user_name} size={28} />
+                    </div>
+                  </UserProfileOverlay>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -769,15 +828,45 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <h4>Media Queue</h4>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              className="icon-btn icon-btn--sm icon-btn--ghost"
-              onClick={() => setIsPlayerMuted(!isPlayerMuted)}
-              title={isPlayerMuted ? "Unmute Music" : "Mute Music"}
-            >
-              {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            </button>
-            {hasManagePermission && (
+            <div style={{ display: "flex", gap: "8px", alignItems: 'center' }}>
+              {(() => {
+                const unmutedUsers = onlineUsers.filter(u => u.route === location.pathname && u.is_muted === false);
+                const showLocal = !isPlayerMuted;
+                const totalUnmuted = new Set(unmutedUsers.map(u => String(u.user_id)));
+                if (showLocal && currentUser) totalUnmuted.add(String(currentUser.id));
+                
+                if (totalUnmuted.size > 0) {
+                  return (
+                    <div style={{ display: 'flex', gap: '4px', marginRight: '8px' }}>
+                      {Array.from(totalUnmuted).map(uid => {
+                        let user;
+                        if (uid === String(currentUser?.id) && currentUser) {
+                          user = { user_name: currentUser.display_name || currentUser.username, avatar: currentUser.avatar_url };
+                        } else {
+                          user = onlineUsers.find(u => String(u.user_id) === uid);
+                        }
+                        if (!user) return null;
+                        return (
+                          <UserProfileOverlay key={`unmute-${uid}`} userId={uid} fallbackName={user.user_name} fallbackAvatar={user.avatar || undefined}>
+                            <div>
+                              <UserAvatar src={user.avatar || undefined} alt={user.user_name} size={20} />
+                            </div>
+                          </UserProfileOverlay>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              <button
+                className="icon-btn icon-btn--sm icon-btn--ghost"
+                onClick={() => setIsPlayerMuted(!isPlayerMuted)}
+                title={isPlayerMuted ? "Unmute Music" : "Mute Music"}
+              >
+                {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              </button>
+              {hasManagePermission && (
               <button
                 className="btn btn-sm btn-ghost"
                 style={{ padding: "4px 8px", fontSize: "0.75rem" }}

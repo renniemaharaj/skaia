@@ -54,6 +54,7 @@ type PresenceUser struct {
 	UserName string `json:"user_name"`
 	Avatar   string `json:"avatar"`
 	Route    string `json:"route"`
+	IsMuted  bool   `json:"is_muted"`
 }
 
 // GlobalChatMessage is a single message in the session chat channel.

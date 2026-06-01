@@ -5,6 +5,7 @@ export interface OnlineUser {
   user_name: string;
   avatar: string;
   route: string;
+  is_muted?: boolean;
 }
 
 export interface CursorPosition {
