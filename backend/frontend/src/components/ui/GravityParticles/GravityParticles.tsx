@@ -5,9 +5,11 @@ import type { Particle, Explosion } from './engine';
 import { 
   spawnParticle, 
   stepPhysics, 
-  getRadius, 
-  hexToRgbStr 
+  getRadius 
 } from './engine';
+import { computeCourtship } from './particleSystems';
+import type { ParticleWithSystems } from './particleSystems';
+import { renderParticle, renderExplosion } from './particleRenderer';
 import './GravityParticles.css';
 
 interface GravityParticlesProps {
@@ -30,6 +32,8 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
   const settings = useAtomValue(physicsSettingsAtom);
   const settingsRef = useRef(settings);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
+  const externalCursorsRef = useRef(externalCursors);
+  useEffect(() => { externalCursorsRef.current = externalCursors; }, [externalCursors]);
   const grabbedParticleRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
   useEffect(() => {
@@ -94,8 +98,10 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
     particlesRef.current = particles;
 
     let animationFrameId: number;
+    let frameCount = 0;
 
     const loop = () => {
+      frameCount++;
       ctx.clearRect(0, 0, width, height);
 
       // Step physics via engine logic
@@ -103,7 +109,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
         particlesRef.current,
         explosionsRef.current,
         settingsRef.current,
-        externalCursors,
+        externalCursorsRef.current,
         grabbedParticleRef.current,
         mousePosRef.current,
         width,
@@ -114,40 +120,20 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       particlesRef.current = nextParts;
       explosionsRef.current = newExplosions;
 
-      // Draw particles
-      for (const p of nextParts) {
-        const r = getRadius(p.mass);
-        const rgb = hexToRgbStr(p.color);
-        
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        // Glow
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r * 3, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(p.x, p.y, r, p.x, p.y, r * 3);
-        gradient.addColorStop(0, `rgba(${rgb}, 0.5)`);
-        gradient.addColorStop(1, `rgba(${rgb}, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      }
+      computeCourtship(nextParts as ParticleWithSystems[], frameCount);
 
       // Draw explosions
       for (const exp of explosionsRef.current) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.beginPath();
-        ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, exp.radius);
-        const rgb = hexToRgbStr(exp.color);
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${exp.alpha})`);
-        gradient.addColorStop(0.2, `rgba(${rgb}, ${exp.alpha * 0.8})`);
-        gradient.addColorStop(1, `rgba(${rgb}, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-        ctx.restore();
+        renderExplosion(ctx, exp);
+      }
+
+      // Draw particles
+      for (const p of nextParts) {
+        renderParticle(ctx, p as ParticleWithSystems, {
+          glowScale: 1.2,
+          showTrails: true,
+          trailAlpha: 0.3,
+        });
       }
 
       animationFrameId = requestAnimationFrame(loop);
@@ -164,7 +150,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       window.removeEventListener('mouseout', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [particleCount, externalCursors]);
+  }, [particleCount]);
 
   return (
     <canvas 

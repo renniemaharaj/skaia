@@ -11,7 +11,7 @@ export type Particle = {
   heat: number;
   /** Ring buffer of recent positions for trail rendering, newest-first */
   trail: { x: number; y: number }[];
-};
+} & Partial<CourtshipFields>;
 
 export type Explosion = {
   x: number;
@@ -28,6 +28,9 @@ export type AttractorParticle = {
   mass: number;
   color: string;
 };
+
+import { buildClusterMap, applySystemGravity } from "./particleSystems";
+import type { CourtshipFields } from "./particleSystems";
 
 export type PhysicsSettings = {
   gravityConstant: number;
@@ -249,6 +252,8 @@ export const stepPhysics = (
   const newParts: Particle[] = [];
   const newExplosions: Explosion[] = [];
 
+  const clusterMap = buildClusterMap(parts);
+
   // ── Helper: explode a single particle into fragments ──────────────────────
   const explodeParticle = (
     p: Particle,
@@ -422,19 +427,20 @@ export const stepPhysics = (
           p2.x += nx * correction;
           p2.y += ny * correction;
         } else {
-          // ─ Gravitational attraction (softened) ────────────────────────────
-          const eps2 = softeningEpsilonSq(r1, getRadius(p2.mass));
-          const force = (G * p1.mass * p2.mass) / (distSq + eps2);
-          const fx_contrib = (dx / dist) * force;
-          const fy_contrib = (dy / dist) * force;
-          // Newton's 3rd law: apply to both here while we have both in scope
-          fx += fx_contrib;
-          fy += fy_contrib;
-          parts[j].vx -= (fx_contrib / p2.mass) * dt;
-          parts[j].vy -= (fy_contrib / p2.mass) * dt;
+          // Gravitational attraction is handled by system gravity below
         }
       }
 
+      // ── System gravity ──────────────────────────────────────────────
+      const { fx: sfx, fy: sfy } = applySystemGravity(
+        p1,
+        clusterMap,
+        parts,
+        G,
+        toRemove
+      );
+      fx += sfx;
+      fy += sfy;
       // ── Cursor interactions ──────────────────────────────────────────────
       for (const cursor of combinedCursors) {
         const dx = cursor.x - p1.x;
