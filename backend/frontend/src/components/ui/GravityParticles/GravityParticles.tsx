@@ -107,8 +107,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
     let animationFrameId: number;
 
     const loop = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // trailing effect
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
 
       const parts = particlesRef.current;
       const newParts: Particle[] = [];
