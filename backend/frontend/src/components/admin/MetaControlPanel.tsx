@@ -8,6 +8,7 @@ interface MetaConfigForm {
   og_image: string;
   dom_skin: string;
   dom_video: string;
+  particle_style: string;
 }
 
 export default function MetaControlPanel({
@@ -25,7 +26,7 @@ export default function MetaControlPanel({
   const [error, setError] = useState<string | null>(null);
 
   const handleInput = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -77,9 +78,10 @@ export default function MetaControlPanel({
           og_image,
           dom_skin,
           dom_video,
+          particle_style: form.particle_style,
         }),
       });
-      onUpdate?.({ ...form, og_image, dom_skin, dom_video });
+      onUpdate?.({ ...form, og_image, dom_skin, dom_video, particle_style: form.particle_style });
     } catch (err: any) {
       setError(err.message || "Failed to save");
     } finally {
@@ -99,6 +101,16 @@ export default function MetaControlPanel({
           required
         />
       </label>
+      <div className="meta-field-group">
+        <label>
+          Particle Style
+          <select name="particle_style" value={form.particle_style || "none"} onChange={handleInput}>
+            <option value="none">None</option>
+            <option value="default">Default Particles</option>
+            <option value="gravity">Gravity Particles</option>
+          </select>
+        </label>
+      </div>
       <div className="meta-field-group">
         <label>
           OG Image

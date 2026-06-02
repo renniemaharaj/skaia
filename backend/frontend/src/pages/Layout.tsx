@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { Header } from "./page/layout/Header";
 import { Footer } from "./page/layout/Footer";
 import { Info } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
 import { layoutModeAtom } from "../atoms/layoutMode";
 import { useAtom } from "jotai";
@@ -14,7 +14,7 @@ import {
   type User,
 } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
-import { pendingTpRouteAtom } from "../atoms/presence";
+import { pendingTpRouteAtom, cursorPositionsAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { contextUserAtom } from "../atoms/contextUser";
 import { apiRequest } from "../utils/api";
@@ -29,6 +29,7 @@ import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
 import { PromptContainer } from "../components/ui/Prompt";
 import { syncServerTime } from "../utils/serverTime";
+import GravityParticles from "../components/ui/GravityParticles";
 import Particles from "../components/ui/Particles/Particles";
 import RateLimitedPage from "./RateLimitedPage";
 import MFAChallenge from "./MFAChallenge";
@@ -141,6 +142,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const pendingTpRoute = useAtomValue(pendingTpRouteAtom);
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
+  const cursorPositions = useAtomValue(cursorPositionsAtom);
+  const externalCursors = useMemo(() => {
+    return Array.from(cursorPositions.values()).map(c => ({
+      x: c.x * (typeof window !== 'undefined' ? window.innerWidth : 1920),
+      y: c.y * (typeof window !== 'undefined' ? window.innerHeight : 1080)
+    }));
+  }, [cursorPositions]);
   const seo = useAtomValue(seoAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
@@ -407,21 +415,28 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
-        <Particles
-          particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
-          particleCount={200}
-          particleSpread={10}
-          speed={0.1}
-          moveParticlesOnHover={true}
-          particleHoverFactor={1}
-          alphaParticles={true}
-          particleBaseSize={100}
-          sizeRandomness={1}
-          cameraDistance={20}
-          disableRotation={false}
-        />
-      </div>
+      {(seo?.particle_style === "gravity") && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
+          <GravityParticles particleCount={150} externalCursors={externalCursors} />
+        </div>
+      )}
+      {(seo?.particle_style === "default" || !seo?.particle_style) && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
+          <Particles
+            particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
+            particleCount={200}
+            particleSpread={10}
+            speed={0.1}
+            moveParticlesOnHover={true}
+            particleHoverFactor={1}
+            alphaParticles={true}
+            particleBaseSize={100}
+            sizeRandomness={1}
+            cameraDistance={20}
+            disableRotation={false}
+          />
+        </div>
+      )}
       <Header
         cartCount={cartCount}
         isDarkMode={isDarkMode}
