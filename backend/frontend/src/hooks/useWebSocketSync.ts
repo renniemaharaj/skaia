@@ -29,6 +29,7 @@ import {
 import {
   onlineUsersAtom,
   pendingTpRouteAtom,
+  pendingTpUserAtom,
   cursorPositionsAtom,
   type CursorPosition,
 } from "../atoms/presence";
@@ -93,6 +94,7 @@ export const useWebSocketSync = () => {
   const setSocket = useSetAtom(socketAtom);
   const setOnlineUsers = useSetAtom(onlineUsersAtom);
   const setPendingTpRoute = useSetAtom(pendingTpRouteAtom);
+  const setPendingTpUser = useSetAtom(pendingTpUserAtom);
   const setCursorPositions = useSetAtom(cursorPositionsAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
@@ -322,6 +324,7 @@ export const useWebSocketSync = () => {
             const route = payload?.route;
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
+              if ((message as any).user_id) setPendingTpUser((message as any).user_id as number);
             }
           }
 

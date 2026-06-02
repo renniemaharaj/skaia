@@ -28,3 +28,6 @@ export const cursorPositionsAtom = atom<Map<number, CursorPosition>>(new Map());
  * Consumed by Layout, which calls navigate() and resets this to null.
  */
 export const pendingTpRouteAtom = atom<string | null>(null);
+
+/** Tracks the user ID we are teleporting to or who summoned us, for scroll syncing. */
+export const pendingTpUserAtom = atom<number | null>(null);

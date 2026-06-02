@@ -92,28 +92,8 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
     },
   ];
 
-  const cardStyle: React.CSSProperties = {
-    ...(authorProfile?.profile_card_art_url
-      ? {
-          backgroundImage: `linear-gradient(rgba(var(--bg-color-rgb), 0.85), rgba(var(--bg-color-rgb), 0.95)), url("${authorProfile.profile_card_art_url}")`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }
-      : {}),
-  };
-
-  return (
+  const cardStyle: React.CSSProperties = {};  return (
     <div className="card vtm-panel" style={cardStyle}>
-      {currentThread?.user_background_video_url && (
-        <video
-          className="vtm-video-bg"
-          src={currentThread.user_background_video_url}
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-      )}
       <div className="vtm-header">
         <UserProfileOverlay 
           userId={currentThread?.user_id || ""}

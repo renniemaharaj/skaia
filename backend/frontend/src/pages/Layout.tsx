@@ -14,7 +14,7 @@ import {
   type User,
 } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
-import { pendingTpRouteAtom, cursorPositionsAtom } from "../atoms/presence";
+import { pendingTpRouteAtom, cursorPositionsAtom, pendingTpUserAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { contextUserAtom } from "../atoms/contextUser";
 import { apiRequest } from "../utils/api";
@@ -142,6 +142,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const pendingTpRoute = useAtomValue(pendingTpRouteAtom);
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
+  const pendingTpUser = useAtomValue(pendingTpUserAtom);
+  const clearTpUser = useSetAtom(pendingTpUserAtom);
   const cursorPositions = useAtomValue(cursorPositionsAtom);
   const externalCursors = useMemo(() => {
     return Array.from(cursorPositions.values()).map(c => ({
@@ -264,14 +266,32 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
           } else {
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
           }
         }, 100);
+      } else if (pendingTpUser) {
+        // Try to find target cursor to scroll to them
+        setTimeout(() => {
+          const targetCursor = cursorPositions.get(pendingTpUser);
+          if (targetCursor) {
+             const scrollWidth = document.documentElement.scrollWidth;
+             const scrollHeight = document.documentElement.scrollHeight;
+             window.scrollTo({
+               left: targetCursor.x * scrollWidth - window.innerWidth / 2,
+               top: targetCursor.y * scrollHeight - window.innerHeight / 2,
+               behavior: "smooth"
+             });
+          } else {
+             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+          }
+          clearTpUser(null);
+        }, 300); // give cursors time to populate on new route
       } else {
-        window.scrollTo(0, 0);
+        // Scroll to top on normal navigation
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
       }
     }
-  }, [isPending, location.pathname, location.hash]);
+  }, [isPending, location.pathname, location.hash, pendingTpUser, clearTpUser, cursorPositions]);
 
   // Consume pending teleport route set by an incoming "tp" WS message.
   useEffect(() => {

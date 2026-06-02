@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
   Users,
@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Mic,
 } from "lucide-react";
-import { onlineUsersAtom, type OnlineUser } from "../../../atoms/presence";
+import { onlineUsersAtom, type OnlineUser, pendingTpUserAtom } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
 import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
 import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
@@ -67,6 +67,7 @@ const PresencePanel = () => {
   const prevChatLenRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const rawUsers = useAtomValue(onlineUsersAtom);
+  const setPendingTpUser = useSetAtom(pendingTpUserAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const socket = useAtomValue(socketAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
@@ -124,7 +125,10 @@ const PresencePanel = () => {
         !currentUser ||
         !u.route ||
         (u.user_id > 0 && String(u.user_id) === String(currentUser.id)),
-      handler: (u) => navigate(u.route),
+      handler: (u) => {
+        setPendingTpUser(u.user_id);
+        navigate(u.route);
+      },
     },
     {
       key: "tp_here",

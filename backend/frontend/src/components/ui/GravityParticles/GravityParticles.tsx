@@ -18,8 +18,8 @@ type Particle = {
   mergeCooldown: number;
 };
 
-const G = 0.05; // Gravitational constant
-const MAX_VELOCITY = 8;
+const G = 0.08; // Gravitational constant (increased for stronger space-time warping)
+const MAX_VELOCITY = 10;
 const EXPLOSION_MASS_THRESHOLD = 40;
 const BOUNDING_BOX_DAMPING = 0.8;
 const CURSOR_MASS = 150; // Cursor acts as a very massive body
@@ -30,6 +30,22 @@ const hexToRgbStr = (hex: string) => {
   if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
   const int = parseInt(hex, 16);
   return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
+};
+
+const blendColors = (c1: string, c2: string, m1: number, m2: number) => {
+  const hex2rgb = (hex: string) => {
+    hex = hex.replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const int = parseInt(hex, 16);
+    return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
+  };
+  const [r1, g1, b1] = hex2rgb(c1);
+  const [r2, g2, b2] = hex2rgb(c2);
+  const total = m1 + m2;
+  const r = Math.round((r1 * m1 + r2 * m2) / total);
+  const g = Math.round((g1 * m1 + g2 * m2) / total);
+  const b = Math.round((b1 * m1 + b2 * m2) / total);
+  return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
 };
 
 const defaultColors = ['#00f0ff', '#ff0055', '#ffe600', '#00ff66'];
@@ -141,26 +157,134 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
           const r2 = getRadius(p2.mass);
           const minDist = r1 + r2;
 
-          // Collision & Merging
+          // Collision, Merging & Systems
           if (dist < minDist && p1.mergeCooldown <= 0 && p2.mergeCooldown <= 0) {
-            if (p1.mass >= p2.mass) {
-              toRemove.add(p2.id);
-              // Momentum conservation
-              p1.vx = (p1.mass * p1.vx + p2.mass * p2.vx) / (p1.mass + p2.mass);
-              p1.vy = (p1.mass * p1.vy + p2.mass * p2.vy) / (p1.mass + p2.mass);
-              p1.mass += p2.mass;
-              continue; // Move to next interaction
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const dvx = p2.vx - p1.vx;
+            const dvy = p2.vy - p1.vy;
+            const velAlongNormal = dvx * nx + dvy * ny;
+
+            // approachSpeed is how fast their surfaces are smashing directly into each other.
+            // This perfectly factors in both speed AND angle! A high-speed glancing blow 
+            // will have a low approachSpeed, while a head-on collision will be high.
+            const approachSpeed = -velAlongNormal;
+
+            // Particles randomly experience orbital decay when rubbing against each other, 
+            // causing stable systems to eventually collapse and merge.
+            const isOrbitalDecay = approachSpeed < 3.5 && Math.random() < 0.02;
+
+            // Collision resolution: Gentle/glancing (< 3.5) forms a system.
+            // Violent head-on (>= 3.5) OR decayed orbits merge!
+            if (approachSpeed < 3.5 && !isOrbitalDecay) {
+              // Do not resolve if velocities are separating
+              if (velAlongNormal < 0) {
+                // Mass ratio defines how much they bounce. 
+                // A tiny particle hitting a huge one has a low mass ratio, 
+                // so it gets almost 0 bounce (restitution), causing it to stick and get trapped!
+                const massRatio = Math.min(p1.mass, p2.mass) / Math.max(p1.mass, p2.mass);
+                const restitution = Math.max(0.05, 0.5 * massRatio); 
+                
+                const j = -(1 + restitution) * velAlongNormal;
+                const impulse = j / (1 / p1.mass + 1 / p2.mass);
+
+                // Apply impulse
+                p1.vx -= (impulse * nx) / p1.mass;
+                p1.vy -= (impulse * ny) / p1.mass;
+                p2.vx += (impulse * nx) / p2.mass;
+                p2.vy += (impulse * ny) / p2.mass;
+
+                // Induce orbital rotation by adding a tangential kick
+                const tx = -ny;
+                const ty = nx;
+                const totalMass = p1.mass + p2.mass;
+                
+                // Calculate perfect orbital velocity so we don't kick them out of the gravity well!
+                // v_orbit = sqrt(G * M / r)
+                const v_orbit = Math.sqrt((G * totalMass) / dist);
+                
+                // Check current tangential velocity
+                const velAlongTangent = dvx * tx + dvy * ty;
+
+                // ONLY inject spin if they are lacking stable orbital velocity!
+                if (Math.abs(velAlongTangent) < v_orbit * 0.5) {
+                  // Inject spin in the direction they are already drifting
+                  const direction = velAlongTangent >= 0 ? 1 : -1;
+                  // Limit the spin force to never exceed the stable orbital velocity
+                  const spinForce = Math.min(0.8, v_orbit * 0.85) * direction;
+
+                  p1.vx -= tx * spinForce * (p2.mass / totalMass);
+                  p1.vy -= ty * spinForce * (p2.mass / totalMass);
+                  p2.vx += tx * spinForce * (p1.mass / totalMass);
+                  p2.vy += ty * spinForce * (p1.mass / totalMass);
+                }
+              }
+
+              // Positional correction to prevent getting stuck
+              const overlap = minDist - dist;
+              p1.x -= nx * overlap * 0.5;
+              p1.y -= ny * overlap * 0.5;
+              p2.x += nx * overlap * 0.5;
+              p2.y += ny * overlap * 0.5;
             } else {
-              toRemove.add(p1.id);
-              p2.vx = (p2.mass * p2.vx + p1.mass * p1.vx) / (p1.mass + p2.mass);
-              p2.vy = (p2.mass * p2.vy + p1.mass * p1.vy) / (p1.mass + p2.mass);
-              p2.mass += p1.mass;
-              break; // p1 is dead
+              if (approachSpeed >= 3.5) {
+                // High speed collision! EXPLODE BOTH PARTICLES!
+                toRemove.add(p1.id);
+                toRemove.add(p2.id);
+
+                const explodeParticle = (p: Particle) => {
+                  explosionsRef.current.push({
+                    x: p.x, y: p.y, radius: getRadius(p.mass) * 2, alpha: 1, color: p.color
+                  });
+                  // Only fragment if mass is large enough to split
+                  if (p.mass >= 1.5) {
+                    const numFragments = Math.min(15, Math.floor(p.mass / 2) + 2);
+                    for (let k = 0; k < numFragments; k++) {
+                      const angle = Math.random() * Math.PI * 2;
+                      const speed = Math.random() * 5 + 2;
+                      newParts.push({
+                        id: nextId.current++,
+                        x: p.x + Math.cos(angle) * (getRadius(p.mass) * 0.5),
+                        y: p.y + Math.sin(angle) * (getRadius(p.mass) * 0.5),
+                        vx: p.vx + Math.cos(angle) * speed,
+                        vy: p.vy + Math.sin(angle) * speed,
+                        mass: Math.max(1, (p.mass / numFragments) * 0.9), // slightly lose mass to energy
+                        color: p.color,
+                        mergeCooldown: 60,
+                      });
+                    }
+                  }
+                };
+
+                explodeParticle(p1);
+                explodeParticle(p2);
+                break; // p1 is destroyed, break out of inner loop
+              } else {
+                // Gentle orbital decay! Normal Merge!
+                const newColor = blendColors(p1.color, p2.color, p1.mass, p2.mass);
+                if (p1.mass >= p2.mass) {
+                  toRemove.add(p2.id);
+                  p1.vx = (p1.mass * p1.vx + p2.mass * p2.vx) / (p1.mass + p2.mass);
+                  p1.vy = (p1.mass * p1.vy + p2.mass * p2.vy) / (p1.mass + p2.mass);
+                  p1.mass += p2.mass;
+                  p1.color = newColor;
+                  continue; 
+                } else {
+                  toRemove.add(p1.id);
+                  p2.vx = (p2.mass * p2.vx + p1.mass * p1.vx) / (p1.mass + p2.mass);
+                  p2.vy = (p2.mass * p2.vy + p1.mass * p1.vy) / (p1.mass + p2.mass);
+                  p2.mass += p1.mass;
+                  p2.color = newColor;
+                  break; 
+                }
+              }
             }
           }
 
           // Gravity calculation
-          const force = (G * p1.mass * p2.mass) / (distSq + 100);
+          // Softening parameter reduced to 20 to allow for massive gravity spikes on close passes (slingshots)
+          const force = (G * p1.mass * p2.mass) / (distSq + 20);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;
         }
