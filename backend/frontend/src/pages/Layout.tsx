@@ -353,13 +353,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       {(currentUser?.background_video_url || seo?.dom_skin) && (
         <style>{`
-          html, body, #root, .app, .main-content {
+          #root, .app, .main-content, .layout {
+             background: transparent !important;
+          }
+          html, body {
              background-color: transparent !important;
           }
           ${seo?.dom_skin ? `
           :root {
              background-image: url("${seo.dom_skin}");
-             background-size: repeat;
+             background-repeat: repeat;
+             background-size: auto;
              background-attachment: fixed;
              background-position: center;
           }
