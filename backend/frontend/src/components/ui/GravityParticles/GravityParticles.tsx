@@ -31,9 +31,11 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
 
   const settings = useAtomValue(physicsSettingsAtom);
   const settingsRef = useRef(settings);
-  useEffect(() => { settingsRef.current = settings; }, [settings]);
+  settingsRef.current = settings;
+  
   const externalCursorsRef = useRef(externalCursors);
-  useEffect(() => { externalCursorsRef.current = externalCursors; }, [externalCursors]);
+  externalCursorsRef.current = externalCursors;
+  
   const grabbedParticleRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
   useEffect(() => {
