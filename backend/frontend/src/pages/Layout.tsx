@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
 import { layoutModeAtom } from "../atoms/layoutMode";
 import { useAtom } from "jotai";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   accessTokenAtom,
   refreshTokenAtom,
@@ -148,7 +148,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const currentUser = useAtomValue(currentUserAtom);
   const contextUser = useAtomValue(contextUserAtom);
 
-  const { path, isPending } = useTransitionNavigation();
+  const { isPending } = useTransitionNavigation();
   // Set theme on mount
   useEffect(() => {
     const theme = isDarkMode ? "dark" : "light";
@@ -244,11 +244,26 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     };
   }, [setAccessToken, setRefreshToken, setCurrentUser]);
 
+  const location = useLocation();
+
   useEffect(() => {
     if (!isPending) {
-      document.documentElement.scrollTo(0, 0);
+      if (location.hash) {
+        // Give the DOM a tiny bit of time to render the target element before scrolling
+        setTimeout(() => {
+          const id = location.hash.replace("#", "");
+          const element = document.getElementById(id);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else {
+            window.scrollTo(0, 0);
+          }
+        }, 100);
+      } else {
+        window.scrollTo(0, 0);
+      }
     }
-  }, [isPending, path]);
+  }, [isPending, location.pathname, location.hash]);
 
   // Consume pending teleport route set by an incoming "tp" WS message.
   useEffect(() => {
@@ -303,6 +318,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div
       className={`layout${layoutMode === "application" ? " layout--application" : ""}`}
+      style={{ isolation: 'isolate' }}
     >
       {currentUser?.font_family && (
         <style>{`
@@ -364,7 +380,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   width: "100vw",
                   height: "100vh",
                   objectFit: "cover",
-                  zIndex: -1,
+                  zIndex: -2,
                   pointerEvents: "none"
                 }}
               />
@@ -391,7 +407,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -2, pointerEvents: 'none' }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
         <Particles
           particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
           particleCount={200}
