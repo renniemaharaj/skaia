@@ -1,8 +1,9 @@
 import { customConfirm } from "../../components/ui/Prompt";
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
+import { contextUserAtom } from "../../atoms/contextUser";
 import { toast } from "sonner";
 
 import { useUserData } from "./useUserData";
@@ -97,6 +98,19 @@ const UserProfile: React.FC<UserProfileProps> = ({
     sentinelRef: threadsSentinelRef,
     handleScroll: threadsHandleScroll,
   } = useThreadsFeed({ authorId: effectiveUserId });
+
+  const setContextUser = useSetAtom(contextUserAtom);
+
+  React.useEffect(() => {
+    if (user) {
+      setContextUser({
+        background_video_url: user.background_video_url,
+        background_image_url: user.background_image_url,
+        background_position: user.background_position,
+      });
+    }
+    return () => setContextUser(null);
+  }, [user, setContextUser]);
 
   if (loading)
     return <div className="up-container up-loading">Loading profile…</div>;

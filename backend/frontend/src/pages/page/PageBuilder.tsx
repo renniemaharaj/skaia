@@ -9,7 +9,7 @@ import {
   MoreHorizontal,
   BarChart3,
 } from "lucide-react";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import { SaveStatusBar } from "./SaveStatusBar";
 import type { PageSection, PageItem, SectionEditor } from "./types";
@@ -17,6 +17,7 @@ import { usePageData } from "../../hooks/usePageData";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import type { PageBuilderDoc } from "../../hooks/usePageData";
 import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
+import { contextUserAtom } from "../../atoms/contextUser";
 import { PageSkeleton } from "./PageSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
 import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
@@ -100,6 +101,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     deletePage,
     pendingIncoming,
   } = usePageData(editingCount > 0);
+
+  const setContextUser = useSetAtom(contextUserAtom);
+  useEffect(() => {
+    if (page?.owner) {
+      setContextUser({
+        background_video_url: page.owner.background_video_url,
+        background_image_url: page.owner.background_image_url,
+        background_position: page.owner.background_position,
+      });
+    }
+    return () => setContextUser(null);
+  }, [page?.owner, setContextUser]);
 
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<PageSection[]>([]);

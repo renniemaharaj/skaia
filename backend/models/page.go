@@ -139,7 +139,10 @@ type PageUser struct {
 	ID          int64  `json:"id"`
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
-	AvatarURL   string `json:"avatar_url"`
+	AvatarURL            string `json:"avatar_url"`
+	BackgroundVideoURL   string `json:"background_video_url,omitempty"`
+	BackgroundImageURL   string `json:"background_image_url,omitempty"`
+	BackgroundPosition   string `json:"background_position,omitempty"`
 }
 
 // PageEditor is a junction row granting edit access to a user on a page.

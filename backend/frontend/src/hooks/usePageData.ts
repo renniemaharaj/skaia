@@ -8,6 +8,9 @@ export interface PageUser {
   username: string;
   display_name: string;
   avatar_url: string;
+  background_video_url?: string;
+  background_image_url?: string;
+  background_position?: string;
 }
 
 export interface PageBuilderDoc {

@@ -11,13 +11,14 @@ import {
   BookOpen,
   Lock,
 } from "lucide-react";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 import ViewThread from "../../components/forum/ViewThread";
 import ViewThreadMeta from "../../components/forum/ViewThreadMeta";
 import ViewThreadComments from "../../components/forum/ViewThreadComments";
 import { currentThreadAtom, threadPermissionsAtom } from "../../atoms/forum";
 import { currentUserAtom } from "../../atoms/auth";
+import { contextUserAtom } from "../../atoms/contextUser";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
@@ -35,6 +36,19 @@ const ViewThreadPage = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
   const currentUser = useAtomValue(currentUserAtom);
+  const setContextUser = useSetAtom(contextUserAtom);
+  
+  useEffect(() => {
+    if (currentThread) {
+      setContextUser({
+        background_video_url: currentThread.user_background_video_url,
+        background_image_url: currentThread.user_background_image_url,
+        background_position: currentThread.user_background_position,
+      });
+    }
+    return () => setContextUser(null);
+  }, [currentThread, setContextUser]);
+
   const { canEdit, canDelete, canLock } = useAtomValue(threadPermissionsAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [loading, setLoading] = useState(true);

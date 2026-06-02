@@ -16,6 +16,7 @@ import {
 import { featuresAtom, seoAtom } from "../atoms/config";
 import { pendingTpRouteAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
+import { contextUserAtom } from "../atoms/contextUser";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
 import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
@@ -145,6 +146,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const currentUser = useAtomValue(currentUserAtom);
+  const contextUser = useAtomValue(contextUserAtom);
 
   const { path, isPending } = useTransitionNavigation();
   // Set theme on mount
@@ -318,62 +320,68 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }
         `}</style>
       )}
-      {currentUser?.background_image_url && (
-        <style>{`
-          body {
-            background-image: url("${currentUser.background_image_url}") !important;
-            background-size: cover !important;
-            background-position: ${currentUser.background_position || "center"} !important;
-            background-attachment: fixed !important;
-          }
-          .layout-main, .up-container, .card, .panel, .forum-container {
-             background-color: rgba(var(--bg-color-rgb), 0.85);
-             backdrop-filter: blur(10px);
-          }
-        `}</style>
-      )}
-      {(currentUser?.background_video_url || seo?.dom_video) && (
-        <video
-          src={currentUser?.background_video_url || seo?.dom_video}
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            objectFit: "cover",
-            zIndex: -1,
-            pointerEvents: "none"
-          }}
-        />
-      )}
-      {(currentUser?.background_video_url || seo?.dom_video || seo?.dom_skin) && (
-        <style>{`
-          #root, .app, .main-content, .layout {
-             background: transparent !important;
-          }
-          html, body {
-             background-color: transparent !important;
-          }
-          ${seo?.dom_skin ? `
-          :root {
-             background-image: url("${seo.dom_skin}");
-             background-repeat: repeat;
-             background-size: auto;
-             background-attachment: fixed;
-             background-position: center;
-          }
-          ` : ''}
-          .layout-main, .up-container, .card, .panel, .forum-container {
-             background-color: rgba(var(--bg-color-rgb), 0.85);
-             backdrop-filter: blur(10px);
-          }
-        `}</style>
-      )}
+      {(() => {
+        const hasContextMedia = contextUser && (contextUser.background_image_url || contextUser.background_video_url);
+        const effectiveBgImage = contextUser?.background_image_url || (!hasContextMedia ? seo?.dom_skin : null);
+        const effectiveBgVideo = contextUser?.background_video_url || (!hasContextMedia ? seo?.dom_video : null);
+        const effectiveBgPos = contextUser?.background_position || "center";
+
+        return (
+          <>
+            {effectiveBgImage && (
+              <style>{`
+                body {
+                  background-image: url("${effectiveBgImage}") !important;
+                  background-size: ${contextUser?.background_image_url ? "cover" : "auto"} !important;
+                  background-position: ${effectiveBgPos} !important;
+                  background-attachment: fixed !important;
+                  ${!contextUser?.background_image_url ? "background-repeat: repeat;" : ""}
+                }
+                .layout-main, .up-container, .card, .panel, .forum-container {
+                   background-color: rgba(var(--bg-color-rgb), 0.85);
+                   backdrop-filter: blur(10px);
+                }
+                :root {
+                   background-image: url("${effectiveBgImage}");
+                   background-repeat: ${!contextUser?.background_image_url ? "repeat" : "no-repeat"};
+                   background-size: ${contextUser?.background_image_url ? "cover" : "auto"};
+                   background-attachment: fixed;
+                   background-position: ${effectiveBgPos};
+                }
+              `}</style>
+            )}
+            {effectiveBgVideo && (
+              <video
+                src={effectiveBgVideo}
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  objectFit: "cover",
+                  zIndex: -1,
+                  pointerEvents: "none"
+                }}
+              />
+            )}
+            {(effectiveBgVideo || effectiveBgImage) && (
+              <style>{`
+                #root, .app, .main-content, .layout {
+                   background: transparent !important;
+                }
+                html, body {
+                   background-color: transparent !important;
+                }
+              `}</style>
+            )}
+          </>
+        );
+      })()}
       {guestSandboxMode && (
         <div className="layout-guest-sandbox-banner">
           <Info size={16} className="layout-guest-sandbox-icon" />

@@ -140,7 +140,7 @@ func (r *sqlRepository) RemoveEditor(pageID, userID int64) error {
 
 func (r *sqlRepository) GetEditors(pageID int64) ([]*models.PageUser, error) {
 	rows, err := r.db.Query(
-		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, '')
+		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position
 		 FROM page_editors pe JOIN users u ON u.id = pe.user_id
 		 WHERE pe.page_id = $1 ORDER BY pe.granted_at`, pageID,
 	)
@@ -151,8 +151,18 @@ func (r *sqlRepository) GetEditors(pageID int64) ([]*models.PageUser, error) {
 	var users []*models.PageUser
 	for rows.Next() {
 		u := &models.PageUser{}
-		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL); err != nil {
+		var bgVid, bgImg, bgPos sql.NullString
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &bgVid, &bgImg, &bgPos); err != nil {
 			return nil, err
+		}
+		if bgVid.Valid {
+			u.BackgroundVideoURL = bgVid.String
+		}
+		if bgImg.Valid {
+			u.BackgroundImageURL = bgImg.String
+		}
+		if bgPos.Valid {
+			u.BackgroundPosition = bgPos.String
 		}
 		users = append(users, u)
 	}
@@ -161,13 +171,23 @@ func (r *sqlRepository) GetEditors(pageID int64) ([]*models.PageUser, error) {
 
 func (r *sqlRepository) GetOwner(pageID int64) (*models.PageUser, error) {
 	u := &models.PageUser{}
+	var bgVid, bgImg, bgPos sql.NullString
 	err := r.db.QueryRow(
-		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, '')
+		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position
 		 FROM pages p JOIN users u ON u.id = p.owner_id
 		 WHERE p.id = $1`, pageID,
-	).Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL)
+	).Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &bgVid, &bgImg, &bgPos)
 	if err != nil {
 		return nil, err
+	}
+	if bgVid.Valid {
+		u.BackgroundVideoURL = bgVid.String
+	}
+	if bgImg.Valid {
+		u.BackgroundImageURL = bgImg.String
+	}
+	if bgPos.Valid {
+		u.BackgroundPosition = bgPos.String
 	}
 	return u, nil
 }
@@ -186,7 +206,7 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		        p.owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=p.id), 0),
 		        p.visibility, p.created_at, p.updated_at,
-		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''),
+		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id),
 		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id)
 		 FROM pages p
@@ -202,10 +222,10 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		p := &models.Page{}
 		var ownerID sql.NullInt64
 		var oID sql.NullInt64
-		var oUsername, oDisplayName, oAvatar sql.NullString
+		var oUsername, oDisplayName, oAvatar, bgVid, bgImg, bgPos sql.NullString
 		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
 			&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
-			&oID, &oUsername, &oDisplayName, &oAvatar,
+			&oID, &oUsername, &oDisplayName, &oAvatar, &bgVid, &bgImg, &bgPos,
 			&p.Likes, &p.CommentCount); err != nil {
 			return nil, err
 		}
@@ -218,6 +238,10 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 				Username:    oUsername.String,
 				DisplayName: oDisplayName.String,
 				AvatarURL:   oAvatar.String,
+				BackgroundVideoURL: bgVid.String,
+				BackgroundImageURL: bgImg.String,
+				BackgroundPosition: bgPos.String,
+
 			}
 		}
 		pages = append(pages, p)

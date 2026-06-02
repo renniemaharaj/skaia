@@ -42,6 +42,8 @@ export interface ForumThread {
   user_roles?: string[];
   user_avatar?: string;
   user_background_video_url?: string;
+  user_background_image_url?: string;
+  user_background_position?: string;
   likes?: number;
   is_liked?: boolean;
   can_edit?: boolean;
