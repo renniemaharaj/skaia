@@ -14,6 +14,7 @@ export function AdminMetaSettings() {
           seo.description || branding.tagline || branding.header_subtitle || "",
         og_image: seo.og_image || "",
         dom_skin: seo.dom_skin || "",
+        dom_video: seo.dom_video || "",
       }}
       onUpdate={() => window.location.reload()}
     />

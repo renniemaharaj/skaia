@@ -193,10 +193,10 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var patch struct {
-		DisplayName        string  `json:"display_name"`
-		Bio                string  `json:"bio"`
-		AvatarURL          string  `json:"avatar_url"`
-		BannerURL          string  `json:"banner_url"`
+		DisplayName        *string `json:"display_name"`
+		Bio                *string `json:"bio"`
+		AvatarURL          *string `json:"avatar_url"`
+		BannerURL          *string `json:"banner_url"`
 		DiscordID          *string `json:"discord_id"`
 		BackgroundImageURL *string `json:"background_image_url"`
 		BackgroundVideoURL *string `json:"background_video_url"`
@@ -209,35 +209,55 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if patch.DisplayName != "" {
-		existing.DisplayName = patch.DisplayName
+	if patch.DisplayName != nil {
+		existing.DisplayName = *patch.DisplayName
 	}
-	if patch.Bio != "" {
-		existing.Bio = patch.Bio
+	if patch.Bio != nil {
+		existing.Bio = *patch.Bio
 	}
-	if patch.AvatarURL != "" {
-		existing.AvatarURL = patch.AvatarURL
+	if patch.AvatarURL != nil {
+		existing.AvatarURL = *patch.AvatarURL
 	}
-	if patch.BannerURL != "" {
-		existing.BannerURL = patch.BannerURL
+	if patch.BannerURL != nil {
+		existing.BannerURL = *patch.BannerURL
 	}
 	if patch.DiscordID != nil {
 		existing.DiscordID = patch.DiscordID
 	}
 	if patch.BackgroundImageURL != nil {
-		existing.BackgroundImageURL = patch.BackgroundImageURL
+		if *patch.BackgroundImageURL == "" {
+			existing.BackgroundImageURL = nil
+		} else {
+			existing.BackgroundImageURL = patch.BackgroundImageURL
+		}
 	}
 	if patch.BackgroundVideoURL != nil {
-		existing.BackgroundVideoURL = patch.BackgroundVideoURL
+		if *patch.BackgroundVideoURL == "" {
+			existing.BackgroundVideoURL = nil
+		} else {
+			existing.BackgroundVideoURL = patch.BackgroundVideoURL
+		}
 	}
 	if patch.BackgroundPosition != nil {
-		existing.BackgroundPosition = patch.BackgroundPosition
+		if *patch.BackgroundPosition == "" {
+			existing.BackgroundPosition = nil
+		} else {
+			existing.BackgroundPosition = patch.BackgroundPosition
+		}
 	}
 	if patch.FontFamily != nil {
-		existing.FontFamily = patch.FontFamily
+		if *patch.FontFamily == "" {
+			existing.FontFamily = nil
+		} else {
+			existing.FontFamily = patch.FontFamily
+		}
 	}
 	if patch.ProfileCardArtURL != nil {
-		existing.ProfileCardArtURL = patch.ProfileCardArtURL
+		if *patch.ProfileCardArtURL == "" {
+			existing.ProfileCardArtURL = nil
+		} else {
+			existing.ProfileCardArtURL = patch.ProfileCardArtURL
+		}
 	}
 
 	updated, err := h.svc.Update(existing)

@@ -23,6 +23,8 @@ export function useProfileEdit({
   const [editBackgroundPosition, setEditBackgroundPosition] = useState(user?.background_position ?? "");
   const [editFontFamily, setEditFontFamily] = useState(user?.font_family ?? "");
   const [editProfileCardArtUrl, setEditProfileCardArtUrl] = useState(user?.profile_card_art_url ?? "");
+  const [editAvatarUrl, setEditAvatarUrl] = useState(user?.avatar_url ?? "");
+  const [editBannerUrl, setEditBannerUrl] = useState(user?.banner_url ?? "");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -49,6 +51,8 @@ export function useProfileEdit({
       setEditBackgroundPosition(user.background_position ?? "");
       setEditFontFamily(user.font_family ?? "");
       setEditProfileCardArtUrl(user.profile_card_art_url ?? "");
+      setEditAvatarUrl(user.avatar_url ?? "");
+      setEditBannerUrl(user.banner_url ?? "");
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -109,8 +113,8 @@ export function useProfileEdit({
     setEditSaving(true);
     setEditError(null);
     try {
-      let finalAvatarUrl = user.avatar_url ?? "";
-      let finalBannerUrl = user.banner_url ?? "";
+      let finalAvatarUrl = editAvatarUrl;
+      let finalBannerUrl = editBannerUrl;
       let finalBgImageUrl = editBackgroundImageUrl;
       let finalBgVideoUrl = editBackgroundVideoUrl;
       let finalCardArtUrl = editProfileCardArtUrl;
@@ -163,11 +167,11 @@ export function useProfileEdit({
           bio: editBio,
           avatar_url: finalAvatarUrl,
           banner_url: finalBannerUrl,
-          background_image_url: finalBgImageUrl || null,
-          background_video_url: finalBgVideoUrl || null,
-          background_position: editBackgroundPosition || null,
-          font_family: editFontFamily || null,
-          profile_card_art_url: finalCardArtUrl || null,
+          background_image_url: finalBgImageUrl || "",
+          background_video_url: finalBgVideoUrl || "",
+          background_position: editBackgroundPosition || "",
+          font_family: editFontFamily || "",
+          profile_card_art_url: finalCardArtUrl || "",
         }),
       });
 
@@ -208,6 +212,10 @@ export function useProfileEdit({
     setEditBio,
     editDisplayName,
     setEditDisplayName,
+    editAvatarUrl,
+    setEditAvatarUrl,
+    editBannerUrl,
+    setEditBannerUrl,
     avatarPreview,
     bannerPreview,
     handleAvatarChange,

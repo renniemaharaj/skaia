@@ -61,6 +61,7 @@ export interface SEOConfig {
   description: string;
   og_image: string;
   dom_skin: string;
+  dom_video: string;
 }
 
 export interface FooterLink {

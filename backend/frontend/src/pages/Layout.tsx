@@ -332,9 +332,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }
         `}</style>
       )}
-      {currentUser?.background_video_url && (
+      {(currentUser?.background_video_url || seo?.dom_video) && (
         <video
-          src={currentUser.background_video_url}
+          src={currentUser?.background_video_url || seo?.dom_video}
           autoPlay
           loop
           muted
@@ -351,7 +351,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         />
       )}
-      {(currentUser?.background_video_url || seo?.dom_skin) && (
+      {(currentUser?.background_video_url || seo?.dom_video || seo?.dom_skin) && (
         <style>{`
           #root, .app, .main-content, .layout {
              background: transparent !important;
