@@ -67,13 +67,43 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
     const handleMouseDown = (e: MouseEvent) => {
       const mx = e.clientX;
       const my = e.clientY;
+      let grabbed = false;
       for (const p of particlesRef.current) {
         const dx = p.x - mx;
         const dy = p.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist <= Math.max(20, getRadius(p.mass))) {
           grabbedParticleRef.current = { id: p.id, offsetX: dx, offsetY: dy };
+          grabbed = true;
           break;
+        }
+      }
+      
+      if (!grabbed && settingsRef.current.createOnClick) {
+        const threshold = settingsRef.current.explosionThreshold;
+        // Central massive particle just below threshold
+        const central = spawnParticle(mx, my, threshold * 0.85, nextId);
+        particlesRef.current.push(central);
+
+        // Orbiting particles
+        const numOrbiters = 5 + Math.floor(Math.random() * 5);
+        for (let i = 0; i < numOrbiters; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 40 + Math.random() * 60;
+          const orbiter = spawnParticle(
+            mx + Math.cos(angle) * dist,
+            my + Math.sin(angle) * dist,
+            Math.random() * 3 + 2,
+            nextId
+          );
+          
+          // Add tangential velocity for orbit
+          const G = settingsRef.current.gravityConstant;
+          const vOrbit = Math.sqrt((G * central.mass) / dist);
+          orbiter.vx = -Math.sin(angle) * vOrbit;
+          orbiter.vy = Math.cos(angle) * vOrbit;
+          
+          particlesRef.current.push(orbiter);
         }
       }
     };

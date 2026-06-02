@@ -627,4 +627,51 @@
   text-align: center;
 }
 
+.pp-physics-section {
+  border-bottom: 1px solid var(--border-color, #333);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.pp-physics-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.pp-physics-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary, #ddd);
+  cursor: pointer;
+  padding: 4px 0 8px 0;
+  display: flex;
+  align-items: center;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pp-physics-section-title::-webkit-details-marker {
+  display: none;
+}
+
+.pp-physics-section-title::before {
+  content: "►";
+  font-size: 10px;
+  margin-right: 8px;
+  transition: transform 0.2s ease;
+  color: var(--primary-color, #888);
+}
+
+.pp-physics-section[open] .pp-physics-section-title::before {
+  transform: rotate(90deg);
+}
+
+.pp-physics-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0 16px 8px;
+}
+
 

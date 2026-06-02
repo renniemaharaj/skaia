@@ -40,9 +40,13 @@ export type PhysicsSettings = {
   bounceRestitution: number;
   /** Probability [0,1] a slow collision merges instead of bouncing */
   orbitalDecayChance: number;
+  /** Speed threshold below which particles can merge */
+  mergeThreshold: number;
   cursorMass: number;
   /** TRUE = cursor repels close particles; FALSE = pure attractor */
   cursorRepels: boolean;
+  /** TRUE = clicking empty space creates new particles */
+  createOnClick: boolean;
   /** Number of physics sub-steps per frame (1–4, default 2) */
   subSteps: number;
   /** Max trail length stored per particle (0 = disabled) */
@@ -74,8 +78,10 @@ export const defaultSettings: PhysicsSettings = {
   explosionThreshold: 120,
   bounceRestitution: 0.55,
   orbitalDecayChance: 0.012,
+  mergeThreshold: 3.5,
   cursorMass: 80,
   cursorRepels: true,
+  createOnClick: false,
   subSteps: 2,
   trailLength: MAX_TRAIL_LENGTH,
   shockwaveForce: 6,
@@ -225,6 +231,7 @@ export const stepPhysics = (
     explosionThreshold: EXPLOSION_MASS_THRESHOLD,
     bounceRestitution,
     orbitalDecayChance,
+    mergeThreshold,
     cursorMass: CURSOR_MASS,
     cursorRepels,
     subSteps,
@@ -348,9 +355,9 @@ export const stepPhysics = (
 
           const approachSpeed = -velAlongNormal;
           const isOrbitalDecay =
-            approachSpeed < 3.5 && Math.random() < orbitalDecayChance;
+            approachSpeed < mergeThreshold && Math.random() < orbitalDecayChance;
 
-          if (approachSpeed >= 3.5) {
+          if (approachSpeed >= Math.max(3.5, mergeThreshold)) {
             // ─ High-speed collision → explode both ──────────────────────────
             if (!toRemove.has(p1.id) && !toRemove.has(p2.id)) {
               toRemove.add(p1.id);
