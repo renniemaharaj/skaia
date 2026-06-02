@@ -105,3 +105,12 @@
   margin-right: 0.35rem;
   flex-shrink: 0;
 }
+
+.threads-feed-pinned-badge {
+  color: var(--primary-color);
+}
+
+.threads-feed-pinned-icon {
+  margin-right: 6px;
+  vertical-align: text-bottom;
+}

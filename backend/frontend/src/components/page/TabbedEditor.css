@@ -90,8 +90,8 @@
 }
 
 .tabbed-editor__tab-close:hover {
-  background: var(--error-bg, rgba(255, 80, 80, 0.15));
-  color: var(--error-color, #e74c3c);
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 
 .tabbed-editor__rename-input {
@@ -154,8 +154,8 @@
 }
 
 .tabbed-editor__badge--error {
-  background: var(--error-bg, rgba(255, 80, 80, 0.15));
-  color: var(--error-color, #e74c3c);
+  background: var(--error-bg);
+  color: var(--error-color);
 }
 
 .tabbed-editor__badge--warn {
@@ -177,7 +177,7 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: var(--error-color, #e74c3c);
+  color: var(--error-color);
 }
 
 .tabbed-editor__diag-warnings {

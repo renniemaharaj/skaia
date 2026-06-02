@@ -3,7 +3,7 @@
   flex-direction: column;
   padding: 1rem;
   margin-bottom: 1rem;
-  background-color: var(--bg-color-alt, #1e1e1e);
+  background-color: var(--bg-secondary);
 }
 
 .toc-header {
@@ -11,8 +11,8 @@
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  color: var(--text-primary, #fff);
-  border-bottom: 1px solid var(--border-color, #333);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.5rem;
 }
 
@@ -35,14 +35,14 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  color: var(--text-secondary, #aaa);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   transition: color 0.2s ease;
   line-height: 1.4;
 }
 
 .toc-item:hover {
-  color: var(--primary-color, #8a2be2);
+  color: var(--primary-color);
 }
 
 .toc-item .toc-dot {
@@ -55,7 +55,7 @@
 
 .toc-level-1 {
   font-weight: 600;
-  color: var(--text-primary, #ddd);
+  color: var(--text-primary);
 }
 .toc-level-1 .toc-dot {
   display: none;

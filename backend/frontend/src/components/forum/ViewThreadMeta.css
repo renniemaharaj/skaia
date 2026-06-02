@@ -194,3 +194,16 @@
     align-items: stretch;
   }
 }
+
+.vtm-icon-avatar {
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.vtm-author-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

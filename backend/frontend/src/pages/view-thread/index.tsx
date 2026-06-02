@@ -219,28 +219,24 @@ const ViewThreadPage = () => {
 
   if (loading) {
     return (
-      <div className="modal">
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <p>Loading thread...</p>
-        </div>
+      <div className="card view-thread-state-card">
+        <p>Loading thread...</p>
       </div>
     );
   }
 
   if (error || !currentThread) {
     return (
-      <div className="modal">
-        <div style={{ padding: "2rem", textAlign: "center" }}>
-          <p style={{ color: "var(--text-secondary)" }}>
-            {error || "Thread not found"}
-          </p>
-          <button
-            onClick={() => navigate("/forum")}
-            style={{ marginTop: "1rem" }}
-          >
-            Back to Forum
-          </button>
-        </div>
+      <div className="card view-thread-state-card">
+        <p className="view-thread-state-text">
+          {error || "Thread not found"}
+        </p>
+        <button
+          onClick={() => navigate("/forum")}
+          className="btn btn-primary view-thread-state-btn"
+        >
+          Back to Forum
+        </button>
       </div>
     );
   }
@@ -250,24 +246,10 @@ const ViewThreadPage = () => {
       className={isMobile ? "mobile-view-thread-page" : "view-thread-wrapper"}
       onClick={(e) => e.stopPropagation()}
     >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          maxWidth: "100%",
-          overflow: "hidden",
-        }}
-      >
+      <div className="view-thread-container">
         {/* <Hero height="350px" /> */}
-        <div
-          style={{
-            padding: "1rem",
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+        <div className="view-thread-actions-bar">
+          <div className="view-thread-actions-group">
             {currentUser && (
               <button
                 className={`thread-action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}

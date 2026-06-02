@@ -116,3 +116,38 @@
 .thread-action-btn.share-btn:hover {
   color: var(--primary-color);
 }
+
+/* ── Container blocks ────────────────────────────────────────── */
+.view-thread-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.view-thread-actions-bar {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.view-thread-actions-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* ── State Cards (Loading / Error) ───────────────────────────── */
+.view-thread-state-card {
+  padding: 2rem;
+  text-align: center;
+}
+
+.view-thread-state-text {
+  color: var(--text-secondary);
+}
+
+.view-thread-state-btn {
+  margin-top: 1rem;
+}

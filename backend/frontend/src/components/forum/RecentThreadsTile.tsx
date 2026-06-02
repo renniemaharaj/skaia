@@ -8,6 +8,8 @@ import UserAvatar from "../user/UserAvatar";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
 
+import "./RecentThreadsTile.css";
+
 interface RecentThreadsTileProps {
   currentCategoryId?: string | number;
   currentThreadId?: string | number;
@@ -45,7 +47,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
   if (loading || threads.length === 0) return null;
 
   return (
-    <SpotlightCard className="card toc-tile" style={{ marginTop: '1rem', padding: '1rem' }}>
+    <SpotlightCard className="card toc-tile recent-threads-tile">
       <div className="toc-header">
         <Clock size={16} />
         <h3>Recent Threads</h3>
@@ -55,22 +57,21 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
           <Link 
             key={thread.id} 
             to={`/view-thread/${thread.id}`}
-            className="toc-item"
-            style={{ textDecoration: 'none', alignItems: 'flex-start' }}
+            className="toc-item recent-threads-item"
           >
-            <span className="toc-dot" style={{ marginTop: '14px' }}></span>
-            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
-              <span style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span className="toc-dot recent-threads-dot"></span>
+            <div className="recent-threads-content">
+              <span className="recent-threads-title">
                 {thread.title}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+              <div className="recent-threads-meta">
                 <UserProfileOverlay userId={thread.user_id} fallbackName={thread.user_name} fallbackAvatar={thread.user_avatar}>
                   <UserAvatar src={thread.user_avatar} alt={thread.user_name || "Unknown"} size={20} />
                 </UserProfileOverlay>
-                <span style={{ fontSize: '0.8rem', opacity: 0.7, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <span className="recent-threads-author">
                   By {thread.user_name || "Unknown"}
                 </span>
-                <span style={{ fontSize: '0.75rem', opacity: 0.5, whiteSpace: 'nowrap' }}>
+                <span className="recent-threads-time">
                   {relativeTimeAgo(thread.created_at)}
                 </span>
               </div>

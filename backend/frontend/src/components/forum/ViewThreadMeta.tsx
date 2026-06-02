@@ -121,7 +121,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           fallbackAvatar={author.profilePicture}
           fallbackRoles={currentThread?.user_roles}
         >
-          <div className="vtm-icon" style={{ padding: 0, overflow: 'hidden', background: 'transparent' }}>
+          <div className="vtm-icon vtm-icon-avatar">
             <UserAvatar 
               src={author.profilePicture} 
               alt={author.name} 
@@ -147,7 +147,7 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
           <div className="vtm-meta-row">
             <div className="vtm-group">
               <span className="vtm-info-label">Author</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div className="vtm-author-group">
                 <UserLink
                   userId={currentThread?.user_id || ""}
                   displayName={author.name}

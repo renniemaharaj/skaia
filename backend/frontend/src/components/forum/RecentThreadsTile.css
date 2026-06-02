@@ -1,0 +1,49 @@
+.recent-threads-tile {
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.recent-threads-item {
+  text-decoration: none;
+  align-items: flex-start;
+}
+
+.recent-threads-dot {
+  margin-top: 14px;
+}
+
+.recent-threads-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.recent-threads-title {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-threads-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.recent-threads-author {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-threads-time {
+  font-size: 0.75rem;
+  opacity: 0.5;
+  white-space: nowrap;
+}
