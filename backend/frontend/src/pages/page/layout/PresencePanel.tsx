@@ -12,6 +12,7 @@ import {
   Gauge,
   ShieldCheck,
   Mic,
+  Atom,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser, pendingTpUserAtom } from "../../../atoms/presence";
 import UserAvatar from "../../../components/user/UserAvatar";
@@ -27,11 +28,13 @@ import {
   type GlobalChatMessage,
 } from "../../../atoms/chat";
 import { mediaStateAtom } from "../../../atoms/media";
+import { seoAtom } from "../../../atoms/config";
 import { toast } from "sonner";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../../components/input/Input";
 import "./PresencePanel.css";
 import VoicePanel from "./VoicePanel";
+import PhysicsControls from "./PhysicsControls";
 
 /**
  * Extensible per-row action. Add new actions to the rowActions array below.
@@ -50,7 +53,7 @@ const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
     typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
   );
-  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice' | 'physics'>('members');
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
@@ -73,6 +76,7 @@ const PresencePanel = () => {
   const hasPermission = useAtomValue(hasPermissionAtom);
   const chatMessages = useAtomValue(globalChatMessagesAtom);
   const mediaState = useAtomValue(mediaStateAtom);
+  const seo = useAtomValue(seoAtom);
   const isMediaActive = mediaState && mediaState.queue && mediaState.queue.length > 0;
   const location = useLocation();
   const navigate = useNavigate();
@@ -454,6 +458,15 @@ const PresencePanel = () => {
           >
             <Mic size={13} strokeWidth={2.5} />
           </button>
+          {seo?.particle_style === 'gravity' && (
+            <button
+              className={`pp-tab${activeTab === 'physics' ? " pp-tab--active" : ""}`}
+              onClick={() => setActiveTab('physics')}
+              title="Physics Engine Controls"
+            >
+              <Atom size={13} strokeWidth={2.5} />
+            </button>
+          )}
         </div>
         {canManagePresenceSettings && (
           <button
@@ -540,8 +553,12 @@ const PresencePanel = () => {
           </div>
         </div>
 
-        <div style={{ display: activeTab === 'voice' ? 'block' : 'none' }} className="pp-scroll pp-scroll--flush">
+        <div style={{ display: activeTab === 'voice' ? 'block' : 'none', height: '100%' }}>
           {hasOpenedVoice && <VoicePanel voiceOnly={location.pathname.startsWith('/view-thread/')} />}
+        </div>
+
+        <div style={{ display: activeTab === 'physics' ? 'flex' : 'none', flexDirection: 'column', height: '400px', paddingTop: '2rem', minHeight: 0, overflow: 'scroll', flex: '1 1 0%' }}>
+          {activeTab === 'physics' && <PhysicsControls />}
         </div>
       </div>
     </div>
