@@ -553,11 +553,11 @@ const PresencePanel = () => {
           </div>
         </div>
 
-        <div style={{ display: activeTab === 'voice' ? 'block' : 'none', height: '100%' }}>
+        <div style={{ display: activeTab === 'voice' ? 'block' : 'none' }} className="pp-scroll pp-scroll--flush">
           {hasOpenedVoice && <VoicePanel voiceOnly={location.pathname.startsWith('/view-thread/')} />}
         </div>
 
-        <div style={{ display: activeTab === 'physics' ? 'flex' : 'none', flexDirection: 'column', height: '400px', paddingTop: '2rem', minHeight: 0, overflow: 'scroll', flex: '1 1 0%' }}>
+        <div style={{ display: activeTab === 'physics' ? 'flex' : 'none', flexDirection: 'column' }} className="pp-scroll">
           {activeTab === 'physics' && <PhysicsControls />}
         </div>
       </div>
