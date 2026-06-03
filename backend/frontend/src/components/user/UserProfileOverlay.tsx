@@ -5,6 +5,7 @@ import SpotlightCard from "../ui/SpotlightCard";
 import { apiRequest } from "../../utils/api";
 import type { ProfileUser, Role } from "../../pages/users/types";
 import UserAvatar from "./UserAvatar";
+import RoleBadge from "./RoleBadge";
 import "./UserProfileOverlay.css";
 
 interface UserProfileOverlayProps {
@@ -186,24 +187,10 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                     <p className="upo-username">@{user.username}</p>
                   )}
 
-                  <div className="upo-roles">
+                  <div className="upo-roles" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
                     {roles.map((r) => {
                       const roleDetails = allRoles.find((ar) => ar.name === r);
-                      const color =
-                        roleDetails?.theme_color || roleDetails?.glow_color;
-                      return (
-                        <span
-                          key={r}
-                          className="upo-badge"
-                          style={
-                            color
-                              ? { backgroundColor: color, color: "#fff" }
-                              : {}
-                          }
-                        >
-                          {r}
-                        </span>
-                      );
+                      return <RoleBadge key={r} role={roleDetails || r} />;
                     })}
                   </div>
 

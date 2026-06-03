@@ -167,7 +167,7 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := utils.ParseUserIdFromParam(r, "roleId")
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -256,7 +256,7 @@ func (h *Handler) deleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roleID, err := utils.ParseUserIdFromParam(r, "roleId")
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
 		return
@@ -377,4 +377,24 @@ func (h *Handler) removePermissionFromRole(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "permission removed from role"})
+}
+
+func (h *Handler) getRoleUsers(w http.ResponseWriter, r *http.Request) {
+	_, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	roleID, err := utils.ParseUserIdFromParam(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid role id")
+		return
+	}
+	users, err := h.svc.GetUsersByRole(roleID)
+	if err != nil {
+		log.Printf("user.Handler.getRoleUsers: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to get users by role")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, users)
 }

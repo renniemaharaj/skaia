@@ -603,3 +603,45 @@ func (r *sqlRepository) DeletePasswordResetTokens(userID int64) error {
 	_, err := r.db.Exec(`DELETE FROM password_reset_tokens WHERE user_id = $1`, userID)
 	return err
 }
+
+func (r *sqlRepository) GetUsersByRole(roleID int64) ([]*models.User, error) {
+	rows, err := r.db.Query(`
+		SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.banner_url, u.discord_id, u.created_at, u.bio, u.is_suspended, u.suspended_reason
+		FROM users u
+		JOIN user_roles ur ON u.id = ur.user_id
+		WHERE ur.role_id = $1
+		ORDER BY u.username ASC
+	`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var users []*models.User
+	for rows.Next() {
+		u := &models.User{}
+		var avatar, banner, discord, bio, reason *string
+		if err := rows.Scan(
+			&u.ID, &u.Username, &u.Email, &u.DisplayName,
+			&avatar, &banner, &discord, &u.CreatedAt, &bio, &u.IsSuspended, &reason,
+		); err != nil {
+			return nil, err
+		}
+		if avatar != nil {
+			u.AvatarURL = *avatar
+		}
+		if banner != nil {
+			u.BannerURL = *banner
+		}
+		if discord != nil {
+			u.DiscordID = discord
+		}
+		if bio != nil {
+			u.Bio = *bio
+		}
+		if reason != nil {
+			u.SuspendedReason = reason
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}

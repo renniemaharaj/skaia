@@ -1,13 +1,16 @@
 import { ThumbsUp, Trash2 } from "lucide-react";
-import { useMemo, type RefObject, useState } from "react";
+import { useMemo, useEffect, type RefObject, useState } from "react";
 import ComposerInput from "../input/Input";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
+import RoleBadge from "../user/RoleBadge";
 import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
 import SpotlightCard from "../ui/SpotlightCard";
+import { apiRequest } from "../../utils/api";
+import type { Role } from "../../pages/users/types";
 import "./CommentSection.css";
 
 type CommentSectionComment = {
@@ -79,6 +82,11 @@ const CommentSection = ({
   const hasComments = comments.length > 0;
   const [richTextContent, setRichTextContent] = useState("");
   const [isEditorVisible, setIsEditorVisible] = useState(false);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
+
+  useEffect(() => {
+    apiRequest<Role[]>("/users/roles").then((r) => setAllRoles(r || []));
+  }, []);
 
   const headerCount = useMemo(
     () => (showCount ? `(${comments.length})` : ""),
@@ -169,12 +177,15 @@ const CommentSection = ({
                         {authorDisplay}
                       </span>
                     )}
-                    {comment.author_roles &&
-                      comment.author_roles.length > 0 && (
-                        <span className="comment-role">
-                          {comment.author_roles.join(", ")}
-                        </span>
-                      )}
+                    <div className="comment-roles" style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginLeft: '0.2rem' }}>
+                      {comment.author_roles &&
+                        comment.author_roles.length > 0 &&
+                        comment.author_roles.map(r => {
+                          const roleDetails = allRoles.find(ar => ar.name === r);
+                          return <RoleBadge key={r} role={roleDetails || r} style={{ fontSize: '0.65rem', padding: '1px 6px' }} />;
+                        })
+                      }
+                    </div>
                     <span className="comment-date">
                       {formatDate(comment.created_at)}
                     </span>

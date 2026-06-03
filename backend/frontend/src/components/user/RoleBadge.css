@@ -1,0 +1,14 @@
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+  white-space: nowrap;
+  line-height: 1.4;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+}

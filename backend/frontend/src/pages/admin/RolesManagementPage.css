@@ -115,6 +115,63 @@
   margin-top: 1rem;
 }
 
+.rmp-color-input {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  cursor: pointer;
+  overflow: hidden;
+}
+.rmp-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.rmp-color-input::-webkit-color-swatch {
+  border: none;
+}
+
+.rmp-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-color);
+  padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+}
+
+.rmp-user-badge-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.rmp-user-badge-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rmp-user-badge-remove:hover {
+  background: color-mix(in srgb, var(--error-color) 15%, transparent);
+  color: var(--error-color);
+}
+
 /* Role list */
 .rmp-list {
   display: flex;

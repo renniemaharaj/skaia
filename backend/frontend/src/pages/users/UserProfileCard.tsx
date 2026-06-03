@@ -14,6 +14,7 @@ import type { ProfileUser, Role } from "./types";
 import { formatDate } from "./useUserData";
 import UserAvatar from "../../components/user/UserAvatar";
 import SpotlightCard from "../../components/ui/SpotlightCard";
+import RoleBadge from "../../components/user/RoleBadge";
 
 interface Props {
   user: ProfileUser;
@@ -137,15 +138,10 @@ const UserProfileCard = ({
             {user.email && canSuspend && (
               <p className="up-email">{user.email}</p>
             )}
-            <div className="up-roles">
+            <div className="up-roles" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
               {(user.roles ?? []).map((r) => {
                 const roleDetails = allRoles.find(ar => ar.name === r);
-                const color = roleDetails?.theme_color || roleDetails?.glow_color;
-                return (
-                  <span key={r} className={`up-badge up-badge-${r}`} style={color ? { backgroundColor: color, color: '#fff' } : {}}>
-                    {r}
-                  </span>
-                );
+                return <RoleBadge key={r} role={roleDetails || r} />;
               })}
             </div>
           </div>

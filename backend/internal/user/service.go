@@ -304,3 +304,7 @@ func (s *Service) GetRoleByIDName(name string) (*models.Role, error) {
 	}
 	return nil, fmt.Errorf("role not found")
 }
+
+func (s *Service) GetUsersByRole(roleID int64) ([]*models.User, error) {
+	return s.repo.GetUsersByRole(roleID)
+}

@@ -91,6 +91,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 			r.Put("/roles/{id}", h.updateRole)
 			r.Delete("/roles/{id}", h.deleteRole)
 			r.Get("/roles/{id}/permissions", h.getRolePermissions)
+			r.Get("/roles/{id}/users", h.getRoleUsers)
 			r.Delete("/roles/{id}/permissions/{perm}", h.removePermissionFromRole)
 			r.Post("/roles/{id}/permissions/{perm}", h.addPermissionToRole)
 		})

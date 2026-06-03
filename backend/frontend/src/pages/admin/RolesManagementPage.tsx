@@ -3,12 +3,18 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../utils/api";
-import type { Permission, Role } from "../users/types";
+import type { Permission, Role, ProfileUser } from "../users/types";
+import PersonPicker from "../../components/ui/PersonPicker";
+import UserAvatar from "../../components/user/UserAvatar";
+import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import type { User } from "../../atoms/auth";
 import "./RolesManagementPage.css";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];
-  expanded?: boolean;
+  loadedUsers?: ProfileUser[];
+  permsExpanded?: boolean;
+  usersExpanded?: boolean;
 }
 
 export default function RolesManagementPage() {
@@ -49,7 +55,9 @@ export default function RolesManagementPage() {
           (fetchedRoles ?? []).map((r) => ({
             ...r,
             loadedPerms: undefined,
-            expanded: false,
+            loadedUsers: undefined,
+            permsExpanded: false,
+            usersExpanded: false,
           })),
         );
         setAllPerms(fetchedPerms ?? []);
@@ -71,15 +79,66 @@ export default function RolesManagementPage() {
     );
   };
 
-  const toggleExpand = async (roleId: string) => {
+  const togglePermsExpand = async (roleId: string) => {
     const role = roles.find((r) => r.id === roleId);
     if (!role) return;
-    const nowExpanded = !role.expanded;
+    const nowExpanded = !role.permsExpanded;
     setRoles((rs) =>
-      rs.map((r) => (r.id === roleId ? { ...r, expanded: nowExpanded } : r)),
+      rs.map((r) => (r.id === roleId ? { ...r, permsExpanded: nowExpanded } : r)),
     );
     if (nowExpanded && role.loadedPerms === undefined) {
       await loadRolePerms(roleId);
+    }
+  };
+
+  const toggleUsersExpand = async (roleId: string) => {
+    const role = roles.find((r) => r.id === roleId);
+    if (!role) return;
+    const nowExpanded = !role.usersExpanded;
+    setRoles((rs) =>
+      rs.map((r) => (r.id === roleId ? { ...r, usersExpanded: nowExpanded } : r)),
+    );
+    if (nowExpanded && role.loadedUsers === undefined) {
+      try {
+        const users = await apiRequest<ProfileUser[]>(`/users/roles/${roleId}/users`);
+        setRoles((rs) => rs.map((r) => (r.id === roleId ? { ...r, loadedUsers: users || [] } : r)));
+      } catch (e) {
+        toast.error("Failed to load users for role");
+      }
+    }
+  };
+
+  const removeUserFromRole = async (roleId: string, roleName: string, userId: string) => {
+    try {
+      await apiRequest(`/users/${userId}/roles/${roleName}`, { method: "DELETE" });
+      setRoles((rs) =>
+        rs.map((r) => {
+          if (r.id !== roleId || !r.loadedUsers) return r;
+          return { ...r, loadedUsers: r.loadedUsers.filter(u => String(u.id) !== String(userId)) };
+        })
+      );
+      toast.success("User removed from role");
+    } catch (e) {
+      toast.error("Failed to remove user");
+    }
+  };
+
+  const addUserToRole = async (roleId: string, roleName: string, user: ProfileUser | User) => {
+    try {
+      await apiRequest(`/users/${user.id}/roles`, { 
+        method: "POST",
+        body: JSON.stringify({ role: roleName })
+      });
+      setRoles((rs) =>
+        rs.map((r) => {
+          if (r.id !== roleId || !r.loadedUsers) return r;
+          if (r.loadedUsers.some(u => String(u.id) === String(user.id))) return r;
+          return { ...r, loadedUsers: [...r.loadedUsers, user as ProfileUser] };
+        })
+      );
+      toast.success("User added to role");
+    } catch (e) {
+      toast.error("Failed to add user");
     }
   };
 
@@ -151,7 +210,7 @@ export default function RolesManagementPage() {
       });
       if (role) {
         setRoles((rs) => [
-          { ...role, loadedPerms: [], expanded: false },
+          { ...role, loadedPerms: [], loadedUsers: [], permsExpanded: false, usersExpanded: false },
           ...rs,
         ]);
         toast.success("Role created");
@@ -298,9 +357,9 @@ export default function RolesManagementPage() {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
                   type="color"
+                  className="rmp-color-input"
                   value={createThemeColor || "#ffffff"}
                   onChange={(e) => setCreateThemeColor(e.target.value)}
-                  style={{ width: '32px', height: '32px', padding: 0, border: 'none', background: 'none' }}
                 />
                 <button 
                   className="btn btn-secondary" 
@@ -381,9 +440,9 @@ export default function RolesManagementPage() {
                         <span className="rmp-label">Color</span>
                         <input
                           type="color"
+                          className="rmp-color-input"
                           value={editThemeColor || "#ffffff"}
                           onChange={(e) => setEditThemeColor(e.target.value)}
-                          style={{ width: '24px', height: '24px', padding: 0, border: 'none', background: 'none' }}
                         />
                         {editThemeColor && (
                            <button 
@@ -447,20 +506,69 @@ export default function RolesManagementPage() {
                   )}
                   <button
                     className="btn btn-secondary rmp-action-btn rmp-expand-btn"
-                    onClick={() => toggleExpand(role.id)}
+                    onClick={() => toggleUsersExpand(role.id)}
                   >
-                    {role.expanded ? (
-                      <ChevronUp size={16} />
-                    ) : (
-                      <ChevronDown size={16} />
-                    )}
+                    {role.usersExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    Users
+                  </button>
+                  <button
+                    className="btn btn-secondary rmp-action-btn rmp-expand-btn"
+                    onClick={() => togglePermsExpand(role.id)}
+                  >
+                    {role.permsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     Permissions
                   </button>
                 </div>
               </div>
 
+              {/* Expanded users */}
+              {role.usersExpanded && (
+                <div className="rmp-perms-panel" style={{ borderTop: '1px solid var(--border-color)', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: '0 0 12px 12px' }}>
+                  <div style={{ marginBottom: '1.5rem', maxWidth: '350px' }}>
+                    <label className="rmp-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Add user to role</label>
+                    <PersonPicker 
+                      onSelect={(user) => addUserToRole(role.id, role.name, user)} 
+                      excludeIds={role.loadedUsers?.map(u => u.id) || []}
+                      excludeSelf={false}
+                      placeholder="Search users..."
+                      autoFocus={false}
+                    />
+                  </div>
+                  {role.loadedUsers === undefined ? (
+                    <div className="rmp-perms-loading">Loading users…</div>
+                  ) : role.loadedUsers.length === 0 ? (
+                    <p className="rmp-empty" style={{ margin: 0 }}>No users assigned to this role.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {role.loadedUsers.map(u => (
+                        <div key={u.id} className="rmp-user-badge">
+                          <UserProfileOverlay userId={u.id} fallbackName={u.display_name || u.username} fallbackAvatar={u.avatar_url || undefined}>
+                            <UserAvatar
+                              src={u.avatar_url || undefined}
+                              alt={u.display_name || u.username}
+                              size={24}
+                              initials={(u.display_name || u.username)?.[0]?.toUpperCase()}
+                            />
+                          </UserProfileOverlay>
+                          <span className="rmp-user-badge-name" title={u.display_name || u.username}>
+                            {u.display_name || u.username}
+                          </span>
+                          <button 
+                            className="rmp-user-badge-remove"
+                            onClick={() => removeUserFromRole(role.id, role.name, String(u.id))}
+                            title={`Remove ${u.display_name || u.username} from ${role.name}`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Expanded permissions */}
-              {role.expanded && (
+              {role.permsExpanded && (
                 <div className="rmp-perms-panel">
                   {role.loadedPerms === undefined ? (
                     <div className="rmp-perms-loading">

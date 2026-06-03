@@ -45,6 +45,7 @@ type Repository interface {
 	DeleteRole(id int64) error
 	GetRoleByID(id int64) (*models.Role, error)
 	GetRolePermissions(roleID int64) ([]*models.Permission, error)
+	GetUsersByRole(roleID int64) ([]*models.User, error)
 	AddPermissionToRole(roleID int64, permissionName string) error
 	RemovePermissionFromRole(roleID int64, permissionName string) error
 

@@ -17,6 +17,7 @@ import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
 import type { ProfileUser, Role } from "../../pages/users/types";
+import RoleBadge from "../user/RoleBadge";
 
 type Author = {
   name: string;
@@ -133,15 +134,12 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
                   displayName={author.name}
                   className="vtm-author-link"
                 />
-                {currentThread?.user_roles && currentThread.user_roles.map((r) => {
-                  const roleDetails = allRoles.find(ar => ar.name === r);
-                  const color = roleDetails?.theme_color || roleDetails?.glow_color;
-                  return (
-                    <span key={r} className={`upo-badge upo-badge-${r}`} style={color ? { backgroundColor: color, color: '#fff' } : {}}>
-                      {r}
-                    </span>
-                  );
-                })}
+                <div className="vtm-roles" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  {currentThread?.user_roles && currentThread.user_roles.map((r) => {
+                    const roleDetails = allRoles.find(ar => ar.name === r);
+                    return <RoleBadge key={r} role={roleDetails || r} />;
+                  })}
+                </div>
               </div>
             </div>
             <div className="vtm-group">
