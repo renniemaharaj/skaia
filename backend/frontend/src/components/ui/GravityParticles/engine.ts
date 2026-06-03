@@ -11,6 +11,22 @@ export type Particle = {
   heat: number;
   /** Ring buffer of recent positions for trail rendering, newest-first */
   trail: { x: number; y: number }[];
+  /**
+   * Autonomous personality — assigned at birth when particlesAreAlive is on.
+   * 'solitary': steers toward lowest gravitational pressure in sight.
+   * 'social':   steers toward highest gravitational pressure in sight.
+   */
+  personality?: "solitary" | "social";
+  /**
+   * Ticks remaining before the particle "thinks" again (asks its two questions).
+   * Randomised per particle to prevent synchronised behaviour.
+   */
+  thinkCooldown?: number;
+  /**
+   * The direction (radians) the particle decided to pursue last think cycle.
+   * Held between think cycles so the steering is smooth/persistent.
+   */
+  desiredAngle?: number;
 } & Partial<CourtshipFields>;
 
 export type Explosion = {
@@ -48,7 +64,7 @@ export type PhysicsSettings = {
    * 'gravity': acts as a pure attractor (pull only)
    * 'repel': repels all particles
    */
-  cursorMode: 'mixed' | 'gravity' | 'repel';
+  cursorMode: "mixed" | "gravity" | "repel";
   /** TRUE = clicking empty space creates new particles */
   createOnClick: boolean;
   /** Number of physics sub-steps per frame (1–4, default 2) */
@@ -59,6 +75,30 @@ export type PhysicsSettings = {
   shockwaveForce: number;
   /** Fragment mass for threshold explosions */
   fragmentMass: number;
+  /** TRUE = particles exhibit autonomous swimming behavior */
+  particlesAreAlive: boolean;
+  /**
+   * How many ticks between each "think" cycle for alive particles.
+   * Lower = more reactive, higher = more drift-like. Default 90.
+   */
+  thinkInterval: number;
+  /**
+   * Sight radius (px) within which alive particles sense gravitational pressure.
+   * Particles cannot "see" beyond this — empty space just past it looks safe.
+   * Default 120.
+   */
+  sightRadius: number;
+  /**
+   * How many evenly-spaced rays the particle casts when scanning its surroundings.
+   * More rays = finer direction choice, slightly heavier. Default 12.
+   */
+  sightRays: number;
+  /**
+   * Strength of the autonomous steering impulse applied each tick.
+   * This is a force coefficient — kept small so it nudges rather than yanks.
+   * Default 0.4.
+   */
+  aliveSteerForce: number;
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -84,12 +124,17 @@ export const defaultSettings: PhysicsSettings = {
   orbitalDecayChance: 0.012,
   mergeThreshold: 3.5,
   cursorMass: 80,
-  cursorMode: 'gravity',
+  cursorMode: "gravity",
   createOnClick: false,
   subSteps: 2,
   trailLength: MAX_TRAIL_LENGTH,
   shockwaveForce: 6,
   fragmentMass: 2,
+  particlesAreAlive: false,
+  thinkInterval: 90,
+  sightRadius: 120,
+  sightRays: 12,
+  aliveSteerForce: 0.4,
 };
 
 // ─── Colour helpers ──────────────────────────────────────────────────────────
@@ -138,7 +183,7 @@ export const getRadius = (mass: number): number => Math.sqrt(mass) * 1.5;
 /** Softening length — prevents force singularities when particles overlap */
 const softeningEpsilonSq = (r1: number, r2: number): number => {
   const s = (r1 + r2) * 0.5;
-  return s * s + 4; // constant floor of 4 keeps tiny particles stable
+  return s * s + 4;
 };
 
 // ─── Particle factory ────────────────────────────────────────────────────────
@@ -149,28 +194,143 @@ export const spawnParticle = (
   mass: number,
   nextId: { current: number },
   color?: string,
-): Particle => ({
-  id: nextId.current++,
-  x,
-  y,
-  vx: (Math.random() - 0.5) * 2,
-  vy: (Math.random() - 0.5) * 2,
-  mass,
-  color:
-    color ?? defaultColors[Math.floor(Math.random() * defaultColors.length)],
-  mergeCooldown: 0,
-  heat: 0,
-  trail: [],
-});
+  particlesAreAlive?: boolean,
+): Particle => {
+  const p: Particle = {
+    id: nextId.current++,
+    x,
+    y,
+    vx: (Math.random() - 0.5) * 2,
+    vy: (Math.random() - 0.5) * 2,
+    mass,
+    color:
+      color ?? defaultColors[Math.floor(Math.random() * defaultColors.length)],
+    mergeCooldown: 0,
+    heat: 0,
+    trail: [],
+  };
+
+  if (particlesAreAlive) {
+    // Assign personality at birth — roughly equal split with slight solitary bias
+    p.personality = Math.random() < 0.5 ? "solitary" : "social";
+    // Stagger initial think cooldowns so they don't all decide on frame 1
+    p.thinkCooldown = Math.floor(Math.random() * 90);
+    p.desiredAngle = Math.random() * Math.PI * 2;
+  }
+
+  return p;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Autonomous behaviour helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Q1: "Where am I?" — sample gravitational pressure along each ray.
+ *
+ * For each ray direction we accumulate (mass / dist²) from every visible
+ * particle within sightRadius.  This gives a scalar "pressure" per ray that
+ * reflects how much gravitational pull exists in that direction.
+ *
+ * Attractors count as heavy anchors and are included.
+ *
+ * @returns pressure[rayIndex] array, length = numRays
+ */
+const scanPressure = (
+  p: Particle,
+  parts: Particle[],
+  attractors: AttractorParticle[],
+  toRemove: Set<number>,
+  numRays: number,
+  sightRadius: number,
+): number[] => {
+  const pressure = new Array<number>(numRays).fill(0);
+  const rayAngleStep = (Math.PI * 2) / numRays;
+  const sightRadiusSq = sightRadius * sightRadius;
+
+  const sampleSource = (sx: number, sy: number, mass: number) => {
+    const dx = sx - p.x;
+    const dy = sy - p.y;
+    const distSq = dx * dx + dy * dy;
+    if (distSq > sightRadiusSq || distSq < 0.01) return;
+
+    const angle = Math.atan2(dy, dx);
+    // Map angle to closest ray index
+    let rayIdx = Math.round(angle / rayAngleStep) % numRays;
+    if (rayIdx < 0) rayIdx += numRays;
+
+    // Pressure falls off with distance squared; mass-weighted
+    pressure[rayIdx] += mass / distSq;
+  };
+
+  for (const other of parts) {
+    if (other.id === p.id || toRemove.has(other.id)) continue;
+    sampleSource(other.x, other.y, other.mass);
+  }
+  for (const att of attractors) {
+    sampleSource(att.x, att.y, att.mass);
+  }
+
+  return pressure;
+};
+
+/**
+ * Q2: "Where can I go?" — choose a direction based on personality.
+ *
+ * Solitary: pick the ray with the LEAST pressure (escape toward emptiness).
+ * Social:   pick the ray with the MOST pressure (move toward company).
+ *
+ * To avoid oscillation, we add a small inertia bias toward the particle's
+ * current heading so it doesn't flip 180° every think cycle.
+ *
+ * @returns chosen angle in radians
+ */
+const chooseDirection = (
+  p: Particle,
+  pressure: number[],
+  numRays: number,
+): number => {
+  const rayAngleStep = (Math.PI * 2) / numRays;
+
+  // Add inertia: lightly boost the ray closest to current heading
+  const currentAngle = Math.atan2(p.vy, p.vx);
+  const pressureWithInertia = pressure.slice();
+  const inertiaBoost = Math.max(...pressure) * 0.25; // 25% of max pressure
+  let closestRay = Math.round(currentAngle / rayAngleStep) % numRays;
+  if (closestRay < 0) closestRay += numRays;
+  pressureWithInertia[closestRay] += inertiaBoost;
+
+  if (p.personality === "solitary") {
+    // Prefer LEAST pressure — find min, break ties randomly
+    let minP = Infinity;
+    let chosen = 0;
+    for (let i = 0; i < numRays; i++) {
+      if (pressureWithInertia[i] < minP) {
+        minP = pressureWithInertia[i];
+        chosen = i;
+      }
+    }
+    return chosen * rayAngleStep;
+  } else {
+    // Prefer MOST pressure
+    let maxP = -Infinity;
+    let chosen = 0;
+    for (let i = 0; i < numRays; i++) {
+      if (pressureWithInertia[i] > maxP) {
+        maxP = pressureWithInertia[i];
+        chosen = i;
+      }
+    }
+    return chosen * rayAngleStep;
+  }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Spatial Hash Grid
-// Divides the world into cells of size `cellSize`.  Each particle is hashed
-// into a cell; neighbour queries only visit the 3×3 block of surrounding cells.
 // ─────────────────────────────────────────────────────────────────────────────
 
 class SpatialHash {
-  private cells = new Map<number, number[]>(); // cell key → particle indices
+  private cells = new Map<number, number[]>();
   private cellSize: number;
 
   constructor(cellSize: number) {
@@ -182,7 +342,6 @@ class SpatialHash {
   }
 
   private key(cx: number, cy: number): number {
-    // Cantor pairing with sign handling for negative coords
     const px = cx >= 0 ? 2 * cx : -2 * cx - 1;
     const py = cy >= 0 ? 2 * cy : -2 * cy - 1;
     return ((px + py) * (px + py + 1)) / 2 + py;
@@ -200,7 +359,6 @@ class SpatialHash {
     cell.push(idx);
   }
 
-  /** Yields all particle indices in the 3×3 neighbourhood of (x, y) */
   *query(x: number, y: number): IterableIterator<number> {
     const cx = Math.floor(x / this.cellSize);
     const cy = Math.floor(y / this.cellSize);
@@ -242,30 +400,29 @@ export const stepPhysics = (
     trailLength,
     shockwaveForce,
     fragmentMass: FRAGMENT_MASS,
+    particlesAreAlive,
+    thinkInterval,
+    sightRadius,
+    sightRays,
+    aliveSteerForce,
   } = settings;
 
-  // Sub-step dt fraction
   const dt = 1 / Math.max(1, subSteps);
 
-  // Cursor list
   const combinedCursors = [...activeCursors];
   if (mousePos.active && !grabbedParticle) {
     combinedCursors.push({ x: mousePos.x, y: mousePos.y });
   }
 
-  // The spatial hash cell size should comfortably fit the largest interaction
-  // radius.  Using 60 covers most particle pairs at 200–500 count.
   const grid = new SpatialHash(60);
 
-  // We run state mutably for performance; a full immutable copy at 500 particles
-  // per sub-step per frame is expensive.  We track which ids to remove/add.
   const toRemove = new Set<number>();
   const newParts: Particle[] = [];
   const newExplosions: Explosion[] = [];
 
   const clusterMap = buildClusterMap(parts);
 
-  // ── Helper: explode a single particle into fragments ──────────────────────
+  // ── Helper: explode a single particle ────────────────────────────────────
   const explodeParticle = (
     p: Particle,
     shockCenter?: { x: number; y: number },
@@ -291,6 +448,7 @@ export const stepPhysics = (
         Math.max(1, (p.mass / numFragments) * 0.9),
         nextId,
         p.color,
+        particlesAreAlive,
       );
       frag.vx = p.vx + Math.cos(angle) * speed;
       frag.vy = p.vy + Math.sin(angle) * speed;
@@ -298,7 +456,6 @@ export const stepPhysics = (
       newParts.push(frag);
     }
 
-    // Shockwave: push nearby particles away from the explosion center
     if (shockwaveForce > 0) {
       const sc = shockCenter ?? p;
       const shockRadius = getRadius(p.mass) * 8;
@@ -320,7 +477,6 @@ export const stepPhysics = (
 
   // ── Sub-step loop ─────────────────────────────────────────────────────────
   for (let step = 0; step < subSteps; step++) {
-    // Rebuild grid each sub-step (positions change)
     grid.clear();
     for (let i = 0; i < parts.length; i++) {
       if (!toRemove.has(parts[i].id)) grid.insert(i, parts[i].x, parts[i].y);
@@ -334,9 +490,9 @@ export const stepPhysics = (
       let fy = 0;
       const r1 = getRadius(p1.mass);
 
-      // ── Particle–particle interactions (spatial hash) ─────────────────────
+      // ── Particle–particle interactions ────────────────────────────────────
       for (const j of grid.query(p1.x, p1.y)) {
-        if (j <= i) continue; // process each pair once
+        if (j <= i) continue;
         const p2 = parts[j];
         if (toRemove.has(p2.id)) continue;
 
@@ -350,7 +506,6 @@ export const stepPhysics = (
         const minDist = r1 + r2;
 
         if (dist < minDist) {
-          // ── Collision resolution ─────────────────────────────────────────
           const nx = dx / dist;
           const ny = dy / dist;
           const dvx = p2.vx - p1.vx;
@@ -359,10 +514,10 @@ export const stepPhysics = (
 
           const approachSpeed = -velAlongNormal;
           const isOrbitalDecay =
-            approachSpeed < mergeThreshold && Math.random() < orbitalDecayChance;
+            approachSpeed < mergeThreshold &&
+            Math.random() < orbitalDecayChance;
 
           if (approachSpeed >= Math.max(3.5, mergeThreshold)) {
-            // ─ High-speed collision → explode both ──────────────────────────
             if (!toRemove.has(p1.id) && !toRemove.has(p2.id)) {
               toRemove.add(p1.id);
               toRemove.add(p2.id);
@@ -379,10 +534,8 @@ export const stepPhysics = (
           }
 
           if (isOrbitalDecay) {
-            // ─ Merge ────────────────────────────────────────────────────────
             const newColor = blendColors(p1.color, p2.color, p1.mass, p2.mass);
             if (p1.mass >= p2.mass) {
-              // p1 absorbs p2 — conserve momentum exactly
               p1.vx = (p1.mass * p1.vx + p2.mass * p2.vx) / (p1.mass + p2.mass);
               p1.vy = (p1.mass * p1.vy + p2.mass * p2.vy) / (p1.mass + p2.mass);
               p1.mass += p2.mass;
@@ -400,9 +553,7 @@ export const stepPhysics = (
             continue;
           }
 
-          // ─ Elastic / inelastic bounce ──────────────────────────────────────
           if (velAlongNormal < 0) {
-            // Restitution scales down for very unequal masses (avoids jitter)
             const massRatio =
               Math.min(p1.mass, p2.mass) / Math.max(p1.mass, p2.mass);
             const e = Math.max(0.05, bounceRestitution * Math.sqrt(massRatio));
@@ -414,7 +565,6 @@ export const stepPhysics = (
             p2.vx += (j_impulse * nx) / p2.mass;
             p2.vy += (j_impulse * ny) / p2.mass;
 
-            // Orbital spin-up (vis-viva tangential nudge)
             const tx = -ny;
             const ty = nx;
             const totalMass = p1.mass + p2.mass;
@@ -430,45 +580,42 @@ export const stepPhysics = (
             }
           }
 
-          // Positional correction — prevents sinking
           const overlap = minDist - dist;
           const correction = overlap * 0.5;
           p1.x -= nx * correction;
           p1.y -= ny * correction;
           p2.x += nx * correction;
           p2.y += ny * correction;
-        } else {
-          // Gravitational attraction is handled by system gravity below
         }
       }
 
-      // ── System gravity ──────────────────────────────────────────────
+      // ── System gravity ────────────────────────────────────────────────────
       const { fx: sfx, fy: sfy } = applySystemGravity(
         p1,
         clusterMap,
         parts,
         G,
-        toRemove
+        toRemove,
       );
       fx += sfx;
       fy += sfy;
-      // ── Cursor interactions ──────────────────────────────────────────────
+
+      // ── Cursor interactions ───────────────────────────────────────────────
       for (const cursor of combinedCursors) {
         const dx = cursor.x - p1.x;
         const dy = cursor.y - p1.y;
         const distSq = dx * dx + dy * dy;
         const dist = Math.sqrt(distSq) || 0.001;
 
-        if (cursorMode === 'repel') {
+        if (cursorMode === "repel") {
           const force = -(G * p1.mass * CURSOR_MASS * 5) / (distSq + 10);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;
-        } else if (cursorMode === 'mixed' && dist < CURSOR_REPULSION_DIST) {
+        } else if (cursorMode === "mixed" && dist < CURSOR_REPULSION_DIST) {
           const force = -(G * p1.mass * CURSOR_MASS * 5) / (distSq + 10);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;
         } else {
-          // 'gravity' mode, or 'mixed' mode beyond repulsion distance
           const force = (G * p1.mass * CURSOR_MASS) / (distSq + 100);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;
@@ -487,6 +634,44 @@ export const stepPhysics = (
         fy += (dy / dist) * force;
       }
 
+      // ── Alive: autonomous steering ────────────────────────────────────────
+      if (particlesAreAlive && p1.personality !== undefined) {
+        // Initialise fields on particles that predate the alive setting being enabled
+        if (p1.thinkCooldown === undefined) {
+          p1.thinkCooldown = Math.floor(Math.random() * thinkInterval);
+          p1.desiredAngle = Math.atan2(p1.vy, p1.vx);
+        }
+
+        p1.thinkCooldown!--;
+
+        if (p1.thinkCooldown! <= 0) {
+          // ── Q1: "Where am I?" ─────────────────────────────────────────────
+          const pressure = scanPressure(
+            p1,
+            parts,
+            attractors,
+            toRemove,
+            sightRays,
+            sightRadius,
+          );
+
+          // ── Q2: "Where can I go?" ─────────────────────────────────────────
+          p1.desiredAngle = chooseDirection(p1, pressure, sightRays);
+
+          // Stagger the next think — base interval ± 30% jitter
+          const jitter = Math.floor(
+            (Math.random() - 0.5) * thinkInterval * 0.6,
+          );
+          p1.thinkCooldown = Math.max(20, thinkInterval + jitter);
+        }
+
+        // Apply a gentle continuous steering force toward desiredAngle.
+        // Force is scaled by mass so heavier particles steer more sluggishly.
+        const steerScale = aliveSteerForce / Math.sqrt(p1.mass);
+        fx += Math.cos(p1.desiredAngle!) * steerScale * p1.mass;
+        fy += Math.sin(p1.desiredAngle!) * steerScale * p1.mass;
+      }
+
       if (toRemove.has(p1.id)) continue;
 
       // ── Integrate velocity ────────────────────────────────────────────────
@@ -495,14 +680,12 @@ export const stepPhysics = (
       p1.vx += (fx / p1.mass) * dt;
       p1.vy += (fy / p1.mass) * dt;
 
-      // Clamp speed
       const speed = Math.sqrt(p1.vx * p1.vx + p1.vy * p1.vy);
       if (speed > MAX_V) {
         p1.vx = (p1.vx / speed) * MAX_V;
         p1.vy = (p1.vy / speed) * MAX_V;
       }
 
-      // Integrate position
       p1.x += p1.vx * dt;
       p1.y += p1.vy * dt;
 
@@ -554,6 +737,7 @@ export const stepPhysics = (
             FRAGMENT_MASS,
             nextId,
             p1.color,
+            particlesAreAlive,
           );
           frag.vx = Math.cos(angle) * burstSpeed;
           frag.vy = Math.sin(angle) * burstSpeed;
@@ -570,8 +754,8 @@ export const stepPhysics = (
         });
         toRemove.add(p1.id);
       }
-    } // end particle loop
-  } // end sub-step loop
+    }
+  }
 
   // ── Build next particles array ────────────────────────────────────────────
   const nextParts: Particle[] = [];
@@ -584,7 +768,6 @@ export const stepPhysics = (
   const updatedExplosions: Explosion[] = [];
   for (const exp of explosions) {
     exp.alpha -= 0.025;
-    // Expand toward maxRadius, then slow down (ease-out feel)
     const expandRate = (exp.maxRadius - exp.radius) * 0.12 + 1;
     exp.radius += expandRate;
     if (exp.alpha > 0) updatedExplosions.push(exp);

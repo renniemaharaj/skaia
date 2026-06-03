@@ -240,6 +240,25 @@ const PhysicsControls = () => {
             />
           </label>
         </div>
+
+        <div className="pp-physics-control pp-physics-checkbox">
+          <label
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              display: "flex",
+            }}
+          >
+            <span>Particles Are Alive</span>
+            <input
+              type="checkbox"
+              checked={settings.particlesAreAlive}
+              onChange={(e) => updateSetting("particlesAreAlive", e.target.checked)}
+              style={{ width: "auto", margin: 0 }}
+            />
+          </label>
+        </div>
       </Section>
 
       <Section title="Visuals">
