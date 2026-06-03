@@ -30,6 +30,8 @@ import { Toaster, toast } from "sonner";
 import { PromptContainer } from "../components/ui/Prompt";
 import { syncServerTime } from "../utils/serverTime";
 import GravityParticles from "../components/ui/GravityParticles";
+import { CenterAnchoredSystem, TextGravityRenderer } from "../components/ui/GravityParticles/GravityRenderers";
+import { physicsSettingsAtom } from "../atoms/physics";
 import Particles from "../components/ui/Particles/Particles";
 import RateLimitedPage from "./RateLimitedPage";
 import MFAChallenge from "./MFAChallenge";
@@ -152,6 +154,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }));
   }, [cursorPositions]);
   const seo = useAtomValue(seoAtom);
+  const physicsSettings = useAtomValue(physicsSettingsAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
@@ -437,7 +440,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       {(seo?.particle_style === "gravity") && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
-          <GravityParticles particleCount={150} externalCursors={externalCursors} />
+          {physicsSettings.rendererType === "center-anchored" ? (
+            <CenterAnchoredSystem particleCount={200} />
+          ) : physicsSettings.rendererType === "text" ? (
+            <TextGravityRenderer text={physicsSettings.rendererText} particleCount={300} />
+          ) : (
+            <GravityParticles particleCount={150} externalCursors={externalCursors} />
+          )}
         </div>
       )}
       {(seo?.particle_style === "default" || !seo?.particle_style) && (

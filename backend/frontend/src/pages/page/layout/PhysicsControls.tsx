@@ -28,7 +28,41 @@ const PhysicsControls = () => {
 
   return (
     <div className="pp-physics-controls">
-      <Section title="Environment" defaultOpen>
+      <Section title="Renderer" defaultOpen>
+        <div className="pp-physics-control">
+          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Style</span>
+            <select
+              value={settings.rendererType}
+              onChange={(e) =>
+                updateSetting("rendererType", e.target.value as PhysicsSettings["rendererType"])
+              }
+              className="pp-physics-select"
+            >
+              <option value="default">Default Gravity</option>
+              <option value="center-anchored">Center Anchored System</option>
+              <option value="text">Text Swarm</option>
+            </select>
+          </label>
+        </div>
+        
+        {settings.rendererType === "text" && (
+          <div className="pp-physics-control">
+            <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>Text</span>
+              <input
+                type="text"
+                value={settings.rendererText}
+                onChange={(e) => updateSetting("rendererText", e.target.value)}
+                className="pp-physics-input"
+                style={{ width: "120px", textAlign: "right" }}
+              />
+            </label>
+          </div>
+        )}
+      </Section>
+
+      <Section title="Environment">
         <div className="pp-physics-control">
           <label>
             <span>Gravity (G)</span>

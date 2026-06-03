@@ -691,3 +691,20 @@
 .pp-physics-select:focus {
   border-color: var(--primary-color);
 }
+
+.pp-physics-input {
+  padding: 4px 8px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  outline: none;
+  font-size: 11px;
+  font-family: inherit;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.pp-physics-input:focus {
+  border-color: var(--primary-color);
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useAtomValue } from 'jotai';
 import { physicsSettingsAtom } from '../../../atoms/physics';
-import type { Particle, Explosion } from './engine';
+import type { Particle, Explosion, AttractorParticle } from './engine';
 import { 
   spawnParticle, 
   stepPhysics, 
@@ -15,12 +15,14 @@ import './GravityParticles.css';
 interface GravityParticlesProps {
   particleCount?: number;
   externalCursors?: { x: number; y: number }[];
+  attractors?: AttractorParticle[];
   className?: string;
 }
 
 const GravityParticles: React.FC<GravityParticlesProps> = ({
   particleCount = 150,
   externalCursors = [],
+  attractors = [],
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,6 +37,9 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
   
   const externalCursorsRef = useRef(externalCursors);
   externalCursorsRef.current = externalCursors;
+
+  const attractorsRef = useRef(attractors);
+  attractorsRef.current = attractors;
   
   const grabbedParticleRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
@@ -146,7 +151,8 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
         mousePosRef.current,
         width,
         height,
-        nextId
+        nextId,
+        attractorsRef.current
       );
 
       particlesRef.current = nextParts;
