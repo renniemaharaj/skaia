@@ -43,8 +43,12 @@ export type PhysicsSettings = {
   /** Speed threshold below which particles can merge */
   mergeThreshold: number;
   cursorMass: number;
-  /** TRUE = cursor repels close particles; FALSE = pure attractor */
-  cursorRepels: boolean;
+  /**
+   * 'mixed': repels close particles, pulls far ones
+   * 'gravity': acts as a pure attractor (pull only)
+   * 'repel': repels all particles
+   */
+  cursorMode: 'mixed' | 'gravity' | 'repel';
   /** TRUE = clicking empty space creates new particles */
   createOnClick: boolean;
   /** Number of physics sub-steps per frame (1–4, default 2) */
@@ -80,7 +84,7 @@ export const defaultSettings: PhysicsSettings = {
   orbitalDecayChance: 0.012,
   mergeThreshold: 3.5,
   cursorMass: 80,
-  cursorRepels: true,
+  cursorMode: 'gravity',
   createOnClick: false,
   subSteps: 2,
   trailLength: MAX_TRAIL_LENGTH,
@@ -233,7 +237,7 @@ export const stepPhysics = (
     orbitalDecayChance,
     mergeThreshold,
     cursorMass: CURSOR_MASS,
-    cursorRepels,
+    cursorMode,
     subSteps,
     trailLength,
     shockwaveForce,
@@ -455,11 +459,16 @@ export const stepPhysics = (
         const distSq = dx * dx + dy * dy;
         const dist = Math.sqrt(distSq) || 0.001;
 
-        if (cursorRepels && dist < CURSOR_REPULSION_DIST) {
+        if (cursorMode === 'repel') {
+          const force = -(G * p1.mass * CURSOR_MASS * 5) / (distSq + 10);
+          fx += (dx / dist) * force;
+          fy += (dy / dist) * force;
+        } else if (cursorMode === 'mixed' && dist < CURSOR_REPULSION_DIST) {
           const force = -(G * p1.mass * CURSOR_MASS * 5) / (distSq + 10);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;
         } else {
+          // 'gravity' mode, or 'mixed' mode beyond repulsion distance
           const force = (G * p1.mass * CURSOR_MASS) / (distSq + 100);
           fx += (dx / dist) * force;
           fy += (dy / dist) * force;

@@ -190,7 +190,7 @@ const PhysicsControls = () => {
       <Section title="Interactions">
         <div className="pp-physics-control">
           <label>
-            <span>Cursor Mass</span>
+            <span>Cursor Force</span>
             <span>{settings.cursorMass}</span>
           </label>
           <input
@@ -205,22 +205,20 @@ const PhysicsControls = () => {
           />
         </div>
 
-        <div className="pp-physics-control pp-physics-checkbox">
-          <label
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              display: "flex",
-            }}
-          >
-            <span>Cursor Repels</span>
-            <input
-              type="checkbox"
-              checked={settings.cursorRepels}
-              onChange={(e) => updateSetting("cursorRepels", e.target.checked)}
-              style={{ width: "auto", margin: 0 }}
-            />
+        <div className="pp-physics-control">
+          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Cursor Mode</span>
+            <select
+              value={settings.cursorMode}
+              onChange={(e) =>
+                updateSetting("cursorMode", e.target.value as PhysicsSettings["cursorMode"])
+              }
+              className="pp-physics-select"
+            >
+              <option value="mixed">Mixed (Pull/Repel)</option>
+              <option value="gravity">Gravity (Pull)</option>
+              <option value="repel">Repel</option>
+            </select>
           </label>
         </div>
 
