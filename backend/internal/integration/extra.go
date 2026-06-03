@@ -14,7 +14,7 @@ import (
 //   - Forum threads-by-category listing and view count increment
 //   - Store product-by-category listing and order history
 func RegisterExtraTests(s *Suite, db *sql.DB) {
-	// ── health ────────────────────────────────────────────────────────────────
+	// health
 	s.Add("health/returns_200", func(t *T) {
 		resp := s.GET("/api/health", nil)
 		t.RequireStatus(resp, 200)
@@ -22,7 +22,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		t.AssertEqual(Str(data["status"]), "ok", "health status")
 	})
 
-	// ── auth middleware enforcement ───────────────────────────────────────────
+	// auth middleware enforcement
 
 	s.Add("middleware/protected_route_rejects_missing_token", func(t *T) {
 		resp := s.GET("/api/users/profile", nil)
@@ -49,7 +49,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── auth: duplicate registration ──────────────────────────────────────────
+	// auth: duplicate registration
 
 	s.Add("auth/register_duplicate_username_rejected", func(t *T) {
 		username := uniq("dupuser")
@@ -104,7 +104,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── forum: threads by category listing ───────────────────────────────────
+	// forum: threads by category listing
 
 	s.Add("forum/threads_by_category_listing", func(t *T) {
 		// Create a fresh admin to avoid rate limit conflicts.
@@ -160,7 +160,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 			"threads-by-category must return at least 3 results, got %d", len(threads))
 	})
 
-	// ── forum: view count increments on fetch ─────────────────────────────────
+	// forum: view count increments on fetch
 
 	s.Add("forum/view_count_increments", func(t *T) {
 		adminEmail := uniq("vc_admin") + "@skaia.test"
@@ -205,7 +205,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		t.RequireStatus(r1, 200)
 		vc1 := ID(ReadJSON(r1)["view_count"])
 
-		// Fetch again — view_count should have incremented.
+		// Fetch again - view_count should have incremented.
 		r2 := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.RequireStatus(r2, 200)
 		vc2 := ID(ReadJSON(r2)["view_count"])
@@ -214,7 +214,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 			"view_count must not decrease on subsequent fetch (vc1=%d, vc2=%d)", vc1, vc2)
 	})
 
-	// ── store: product filtering by category ─────────────────────────────────
+	// store: product filtering by category
 
 	s.Add("store/products_by_category", func(t *T) {
 		adminEmail := uniq("pbc_admin") + "@skaia.test"
@@ -267,7 +267,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		t.RequireStatus(pr2, 201)
 		pr2.Body.Close()
 
-		// List products by cat1 — must return exactly those 2.
+		// List products by cat1 - must return exactly those 2.
 		listResp := s.GET(fmt.Sprintf("/api/store/categories/%d/products", cat1ID), nil)
 		t.RequireStatus(listResp, 200)
 		products := ReadJSONList(listResp)
@@ -275,7 +275,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 			"products-by-category for cat1 must return at least 2, got %d", len(products))
 	})
 
-	// ── store: order history for user ─────────────────────────────────────────
+	// store: order history for user
 
 	s.Add("store/order_history", func(t *T) {
 		adminEmail := uniq("oh_admin") + "@skaia.test"
@@ -336,7 +336,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 			"order history must return at least 2 orders, got %d", len(orders))
 	})
 
-	// ── user: suspension workflow ─────────────────────────────────────────────
+	// user: suspension workflow
 
 	s.Add("user/suspend_and_unsuspend", func(t *T) {
 		// Create admin.
@@ -377,7 +377,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		isSuspended, _ := userData["is_suspended"].(bool)
 		t.Require(isSuspended, "user must be suspended after suspend call")
 
-		// Unsuspend the user — route is DELETE /users/{id}/suspend.
+		// Unsuspend the user - route is DELETE /users/{id}/suspend.
 		unsusResp := s.DELETE(fmt.Sprintf("/api/users/%d/suspend", targetID), nil, Bearer(adminToken))
 		t.RequireStatus(unsusResp, 200)
 		unsusResp.Body.Close()
@@ -390,7 +390,7 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 		t.Require(!isSuspended2, "user must not be suspended after unsuspend call")
 	})
 
-	// ── forum: pagination ─────────────────────────────────────────────────────
+	// forum: pagination
 
 	s.Add("forum/thread_pagination", func(t *T) {
 		adminEmail := uniq("pag_admin") + "@skaia.test"

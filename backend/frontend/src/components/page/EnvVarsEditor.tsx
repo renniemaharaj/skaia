@@ -10,7 +10,7 @@ const MonacoEditor = lazy(() => import("../monaco/Editor"));
 interface Props {
   /** 0 for new (unsaved) datasources. */
   datasourceId: number;
-  /** Current .env text — parent owns the state. */
+  /** Current .env text - parent owns the state. */
   value: string;
   /** Called whenever the text changes. */
   onChange: (v: string) => void;

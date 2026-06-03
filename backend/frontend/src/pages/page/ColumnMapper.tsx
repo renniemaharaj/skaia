@@ -1,5 +1,5 @@
 /**
- * ColumnMapper — drag-and-drop / select UI for mapping datasource columns
+ * ColumnMapper - drag-and-drop / select UI for mapping datasource columns
  * to PageItem fields.
  *
  * Available columns (from evaluated rows) are shown as chips.

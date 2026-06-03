@@ -8,7 +8,7 @@ import { brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
  * Fetches branding, SEO, and footer config from the API and dynamically updates
  * document.title, meta description, og:image, favicon, and Jotai atoms.
  *
- * Safe to call from any route — runs once on mount.
+ * Safe to call from any route - runs once on mount.
  */
 export function useSiteConfig() {
   const [branding, setBranding] = useState<Branding | null>(null);

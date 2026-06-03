@@ -125,7 +125,7 @@ func (h *Handler) setPageAsHomepage(w http.ResponseWriter, r *http.Request) {
 
 // Config-only endpoints (not user-facing) remain under /config
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// helpers
 
 func (h *Handler) requireHomeManage(r *http.Request) bool {
 	uid, ok := utils.UserIDFromCtx(r)
@@ -180,11 +180,11 @@ func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
 	return p.OwnerID != nil && *p.OwnerID == uid
 }
 
-// ── handlers ────────────────────────────────────────────────────────────────
+// handlers
 
 // getLandingSlug returns just the configured landing page slug.
 // The frontend uses this to resolve the slug, then fetches the page by slug
-// directly — avoiding the single /pages/index CDN cache key.
+// directly - avoiding the single /pages/index CDN cache key.
 func (h *Handler) getLandingSlug(w http.ResponseWriter, r *http.Request) {
 	sc, err := h.configSvc.GetConfig("landing_page_slug")
 	if err != nil || sc.Value == "" || sc.Value == `""` {
@@ -213,7 +213,7 @@ func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := h.svc.GetBySlug(slug)
 	if err != nil {
-		// Slug points to a deleted page — auto-clean the stale config.
+		// Slug points to a deleted page - auto-clean the stale config.
 		log.Printf("page.getIndex: landing_page_slug %q not found, cleaning up", slug)
 		_ = h.configSvc.DeleteConfig("landing_page_slug")
 		utils.WriteError(w, http.StatusNotFound, "no landing page configured")
@@ -452,7 +452,7 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── browse (public feed of custom pages) ────────────────────────────────────
+// browse (public feed of custom pages)
 
 func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 	pages, err := h.svc.ListWithOwnership()
@@ -508,7 +508,7 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── ownership & editor management ───────────────────────────────────────────
+// ownership & editor management
 
 func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 	// Only admin can assign/transfer ownership
@@ -701,7 +701,7 @@ func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── engagement handlers ─────────────────────────────────────────────────────
+// engagement handlers
 
 func (h *Handler) recordView(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
@@ -997,7 +997,7 @@ func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": false})
 }
 
-// ── landing page config ─────────────────────────────────────────────────────
+// landing page config
 
 func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 	if !h.requireHomeManage(r) {
@@ -1047,10 +1047,10 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── factory reset ───────────────────────────────────────────────────────────
+// factory reset
 
 // factoryResetHomepage deletes all custom pages, legacy landing sections/items,
-// stale config keys, and page allocations. No default page is created — the
+// stale config keys, and page allocations. No default page is created - the
 // user must create a page and set it as the landing page via config.
 func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
 	if !h.requireHomeManage(r) {
@@ -1101,7 +1101,7 @@ func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── page allocation: user-facing ────────────────────────────────────────────
+// page allocation: user-facing
 
 func (h *Handler) getMyAllocation(w http.ResponseWriter, r *http.Request) {
 	uid, ok := utils.UserIDFromCtx(r)
@@ -1169,7 +1169,7 @@ func (h *Handler) claimPage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ── page allocation: admin management ───────────────────────────────────────
+// page allocation: admin management
 
 func (h *Handler) listAllocations(w http.ResponseWriter, r *http.Request) {
 	if !h.requireHomeManage(r) {

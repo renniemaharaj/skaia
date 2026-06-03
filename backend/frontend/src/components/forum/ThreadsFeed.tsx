@@ -32,7 +32,7 @@ const ThreadsFeed = ({
 }: Props) => {
   return (
     <div className="threads-feed" ref={feedRef} onScroll={handleScroll}>
-      {/* Top sentinel — fires IntersectionObserver to load older items */}
+      {/* Top sentinel - fires IntersectionObserver to load older items */}
       <div ref={sentinelRef} className="threads-feed-sentinel-top">
         {loading && (
           <span className="threads-feed-loading">

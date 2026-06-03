@@ -72,7 +72,7 @@ func (c *CompileCache) Set(source string, result *CompileResult) {
 	}
 }
 
-// ── ExecuteCache ─────────────────────────────────────────────────────────────
+// ExecuteCache
 
 var executeCachePrefix = datasourceClientPrefix() + "datasource:exec:"
 

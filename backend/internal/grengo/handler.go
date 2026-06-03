@@ -87,7 +87,7 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 		// All grengo routes require a valid JWT.
 		gr.Use(jwtAuth)
 
-		// POST /grengo/session — create a temporary session (admin + passcode).
+		// POST /grengo/session - create a temporary session (admin + passcode).
 		gr.Post("/session", h.handleCreateSession)
 
 		// Session-gated routes: validate via {sessionId} path prefix.

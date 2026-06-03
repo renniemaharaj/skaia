@@ -194,11 +194,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               setAccessToken(refreshResp.access_token);
             }
           } catch {
-            // Refresh token expired/invalid — profile fetch below will 401 and clear state.
+            // Refresh token expired/invalid - profile fetch below will 401 and clear state.
           }
         }
 
-        // Fetch user profile — refreshes currentUserAtom with latest DB data
+        // Fetch user profile - refreshes currentUserAtom with latest DB data
         // (picks up any permission/role/suspension changes made since last login)
         const profile = await apiRequest<User>("/users/profile", {
           method: "GET",

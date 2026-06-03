@@ -62,7 +62,7 @@ func rootEnvFile() string { return filepath.Join(ProjectRoot(), ".env") }
 func ensureWritableDir(dir string) {
 	info, err := os.Stat(dir)
 	if err == nil {
-		// Exists — check writability by trying to create a temp file.
+		// Exists - check writability by trying to create a temp file.
 		if !info.IsDir() {
 			die("%s exists but is not a directory", dir)
 		}
@@ -78,7 +78,7 @@ func ensureWritableDir(dir string) {
 		return
 	}
 
-	// Does not exist — create it.
+	// Does not exist - create it.
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		die("Cannot create directory %s: %v", dir, err)
 	}

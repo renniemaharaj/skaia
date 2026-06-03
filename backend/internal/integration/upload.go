@@ -19,7 +19,7 @@ import (
 func RegisterUploadTests(s *Suite, db *sql.DB) {
 	var userToken string
 
-	// ── setup: create an authenticated user ───────────────────────────────────
+	// setup: create an authenticated user
 	s.Add("upload/setup", func(t *T) {
 		email := uniq("uploader") + "@skaia.test"
 		username := uniq("uploader")
@@ -33,7 +33,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		t.Require(userToken != "", "uploader token must be non-empty")
 	})
 
-	// ── upload/image_requires_auth ────────────────────────────────────────────
+	// upload/image_requires_auth
 	s.Add("upload/image_requires_auth", func(t *T) {
 		body, ct := buildMultipartImage(t, "test.png", makePNG(1, 1))
 		resp := doMultipart(s, "POST", "/api/upload/image", body, ct, nil)
@@ -42,7 +42,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/video_requires_auth ────────────────────────────────────────────
+	// upload/video_requires_auth
 	s.Add("upload/video_requires_auth", func(t *T) {
 		body, ct := buildMultipartRaw(t, "file", "clip.mp4", []byte("fake video"))
 		resp := doMultipart(s, "POST", "/api/upload/video", body, ct, nil)
@@ -51,7 +51,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/file_requires_auth ─────────────────────────────────────────────
+	// upload/file_requires_auth
 	s.Add("upload/file_requires_auth", func(t *T) {
 		body, ct := buildMultipartRaw(t, "file", "doc.pdf", []byte("fake doc"))
 		resp := doMultipart(s, "POST", "/api/upload/file", body, ct, nil)
@@ -60,7 +60,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/banner_requires_auth ───────────────────────────────────────────
+	// upload/banner_requires_auth
 	s.Add("upload/banner_requires_auth", func(t *T) {
 		body, ct := buildMultipartImage(t, "banner.png", makePNG(800, 350))
 		// Use "banner" field name as the handler expects.
@@ -71,9 +71,9 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/image_missing_file_field ──────────────────────────────────────
+	// upload/image_missing_file_field
 	s.Add("upload/image_missing_file_field", func(t *T) {
-		// Send an empty multipart form — the "file" field is absent.
+		// Send an empty multipart form - the "file" field is absent.
 		var buf bytes.Buffer
 		w := multipart.NewWriter(&buf)
 		w.Close()
@@ -83,7 +83,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/image_wrong_content_type ──────────────────────────────────────
+	// upload/image_wrong_content_type
 	s.Add("upload/image_wrong_content_type", func(t *T) {
 		// Send a plaintext file disguised with a .png extension.
 		body, ct := buildMultipartRaw(t, "file", "notanimage.png", []byte("this is plain text, not an image"))
@@ -94,7 +94,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		t.Require(Str(data["error"]) != "", "error message must be present")
 	})
 
-	// ── upload/image_success ──────────────────────────────────────────────────
+	// upload/image_success
 	s.Add("upload/image_success", func(t *T) {
 		pngData := encodePNG(makePNG(100, 100))
 		body, ct := buildMultipartRaw(t, "file", "photo.png", pngData)
@@ -108,7 +108,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 			"url must be under /uploads/, got %s", Str(data["url"]))
 	})
 
-	// ── upload/file_success ───────────────────────────────────────────────────
+	// upload/file_success
 	s.Add("upload/file_success", func(t *T) {
 		content := []byte("Hello integration test attachment")
 		body, ct := buildMultipartRaw(t, "file", "readme.txt", content)
@@ -120,7 +120,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		t.Require(ID(data["size"]) == int64(len(content)), "size must match content length")
 	})
 
-	// ── upload/serve_traversal_blocked ────────────────────────────────────────
+	// upload/serve_traversal_blocked
 	s.Add("upload/serve_traversal_blocked", func(t *T) {
 		resp := s.GET("/uploads/../etc/passwd", nil)
 		// Go's http.FileServer cleans the path (/../etc/passwd => /etc/passwd) and
@@ -130,7 +130,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/serve_nonexistent ──────────────────────────────────────────────
+	// upload/serve_nonexistent
 	s.Add("upload/serve_nonexistent", func(t *T) {
 		resp := s.GET("/uploads/users/0/nonexistent_file_xyz.png", nil)
 		t.Require(resp.StatusCode == 404,
@@ -138,7 +138,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/serve_nonexistent_webp ──────────────────────────────────────────
+	// upload/serve_nonexistent_webp
 	s.Add("upload/serve_nonexistent_webp", func(t *T) {
 		resp := s.GET("/uploads/users/0/nonexistent_file_xyz.webp", nil)
 		t.Require(resp.StatusCode == 404,
@@ -146,7 +146,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── upload/image_served_after_upload ─────────────────────────────────────
+	// upload/image_served_after_upload
 	s.Add("upload/image_served_after_upload", func(t *T) {
 		// Upload a fresh image, then verify it is accessible via the static URL.
 		pngData := encodePNG(makePNG(50, 50))
@@ -173,7 +173,7 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 	})
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// helpers
 
 // makePNG creates an in-memory RGBA image of width×height.
 func makePNG(width, height int) *image.RGBA {

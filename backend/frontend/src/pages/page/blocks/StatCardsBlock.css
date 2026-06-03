@@ -1,4 +1,4 @@
-/* ── Stat Cards Block ─────────────────────────────────────────────────── */
+/* Stat Cards Block */
 
 @keyframes fadeIn {
   from {
@@ -83,7 +83,7 @@
   margin: 0;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .stats-section {

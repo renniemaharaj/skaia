@@ -51,7 +51,7 @@ export const RichTextBlock = ({
     if (!editing) return;
     enterEdit();
     return () => leaveEdit();
-    // enterEdit/leaveEdit are stable useCallback refs — safe to omit from deps.
+    // enterEdit/leaveEdit are stable useCallback refs - safe to omit from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
   // Derive content from props only when not editing; local state insulates the

@@ -83,7 +83,7 @@ func (s *Service) ValidateSession(ctx context.Context, sessionID, currentIP stri
 		return nil, ErrSessionExpired
 	}
 
-	// Same IP — update last-seen and continue
+	// Same IP - update last-seen and continue
 	if sess.LastSeenIP == currentIP || sess.CreatedIP == currentIP {
 		if sess.LastSeenIP != currentIP {
 			_ = s.repo.UpdateLastSeenIP(ctx, sessionID, currentIP)
@@ -91,12 +91,12 @@ func (s *Service) ValidateSession(ctx context.Context, sessionID, currentIP stri
 		return sess, nil
 	}
 
-	// IP changed — require step-up if Turnstile is configured
+	// IP changed - require step-up if Turnstile is configured
 	if s.TurnstileEnabled() {
 		return sess, ErrStepUpRequired
 	}
 
-	// Turnstile not configured — soft-allow but update IP
+	// Turnstile not configured - soft-allow but update IP
 	_ = s.repo.UpdateLastSeenIP(ctx, sessionID, currentIP)
 	return sess, nil
 }
@@ -116,7 +116,7 @@ func (s *Service) VerifyTurnstileToken(ctx context.Context, sessionID, token, re
 		return fmt.Errorf("turnstile challenge failed: %v", resp.ErrorCodes)
 	}
 
-	// Challenge passed — update session IP and mark verified
+	// Challenge passed - update session IP and mark verified
 	if err := s.repo.UpdateLastSeenIP(ctx, sessionID, remoteIP); err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (s *Service) GetUserSessions(ctx context.Context, userID int64) ([]*Session
 	return s.repo.GetByUserID(ctx, userID)
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────
+// Helpers
 
 // hashUserAgent produces a hex SHA-256 digest of the User-Agent string.
 func hashUserAgent(ua string) string {

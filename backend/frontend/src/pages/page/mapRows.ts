@@ -1,5 +1,5 @@
 /**
- * mapRows — transform datasource rows into PageItem[] via a column map.
+ * mapRows - transform datasource rows into PageItem[] via a column map.
  *
  * Each row from the evaluated datasource becomes a PageItem.
  * The column_map tells us which row field populates which PageItem field.

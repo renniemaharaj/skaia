@@ -1,6 +1,5 @@
 -- Seed data: roles, permissions, admin account, default forum categories.
 
-
 INSERT INTO roles (id, name, description, power_level) VALUES
     (1, 'admin',     'Administrator with full access',                       100),
     (2, 'member',    'Regular member',                                        10),
@@ -96,7 +95,6 @@ INSERT INTO role_permissions (role_id, permission_id)
 SELECT (SELECT id FROM roles WHERE name = 'superuser'), p.id
 FROM   permissions p
 ON CONFLICT DO NOTHING;
-
 
 -- Insert admin user (without password_hash)
 INSERT INTO users (id, username, email, display_name, bio,
@@ -199,7 +197,7 @@ INSERT INTO site_config (key, value) VALUES
     }'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- ── "Get Started" seed page ─────────────────────────────────────────────────
+-- "Get Started" seed page
 -- A showcase page demonstrating available block types. Set as landing page via config.
 INSERT INTO pages (slug, title, description, content, visibility)
 SELECT 'get-started', 'Get Started', 'A quick tour of the page builder blocks available on your site.',
@@ -242,7 +240,7 @@ INSERT INTO site_config (key, value)
 VALUES ('landing_page_slug', '"get-started"'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- ── System "noreply" user for automated inbox messages ──────────────────────
+-- System "noreply" user for automated inbox messages
 
 -- Insert noreply user (without password_hash)
 INSERT INTO users (username, email, display_name, bio,

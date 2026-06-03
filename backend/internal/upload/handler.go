@@ -36,7 +36,7 @@ const (
 	MaxImgSize  = 10 * 1024 * 1024 // 10 MB (images / banners)
 )
 
-// Upload quota limits — read from environment (bytes).
+// Upload quota limits - read from environment (bytes).
 var (
 	MaxUploadPerUser int64 = 500 * 1024 * 1024  // MAX_UPLOAD_PER_USER_MB
 	MaxUploadTotal   int64 = 5000 * 1024 * 1024 // MAX_UPLOAD_TOTAL_MB
@@ -194,7 +194,7 @@ func NewHandler(hub *ws.Hub) *Handler {
 
 // Mount registers all upload routes on r.
 //
-//	jwt — middleware that requires a valid JWT.
+//	jwt - middleware that requires a valid JWT.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	// Static file serving for uploaded assets.
 	r.Get("/uploads/*", ServeUploads)

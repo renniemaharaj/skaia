@@ -1,12 +1,4 @@
-/* ──────────────────────────────────────────────
- * ViewThreadMeta — file-style thread header
- *
- * Uses shared tokens: .card, .badge / .badge-secondary,
- * .thread-action-btn (ThreadActions.css), semantic status vars.
- * Only truly unique layout concerns live here.
- * ────────────────────────────────────────────── */
-
-/* Panel — extends .card via markup, only overrides needed here */
+/* Panel - extends .card via markup, only overrides needed here */
 .vtm-panel {
   max-width: 1080px;
   margin: 1rem auto 0;
@@ -79,7 +71,7 @@
 .vtm-description {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   line-height: 1.6;
   max-width: 90%;
   display: -webkit-box;
@@ -87,6 +79,13 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.vtm-description * {
+  font-size: inherit !important;
+  margin: 0 !important;
+  font-weight: normal !important;
+  line-height: inherit !important;
 }
 
 /* Author / status row */
@@ -155,7 +154,7 @@
   color: var(--text-secondary);
 }
 
-/* Metrics row — reuses .badge-secondary sizing pattern */
+/* Metrics row - reuses .badge-secondary sizing pattern */
 .vtm-metrics {
   display: flex;
   flex-wrap: wrap;

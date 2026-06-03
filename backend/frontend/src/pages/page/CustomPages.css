@@ -208,7 +208,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Grid card ─────────────────────────────────────────────── */
+/* Grid card */
 
 .cp-card {
   display: flex;
@@ -312,7 +312,7 @@
   overflow: hidden;
 }
 
-/* ── Page thumbnail (scaled-down render) ─────────────────────── */
+/* Page thumbnail (scaled-down render) */
 
 .cp-card__thumb {
   position: relative;
@@ -497,7 +497,7 @@
   }
 }
 
-/* ── Rename / Duplicate modals ─────────────────────────────────────────── */
+/* Rename / Duplicate modals */
 .cp-modal-overlay {
   position: fixed;
   inset: 0;

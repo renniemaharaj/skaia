@@ -172,7 +172,7 @@ func (s *Service) Delete(id int64) error {
 	return nil
 }
 
-// ── Ownership & editors ─────────────────────────────────────────────────────
+// Ownership & editors
 
 func (s *Service) SetOwner(pageID, ownerID int64) error {
 	return s.repo.SetOwner(pageID, ownerID)
@@ -251,7 +251,7 @@ func (s *Service) CanDelete(pageID, userID int64, isAdmin bool) bool {
 	return page.OwnerID != nil && *page.OwnerID == userID
 }
 
-// ── Engagement ──────────────────────────────────────────────────────────────
+// Engagement
 
 func (s *Service) LikePage(pageID, userID int64) (int64, error) {
 	return s.repo.LikePage(pageID, userID)
@@ -291,7 +291,7 @@ func (s *Service) EnrichPageEngagement(p *models.Page, userID *int64) {
 	}
 }
 
-// ── Comments ────────────────────────────────────────────────────────────────
+// Comments
 
 func (s *Service) CreateComment(c *models.PageComment) (*models.PageComment, error) {
 	return s.repo.CreateComment(c)
@@ -325,7 +325,7 @@ func (s *Service) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
 	return s.repo.IsCommentLikedByUser(commentID, userID)
 }
 
-// ── Page allocations ────────────────────────────────────────────────────────
+// Page allocations
 
 func (s *Service) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
 	return s.repo.GetAllocation(userID)

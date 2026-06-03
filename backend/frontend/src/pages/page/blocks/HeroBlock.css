@@ -1,4 +1,4 @@
-/* ── Hero Banner Block ─────────────────────────────────────────────────── */
+/* Hero Banner Block */
 
 .hero-banner {
   position: relative;
@@ -126,7 +126,7 @@
   border-radius: 2px;
 }
 
-/* ── Hero Video Navigation ────────────────────────────────────────────── */
+/* Hero Video Navigation */
 
 .hero-video-nav {
   position: absolute;
@@ -278,7 +278,7 @@
   }
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .hero-banner {

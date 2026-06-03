@@ -82,14 +82,14 @@ const PresencePanel = () => {
   const navigate = useNavigate();
 
   // Deduplicate authenticated users (positive id) by user_id, prefer entry with name.
-  // Guests have negative ids (unique per connection) — include as-is.
+  // Guests have negative ids (unique per connection) - include as-is.
   // Skip any stale user_id=0 entries.
   const onlineUsers = (() => {
     const seen = new Map<number, OnlineUser>();
     for (const u of rawUsers) {
       if (u.user_id === 0) continue;
       if (u.user_id < 0) {
-        // guest — always unique, no dedup needed
+        // guest - always unique, no dedup needed
         seen.set(u.user_id, u);
         continue;
       }
@@ -108,8 +108,8 @@ const PresencePanel = () => {
 
   const total = onlineUsers.length;
 
-  // ── Row actions ───────────────────────────────────────────────
-  // Add future actions here — they appear on hover in declaration order.
+  // Row actions
+  // Add future actions here - they appear on hover in declaration order.
   const rowActions: PresenceRowAction[] = [
     {
       key: "dm",
@@ -176,7 +176,7 @@ const PresencePanel = () => {
     },
   ];
 
-  // ───────────────────────────────────────────────────────────────
+  
 
   // Auto-scroll chat feed to bottom when new messages arrive
   useEffect(() => {
@@ -186,7 +186,7 @@ const PresencePanel = () => {
   }, [chatMessages, activeTab, expanded]);
 
   // Track unread count while on the members tab.
-  // Only count a delta of exactly 1 — history loads arrive as a big batch
+  // Only count a delta of exactly 1 - history loads arrive as a big batch
   // and should NOT mark the chat tab as having new messages.
   useEffect(() => {
     const delta = chatMessages.length - prevChatLenRef.current;
@@ -289,7 +289,7 @@ const PresencePanel = () => {
     };
   }, [expanded, isMobile]);
 
-  // ───────────────────────────────────────────────────────────────
+  
 
   const UserRow = ({ u, dim }: { u: OnlineUser; dim?: boolean }) => {
     const isGuest = u.user_id < 0;

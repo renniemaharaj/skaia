@@ -83,7 +83,7 @@ export const currentThreadAtom = atom<ForumThread | null>(null);
 // Comments for current thread - NOT persisted to localStorage because they're thread-specific
 export const threadCommentsAtom = atom<ThreadComment[]>([]);
 
-// ── Live thread feeds ────────────────────────────────────────────────────────
+// Live thread feeds
 // These are updated in real-time by the WebSocket handler.
 // The "active" atoms tell the WS handler which feed is currently visible
 // so it can route broadcast thread_created / thread_deleted events correctly.
@@ -94,7 +94,7 @@ export const activeCategoryFeedIdAtom = atom<string | null>(null);
 export const userFeedThreadsAtom = atom<ForumThread[]>([]);
 export const activeUserFeedIdAtom = atom<string | null>(null);
 
-// ── Derived thread permissions ──────────────────────────────────────────────
+// Derived thread permissions
 // Reactively recomputes permissions from the live user atom so any
 // permission/role change propagated over WS is instantly reflected.
 export const threadPermissionsAtom = atom((get) => {
@@ -129,7 +129,7 @@ export const threadPermissionsAtom = atom((get) => {
   };
 });
 
-// Derived per-comment permissions — enriches each comment with live user perms.
+// Derived per-comment permissions - enriches each comment with live user perms.
 export const enrichedThreadCommentsAtom = atom((get) => {
   const user = get(currentUserAtom);
   const comments = get(threadCommentsAtom);

@@ -189,7 +189,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 />
               </div>
 
-              {/* Background Image — file upload + URL fallback */}
+              {/* Background Image - file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={{ fontWeight: 500 }}>Background Image</label>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -220,7 +220,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 )}
               </div>
 
-              {/* Background Video — file upload + URL fallback */}
+              {/* Background Video - file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={{ fontWeight: 500 }}>Background Video</label>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -254,7 +254,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 )}
               </div>
 
-              {/* Background Position — select dropdown */}
+              {/* Background Position - select dropdown */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between" }}>
                   <label style={{ fontWeight: 500 }}>Background Position</label>
@@ -276,7 +276,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 </select>
               </div>
 
-              {/* Profile Card Art — file upload + URL fallback */}
+              {/* Profile Card Art - file upload + URL fallback */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <label style={{ fontWeight: 500 }}>Profile Card Art</label>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>

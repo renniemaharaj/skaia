@@ -5,7 +5,7 @@ import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// Types
 
 interface SiteInfo {
   name: string;
@@ -77,7 +77,7 @@ const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 // Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
 const KEEPALIVE_MS = 2 * 60 * 1000;
 
-// ── Component ──────────────────────────────────────────────────────────────
+// Component
 
 export default function GrengoDashboard() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -132,7 +132,7 @@ export default function GrengoDashboard() {
 
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Session-scoped API helper ────────────────────────────────────────
+  // Session-scoped API helper
 
   const apiBase = `/grengo/s/${sessionId}`;
 
@@ -143,7 +143,7 @@ export default function GrengoDashboard() {
     [apiBase],
   );
 
-  // ── Session validation & keep-alive ──────────────────────────────────
+  // Session validation & keep-alive
 
   const validateSession = useCallback(async () => {
     if (!sessionId) {
@@ -188,7 +188,7 @@ export default function GrengoDashboard() {
     };
   }, [sessionValid, validateSession, navigate]);
 
-  // ── Lock / end session ───────────────────────────────────────────────
+  // Lock / end session
 
   const handleLock = async () => {
     try {
@@ -199,7 +199,7 @@ export default function GrengoDashboard() {
     navigate("/", { replace: true });
   };
 
-  // ── Fetch sites ──────────────────────────────────────────────────────
+  // Fetch sites
 
   const fetchSites = useCallback(async () => {
     setLoading(true);
@@ -218,7 +218,7 @@ export default function GrengoDashboard() {
     if (sessionValid) fetchSites();
   }, [sessionValid, fetchSites]);
 
-  // ── Fetch stats ──────────────────────────────────────────────────────
+  // Fetch stats
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -226,7 +226,7 @@ export default function GrengoDashboard() {
       const data = await grengoRequest<ContainerStats[]>("/stats");
       setStats(Array.isArray(data) ? data : []);
     } catch {
-      // non-critical — silently fail
+      // non-critical - silently fail
     } finally {
       setStatsLoading(false);
     }
@@ -236,7 +236,7 @@ export default function GrengoDashboard() {
     if (sessionValid) fetchStats();
   }, [sessionValid, fetchStats]);
 
-  // ── Fetch storage ────────────────────────────────────────────────────
+  // Fetch storage
 
   const fetchStorage = useCallback(async () => {
     try {
@@ -251,7 +251,7 @@ export default function GrengoDashboard() {
     if (sessionValid) fetchStorage();
   }, [sessionValid, fetchStorage]);
 
-  // ── Fetch sysinfo ────────────────────────────────────────────────────
+  // Fetch sysinfo
 
   const fetchSysInfo = useCallback(async () => {
     try {
@@ -266,7 +266,7 @@ export default function GrengoDashboard() {
     if (sessionValid) fetchSysInfo();
   }, [sessionValid, fetchSysInfo]);
 
-  // ── Compose actions ──────────────────────────────────────────────────
+  // Compose actions
 
   const handleComposeUp = async (build: boolean) => {
     setComposeBusy(true);
@@ -303,7 +303,7 @@ export default function GrengoDashboard() {
     }
   };
 
-  // ── Migrate actions ──────────────────────────────────────────────────
+  // Migrate actions
 
   const handleMigrate = async (name: string, rebuild = false) => {
     setMigrateBusy((prev) => ({ ...prev, [name]: true }));
@@ -354,7 +354,7 @@ export default function GrengoDashboard() {
     }
   };
 
-  // ── Node export / import ─────────────────────────────────────────────
+  // Node export / import
 
   const handleExportNode = async () => {
     setNodeExportBusy(true);
@@ -387,7 +387,7 @@ export default function GrengoDashboard() {
     }
   };
 
-  // ── Site actions ─────────────────────────────────────────────────────
+  // Site actions
 
   const siteAction = async (
     name: string,
@@ -449,7 +449,7 @@ export default function GrengoDashboard() {
     }
   };
 
-  // ── Env editor ───────────────────────────────────────────────────────
+  // Env editor
 
   const openEnvEditor = async (name: string) => {
     setEnvSite(name);
@@ -494,7 +494,7 @@ export default function GrengoDashboard() {
 
   const envDirty = envDraft !== envContent;
 
-  // ── Render: Loading / validating ──────────────────────────────────────
+  // Render: Loading / validating
 
   if (sessionValid === null) {
     return (
@@ -504,7 +504,7 @@ export default function GrengoDashboard() {
     );
   }
 
-  // ── Render: Dashboard ────────────────────────────────────────────────
+  // Render: Dashboard
 
   return (
     <div className="grengo-dashboard">
@@ -689,7 +689,7 @@ export default function GrengoDashboard() {
   );
 }
 
-// ── SysInfoBar ───────────────────────────────────────────────────────────────
+// SysInfoBar
 
 function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
   return (
@@ -730,7 +730,7 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
   );
 }
 
-// ── SiteTable ─────────────────────────────────────────────────────────────────
+// SiteTable
 
 function SiteTable({
   sites,
@@ -928,7 +928,7 @@ function SiteTable({
   );
 }
 
-// ── EnvEditorPanel ────────────────────────────────────────────────────────────
+// EnvEditorPanel
 
 function EnvEditorPanel({
   envSite,
@@ -987,7 +987,7 @@ function EnvEditorPanel({
   );
 }
 
-// ── StoragePanel ──────────────────────────────────────────────────────────────
+// StoragePanel
 
 function StoragePanel({ storage }: { storage: StorageInfo }) {
   return (
@@ -1035,7 +1035,7 @@ function StoragePanel({ storage }: { storage: StorageInfo }) {
   );
 }
 
-// ── PerformanceMetrics ────────────────────────────────────────────────────────
+// PerformanceMetrics
 
 function PerformanceMetrics({
   stats,
@@ -1101,7 +1101,7 @@ function PerformanceMetrics({
   );
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 function barClass(pct: number): string {
   if (pct >= 80) return "bar-danger";
@@ -1119,7 +1119,7 @@ function parseMemMB(s: string): number {
   return val; // MiB / MB
 }
 
-// ── Stats Overview ──────────────────────────────────────────────────────────
+// Stats Overview
 
 function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   const totalCPU = stats.reduce((sum, s) => sum + s.cpu_percent, 0);
@@ -1155,7 +1155,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   );
 }
 
-// ── Create Site Form ───────────────────────────────────────────────────────
+// Create Site Form
 
 function CreateSiteForm({
   apiBase,
@@ -1295,7 +1295,7 @@ function CreateSiteForm({
   );
 }
 
-// ── Import Site Form ───────────────────────────────────────────────────────
+// Import Site Form
 
 function ImportSiteForm({
   apiBase,
@@ -1383,7 +1383,7 @@ function ImportSiteForm({
   );
 }
 
-// ── Import Node Form ───────────────────────────────────────────────────────
+// Import Node Form
 
 function ImportNodeForm({
   apiBase,

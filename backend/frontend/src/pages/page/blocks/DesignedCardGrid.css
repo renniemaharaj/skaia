@@ -1,4 +1,4 @@
-/* ── Designed Card Grid ────────────────────────────────────────────────── */
+/* Designed Card Grid */
 
 .dcard-grid {
   display: flex;
@@ -14,7 +14,7 @@
   box-sizing: border-box;
 }
 
-/* ── Card widths (flex-based layout) ──────────────────────────────────── */
+/* Card widths (flex-based layout) */
 
 .dcard--narrow {
   flex: 0 1 25%;
@@ -36,7 +36,7 @@
   flex: 0 1 100%;
 }
 
-/* ── Card structure ───────────────────────────────────────────────────── */
+/* Card structure */
 
 .dcard {
   display: flex;
@@ -61,7 +61,7 @@
   border-radius: inherit;
 }
 
-/* ── Card style variants ──────────────────────────────────────────────── */
+/* Card style variants */
 
 .dcard--flat {
   box-shadow: none;
@@ -131,7 +131,7 @@
   box-shadow: none;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .dcard-grid {

@@ -64,7 +64,7 @@ export interface CheckoutResponse {
   message?: string;
 }
 
-// ── Atoms ─────────────────────────────────────────────────────────────────────
+// Atoms
 
 export const productsAtom = atomWithStorage<Product[]>("store.products", []);
 export const productCategoriesAtom = atomWithStorage<StoreCategory[]>(

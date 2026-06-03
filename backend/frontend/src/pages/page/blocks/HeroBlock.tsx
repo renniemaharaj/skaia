@@ -18,7 +18,7 @@ const HERO_VARIANTS = 2;
 
 interface HeroCfg {
   background_image?: string;
-  /** @deprecated kept for migration — now use `videos` array */
+  /** @deprecated kept for migration - now use `videos` array */
   video_url?: string;
   videos?: string[];
   tint_color?: string;

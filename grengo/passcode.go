@@ -107,7 +107,7 @@ func cmdPasscodeStatus() {
 	}
 }
 
-// ── helpers ────────────────────────────────────────────────────────────────
+// helpers
 
 // hashPasscode computes SHA-256(salt + p1 + ":" + p2).
 func hashPasscode(salt []byte, p1, p2 string) []byte {

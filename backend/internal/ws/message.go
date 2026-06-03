@@ -66,7 +66,7 @@ type GlobalChatMessage struct {
 	Content   string `json:"content"`
 	CreatedAt string `json:"created_at"`
 	IsGuest   bool   `json:"is_guest"`
-	SessionID int64  `json:"-"` // internal routing — not serialised to clients
+	SessionID int64  `json:"-"` // internal routing - not serialised to clients
 }
 
 // Message represents a WebSocket message.

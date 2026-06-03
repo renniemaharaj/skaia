@@ -592,7 +592,7 @@ export const CustomSectionBlock = ({
             />
           )}
 
-        {/* Has rows but no column map — prompt to configure */}
+        {/* Has rows but no column map - prompt to configure */}
         {!evaluating &&
           !authError &&
           !evalError &&

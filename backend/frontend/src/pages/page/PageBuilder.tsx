@@ -123,7 +123,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const canDelete =
     !!page?.can_delete || (page?.id != null && (isAdmin || isOwner));
   const canChangeVisibility = page?.id != null && (isAdmin || isOwner);
-  // Toolbar visible to admins and owners only — editors can edit inline but don't see the bar
+  // Toolbar visible to admins and owners only - editors can edit inline but don't see the bar
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showOwnershipBtn = showToolbar && page?.id && slug;
   const canShowSandboxToggle = !isEditable;
@@ -343,16 +343,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   }, [slug]);
 
   useEffect(() => {
-    // Don't overwrite sections while there are unsaved pending changes —
+    // Don't overwrite sections while there are unsaved pending changes -
     // a live websocket event from another user would otherwise clobber
     // the editor's in-progress work.
     if (pendingSectionsRef.current !== null) return;
     // Likewise, don't update while the user has an editor open even if they
-    // haven't made changes yet — the incoming content would reset the editor.
+    // haven't made changes yet - the incoming content would reset the editor.
     if (editingCountRef.current > 0) return;
 
     if (!page && error) {
-      // Page not found (404) — show empty sections.
+      // Page not found (404) - show empty sections.
       setSections([]);
       setSectionsSourced(true);
       return;
@@ -386,7 +386,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     const handler = (e: Event) => {
       const action =
         (e as CustomEvent<{ action?: string }>).detail?.action ?? "";
-      // Suppress live page reloads while the user is actively editing — they
+      // Suppress live page reloads while the user is actively editing - they
       // would reset the editor and discard in-progress work.
       if (
         action === "landing_page_updated" &&
@@ -408,7 +408,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const slugRef = useRef(slug);
   slugRef.current = slug;
 
-  // ── Adaptive BBR save pipeline ─────────────────────────────────────────
+  // Adaptive BBR save pipeline
   // Changes are batched with an adaptive delay (800 ms base, grows by 200 ms
   // per rapid successive change up to 3500 ms).  When any component signals
   // edit mode (rich text, code editor, color picker) the timer is held and
@@ -468,7 +468,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const enterEdit = useCallback(() => {
     editingCountRef.current++;
     setEditingCount((c) => c + 1);
-    // Cancel any pending timer — hold saves until editing stops.
+    // Cancel any pending timer - hold saves until editing stops.
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;

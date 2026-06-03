@@ -30,7 +30,7 @@ const PhysicsControls = () => {
     <div className="pp-physics-controls">
       <Section title="Renderer" defaultOpen>
         <div className="pp-physics-control">
-          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
             <span>Style</span>
             <select
               value={settings.rendererType}
@@ -41,7 +41,7 @@ const PhysicsControls = () => {
             >
               <option value="default">Default Gravity</option>
               <option value="center-anchored">Center Anchored System</option>
-              <option value="text">Text Swarm</option>
+              <option value="text" disabled>Text Swarm (Not Ready)</option>
             </select>
           </label>
         </div>

@@ -72,7 +72,7 @@ var envDefaults = []envDefaultEntry{
 // syncEnvDefaults reads a client's .env, appends any keys from envDefaults
 // that are missing, and writes the file back. New keys are added **commented
 // out** (e.g. `# SMTP_HOST=`) so they're visible but don't affect the running
-// config. Keys already present — whether active or commented — are never
+// config. Keys already present - whether active or commented - are never
 // touched. Returns the number of keys added.
 func syncEnvDefaults(name string) int {
 	envFile := clientEnvFile(name)

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ── In-memory repository for unit tests ─────────────────────────────────
+// In-memory repository for unit tests
 
 type fakeRepository struct {
 	sessions map[string]*Session
@@ -94,7 +94,7 @@ func (r *fakeRepository) DeleteExpired(_ context.Context) (int64, error) {
 	return count, nil
 }
 
-// ── Tests ────────────────────────────────────────────────────────────────
+// Tests
 
 func newTestService() *Service {
 	svc := &Service{

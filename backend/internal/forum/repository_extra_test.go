@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// ── CategoryRepository extra ──────────────────────────────────────────────────
+// CategoryRepository extra
 
 func TestCategoryRepository_GetByName(t *testing.T) {
 	db := testutil.OpenTestDB(t)
@@ -40,7 +40,7 @@ func TestCategoryRepository_Update(t *testing.T) {
 	assert.Equal(t, "Updated description", fetched.Description)
 }
 
-// ── ThreadRepository extra ────────────────────────────────────────────────────
+// ThreadRepository extra
 
 func TestThreadRepository_Update(t *testing.T) {
 	db := testutil.OpenTestDB(t)
@@ -183,7 +183,7 @@ func TestThreadRepository_LikeIdempotent(t *testing.T) {
 		CategoryID: cat.ID, UserID: uid,
 		Title: testutil.UniqueStr("idem_like"), Content: "x",
 	})
-	// Like twice — ON CONFLICT DO NOTHING means count stays at 1.
+	// Like twice - ON CONFLICT DO NOTHING means count stays at 1.
 	count1, err := threadRepo.Like(thread.ID, uid)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, count1)
@@ -192,7 +192,7 @@ func TestThreadRepository_LikeIdempotent(t *testing.T) {
 	assert.EqualValues(t, 1, count2, "duplicate like must not increment count beyond 1")
 }
 
-// ── CommentRepository extra ───────────────────────────────────────────────────
+// CommentRepository extra
 
 func TestCommentRepository_GetByThread(t *testing.T) {
 	db := testutil.OpenTestDB(t)

@@ -335,7 +335,7 @@
   }
 }
 
-/* Dark mode handled by data-theme attribute on <html> — variables auto-switch */
+/* Dark mode handled by data-theme attribute on <html> - variables auto-switch */
 
 /* Responsive */
 @media (max-width: 640px) {

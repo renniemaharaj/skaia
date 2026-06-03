@@ -10,7 +10,7 @@ import (
 "github.com/stretchr/testify/require"
 )
 
-// ── StoreCategoryRepository extra ─────────────────────────────────────────────
+// StoreCategoryRepository extra
 
 func TestStoreCategoryRepository_GetByName(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -39,7 +39,7 @@ require.NoError(t, err)
 assert.Equal(t, "Updated store category description", fetched.Description)
 }
 
-// ── ProductRepository extra ───────────────────────────────────────────────────
+// ProductRepository extra
 
 func TestProductRepository_Delete(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -120,7 +120,7 @@ assert.False(t, ids[p.ID], "product %d appeared on both pages", p.ID)
 }
 }
 
-// ── CartRepository extra ──────────────────────────────────────────────────────
+// CartRepository extra
 
 func TestCartRepository_GetItem(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -198,7 +198,7 @@ _, err := cartRepo.GetItem(uid, 999999999)
 assert.Error(t, err, "GetItem for nonexistent entry must return an error")
 }
 
-// ── OrderRepository extra ─────────────────────────────────────────────────────
+// OrderRepository extra
 
 func TestOrderRepository_GetByUser(t *testing.T) {
 db := testutil.OpenTestDB(t)

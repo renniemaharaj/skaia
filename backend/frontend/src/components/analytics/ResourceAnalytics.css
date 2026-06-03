@@ -39,7 +39,7 @@
   gap: 0.5rem;
 }
 
-/* ── tabs ──────────────────────────────────────────────── */
+/* tabs */
 
 .ra-tabs {
   display: flex;
@@ -77,7 +77,7 @@
   flex: 1;
 }
 
-/* ── stat cards ────────────────────────────────────────── */
+/* stat cards */
 
 .ra-stats {
   display: grid;
@@ -110,7 +110,7 @@
   margin-top: 0.25rem;
 }
 
-/* ── chart area ────────────────────────────────────────── */
+/* chart area */
 
 .ra-chart-header {
   display: flex;
@@ -142,7 +142,7 @@
   padding: 1rem 0.75rem 0.5rem;
 }
 
-/* ── visitor table ─────────────────────────────────────── */
+/* visitor table */
 
 .ra-visitors {
   width: 100%;
@@ -208,7 +208,7 @@
   font-size: 0.8125rem;
 }
 
-/* ── visitors toolbar ──────────────────────────────────── */
+/* visitors toolbar */
 
 .ra-visitors-toolbar {
   display: flex;
@@ -331,7 +331,7 @@
   background: var(--bg-tertiary);
 }
 
-/* ── loading / empty ───────────────────────────────────── */
+/* loading / empty */
 
 .ra-loading {
   display: flex;
@@ -382,7 +382,7 @@
   background: var(--error-border);
 }
 
-/* ── responsive ────────────────────────────────────────── */
+/* responsive */
 
 @media (max-width: 620px) {
   .ra-stats {

@@ -303,7 +303,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 };
 
-// ── HeaderNavLinks ────────────────────────────────────────────────────────────
+// HeaderNavLinks
 
 const MAX_NAV_VISIBLE = 3;
 
@@ -378,7 +378,7 @@ function HeaderNavLinks({
   );
 }
 
-// ── SoundControl ──────────────────────────────────────────────────────────────
+// SoundControl
 
 function SoundControl() {
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
@@ -453,7 +453,7 @@ function SoundControl() {
   );
 }
 
-// ── HeaderUserMenu ────────────────────────────────────────────────────────────
+// HeaderUserMenu
 
 function HeaderUserMenu({
   user,

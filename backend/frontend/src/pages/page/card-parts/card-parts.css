@@ -1,6 +1,6 @@
-/* ── Card Parts ─ Reusable card zone components ───────────────────────── */
+/* Card Parts  Reusable card zone components */
 
-/* ── Image ────────────────────────────────────────────────────────────── */
+/* Image */
 
 .cdp-image {
   position: relative;
@@ -36,7 +36,7 @@
   display: block;
 }
 
-/* ── Heading ──────────────────────────────────────────────────────────── */
+/* Heading */
 
 .cdp-heading {
   margin: 0;
@@ -61,7 +61,7 @@
   font-weight: 700;
 }
 
-/* ── Subheading ───────────────────────────────────────────────────────── */
+/* Subheading */
 
 .cdp-subheading {
   margin: 0;
@@ -83,7 +83,7 @@
   font-size: 1rem;
 }
 
-/* ── Icon ─────────────────────────────────────────────────────────────── */
+/* Icon */
 
 .cdp-icon {
   display: flex;
@@ -101,7 +101,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Link ─────────────────────────────────────────────────────────────── */
+/* Link */
 
 .cdp-link {
   margin: 0;

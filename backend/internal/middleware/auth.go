@@ -41,7 +41,7 @@ func JWTAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// OptionalJWTAuthMiddleware is now a no-op since ExtractTokenMiddleware 
+// OptionalJWTAuthMiddleware is now a no-op since ExtractTokenMiddleware
 // populates the context optionally. Kept for backwards compatibility.
 func OptionalJWTAuthMiddleware(next http.Handler) http.Handler {
 	return next

@@ -171,7 +171,7 @@ export const Footer: React.FC = () => {
         </div>
       )}
 
-      {/* ── Variant 1: Classic community layout ── */}
+      {/* Variant 1: Classic community layout */}
       {variant === 1 && (
         <>
           <div className="footer-content">
@@ -271,7 +271,7 @@ export const Footer: React.FC = () => {
         </>
       )}
 
-      {/* ── Variant 2: Three-column with quick links ── */}
+      {/* Variant 2: Three-column with quick links */}
       {variant === 2 && (
         <>
           {/* Background watermark logo */}

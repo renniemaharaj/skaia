@@ -1,5 +1,5 @@
 /**
- * CardDesigner — visual card template builder.
+ * CardDesigner - visual card template builder.
  *
  * Lets the user configure card dimensions, toggle zones on/off,
  * reorder zones via drag-and-drop, and set alignment + size per zone.

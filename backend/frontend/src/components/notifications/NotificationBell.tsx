@@ -277,7 +277,7 @@ const NotificationBell = () => {
               </div>
             ))}
 
-            {/* Bottom anchor — auto-scroll to newest */}
+            {/* Bottom anchor - auto-scroll to newest */}
             <div ref={feedEndRef} />
           </div>
         </div>

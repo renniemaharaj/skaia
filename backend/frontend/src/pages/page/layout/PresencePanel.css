@@ -10,7 +10,7 @@
   font-size: 0.82rem;
 }
 
-/* ── Control bar ──────────────────────────────────────────────── */
+/* Control bar */
 .pp-controls {
   display: flex;
   align-items: center;
@@ -238,7 +238,7 @@
   pointer-events: none;
 }
 
-/* Per-row presence actions (tp to / tp here) — revealed on hover */
+/* Per-row presence actions (tp to / tp here) - revealed on hover */
 .pp-actions {
   display: flex;
   gap: 1px;
@@ -290,7 +290,7 @@
   color: var(--primary-color);
 }
 
-/* ── Chat feed ────────────────────────────────────────────────── */
+/* Chat feed */
 .pp-chat-feed {
   max-height: 340px;
   overflow-y: auto;

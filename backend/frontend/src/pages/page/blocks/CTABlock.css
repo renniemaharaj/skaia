@@ -1,4 +1,4 @@
-/* ── CTA Block ────────────────────────────────────────────────────────── */
+/* CTA Block */
 
 .cta {
   padding: 80px 40px;
@@ -61,7 +61,7 @@
   border-color: white;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .cta {

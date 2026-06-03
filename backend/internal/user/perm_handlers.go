@@ -13,7 +13,7 @@ import (
 )
 
 // propagatePermissions sends only the changed permissions/roles and a fresh
-// JWT directly to the user's connected client(s). No subscription required —
+// JWT directly to the user's connected client(s). No subscription required -
 // if the user is online they receive it immediately.
 func (h *Handler) propagatePermissions(userID int64) {
 	if h.hub == nil {
@@ -31,7 +31,7 @@ func (h *Handler) propagatePermissions(userID int64) {
 		log.Printf("user.Handler.propagatePermissions: generate token for %d: %v", userID, err)
 		return
 	}
-	// Send only the fields that matter — the frontend merges them into
+	// Send only the fields that matter - the frontend merges them into
 	// the existing currentUserAtom so the UI reacts instantly.
 	payload, _ := json.Marshal(map[string]interface{}{
 		"action": "permissions_changed",

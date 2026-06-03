@@ -1,4 +1,4 @@
-/* ── Column Mapper ─────────────────────────────────────────────────────── */
+/* Column Mapper */
 
 .column-mapper {
   display: flex;
@@ -32,7 +32,7 @@
   opacity: 0.7;
 }
 
-/* ── Available columns (source) ───────────────────────────────────────── */
+/* Available columns (source) */
 
 .column-mapper-sources {
   display: flex;
@@ -77,7 +77,7 @@
   cursor: grabbing;
 }
 
-/* ── Target slots (card fields) ───────────────────────────────────────── */
+/* Target slots (card fields) */
 
 .column-mapper-targets {
   display: grid;
@@ -147,7 +147,7 @@
   color: var(--error-color);
 }
 
-/* ── Separator ────────────────────────────────────────────────────────── */
+/* Separator */
 
 .column-mapper-divider {
   height: 1px;
@@ -155,7 +155,7 @@
   margin: 4px 0;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 640px) {
   .column-mapper-targets {

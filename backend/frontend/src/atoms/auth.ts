@@ -88,7 +88,7 @@ export const currentUserAtom = atomWithStorage<User | null>("auth.user", null);
 
 // Derived from accessTokenAtom (synchronous localStorage read) so that
 // ProtectedRoute sees the correct value on the very first render after a
-// page reload — no async-hydration race condition.
+// page reload - no async-hydration race condition.
 export const isAuthenticatedAtom = atom<boolean>(
   (get) => get(accessTokenAtom) !== null,
 );

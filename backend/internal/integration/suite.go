@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-// ── T: lightweight testing.T stand-in ────────────────────────────────────────
+// T: lightweight testing.T stand-in
 
 // testAbort is used as a sentinel panic value so Fatalf can stop a test early.
 type testAbort struct{}
@@ -72,7 +72,7 @@ func (t *T) AssertEqual(a, b any, label string) {
 	}
 }
 
-// ── Suite ─────────────────────────────────────────────────────────────────────
+// Suite
 
 type testCase struct {
 	name string
@@ -137,7 +137,7 @@ func (s *Suite) Run() (passed, failed int) {
 	return
 }
 
-// ── HTTP helpers ──────────────────────────────────────────────────────────────
+// HTTP helpers
 
 // URL returns the full URL for the given path on the test server.
 func (s *Suite) URL(path string) string { return s.server.URL + path }
@@ -179,7 +179,7 @@ func (s *Suite) DELETE(path string, body any, headers map[string]string) *http.R
 	return s.do(http.MethodDelete, path, body, headers)
 }
 
-// ── JSON helpers ──────────────────────────────────────────────────────────────
+// JSON helpers
 
 // ReadJSON drains and closes resp.Body, returning the decoded JSON object.
 func ReadJSON(resp *http.Response) map[string]any {

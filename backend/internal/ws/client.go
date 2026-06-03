@@ -20,12 +20,12 @@ type Client struct {
 	UserID      int64
 	Permissions []string
 	SessionID   int64 // session bucket for chat, presence & cursor fan-out
-	// Presence fields — written under Hub.mu.Lock via presenceUpdates.
+	// Presence fields - written under Hub.mu.Lock via presenceUpdates.
 	Route    string
 	UserName string
 	Avatar   string
 	IsMuted  bool
-	// Per-client rate limiters — used only from ReadPump (single goroutine).
+	// Per-client rate limiters - used only from ReadPump (single goroutine).
 	chatLimit      rateBucket
 	cursorLimit    rateBucket
 	presenceLimit  rateBucket
@@ -108,7 +108,7 @@ func (c *Client) ReadPump() {
 				c.handleCursor(msg)
 			}
 		case Ping:
-			// nothing — client keepalive only
+			// nothing - client keepalive only
 		case VoiceControl:
 			c.handleVoiceControlMsg(msg)
 		case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:

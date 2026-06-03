@@ -73,7 +73,7 @@ interface WebSocketMessage {
 }
 
 /**
- * Module-level singleton — shared across every hook instance in the same JS context.
+ * Module-level singleton - shared across every hook instance in the same JS context.
  * Prevents multiple concurrent WebSocket connections when the hook is called from
  * both Layout and a page-level component at the same time.
  */
@@ -110,7 +110,7 @@ export const useWebSocketSync = () => {
   currentUserIdRef.current = currentUser?.id ?? null;
   currentUserPermissionsRef.current = currentUser?.permissions ?? null;
 
-  // Live thread feed atoms — the WS handler pushes broadcast events into these
+  // Live thread feed atoms - the WS handler pushes broadcast events into these
   const setCategoryFeedThreads = useSetAtom(categoryFeedThreadsAtom);
   const setUserFeedThreads = useSetAtom(userFeedThreadsAtom);
   const activeCategoryFeedId = useAtomValue(activeCategoryFeedIdAtom);
@@ -121,10 +121,10 @@ export const useWebSocketSync = () => {
   activeCategoryFeedIdRef.current = activeCategoryFeedId;
   activeUserFeedIdRef.current = activeUserFeedId;
 
-  // ── Global chat ─────────────────────────────────────────────────────────
+  // Global chat
   const setGlobalChatMessages = useSetAtom(globalChatMessagesAtom);
 
-  // ── Inbox ────────────────────────────────────────────────────────────────
+  // Inbox
   const setInboxMessages = useSetAtom(inboxMessagesAtom);
   const setInboxConversations = useSetAtom(inboxConversationsAtom);
   const setInboxUnreadCount = useSetAtom(inboxUnreadCountAtom);
@@ -134,22 +134,22 @@ export const useWebSocketSync = () => {
   // Keep module-level var in sync so all setupWebSocket closures see the latest value.
   _activeConversationId = activeConversationId;
 
-  // ── Notifications ────────────────────────────────────────────────────────
+  // Notifications
   const setNotifications = useSetAtom(notificationsAtom);
-  // ── Site config ──────────────────────────────────────────────────────────
+  // Site config
   const setBrandingWs = useSetAtom(brandingAtom);
   const setFooterWs = useSetAtom(footerConfigAtom);
   const setSeoWs = useSetAtom(seoAtom);
 
-  // ── Store ─────────────────────────────────────────────────────────────────
+  // Store
   const setProducts = useSetAtom(productsAtom);
   const setStoreCategories = useSetAtom(productCategoriesAtom);
   const setStoreCartItems = useSetAtom(storeCartItemsAtom);
 
-  // ── Voice ─────────────────────────────────────────────────────────────────
+  // Voice
   const setVoicePermissions = useSetAtom(voicePermissionsAtom);
 
-  // ── Activity events ───────────────────────────────────────────────────────
+  // Activity events
   const setActivityEvents = useSetAtom(activityEventsAtom);
 
   // read token so the WS connection is authenticated server-side
@@ -158,7 +158,7 @@ export const useWebSocketSync = () => {
   accessTokenRef.current = accessToken;
 
   const setupWebSocket = useCallback(() => {
-    // Global singleton guard — only one WS connection per browser context.
+    // Global singleton guard - only one WS connection per browser context.
     if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
       return;
     }
@@ -220,9 +220,9 @@ export const useWebSocketSync = () => {
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;
 
-            // ── Lightweight permission/role push ─────────────────────────
+            // Lightweight permission/role push
             // Sent directly to the user's client (no subscription needed).
-            // Only contains id, roles, permissions, new_token — merge into
+            // Only contains id, roles, permissions, new_token - merge into
             // currentUserAtom so derived atoms react instantly.
             if (userAction === "permissions_changed" && userData) {
               const myId = currentUserIdRef.current;
@@ -251,7 +251,7 @@ export const useWebSocketSync = () => {
               );
             }
 
-            // ── Full user object push (profile edits, avatar, suspend…) ──
+            // Full user object push (profile edits, avatar, suspend…)
             if (payload?.data?.user) {
               const updatedUser = payload.data.user as User;
               const newToken = payload.data.new_token as string | undefined;
@@ -285,7 +285,7 @@ export const useWebSocketSync = () => {
               }
             }
 
-            // ── Uploads changed — notify the profile uploads tab ──────────
+            // Uploads changed - notify the profile uploads tab
             if (
               userAction === "user_updated" &&
               (userData as any)?.action === "uploads_changed"
@@ -319,7 +319,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // Handle incoming teleport request — navigate this client to the given route
+          // Handle incoming teleport request - navigate this client to the given route
           if (message.type === "tp") {
             const route = payload?.route;
             if (typeof route === "string" && route) {
@@ -337,7 +337,7 @@ export const useWebSocketSync = () => {
             window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
           }
 
-          // ── MFA Required ──────────────────────────────────────────────────
+          // MFA Required
           if (message.type === "mfa:required") {
             window.dispatchEvent(new CustomEvent("auth:mfa-required"));
           }
@@ -369,7 +369,7 @@ export const useWebSocketSync = () => {
               });
             }
 
-            // ── Live feed: thread created (broadcast to all clients) ──────────
+            // Live feed: thread created (broadcast to all clients)
             if (action === "thread_created" && data) {
               const thread = data as ForumThread;
               // Category feed
@@ -396,7 +396,7 @@ export const useWebSocketSync = () => {
               }
             }
 
-            // ── Live feed: thread updated (metadata refresh in both feeds) ───
+            // Live feed: thread updated (metadata refresh in both feeds)
             if (action === "thread_updated" && data) {
               const update = (prev: ForumThread[]) =>
                 prev.map((t) =>
@@ -416,7 +416,7 @@ export const useWebSocketSync = () => {
               });
             }
 
-            // ── Live feed: thread deleted (broadcast to all clients) ─────────
+            // Live feed: thread deleted (broadcast to all clients)
             if (action === "thread_deleted" && id) {
               const remove = (prev: ForumThread[]) =>
                 prev.filter((t) => String(t.id) !== String(id));
@@ -668,7 +668,7 @@ export const useWebSocketSync = () => {
             });
           }
 
-          // ── Global chat ──────────────────────────────────────────────────
+          // Global chat
           if (message.type === "global:chat") {
             const chatMsg = payload as GlobalChatMessage;
             // Play sound only for messages from other users
@@ -688,13 +688,13 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Inbox ─────────────────────────────────────────────────────────
+          // Inbox
           if (message.type === "inbox:update") {
             const { action: inboxAction, data: inboxData } = payload as any;
             if (inboxAction === "message_created" && inboxData) {
               const convStr = String(inboxData.conversation_id);
               const activeId = _activeConversationId;
-              // Always append to the message feed — the subscription to
+              // Always append to the message feed - the subscription to
               // inbox_conversation:{id} ensures we only receive events for
               // the conversation currently open, just like thread comments.
               // No extra activeId check needed; the backend only pushes to
@@ -721,7 +721,7 @@ export const useWebSocketSync = () => {
           }
 
           if (message.type === "inbox:message") {
-            // Direct push to recipient — no subscription required.
+            // Direct push to recipient - no subscription required.
             // Bump global badge and update the sidebar so the conversation
             // list stays current even when no specific chat is open.
             playMessageSound();
@@ -753,7 +753,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Store ─────────────────────────────────────────────────────────
+          // Store
           if (message.type === "store:update") {
             const { action, data } = payload as { action: string; data?: any };
 
@@ -797,7 +797,7 @@ export const useWebSocketSync = () => {
               );
             }
 
-            // Purchase outcomes — targeted at the purchasing user only
+            // Purchase outcomes - targeted at the purchasing user only
             if (action === "purchase_success") {
               const resp = data as CheckoutResponse;
               toast.success("Payment successful!", {
@@ -816,7 +816,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Notifications ─────────────────────────────────────────────────
+          // Notifications
           if (message.type === "notification") {
             const notif = payload as AppNotification;
             setNotifications((prev) => [notif, ...prev]);
@@ -834,7 +834,7 @@ export const useWebSocketSync = () => {
             });
           }
 
-          // ── Notification bootstrap (on connect) ───────────────────────────
+          // Notification bootstrap (on connect)
           if (message.type === "notification:sync") {
             const { notifications: notifs } = payload as {
               notifications?: AppNotification[];
@@ -846,7 +846,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Notification read / delete sync ───────────────────────────────
+          // Notification read / delete sync
           if (message.type === "notification:update") {
             const { action: na, id: nid } = payload as {
               action: string;
@@ -874,7 +874,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Cart ──────────────────────────────────────────────────────────
+          // Cart
           if (message.type === "cart:update") {
             const { data: cartData } = payload as {
               action: string;
@@ -885,7 +885,7 @@ export const useWebSocketSync = () => {
             }
           }
 
-          // ── Site config ───────────────────────────────────────────────────
+          // Site config
           if (message.type === "config:update") {
             const { action: ca, data: cd } = payload as {
               action: string;
@@ -894,7 +894,7 @@ export const useWebSocketSync = () => {
             if (ca === "branding_updated" && cd) setBrandingWs(cd);
             if (ca === "seo_updated" && cd) setSeoWs(cd);
             if (ca === "footer_updated" && cd) setFooterWs(cd);
-            // Page section/item changes — let page components re-fetch
+            // Page section/item changes - let page components re-fetch
             window.dispatchEvent(
               new CustomEvent("config:live:event", {
                 detail: { action: ca, data: cd },
@@ -902,7 +902,7 @@ export const useWebSocketSync = () => {
             );
           }
 
-          // ── Voice Controls ────────────────────────────────────────────────
+          // Voice Controls
           if (message.type === "voice:control") {
             const vp = payload as {
               route: string;
@@ -935,7 +935,7 @@ export const useWebSocketSync = () => {
             });
           }
 
-          // ── CMS pages ─────────────────────────────────────────────────────
+          // CMS pages
           if (message.type === "page:update") {
             const { action: pa, data: pd } = payload as {
               action: string;
@@ -948,7 +948,7 @@ export const useWebSocketSync = () => {
             );
           }
 
-          // ── Activity events ───────────────────────────────────────────────
+          // Activity events
           if (message.type === "events:update") {
             const { data: evtData } = payload as {
               action: string;
@@ -1017,7 +1017,7 @@ export const useWebSocketSync = () => {
 
   // Reconnect only when the *user identity* changes (login / logout),
   // NOT on every token refresh.  Permission propagation updates the token
-  // in-place — that must NOT tear down the socket or we create a
+  // in-place - that must NOT tear down the socket or we create a
   // disconnect/reconnect loop that drops messages.
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const prevAuthRef = useRef(isAuthenticated);
@@ -1106,7 +1106,7 @@ export const useWebSocketSync = () => {
 
     return () => {
       clearInterval(heartbeatInterval);
-      // Do NOT close the global socket here — other mounted instances still need it.
+      // Do NOT close the global socket here - other mounted instances still need it.
       // The socket is closed via onclose/reconnect logic or page unload.
     };
   }, []);

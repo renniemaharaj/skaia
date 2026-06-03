@@ -11,7 +11,7 @@ type sqlRepository struct{ db *sql.DB }
 // NewRepository returns a Repository backed by Postgres.
 func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
 
-// ── reads ───────────────────────────────────────────────────────────────────
+// reads
 
 func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	p := &models.Page{}
@@ -81,7 +81,7 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 	return pages, nil
 }
 
-// ── writes ──────────────────────────────────────────────────────────────────
+// writes
 
 func (r *sqlRepository) Create(p *models.Page) error {
 	return r.db.QueryRow(
@@ -113,7 +113,7 @@ func (r *sqlRepository) DeleteAll() error {
 	return err
 }
 
-// ── ownership & editors ─────────────────────────────────────────────────────
+// ownership & editors
 
 func (r *sqlRepository) SetOwner(pageID, ownerID int64) error {
 	_, err := r.db.Exec(`UPDATE pages SET owner_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, pageID, ownerID)
@@ -249,7 +249,7 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	return pages, rows.Err()
 }
 
-// ── engagement: likes, comments ─────────────────────────────────────────
+// engagement: likes, comments
 
 func (r *sqlRepository) LikePage(pageID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
@@ -292,7 +292,7 @@ func (r *sqlRepository) GetPageCommentCount(pageID int64) (int, error) {
 	return count, err
 }
 
-// ── page comments ───────────────────────────────────────────────────────────
+// page comments
 
 func (r *sqlRepository) CreateComment(c *models.PageComment) (*models.PageComment, error) {
 	err := r.db.QueryRow(
@@ -387,7 +387,7 @@ func (r *sqlRepository) IsCommentLikedByUser(commentID, userID int64) (bool, err
 	return count > 0, err
 }
 
-// ── page allocations ────────────────────────────────────────────────────────
+// page allocations
 
 func (r *sqlRepository) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
 	a := &models.UserPageAllocation{}

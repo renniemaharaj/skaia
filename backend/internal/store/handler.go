@@ -54,7 +54,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/cart/remove", h.removeFromCart)
 		r.With(jwt).Delete("/cart", h.clearCart)
 
-		// Checkout — all payment logic is backend-only
+		// Checkout - all payment logic is backend-only
 		r.With(jwt).Post("/checkout", h.checkout)
 
 		// Order routes
@@ -408,11 +408,11 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	if req.Price != nil {
 		newPrice := int64(math.Round(*req.Price))
 		if newPrice < existing.Price {
-			// Price dropped — record old price as original_price for strike-through display
+			// Price dropped - record old price as original_price for strike-through display
 			old := existing.Price
 			existing.OriginalPrice = &old
 		} else if newPrice > existing.Price {
-			// Price went up or reset — clear strike-through
+			// Price went up or reset - clear strike-through
 			existing.OriginalPrice = nil
 		}
 		existing.Price = newPrice

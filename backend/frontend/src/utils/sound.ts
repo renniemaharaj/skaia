@@ -2,7 +2,7 @@
  * Sound notification utility.
  *
  * Plays short tones for real-time social events (inbox, notifications, global
- * chat) — NOT for optimistic UI updates.  Uses the Web Audio API to synthesise
+ * chat) - NOT for optimistic UI updates.  Uses the Web Audio API to synthesise
  * tones so we don't need to ship any audio files.
  */
 
@@ -20,7 +20,7 @@ function getAudioCtx(): AudioContext {
   return _audioCtx;
 }
 
-// ── Sound‑enabled preference (persisted in localStorage) ─────────────────
+// Sound-enabled preference (persisted in localStorage)
 
 const SOUND_KEY = "skaia:sound_enabled";
 const VOLUME_KEY = "skaia:sound_volume";
@@ -67,7 +67,7 @@ export function setSoundVolume(level: number) {
   }
 }
 
-// ── Tone presets ─────────────────────────────────────────────────────────
+// Tone presets
 
 type SoundPreset = "notification" | "message" | "chat";
 
@@ -134,11 +134,11 @@ function playTone(params: ToneParams) {
     osc.start(t);
     osc.stop(t + params.duration);
   } catch {
-    // Audio not available — silently ignore.
+    // Audio not available - silently ignore.
   }
 }
 
-// ── Public API ───────────────────────────────────────────────────────────
+// Public API
 
 /** Play a notification sound (for social notifications from the server). */
 export function playNotificationSound() {

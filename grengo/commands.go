@@ -41,7 +41,7 @@ func cmdNew(args []string) {
 	var name, port string
 	var domains []string
 
-	// Parse CLI flags (all optional — missing values will be prompted).
+	// Parse CLI flags (all optional - missing values will be prompted).
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--domain":
@@ -145,7 +145,7 @@ func cmdNew(args []string) {
 	// Admin email
 	adminEmail := prompt("Admin email", "admin@localhost", false)
 
-	// Session timeout (minutes) — default 1 month = 30d × 24h × 60m = 43200
+	// Session timeout (minutes) - default 1 month = 30d × 24h × 60m = 43200
 	sessionTimeout := prompt("Session timeout (minutes)", "43200", false)
 
 	// Environment
@@ -557,7 +557,7 @@ func cmdComposeUp(follow bool, build bool) {
 			continue
 		}
 
-		// Init DB if needed (ignore errors — DB may already exist)
+		// Init DB if needed (ignore errors - DB may already exist)
 		cmdDBInit(cname)
 
 		log("Starting %s…", cname)

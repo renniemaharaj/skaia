@@ -344,7 +344,7 @@ func (h *Handler) AdminDisableTOTP(w http.ResponseWriter, r *http.Request) {
 	if !h.userSvc.CheckManagePowerLevel(w, actorID, targetID) {
 		return
 	}
-	// Admin disable does not require password — call service method with empty password as sentinel.
+	// Admin disable does not require password - call service method with empty password as sentinel.
 	if err := h.svc.AdminDisableTOTP(r.Context(), targetID); err != nil {
 		log.Printf("auth.Handler.AdminDisableTOTP: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())

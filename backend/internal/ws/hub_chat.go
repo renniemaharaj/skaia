@@ -34,7 +34,7 @@ func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
 		select {
 		case client.Send <- msg:
 		default:
-			// Buffer full — skip. Client will be reaped by its write deadline.
+			// Buffer full - skip. Client will be reaped by its write deadline.
 		}
 	}
 }

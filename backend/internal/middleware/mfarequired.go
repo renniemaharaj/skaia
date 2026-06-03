@@ -100,7 +100,7 @@ func handleMFAChallenge(w http.ResponseWriter, r *http.Request, authSvc *auth.Se
 
 // assertMFACleared returns nil if the user has a valid MFA session, otherwise errMFARequired.
 // As a convenience, it also accepts an inline MFA code on the request body and clears
-// the challenge if valid — allowing clients to piggyback verification on their first request.
+// the challenge if valid - allowing clients to piggyback verification on their first request.
 func assertMFACleared(r *http.Request, authSvc *auth.Service, userID int64) error {
 	mfaStatus, err := authSvc.GetMFARequired(r.Context(), userID)
 	expired := !mfaStatus.UpdatedAt.IsZero() && time.Since(mfaStatus.UpdatedAt) > mfaSessionTTL

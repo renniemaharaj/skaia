@@ -39,7 +39,7 @@ func adminToken(t *testing.T) string {
 	return tok
 }
 
-// ── JWTAuthMiddleware ─────────────────────────────────────────────────────────
+// JWTAuthMiddleware
 
 func TestJWTAuthMiddleware_NoContext_Returns401(t *testing.T) {
 	h := mw.JWTAuthMiddleware(okHandler())
@@ -89,7 +89,7 @@ func TestJWTAuthMiddleware_SetsRolesInContext(t *testing.T) {
 	assert.Contains(t, roles, "user")
 }
 
-// ── ExtractTokenMiddleware ─────────────────────────────────────────────────────
+// ExtractTokenMiddleware
 
 func TestExtractTokenMiddleware_NoHeader_Passes(t *testing.T) {
 	h := mw.ExtractTokenMiddleware(okHandler())
@@ -140,7 +140,7 @@ func TestExtractTokenMiddleware_InvalidToken_StillPasses(t *testing.T) {
 	assert.Nil(t, capturedUserID, "user_id must not be set for invalid token")
 }
 
-// ── PermissionMiddleware ──────────────────────────────────────────────────────
+// PermissionMiddleware
 
 func TestPermissionMiddleware_NoClaims_Returns401(t *testing.T) {
 	h := mw.PermissionMiddleware("read:data")(okHandler())
@@ -204,10 +204,10 @@ func TestPermissionMiddleware_MultiplePermissions_PassesOnMatch(t *testing.T) {
 	}
 }
 
-// ── RateLimitMiddleware ───────────────────────────────────────────────────────
+// RateLimitMiddleware
 
 func TestRateLimitMiddleware_NormalLoad_NeverBlocked(t *testing.T) {
-	// 100 req/min limit — 10 rapid requests must never be rate limited.
+	// 100 req/min limit - 10 rapid requests must never be rate limited.
 	limiter := mw.RateLimitMiddleware()
 	srv := httptest.NewServer(limiter(okHandler()))
 	defer srv.Close()

@@ -352,7 +352,7 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
-// ── Environment variables per datasource ────────────────────────────────────
+// Environment variables per datasource
 
 func (h *Handler) getEnvData(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
@@ -360,7 +360,7 @@ func (h *Handler) getEnvData(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid datasource id")
 		return
 	}
-	// Only privileged users may read env vars — guests get empty.
+	// Only privileged users may read env vars - guests get empty.
 	if !h.requireHomeManage(r) {
 		utils.WriteJSON(w, http.StatusOK, map[string]string{"env_data": ""})
 		return

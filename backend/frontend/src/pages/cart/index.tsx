@@ -33,7 +33,7 @@ export const CartPage = () => {
           body: JSON.stringify({ product_id: Number(productId) }),
         });
       } catch {
-        // ignore — atom already updated
+        // ignore - atom already updated
       }
     }
   };

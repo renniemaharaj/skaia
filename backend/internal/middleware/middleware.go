@@ -13,7 +13,7 @@ import (
 
 // penaltyBox enforces a lockout period after a client triggers a rate limit.
 // Once penalised, every request from that key is rejected until the penalty
-// expires — the client cannot "reset" by simply waiting for the sliding
+// expires - the client cannot "reset" by simply waiting for the sliding
 // window counter to roll over.
 type penaltyBox struct {
 	mu      sync.RWMutex

@@ -1,4 +1,4 @@
-/* ── Page container ──────────────────────────────────────────────────────── */
+/* Page container */
 .up-container {
   width: 100%;
   max-width: 960px;
@@ -21,7 +21,7 @@
   font-weight: 500;
 }
 
-/* ── Banner ───────────────────────────────────────────────────────────────── */
+/* Banner */
 .up-banner {
   position: relative;
   width: 100%;
@@ -57,7 +57,7 @@
   background: var(--overlay-dark-heavy);
 }
 
-/* ── Profile card ─────────────────────────────────────────────────────────── */
+/* Profile card */
 .up-card {
   position: relative;
   z-index: 1;
@@ -296,7 +296,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Admin management pane ────────────────────────────────────────────────── */
+/* Admin management pane */
 .up-manage-panel {
   margin: 20px 24px 0;
   background: var(--bg-secondary);
@@ -392,7 +392,7 @@
   white-space: normal;
 }
 
-/* ── Threads section ──────────────────────────────────────────────────────── */
+/* Threads section */
 .up-threads-section {
   margin: 20px 24px 0;
 }
@@ -506,7 +506,7 @@
   pointer-events: none;
 }
 
-/* ── User uploads section ─────────────────────────────────────────────────── */
+/* User uploads section */
 .up-uploads-section {
   margin: 20px 24px 0;
 }
@@ -542,7 +542,7 @@
   margin: 0;
 }
 
-/* ── Upload Storage Bar ─────────────────────────────────────────────── */
+/* Upload Storage Bar */
 
 .up-storage-info {
   margin-bottom: 12px;
@@ -717,7 +717,7 @@
   color: var(--text-secondary);
 }
 
-/* Action buttons — uses .thread-action-btn from ThreadActions.css */
+/* Action buttons - uses .thread-action-btn from ThreadActions.css */
 .up-upload-card .thread-actions,
 .up-upload-file-row .thread-actions,
 .up-upload-lightbox-bar .thread-actions {
@@ -844,7 +844,7 @@
   margin-right: 12px;
 }
 
-/* ── Spinner ──────────────────────────────────────────────────────────────── */
+/* Spinner */
 .up-spinner {
   display: inline-block;
   width: 14px;
@@ -860,7 +860,7 @@
   }
 }
 
-/* ── Dialogs ──────────────────────────────────────────────────────────────── */
+/* Dialogs */
 .up-dialog-overlay {
   position: fixed;
   inset: 0;
@@ -995,7 +995,7 @@
   margin: 0;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 640px) {
   .up-card,
   .up-manage-panel,

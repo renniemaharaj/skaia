@@ -8,7 +8,7 @@ import (
 // RegisterUserTests registers all user-domain integration tests onto s.
 // Tests run sequentially and share admin/user state through closures.
 func RegisterUserTests(s *Suite, db *sql.DB) {
-	// ── shared state ──────────────────────────────────────────────────────────
+	// shared state
 	var (
 		adminEmail    = uniq("admin") + "@skaia.test"
 		adminUsername = uniq("admin")
@@ -23,7 +23,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		userID       int64
 	)
 
-	// ── setup: create admin ───────────────────────────────────────────────────
+	// setup: create admin
 	s.Add("user/setup_admin", func(t *T) {
 		resp := s.POST("/api/auth/register", map[string]any{
 			"username":     adminUsername,
@@ -49,7 +49,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.Require(adminToken != "", "admin token must be non-empty")
 	})
 
-	// ── user/register ─────────────────────────────────────────────────────────
+	// user/register
 	s.Add("user/register", func(t *T) {
 		resp := s.POST("/api/auth/register", map[string]any{
 			"username":     userUsername,
@@ -65,7 +65,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.Require(userID != 0, "user id must be non-zero")
 	})
 
-	// ── user/login ────────────────────────────────────────────────────────────
+	// user/login
 	s.Add("user/login", func(t *T) {
 		resp := s.POST("/api/auth/login", map[string]any{
 			"email":    userEmail,
@@ -78,7 +78,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		userToken = tok // refresh token in case register gave a different one
 	})
 
-	// ── user/login_wrong_password ─────────────────────────────────────────────
+	// user/login_wrong_password
 	s.Add("user/login_wrong_password", func(t *T) {
 		resp := s.POST("/api/auth/login", map[string]any{
 			"email":    userEmail,
@@ -88,7 +88,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── user/get_by_id ────────────────────────────────────────────────────────
+	// user/get_by_id
 	s.Add("user/get_by_id", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/users/%d", userID), Bearer(userToken))
 		t.RequireStatus(resp, 200)
@@ -97,7 +97,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.Require(Str(data["password_hash"]) == "", "password_hash must not be exposed")
 	})
 
-	// ── user/get_profile ──────────────────────────────────────────────────────
+	// user/get_profile
 	s.Add("user/get_profile", func(t *T) {
 		resp := s.GET("/api/users/profile", Bearer(userToken))
 		t.RequireStatus(resp, 200)
@@ -105,7 +105,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.AssertEqual(Str(data["email"]), userEmail, "email")
 	})
 
-	// ── user/update ───────────────────────────────────────────────────────────
+	// user/update
 	s.Add("user/update_display_name", func(t *T) {
 		newName := uniq("DisplayName")
 		resp := s.PUT(fmt.Sprintf("/api/users/%d", userID), map[string]any{
@@ -118,7 +118,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.AssertEqual(Str(data["bio"]), "Integration test bio", "bio after update")
 	})
 
-	// ── user/update_verify_persistence ───────────────────────────────────────
+	// user/update_verify_persistence
 	s.Add("user/update_verify_persistence", func(t *T) {
 		// Fetch the user again to confirm the mutation persisted in the DB.
 		resp := s.GET(fmt.Sprintf("/api/users/%d", userID), Bearer(userToken))
@@ -127,7 +127,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.Require(Str(data["bio"]) == "Integration test bio", "bio must persist in DB")
 	})
 
-	// ── user/search ───────────────────────────────────────────────────────────
+	// user/search
 	s.Add("user/search", func(t *T) {
 		resp := s.GET("/api/users/search?q="+userUsername, Bearer(userToken))
 		t.RequireStatus(resp, 200)
@@ -135,7 +135,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.Require(len(list) >= 1, "search must return at least 1 result")
 	})
 
-	// ── user/add_permission ───────────────────────────────────────────────────
+	// user/add_permission
 	s.Add("user/add_permission", func(t *T) {
 		resp := s.POST(fmt.Sprintf("/api/users/%d/permissions", userID), map[string]any{
 			"permission": "forums.test",
@@ -143,7 +143,7 @@ func RegisterUserTests(s *Suite, db *sql.DB) {
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── user/remove_permission ────────────────────────────────────────────────
+	// user/remove_permission
 	s.Add("user/remove_permission", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/users/%d/permissions/forums.test", userID), nil, Bearer(adminToken))
 		t.RequireStatus(resp, 200)

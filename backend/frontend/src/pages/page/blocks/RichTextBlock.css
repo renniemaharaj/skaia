@@ -1,4 +1,4 @@
-/* ── Rich Text Block ──────────────────────────────────────────────────── */
+/* Rich Text Block */
 
 .richtext-block {
   padding: 40px;
@@ -73,7 +73,7 @@
   font-size: 1rem;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .richtext-block {

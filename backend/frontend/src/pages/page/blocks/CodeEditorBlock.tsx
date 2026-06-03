@@ -154,7 +154,7 @@ export const CodeEditorBlock = ({
     if (!editing) return;
     enterEdit();
     return () => leaveEdit();
-    // enterEdit/leaveEdit are stable useCallback refs — safe to omit from deps.
+    // enterEdit/leaveEdit are stable useCallback refs - safe to omit from deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing]);
   const { theme } = useThemeContext();
@@ -276,7 +276,7 @@ export const CodeEditorBlock = ({
         />
       )}
 
-      {/* Controls bar — visible only when editing */}
+      {/* Controls bar - visible only when editing */}
       {canEdit && editing && (
         <div className="code-editor-controls">
           <label className="code-editor-control">
@@ -305,7 +305,7 @@ export const CodeEditorBlock = ({
         </div>
       )}
 
-      {/* File header — show when not editing (guest or admin preview) */}
+      {/* File header - show when not editing (guest or admin preview) */}
       {!editing && localCode && (
         <div
           className={`code-editor-file-header ${theme === "dark" ? "" : "code-editor-file-header-light"}`}

@@ -29,7 +29,7 @@ func prompt(label, defaultVal string, secret bool) string {
 		if defaultVal != "" {
 			return defaultVal
 		}
-		// No default and non-interactive — can't proceed.
+		// No default and non-interactive - can't proceed.
 		die("Cannot prompt for %q in non-interactive mode (no default)", label)
 	}
 	initScanner()

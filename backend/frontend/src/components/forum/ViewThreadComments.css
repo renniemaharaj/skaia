@@ -6,7 +6,7 @@
   width: 100%;
 }
 
-/* ── Header ─────────────────────────────────────────── */
+/* Header */
 .comments-header {
   display: flex;
   justify-content: space-between;
@@ -28,7 +28,7 @@
   border-radius: 999px;
 }
 
-/* ── Scrollable feed ─────────────────────────────────── */
+/* Scrollable feed */
 .comments-feed {
   display: flex;
   flex-direction: column;
@@ -61,7 +61,7 @@
   font-size: 0.88rem;
 }
 
-/* ── Comment card ────────────────────────────────────── */
+/* Comment card */
 .comment-card {
   display: flex;
   gap: 0.6rem;
@@ -142,7 +142,7 @@
   margin-top: 0.15rem;
 }
 
-/* ── Chat composer ───────────────────────────────────── */
+/* Chat composer */
 .comment-composer {
   padding-top: 0.75rem;
 }

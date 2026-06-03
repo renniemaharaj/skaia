@@ -17,7 +17,7 @@ t.Helper()
 return user.NewRepository(db)
 }
 
-// ── Roles ─────────────────────────────────────────────────────────────────────
+// Roles
 
 func TestUserRepository_GetAllRoles(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -69,7 +69,7 @@ require.NoError(t, err)
 assert.NotContains(t, fetched2.Roles, "admin")
 }
 
-// ── Permissions ──────────────────────────────────────────────────────────────
+// Permissions
 
 func TestUserRepository_GetAllPermissions(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -102,7 +102,7 @@ require.NoError(t, err)
 assert.False(t, has3)
 }
 
-// ── Suspension ────────────────────────────────────────────────────────────────
+// Suspension
 
 func TestUserRepository_Suspend_And_Unsuspend(t *testing.T) {
 db := testutil.OpenTestDB(t)
@@ -125,7 +125,7 @@ require.NoError(t, err)
 assert.False(t, fetched2.IsSuspended)
 }
 
-// ── Edge cases ────────────────────────────────────────────────────────────────
+// Edge cases
 
 func TestUserRepository_UpdatePreservesEmail(t *testing.T) {
 db := testutil.OpenTestDB(t)

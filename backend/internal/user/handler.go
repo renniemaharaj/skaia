@@ -156,7 +156,7 @@ func (h *Handler) getProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
-	// Placeholder — full admin-create flow can be added here.
+	// Placeholder - full admin-create flow can be added here.
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message": "User created",
 		"status":  "success",

@@ -1,5 +1,5 @@
 /**
- * DesignedCardGrid — renders a grid of cards using a CardTemplate.
+ * DesignedCardGrid - renders a grid of cards using a CardTemplate.
  *
  * Each card is laid out according to the template's zone list,
  * using reusable CardPart components for each visible zone.

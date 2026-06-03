@@ -201,7 +201,7 @@ export const PREVIEW_TYPE_LABELS: Record<PreviewType, string> = {
   table: "Table",
 };
 
-/* ── Column-mapped (fact-table) rendering ─────────────────────────────── */
+/* Column-mapped (fact-table) rendering */
 
 /** Section types that support datasource-driven rendering. */
 export const RENDERABLE_SECTION_TYPES = [
@@ -250,7 +250,7 @@ export type RowOverrides = Record<
   Partial<Record<MappableField, string>>
 >;
 
-/* ── Card Designer types ───────────────────────────────────────────────── */
+/* Card Designer types */
 
 /** Card width options for grid-based card layouts. */
 export type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
@@ -315,10 +315,10 @@ export interface CardTemplate {
   paddingRight: number;
   paddingBottom: number;
   paddingLeft: number;
-  /** Legacy unified padding — migrated to per-side on load. */
+  /** Legacy unified padding - migrated to per-side on load. */
   padding?: number;
   imagePosition: ImagePosition;
-  /** Image height in px — controls how much space the image claims. */
+  /** Image height in px - controls how much space the image claims. */
   imageHeight?: number;
   /** Border radius in px. */
   borderRadius: number;

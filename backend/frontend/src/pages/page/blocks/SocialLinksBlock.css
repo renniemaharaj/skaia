@@ -1,4 +1,4 @@
-/* ── Social Links Block ────────────────────────────────────────────────── */
+/* Social Links Block */
 
 .social-links {
   max-width: 1400px;
@@ -30,7 +30,7 @@
   color: var(--text-primary) !important;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .social-links {

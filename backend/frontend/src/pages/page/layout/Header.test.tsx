@@ -14,7 +14,7 @@ import {
 import { brandingAtom } from "../../../atoms/config";
 import type { User } from "../../../atoms/auth";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const testUser: User = {
   id: "123",
@@ -93,7 +93,7 @@ function renderHeader(
   return { ...utils, store };
 }
 
-// ── Tests ────────────────────────────────────────────────────────────────────
+// Tests
 
 describe("Header Component", () => {
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe("Header Component", () => {
     localStorage.clear();
   });
 
-  // ── Unauthenticated ────────────────────────────────────────────────────
+  // Unauthenticated
 
   describe("Unauthenticated State", () => {
     it("renders sign-in button when not authenticated", () => {
@@ -130,7 +130,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Authenticated ──────────────────────────────────────────────────────
+  // Authenticated
 
   describe("Authenticated State", () => {
     it("renders user display name when authenticated", () => {
@@ -179,7 +179,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Navigation Links ──────────────────────────────────────────────────
+  // Navigation Links
 
   describe("Navigation Links", () => {
     it("renders all navigation links", () => {
@@ -198,7 +198,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Cart Icon ──────────────────────────────────────────────────────────
+  // Cart Icon
 
   describe("Cart Icon", () => {
     it("displays cart count badge when cart has items", () => {
@@ -221,7 +221,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Dark Mode Toggle ──────────────────────────────────────────────────
+  // Dark Mode Toggle
 
   describe("Dark Mode Toggle", () => {
     it("renders theme toggle button", () => {
@@ -231,7 +231,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Mobile Menu ────────────────────────────────────────────────────────
+  // Mobile Menu
 
   describe("Mobile Menu", () => {
     it("renders menu toggle button", () => {
@@ -269,7 +269,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Logo and Branding ─────────────────────────────────────────────────
+  // Logo and Branding
 
   describe("Logo and Branding", () => {
     it("renders logo link to home", () => {
@@ -291,7 +291,7 @@ describe("Header Component", () => {
     });
   });
 
-  // ── Responsive Behavior ───────────────────────────────────────────────
+  // Responsive Behavior
 
   describe("Responsive Behavior", () => {
     it("renders header element", () => {

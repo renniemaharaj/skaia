@@ -1,4 +1,4 @@
-/* ── Page wrapper ─────────────────────────── */
+/* Page wrapper */
 .inbox-page-wrapper {
   padding: 0;
   width: 100%;
@@ -15,12 +15,12 @@
   flex: 1;
   overflow: hidden;
   background: var(--bg-secondary);
-  /* No border-radius / border — full-bleed Discord look */
+  /* No border-radius / border - full-bleed Discord look */
   border-top: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
 }
 
-/* ── Sidebar ──────────────────────────────── */
+/* Sidebar */
 .inbox-sidebar {
   width: 280px;
   flex-shrink: 0;
@@ -272,7 +272,7 @@
   line-height: 1;
 }
 
-/* ── Main panel ───────────────────────────── */
+/* Main panel */
 .inbox-main {
   flex: 1;
   display: flex;
@@ -597,7 +597,7 @@
   }
 }
 
-/* ── Chat actions menu ────────────────────── */
+/* Chat actions menu */
 .inbox-chat-actions {
   position: relative;
   margin-left: auto;
@@ -654,7 +654,7 @@
   cursor: not-allowed;
 }
 
-/* ── Input toolbar (emoji, file upload) ───── */
+/* Input toolbar (emoji, file upload) */
 .inbox-toolbar-btn {
   display: inline-flex;
   align-items: center;
@@ -703,7 +703,7 @@
   margin-bottom: 4px;
 }
 
-/* ── Attachment rendering ─────────────────── */
+/* Attachment rendering */
 .inbox-msg-image {
   max-width: 300px;
   max-height: 300px;
@@ -750,7 +750,7 @@
   margin-top: 2px;
 }
 
-/* ── Page card (system DM) ─────────────────────────────────── */
+/* Page card (system DM) */
 
 .inbox-page-card {
   display: flex;

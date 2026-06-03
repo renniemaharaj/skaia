@@ -78,6 +78,7 @@ const CommentSection = ({
 }: CommentSectionProps) => {
   const hasComments = comments.length > 0;
   const [richTextContent, setRichTextContent] = useState("");
+  const [isEditorVisible, setIsEditorVisible] = useState(false);
 
   const headerCount = useMemo(
     () => (showCount ? `(${comments.length})` : ""),
@@ -232,25 +233,47 @@ const CommentSection = ({
       {canComment && (
         <div className="comment-composer">
           {useRichText ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Editor
-                value={richTextContent}
-                onChange={setRichTextContent}
-                minHeight="80px"
-              />
-              <button
-                className="thread-action-btn btn-submit"
-                style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
-                disabled={disabled || !richTextContent.trim() || richTextContent === "<p></p>"}
-                onClick={async () => {
-                  if (disabled) return;
-                  await onSubmit(richTextContent);
-                  setRichTextContent("");
-                }}
+            isEditorVisible ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Editor
+                  value={richTextContent}
+                  onChange={setRichTextContent}
+                  minHeight="80px"
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <button
+                    className="thread-action-btn btn-cancel"
+                    style={{ padding: '6px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                    onClick={() => {
+                      setIsEditorVisible(false);
+                      setRichTextContent("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="thread-action-btn btn-submit"
+                    style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
+                    disabled={disabled || !richTextContent.trim() || richTextContent === "<p></p>"}
+                    onClick={async () => {
+                      if (disabled) return;
+                      await onSubmit(richTextContent);
+                      setRichTextContent("");
+                      setIsEditorVisible(false);
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className="comment-composer-placeholder"
+                onClick={() => setIsEditorVisible(true)}
               >
-                Send
-              </button>
-            </div>
+                <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span> Make a reply
+              </div>
+            )
           ) : (
             <ComposerInput
               handleSend={async (text) => {

@@ -1,4 +1,4 @@
-/* ── Mobile full-width wrapper ─────────────────────────────────── */
+/* Mobile full-width wrapper */
 .mobile-view-thread-page {
   width: 100%;
   max-width: 100%;
@@ -7,7 +7,7 @@
   padding: 0 0.5rem;
 }
 
-/* Desktop wrapper — wider than the default .modal */
+/* Desktop wrapper - wider than the default .modal */
 .view-thread-wrapper {
   display: flex;
   flex-direction: column;
@@ -79,7 +79,7 @@
   }
 }
 
-/* ── Reshared thread banner ──────────────────────────────────── */
+/* Reshared thread banner */
 .reshared-banner {
   display: flex;
   align-items: center;
@@ -102,7 +102,7 @@
   color: var(--text-primary);
 }
 
-/* ── Lock / Share action buttons ─────────────────────────────── */
+/* Lock / Share action buttons */
 .thread-action-btn.lock-btn,
 .thread-action-btn.share-btn {
   color: var(--text-secondary);
@@ -117,7 +117,7 @@
   color: var(--primary-color);
 }
 
-/* ── Container blocks ────────────────────────────────────────── */
+/* Container blocks */
 .view-thread-container {
   display: flex;
   flex-direction: column;
@@ -138,7 +138,7 @@
   align-items: center;
 }
 
-/* ── State Cards (Loading / Error) ───────────────────────────── */
+/* State Cards (Loading / Error) */
 .view-thread-state-card {
   padding: 2rem;
   text-align: center;

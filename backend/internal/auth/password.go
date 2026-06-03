@@ -10,7 +10,7 @@ import (
 
 const bcryptCost = 12
 
-// ── Token helpers ─────────────────────────────────────────────────────────
+// Token helpers
 
 const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 

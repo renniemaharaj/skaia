@@ -7,7 +7,7 @@ import (
 
 // RegisterForumTests registers all forum-domain integration tests onto s.
 func RegisterForumTests(s *Suite, db *sql.DB) {
-	// ── shared state ──────────────────────────────────────────────────────────
+	// shared state
 	var (
 		adminEmail    = uniq("fadmin") + "@skaia.test"
 		adminUsername = uniq("fadmin")
@@ -24,7 +24,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		commentID  int64
 	)
 
-	// ── setup ─────────────────────────────────────────────────────────────────
+	// setup
 	s.Add("forum/setup", func(t *T) {
 		// Create admin
 		resp := s.POST("/api/auth/register", map[string]any{
@@ -56,7 +56,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(userToken != "", "user token must be non-empty")
 	})
 
-	// ── forum/create_category ─────────────────────────────────────────────────
+	// forum/create_category
 	s.Add("forum/create_category", func(t *T) {
 		resp := s.POST("/api/forum/categories", map[string]any{
 			"name":        uniq("TestCategory"),
@@ -68,7 +68,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(categoryID != 0, "created category must have an id")
 	})
 
-	// ── forum/create_category_requires_admin ──────────────────────────────────
+	// forum/create_category_requires_admin
 	s.Add("forum/create_category_requires_admin", func(t *T) {
 		resp := s.POST("/api/forum/categories", map[string]any{
 			"name": uniq("NoPerms"),
@@ -77,7 +77,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── forum/list_categories ─────────────────────────────────────────────────
+	// forum/list_categories
 	s.Add("forum/list_categories", func(t *T) {
 		resp := s.GET("/api/forum/categories", nil)
 		t.RequireStatus(resp, 200)
@@ -85,7 +85,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(len(list) >= 1, "must return at least the created category")
 	})
 
-	// ── forum/create_thread ───────────────────────────────────────────────────
+	// forum/create_thread
 	s.Add("forum/create_thread", func(t *T) {
 		resp := s.POST("/api/forum/threads", map[string]any{
 			"category_id": fmt.Sprintf("%d", categoryID), // string per handler
@@ -98,7 +98,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(threadID != 0, "created thread must have an id")
 	})
 
-	// ── forum/get_thread ──────────────────────────────────────────────────────
+	// forum/get_thread
 	s.Add("forum/get_thread", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.RequireStatus(resp, 200)
@@ -107,7 +107,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(Str(data["content"]) != "", "thread content must be non-empty")
 	})
 
-	// ── forum/update_thread ───────────────────────────────────────────────────
+	// forum/update_thread
 	s.Add("forum/update_thread", func(t *T) {
 		updatedTitle := uniq("UpdatedTitle")
 		resp := s.PUT(fmt.Sprintf("/api/forum/threads/%d", threadID), map[string]any{
@@ -119,7 +119,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.AssertEqual(Str(data["title"]), updatedTitle, "title after update")
 	})
 
-	// ── forum/update_verify_persistence ──────────────────────────────────────
+	// forum/update_verify_persistence
 	s.Add("forum/update_verify_persistence", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.RequireStatus(resp, 200)
@@ -128,27 +128,27 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 			"updated content must persist in DB")
 	})
 
-	// ── forum/like_thread ─────────────────────────────────────────────────────
+	// forum/like_thread
 	s.Add("forum/like_thread", func(t *T) {
 		resp := s.POST(fmt.Sprintf("/api/forum/threads/%d/like", threadID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/like_thread_duplicate ───────────────────────────────────────────
+	// forum/like_thread_duplicate
 	s.Add("forum/like_thread_duplicate", func(t *T) {
-		// Like uses ON CONFLICT DO NOTHING, so a duplicate is idempotent — 200 is correct.
+		// Like uses ON CONFLICT DO NOTHING, so a duplicate is idempotent - 200 is correct.
 		resp := s.POST(fmt.Sprintf("/api/forum/threads/%d/like", threadID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 		resp.Body.Close()
 	})
 
-	// ── forum/unlike_thread ───────────────────────────────────────────────────
+	// forum/unlike_thread
 	s.Add("forum/unlike_thread", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/forum/threads/%d/like", threadID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/create_comment ──────────────────────────────────────────────────
+	// forum/create_comment
 	s.Add("forum/create_comment", func(t *T) {
 		resp := s.POST(fmt.Sprintf("/api/forum/threads/%d/comments", threadID), map[string]any{
 			"content": "This is an integration test comment.",
@@ -159,7 +159,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(commentID != 0, "created comment must have an id")
 	})
 
-	// ── forum/comment_increments_reply_count ──────────────────────────────────
+	// forum/comment_increments_reply_count
 	s.Add("forum/comment_increments_reply_count", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.RequireStatus(resp, 200)
@@ -168,25 +168,25 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(rc >= 1, "reply_count must be at least 1 after comment, got %d", rc)
 	})
 
-	// ── forum/like_comment ────────────────────────────────────────────────────
+	// forum/like_comment
 	s.Add("forum/like_comment", func(t *T) {
 		resp := s.POST(fmt.Sprintf("/api/forum/comments/%d/like", commentID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/unlike_comment ──────────────────────────────────────────────────
+	// forum/unlike_comment
 	s.Add("forum/unlike_comment", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/forum/comments/%d/like", commentID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/delete_comment ──────────────────────────────────────────────────
+	// forum/delete_comment
 	s.Add("forum/delete_comment", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/forum/comments/%d", commentID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/delete_decrements_reply_count ───────────────────────────────────
+	// forum/delete_decrements_reply_count
 	s.Add("forum/delete_decrements_reply_count", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.RequireStatus(resp, 200)
@@ -195,13 +195,13 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		t.Require(rc == 0, "reply_count must be 0 after comment deletion, got %d", rc)
 	})
 
-	// ── forum/delete_thread ───────────────────────────────────────────────────
+	// forum/delete_thread
 	s.Add("forum/delete_thread", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/forum/threads/%d", threadID), nil, Bearer(userToken))
 		t.RequireStatus(resp, 200)
 	})
 
-	// ── forum/delete_thread_verify_gone ──────────────────────────────────────
+	// forum/delete_thread_verify_gone
 	s.Add("forum/delete_thread_verify_gone", func(t *T) {
 		resp := s.GET(fmt.Sprintf("/api/forum/threads/%d", threadID), nil)
 		t.Require(resp.StatusCode == 404 || resp.StatusCode == 410,
@@ -209,7 +209,7 @@ func RegisterForumTests(s *Suite, db *sql.DB) {
 		resp.Body.Close()
 	})
 
-	// ── forum/delete_category ─────────────────────────────────────────────────
+	// forum/delete_category
 	s.Add("forum/delete_category", func(t *T) {
 		resp := s.DELETE(fmt.Sprintf("/api/forum/categories/%d", categoryID), nil, Bearer(adminToken))
 		t.RequireStatus(resp, 200)

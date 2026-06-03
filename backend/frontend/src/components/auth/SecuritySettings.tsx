@@ -61,9 +61,9 @@ export default function SecuritySettings({
     console.log("TOTP enabled state:", totpEnabled);
   }, [totpEnabled]);
 
-  // ── Admin/Power User Controls ──────────────────────────────────────
+  // Admin/Power User Controls
   // If managing another user, show a warning and allow privileged actions
-  // ── Admin/Power User Controls ──────────────────────────────────────
+  // Admin/Power User Controls
   // If managing another user, show a warning and allow privileged actions
   const [adminSetupData, setAdminSetupData] =
     useState<TOTPSetupResponse | null>(null);
@@ -415,7 +415,7 @@ export default function SecuritySettings({
     }
   };
 
-  // ── 2FA Setup ───────────────────────────────────────────────────────
+  // 2FA Setup
   const handleStartSetup = async () => {
     setLoading(true);
     setError(null);
@@ -493,7 +493,7 @@ export default function SecuritySettings({
     toast.success("Backup codes downloaded");
   };
 
-  // ── Backup codes display (shown once after enable) ──────────────────
+  // Backup codes display (shown once after enable)
   if (backupCodes) {
     return (
       <div className="sec-panel">
@@ -545,7 +545,7 @@ export default function SecuritySettings({
     );
   }
 
-  // ── 2FA Setup dialog ────────────────────────────────────────────────
+  // 2FA Setup dialog
   if (setupData) {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.otpauth)}`;
 
@@ -617,9 +617,7 @@ export default function SecuritySettings({
     );
   }
 
-
-
-  // ── Main panel ──────────────────────────────────────────────────────
+  // Main panel
   return (
     <div className="sec-panel">
       <h2 className="sec-panel__title">Security</h2>

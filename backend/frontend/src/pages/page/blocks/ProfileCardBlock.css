@@ -1,4 +1,4 @@
-/* ── Profile Card Block ────────────────────────────────────────────────── */
+/* Profile Card Block */
 
 .profile-card-section {
   padding: 80px 40px;
@@ -155,7 +155,7 @@
   margin-top: 2px;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .profile-card-section {

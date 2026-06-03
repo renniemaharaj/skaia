@@ -26,7 +26,7 @@ type archiveMeta struct {
 	ExportedAt string   `json:"exported_at"`
 }
 
-// ─── Client Export ────────────────────────────────────────────────────────────
+// Client Export
 
 // cmdExportClient packs a single client (env, compose, uploads, DB dump) into
 // a portable tar.gz archive.
@@ -82,7 +82,7 @@ func cmdExportClient(name, outFile string) {
 	log("Client '%s' exported => %s", name, outFile)
 }
 
-// ─── Client Import ────────────────────────────────────────────────────────────
+// Client Import
 
 // cmdImportClient restores a single-client archive onto this node.
 // newName overrides the archived client name; newPort overrides the port.
@@ -120,7 +120,7 @@ func cmdImportClient(archivePath, newName, newPort string) {
 	reloadNginxIfRunning()
 }
 
-// ─── Node Export ──────────────────────────────────────────────────────────────
+// Node Export
 
 // cmdExportNode packs every client on this node into a single tar.gz archive.
 func cmdExportNode(outFile string) {
@@ -196,7 +196,7 @@ func cmdExportNode(outFile string) {
 	log("Node exported => %s  (%d client(s))", outFile, len(names))
 }
 
-// ─── Node Import ──────────────────────────────────────────────────────────────
+// Node Import
 
 // cmdImportNode restores all clients from a node archive onto this node.
 // Clients that already exist are skipped; port conflicts are auto-resolved.
@@ -243,7 +243,7 @@ func cmdImportNode(archivePath string) {
 	reloadNginxIfRunning()
 }
 
-// ─── Shared setup helper ──────────────────────────────────────────────────────
+// Shared setup helper
 
 // setupClientFromFiles creates the client directory structure, writes the patched
 // env and compose files, extracts uploaded files, and restores the database dump.
@@ -268,14 +268,14 @@ func setupClientFromFiles(
 	envMap["PORT"] = port
 	writeEnvPatched(clientEnvFile(name), envData, envMap)
 
-	// compose.yml — use archived copy verbatim.
+	// compose.yml - use archived copy verbatim.
 	if len(composeData) > 0 {
 		if err := os.WriteFile(clientComposeFile(name), composeData, 0644); err != nil {
 			die("Cannot write compose.yml for '%s': %v", name, err)
 		}
 	}
 
-	// Uploads — preserve directory tree.
+	// Uploads - preserve directory tree.
 	uploadsBase := uploadsPrefix + "uploads/"
 	for archPath, data := range allFiles {
 		if !strings.HasPrefix(archPath, uploadsBase) {
@@ -313,7 +313,7 @@ func setupClientFromFiles(
 	}
 }
 
-// ─── Port helper ─────────────────────────────────────────────────────────────
+// Port helper
 
 // resolvePort returns an available port. If override is given it is used
 // (erroring on conflict). Otherwise the archived port is used if free, or the
@@ -337,7 +337,7 @@ func resolvePort(archived, override string) string {
 	return next
 }
 
-// ─── Archive low-level helpers ────────────────────────────────────────────────
+// Archive low-level helpers
 
 // readArchive opens a .tar.gz file and returns all regular-file contents
 // keyed by their path inside the archive.
@@ -434,7 +434,7 @@ func addDirToArchive(tw *tar.Writer, dir, archivePrefix string) {
 	})
 }
 
-// ─── Postgres helpers ─────────────────────────────────────────────────────────
+// Postgres helpers
 
 // pgDump runs pg_dump inside the postgres container and returns the SQL bytes.
 func pgDump(dbName string) ([]byte, error) {
@@ -445,7 +445,7 @@ func pgDump(dbName string) ([]byte, error) {
 	).Output()
 }
 
-// ─── Env helpers ──────────────────────────────────────────────────────────────
+// Env helpers
 
 // parseEnvBytes parses raw .env bytes into a key=>value map.
 // Comments and blank lines are ignored.

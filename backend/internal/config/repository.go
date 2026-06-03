@@ -11,7 +11,7 @@ type sqlRepository struct{ db *sql.DB }
 // NewRepository returns a Repository backed by Postgres.
 func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
 
-// ── Site config ─────────────────────────────────────────────────────────────
+// Site config
 
 func (r *sqlRepository) GetConfig(key string) (*models.SiteConfig, error) {
 	sc := &models.SiteConfig{}
@@ -42,7 +42,7 @@ func (r *sqlRepository) DeleteConfig(key string) error {
 	return err
 }
 
-// ── Landing sections ────────────────────────────────────────────────────────
+// Landing sections
 
 func (r *sqlRepository) DeleteAllSections() error {
 	_, err := r.db.Exec(`DELETE FROM page_sections`)
@@ -168,7 +168,7 @@ func (r *sqlRepository) ReorderSections(ids []int64) error {
 	return tx.Commit()
 }
 
-// ── Landing items ───────────────────────────────────────────────────────────
+// Landing items
 
 func (r *sqlRepository) ListItems(sectionID int64) ([]*models.PageItem, error) {
 	rows, err := r.db.Query(

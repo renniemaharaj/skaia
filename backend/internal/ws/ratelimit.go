@@ -3,7 +3,7 @@ package ws
 import "time"
 
 // rateBucket implements a simple token-bucket rate limiter.
-// NOT goroutine-safe — designed for single-goroutine use in Client.ReadPump.
+// NOT goroutine-safe - designed for single-goroutine use in Client.ReadPump.
 type rateBucket struct {
 	tokens float64
 	last   time.Time

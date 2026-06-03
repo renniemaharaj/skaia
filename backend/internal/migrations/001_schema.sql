@@ -334,14 +334,14 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user_read   ON notifications(user_i
 
 -- Site config: branding, SEO, and page blocks.
 
--- ── Site config (key-value) ─────────────────────────────────────────────────
+-- Site config (key-value)
 CREATE TABLE IF NOT EXISTS site_config (
     key        VARCHAR(255) PRIMARY KEY,
     value      JSONB        NOT NULL DEFAULT '{}',
     updated_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
 
--- ── Page sections (ordered blocks) ─────────────────────────────────────────
+-- Page sections (ordered blocks)
 CREATE TABLE IF NOT EXISTS page_sections (
     id            BIGSERIAL    PRIMARY KEY,
     display_order INT          NOT NULL DEFAULT 0,
@@ -354,7 +354,7 @@ CREATE TABLE IF NOT EXISTS page_sections (
 );
 CREATE INDEX IF NOT EXISTS idx_page_sections_order ON page_sections(display_order);
 
--- ── Page section items (cards/tiles within a section) ────────────────────
+-- Page section items (cards/tiles within a section)
 CREATE TABLE IF NOT EXISTS page_items (
     id                BIGSERIAL    PRIMARY KEY,
     page_section_id   BIGINT       NOT NULL REFERENCES page_sections(id) ON DELETE CASCADE,
@@ -370,7 +370,7 @@ CREATE TABLE IF NOT EXISTS page_items (
 );
 CREATE INDEX IF NOT EXISTS idx_page_items_section ON page_items(page_section_id, display_order);
 
--- ── Custom pages (block-builder content) ────────────────────────────────────
+-- Custom pages (block-builder content)
 CREATE TABLE IF NOT EXISTS pages (
     id          BIGSERIAL    PRIMARY KEY,
     slug        VARCHAR(120) NOT NULL UNIQUE,
@@ -405,7 +405,7 @@ CREATE TABLE IF NOT EXISTS page_editors (
 CREATE INDEX IF NOT EXISTS idx_page_editors_page ON page_editors(page_id);
 CREATE INDEX IF NOT EXISTS idx_page_editors_user ON page_editors(user_id);
 
--- ── Page engagement: views, likes, comments ─────────────────────────────────
+-- Page engagement: views, likes, comments
 
 -- Old page_views table and pages.view_count replaced by resource_views (006).
 DROP TABLE IF EXISTS page_views;
@@ -443,7 +443,7 @@ CREATE TABLE IF NOT EXISTS page_comment_likes (
     UNIQUE(page_comment_id, user_id)
 );
 
--- ── Data sources (evaluable code snippets for derived page sections) ────────
+-- Data sources (evaluable code snippets for derived page sections)
 CREATE TABLE IF NOT EXISTS data_sources (
     id          BIGSERIAL    PRIMARY KEY,
     name        VARCHAR(255) NOT NULL,
@@ -457,7 +457,7 @@ CREATE TABLE IF NOT EXISTS data_sources (
 );
 CREATE INDEX IF NOT EXISTS idx_data_sources_created_by ON data_sources(created_by);
 
--- ── Custom sections (reusable data-bound visualizations, like Superset charts) ──
+-- Custom sections (reusable data-bound visualizations, like Superset charts)
 CREATE TABLE IF NOT EXISTS custom_sections (
     id              BIGSERIAL    PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
@@ -472,9 +472,7 @@ CREATE TABLE IF NOT EXISTS custom_sections (
 CREATE INDEX IF NOT EXISTS idx_custom_sections_datasource ON custom_sections(datasource_id);
 CREATE INDEX IF NOT EXISTS idx_custom_sections_created_by ON custom_sections(created_by);
 
-
-
--- ── User page allocations (per-user custom page quotas) ─────────────────────
+-- User page allocations (per-user custom page quotas)
 CREATE TABLE IF NOT EXISTS user_page_allocations (
     id         BIGSERIAL PRIMARY KEY,
     user_id    BIGINT   NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -488,7 +486,7 @@ CREATE INDEX IF NOT EXISTS idx_user_page_alloc_user ON user_page_allocations(use
 ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS max_pages  INT NOT NULL DEFAULT 5;
 ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS used_pages INT NOT NULL DEFAULT 0;
 
--- ── Events (audit log for all user / system activity) ───────────────────────
+-- Events (audit log for all user / system activity)
 CREATE TABLE IF NOT EXISTS events (
     id          BIGSERIAL    PRIMARY KEY,
     user_id     BIGINT       REFERENCES users(id) ON DELETE SET NULL,
@@ -504,12 +502,12 @@ CREATE INDEX IF NOT EXISTS idx_events_activity   ON events(activity);
 CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_resource   ON events(resource, resource_id);
 
--- ── Email verification & 2FA columns ───────────────────────────────────────
+-- Email verification & 2FA columns
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified    BOOLEAN   DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMP;
 -- totp_secret and totp_enabled removed, now in auth_totp_secrets
 
--- ── Email verification tokens ──────────────────────────────────────────────
+-- Email verification tokens
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
     id         BIGSERIAL    PRIMARY KEY,
     user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -521,7 +519,7 @@ CREATE INDEX IF NOT EXISTS idx_email_verify_user   ON email_verification_tokens(
 CREATE INDEX IF NOT EXISTS idx_email_verify_token  ON email_verification_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_email_verify_expiry ON email_verification_tokens(expires_at);
 
--- ── Password reset tokens ──────────────────────────────────────────────────
+-- Password reset tokens
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id         BIGSERIAL    PRIMARY KEY,
     user_id    BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -534,8 +532,7 @@ CREATE INDEX IF NOT EXISTS idx_pw_reset_user   ON password_reset_tokens(user_id)
 CREATE INDEX IF NOT EXISTS idx_pw_reset_token  ON password_reset_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_pw_reset_expiry ON password_reset_tokens(expires_at);
 
-
--- ── Auth tables (moved from migration 009) ─────────────────────────────
+-- Auth tables (moved from migration 009)
 CREATE TABLE IF NOT EXISTS auth_credentials (
     id          BIGSERIAL PRIMARY KEY,
     user_id     BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,

@@ -186,7 +186,7 @@
   box-shadow: 0 8px 16px color-mix(in srgb, var(--skaia-green-primary) 20%, transparent);
 }
 
-/* ── Editable social link wrapper ── */
+/* Editable social link wrapper */
 .social-link-editable {
   position: relative;
   display: inline-flex;
@@ -227,7 +227,7 @@
   color: var(--error-color);
 }
 
-/* ── Social link inline editor ── */
+/* Social link inline editor */
 .social-link-editor {
   display: flex;
   gap: 0.35rem;
@@ -251,7 +251,7 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--skaia-green-primary) 15%, transparent);
 }
 
-/* ── Add social link button ── */
+/* Add social link button */
 .social-link-add-btn {
   display: flex;
   align-items: center;
@@ -310,7 +310,7 @@
   }
 }
 
-/* ── Variant cycler wrapper ───────────────────────────────────────── */
+/* Variant cycler wrapper */
 
 .footer-variant-cycler-wrapper {
   position: absolute;
@@ -319,7 +319,7 @@
   z-index: 5;
 }
 
-/* ── Footer Variant 2 ─────────────────────────────────────────────── */
+/* Footer Variant 2 */
 
 .footer-v2 {
   background: var(--bg-secondary);

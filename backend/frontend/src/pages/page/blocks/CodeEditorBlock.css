@@ -1,4 +1,4 @@
-/* ── Code Editor Block ─────────────────────────────────────────────────── */
+/* Code Editor Block */
 
 .code-editor-block {
   padding: 40px;
@@ -205,7 +205,7 @@
   font-size: 1rem;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .code-editor-block {

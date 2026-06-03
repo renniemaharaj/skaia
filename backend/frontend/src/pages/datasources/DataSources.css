@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════════
-   Data Sources — Superset-inspired dashboard & editor styles
+   Data Sources - Superset-inspired dashboard & editor styles
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Page wrapper ─────────────────────────────────────────────── */
+/* Page wrapper */
 
 .ds-page {
   max-width: 1400px;
@@ -10,7 +10,7 @@
   padding: 32px 40px;
 }
 
-/* ── Page header ──────────────────────────────────────────────── */
+/* Page header */
 
 .ds-page__header {
   display: flex;
@@ -90,7 +90,7 @@
   opacity: 0.9;
 }
 
-/* ── Toolbar / Search ─────────────────────────────────────────── */
+/* Toolbar / Search */
 
 .ds-page__toolbar {
   display: flex;
@@ -110,7 +110,7 @@
   white-space: nowrap;
 }
 
-/* ── Empty & Loading ──────────────────────────────────────────── */
+/* Empty & Loading */
 
 .ds-page__empty {
   display: flex;
@@ -568,7 +568,7 @@
   font-size: 0.875rem;
 }
 
-/* ── Split pane ───────────────────────────────────────────────── */
+/* Split pane */
 
 .ds-editor__split {
   display: grid;
@@ -904,7 +904,7 @@
   color: var(--text-primary);
 }
 
-/* ── Spin animation ───────────────────────────────────────────── */
+/* Spin animation */
 
 @keyframes spin {
   to {
@@ -916,7 +916,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-/* ── Responsive ───────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 1024px) {
   .ds-editor__split {

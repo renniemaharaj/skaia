@@ -10,7 +10,7 @@
  * 4. Writes JSON result to stdout:
  *   { "js": "<compiled code>", "diagnostics": [ { "file": "main.ts", "line": 1, ... } ] }
  *
- * Exit code 0 on success (even with diagnostics — caller decides severity).
+ * Exit code 0 on success (even with diagnostics - caller decides severity).
  * Exit code 1 on fatal errors (e.g. missing TS module).
  */
 

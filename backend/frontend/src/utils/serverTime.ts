@@ -2,10 +2,10 @@
  * Server-synchronised time utilities
  *
  * Problem: relative-time strings ("5m ago") computed with Date.now() are
- * vulnerable to client clock skew — a client whose clock is minutes ahead or
+ * vulnerable to client clock skew - a client whose clock is minutes ahead or
  * behind the server will show nonsense like "in 3 minutes" for very recent
  * messages.  Additionally, JavaScript's `Date` already stores every instant as
- * UTC milliseconds, so timezone does NOT affect absolute comparisons — but
+ * UTC milliseconds, so timezone does NOT affect absolute comparisons - but
  * presenting local times for display requires the browser's detected locale and
  * timezone to be respected.
  *
@@ -15,7 +15,7 @@
  *
  *       offsetMs = serverTimeAtMidpoint - clientTimeAtMidpoint
  *
- *  2. `getServerNow()` returns Date.now() + offsetMs — a clock that stays in
+ *  2. `getServerNow()` returns Date.now() + offsetMs - a clock that stays in
  *     sync with the backend's authoritative UTC clock.
  *
  *  3. All relative-time ("5m ago") calculations use getServerNow() instead of
@@ -25,7 +25,7 @@
  *     `Intl.DateTimeFormat` with implicit `undefined` locale + timezone, which
  *     automatically resolves to the user's OS/browser locale and IANA timezone
  *     (e.g. "America/New_York").  This is the production-safe way to localise
- *     times — it handles DST, regional number formats, and 12/24-hour
+ *     times - it handles DST, regional number formats, and 12/24-hour
  *     preferences without any manual config.
  */
 
@@ -35,7 +35,7 @@ let _offsetMs = 0;
 /**
  * Synchronise the client clock against the backend.
  * Call exactly once near app start (e.g. in the root Layout component).
- * Safe to call multiple times — subsequent calls recalibrate the offset.
+ * Safe to call multiple times - subsequent calls recalibrate the offset.
  */
 export async function syncServerTime(): Promise<void> {
   try {
@@ -52,7 +52,7 @@ export async function syncServerTime(): Promise<void> {
     const roundTripMs = clientAfter - clientBefore;
     _offsetMs = serverMs + roundTripMs / 2 - clientAfter;
   } catch {
-    // Gracefully degrade to the local clock — offset stays 0.
+    // Gracefully degrade to the local clock - offset stays 0.
   }
 }
 
@@ -96,7 +96,7 @@ export function relativeTimeAgo(iso: string): string {
  * user's detected IANA timezone via `Intl.DateTimeFormat`.
  *
  * Passing `undefined` as the locale lets the runtime pick the user's browser
- * locale automatically — the correct production practice for multi-region
+ * locale automatically - the correct production practice for multi-region
  * deployments.  Omitting `timeZone` defaults to the environment timezone
  * (i.e. the OS/browser timezone the user has set).
  */
@@ -127,7 +127,7 @@ export function formatDate(iso: string): string {
 
 /**
  * Formats a UTC ISO timestamp as a full datetime string including timezone
- * abbreviation — safe as a hover tooltip so users in unusual timezones always
+ * abbreviation - safe as a hover tooltip so users in unusual timezones always
  * know the exact absolute time being shown.
  */
 export function formatFullDateTime(iso: string): string {

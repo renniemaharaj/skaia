@@ -12,7 +12,7 @@ import (
 func TestDispatchAndProcess(t *testing.T) {
 	d := &Dispatcher{
 		jobs:    make(chan Job, 16),
-		repo:    &Repository{}, // nil db — Insert will fail silently (logged)
+		repo:    &Repository{}, // nil db - Insert will fail silently (logged)
 		workers: 2,
 	}
 	d.Start()
@@ -58,7 +58,7 @@ func TestBackpressureDrop(t *testing.T) {
 	d := &Dispatcher{
 		jobs:    make(chan Job, 1),
 		repo:    &Repository{},
-		workers: 0, // no workers — nothing drains the channel
+		workers: 0, // no workers - nothing drains the channel
 		done:    atomic.Bool{},
 	}
 	// Fill the buffer.

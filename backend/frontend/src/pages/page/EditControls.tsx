@@ -101,7 +101,7 @@ export function setSectionLayout(
   return JSON.stringify(updated);
 }
 
-// ── Margin helpers ──────────────────────────────────────────────────────────
+// Margin helpers
 
 export interface SectionMargins {
   marginTop: number;
@@ -143,7 +143,7 @@ export function setSectionMargins(
   return JSON.stringify({ ...parsed, ...margins });
 }
 
-// ── Animation helpers ───────────────────────────────────────────────────────
+// Animation helpers
 
 export const SECTION_ANIMATIONS = [
   "none",
@@ -171,7 +171,7 @@ export function setSectionAnimation(
   return JSON.stringify({ ...parsed, animation });
 }
 
-// ── Animation intensity helpers ─────────────────────────────────────────────
+// Animation intensity helpers
 
 export const ANIMATION_INTENSITIES = ["subtle", "normal", "dramatic"] as const;
 export type AnimationIntensity = (typeof ANIMATION_INTENSITIES)[number];
@@ -193,7 +193,7 @@ export function setSectionAnimationIntensity(
   return JSON.stringify({ ...parsed, animationIntensity: intensity });
 }
 
-// ── Background color helpers ────────────────────────────────────────────────
+// Background color helpers
 
 export function getSectionBgColor(config: string): string {
   const parsed = safeParseConfig(config);
@@ -586,7 +586,7 @@ export const SectionAnimationControl = ({
   </div>
 );
 
-/** Inline-editable text — click pencil to edit, Enter/blur to save. */
+/** Inline-editable text - click pencil to edit, Enter/blur to save. */
 export const EditableText = ({
   value,
   onSave,
@@ -855,8 +855,8 @@ export function blankItem(
 }
 
 /**
- * Image picker button — click to open file dialog, uploads via /upload/image,
- * returns the URL to the caller. Does NOT wrap children — just renders a button.
+ * Image picker button - click to open file dialog, uploads via /upload/image,
+ * returns the URL to the caller. Does NOT wrap children - just renders a button.
  * Parent handles positioning via className.
  */
 export const ImagePickerButton = ({
@@ -930,7 +930,7 @@ export const ImagePickerButton = ({
 };
 
 /**
- * Video picker button — same pattern as ImagePickerButton but accepts video files.
+ * Video picker button - same pattern as ImagePickerButton but accepts video files.
  * Uploads via /upload/video.
  */
 export const VideoPickerButton = ({
@@ -1008,7 +1008,7 @@ export const VideoPickerButton = ({
   );
 };
 
-/** Inline color picker — renders a small swatch that opens a native color input. */
+/** Inline color picker - renders a small swatch that opens a native color input. */
 export const ColorPickerButton = ({
   value,
   onChange,

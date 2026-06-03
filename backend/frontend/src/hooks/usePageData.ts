@@ -104,7 +104,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       const pending = pendingDataRef.current;
       pendingDataRef.current = null;
       if (pending) {
-        // Apply stored WS data directly — no HTTP round trip, no flicker.
+        // Apply stored WS data directly - no HTTP round trip, no flicker.
         applyIncomingData(pending);
       } else {
         // Fallback: no stored data (shouldn't normally happen).
@@ -150,7 +150,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       } else {
         // Index mode: resolve the landing slug first, then fetch by slug.
         // This avoids the single /pages/index cache key that CDNs
-        // serve stale when the landing page is swapped — the per-slug URL
+        // serve stale when the landing page is swapped - the per-slug URL
         // has a unique cache key per page.
         const cfg = await apiRequest<{ slug: string }>("/pages/landing-slug");
         if (requestId !== requestIdRef.current) return;
@@ -235,11 +235,11 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       ).detail;
       const slug = currentSlugRef.current;
 
-      // Landing page was swapped to a different page — replace entirely.
+      // Landing page was swapped to a different page - replace entirely.
       // Only applies when the hook is in "index" mode (no explicit slug).
       if (action === "landing_page_changed" && data) {
         if (!requestedSlugRef.current) {
-          // We're on the index route — swap to the new landing page.
+          // We're on the index route - swap to the new landing page.
           setPage(data as PageBuilderDoc);
           currentSlugRef.current = data.slug ?? null;
           return;
@@ -253,11 +253,11 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         (data?.slug === slug || data?.id === page?.id)
       ) {
         if (suppressRef.current) {
-          // Hold the incoming update — store the data and apply when editing ends.
+          // Hold the incoming update - store the data and apply when editing ends.
           pendingDataRef.current = data;
           setPendingIncoming(true);
         } else {
-          // Apply WS data directly — no HTTP round trip, no loading flash.
+          // Apply WS data directly - no HTTP round trip, no loading flash.
           applyIncomingData(data);
         }
       } else if (action === "page_deleted" && data?.id === page?.id) {
@@ -281,8 +281,6 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     window.addEventListener("api:rate-limit-cleared", handler);
     return () => window.removeEventListener("api:rate-limit-cleared", handler);
   }, [errorStatus, refresh]);
-
-
 
   return {
     page,

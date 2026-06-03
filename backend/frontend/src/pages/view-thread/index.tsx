@@ -349,6 +349,9 @@ const ViewThreadPage = () => {
         </div>
 
         {/* Body */}
+        <div style={{ width: '100%', marginBottom: '1.5rem' }}>
+          <ViewThreadMeta threadId={threadId} />
+        </div>
         <div 
           className={`view-thread-page ${readingMode ? 'view-thread-page--reading-mode' : ''}`} 
           style={authorColor ? { 
@@ -357,7 +360,6 @@ const ViewThreadPage = () => {
           } : {}}
         >
           <div className="view-thread-main">
-            <ViewThreadMeta threadId={threadId} />
             <div>
               {currentThread.is_shared && currentThread.original_thread && (
                 <div

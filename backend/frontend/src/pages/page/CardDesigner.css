@@ -476,7 +476,7 @@
   border-color: var(--primary-color);
 }
 
-/* ── Compact inline controls (inspector-density) ─────────────────────── */
+/* Compact inline controls (inspector-density) */
 
 .cd-ctrl-row {
   display: flex;
@@ -553,7 +553,7 @@
   min-width: 0;
 }
 
-/* ── Compact toggle pills ────────────────────────────────────────────── */
+/* Compact toggle pills */
 
 .cd-toggle {
   display: inline-flex;
@@ -599,7 +599,7 @@
   background: var(--primary-color);
 }
 
-/* ── Compact range row ───────────────────────────────────────────────── */
+/* Compact range row */
 
 .cd-range-row {
   display: flex;

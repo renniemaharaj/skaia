@@ -26,7 +26,7 @@ import "./TabbedEditor.css";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
 
-/* ── Diagnostic type returned by the backend compile endpoint ────────── */
+/* Diagnostic type returned by the backend compile endpoint */
 interface CompileDiagnostic {
   file: string;
   line: number;
@@ -35,7 +35,7 @@ interface CompileDiagnostic {
   category: number; // 0=Warning, 1=Error
 }
 
-/* ── Props ───────────────────────────────────────────────────────────── */
+/* Props */
 export interface TabbedEditorProps {
   /** Map of filename => content (.ts files only). */
   files: Record<string, string>;
@@ -49,7 +49,7 @@ export interface TabbedEditorProps {
   height?: number;
 }
 
-/* ── Helpers ─────────────────────────────────────────────────────────── */
+/* Helpers */
 const RESERVED = new Set([".env"]);
 const isEnv = (f: string) => f === ".env";
 const langFor = (f: string) => (isEnv(f) ? "ini" : "typescript");
@@ -77,7 +77,7 @@ function countByFile(
   return m;
 }
 
-/* ── Component ───────────────────────────────────────────────────────── */
+/* Component */
 export default function TabbedEditor({
   files,
   onFilesChange,
@@ -117,20 +117,20 @@ export default function TabbedEditor({
   // Compile debounce timer
   const compileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Ensure activeTab exists ─────────────────────────────────────── */
+  /* Ensure activeTab exists */
   useEffect(() => {
     if (!allTabs.includes(activeTab)) {
       setActiveTab(allTabs.includes("main.ts") ? "main.ts" : allTabs[0]);
     }
   }, [allTabs, activeTab]);
 
-  /* ── Get content for active tab ──────────────────────────────────── */
+  /* Get content for active tab */
   const getContent = useCallback(
     (tab: string) => (isEnv(tab) ? envData : (files[tab] ?? "")),
     [files, envData],
   );
 
-  /* ── Monaco model management ─────────────────────────────────────── */
+  /* Monaco model management */
   const getOrCreateModel = useCallback(
     (monaco: typeof import("monaco-editor"), name: string, content: string) => {
       let model = modelsRef.current.get(name);
@@ -147,7 +147,7 @@ export default function TabbedEditor({
     [],
   );
 
-  /* ── Switch editor to a tab ──────────────────────────────────────── */
+  /* Switch editor to a tab */
   const switchToTab = useCallback(
     (tab: string) => {
       const editor = editorRef.current;
@@ -190,7 +190,7 @@ export default function TabbedEditor({
     [files, envData, getOrCreateModel],
   );
 
-  /* ── Apply diagnostic markers to a file's model ──────────────────── */
+  /* Apply diagnostic markers to a file's model */
   const applyMarkers = useCallback(
     (monaco: typeof import("monaco-editor"), tab: string) => {
       const model = modelsRef.current.get(tab);
@@ -213,7 +213,7 @@ export default function TabbedEditor({
     [diagnostics],
   );
 
-  /* ── Re-apply markers when diagnostics change ────────────────────── */
+  /* Re-apply markers when diagnostics change */
   useEffect(() => {
     const monaco = monacoRef.current;
     if (!monaco) return;
@@ -222,13 +222,13 @@ export default function TabbedEditor({
     }
   }, [diagnostics, allTabs, applyMarkers]);
 
-  /* ── Tab switch ──────────────────────────────────────────────────── */
+  /* Tab switch */
   useEffect(() => {
     switchToTab(activeTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  /* ── Live compile ────────────────────────────────────────────────── */
+  /* Live compile */
   const triggerCompile = useCallback((updatedFiles: Record<string, string>) => {
     if (compileTimerRef.current) clearTimeout(compileTimerRef.current);
     compileTimerRef.current = setTimeout(async () => {
@@ -253,7 +253,7 @@ export default function TabbedEditor({
     };
   }, []);
 
-  /* ── Editor mount ────────────────────────────────────────────────── */
+  /* Editor mount */
   const handleEditorMount = useCallback(
     (
       editor: MonacoEditor.IStandaloneCodeEditor,
@@ -297,11 +297,11 @@ export default function TabbedEditor({
   useEffect(() => {
     return () => {
       disposeRef.current?.dispose();
-      // Don't dispose models — Monaco manages them globally
+      // Don't dispose models - Monaco manages them globally
     };
   }, []);
 
-  /* ── Sync external changes into models ───────────────────────────── */
+  /* Sync external changes into models */
   useEffect(() => {
     const monaco = monacoRef.current;
     if (!monaco) return;
@@ -316,7 +316,7 @@ export default function TabbedEditor({
     }
   }, [files, envData, allTabs, getContent]);
 
-  /* ── File actions ────────────────────────────────────────────────── */
+  /* File actions */
   const addFile = () => {
     const name = nextFileName(Object.keys(files));
     onFilesChange({ ...files, [name]: "" });
@@ -375,7 +375,7 @@ export default function TabbedEditor({
     triggerCompile(next);
   };
 
-  /* ── Env actions ─────────────────────────────────────────────────── */
+  /* Env actions */
   const handleEnvSave = async () => {
     if (datasourceId <= 0) return;
     setEnvSaving(true);
@@ -415,16 +415,16 @@ export default function TabbedEditor({
     onEnvDataChange("");
   };
 
-  /* ── Total errors/warnings ───────────────────────────────────────── */
+  /* Total errors/warnings */
   const totalErrors = diagnostics.filter((d) => d.category === 1).length;
   const totalWarnings = diagnostics.filter((d) => d.category !== 1).length;
 
-  /* ── Env tab read-only state ─────────────────────────────────────── */
+  /* Env tab read-only state */
   const isReadOnly = activeTab === ".env" && envLocked;
 
   return (
     <div className="tabbed-editor">
-      {/* ── Tab bar ────────────────────────────────────────────────── */}
+      {/* Tab bar */}
       <div className="tabbed-editor__tabs">
         <div className="tabbed-editor__tab-list">
           {allTabs.map((tab) => {
@@ -508,7 +508,7 @@ export default function TabbedEditor({
           </button>
         </div>
 
-        {/* ── Tab-level actions ──────────────────────────────────── */}
+        {/* Tab-level actions */}
         <div className="tabbed-editor__actions">
           {activeTab === ".env" && (
             <>
@@ -558,7 +558,7 @@ export default function TabbedEditor({
         </div>
       </div>
 
-      {/* ── Env locked placeholder ─────────────────────────────────── */}
+      {/* Env locked placeholder */}
       {activeTab === ".env" && envLocked && (
         <div className="tabbed-editor__env-locked" style={{ height }}>
           <Lock size={20} />

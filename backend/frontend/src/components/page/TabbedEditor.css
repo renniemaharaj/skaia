@@ -1,4 +1,4 @@
-/* ── Tabbed Editor ────────────────────────────────────────────────── */
+/* Tabbed Editor */
 
 .tabbed-editor {
   border: 1px solid var(--border-color);
@@ -7,7 +7,7 @@
   background: var(--bg-secondary);
 }
 
-/* ── Tab bar ──────────────────────────────────────────────────────── */
+/* Tab bar */
 
 .tabbed-editor__tabs {
   display: flex;
@@ -105,7 +105,7 @@
   outline: none;
 }
 
-/* ── Add button ───────────────────────────────────────────────────── */
+/* Add button */
 
 .tabbed-editor__add-btn {
   display: inline-flex;
@@ -128,7 +128,7 @@
   color: var(--primary-color);
 }
 
-/* ── Actions area (right side of tab bar) ─────────────────────────── */
+/* Actions area (right side of tab bar) */
 
 .tabbed-editor__actions {
   display: flex;
@@ -138,7 +138,7 @@
   flex-shrink: 0;
 }
 
-/* ── Diagnostic badges on tabs ────────────────────────────────────── */
+/* Diagnostic badges on tabs */
 
 .tabbed-editor__badge {
   display: inline-flex;
@@ -163,7 +163,7 @@
   color: #e08800;
 }
 
-/* ── Diagnostic summary in actions bar ────────────────────────────── */
+/* Diagnostic summary in actions bar */
 
 .tabbed-editor__diag-summary {
   display: flex;
@@ -184,7 +184,7 @@
   color: #e08800;
 }
 
-/* ── Env locked placeholder ───────────────────────────────────────── */
+/* Env locked placeholder */
 
 .tabbed-editor__env-locked {
   display: flex;
@@ -214,7 +214,7 @@
   color: var(--text-primary);
 }
 
-/* ── Editor wrapper ───────────────────────────────────────────────── */
+/* Editor wrapper */
 
 .tabbed-editor__editor-wrap {
   overflow: hidden;

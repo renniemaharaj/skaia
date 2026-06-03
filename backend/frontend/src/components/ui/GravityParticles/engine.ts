@@ -12,7 +12,7 @@ export type Particle = {
   /** Ring buffer of recent positions for trail rendering, newest-first */
   trail: { x: number; y: number }[];
 
-  // ── Alive fields ──────────────────────────────────────────────────────────
+  // Alive fields
   /**
    * 0 = fully social (seeks density), 1 = fully antisocial (flees density).
    * Triangle-distributed at birth so most particles are mid-spectrum.
@@ -31,7 +31,7 @@ export type Particle = {
    * Set on entry to a system; null when not in a system.
    */
   targetOrbitalRadius?: number | null;
-  /** Arrival order token — lower = earlier = higher priority for inner slots. */
+  /** Arrival order token - lower = earlier = higher priority for inner slots. */
   systemArrivalOrder?: number;
   /**
    * Estimated gravitational binding energy of this particle to its local system,
@@ -40,7 +40,7 @@ export type Particle = {
    */
   bindingEnergy?: number;
   /**
-   * When > 0 the particle is in active escape mode — applies a sustained
+   * When > 0 the particle is in active escape mode - applies a sustained
    * counterforce against the local gravitational gradient regardless of
    * thinkCooldown. Counts down each tick.
    */
@@ -92,7 +92,7 @@ export type PhysicsSettings = {
   /** Number of ray directions cast during scan. Default 16. */
   sightRays: number;
   /**
-   * Steering force coefficient — multiplied by the particle's estimated
+   * Steering force coefficient - multiplied by the particle's estimated
    * gravitational binding when escaping, so antisocial particles can actually
    * break free. Default 0.35.
    */
@@ -111,13 +111,13 @@ export type PhysicsSettings = {
   ringSpringK: number;
   /**
    * Minimum clearance (px) enforced between any particle and the system CoM.
-   * Acts as a hard repulsion floor — prevents full gravitational collapse.
+   * Acts as a hard repulsion floor - prevents full gravitational collapse.
    * Default = ringSpacing (one ring-width).
    */
   collapseGuardRadius: number;
 };
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// Constants
 
 export const BOUNDING_BOX_DAMPING = 0.75;
 export const CURSOR_REPULSION_DIST = 100;
@@ -160,7 +160,7 @@ export const defaultSettings: PhysicsSettings = {
   collapseGuardRadius: 30, // = ringSpacing by default
 };
 
-// ─── Colour helpers ──────────────────────────────────────────────────────────
+// Colour helpers
 
 export const hexToRgbStr = (hex: string): string => {
   hex = hex.replace(/^#/, "");
@@ -199,7 +199,7 @@ export const blendColors = (
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
 };
 
-// ─── Geometry helpers ────────────────────────────────────────────────────────
+// Geometry helpers
 
 export const getRadius = (mass: number): number => Math.sqrt(mass) * 1.5;
 
@@ -208,7 +208,7 @@ const softeningEpsilonSq = (r1: number, r2: number): number => {
   return s * s + 4;
 };
 
-// ─── Particle factory ────────────────────────────────────────────────────────
+// Particle factory
 
 export const spawnParticle = (
   x: number,
@@ -250,13 +250,11 @@ export const spawnParticle = (
   return p;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Alive behaviour helpers
-// ─────────────────────────────────────────────────────────────────────────────
 
 let _arrivalCounter = 0;
 
-// ── System analysis ───────────────────────────────────────────────────────────
+// System analysis
 
 type SystemInfo = {
   cx: number;
@@ -315,7 +313,7 @@ const computeLocalSystem = (
   return { cx, cy, totalMass, count, gravAccel };
 };
 
-// ── Pressure scan ─────────────────────────────────────────────────────────────
+// Pressure scan
 
 const scanPressure = (
   p: Particle,
@@ -349,7 +347,7 @@ const scanPressure = (
   return pressure;
 };
 
-// ── Destination picker ────────────────────────────────────────────────────────
+// Destination picker
 
 const pickDestination = (
   p: Particle,
@@ -407,7 +405,7 @@ const pickDestination = (
   return { x: p.x + Math.cos(angle) * dist, y: p.y + Math.sin(angle) * dist };
 };
 
-// ── Ring slot assignment ──────────────────────────────────────────────────────
+// Ring slot assignment
 
 const computeTargetRing = (
   p: Particle,
@@ -440,7 +438,7 @@ const computeTargetRing = (
   return collapseGuardRadius + (ringIdx + 1) * ringSpacing;
 };
 
-// ── Ring stabilisation force ─────────────────────────────────────────────────
+// Ring stabilisation force
 
 /**
  * Returns the combined radial + tangential + neighbour-repulsion force for a
@@ -473,7 +471,7 @@ const computeRingForce = (
   let rfx = 0;
   let rfy = 0;
 
-  // ── 1. Hard collapse guard — exponential repulsion below guard radius ─────
+  // 1. Hard collapse guard - exponential repulsion below guard radius
   if (currentR < collapseGuardRadius) {
     // Force grows steeply as the particle approaches the CoM
     const penetration = collapseGuardRadius - currentR;
@@ -482,7 +480,7 @@ const computeRingForce = (
     rfy += uy * guardMag;
   }
 
-  // ── 2. Ring spring — scaled by gravAccel so it competes with gravity ─────
+  // 2. Ring spring - scaled by gravAccel so it competes with gravity
   const radialError = currentR - targetR;
   // Scale: ringSpringK controls shape; gravAccel ensures strength matches field
   const springScale = ringSpringK * (1 + gravAccel * 2.5);
@@ -491,14 +489,14 @@ const computeRingForce = (
   rfx -= ux * radialMag;
   rfy -= uy * radialMag;
 
-  // ── 3. Tangential nudge — maintains orbit rather than radial stacking ─────
+  // 3. Tangential nudge - maintains orbit rather than radial stacking
   const tangentialDir = p.id % 2 === 0 ? 1 : -1;
   const tangentialMag = ringSpringK * gravAccel * p.mass * 0.6;
   rfx += -uy * tangentialDir * tangentialMag;
   rfy += ux * tangentialDir * tangentialMag;
 
-  // ── 4. Same-ring neighbour repulsion ──────────────────────────────────────
-  // Zone is ringSpacing × 0.7 — generous enough to spread without tight packing
+  // 4. Same-ring neighbour repulsion
+  // Zone is ringSpacing × 0.7 - generous enough to spread without tight packing
   const repelZone = ringSpacing * 0.7;
   for (const other of parts) {
     if (other.id === p.id || toRemove.has(other.id)) continue;
@@ -523,7 +521,7 @@ const computeRingForce = (
   return { rfx, rfy };
 };
 
-// ── Escape force ─────────────────────────────────────────────────────────────
+// Escape force
 
 /**
  * For antisocial particles in a gravitational trap:
@@ -567,7 +565,7 @@ const computeEscapeForce = (
   return { efx: (bx / bLen) * mag, efy: (by / bLen) * mag };
 };
 
-// ── Look-ahead collision avoidance ────────────────────────────────────────────
+// Look-ahead collision avoidance
 
 const computeAvoidanceForce = (
   p: Particle,
@@ -628,9 +626,7 @@ const computeAvoidanceForce = (
   return { bfx, bfy, lfx, lfy };
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Spatial Hash Grid
-// ─────────────────────────────────────────────────────────────────────────────
 
 class SpatialHash {
   private cells = new Map<number, number[]>();
@@ -674,9 +670,7 @@ class SpatialHash {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // stepPhysics
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const stepPhysics = (
   parts: Particle[],
@@ -728,7 +722,7 @@ export const stepPhysics = (
   const newExplosions: Explosion[] = [];
   const clusterMap = buildClusterMap(parts);
 
-  // ── Explode helper ────────────────────────────────────────────────────────
+  // Explode helper
   const explodeParticle = (
     p: Particle,
     shockCenter?: { x: number; y: number },
@@ -780,7 +774,7 @@ export const stepPhysics = (
     }
   };
 
-  // ── Sub-step loop ─────────────────────────────────────────────────────────
+  // Sub-step loop
   for (let step = 0; step < subSteps; step++) {
     grid.clear();
     for (let i = 0; i < parts.length; i++) {
@@ -795,7 +789,7 @@ export const stepPhysics = (
       let fy = 0;
       const r1 = getRadius(p1.mass);
 
-      // ── Particle–particle collisions ──────────────────────────────────────
+      // Particle–particle collisions
       for (const j of grid.query(p1.x, p1.y)) {
         if (j <= i) continue;
         const p2 = parts[j];
@@ -895,7 +889,7 @@ export const stepPhysics = (
         }
       }
 
-      // ── System gravity ────────────────────────────────────────────────────
+      // System gravity
       const { fx: sfx, fy: sfy } = applySystemGravity(
         p1,
         clusterMap,
@@ -906,7 +900,7 @@ export const stepPhysics = (
       fx += sfx;
       fy += sfy;
 
-      // ── Cursor interactions ───────────────────────────────────────────────
+      // Cursor interactions
       for (const cursor of combinedCursors) {
         const dx = cursor.x - p1.x;
         const dy = cursor.y - p1.y;
@@ -927,7 +921,7 @@ export const stepPhysics = (
         }
       }
 
-      // ── Static attractors ─────────────────────────────────────────────────
+      // Static attractors
       for (const att of attractors) {
         const dx = att.x - p1.x;
         const dy = att.y - p1.y;
@@ -939,9 +933,9 @@ export const stepPhysics = (
         fy += (dy / dist) * force;
       }
 
-      // ─────────────────────────────────────────────────────────────────────
+      
       // ALIVE BEHAVIOUR
-      // ─────────────────────────────────────────────────────────────────────
+      
       if (particlesAreAlive && p1.antisocialLevel !== undefined) {
         const al = p1.antisocialLevel;
 
@@ -961,7 +955,7 @@ export const stepPhysics = (
         p1.thinkCooldown!--;
 
         if (p1.thinkCooldown! <= 0) {
-          // ── Q1: "Where am I?" ─────────────────────────────────────────────
+          // Q1: "Where am I?"
           const localSystem = computeLocalSystem(
             p1,
             parts,
@@ -977,7 +971,7 @@ export const stepPhysics = (
             p1.bindingEnergy = localSystem.gravAccel;
 
             if (!wasInSystem) {
-              // Just entered — assign ring slot
+              // Just entered - assign ring slot
               p1.systemArrivalOrder = _arrivalCounter++;
               const systemParts = parts.filter((q) => {
                 if (q.id === p1.id || toRemove.has(q.id)) return false;
@@ -1025,7 +1019,7 @@ export const stepPhysics = (
             }
           }
 
-          // ── Q2: "Where am I going?" ───────────────────────────────────────
+          // Q2: "Where am I going?"
           const dest = p1.destination;
           if (dest) {
             const ddx = dest.x - p1.x;
@@ -1034,7 +1028,7 @@ export const stepPhysics = (
             const destinationReached = destDist < sightRadius * 0.2;
 
             if (destinationReached) {
-              // Arrived — evaluate whether to stay
+              // Arrived - evaluate whether to stay
               const pressure = scanPressure(
                 p1,
                 parts,
@@ -1068,7 +1062,7 @@ export const stepPhysics = (
                 p1.destination = null; // content to linger
               }
             } else if (p1.inSystem && al > 0.65 && localSystem) {
-              // In a system mid-journey while antisocial — override toward escape
+              // In a system mid-journey while antisocial - override toward escape
               const escapePressure = scanPressure(
                 p1,
                 parts,
@@ -1086,7 +1080,7 @@ export const stepPhysics = (
             }
           }
 
-          // ── Q3: "Where can I go?" ─────────────────────────────────────────
+          // Q3: "Where can I go?"
           if (!p1.destination) {
             const pressure = scanPressure(
               p1,
@@ -1117,9 +1111,9 @@ export const stepPhysics = (
           p1.thinkCooldown = Math.max(20, thinkInterval + jitter);
         }
 
-        // ── Every-tick alive forces ───────────────────────────────────────
+        // Every-tick alive forces
 
-        // 1. Escape burn — sustained anti-gravity for trapped antisocial particles
+        // 1. Escape burn - sustained anti-gravity for trapped antisocial particles
         if ((p1.escapeBurnTicks ?? 0) > 0 && p1.systemCoM) {
           p1.escapeBurnTicks!--;
           const { efx, efy } = computeEscapeForce(
@@ -1149,8 +1143,8 @@ export const stepPhysics = (
           fy += Math.sin(p1.desiredAngle) * steerScale * p1.mass;
         }
 
-        // 3. Ring stabilisation — only for social/neutral particles in a system
-        //    Antisocial particles trying to escape don't stabilise — they're leaving
+        // 3. Ring stabilisation - only for social/neutral particles in a system
+        //    Antisocial particles trying to escape don't stabilise - they're leaving
         if (
           p1.inSystem &&
           p1.targetOrbitalRadius != null &&
@@ -1176,7 +1170,7 @@ export const stepPhysics = (
           al >= 0.65 &&
           (p1.escapeBurnTicks ?? 0) === 0
         ) {
-          // Antisocial particle not actively burning — still apply collapse guard
+          // Antisocial particle not actively burning - still apply collapse guard
           // so it doesn't get crushed while waiting for next think cycle
           const rdx = p1.x - p1.systemCoM.x;
           const rdy = p1.y - p1.systemCoM.y;
@@ -1204,13 +1198,13 @@ export const stepPhysics = (
           fy += bfy + lfy;
         }
       }
-      // ─────────────────────────────────────────────────────────────────────
+      
       // END ALIVE
-      // ─────────────────────────────────────────────────────────────────────
+      
 
       if (toRemove.has(p1.id)) continue;
 
-      // ── Integrate ─────────────────────────────────────────────────────────
+      // Integrate
       if (p1.mergeCooldown > 0) p1.mergeCooldown--;
 
       p1.vx += (fx / p1.mass) * dt;
@@ -1232,7 +1226,7 @@ export const stepPhysics = (
         p1.vy = 0;
       }
 
-      // ── Boundaries ────────────────────────────────────────────────────────
+      // Boundaries
       const r = getRadius(p1.mass);
       if (p1.x < r) {
         p1.x = r;
@@ -1258,7 +1252,7 @@ export const stepPhysics = (
         if (p1.trail.length > trailLength) p1.trail.length = trailLength;
       }
 
-      // ── Threshold explosion ───────────────────────────────────────────────
+      // Threshold explosion
       if (p1.mass > EXPLOSION_MASS_THRESHOLD) {
         const spawnCount = Math.floor(p1.mass / FRAGMENT_MASS);
         for (let k = 0; k < spawnCount; k++) {
@@ -1290,7 +1284,7 @@ export const stepPhysics = (
     }
   }
 
-  // ── Build next frame ──────────────────────────────────────────────────────
+  // Build next frame
   const nextParts: Particle[] = [];
   for (const p of parts) {
     if (!toRemove.has(p.id)) nextParts.push(p);

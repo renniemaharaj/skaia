@@ -1,4 +1,4 @@
-/* ── Container ──────────────────────────────────────────────────────────── */
+/* Container */
 .rmp-container {
   width: 100%;
   max-width: 960px;
@@ -20,7 +20,7 @@
   font-weight: 500;
 }
 
-/* ── Header ──────────────────────────────────────────────────────────────── */
+/* Header */
 .rmp-header {
   display: flex;
   align-items: flex-start;
@@ -51,7 +51,7 @@
   flex-shrink: 0;
 }
 
-/* ── Create card ─────────────────────────────────────────────────────────── */
+/* Create card */
 .rmp-create-card {
   margin-bottom: 1.5rem;
 }
@@ -115,7 +115,7 @@
   margin-top: 1rem;
 }
 
-/* ── Role list ───────────────────────────────────────────────────────────── */
+/* Role list */
 .rmp-list {
   display: flex;
   flex-direction: column;
@@ -128,7 +128,7 @@
   padding: 2rem;
 }
 
-/* ── Role card ───────────────────────────────────────────────────────────── */
+/* Role card */
 .rmp-role-card {
   padding: 1rem 1.25rem;
 }
@@ -171,7 +171,7 @@
   white-space: nowrap;
 }
 
-/* ── Edit row ────────────────────────────────────────────────────────────── */
+/* Edit row */
 .rmp-edit-row {
   display: flex;
   gap: 0.5rem;
@@ -200,7 +200,7 @@
   width: 80px;
 }
 
-/* ── Role actions ────────────────────────────────────────────────────────── */
+/* Role actions */
 .rmp-role-actions {
   display: flex;
   align-items: center;
@@ -230,7 +230,7 @@
   gap: 4px;
 }
 
-/* ── Permissions panel ───────────────────────────────────────────────────── */
+/* Permissions panel */
 .rmp-perms-panel {
   border-top: 1px solid var(--border-color);
   margin-top: 1rem;
@@ -309,7 +309,7 @@
   margin-top: 1px;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+/* Responsive */
 @media (max-width: 600px) {
   .rmp-header {
     flex-direction: column;

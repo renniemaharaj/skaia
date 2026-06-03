@@ -26,7 +26,7 @@ func pidFilePath() string {
 	return filepath.Join(ProjectRoot(), pidFileName)
 }
 
-// ── CLI commands ───────────────────────────────────────────────────────────
+// CLI commands
 
 // cmdAPIStart launches the internal grengo API server.
 // It binds to 0.0.0.0 so Docker containers on the host can reach it,
@@ -145,7 +145,7 @@ func cmdAPIStatus() {
 	}
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// Helpers
 
 func readPIDFile() (int, error) {
 	data, err := os.ReadFile(pidFilePath())
@@ -173,7 +173,7 @@ func apiError(w http.ResponseWriter, status int, msg string) {
 	apiJSON(w, status, map[string]any{"error": msg})
 }
 
-// ── API Handlers ───────────────────────────────────────────────────────────
+// API Handlers
 
 func apiHealth(w http.ResponseWriter, r *http.Request) {
 	apiJSON(w, http.StatusOK, map[string]any{"ok": true})

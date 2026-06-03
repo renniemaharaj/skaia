@@ -1,4 +1,4 @@
-/* ── Derived Section Block ────────────────────────────────────────────── */
+/* Derived Section Block */
 
 .derived-section-block {
   position: relative;
@@ -224,7 +224,7 @@
   }
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 640px) {
   .derived-section-grid {

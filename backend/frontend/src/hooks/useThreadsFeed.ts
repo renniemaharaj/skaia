@@ -9,7 +9,7 @@ import {
   activeUserFeedIdAtom,
 } from "../atoms/forum";
 
-/** Convenience alias — keeps imports in consumers unchanged. */
+/** Convenience alias - keeps imports in consumers unchanged. */
 export type FeedThread = ForumThread;
 
 interface Options {
@@ -62,7 +62,7 @@ export function useThreadsFeed({
   const isAtBottomRef = useRef(true);
   const prevCountRef = useRef(0);
 
-  // ── Scroll helpers ─────────────────────────────────────────────────────────
+  // Scroll helpers
 
   const scrollToBottom = useCallback(() => {
     if (feedRef.current) {
@@ -77,7 +77,7 @@ export function useThreadsFeed({
     isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
   }, []);
 
-  // ── URL builder ───────────────────────────────────────────────────────────
+  // URL builder
 
   const buildUrl = useCallback(
     (offset: number) => {
@@ -93,7 +93,7 @@ export function useThreadsFeed({
     [categoryId, authorId, searchQuery, limit],
   );
 
-  // ── Initial load ──────────────────────────────────────────────────────────
+  // Initial load
 
   const loadInitial = useCallback(async () => {
     if (!filterKey) return;
@@ -117,7 +117,7 @@ export function useThreadsFeed({
     }
   }, [filterKey, buildUrl, limit, setThreads]);
 
-  // ── Load older (top sentinel) ─────────────────────────────────────────────
+  // Load older (top sentinel)
 
   const loadOlder = useCallback(async () => {
     if (!filterKey || loadingRef.current || exhaustedRef.current) return;
@@ -154,7 +154,7 @@ export function useThreadsFeed({
     }
   }, [filterKey, buildUrl, limit, setThreads]);
 
-  // ── Register active feed + trigger initial load when filter changes ────────
+  // Register active feed + trigger initial load when filter changes
 
   useEffect(() => {
     if (!filterKey) return;
@@ -165,7 +165,7 @@ export function useThreadsFeed({
     };
   }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Scroll to bottom once the initial load completes ──────────────────────
+  // Scroll to bottom once the initial load completes
 
   useEffect(() => {
     if (!isLoading) {
@@ -175,7 +175,7 @@ export function useThreadsFeed({
     }
   }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-scroll when WS appends a new thread ─────────────────────────────
+  // Auto-scroll when WS appends a new thread
 
   useEffect(() => {
     if (isInitialLoadRef.current) return;
@@ -186,7 +186,7 @@ export function useThreadsFeed({
     }
   }, [threads.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── IntersectionObserver on the top sentinel ──────────────────────────────
+  // IntersectionObserver on the top sentinel
 
   useEffect(() => {
     const el = sentinelRef.current;

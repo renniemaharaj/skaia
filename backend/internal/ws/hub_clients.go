@@ -4,7 +4,7 @@ import "log"
 
 // handleRegister assigns a ClientID and session to the new client, then adds
 // it to the hub's client map. Sessions are shared buckets used for chat,
-// presence and cursor fan-out — existing sessions with capacity are reused
+// presence and cursor fan-out - existing sessions with capacity are reused
 // before a new one is created. Rejects the connection if the server is at
 // capacity.
 func (h *Hub) handleRegister(client *Client) {
@@ -158,7 +158,7 @@ func (h *Hub) handleBroadcast(msg *Message) {
 		select {
 		case client.Send <- msg:
 		default:
-			// Buffer full — skip. Client will be reaped by its write deadline.
+			// Buffer full - skip. Client will be reaped by its write deadline.
 		}
 	}
 }

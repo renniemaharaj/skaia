@@ -246,3 +246,24 @@
   font-size: 0.85rem;
   border-top: 1px solid var(--border-color);
 }
+
+.comment-composer-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  justify-content: center;
+}
+
+.comment-composer-placeholder:hover {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--bg-hover) 80%, transparent);
+  opacity: 0.9;
+}

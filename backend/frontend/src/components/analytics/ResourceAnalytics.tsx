@@ -15,7 +15,7 @@ import UserProfileOverlay from "../user/UserProfileOverlay";
 import CountUp from "../ui/CountUp/CountUp";
 import "./ResourceAnalytics.css";
 
-/* ── types ─────────────────────────────────────────────── */
+/* types */
 
 interface ViewStat {
   date: string;
@@ -55,7 +55,7 @@ interface Props {
   onClose: () => void;
 }
 
-/* ── constants ─────────────────────────────────────────── */
+/* constants */
 
 type Tab = "overview" | "visitors";
 const PAGE_SIZE = 50;
@@ -82,7 +82,7 @@ const formatTimestamp = (iso: string) => {
   });
 };
 
-/* ── component ─────────────────────────────────────────── */
+/* component */
 
 export default function ResourceAnalytics({
   resource,
@@ -103,7 +103,7 @@ export default function ResourceAnalytics({
   const [hasMore, setHasMore] = useState(true);
   const [identifiedOnly, setIdentifiedOnly] = useState(false);
 
-  /* ── load overview stats ──────────────────────────────── */
+  /* load overview stats */
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -127,7 +127,7 @@ export default function ResourceAnalytics({
     loadStats();
   }, [loadStats]);
 
-  /* ── load visitors ────────────────────────────────────── */
+  /* load visitors */
 
   const loadVisitors = useCallback(
     async (offset: number) => {
@@ -165,7 +165,7 @@ export default function ResourceAnalytics({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, identifiedOnly]);
 
-  /* ── keyboard ─────────────────────────────────────────── */
+  /* keyboard */
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -175,7 +175,7 @@ export default function ResourceAnalytics({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  /* ── derived ──────────────────────────────────────────── */
+  /* derived */
 
   const chartColor = "var(--primary-color)";
   const daily = data?.daily ?? [];
@@ -262,7 +262,7 @@ export default function ResourceAnalytics({
 
     return groups;
   };
-  /* ── render ───────────────────────────────────────────── */
+  /* render */
 
   return (
     <div className="ra-overlay" onClick={onClose}>
@@ -302,7 +302,7 @@ export default function ResourceAnalytics({
         </div>
 
         <div className="ra-body">
-          {/* ───── stat cards (always visible) ───── */}
+          {/* stat cards (always visible) */}
           {!loading && (
             <div className="ra-stats">
               <div className="ra-stat">
@@ -337,7 +337,7 @@ export default function ResourceAnalytics({
             </div>
           )}
 
-          {/* ───── overview tab ───── */}
+          {/* overview tab */}
           {tab === "overview" && (
             <>
               {loading ? (
@@ -450,7 +450,7 @@ export default function ResourceAnalytics({
             </>
           )}
 
-          {/* ───── visitors tab ───── */}
+          {/* visitors tab */}
           {tab === "visitors" && (
             <>
               {/* filter bar */}

@@ -118,7 +118,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	})
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// helpers
 
 func (h *Handler) requireHomeManage(r *http.Request) bool {
 	uid, ok := utils.UserIDFromCtx(r)
@@ -133,7 +133,7 @@ func parseID(r *http.Request, param string) (int64, error) {
 	return strconv.ParseInt(chi.URLParam(r, param), 10, 64)
 }
 
-// ── config endpoints ────────────────────────────────────────────────────────
+// config endpoints
 
 func (h *Handler) listSectionTypes(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, s_registry.List())

@@ -33,7 +33,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.svc.GetByEmail(r.Context(), req.Email)
 	if err != nil {
-		return // user not found — silent
+		return // user not found - silent
 	}
 
 	token, err := h.svc.CreatePasswordResetToken(r.Context(), user.ID)

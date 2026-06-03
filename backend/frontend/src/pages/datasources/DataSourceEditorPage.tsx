@@ -331,7 +331,7 @@ export default function DataSourceEditorPage() {
         );
         setEnvData(env.env_data ?? "");
       } catch {
-        // not authorized or no env data — leave empty
+        // not authorized or no env data - leave empty
       }
     } catch {
       toast.error("Data source not found");
@@ -405,7 +405,7 @@ export default function DataSourceEditorPage() {
     const startedAt = performance.now();
     const fetchLog: FetchLogEntry[] = [];
 
-    // Tracked fetch — logs every outbound request including status + headers
+    // Tracked fetch - logs every outbound request including status + headers
     const trackedFetch = async (
       input: string | Request | URL,
       init?: RequestInit,
@@ -556,7 +556,7 @@ export default function DataSourceEditorPage() {
         return;
       }
 
-      // Per-item validation and sanitization — skip bad entries, never throw
+      // Per-item validation and sanitization - skip bad entries, never throw
       const sanitized: EvalItem[] = [];
       let skippedItems = 0;
       const isTablePreview = previewType === "table";
@@ -1024,7 +1024,7 @@ export default function DataSourceEditorPage() {
             {/* Diagnostics */}
             {activePanel === "diagnostics" && (
               <div className="ds-editor__diagnostics">
-                {/* Empty state — only before first run */}
+                {/* Empty state - only before first run */}
                 {!runStats && diagnostics.length === 0 && !evalError && (
                   <div className="ds-editor__preview-empty">
                     <CheckCircle2 size={32} />
@@ -1155,7 +1155,7 @@ function TablePreview({
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// Sub-components
 
 function RunSummaryCard({ runStats }: { runStats: RunStats }) {
   return (

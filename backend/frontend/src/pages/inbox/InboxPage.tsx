@@ -153,7 +153,7 @@ const InboxPage = () => {
                 setActiveId(conv.id);
               }
             } catch {
-              // ignore — user may not exist
+              // ignore - user may not exist
             }
           }
         }
@@ -214,7 +214,7 @@ const InboxPage = () => {
 
     subscribe("inbox_conversation", activeId);
 
-    // Mark conversation as read — subtract the actual per-conversation
+    // Mark conversation as read - subtract the actual per-conversation
     // unread count so the global badge stays accurate.
     const convToMark = conversations.find((c) => c.id === activeId);
     const prevUnread = convToMark?.unread_count ?? 0;
@@ -242,7 +242,7 @@ const InboxPage = () => {
   }, [loadingMsgs]);
 
   // Auto-scroll to bottom when new messages arrive, but only if the user is
-  // already near the bottom — preserve scroll position when reading history.
+  // already near the bottom - preserve scroll position when reading history.
   useEffect(() => {
     const prev = prevCountRef.current;
     prevCountRef.current = messages.length;
@@ -550,7 +550,7 @@ const InboxPage = () => {
   return (
     <div className="inbox-page-wrapper" ref={wrapperRef}>
       <div className={inboxPageClass}>
-        {/* ── Left: Conversation list ── */}
+        {/* Left: Conversation list */}
         <aside className="inbox-sidebar">
           <div className="inbox-sidebar-header">
             <h2 className="inbox-sidebar-title">Messages</h2>
@@ -647,7 +647,7 @@ const InboxPage = () => {
           </div>
         </aside>
 
-        {/* ── Right: Message feed ── */}
+        {/* Right: Message feed */}
         <section className="inbox-main">
           {!activeId ? (
             <div className="inbox-placeholder">
@@ -785,7 +785,7 @@ const InboxPage = () => {
 
 export default InboxPage;
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// Sub-components
 
 function UserSearchResult({
   user,

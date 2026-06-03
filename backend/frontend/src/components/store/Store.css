@@ -296,7 +296,7 @@
   color: var(--text-secondary);
 }
 
-/* ── Admin action buttons ───────────────────────────────────── */
+/* Admin action buttons */
 .product-admin-actions {
   display: flex;
   gap: 6px;
@@ -362,7 +362,7 @@
   box-shadow: none;
 }
 
-/* ── Stock indicators ───────────────────────────────────────── */
+/* Stock indicators */
 .product-stock-warning {
   font-size: 0.78rem;
   color: var(--warning-color);
@@ -377,7 +377,7 @@
   margin-bottom: 6px;
 }
 
-/* ── Skeleton loading ───────────────────────────────────────── */
+/* Skeleton loading */
 .skeleton-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);

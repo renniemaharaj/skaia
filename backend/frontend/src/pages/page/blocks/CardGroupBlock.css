@@ -1,4 +1,4 @@
-/* ── Card Group Block (Community Legacy) ──────────────────────────────── */
+/* Card Group Block (Community Legacy) */
 
 .community-legacy {
   padding: 80px 40px;
@@ -81,7 +81,7 @@
   flex-grow: 1;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .community-legacy {

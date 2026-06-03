@@ -24,7 +24,7 @@ export interface AuthResponse {
   totp_token?: string;
 }
 
-// ── Admin TOTP (2FA) Management ─────────────────────────────────────────────
+// Admin TOTP (2FA) Management
 
 export interface AdminTOTPEnableResponse {
   status: string;
@@ -163,7 +163,7 @@ export async function apiRequest<T>(
       );
     }
 
-    // Handle 503 — site may be armed (maintenance mode)
+    // Handle 503 - site may be armed (maintenance mode)
     if (
       response.status === 503 &&
       errorMessage.toLowerCase().includes("armed")
@@ -225,10 +225,10 @@ export async function apiRequest<T>(
                   return null as T;
                 }
               }
-              // Retry also failed — fall through to clear auth
+              // Retry also failed - fall through to clear auth
             }
           } catch {
-            // Refresh request failed — fall through to clear auth
+            // Refresh request failed - fall through to clear auth
           }
         }
 
@@ -341,7 +341,7 @@ export async function uploadFile(
   return response.json();
 }
 
-// ── Email Verification ──────────────────────────────────────────────────────
+// Email Verification
 
 export async function verifyEmail(token: string): Promise<{ status: string }> {
   return apiRequest("/auth/verify-email", {
@@ -356,7 +356,7 @@ export async function resendVerificationEmail(): Promise<{ status: string }> {
   });
 }
 
-// ── Password Reset ──────────────────────────────────────────────────────────
+// Password Reset
 
 export async function forgotPassword(
   email: string,
@@ -377,7 +377,7 @@ export async function resetPassword(
   });
 }
 
-// ── TOTP / 2FA ──────────────────────────────────────────────────────────────
+// TOTP / 2FA
 
 export interface TOTPSetupResponse {
   secret: string;

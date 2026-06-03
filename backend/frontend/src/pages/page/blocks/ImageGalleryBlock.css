@@ -1,4 +1,4 @@
-/* ── Image Gallery Block (Showcase + Gallery Album) ───────────────────── */
+/* Image Gallery Block (Showcase + Gallery Album) */
 
 .showcase {
   padding: 80px 40px;
@@ -72,7 +72,7 @@
   text-shadow: 0 2px 8px var(--overlay-dark-heavy);
 }
 
-/* ── Gallery Album System ─────────────────────────────────────────────── */
+/* Gallery Album System */
 
 .gallery-album-tabs {
   display: flex;
@@ -362,7 +362,7 @@
   color: var(--primary-color);
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
+/* Responsive */
 
 @media (max-width: 768px) {
   .showcase {

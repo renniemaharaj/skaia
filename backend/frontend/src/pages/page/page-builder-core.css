@@ -1,9 +1,9 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   Page Builder Core — infrastructure styles for the section-based editor.
+   Page Builder Core - infrastructure styles for the section-based editor.
    Imported by PageBuilder.tsx + BlockRenderer.tsx.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Variant Cycler ───────────────────────────────────────────────────── */
+/* Variant Cycler */
 
 .pb-variant-cycler {
   display: inline-flex;
@@ -26,7 +26,7 @@
   background: color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
-/* ── Shared section header (used by feature_grid, card_group, etc.) ─── */
+/* Shared section header (used by feature_grid, card_group, etc.) */
 
 .section-header {
   text-align: center;
@@ -46,7 +46,7 @@
   margin: 0 auto;
 }
 
-/* ── Edit controls ────────────────────────────────────────────────────── */
+/* Edit controls */
 
 .pb-inline-input {
   background: transparent;
@@ -82,7 +82,7 @@
   opacity: 1;
 }
 
-/* ── Icon picker ──────────────────────────────────────────────────────── */
+/* Icon picker */
 
 .pb-icon-picker {
   position: relative;
@@ -136,7 +136,7 @@
   color: var(--primary-color);
 }
 
-/* ── Section toolbar ──────────────────────────────────────────────────── */
+/* Section toolbar */
 
 .pb-section-toolbar {
   display: flex;
@@ -185,7 +185,7 @@
   flex-wrap: wrap;
 }
 
-/* ── Last edited by badge ─────────────────────────────────────────────── */
+/* Last edited by badge */
 
 .pb-last-edited-badge {
   display: inline-flex;
@@ -226,7 +226,7 @@
   font-size: 0.85em;
 }
 
-/* ── Layout wrapper for all sections ──────────────────────────────────── */
+/* Layout wrapper for all sections */
 
 .pb-section-layout {
   position: relative;
@@ -293,7 +293,7 @@
   margin: 0 !important;
 }
 
-/* ── Section move buttons ─────────────────────────────────────────────── */
+/* Section move buttons */
 
 .pb-section-move-btns {
   display: inline-flex;
@@ -313,7 +313,7 @@
   pointer-events: none;
 }
 
-/* ── Add / delete item buttons ────────────────────────────────────────── */
+/* Add / delete item buttons */
 
 .pb-add-item-btn {
   display: flex;
@@ -361,7 +361,7 @@
   background: var(--error-bg);
 }
 
-/* ── Generic action button (image picker, etc.) ───────────────────────── */
+/* Generic action button (image picker, etc.) */
 
 .pb-action-btn {
   background: color-mix(in srgb, var(--bg-color) 80%, transparent);
@@ -390,7 +390,7 @@
   left: 6px;
 }
 
-/* ── Add section ──────────────────────────────────────────────────────── */
+/* Add section */
 
 .pb-add-section {
   display: flex;
@@ -515,7 +515,7 @@
   background: color-mix(in srgb, var(--primary-color) 15%, transparent);
 }
 
-/* ── Spinner ──────────────────────────────────────────────────────────── */
+/* Spinner */
 
 @keyframes pb-spin {
   to {
@@ -527,7 +527,7 @@
   animation: pb-spin 1s linear infinite;
 }
 
-/* ── Page builder skeleton ────────────────────────────────────────────── */
+/* Page builder skeleton */
 
 .skeleton-pb-hero {
   height: 500px;
@@ -620,7 +620,7 @@
   }
 }
 
-/* ── Color Picker / Swatch ────────────────────────────────────────────── */
+/* Color Picker / Swatch */
 
 .pb-color-picker {
   display: flex;
@@ -636,7 +636,7 @@
   border: 1px solid var(--border-color);
 }
 
-/* ── Section margins & spacing controls ──────────────────────────────── */
+/* Section margins & spacing controls */
 
 .section-spacing-capture {
   display: inline-flex;
@@ -764,7 +764,7 @@
   -moz-appearance: none;
 }
 
-/* ── Section animation classes (scroll-triggered) ────────────────────── */
+/* Section animation classes (scroll-triggered) */
 
 /* Sections with animation start invisible until scrolled into view */
 
@@ -779,7 +779,7 @@
     var(--anim-duration, 0.6s) ease-in both;
 }
 
-/* Intensity variables — default to "normal" */
+/* Intensity variables - default to "normal" */
 .pb-section-layout[data-intensity="subtle"] {
   --anim-distance: 20px;
   --anim-scale: 0.95;
@@ -998,7 +998,7 @@
   }
 }
 
-/* ── Animation intensity picker ──────────────────────────────────────── */
+/* Animation intensity picker */
 
 .section-intensity-control {
   display: inline-flex;
@@ -1040,7 +1040,7 @@
   color: var(--primary-color);
 }
 
-/* ── Save status pill ─────────────────────────────────────────────────── */
+/* Save status pill */
 
 .page-save-bar {
   position: fixed;
@@ -1105,7 +1105,7 @@
   }
 }
 
-/* ── Responsive overrides for shared section header ───────────────────── */
+/* Responsive overrides for shared section header */
 
 @media (max-width: 768px) {
   .section-header h2 {

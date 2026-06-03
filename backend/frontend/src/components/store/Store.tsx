@@ -49,7 +49,7 @@ export const Store: React.FC = () => {
 
   const [guestSandboxMode] = useGuestSandboxMode();
 
-  // ── Permissions ───────────────────────────────────────────────────────────
+  // Permissions
   const canCreateProduct =
     currentUser?.permissions?.includes("store.product-new") || guestSandboxMode;
   const canEditProduct =
@@ -64,7 +64,7 @@ export const Store: React.FC = () => {
   const canCreateCategory = canManageCategories || guestSandboxMode;
   const canDeleteCategory = canManageCategories || guestSandboxMode;
 
-  // ── Load catalog ──────────────────────────────────────────────────────────
+  // Load catalog
   const loadCatalog = useCallback(async () => {
     try {
       setLoading(true);
@@ -86,7 +86,7 @@ export const Store: React.FC = () => {
     }
   }, [setCategories, setProducts, subscribe]);
 
-  // ── Load user's backend cart (authenticated) ──────────────────────────────
+  // Load user's backend cart (authenticated)
   const loadCart = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
@@ -95,7 +95,7 @@ export const Store: React.FC = () => {
         setCartItems(resp.items);
       }
     } catch {
-      // silent — cart may be empty
+      // silent - cart may be empty
     }
   }, [isAuthenticated, setCartItems]);
 
@@ -114,7 +114,7 @@ export const Store: React.FC = () => {
   useEffect(() => {
     if (!socketMounted.current) {
       socketMounted.current = true;
-      return; // skip the initial mount — initial load is handled above
+      return; // skip the initial mount - initial load is handled above
     }
     if (socket) {
       loadCatalog();
@@ -122,7 +122,7 @@ export const Store: React.FC = () => {
     }
   }, [socket, loadCatalog, loadCart]);
 
-  // ── Cart actions ──────────────────────────────────────────────────────────
+  // Cart actions
   const handleAddToCart = async (product: Product) => {
     if (!isAuthenticated) {
       // Optimistic local-only cart for guests
@@ -160,7 +160,7 @@ export const Store: React.FC = () => {
     }
   };
 
-  // ── Admin actions ─────────────────────────────────────────────────────────
+  // Admin actions
   const handleDeleteProduct = async (productId: string) => {
     try {
       await apiRequest(`/store/products/${productId}`, { method: "DELETE" });
@@ -182,7 +182,7 @@ export const Store: React.FC = () => {
 
   return (
     <div className="store-container">
-      {/* ── Categories ────────────────────────────────────────────────── */}
+      {/* Categories */}
       <div className="categories-section">
         <div className="categories-header">
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -233,7 +233,7 @@ export const Store: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Products ──────────────────────────────────────────────────── */}
+      {/* Products */}
       <div className="products-section">
         <div className="products-header">
           <h2 className="page-title">
@@ -368,7 +368,7 @@ export const Store: React.FC = () => {
         )}
       </div>
 
-      {/* ── Admin dialogs ─────────────────────────────────────────────── */}
+      {/* Admin dialogs */}
       {showCreateCategoryDialog && (
         <CreateStoreCategoryDialog
           isOpen={showCreateCategoryDialog}

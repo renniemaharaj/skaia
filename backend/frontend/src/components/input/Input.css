@@ -1,4 +1,4 @@
-/* ── Composer input wrapper ──────────────────────────── */
+/* Composer input wrapper */
 .composer-wrapper {
   width: 100%;
   border: 2px solid var(--border-color);
@@ -24,7 +24,7 @@
   border-width: 1px;
 }
 
-/* ── Inner layout ───────────────────────────────────── */
+/* Inner layout */
 .composer-row {
   display: flex;
   align-items: center;
@@ -32,7 +32,7 @@
   width: 100%;
 }
 
-/* ── Textarea ───────────────────────────────────────── */
+/* Textarea */
 .composer-textarea {
   flex: 1;
   border: none;
@@ -67,7 +67,7 @@
   -ms-overflow-style: none;
 }
 
-/* ── Send button ────────────────────────────────────── */
+/* Send button */
 .composer-send-btn {
   flex-shrink: 0;
   width: 36px;
@@ -107,7 +107,7 @@
   border-radius: 8px;
 }
 
-/* ── Children slot (below the row) ──────────────────── */
+/* Children slot (below the row) */
 .composer-extra {
   margin-top: 0.4rem;
 }

@@ -103,7 +103,7 @@ export const Auth: React.FC<AuthPageProps> = ({
       if (isLogin) {
         data = await loginUser(formData.email, formData.password);
 
-        // 2FA required — show TOTP challenge
+        // 2FA required - show TOTP challenge
         if (data.requires_totp && data.totp_token) {
           setTotpToken(data.totp_token);
           setLoading(false);
@@ -140,7 +140,7 @@ export const Auth: React.FC<AuthPageProps> = ({
     }
   };
 
-  // ── TOTP challenge screen ──────────────────────────────────────────────
+  // TOTP challenge screen
   if (totpToken) {
     return (
       <MFAChallenge

@@ -156,26 +156,26 @@ type Hub struct {
 	voiceControl    chan VoiceControlAction
 	mediaUpdates    chan MediaUpdateAction
 
-	// voice permissions — protected by voiceMu
+	// voice permissions - protected by voiceMu
 	voiceMu     sync.RWMutex
 	voiceRoutes map[string]*VoicePermissions
 
-	// media queues — protected by mediaMu
+	// media queues - protected by mediaMu
 	mediaMu     sync.RWMutex
 	mediaRoutes map[string]*MediaState
 
-	// clients + subscriptions — protected by mu
+	// clients + subscriptions - protected by mu
 	mu sync.RWMutex
 
 	// worker pool
 	workerSem chan struct{}
 
-	// per-session chat ring buffers — protected by chatMu
+	// per-session chat ring buffers - protected by chatMu
 	chatMu     sync.Mutex
 	chatRings  map[int64]*sessionChatRing // sessionID => ring
 	nextChatID int64
 
-	// sessions — protected by sessionMu
+	// sessions - protected by sessionMu
 	sessionMu   sync.Mutex
 	sessions    map[int64]int // sessionID => active client count
 	nextSession int64
@@ -189,7 +189,7 @@ type Hub struct {
 	// presence coalescing
 	presenceDirty atomic.Int32
 
-	// chat slow mode — updated dynamically by SetChatSlowMode
+	// chat slow mode - updated dynamically by SetChatSlowMode
 	chatSlowModeEnabled  atomic.Bool
 	chatSlowModeInterval atomic.Int64 // seconds; 0 means use default burst rate
 
@@ -295,9 +295,9 @@ func (h *Hub) Run() {
 				h.markPresenceDirty()
 			})
 		case sub := <-h.subscribe:
-			h.handleSubscribe(sub) // fast map write — run inline
+			h.handleSubscribe(sub) // fast map write - run inline
 		case unsub := <-h.unsubscribe:
-			h.handleUnsubscribe(unsub) // fast map write — run inline
+			h.handleUnsubscribe(unsub) // fast map write - run inline
 		case msg := <-h.broadcast:
 			h.dispatch(func() { h.handleBroadcast(msg) })
 		case cp := <-h.presenceUpdates:
@@ -369,7 +369,7 @@ func (h *Hub) BroadcastExceptUser(userID int64, msg *Message) {
 		select {
 		case client.Send <- msg:
 		default:
-			// Buffer full — skip this client.
+			// Buffer full - skip this client.
 		}
 	}
 }

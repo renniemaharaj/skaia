@@ -77,7 +77,7 @@ const BLOCK_MAP: Record<
 /**
  * Memoised wrapper for a single section block.  When the parent re-renders
  * (e.g. a WS update changed a *different* section), this component will bail
- * out as long as its props still reference the same objects — which is
+ * out as long as its props still reference the same objects - which is
  * guaranteed by the `mergeSections` diffing in PageBuilder and the stable
  * `useCallback` wrappers.
  */
@@ -229,7 +229,7 @@ export const BlockRenderer = memo(function BlockRenderer({
     (a, b) => a.display_order - b.display_order,
   );
 
-  // Stable move handler — uses refs so the callback identity never changes.
+  // Stable move handler - uses refs so the callback identity never changes.
   const sectionsRef = useRef(orderedSections);
   sectionsRef.current = orderedSections;
   const onMoveSectionRef = useRef(onMoveSection);

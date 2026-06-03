@@ -70,11 +70,11 @@ func runMigrations(dbName string, env SharedEnv) {
 	}
 }
 
-// ─── Migrate ──────────────────────────────────────────────────────────────────
+// Migrate
 
 // cmdMigrate re-runs all migration SQL files against an existing client database.
 // Because every migration uses IF NOT EXISTS / ON CONFLICT DO NOTHING, this is
-// safe to run on a live database — existing objects are untouched and any new
+// safe to run on a live database - existing objects are untouched and any new
 // tables, indexes, or seed rows are added.
 //
 // With --rebuild the command performs a full export => drop => recreate => migrate =>
@@ -84,7 +84,7 @@ func cmdMigrate(name string, rebuild bool) {
 		die("Client '%s' not found", name)
 	}
 
-	// Sync env defaults — add any missing keys from the registry.
+	// Sync env defaults - add any missing keys from the registry.
 	if n := syncEnvDefaults(name); n > 0 {
 		log("Added %d missing env var(s) to %s", n, clientEnvFile(name))
 	}
@@ -181,7 +181,7 @@ func cmdMigrateAll(rebuild bool) {
 	}
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 // backupDatabase creates a timestamped pg_dump of dbName in the client directory
 // and returns the resulting file path. Old backups beyond maxBackups are pruned.

@@ -368,23 +368,23 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		MaxAge:           300,
 	}))
 
-	// ── Health check at root (for Docker healthcheck probes) ───────────
+	// Health check at root (for Docker healthcheck probes)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 	})
 
-	// ── Sitemap for SEO (per-client and default) ───────────────────────
+	// Sitemap for SEO (per-client and default)
 	r.Get("/sitemap.xml", writeSitemapResponse)
 	r.Get("/sitemap/{client}.xml", writeSitemapResponse)
 
-	// ── WebSocket at root (nginx proxies /ws directly) ─────────────────
+	// WebSocket at root (nginx proxies /ws directly)
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		ws.HandleConnection(w, r, hub)
 	})
 
-	// ── Static file serving for user uploads (at root — URLs are stored
-	// in the DB as /uploads/users/…) ────────────────────────────────────
+	//  Static file serving for user uploads (at root - URLs are stored
+	// in the DB as /uploads/users/…)
 	r.Get("/uploads/*", iupload.ServeUploads)
 
 	notifRepo := inotif.NewRepository(db)
@@ -421,7 +421,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 	}
 
-	// ── All API routes under /api ──────────────────────────────────────
+	// All API routes under /api
 	r.Route("/api", func(api chi.Router) {
 		armedDir := os.Getenv("ARMED_DIR")
 		if armedDir == "" {
@@ -646,13 +646,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 	})
 
-	// ── SSR: serve index.html with injected SEO head tags ──────────────
+	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
 		ssrHandler := ssr.IndexHandler(cfgSvc)
 		ssrHandler(w, req)
 	})
 
-	// ── SPA fallback ───────────────────────────────────────────────────
+	// SPA fallback
 	// API routes and /uploads/* above take precedence.  If a static file
 	// exists on disk we serve it; extensionless paths get the SSR index
 	// (client-side routing).  Paths with a file extension that don't exist

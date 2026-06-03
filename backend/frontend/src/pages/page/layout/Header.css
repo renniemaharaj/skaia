@@ -325,7 +325,7 @@
   }
 }
 
-/* ── Sound toggle button ── */
+/* Sound toggle button */
 .header-volume-wrap {
   position: relative;
 }
@@ -433,7 +433,7 @@
   text-align: right;
 }
 
-/* ── Inbox icon button in header ── */
+/* Inbox icon button in header */
 .header-inbox-btn {
   position: relative;
   display: flex;
@@ -477,13 +477,13 @@
   line-height: 1;
 }
 
-/* ── Logo edit controls (prevent navigation on click) ──────────── */
+/* Logo edit controls (prevent navigation on click) */
 
 .logo-edit-controls {
   display: contents;
 }
 
-/* ── "New" / attention nav link ────────────────────────────────── */
+/* "New" / attention nav link */
 
 .header-new-link {
   display: inline-flex;
@@ -495,7 +495,7 @@
 }
 
 .header-new-link::after {
-  /* override default nav underline — use badge instead */
+  /* override default nav underline - use badge instead */
   display: none !important;
 }
 
@@ -528,7 +528,7 @@
   }
 }
 
-/* ── "More" nav overflow dropdown ──────────────────────────────── */
+/* "More" nav overflow dropdown */
 
 .header-more-wrap {
   position: relative;
@@ -591,7 +591,7 @@
   display: none !important;
 }
 
-/* ── Mobile Menu Variant 2: Fullscreen overlay ───────────────────── */
+/* Mobile Menu Variant 2: Fullscreen overlay */
 
 @media (max-width: 768px) {
   .menu-v2 .nav {

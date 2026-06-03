@@ -43,7 +43,19 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
   }, [htmlContent]);
 
   if (tocItems.length === 0) {
-    return null;
+    return (
+      <div className="card toc-tile">
+        <div className="toc-header">
+          <List size={16} />
+          <h3>Table of Contents</h3>
+        </div>
+        <div className="toc-content">
+          <div className="toc-placeholder" style={{ padding: '1rem', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            Use h tags hierarchically to populate this tile
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const scrollToHeading = (id: string) => {
@@ -89,6 +101,11 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
             {item.text}
           </div>
         ))}
+        {tocItems.length > 0 && tocItems.length < 3 && (
+          <div className="toc-placeholder" style={{ padding: '1rem', border: '1px dashed var(--border-color)', borderRadius: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '1rem' }}>
+            Use h tags hierarchically to populate this tile
+          </div>
+        )}
       </div>
     </div>
   );
