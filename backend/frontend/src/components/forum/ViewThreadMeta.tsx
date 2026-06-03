@@ -34,7 +34,7 @@ type ThreadMeta = {
   status: "Open" | "Closed" | "Archived";
 };
 
-const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
+const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, actions?: React.ReactNode }) => {
   const currentThread = useAtomValue(currentThreadAtom);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [authorProfile, setAuthorProfile] = useState<ProfileUser | null>(null);
@@ -150,6 +150,11 @@ const ViewThreadMeta = ({ threadId }: { threadId: string | undefined }) => {
             </div>
           </div>
         </div>
+        {actions && (
+          <div className="vtm-actions">
+            {actions}
+          </div>
+        )}
       </div>
 
       <div className="vtm-metrics">

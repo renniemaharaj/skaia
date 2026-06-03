@@ -248,109 +248,110 @@ const ViewThreadPage = () => {
     >
       <div className="view-thread-container">
         {/* <Hero height="350px" /> */}
-        <div className="view-thread-actions-bar">
-          <div className="view-thread-actions-group">
-            {currentUser && (
-              <button
-                className={`thread-action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}
-                onClick={handleLikeThread}
-                title="Like"
-                type="button"
-              >
-                <ThumbsUp size={14} />
-                {currentThread?.likes ? (
-                  <span>{currentThread.likes}</span>
-                ) : null}
-              </button>
-            )}
-
-            {/* Reading Mode */}
-            <button
-              className={`thread-action-btn ${readingMode ? 'active' : ''}`}
-              onClick={() => setReadingMode(!readingMode)}
-              title={readingMode ? "Disable Reading Mode" : "Enable Reading Mode"}
-            >
-              <BookOpen size={16} />
-            </button>
-
-            {/* Share */}
-            {currentUser && (
-              <button
-                className="thread-action-btn share-btn"
-                onClick={handleShareThread}
-                title="Share thread"
-                type="button"
-              >
-                <Share2 size={14} />
-              </button>
-            )}
-
-            {/* Lock/Unlock */}
-            {canLock && (
-              <button
-                className={`thread-action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
-                onClick={handleLockThread}
-                title={
-                  currentThread?.is_locked ? "Unlock thread" : "Lock thread"
-                }
-                type="button"
-              >
-                {currentThread?.is_locked ? (
-                  <Unlock size={14} />
-                ) : (
-                  <Lock size={14} />
-                )}
-              </button>
-            )}
-
-            {/* Edit - derived from live user permissions atom */}
-            {canEdit && (
-              <button
-                className="thread-action-btn edit-btn"
-                onClick={handleEdit}
-                title="Edit"
-              >
-                <Pencil size={14} />
-              </button>
-            )}
-
-            {/* Delete - derived from live user permissions atom */}
-            {canDelete && (
-              <button
-                className="thread-action-btn delete-btn"
-                onClick={handleDelete}
-                title="Delete"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-
-            {/* Analytics */}
-            {currentUser && (canEdit || canDelete) && (
-              <button
-                className="thread-action-btn"
-                onClick={() => setShowAnalytics(true)}
-                title="Analytics"
-                type="button"
-              >
-                <BarChart3 size={14} />
-              </button>
-            )}
-
-            {/* Close */}
-            <button
-              className="thread-action-btn close-btn"
-              onClick={() => navigate("/forum")}
-              title="Close"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
-
         {/* Body */}
         <div style={{ width: '100%', marginBottom: '1.5rem' }}>
-          <ViewThreadMeta threadId={threadId} />
+          <ViewThreadMeta 
+            threadId={threadId} 
+            actions={
+              <div className="view-thread-actions-group">
+                {currentUser && (
+                  <button
+                    className={`thread-action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}
+                    onClick={handleLikeThread}
+                    title="Like"
+                    type="button"
+                  >
+                    <ThumbsUp size={14} />
+                    {currentThread?.likes ? (
+                      <span>{currentThread.likes}</span>
+                    ) : null}
+                  </button>
+                )}
+
+                {/* Reading Mode */}
+                <button
+                  className={`thread-action-btn ${readingMode ? 'active' : ''}`}
+                  onClick={() => setReadingMode(!readingMode)}
+                  title={readingMode ? "Disable Reading Mode" : "Enable Reading Mode"}
+                >
+                  <BookOpen size={16} />
+                </button>
+
+                {/* Share */}
+                {currentUser && (
+                  <button
+                    className="thread-action-btn share-btn"
+                    onClick={handleShareThread}
+                    title="Share thread"
+                    type="button"
+                  >
+                    <Share2 size={14} />
+                  </button>
+                )}
+
+                {/* Lock/Unlock */}
+                {canLock && (
+                  <button
+                    className={`thread-action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
+                    onClick={handleLockThread}
+                    title={
+                      currentThread?.is_locked ? "Unlock thread" : "Lock thread"
+                    }
+                    type="button"
+                  >
+                    {currentThread?.is_locked ? (
+                      <Unlock size={14} />
+                    ) : (
+                      <Lock size={14} />
+                    )}
+                  </button>
+                )}
+
+                {/* Edit - derived from live user permissions atom */}
+                {canEdit && (
+                  <button
+                    className="thread-action-btn edit-btn"
+                    onClick={handleEdit}
+                    title="Edit"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+
+                {/* Delete - derived from live user permissions atom */}
+                {canDelete && (
+                  <button
+                    className="thread-action-btn delete-btn"
+                    onClick={handleDelete}
+                    title="Delete"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+
+                {/* Analytics */}
+                {currentUser && (canEdit || canDelete) && (
+                  <button
+                    className="thread-action-btn"
+                    onClick={() => setShowAnalytics(true)}
+                    title="Analytics"
+                    type="button"
+                  >
+                    <BarChart3 size={14} />
+                  </button>
+                )}
+
+                {/* Close */}
+                <button
+                  className="thread-action-btn close-btn"
+                  onClick={() => navigate("/forum")}
+                  title="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            }
+          />
         </div>
         <div 
           className={`view-thread-page ${readingMode ? 'view-thread-page--reading-mode' : ''}`} 
