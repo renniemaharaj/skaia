@@ -335,7 +335,7 @@ export const Forum: React.FC = () => {
 
   return (
     <div className="forum-container">
-      <div className="forum-controls" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-start' }}>
+      <div className="forum-controls">
         <SearchField
           value={searchQuery}
           onChange={(val) => {

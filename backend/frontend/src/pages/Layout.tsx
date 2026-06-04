@@ -384,7 +384,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   background-attachment: fixed !important;
                   ${!contextUser?.background_image_url ? "background-repeat: repeat;" : ""}
                 }
-                .layout-main, .up-container, .card, .panel, .forum-container {
+                .layout-main, .card, .panel {
                    background-color: rgba(var(--bg-color-rgb), 0.85);
                    backdrop-filter: blur(10px);
                 }

@@ -114,29 +114,25 @@ const CategoryThreadsPage = () => {
       >
         <Forum />
       </div>
-      <div
-        className="modal"
-        style={{ width: "100vw", maxWidth: "100%", marginTop: "24px" }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="modal-header">
-          <div className="modal-title-wrapper">
+      <div className="forum-container" style={{ paddingTop: forumExpanded ? 0 : '40px' }}>
+        {/* Header and Controls */}
+        <div className="forum-header" style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
+          <div className="forum-header-left" style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <MessageSquare
-                size={22}
+                size={28}
                 style={{ color: "var(--primary-color)", flexShrink: 0 }}
               />
               <div>
-                <h2 style={{ margin: 0 }}>
+                <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--text-primary)" }}>
                   {category?.name ?? `Category #${categoryId}`}
-                </h2>
+                </h1>
                 {category?.description && (
                   <p
                     style={{
                       margin: "4px 0 0",
                       color: "var(--text-secondary)",
-                      fontSize: "0.9rem",
+                      fontSize: "0.95rem",
                     }}
                   >
                     {category.description}
@@ -145,7 +141,7 @@ const CategoryThreadsPage = () => {
               </div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div className="forum-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
             <SearchField
               value={searchQuery}
               onChange={setSearchQuery}
@@ -181,7 +177,7 @@ const CategoryThreadsPage = () => {
         </div>
 
         {/* Thread feed */}
-        <div style={{ paddingTop: "8px" }}>
+        <div className="forums-grid" style={{ display: "block" }}>
           <CategoryThreadsFeed
             threads={threads}
             isLoading={isLoading}
