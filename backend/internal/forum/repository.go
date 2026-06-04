@@ -131,6 +131,8 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 	var roles sql.NullString
 	var origID sql.NullInt64
 	var bgVideo, bgImage, bgPos sql.NullString
+	var lastEditedBy sql.NullInt64
+	var lastEditedAvatar, lastEditedName sql.NullString
 	err := r.db.QueryRow(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
@@ -139,19 +141,21 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 		        ft.created_at, ft.updated_at,
 		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
-		        COUNT(DISTINCT tl.id) AS likes
+		        COUNT(DISTINCT tl.id) AS likes,
+				ft.last_edited_by, editor.avatar_url, COALESCE(editor.display_name, editor.username)
 		 FROM forum_threads ft
 		 LEFT JOIN users u ON ft.user_id = u.id
+		 LEFT JOIN users editor ON ft.last_edited_by = editor.id
 		 LEFT JOIN user_roles ur ON u.id = ur.user_id
 		 LEFT JOIN roles r ON ur.role_id = r.id
 		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
 		 WHERE ft.id = $1
-		 GROUP BY ft.id, u.id, u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position`, id,
+		 GROUP BY ft.id, u.id, u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position, editor.id`, id,
 	).Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 		&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
 		&t.IsShared, &origID,
 		&t.CreatedAt, &t.UpdatedAt,
-		&t.UserName, &t.UserAvatar, &bgVideo, &bgImage, &bgPos, &roles, &t.Likes)
+		&t.UserName, &t.UserAvatar, &bgVideo, &bgImage, &bgPos, &roles, &t.Likes, &lastEditedBy, &lastEditedAvatar, &lastEditedName)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("thread not found")
@@ -173,6 +177,15 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 	}
 	if roles.Valid && roles.String != "" {
 		t.UserRoles = strings.Split(roles.String, ",")
+	}
+	if lastEditedBy.Valid {
+		t.LastEditedBy = &lastEditedBy.Int64
+	}
+	if lastEditedAvatar.Valid {
+		t.LastEditedByAvatar = lastEditedAvatar.String
+	}
+	if lastEditedName.Valid {
+		t.LastEditedByName = lastEditedName.String
 	}
 	return t, nil
 }
@@ -300,17 +313,22 @@ func (r *sqlThreadRepository) Update(thread *models.ForumThread) (*models.ForumT
 	var vc int
 	err := r.db.QueryRow(
 		`UPDATE forum_threads
-		 SET title=$1, content=$2, is_pinned=$3, is_locked=$4, category_id=$5, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$6
+		 SET title=$1, content=$2, is_pinned=$3, is_locked=$4, category_id=$5, updated_at=CURRENT_TIMESTAMP, last_edited_by=$6
+		 WHERE id=$7
 		 RETURNING id, category_id, user_id, title, content,
 		           COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=forum_threads.id), 0),
-		           reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at`,
-		thread.Title, thread.Content, thread.IsPinned, thread.IsLocked, thread.CategoryID, thread.ID,
+		           reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at, last_edited_by`,
+		thread.Title, thread.Content, thread.IsPinned, thread.IsLocked, thread.CategoryID, thread.LastEditedBy, thread.ID,
 	).Scan(&thread.ID, &thread.CategoryID, &thread.UserID, &thread.Title, &thread.Content,
 		&vc, &thread.ReplyCount, &thread.IsPinned, &thread.IsLocked,
 		&thread.IsShared, &thread.OriginalThreadID,
-		&thread.CreatedAt, &thread.UpdatedAt)
+		&thread.CreatedAt, &thread.UpdatedAt, &thread.LastEditedBy)
 	thread.ViewCount = vc
+	
+	if err == nil && thread.LastEditedBy != nil {
+		r.db.Exec(`INSERT INTO thread_editors (thread_id, user_id) VALUES ($1, $2) ON CONFLICT(thread_id, user_id) DO UPDATE SET edited_at = CURRENT_TIMESTAMP`, thread.ID, *thread.LastEditedBy)
+	}
+
 	return thread, err
 }
 
@@ -466,6 +484,43 @@ func (r *sqlThreadRepository) GetThreadViewers(threadID int64, limit, offset int
 		viewers = append(viewers, u)
 	}
 	return viewers, rows.Err()
+}
+
+func (r *sqlThreadRepository) GetThreadContributorsUsers(threadID int64, limit, offset int) ([]*models.User, error) {
+	rows, err := r.db.Query(
+		`SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.is_suspended, u.created_at
+		 FROM users u
+		 JOIN (
+		     SELECT user_id, MAX(ts) as last_activity
+		     FROM (
+		         SELECT user_id, created_at as ts FROM thread_comments WHERE thread_id=$1 AND user_id IS NOT NULL
+		         UNION ALL
+		         SELECT user_id, edited_at as ts FROM thread_editors WHERE thread_id=$1
+		     ) combined
+		     GROUP BY user_id
+		 ) tc ON u.id = tc.user_id
+		 ORDER BY tc.last_activity DESC
+		 LIMIT $2 OFFSET $3`,
+		threadID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		u := &models.User{}
+		var avatar sql.NullString
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.DisplayName, &avatar, &u.IsSuspended, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		if avatar.Valid {
+			u.AvatarURL = avatar.String
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
 }
 
 // Comment repository

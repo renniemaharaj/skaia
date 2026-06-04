@@ -140,6 +140,10 @@ func (s *Service) GetThreadViewers(threadID int64, limit, offset int) ([]*models
 	return s.threads.GetThreadViewers(threadID, limit, offset)
 }
 
+func (s *Service) GetThreadContributorsUsers(threadID int64, limit, offset int) ([]*models.User, error) {
+	return s.threads.GetThreadContributorsUsers(threadID, limit, offset)
+}
+
 func (s *Service) CreateComment(comment *models.ThreadComment) (*models.ThreadComment, error) {
 	c, err := s.comments.Create(comment)
 	if err == nil {

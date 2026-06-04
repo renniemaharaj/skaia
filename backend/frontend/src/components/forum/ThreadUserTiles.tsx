@@ -3,12 +3,12 @@ import { apiRequest } from "../../utils/api";
 import type { ProfileUser } from "../../pages/users/types";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
-import { Heart, Eye, Loader2 } from "lucide-react";
+import { Heart, Eye, Loader2, Users } from "lucide-react";
 import "./ThreadUserTiles.css";
 
 interface UserTileProps {
   threadId: string;
-  type: "likers" | "viewers";
+  type: "likers" | "viewers" | "contributors";
 }
 
 const PAGE_SIZE = 20;
@@ -72,8 +72,8 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
     return null; // Don't show the tile if empty
   }
 
-  const title = type === "likers" ? "Liked by" : "Viewed by";
-  const Icon = type === "likers" ? Heart : Eye;
+  const title = type === "likers" ? "Liked by" : type === "viewers" ? "Viewed by" : "Contributors";
+  const Icon = type === "likers" ? Heart : type === "viewers" ? Eye : Users;
 
   return (
     <div className="card thread-user-tile">

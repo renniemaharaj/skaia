@@ -43,6 +43,9 @@ type ForumThread struct {
 	CanDeleteThreadComment bool         `json:"can_delete_thread_comment,omitempty"`
 	CanLikeThreads         bool         `json:"can_like_threads,omitempty"`
 	CanLock                bool         `json:"can_lock,omitempty"`
+	LastEditedBy           *int64       `json:"last_edited_by,omitempty"`
+	LastEditedByAvatar     string       `json:"last_edited_by_avatar,omitempty"`
+	LastEditedByName       string       `json:"last_edited_by_name,omitempty"`
 	OriginalThread         *ForumThread `json:"original_thread,omitempty"`
 }
 

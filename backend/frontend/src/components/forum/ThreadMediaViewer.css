@@ -1,0 +1,11 @@
+.tmv-empty {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.tmv-container .up-section-heading {
+  margin: 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+}

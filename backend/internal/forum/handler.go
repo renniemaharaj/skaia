@@ -63,6 +63,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/threads/{threadId}/like", h.unlikeThread)
 		r.With(optJWT).Get("/threads/{id}/likers", h.listThreadLikers)
 		r.With(optJWT).Get("/threads/{id}/viewers", h.listThreadViewers)
+		r.With(optJWT).Get("/threads/{id}/contributors", h.listThreadContributors)
 		r.With(jwt).Post("/threads/{threadId}/share", h.shareThread)
 
 		// Comment routes
@@ -606,6 +607,8 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	thread.LastEditedBy = &userID
 
 	updated, err := h.svc.UpdateThread(thread)
 	if err != nil {
@@ -1285,6 +1288,30 @@ func (h *Handler) listThreadViewers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.svc.GetThreadViewers(id, limit, offset)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to get thread viewers")
+		return
+	}
+	if users == nil {
+		users = []*models.User{}
+	}
+	utils.WriteJSON(w, http.StatusOK, users)
+}
+
+func (h *Handler) listThreadContributors(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid thread ID")
+		return
+	}
+	limit, offset := 50, 0
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 100 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	users, err := h.svc.GetThreadContributorsUsers(id, limit, offset)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get thread contributors")
 		return
 	}
 	if users == nil {

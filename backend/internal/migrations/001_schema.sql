@@ -264,12 +264,14 @@ CREATE TABLE IF NOT EXISTS forum_threads (
     is_locked   BOOLEAN DEFAULT false,
     is_shared          BOOLEAN DEFAULT false,
     original_thread_id BIGINT  REFERENCES forum_threads(id) ON DELETE SET NULL,
+    last_edited_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE forum_threads DROP COLUMN IF EXISTS view_count;
 ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS is_shared BOOLEAN DEFAULT false;
 ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS original_thread_id BIGINT REFERENCES forum_threads(id) ON DELETE SET NULL;
+ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS last_edited_by BIGINT REFERENCES users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_forum_threads_category_id ON forum_threads(category_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_user_id     ON forum_threads(user_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at  ON forum_threads(created_at DESC);
@@ -304,6 +306,15 @@ CREATE TABLE IF NOT EXISTS thread_likes (
 );
 CREATE INDEX IF NOT EXISTS idx_thread_likes_thread_id ON thread_likes(thread_id);
 CREATE INDEX IF NOT EXISTS idx_thread_likes_user_id   ON thread_likes(user_id);
+
+CREATE TABLE IF NOT EXISTS thread_editors (
+    thread_id BIGINT NOT NULL REFERENCES forum_threads(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (thread_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_thread_editors_thread ON thread_editors(thread_id);
+CREATE INDEX IF NOT EXISTS idx_thread_editors_user ON thread_editors(user_id);
 
 -- Inbox
 CREATE TABLE IF NOT EXISTS inbox_conversations (

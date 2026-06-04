@@ -12,8 +12,6 @@ import { currentThreadAtom } from "../../atoms/forum";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
-import { RichTextRenderer } from "../ui/RichTextRenderer";
-import DOMPurify from "dompurify";
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
 import type { ProfileUser, Role } from "../../pages/users/types";
@@ -66,7 +64,12 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
   };
 
   const rawHtml = currentThread?.content || "";
-  const sanitizedContent = DOMPurify.sanitize(rawHtml);
+  const extractPreviewText = (html: string) => {
+    if (!html) return "";
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent?.trim().replace(/\s+/g, ' ') || "";
+  };
+  const previewText = truncate(extractPreviewText(rawHtml), { length: 250 });
 
   const statusClass = `vtm-status vtm-status--${threadMeta.status.toLowerCase()}`;
 
@@ -116,12 +119,8 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
           <h1 className="vtm-title">
             {currentThread?.title || "Untitled Thread"}
           </h1>
-          {sanitizedContent ? (
-            <RichTextRenderer
-              className="vtm-description"
-              html={sanitizedContent}
-              previewMode={true}
-            />
+          {previewText ? (
+            <p className="vtm-description">{previewText}</p>
           ) : (
             <p className="vtm-description">No description available.</p>
           )}
@@ -162,7 +161,22 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
           const Icon = metric.icon;
           return (
             <div key={metric.id} className="vtm-chip">
-              <Icon size={14} />
+              {metric.id === "activity" ? (
+                <UserProfileOverlay 
+                  userId={currentThread?.last_edited_by?.toString() || currentThread?.user_id || ""}
+                  fallbackName={currentThread?.last_edited_by_name || author.name}
+                  fallbackAvatar={currentThread?.last_edited_by_avatar || author.profilePicture}
+                >
+                  <UserAvatar 
+                    src={currentThread?.last_edited_by_avatar || author.profilePicture} 
+                    alt={currentThread?.last_edited_by_name || author.name} 
+                    size={14} 
+                    initials={(currentThread?.last_edited_by_name || author.name)[0]?.toUpperCase()} 
+                  />
+                </UserProfileOverlay>
+              ) : (
+                <Icon size={14} />
+              )}
               <span>{metric.label}</span>
             </div>
           );

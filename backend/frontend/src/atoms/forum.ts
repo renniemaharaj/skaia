@@ -44,6 +44,9 @@ export interface ForumThread {
   user_background_video_url?: string;
   user_background_image_url?: string;
   user_background_position?: string;
+  last_edited_by?: number;
+  last_edited_by_avatar?: string;
+  last_edited_by_name?: string;
   likes?: number;
   is_liked?: boolean;
   can_edit?: boolean;

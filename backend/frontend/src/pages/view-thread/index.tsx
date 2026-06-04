@@ -25,6 +25,7 @@ import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import TableOfContentsTile from "../../components/forum/TableOfContentsTile";
 import RecentThreadsTile from "../../components/forum/RecentThreadsTile";
 import { ThreadUserTiles } from "../../components/forum/ThreadUserTiles";
+import ThreadMediaViewer from "../../components/forum/ThreadMediaViewer";
 import VoicePanel from "../page/layout/VoicePanel";
 import type { Role } from "../users/types";
 
@@ -353,6 +354,29 @@ const ViewThreadPage = () => {
             }
           />
         </div>
+
+        <ThreadMediaViewer />
+
+        {currentThread.is_shared && currentThread.original_thread && (
+          <div
+            className="reshared-banner"
+            onClick={() =>
+              navigate(`/view-thread/${currentThread.original_thread_id}`)
+            }
+          >
+            <Share2 size={14} />
+            <span>
+              Reshared from{" "}
+              <strong>{currentThread.original_thread.title}</strong> by{" "}
+              {currentThread.original_thread.user_name ?? "unknown"}
+            </span>
+          </div>
+        )}
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <ThreadUserTiles threadId={threadId!} type="contributors" />
+        </div>
+
         <div 
           className={`view-thread-page ${readingMode ? 'view-thread-page--reading-mode' : ''}`} 
           style={authorColor ? { 
@@ -362,21 +386,6 @@ const ViewThreadPage = () => {
         >
           <div className="view-thread-main">
             <div>
-              {currentThread.is_shared && currentThread.original_thread && (
-                <div
-                  className="reshared-banner"
-                  onClick={() =>
-                    navigate(`/view-thread/${currentThread.original_thread_id}`)
-                  }
-                >
-                  <Share2 size={14} />
-                  <span>
-                    Reshared from{" "}
-                    <strong>{currentThread.original_thread.title}</strong> by{" "}
-                    {currentThread.original_thread.user_name ?? "unknown"}
-                  </span>
-                </div>
-              )}
               <ViewThread content={currentThread.content} />
               {readingMode && <ViewThreadComments threadId={threadId} />}
             </div>
