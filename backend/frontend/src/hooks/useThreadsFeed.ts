@@ -7,6 +7,8 @@ import {
   activeCategoryFeedIdAtom,
   userFeedThreadsAtom,
   activeUserFeedIdAtom,
+  allFeedThreadsAtom,
+  activeAllFeedIdAtom,
 } from "../atoms/forum";
 
 /** Convenience alias - keeps imports in consumers unchanged. */
@@ -28,20 +30,26 @@ export function useThreadsFeed({
   categoryId,
   searchQuery,
   limit = DEFAULT_LIMIT,
-}: Options) {
+}: Options = {}) {
   const isCategory = Boolean(categoryId);
-  const filterKey = `${categoryId ?? authorId ?? ""}-${searchQuery ?? ""}`;
+  const isAuthor = Boolean(authorId);
+  const isAll = !isCategory && !isAuthor;
+  const filterKey = isAll ? `all-${searchQuery ?? ""}` : `${categoryId ?? authorId ?? ""}-${searchQuery ?? ""}`;
+
+  let feedAtom = allFeedThreadsAtom;
+  let activeIdAtom = activeAllFeedIdAtom;
+  if (isCategory) {
+    feedAtom = categoryFeedThreadsAtom;
+    activeIdAtom = activeCategoryFeedIdAtom;
+  } else if (isAuthor) {
+    feedAtom = userFeedThreadsAtom;
+    activeIdAtom = activeUserFeedIdAtom;
+  }
 
   // Pick the correct atom pair based on filter type
-  const threads = useAtomValue(
-    isCategory ? categoryFeedThreadsAtom : userFeedThreadsAtom,
-  );
-  const setThreads = useSetAtom(
-    isCategory ? categoryFeedThreadsAtom : userFeedThreadsAtom,
-  );
-  const setActiveId = useSetAtom(
-    isCategory ? activeCategoryFeedIdAtom : activeUserFeedIdAtom,
-  );
+  const threads = useAtomValue(feedAtom);
+  const setThreads = useSetAtom(feedAtom);
+  const setActiveId = useSetAtom(activeIdAtom);
 
   // Render-triggering loading states
   const [isLoading, setIsLoading] = useState(true);
@@ -81,10 +89,10 @@ export function useThreadsFeed({
 
   const buildUrl = useCallback(
     (offset: number) => {
-      const param = categoryId
-        ? `category_id=${categoryId}`
-        : `author_id=${authorId}`;
-      let url = `/forum/threads?${param}&limit=${limit}&offset=${offset}`;
+      let param = "";
+      if (categoryId) param = `category_id=${categoryId}`;
+      else if (authorId) param = `author_id=${authorId}`;
+      let url = `/forum/threads?limit=${limit}&offset=${offset}${param ? `&${param}` : ''}`;
       if (searchQuery) {
         url += `&q=${encodeURIComponent(searchQuery)}`;
       }

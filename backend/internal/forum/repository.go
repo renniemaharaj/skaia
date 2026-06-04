@@ -242,6 +242,57 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 	return threads, rows.Err()
 }
 
+func (r *sqlThreadRepository) GetAll(limit, offset int) ([]*models.ForumThread, error) {
+	rows, err := r.db.Query(
+		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,
+		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=ft.id), 0) AS view_count,
+		        ft.reply_count, ft.is_pinned, ft.is_locked,
+		        ft.is_shared, ft.original_thread_id,
+		        ft.created_at, ft.updated_at,
+		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COUNT(DISTINCT tl.id) AS likes
+		 FROM forum_threads ft
+		 LEFT JOIN users u ON ft.user_id = u.id
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
+		 GROUP BY ft.id, u.id, u.username, u.avatar_url
+		 ORDER BY ft.is_pinned DESC, ft.created_at DESC
+		 LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []*models.ForumThread
+	for rows.Next() {
+		t := &models.ForumThread{}
+		var origID sql.NullInt64
+		var bgVideo, bgImage, bgPos sql.NullString
+		if err := rows.Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
+			&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
+			&t.IsShared, &origID,
+			&t.CreatedAt, &t.UpdatedAt,
+			&t.UserName, &t.UserAvatar, &bgVideo, &bgImage, &bgPos, &t.Likes); err != nil {
+			return nil, err
+		}
+		if origID.Valid {
+			t.OriginalThreadID = &origID.Int64
+		}
+		if bgVideo.Valid {
+			t.UserBackgroundVideoURL = bgVideo.String
+		}
+		if bgImage.Valid {
+			t.UserBackgroundImageURL = bgImage.String
+		}
+		if bgPos.Valid {
+			t.UserBackgroundPosition = bgPos.String
+		}
+		threads = append(threads, t)
+	}
+	return threads, rows.Err()
+}
+
 func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*models.ForumThread, error) {
 	rows, err := r.db.Query(
 		`SELECT ft.id, ft.category_id, ft.user_id, ft.title, ft.content,

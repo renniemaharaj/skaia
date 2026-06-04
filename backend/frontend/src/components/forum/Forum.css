@@ -9,9 +9,11 @@
 }
 
 .forum-header h1 {
-  font-size: 2rem;
-  margin-bottom: 8px;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.35rem 0;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .forum-header p {

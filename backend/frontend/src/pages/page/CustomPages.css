@@ -60,31 +60,7 @@
   white-space: nowrap;
 }
 
-.custom-pages__view-toggle {
-  display: flex;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
-}
 
-.cp-view-btn {
-  min-width: 0;
-  padding: 0.65rem 0.75rem;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.cp-view-btn:hover {
-  background: var(--bg-secondary);
-}
 
 .custom-pages__toolbar {
   display: flex;

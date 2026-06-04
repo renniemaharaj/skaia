@@ -20,7 +20,7 @@ import { apiRequest } from "../../utils/api";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
-import SearchField from "../ui/SearchField";
+
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
@@ -33,6 +33,9 @@ import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
+import { DirectoryLayout } from "../../pages/page/layout/templates/DirectoryLayout";
+import CategoryThreadsFeed from "../../pages/threads/categories/CategoryThreadsFeed";
+import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 
 const CategoryThreadsPreview = ({
   forum,
@@ -193,8 +196,22 @@ export const Forum: React.FC = () => {
   const [hoveredSection, setHoveredSection] = useState<
     "discussion" | "category" | null
   >(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const toggleView = (mode: "grid" | "list") => {
+    setViewMode(mode);
+  };
+
+  const {
+    threads: listThreads,
+    isLoading: threadsLoading,
+    loading: threadsFetchingOlder,
+    feedRef,
+    sentinelRef,
+    handleScroll,
+  } = useThreadsFeed({ searchQuery });
 
   const navigate = useNavigate();
   const currentUser = useAtomValue(currentUserAtom);
@@ -333,25 +350,72 @@ export const Forum: React.FC = () => {
     currentUser?.roles?.includes("admin") ||
     guestSandboxMode;
 
+  const totalThreads = forums.reduce((acc, f) => acc + (f.thread_count || 0), 0);
+  const totalCategories = forums.length;
+  const allThreads = forums.flatMap(f => f.threads || []);
+  const newestThread = allThreads.length > 0 
+    ? allThreads.reduce((latest, t) => new Date(t.created_at || 0) > new Date(latest.created_at || 0) ? t : latest, allThreads[0])
+    : null;
+  const newestForumUpdate = forums.length > 0
+    ? forums.reduce((latest, f) => new Date(f.updated_at || 0) > new Date(latest.updated_at || 0) ? f : latest, forums[0])
+    : null;
+
+  const metrics = [
+    <span key="threads"><strong>{totalThreads}</strong> {totalThreads === 1 ? 'Thread' : 'Threads'} in <strong>{totalCategories}</strong> {totalCategories === 1 ? 'Category' : 'Categories'}</span>,
+    newestThread?.created_at ? <span key="last-created">Last created <strong>{relativeTimeAgo(newestThread.created_at)}</strong></span> : <span key="last-created">Last created <strong>N/A</strong></span>,
+    newestForumUpdate?.updated_at ? <span key="last-contributed">Last contributed <strong>{relativeTimeAgo(newestForumUpdate.updated_at)}</strong></span> : <span key="last-contributed">Last contributed <strong>N/A</strong></span>
+  ];
+
   return (
-    <div className="forum-container">
-      <div className="forum-controls">
-        <SearchField
-          value={searchQuery}
-          onChange={(val) => {
-            setSearchQuery(val);
-            if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-            searchDebounceRef.current = setTimeout(() => {
-              loadForums(val);
-            }, 300);
-          }}
-          placeholder="Search categories..."
-          className="forum-search-field"
-        />
-      </div>
-      <div className="forums-grid">
-        {/* New Thread & Create Category Card */}
-        {isAuthenticated && (
+    <>
+      <CreateCategoryDialog
+        isOpen={showCreateCategoryDialog}
+        onClose={() => setShowCreateCategoryDialog(false)}
+      />
+      <DirectoryLayout
+        className="forum-container"
+        title="Forums"
+        subtitle="Browse categories, join discussions, and share your thoughts with the community."
+        searchPlaceholder={viewMode === "grid" ? "Search categories..." : "Search threads..."}
+        searchValue={searchQuery}
+        onSearchChange={(val) => {
+          setSearchQuery(val);
+          if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+          searchDebounceRef.current = setTimeout(() => {
+            loadForums(val);
+          }, 300);
+        }}
+        metrics={metrics}
+        items={forumsLoading && forums.length === 0 
+          ? Array.from({ length: 3 }, (_, i) => ({
+              id: `skeleton-${i}`,
+              name: "",
+              description: "",
+              is_locked: false,
+              is_pinned: false,
+              display_order: 0,
+              thread_count: 0,
+              created_at: "",
+              updated_at: "",
+              threads: [],
+            }))
+          : forums}
+        viewMode={viewMode}
+        onViewModeChange={toggleView}
+        customListContent={
+          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", height: "calc(100vh - 200px)" }}>
+            <CategoryThreadsFeed
+              threads={listThreads}
+              isLoading={threadsLoading}
+              loading={threadsFetchingOlder}
+              feedRef={feedRef}
+              sentinelRef={sentinelRef}
+              handleScroll={handleScroll}
+              emptyMessage="No threads found."
+            />
+          </div>
+        }
+        prependGridCard={isAuthenticated ? (
           <div className="card card--interactive new-thread-card feature-card">
             <div className="new-thread-content">
               <div style={{ display: "flex", gap: "12px", width: "100%" }}>
@@ -439,29 +503,8 @@ export const Forum: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-
-        <CreateCategoryDialog
-          isOpen={showCreateCategoryDialog}
-          onClose={() => setShowCreateCategoryDialog(false)}
-        />
-
-        {/* Forum Categories */}
-        {((forumsLoading && forums.length === 0)
-          ? Array.from({ length: 3 }, (_, i) => ({
-              id: `skeleton-${i}`,
-              name: "",
-              description: "",
-              is_locked: false,
-              is_pinned: false,
-              display_order: 0,
-              thread_count: 0,
-              created_at: "",
-              updated_at: "",
-              threads: [],
-            }))
-          : forums
-        ).map((forum) => {
+        ) : null}
+        renderGridCard={(forum) => {
           const loading = forumsLoading && forums.length === 0;
 
           return (
@@ -626,8 +669,8 @@ export const Forum: React.FC = () => {
               )}
             </div>
           );
-        })}
-      </div>
-    </div>
+        }}
+      />
+    </>
   );
 };

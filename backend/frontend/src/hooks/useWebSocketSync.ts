@@ -11,6 +11,8 @@ import {
   activeCategoryFeedIdAtom,
   userFeedThreadsAtom,
   activeUserFeedIdAtom,
+  allFeedThreadsAtom,
+  activeAllFeedIdAtom,
 } from "../atoms/forum";
 import {
   socketAtom,
@@ -113,13 +115,17 @@ export const useWebSocketSync = () => {
   // Live thread feed atoms - the WS handler pushes broadcast events into these
   const setCategoryFeedThreads = useSetAtom(categoryFeedThreadsAtom);
   const setUserFeedThreads = useSetAtom(userFeedThreadsAtom);
+  const setAllFeedThreads = useSetAtom(allFeedThreadsAtom);
   const activeCategoryFeedId = useAtomValue(activeCategoryFeedIdAtom);
   const activeUserFeedId = useAtomValue(activeUserFeedIdAtom);
+  const activeAllFeedId = useAtomValue(activeAllFeedIdAtom);
   // Refs so the stable onmessage closure always reads current values
   const activeCategoryFeedIdRef = useRef<string | null>(null);
   const activeUserFeedIdRef = useRef<string | null>(null);
+  const activeAllFeedIdRef = useRef<string | null>(null);
   activeCategoryFeedIdRef.current = activeCategoryFeedId;
   activeUserFeedIdRef.current = activeUserFeedId;
+  activeAllFeedIdRef.current = activeAllFeedId;
 
   // Global chat
   const setGlobalChatMessages = useSetAtom(globalChatMessagesAtom);
@@ -394,6 +400,14 @@ export const useWebSocketSync = () => {
                   return [...prev, thread];
                 });
               }
+              // All threads feed
+              if (activeAllFeedIdRef.current) {
+                setAllFeedThreads((prev) => {
+                  if (prev.some((t) => String(t.id) === String(thread.id)))
+                    return prev;
+                  return [...prev, thread];
+                });
+              }
             }
 
             // Live feed: thread updated (metadata refresh in both feeds)
@@ -404,6 +418,7 @@ export const useWebSocketSync = () => {
                 );
               setCategoryFeedThreads(update);
               setUserFeedThreads(update);
+              setAllFeedThreads(update);
             }
 
             // Handle thread deletion
@@ -422,6 +437,7 @@ export const useWebSocketSync = () => {
                 prev.filter((t) => String(t.id) !== String(id));
               setCategoryFeedThreads(remove);
               setUserFeedThreads(remove);
+              setAllFeedThreads(remove);
             }
 
             // Handle comment operations

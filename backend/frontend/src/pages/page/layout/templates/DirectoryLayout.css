@@ -1,0 +1,143 @@
+.directory-layout {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.directory-layout__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto 18px;
+  padding: 0 40px;
+}
+
+.directory-layout__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.directory-layout__title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.directory-layout__subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.directory-layout__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.directory-layout__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1400px;
+  margin: 0 auto 24px;
+  padding: 0 40px;
+  flex-wrap: wrap;
+}
+
+.directory-layout__search {
+  min-width: 200px;
+  max-width: 360px;
+  flex: 1;
+}
+
+.directory-layout__metrics {
+  display: flex;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.directory-layout__view-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.directory-view-btn {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.directory-view-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.directory-layout__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.directory-layout__list {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.directory-layout__list-header {
+  /* Provide styling in the parent component or default if needed */
+}
+
+@media (max-width: 880px) {
+  .directory-layout {
+    padding: 20px 0;
+  }
+
+  .directory-layout__header,
+  .directory-layout__toolbar,
+  .directory-layout__grid,
+  .directory-layout__list {
+    padding: 0 16px;
+  }
+
+  .directory-layout__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .directory-layout__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .directory-layout__grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}

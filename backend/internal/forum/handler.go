@@ -415,8 +415,16 @@ func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
 		return
 	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": []interface{}{}})
+	threads, err := h.svc.ListAllThreads(limit, offset)
+	if err != nil {
+		log.Printf("forum.listThreads(all): %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to fetch threads")
+		return
+	}
+	if threads == nil {
+		threads = []*models.ForumThread{}
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"threads": threads})
 }
 
 func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {

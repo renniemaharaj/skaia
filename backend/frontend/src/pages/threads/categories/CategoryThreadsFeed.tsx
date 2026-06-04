@@ -8,6 +8,7 @@ interface Props {
   feedRef: React.RefObject<HTMLDivElement | null>;
   sentinelRef: React.RefObject<HTMLDivElement | null>;
   handleScroll: () => void;
+  emptyMessage?: string;
 }
 
 const CategoryThreadsFeed = ({
@@ -17,6 +18,7 @@ const CategoryThreadsFeed = ({
   feedRef,
   sentinelRef,
   handleScroll,
+  emptyMessage = "No threads in this category yet.",
 }: Props) => {
   return (
     <ThreadsFeed
@@ -26,7 +28,7 @@ const CategoryThreadsFeed = ({
       feedRef={feedRef}
       sentinelRef={sentinelRef}
       handleScroll={handleScroll}
-      emptyMessage="No threads in this category yet."
+      emptyMessage={emptyMessage}
     />
   );
 };

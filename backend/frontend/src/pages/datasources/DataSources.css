@@ -52,24 +52,6 @@
   flex-shrink: 0;
 }
 
-.ds-page__view-toggle {
-  display: flex;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.ds-view-btn {
-  border-radius: 0;
-}
-
-.ds-view-btn:first-child {
-  border-radius: 8px 0 0 8px;
-}
-
-.ds-view-btn:last-child {
-  border-radius: 0 8px 8px 0;
-}
 
 .ds-page__create-btn {
   display: inline-flex;

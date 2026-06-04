@@ -1,0 +1,139 @@
+import type { ReactNode } from "react";
+import SearchField from "../../../../components/ui/SearchField";
+import { LayoutGrid, List } from "lucide-react";
+import "./DirectoryLayout.css";
+
+export type ViewMode = "grid" | "list";
+
+export interface DirectoryLayoutProps<T> {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  headerActions?: ReactNode;
+
+  searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (val: string) => void;
+
+  metrics?: ReactNode[];
+
+  items: T[];
+
+  // Grid mode props
+  renderGridCard: (item: T, index: number) => ReactNode;
+  prependGridCard?: ReactNode;
+
+  // List mode props
+  renderListRow?: (item: T, index: number) => ReactNode;
+  listHeader?: ReactNode;
+
+  customListContent?: ReactNode;
+
+  // View mode
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+
+  emptyState?: ReactNode;
+  className?: string;
+}
+
+export function DirectoryLayout<T>({
+  title,
+  subtitle,
+  headerActions,
+  searchPlaceholder = "Search...",
+  searchValue,
+  onSearchChange,
+  metrics,
+  items,
+  renderGridCard,
+  prependGridCard,
+  renderListRow,
+  listHeader,
+  customListContent,
+  viewMode = "grid",
+  onViewModeChange,
+  emptyState,
+  className = "",
+}: DirectoryLayoutProps<T>) {
+  const isList = viewMode === "list" && (renderListRow || customListContent);
+
+  return (
+    <div className={`directory-layout ${className}`}>
+      <div className="directory-layout__header">
+        <div className="directory-layout__header-left">
+          <h1 className="directory-layout__title">{title}</h1>
+          {subtitle && <p className="directory-layout__subtitle">{subtitle}</p>}
+        </div>
+        {(headerActions || onViewModeChange) && (
+          <div className="directory-layout__header-actions">
+            {headerActions}
+            {onViewModeChange && (
+              <div className="directory-layout__view-toggle">
+                <button
+                  className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "grid" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                  onClick={() => onViewModeChange("grid")}
+                  title="Grid view"
+                >
+                  <LayoutGrid size={16} />
+                </button>
+                <button
+                  className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "list" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                  onClick={() => onViewModeChange("list")}
+                  title="List view"
+                >
+                  <List size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {(!!onSearchChange || (metrics && metrics.length > 0)) && (
+        <div className="directory-layout__toolbar">
+          {onSearchChange && searchValue !== undefined && (
+            <SearchField
+              value={searchValue}
+              onChange={onSearchChange}
+              placeholder={searchPlaceholder}
+              className="directory-layout__search"
+            />
+          )}
+          {metrics && metrics.length > 0 && (
+            <div className="directory-layout__metrics">
+              {metrics.map((metric, i) => (
+                <span key={i} className="directory-layout__metric">
+                  {metric}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {items.length === 0 && !prependGridCard && emptyState ? (
+        <div className="directory-layout__empty-container">
+          {emptyState}
+        </div>
+      ) : (
+        isList ? (
+          customListContent ? customListContent : (
+            <div className="directory-layout__list">
+              {listHeader && (
+                <div className="directory-layout__list-header">
+                  {listHeader}
+                </div>
+              )}
+              {items.map((item, index) => renderListRow!(item, index))}
+            </div>
+          )
+        ) : (
+          <div className="directory-layout__grid">
+            {prependGridCard}
+            {items.map((item, index) => renderGridCard(item, index))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}

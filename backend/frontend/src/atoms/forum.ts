@@ -97,6 +97,9 @@ export const activeCategoryFeedIdAtom = atom<string | null>(null);
 export const userFeedThreadsAtom = atom<ForumThread[]>([]);
 export const activeUserFeedIdAtom = atom<string | null>(null);
 
+export const allFeedThreadsAtom = atom<ForumThread[]>([]);
+export const activeAllFeedIdAtom = atom<string | null>(null);
+
 // Derived thread permissions
 // Reactively recomputes permissions from the live user atom so any
 // permission/role change propagated over WS is instantly reflected.
