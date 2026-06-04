@@ -168,9 +168,9 @@ const PresencePanel = () => {
       handler: async (u) => {
         try {
           await adminTriggerMFAChallenge(String(u.user_id));
-          toast.success(`MFA challenge sent to ${u.user_name || "User"}`);
+          toast.success(`Successfully triggered challenge for ${u.user_name || "User"}`);
         } catch (err: any) {
-          toast.error(err.message || "Failed to trigger MFA challenge");
+          toast.error(`Failed to trigger challenge: ${err.message || "Unknown error"}`);
         }
       },
     },

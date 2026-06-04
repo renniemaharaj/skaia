@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { ChevronDown } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { hasPermissionAtom } from "../../atoms/auth";
 import "./ForumCategory.css";
 
 interface Category {
@@ -17,6 +19,8 @@ interface ForumCategoryProps {
 const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasPermission = useAtomValue(hasPermissionAtom);
+  const canEditCategory = hasPermission("forum.category-edit");
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -51,7 +55,7 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
         >
           <option value="">Select a category</option>
           {categories.map((cat) => (
-            <option key={cat.id} value={cat.id} disabled={cat.is_locked}>
+            <option key={cat.id} value={cat.id} disabled={cat.is_locked && !canEditCategory}>
               {cat.name}
               {cat.is_locked ? " (locked)" : ""}
             </option>

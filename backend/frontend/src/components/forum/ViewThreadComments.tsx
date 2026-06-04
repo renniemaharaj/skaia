@@ -8,7 +8,7 @@ import {
 import { type ThreadComment } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
-import { currentUserAtom } from "../../atoms/auth";
+import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import CommentSection from "../comments/CommentSection";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 
@@ -18,6 +18,7 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const comments = useAtomValue(enrichedThreadCommentsAtom);
   const setComments = useSetAtom(threadCommentsAtom);
   const currentUser = useAtomValue(currentUserAtom);
+  const hasPermission = useAtomValue(hasPermissionAtom);
   const currentThread = useAtomValue(currentThreadAtom);
   const { subscribe } = useWebSocketSync();
 
@@ -106,17 +107,21 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
     [setComments],
   );
 
+  const canEditThread = hasPermission("forum.thread-edit");
+
   return (
     <CommentSection
       title="Comments"
       comments={comments}
       isLoading={isLoading}
       canComment={
-        !currentThread?.is_locked &&
-        (currentUser?.permissions ?? []).includes("forum.thread-comment-new")
+        (!currentThread?.is_locked || canEditThread) &&
+        hasPermission("forum.thread-comment-new")
       }
       lockedMessage={
-        currentThread?.is_locked ? "This thread is locked." : undefined
+        currentThread?.is_locked && !canEditThread
+          ? "This thread is locked."
+          : undefined
       }
       onSubmit={async (text) => {
         if (!threadId || isSubmitting) return;

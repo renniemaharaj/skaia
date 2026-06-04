@@ -236,7 +236,7 @@ func (h *Handler) AdminTriggerMFAChallenge(w http.ResponseWriter, r *http.Reques
 	// Verify target user actually has TOTP enabled
 	_, enabled, err := h.svc.GetTOTPEnabled(r.Context(), targetID)
 	if err != nil || !enabled {
-		utils.WriteError(w, http.StatusBadRequest, "target user does not have 2FA enabled")
+		utils.WriteError(w, http.StatusBadRequest, "user does not have a method like TOTP enabled")
 		return
 	}
 

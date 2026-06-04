@@ -463,8 +463,11 @@ func (h *Handler) createThread(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if cat.IsLocked {
-		utils.WriteError(w, http.StatusForbidden, "category is locked")
-		return
+		canEditCat, _ := h.authz.HasPermission(userID, "forum.category-edit")
+		if !canEditCat {
+			utils.WriteError(w, http.StatusForbidden, "category is locked")
+			return
+		}
 	}
 
 	created, err := h.svc.CreateThread(&models.ForumThread{
@@ -912,8 +915,11 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if thread.IsLocked {
-		utils.WriteError(w, http.StatusForbidden, "thread is locked")
-		return
+		canEditThread, _ := h.authz.HasPermission(userID, "forum.thread-edit")
+		if !canEditThread {
+			utils.WriteError(w, http.StatusForbidden, "thread is locked")
+			return
+		}
 	}
 
 	var req struct {
@@ -1348,6 +1354,15 @@ func (h *Handler) shareThread(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, "original thread not found")
 		return
+	}
+
+	cat, err := h.svc.GetCategory(original.CategoryID)
+	if err == nil && cat.IsLocked {
+		canEditCat, _ := h.authz.HasPermission(userID, "forum.category-edit")
+		if !canEditCat {
+			utils.WriteError(w, http.StatusForbidden, "category is locked")
+			return
+		}
 	}
 
 	var req struct {
