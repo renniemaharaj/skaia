@@ -20,6 +20,17 @@ Current incremental migrations:
 - `007_rename_landing_to_page.sql`
 - `008_superuser_admin.sql`
 - `009_auth_user_separation.sql`
+- `010_add_indexes.sql`
+- `011_ui_cosmetics_and_skins.sql`
+- `012_sessions.sql`
+- `013_forum_category_pinning.sql`
+- `014_media_history.sql`
+- `015_superuser_color.sql`
+
+When an incremental migration adds stable schema used by runtime code, mirror
+the fresh-database shape in `001_schema.sql` and keep the incremental file for
+existing deployments. Current examples include role cosmetic columns,
+stateful `sessions`, forum category pinning, and `media_history`.
 
 ### Rationale
 

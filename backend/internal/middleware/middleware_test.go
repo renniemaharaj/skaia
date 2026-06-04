@@ -242,6 +242,26 @@ func TestAuthLimitMiddleware_ExceedsLimit_Returns429(t *testing.T) {
 	assert.True(t, hitLimit, "rate limit must eventually be hit")
 }
 
+func TestRateLimitByIP_Returns429WithoutAuthService(t *testing.T) {
+	t.Setenv("API_RATE_LIMIT_IP", "1")
+	t.Setenv("API_RATE_LIMIT_PENALTY_SECONDS", "1")
+	limiter := mw.RateLimitByIP(nil)
+	srv := httptest.NewServer(limiter(okHandler()))
+	defer srv.Close()
+
+	client := &http.Client{}
+	resp, err := client.Get(srv.URL + "/")
+	require.NoError(t, err)
+	resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	resp, err = client.Get(srv.URL + "/")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusTooManyRequests, resp.StatusCode)
+	assert.Equal(t, "1", resp.Header.Get("Retry-After"))
+}
+
 func TestIsArmed_EmptyDir_ReturnsFalse(t *testing.T) {
 	mw.ResetArmedCacheForTest()
 	dir := t.TempDir()

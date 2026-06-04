@@ -100,12 +100,12 @@ verify references and formatting
 
 ## Last Ran
 
-- 2026-05-30
+- 2026-06-03
 
 ## Last Run Remarks
 
-- Middleware analysis: Found design drift where MFA database logic is tightly coupled with volumetric rate limiting (`triggerMFA` inside `RateLimitByIP`), turning potential rate-limit protections into DDoS DB exhaustion vectors. Added a plan to decouple this. Found undocumented unbounded `lastIPs` sync.Map memory leak.
+- Worker follow-up: `RateLimitByIP` no longer triggers MFA database writes on limiter denial paths. The previous unbounded `lastIPs` finding is resolved by the LRU cache in `ip_hopping.go`; IP-hop MFA remains the intentional step-up path. Migration baseline and superuser demotion correctness plans were executed with tests/spec updates.
 
 ## Next Steps
 
-- Refactor middleware to use request context rather than double-parsing JWTs. Delegate execution to `.todo/middleware_performance_refactor`.
+- Continue using `.todo/*` entries for remaining product work; no dangling `.todo/middleware_performance_refactor` reference remains.

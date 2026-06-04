@@ -28,11 +28,21 @@ CREATE TABLE IF NOT EXISTS users (
     is_suspended     BOOLEAN   DEFAULT false,
     suspended_at     TIMESTAMP,
     suspended_reason TEXT,
+    background_image_url TEXT,
+    background_video_url TEXT,
+    background_position  VARCHAR(50),
+    font_family          VARCHAR(100),
+    profile_card_art_url TEXT,
     created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email    ON users(email);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS background_image_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS background_video_url TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS background_position  VARCHAR(50);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS font_family          VARCHAR(100);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_card_art_url TEXT;
 
 CREATE TABLE IF NOT EXISTS user_sessions (
     id            BIGSERIAL    PRIMARY KEY,
@@ -47,19 +57,40 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id    ON user_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_sessions_expires_at ON user_sessions(expires_at);
 
+CREATE TABLE IF NOT EXISTS sessions (
+    id              VARCHAR(36)  PRIMARY KEY,
+    user_id         BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_ip      VARCHAR(45)  NOT NULL,
+    last_seen_ip    VARCHAR(45)  NOT NULL,
+    user_agent_hash VARCHAR(64)  NOT NULL DEFAULT '',
+    issued_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at      TIMESTAMP    NOT NULL,
+    verified        BOOLEAN      NOT NULL DEFAULT true,
+    created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id    ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+
 CREATE TABLE IF NOT EXISTS roles (
     id          BIGSERIAL PRIMARY KEY,
     name        VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
     power_level INT NOT NULL DEFAULT 0,
+    theme_color VARCHAR(50),
+    glow_color  VARCHAR(50),
     created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS power_level INT NOT NULL DEFAULT 0;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS theme_color VARCHAR(50);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS glow_color  VARCHAR(50);
 
 -- Insert superuser role for fresh DBs
-INSERT INTO roles (id, name, description, power_level)
-VALUES (100, 'superuser', 'Superuser with unrestricted power', 255)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO roles (id, name, description, power_level, theme_color)
+VALUES (100, 'superuser', 'Superuser with unrestricted power', 255, '#5b9e8e')
+ON CONFLICT (id) DO UPDATE
+    SET power_level = EXCLUDED.power_level,
+        theme_color = COALESCE(NULLIF(roles.theme_color, ''), EXCLUDED.theme_color);
 
 CREATE TABLE IF NOT EXISTS permissions (
     id          BIGSERIAL PRIMARY KEY,
@@ -215,9 +246,11 @@ CREATE TABLE IF NOT EXISTS forum_categories (
     name          VARCHAR(255) NOT NULL UNIQUE,
     description   TEXT,
     display_order INT DEFAULT 0,
+    is_pinned     BOOLEAN DEFAULT false,
     is_locked     BOOLEAN DEFAULT false,
     created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT false;
 ALTER TABLE forum_categories ADD COLUMN IF NOT EXISTS is_locked BOOLEAN DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS forum_threads (
@@ -564,3 +597,15 @@ CREATE TABLE IF NOT EXISTS mfa_challenge_required (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS media_history (
+    id         SERIAL PRIMARY KEY,
+    route      VARCHAR(255) NOT NULL,
+    video_id   VARCHAR(255) NOT NULL,
+    added_by   BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    user_name  VARCHAR(255) NOT NULL,
+    loop       BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_media_history_route ON media_history(route);
+CREATE INDEX IF NOT EXISTS idx_media_history_created_at ON media_history(created_at);

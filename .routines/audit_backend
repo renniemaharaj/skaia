@@ -105,12 +105,12 @@ document durable findings
 
 ## Last Ran
 
-- 2026-05-30
+- 2026-06-03
 
 ## Last Run Remarks
 
-- Found severe performance and design anti-patterns in backend middleware: quadruple JWT parsing per request, per-request directory reading in `ArmedMiddleware`, DB writes triggered during rate-limiting bursts, and an unbounded global `sync.Map` in `ip_hopping.go` causing memory leaks. Also noted duplicated manual JWT extraction logic across middlewares.
+- Worker follow-up: Rate-limit denial no longer triggers MFA DB writes, `ip_hopping.go` uses a bounded LRU cache, and middleware auth context extraction is centralized through `ExtractTokenMiddleware`. Migration baseline drift and superuser demotion correctness were tightened under todo-backed work.
 
 ## Next Steps
 
-- Execute `.todo/middleware_performance_refactor` to resolve these issues.
+- Keep backend verification anchored on `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`.

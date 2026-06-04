@@ -19,12 +19,20 @@ function SuperUsersDemotionVoteButton({
       return;
     setLoading(true);
     try {
-      await apiRequest(`/users/${targetUserId}/superuser-sacrifice`, {
+      const result = await apiRequest<{
+        demoted?: boolean;
+        votes?: number;
+        threshold?: number;
+      }>(`/users/${targetUserId}/superuser-sacrifice`, {
         method: "POST",
       });
-      toast.success(
-        "You voted to demote this superuser. If more than 50% of superusers vote, they will be demoted.",
-      );
+      if (result.demoted) {
+        toast.success("Superuser role removed.");
+      } else {
+        toast.success(
+          `Vote recorded (${result.votes ?? "?"}/${result.threshold ?? "?"}).`,
+        );
+      }
       window.location.reload();
     } catch (e) {
       toast.error(

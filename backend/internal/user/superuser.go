@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"net/http"
 
 	ievents "github.com/skaia/backend/internal/events"
@@ -41,13 +42,15 @@ func (h *Handler) newDistinctSuperuserDemotionVote(w http.ResponseWriter, r *htt
 	}
 
 	// Record the vote in the database, ensuring uniqueness per actor-target pair. If the vote already exists, this will do nothing.
-	err = h.svc.NewDistinctSuperuserDemotionVote(actorID, targetID)
+	status, err := h.svc.NewDistinctSuperuserDemotionVote(actorID, targetID)
 	if err != nil {
+		if errors.Is(err, ErrSelfSuperuserDemotionVote) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, "failed to record vote")
 		return
 	}
-
-	// Optionally, you could check the total votes for this target and automatically demote if a threshold is reached. For now, we just record the vote.
 
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     actorID,
@@ -55,5 +58,11 @@ func (h *Handler) newDistinctSuperuserDemotionVote(w http.ResponseWriter, r *htt
 		Resource:   ievents.ResUser,
 		ResourceID: targetID,
 	})
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "target demoted from superuser"})
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":           "vote recorded",
+		"votes":            status.Votes,
+		"threshold":        status.Threshold,
+		"total_superusers": status.Total,
+		"demoted":          status.Demoted,
+	})
 }

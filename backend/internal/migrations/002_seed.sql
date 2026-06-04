@@ -1,13 +1,14 @@
 -- Seed data: roles, permissions, admin account, default forum categories.
 
-INSERT INTO roles (id, name, description, power_level) VALUES
-    (1, 'admin',     'Administrator with full access',                       100),
-    (2, 'member',    'Regular member',                                        10),
-    (3, 'banned',    'Banned user',                                            0),
-    (4, 'moderator', 'Can moderate forum content and manage users',           50),
-    (100, 'superuser', 'Superuser with unrestricted power',                  255)
+INSERT INTO roles (id, name, description, power_level, theme_color) VALUES
+    (1, 'admin',     'Administrator with full access',                       100, NULL),
+    (2, 'member',    'Regular member',                                        10, NULL),
+    (3, 'banned',    'Banned user',                                            0, NULL),
+    (4, 'moderator', 'Can moderate forum content and manage users',           50, NULL),
+    (100, 'superuser', 'Superuser with unrestricted power',                  255, '#5b9e8e')
 ON CONFLICT (id) DO UPDATE
-    SET power_level = EXCLUDED.power_level;
+    SET power_level = EXCLUDED.power_level,
+        theme_color = COALESCE(NULLIF(roles.theme_color, ''), EXCLUDED.theme_color);
 
 SELECT setval(pg_get_serial_sequence('roles', 'id'),
               (SELECT COALESCE(MAX(id), 0) + 1 FROM roles), false);
@@ -141,16 +142,16 @@ BEGIN
     SELECT id INTO v_cat_id   FROM forum_categories WHERE name    = 'General Discussion' LIMIT 1;
 
     IF v_admin_id IS NOT NULL AND v_cat_id IS NOT NULL THEN
-        INSERT INTO forum_threads (category_id, user_id, title, content, view_count, reply_count)
+        INSERT INTO forum_threads (category_id, user_id, title, content, reply_count)
         VALUES
             (v_cat_id, v_admin_id,
              'Welcome to the forum!',
              'Welcome to our community forum!',
-             0, 0),
+             0),
             (v_cat_id, v_admin_id,
              'Server updates and news',
              'Stay tuned for the latest updates.',
-             0, 0)
+             0)
         ON CONFLICT DO NOTHING;
     END IF;
 END $$;

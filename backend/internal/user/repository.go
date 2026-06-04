@@ -3,7 +3,6 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"math"
 
 	"github.com/skaia/backend/models"
 )
@@ -400,27 +399,45 @@ func (r *sqlRepository) GetUserMaxPowerLevel(userID int64) (int, error) {
 	return level, err
 }
 
-func (r *sqlRepository) IsSuperUserVotedOut(targetID int64) (bool, error) {
-	var count int
+func (r *sqlRepository) GetSuperuserDemotionStatus(targetID int64) (*SuperuserDemotionStatus, error) {
+	status := &SuperuserDemotionStatus{}
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM superuser_demotion_votes WHERE target_id = $1`,
+		`WITH current_superusers AS (
+		     SELECT DISTINCT ur.user_id
+		     FROM user_roles ur
+		     JOIN roles r ON r.id = ur.role_id
+		     WHERE r.name = 'superuser'
+		 ),
+		 current_votes AS (
+		     SELECT DISTINCT v.actor_id
+		     FROM superuser_demotion_votes v
+		     JOIN current_superusers cs ON cs.user_id = v.actor_id
+		     WHERE v.target_id = $1
+		 )
+		 SELECT
+		     (SELECT COUNT(*) FROM current_votes) AS votes,
+		     (SELECT COUNT(*) FROM current_superusers) AS total_superusers`,
 		targetID,
-	).Scan(&count)
+	).Scan(&status.Votes, &status.Total)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-
-	threshold := max(2, int(math.Floor(float64(count)/2))+1) // Example threshold: more than 50% of superusers must vote to demote
-	return count >= threshold, nil
+	status.Threshold = status.Total/2 + 1
+	if status.Threshold < 2 {
+		status.Threshold = 2
+	}
+	status.Demoted = status.Votes >= status.Threshold
+	return status, nil
 }
 
-func (r *sqlRepository) NewDistinctSuperuserDemotionVote(actorID, targetID int64) error {
-	_, err := r.db.Exec(
+func (r *sqlRepository) NewDistinctSuperuserDemotionVote(actorID, targetID int64) (*SuperuserDemotionStatus, error) {
+	if _, err := r.db.Exec(
 		`INSERT INTO superuser_demotion_votes (actor_id, target_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
 		actorID, targetID,
-	)
-
-	return err
+	); err != nil {
+		return nil, err
+	}
+	return r.GetSuperuserDemotionStatus(targetID)
 }
 
 func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {

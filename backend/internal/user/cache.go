@@ -54,6 +54,9 @@ func cacheKey(id int64) string {
 
 // GetByID returns the cached user for the given id.
 func (c *Cache) GetByID(id int64) (*models.User, bool) {
+	if c == nil || c.rdb == nil {
+		return nil, false
+	}
 	ctx := context.Background()
 	data, err := c.rdb.Get(ctx, cacheKey(id)).Bytes()
 	if err != nil {
@@ -73,6 +76,9 @@ func (c *Cache) GetByID(id int64) (*models.User, bool) {
 
 // SetByID stores the user for the given id with a 5 minute TTL.
 func (c *Cache) SetByID(id int64, u *models.User) {
+	if c == nil || c.rdb == nil {
+		return
+	}
 	data, err := json.Marshal(u)
 	if err != nil {
 		log.Printf("user.Cache.SetByID(%d): marshal: %v", id, err)
@@ -86,6 +92,9 @@ func (c *Cache) SetByID(id int64, u *models.User) {
 
 // Invalidate removes the entry for id.
 func (c *Cache) Invalidate(id int64) {
+	if c == nil || c.rdb == nil {
+		return
+	}
 	ctx := context.Background()
 	if err := c.rdb.Del(ctx, cacheKey(id)).Err(); err != nil {
 		log.Printf("user.Cache.Invalidate(%d): %v", id, err)
@@ -94,6 +103,9 @@ func (c *Cache) Invalidate(id int64) {
 
 // Flush removes all user cache entries (keys matching "user:*").
 func (c *Cache) Flush() {
+	if c == nil || c.rdb == nil {
+		return
+	}
 	ctx := context.Background()
 	pattern := fmt.Sprintf("%s*", cacheKeyPrefix)
 	var cursor uint64

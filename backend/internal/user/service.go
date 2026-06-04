@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,6 +15,15 @@ import (
 type Service struct {
 	repo  Repository
 	cache *Cache
+}
+
+var ErrSelfSuperuserDemotionVote = errors.New("superusers cannot vote to demote themselves")
+
+type SuperuserDemotionStatus struct {
+	Votes     int  `json:"votes"`
+	Total     int  `json:"total_superusers"`
+	Threshold int  `json:"threshold"`
+	Demoted   bool `json:"demoted"`
 }
 
 // NewService wires together a repository and an in-memory cache.
@@ -162,31 +172,24 @@ func (s *Service) GetUserMaxPowerLevel(userID int64) (int, error) {
 	return s.repo.GetUserMaxPowerLevel(userID)
 }
 
-// NewDistinctSuperuserDemotionVote records a vote from actorID to demote targetID from superuser status, ensuring uniqueness of the vote.
-func (s *Service) NewDistinctSuperuserDemotionVote(actorID, targetID int64) error {
-	err := s.repo.NewDistinctSuperuserDemotionVote(actorID, targetID)
+// NewDistinctSuperuserDemotionVote records a distinct demotion vote and
+// removes only the superuser role once current-superuser votes exceed 50%.
+func (s *Service) NewDistinctSuperuserDemotionVote(actorID, targetID int64) (*SuperuserDemotionStatus, error) {
+	if actorID == targetID {
+		return nil, ErrSelfSuperuserDemotionVote
+	}
+	status, err := s.repo.NewDistinctSuperuserDemotionVote(actorID, targetID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	toDemote, err := s.repo.IsSuperUserVotedOut(targetID)
-	if err != nil {
-		return err
-	}
-
-	if toDemote {
-		// If the target has reached the vote threshold for demotion,
-		// remove all of their roles and permissions, effectively stripping superuser status.
-		if err := s.RemoveAllRoles(targetID); err != nil {
-			return err
+	if status.Demoted {
+		if err := s.RemoveRoleByName(targetID, "superuser"); err != nil {
+			return nil, err
 		}
-		if err := s.RemoveAllPermissions(targetID); err != nil {
-			return err
-		}
-		// Optionally: log/admin audit here about the demotion event
 		s.cache.Invalidate(targetID)
 	}
-	return nil
+	return status, nil
 }
 
 func (s *Service) GetRoleByID(id int64) (*models.Role, error) {
