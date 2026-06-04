@@ -248,14 +248,14 @@
   flex-shrink: 0;
 }
 
-/* Render block content at 960px width then scale down to fit the card.
-   scale = card_width / 960. Using 0.32 targets ~300px cards nicely. */
+/* Render block content at 3x width then scale down to fit the card.
+   This ensures the preview is always full width regardless of grid column size. */
 .cp-card__thumb-inner {
   position: absolute;
   top: 0;
   left: 0;
-  width: 960px;
-  transform: scale(0.32);
+  width: 300%;
+  transform: scale(0.333333);
   transform-origin: top left;
   pointer-events: none;
   user-select: none;
