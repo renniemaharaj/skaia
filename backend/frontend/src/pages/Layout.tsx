@@ -14,7 +14,11 @@ import {
   type User,
 } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
-import { pendingTpRouteAtom, cursorPositionsAtom, pendingTpUserAtom } from "../atoms/presence";
+import {
+  pendingTpRouteAtom,
+  cursorPositionsAtom,
+  pendingTpUserAtom,
+} from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { contextUserAtom } from "../atoms/contextUser";
 import { apiRequest } from "../utils/api";
@@ -30,7 +34,10 @@ import { Toaster, toast } from "sonner";
 import { PromptContainer } from "../components/ui/Prompt";
 import { syncServerTime } from "../utils/serverTime";
 import GravityParticles from "../components/ui/GravityParticles";
-import { CenterAnchoredSystem, TextGravityRenderer } from "../components/ui/GravityParticles/GravityRenderers";
+import {
+  CenterAnchoredSystem,
+  TextGravityRenderer,
+} from "../components/ui/GravityParticles/GravityRenderers";
 import { physicsSettingsAtom } from "../atoms/physics";
 import Particles from "../components/ui/Particles/Particles";
 import RateLimitedPage from "./RateLimitedPage";
@@ -148,9 +155,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const clearTpUser = useSetAtom(pendingTpUserAtom);
   const cursorPositions = useAtomValue(cursorPositionsAtom);
   const externalCursors = useMemo(() => {
-    return Array.from(cursorPositions.values()).map(c => ({
-      x: c.x * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-      y: c.y * (typeof window !== 'undefined' ? window.innerHeight : 1080)
+    return Array.from(cursorPositions.values()).map((c) => ({
+      x: c.x * (typeof window !== "undefined" ? window.innerWidth : 1920),
+      y: c.y * (typeof window !== "undefined" ? window.innerHeight : 1080),
     }));
   }, [cursorPositions]);
   const seo = useAtomValue(seoAtom);
@@ -221,7 +228,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           setMfaRequired(true);
           return;
         }
-        const shouldLogout = /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(errorMessage);
+        const shouldLogout =
+          /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
+            errorMessage,
+          );
         if (shouldLogout) {
           // Only clear state if it's explicitly an auth failure, not a 500 or timeout
           setAccessToken(null);
@@ -242,10 +252,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         setMfaRequired(true);
         return;
       }
-      console.warn(
-        "Unauthorized access detected, clearing auth state",
-        detail,
-      );
+      console.warn("Unauthorized access detected, clearing auth state", detail);
       setAccessToken(null);
       setRefreshToken(null);
       setCurrentUser(null);
@@ -258,43 +265,62 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [setAccessToken, setRefreshToken, setCurrentUser]);
 
   const location = useLocation();
+  const effectiveLayoutMode = location.pathname.startsWith("/inbox") ? "application" : layoutMode;
 
+  // Normal navigation and hash scrolling
+  // Normal navigation and hash scrolling
   useEffect(() => {
     if (!isPending) {
       if (location.hash) {
-        // Give the DOM a tiny bit of time to render the target element before scrolling
         setTimeout(() => {
           const id = location.hash.replace("#", "");
           const element = document.getElementById(id);
           if (element) {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
           } else {
-            window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+            const root = document.getElementById("root");
+            if (root) root.scrollTo({ top: 0, left: 0, behavior: "instant" });
+            window.scrollTo({ top: 0, left: 0, behavior: "instant" });
           }
         }, 100);
-      } else if (pendingTpUser) {
-        // Try to find target cursor to scroll to them
-        setTimeout(() => {
-          const targetCursor = cursorPositions.get(pendingTpUser);
-          if (targetCursor) {
-             const scrollWidth = document.documentElement.scrollWidth;
-             const scrollHeight = document.documentElement.scrollHeight;
-             window.scrollTo({
-               left: targetCursor.x * scrollWidth - window.innerWidth / 2,
-               top: targetCursor.y * scrollHeight - window.innerHeight / 2,
-               behavior: "smooth"
-             });
-          } else {
-             window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-          }
-          clearTpUser(null);
-        }, 300); // give cursors time to populate on new route
       } else {
-        // Scroll to top on normal navigation
-        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+        setTimeout(() => {
+          const root = document.getElementById("root");
+          if (root) {
+            root.style.scrollBehavior = "auto";
+            root.scrollTo({ top: 0, left: 0, behavior: "instant" });
+            root.scrollTop = 0;
+            setTimeout(() => { root.style.scrollBehavior = ""; }, 10);
+          }
+          
+          document.documentElement.style.scrollBehavior = "auto";
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+          setTimeout(() => { document.documentElement.style.scrollBehavior = ""; }, 10);
+        }, 10);
       }
     }
-  }, [isPending, location.pathname, location.hash, pendingTpUser, clearTpUser, cursorPositions]);
+  }, [location.pathname, location.hash, isPending]);
+
+  // Teleport to user logic
+  useEffect(() => {
+    if (!isPending && pendingTpUser) {
+      setTimeout(() => {
+        const targetCursor = cursorPositions.get(pendingTpUser);
+        if (targetCursor) {
+          const root = document.getElementById("root");
+          const target = root || window;
+          const scrollContainer = root || document.documentElement;
+          
+          target.scrollTo({
+            left: targetCursor.x * scrollContainer.scrollWidth - window.innerWidth / 2,
+            top: targetCursor.y * scrollContainer.scrollHeight - window.innerHeight / 2,
+            behavior: "smooth"
+          });
+        }
+        clearTpUser(null);
+      }, 300);
+    }
+  }, [pendingTpUser, cursorPositions, isPending, clearTpUser]);
 
   // Consume pending teleport route set by an incoming "tp" WS message.
   useEffect(() => {
@@ -348,8 +374,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div
-      className={`layout${layoutMode === "application" ? " layout--application" : ""}`}
-      style={{ isolation: 'isolate' }}
+      className={`layout${effectiveLayoutMode === "application" ? " layout--application" : ""}`}
+      style={{ isolation: "isolate" }}
     >
       {currentUser?.font_family && (
         <style>{`
@@ -368,9 +394,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         `}</style>
       )}
       {(() => {
-        const hasContextMedia = contextUser && (contextUser.background_image_url || contextUser.background_video_url);
-        const effectiveBgImage = contextUser?.background_image_url || (!hasContextMedia ? seo?.dom_skin : null);
-        const effectiveBgVideo = contextUser?.background_video_url || (!hasContextMedia ? seo?.dom_video : null);
+        const hasContextMedia =
+          contextUser &&
+          (contextUser.background_image_url ||
+            contextUser.background_video_url);
+        const effectiveBgImage =
+          contextUser?.background_image_url ||
+          (!hasContextMedia ? seo?.dom_skin : null);
+        const effectiveBgVideo =
+          contextUser?.background_video_url ||
+          (!hasContextMedia ? seo?.dom_video : null);
         const effectiveBgPos = contextUser?.background_position || "center";
 
         return (
@@ -412,7 +445,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   height: "100vh",
                   objectFit: "cover",
                   zIndex: -2,
-                  pointerEvents: "none"
+                  pointerEvents: "none",
                 }}
               />
             )}
@@ -438,21 +471,49 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
-      {(seo?.particle_style === "gravity") && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
+      {seo?.particle_style === "gravity" && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: -1,
+            pointerEvents: "none",
+          }}
+        >
           {physicsSettings.rendererType === "center-anchored" ? (
             <CenterAnchoredSystem particleCount={200} />
           ) : physicsSettings.rendererType === "text" ? (
-            <TextGravityRenderer text={physicsSettings.rendererText} particleCount={300} />
+            <TextGravityRenderer
+              text={physicsSettings.rendererText}
+              particleCount={300}
+            />
           ) : (
-            <GravityParticles particleCount={150} externalCursors={externalCursors} />
+            <GravityParticles
+              particleCount={150}
+              externalCursors={externalCursors}
+            />
           )}
         </div>
       )}
       {(seo?.particle_style === "default" || !seo?.particle_style) && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: -1,
+            pointerEvents: "none",
+          }}
+        >
           <Particles
-            particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
+            particleColors={
+              isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]
+            }
             particleCount={200}
             particleSpread={10}
             speed={0.1}
@@ -470,16 +531,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         cartCount={cartCount}
         isDarkMode={isDarkMode}
         onDarkModeToggle={setIsDarkMode}
-        layoutMode={layoutMode as "application" | "web"}
+        layoutMode={effectiveLayoutMode as "application" | "web"}
         onToggleLayoutMode={() =>
           setLayoutMode(layoutMode === "application" ? "web" : "application")
         }
       />
       <main className="layout-main">{children}</main>
-      {layoutMode === "web" && <Footer />}
+      {effectiveLayoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? <PresencePanel /> : null}
       <CursorOverlay />
-      <Toaster position="bottom-right" richColors closeButton theme={isDarkMode ? "dark" : "light"} />
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+        theme={isDarkMode ? "dark" : "light"}
+      />
       <PromptContainer />
     </div>
   );
