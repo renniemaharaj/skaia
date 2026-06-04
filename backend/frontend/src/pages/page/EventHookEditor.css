@@ -1,0 +1,103 @@
+/* ──── EventHookEditor ──── */
+
+.ehe {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.ehe__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.ehe__title {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.ehe__badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--primary-color);
+  color: #fff;
+  line-height: 1.4;
+}
+
+.ehe__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ehe__event {
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+}
+.ehe__event--active {
+  border-color: var(--primary-color);
+}
+
+.ehe__event-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background 0.12s;
+}
+.ehe__event-toggle:hover {
+  background: var(--bg-tertiary);
+}
+.ehe__event-name {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.ehe__event-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  margin-left: auto;
+}
+
+.ehe__editor {
+  padding: 0 8px 8px;
+}
+.ehe__textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  tab-size: 2;
+}
+.ehe__textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+.ehe__textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
+}

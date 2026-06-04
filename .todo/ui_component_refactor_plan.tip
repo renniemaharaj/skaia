@@ -6,15 +6,32 @@
 - **Phase 1: Align with page model** — ✅ Complete
 - **Phase 2: Section metadata** — ✅ Complete
 - **Phase 3: Integration primitives** — ✅ Complete
-- **Phase 4: Component registry & bind-point contracts** — ⬜ Not started
+- **Phase 4: Component registry & bind-point contracts** — ✅ Complete
 - **Phase 5: Open derived/custom sections to registered components** — ⬜ Not started
 - **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
 - **Phase 7: Add versioning and migration** — ⬜ Not started
 
+### Phase 4 Deliverables
+- [x] Component registry in `backend/internal/s_registry/component.go` with 11 canonical component definitions (7 primitive, 4 compound)
+- [x] Bind-point contracts: key, label, description, kind, required, fallback on every component
+- [x] Style target lists on every component for safe style override validation
+- [x] `ValidateComponentConfig()` validates: component_type known, bind-point keys exist, required bind-points mapped, style-override targets and properties safe
+- [x] Content validation pipeline wired: derived_section and custom_section configs validated at save time
+- [x] API endpoints: `GET /config/components` and `GET /config/components/{type}` mounted in config handler
+- [x] 14 focused unit tests in `component_test.go` — all passing
+- [x] Full backend test suite passing (19 s_registry tests, all packages green)
+- [x] Frontend types: `BindPointKind`, `BindPoint`, `ComponentDefinition` added to `types.ts`
+- [x] `FactTableConfig` extended with `component_type`, `component_version`, `bindings`, `style_overrides`
+- [x] TypeScript compiles cleanly with zero errors
+- [x] Plan terminology updated: `LandingSection` → `PageSection`, `LandingItem` → `PageItem`
+- [x] `backend_spec` updated with component registry endpoints
+- [x] Verification: `go test ./...` all pass, `tsc --noEmit` clean
+
 ### Next Steps
-- [ ] Implement component registry & bind-point contracts
-- [ ] Update `backend_spec` for `/config/sections` and `/config/section-types/{type}` endpoints
-- [ ] Rename types in this plan from `LandingSection` to `PageSection`
+- [ ] Implement Phase 5: Open derived/custom sections to registered components
+  - Add component picker UI in DerivedSectionBlock and CustomSectionBlock
+  - Add bind-point mapping UI (column → bind-point)
+  - Implement component-driven row rendering in DesignedCardGrid
 - [ ] Verify the newly refactored UI components as part of `.todo/live_testing`
 
 <--/------->

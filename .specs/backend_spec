@@ -207,8 +207,29 @@ All under `/api/`. JWT-protected unless noted.
 - `/store/*` — products, cart, checkout, orders, subscriptions
 - `/inbox/*` — conversations, messages, unread count
 - `/notifications/*` — list, read, delete
-- `/config/*` — branding, SEO, footer, features, landing, pages
+- `/config/*` — branding, SEO, footer, features, landing, pages, section/component registry
 - `/upload/*` — image, video, file, banner
+
+### Config / Registry Endpoints
+
+All under `/config` (chi subroute). Public unless noted.
+
+| Method | Path                    | Auth | Purpose                                      |
+| ------ | ----------------------- | ---- | -------------------------------------------- |
+| GET    | /branding               | none | Branding settings (site name, logo, etc.)    |
+| GET    | /seo                    | none | SEO meta tags                                |
+| GET    | /footer                 | none | Footer content                               |
+| GET    | /comment-slowmode       | none | Comment slow-mode config                     |
+| GET    | /features               | none | Enabled feature flags                        |
+| GET    | /feature/{feature}      | none | Check single feature flag                    |
+| GET    | /sections               | none | List all supported section types + schema    |
+| GET    | /section-types/{type}   | none | Get one section type definition              |
+| GET    | /components             | none | List all registered component definitions    |
+| GET    | /components/{type}      | none | Get one component definition with bind points|
+| PUT    | /branding               | JWT  | Update branding                              |
+| PUT    | /seo                    | JWT  | Update SEO                                   |
+| PUT    | /footer                 | JWT  | Update footer                                |
+| PUT    | /comment-slowmode       | JWT  | Update comment slow-mode                     |
 
 ### Page / Landing Endpoints
 

@@ -39,7 +39,14 @@ import type {
   CustomSection,
   CardTemplate,
   CardZone,
+  ComponentDefinition,
+  ComponentGroup,
+  EventHook,
 } from "../page/types";
+import { ComponentBindMapper } from "../page/ComponentBindMapper";
+import { ComponentGrid } from "../page/ComponentRenderer";
+import { ComponentGroupEditor, ComponentGroupRenderer } from "../page/ComponentGroupEditor";
+import { EventHookEditor } from "../page/EventHookEditor";
 import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
 import { CardDesigner } from "../page/CardDesigner";
 import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
@@ -121,6 +128,7 @@ const DATASOURCE_PREVIEW_TYPES = [
   "feature",
   "image",
   "designed_card",
+  "component",
 ] as const;
 
 type DataSourcePreviewType = (typeof DATASOURCE_PREVIEW_TYPES)[number];
@@ -132,6 +140,7 @@ const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
   feature: "Feature Grid",
   image: "Image Grid",
   designed_card: "Card Designer",
+  component: "Component Registry",
 };
 
 function formatCellValue(value: unknown): string {
@@ -230,6 +239,9 @@ const DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS: Record<
   designed_card: {
     ...DEFAULT_CARD_TEMPLATE,
   },
+  component: {
+    ...DEFAULT_CARD_TEMPLATE,
+  },
 };
 
 export default function DataSourceEditorPage() {
@@ -298,7 +310,27 @@ export default function DataSourceEditorPage() {
     image: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.image,
     table: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.table,
     designed_card: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.designed_card,
+    component: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.component,
   }));
+
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
+    [],
+  );
+  const [componentMode, setComponentMode] = useState<"single" | "group">("single");
+  const [selectedComponentType, setSelectedComponentType] = useState<string>("");
+  const [componentBindings, setComponentBindings] = useState<Record<string, string>>({});
+  const [componentGroup, setComponentGroup] = useState<ComponentGroup>({
+    items: [],
+    gap: 16,
+    max_width: 800,
+  });
+  const [componentHooks, setComponentHooks] = useState<EventHook[]>([]);
+
+  useEffect(() => {
+    apiRequest<ComponentDefinition[]>("/config/components")
+      .then(setComponentsList)
+      .catch(console.error);
+  }, []);
 
   const currentCardTemplate = cardTemplates[previewType];
   const handleCardTemplateChange = useCallback(
@@ -382,7 +414,7 @@ export default function DataSourceEditorPage() {
 
   const handleDelete = async () => {
     if (isNew) return;
-    if (!await customConfirm("Delete this data source?")) return;
+    if (!(await customConfirm("Delete this data source?"))) return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Deleted");
@@ -674,10 +706,25 @@ export default function DataSourceEditorPage() {
           description: sectionDesc,
           datasource_id: Number(id),
           section_type: previewType,
-          config: JSON.stringify({
-            columns: 3,
-            card_template: currentCardTemplate,
-          }),
+          config: JSON.stringify(
+            previewType === "component"
+              ? componentMode === "group"
+                ? {
+                    columns: 1,
+                    component_group: componentGroup,
+                    event_hooks: componentHooks,
+                  }
+                : {
+                    columns: 3,
+                    component_type: selectedComponentType,
+                    bindings: componentBindings,
+                    event_hooks: componentHooks,
+                  }
+              : {
+                  columns: 3,
+                  card_template: currentCardTemplate,
+                },
+          ),
         }),
       });
       toast.success(`Section "${sectionName}" saved`);
@@ -970,12 +1017,73 @@ export default function DataSourceEditorPage() {
                   </div>
                 )}
 
-                {previewItems.length > 0 && (
+                {previewItems.length > 0 && previewType !== "component" && (
                   <CardDesigner
                     template={currentCardTemplate}
                     onChange={handleCardTemplateChange}
                     mode={previewType === "table" ? "table" : "card"}
                   />
+                )}
+
+                {previewItems.length > 0 && previewType === "component" && (
+                  <div className="ds-component-mode-picker">
+                    <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                      <button
+                        className={`icon-btn ${componentMode === "single" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                        onClick={() => setComponentMode("single")}
+                      >
+                        Single Component
+                      </button>
+                      <button
+                        className={`icon-btn ${componentMode === "group" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                        onClick={() => setComponentMode("group")}
+                      >
+                        Component Group
+                      </button>
+                    </div>
+
+                    {componentMode === "single" ? (
+                      <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
+                        <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>Select Component</label>
+                        <select
+                          value={selectedComponentType}
+                          onChange={(e) => setSelectedComponentType(e.target.value)}
+                          style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border-color)", width: "100%", backgroundColor: "var(--bg-color)" }}
+                        >
+                          <option value="">— Select a component —</option>
+                          {componentsList.map((c) => (
+                            <option key={c.type} value={c.type}>
+                              {c.label} ({c.type})
+                            </option>
+                          ))}
+                        </select>
+                        {componentsList.find((c) => c.type === selectedComponentType) && (
+                          <ComponentBindMapper
+                            availableColumns={tableColumns}
+                            component={componentsList.find((c) => c.type === selectedComponentType)!}
+                            bindings={componentBindings}
+                            onChange={setComponentBindings}
+                          />
+                        )}
+                        <div style={{ marginTop: "16px" }}>
+                          <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
+                        <ComponentGroupEditor
+                          group={componentGroup}
+                          components={componentsList}
+                          availableColumns={tableColumns}
+                          firstRow={previewItems[0] || null}
+                          onChange={setComponentGroup}
+                        />
+                        <div style={{ marginTop: "16px" }}>
+                          <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {previewItems.length > 0 && previewType === "table" && (
@@ -986,7 +1094,28 @@ export default function DataSourceEditorPage() {
                   />
                 )}
 
-                {previewItems.length > 0 && previewType !== "table" && (
+                {previewItems.length > 0 && previewType === "component" && componentMode === "single" && selectedComponentType && (
+                  <ComponentGrid
+                    component={componentsList.find((c) => c.type === selectedComponentType)!}
+                    bindings={componentBindings}
+                    rows={previewItems}
+                  />
+                )}
+
+                {previewItems.length > 0 && previewType === "component" && componentMode === "group" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: componentGroup.gap, marginTop: "16px" }}>
+                    {previewItems.map((row, i) => (
+                      <ComponentGroupRenderer
+                        key={i}
+                        group={componentGroup}
+                        components={componentsList}
+                        row={row}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {previewItems.length > 0 && previewType !== "table" && previewType !== "component" && (
                   <DesignedCardGrid
                     items={previewItems.map((item, index) => ({
                       id: -(index + 1),

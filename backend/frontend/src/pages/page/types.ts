@@ -420,6 +420,14 @@ export interface FactTableConfig {
   columns?: number;
   row_key_column?: string; // which datasource column provides the stable row key
   card_template?: CardTemplate;
+  /** Component registry fields (Phase 4). */
+  component_type?: string;
+  component_version?: number;
+  bindings?: Record<string, string>;
+  style_overrides?: Record<string, Record<string, string>>;
+  /** Component group (Phase 5). */
+  component_group?: ComponentGroup;
+  event_hooks?: EventHook[];
 }
 
 /** A saved custom section (reusable data-bound visualization). */
@@ -435,3 +443,81 @@ export interface CustomSection {
   created_at: string;
   updated_at: string;
 }
+
+/* ──── Component Registry Types (Phase 4) ──── */
+
+/** Data contract categories a bind point can accept. */
+export const BIND_POINT_KINDS = [
+  "text",
+  "rich_text",
+  "number",
+  "boolean",
+  "url",
+  "media",
+  "image",
+  "video",
+  "object",
+  "array",
+  "action",
+  "any",
+] as const;
+export type BindPointKind = (typeof BIND_POINT_KINDS)[number];
+
+/** A single data target on a registered component. */
+export interface BindPoint {
+  key: string;
+  label: string;
+  description: string;
+  kind: BindPointKind;
+  required: boolean;
+  fallback?: unknown;
+}
+
+/** A registered UI component definition from the backend. */
+export interface ComponentDefinition {
+  type: string;
+  label: string;
+  group: string;
+  description: string;
+  repeatable: boolean;
+  props_schema: Record<string, unknown>;
+  style_targets: string[];
+  bind_points: BindPoint[];
+  version: number;
+}
+
+/* ──── Component Groups (Phase 5) ──── */
+
+/** A single component within a group layout. */
+export interface ComponentGroupItem {
+  id: string;
+  component_type: string;
+  bindings: Record<string, string>;
+  width: number; // percentage 0-100
+  order: number;
+  event_hooks?: EventHook[];
+}
+
+/** A group of components rendered together per row. */
+export interface ComponentGroup {
+  items: ComponentGroupItem[];
+  gap: number;
+  max_width: number; // px
+}
+
+/** A TypeScript event hook attached to a component. */
+export interface EventHook {
+  event: ComponentEvent;
+  code: string;
+}
+
+/** Supported component lifecycle events. */
+export const COMPONENT_EVENTS = [
+  "onClick",
+  "onDoubleClick",
+  "onHover",
+  "onMouseEnter",
+  "onMouseLeave",
+] as const;
+export type ComponentEvent = (typeof COMPONENT_EVENTS)[number];
+

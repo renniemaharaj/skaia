@@ -116,11 +116,11 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-06-04T09:34:00-04:00
+- 2026-06-04T16:32:00-04:00
 
 ## Last Run Remarks
 
-- Executed `ui_directory_template_reconciliation`: Removed ~2.4 kB of dead CSS from `CustomPages.css`, `DataSources.css`, and `Forum.css` after DirectoryLayout template consolidation. Cleaned dead header/toolbar/title/subtitle/header-actions/view-toggle classes and their media query references. Preserved all still-used domain-specific classes (`cp-new-page-btn`, `cp-allocation-badge`, `ds-page__icon`, `ds-page__create-btn`, `.forums-grid` responsive, etc.). Build verified with zero errors.
+- Executed `ui_component_refactor_plan` Phase 4: Added component registry (`s_registry/component.go`) with 11 canonical component definitions (7 primitive, 4 compound), bind-point contracts with kind/required/fallback metadata, style target lists, and `ValidateComponentConfig()` validation. Wired into content validation pipeline for derived_section and custom_section. Added `GET /config/components` and `GET /config/components/{type}` API endpoints. Frontend types added (`BindPoint`, `ComponentDefinition`), `FactTableConfig` extended. 14 new tests, full backend suite green, `tsc --noEmit` clean. Plan terminology updated, backend_spec updated.
 
 ## Next Steps
 

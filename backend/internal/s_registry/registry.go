@@ -114,6 +114,12 @@ func ValidateContent(content string, resolver Resolver) error {
 		if err := validateIntegrationRefs(i, section.SectionType, cfg, resolver); err != nil {
 			return err
 		}
+		// Validate component registry config for section types that support it.
+		if section.SectionType == "derived_section" || section.SectionType == "custom_section" {
+			if err := ValidateComponentConfig(cfg); err != nil {
+				return fmt.Errorf("section %d component config is invalid: %w", i, err)
+			}
+		}
 	}
 	return nil
 }

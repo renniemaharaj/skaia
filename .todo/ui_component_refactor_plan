@@ -76,9 +76,9 @@ The backend owns the page/block schema, component registry metadata, bind-point 
 
 # Skaia Section/Block Registry Model
 
-Each saved page block should follow the existing `LandingSection` shape:
+Each saved page block should follow the existing `PageSection` shape:
 
-LandingSection:
+PageSection:
 
 - id: number
 - display_order: number
@@ -86,7 +86,7 @@ LandingSection:
 - heading: string
 - subheading: string
 - config: string (JSON object)
-- items?: LandingItem[]
+- items?: PageItem[]
 - last_edited_by?: SectionEditor
 
 Supported `section_type`s in Skaia today:

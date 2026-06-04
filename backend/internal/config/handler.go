@@ -106,6 +106,8 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/feature/{feature}", h.getFeature)
 		r.Get("/sections", h.listSectionTypes)
 		r.Get("/section-types/{type}", h.getSectionType)
+		r.Get("/components", h.listComponents)
+		r.Get("/components/{type}", h.getComponent)
 
 		// Protected – requires home.manage
 		r.Group(func(r chi.Router) {
@@ -147,6 +149,20 @@ func (h *Handler) getSectionType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, def)
+}
+
+func (h *Handler) listComponents(w http.ResponseWriter, r *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, s_registry.ListComponents())
+}
+
+func (h *Handler) getComponent(w http.ResponseWriter, r *http.Request) {
+	typ := chi.URLParam(r, "type")
+	c, ok := s_registry.GetComponent(typ)
+	if !ok {
+		utils.WriteError(w, http.StatusNotFound, "component type not found")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, c)
 }
 
 func (h *Handler) getBranding(w http.ResponseWriter, r *http.Request) {
