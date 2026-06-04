@@ -99,14 +99,13 @@ if new plan needed:
 
 ## Last Ran
 
-- 2026-06-03T23:45:00-04:00
+- 2026-06-04T09:31:00-04:00
 
 ## Last Run Remarks
 
-- Deleted completed todo plans (`superuser_demotion_correctness`, `middleware_performance_refactor`, `migration_baseline_sync`) after verifying implementation changes were applied and tests updated.
-- Formatted all `.tip` files to strictly match `.todo/README.md` conventions (`<--/------->` bounds, `### Current Progress`, `### Next Steps`).
-- Deleted completed todo plans (`project_hardening_and_perf`, `auth_interface_context_refactor`, `hotfix_security_and_schema`) after verifying backend tests pass and all phases were complete.
-- Updated `smart_rate_limiter`, `ui_component_refactor_plan`, `project_normalization`, `auth_user_separation`, `session_cookie_ip_val`, and `custom_pages_homepage_toggle` with accurate progress, next steps, and formatting.
+- Created `ui_directory_template_reconciliation` todo and tip for dead CSS cleanup across CustomPages.css, DataSources.css, and Forum.css after DirectoryLayout template consolidation.
+- Audited existing todos for overlap: this work is complementary to `ui_component_refactor_plan` (primitive consolidation) and `project_normalization` (landing-to-page renaming) but scoped only to dead CSS from the DirectoryLayout migration.
+- Verified no existing todo covers this specific cleanup.
 
 ## Next Steps
 

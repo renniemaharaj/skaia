@@ -116,11 +116,11 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-05-30T13:17:40-04:00
+- 2026-06-04T09:34:00-04:00
 
 ## Last Run Remarks
 
-- Executed `user_settings_expansion.tip`: Migrated `EditProfileDialog` to a dedicated `ProfileSettings.tsx` route under `/settings/users/:id`. Redesigned the settings interface to use primitive aesthetic classes and mobile-friendly grid layouts. Updated `routes.tsx` to handle ID-specific settings paths and linked `UserProfile.tsx` to the new route. Verified via `npm run build`.
+- Executed `ui_directory_template_reconciliation`: Removed ~2.4 kB of dead CSS from `CustomPages.css`, `DataSources.css`, and `Forum.css` after DirectoryLayout template consolidation. Cleaned dead header/toolbar/title/subtitle/header-actions/view-toggle classes and their media query references. Preserved all still-used domain-specific classes (`cp-new-page-btn`, `cp-allocation-badge`, `ds-page__icon`, `ds-page__create-btn`, `.forums-grid` responsive, etc.). Build verified with zero errors.
 
 ## Next Steps
 

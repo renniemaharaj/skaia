@@ -1,0 +1,20 @@
+<--/------->
+
+## ui_directory_template_reconciliation
+
+### Current Progress
+- **Phase 1: CustomPages.css dead CSS removal** — ✅ Complete
+- **Phase 2: DataSources.css dead CSS removal** — ✅ Complete
+- **Phase 3: Forum.css dead CSS removal** — ✅ Complete
+- **Phase 4: Media query cleanup** — ✅ Complete
+- **Phase 5: Build verification** — ✅ Complete
+
+### Next Steps
+- [x] Remove dead header/toolbar/title/subtitle/header-actions classes from `CustomPages.css`
+- [x] Remove dead header/toolbar/title/subtitle/header-actions/view-toggle classes from `DataSources.css`
+- [x] Remove dead `.forum-controls` class from `Forum.css`
+- [x] Clean up media query references to removed selectors in all three files
+- [x] Run `npm run build` and verify no regressions — passed, CSS bundle reduced from 283.14 kB to 280.70 kB
+- Verified 2026-06-04 via `npm run build` (tsc + vite) — zero errors
+
+<--/------->
