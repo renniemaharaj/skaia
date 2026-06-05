@@ -1,0 +1,38 @@
+# UI Primitive Consolidation Plan
+
+## Context
+Currently, the codebase contains extensive duplication of native HTML elements like `<button>`, `<select>`, and `<input type="checkbox">` (over 300 instances found). This leads to inconsistent styling (e.g., misaligned select arrows, varied button hover effects) and makes global design updates difficult. The components in datasources component picker should be based off of the same components we use from our `src/components`.
+
+## Goal
+- Consolidate scattered UI elements into reusable, consistent primitive components.
+- Maximize UI consistency across all routes.
+- Replace naked HTML tags with typed, beautifully styled React primitives.
+
+## Non-Goals
+- Complete redesign of the entire app visual language.
+- Rewriting backend APIs or non-UI business logic.
+
+## Steps
+1. Create/refactor foundation primitives in `src/components/ui/` or `src/components/input/`.
+   - `Button`: variants (primary, secondary, danger, ghost, outline), sizes (sm, md, lg, icon).
+   - `Select`: variants (standard, minimal), fix custom arrow placement, improve dropdown spacing.
+   - `Checkbox`: custom SVG checkmark, unified border-radius, consistent label spacing.
+   - `Tile` / `Card`: variants (interactive, static), defined border radius, background colors, and effects.
+2. Refactor Core Routes (Admin, Settings, Auth).
+   - Replace `<select>`, `<button>`, and `<input type="checkbox">` instances in `Admin Dashboard`, `MetaControlPanel`, `ProfileSettings`, `SecuritySettings`, and `Auth` screens.
+3. Builder & Editor Standardization.
+   - Convert the `Component Picker` UI in Datasource Editor to use the new `<Select>` and `<Tile>` primitives.
+   - Refactor Page Builder block configuration forms (`CardDesigner`, `ColumnMapper`, `DerivedSectionBlock`).
+4. CSS Token Standardization.
+   - Audit `index.css` to ensure `var(--primary-color)`, `var(--border-color)`, `var(--bg-secondary)`, and spacing variables are correctly mapped.
+   - Remove legacy inline styles and one-off classes (`.btn-custom`, `.select-box`).
+
+## Verification
+- Confirm 0 raw `<button>`, `<select>`, and `<input type="checkbox">` elements remain in core routes (grep search).
+- Verify all interactive states (hover, focus, disabled) map accurately across new components.
+- Verify typescript checks pass completely after refactor.
+
+## References
+- `backend/frontend/src/components/input/`
+- `backend/frontend/src/pages/datasources/DataSourceEditorPage.tsx`
+- `backend/frontend/src/components/admin/GrengoDashboard.tsx`

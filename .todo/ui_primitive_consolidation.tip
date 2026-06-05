@@ -1,0 +1,17 @@
+<--/------->
+
+## ui_primitive_consolidation
+
+### Current Progress
+- **Phase 1: Primitive Components** — ⬜ Not started
+- **Phase 2: Input & Control Standardization** — ⬜ Not started
+- **Phase 3: Route & Layout Consolidation** — ⬜ Not started
+- **Phase 4: Design Token Hardening** — ⬜ Not started
+
+### Next Steps
+- [ ] Define generic `<Button>` with variants and sizes in `src/components/input/Button.tsx`.
+- [ ] Define generic `<Select>` with custom arrow placement in `src/components/input/Select.tsx`.
+- [ ] Define generic `<Checkbox>` with standardized checkmark.
+- [ ] Define generic `<Tile>` component.
+
+<--/------->
