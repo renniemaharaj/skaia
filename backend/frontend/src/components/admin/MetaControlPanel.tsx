@@ -2,6 +2,8 @@ import { useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { Trash2 } from "lucide-react";
 import "./MetaControlPanel.css";
+import Button from "../input/Button";
+import Select from "../input/Select";
 
 interface MetaConfigForm {
   description: string;
@@ -102,14 +104,17 @@ export default function MetaControlPanel({
         />
       </label>
       <div className="meta-field-group">
-        <label>
-          Particle Style
-          <select name="particle_style" value={form.particle_style || "none"} onChange={handleInput}>
-            <option value="none">None</option>
-            <option value="default">Default Particles</option>
-            <option value="gravity">Gravity Particles</option>
-          </select>
-        </label>
+        <Select
+          label="Particle Style"
+          name="particle_style"
+          value={form.particle_style || "none"}
+          onChange={handleInput}
+          options={[
+            { value: "none", label: "None" },
+            { value: "default", label: "Default Particles" },
+            { value: "gravity", label: "Gravity Particles" },
+          ]}
+        />
       </div>
       <div className="meta-field-group">
         <label>
@@ -123,9 +128,9 @@ export default function MetaControlPanel({
               placeholder="Image URL or upload below"
               style={{ flex: 1 }}
             />
-            <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => handleReset("og_image")} title="Reset OG Image">
+            <Button variant="danger" size="icon" onClick={() => handleReset("og_image")} title="Reset OG Image">
               <Trash2 size={14} />
-            </button>
+            </Button>
           </div>
           <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} />
         </label>
@@ -142,9 +147,9 @@ export default function MetaControlPanel({
               placeholder="Image URL or upload below (e.g. Minecraft texture)"
               style={{ flex: 1 }}
             />
-            <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => handleReset("dom_skin")} title="Reset Background Image">
+            <Button variant="danger" size="icon" onClick={() => handleReset("dom_skin")} title="Reset Background Image">
               <Trash2 size={14} />
-            </button>
+            </Button>
           </div>
           <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} />
         </label>
@@ -161,18 +166,18 @@ export default function MetaControlPanel({
               placeholder="Video URL or upload below (e.g. mp4)"
               style={{ flex: 1 }}
             />
-            <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => handleReset("dom_video")} title="Reset Background Video">
+            <Button variant="danger" size="icon" onClick={() => handleReset("dom_video")} title="Reset Background Video">
               <Trash2 size={14} />
-            </button>
+            </Button>
           </div>
           <input type="file" name="dom_video_file" accept="video/mp4,video/webm" onChange={handleFile} />
         </label>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="actions">
-        <button type="submit" disabled={saving} className="btn btn-primary">
-          {saving ? "Saving..." : "Save"}
-        </button>
+        <Button type="submit" variant="primary" loading={saving}>
+          Save
+        </Button>
       </div>
     </form>
   );

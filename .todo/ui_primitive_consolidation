@@ -36,3 +36,23 @@ Currently, the codebase contains extensive duplication of native HTML elements l
 - `backend/frontend/src/components/input/`
 - `backend/frontend/src/pages/datasources/DataSourceEditorPage.tsx`
 - `backend/frontend/src/components/admin/GrengoDashboard.tsx`
+
+## History / Notes
+**Phase 1 Completion:**
+All four primitives created in `src/components/input/`:
+- **`Button.tsx`**: Variants (primary, secondary, ghost, danger, warning, outline), sizes (sm, md, lg, icon), block/pill/loading/iconLeft/iconRight. Class prefix `sk-btn`.
+- **`Select.tsx`**: Variants (standard, minimal), sizes (sm, md, lg), custom chevron arrow (`ChevronDown`). Class prefix `sk-select`.
+- **`Checkbox.tsx`**: Sizes (sm, md, lg), custom SVG checkmark (`Check`), label + description slots. Class prefix `sk-checkbox`.
+- **`Tile.tsx`**: Variants (interactive, static), selected/compact/disabled states. Class prefix `sk-tile`.
+
+**Phase 2 Completion:**
+Migrated core routes to new primitives:
+- `MetaControlPanel.tsx` — 1 Select, 4 Buttons
+- `GrengoDashboard.tsx` — 1 Select, 26+ Buttons
+- `Auth.tsx` — 1 submit Button
+- `auth/SecuritySettings.tsx` — 16 Buttons
+- `ProfileSettings.tsx` — 1 Select, 9 Buttons
+- `pages/settings/SecuritySettings.tsx` — 1 submit Button
+- `RolesManagementPage.tsx` — 12+ Buttons, 1 Checkbox (permission toggle)
+- **Cleanup:** Removed unused `Loader` imports from `Auth.tsx` and `SecuritySettings.tsx`.
+- **Verification**: `tsc --noEmit` clean, `npm run build` clean.

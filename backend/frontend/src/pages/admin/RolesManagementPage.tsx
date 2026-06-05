@@ -9,6 +9,8 @@ import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import type { User } from "../../atoms/auth";
 import "./RolesManagementPage.css";
+import Button from "../../components/input/Button";
+import Checkbox from "../../components/input/Checkbox";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];
@@ -320,13 +322,14 @@ export default function RolesManagementPage() {
             — a user can only manage others with a lower power level.
           </p>
         </div>
-        <button
-          className="btn btn-primary rmp-create-btn"
+        <Button
+          variant="primary"
+          className="rmp-create-btn"
           onClick={() => setShowCreate((v) => !v)}
+          iconLeft={<Plus size={16} />}
         >
-          <Plus size={16} />
           New Role
-        </button>
+        </Button>
       </div>
 
       {showCreate && (
@@ -361,13 +364,14 @@ export default function RolesManagementPage() {
                   value={createThemeColor || "#ffffff"}
                   onChange={(e) => setCreateThemeColor(e.target.value)}
                 />
-                <button 
-                  className="btn btn-secondary" 
+                <Button 
+                  variant="secondary" 
+                  size="sm"
                   onClick={() => setCreateThemeColor("")}
                   style={{ padding: '4px 8px', fontSize: '12px' }}
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -381,19 +385,20 @@ export default function RolesManagementPage() {
             />
           </div>
           <div className="rmp-form-actions">
-            <button
-              className="btn btn-secondary"
+            <Button
+              variant="secondary"
               onClick={() => setShowCreate(false)}
             >
               Cancel
-            </button>
-            <button
-              className="btn btn-primary"
+            </Button>
+            <Button
+              variant="primary"
               onClick={createRole}
-              disabled={creating || !createName.trim()}
+              disabled={!createName.trim()}
+              loading={creating}
             >
-              {creating ? "Creating…" : "Create"}
-            </button>
+              Create
+            </Button>
           </div>
         </div>
       )}
@@ -445,13 +450,14 @@ export default function RolesManagementPage() {
                           onChange={(e) => setEditThemeColor(e.target.value)}
                         />
                         {editThemeColor && (
-                           <button 
-                             className="btn btn-secondary" 
+                           <Button 
+                             variant="secondary" 
+                             size="sm"
                              onClick={() => setEditThemeColor("")}
                              style={{ padding: '2px 6px', fontSize: '10px' }}
                            >
                              Clear
-                           </button>
+                           </Button>
                         )}
                       </div>
                     </div>
@@ -472,52 +478,62 @@ export default function RolesManagementPage() {
                 <div className="rmp-role-actions">
                   {isEditing ? (
                     <>
-                      <button
-                        className="btn btn-primary rmp-action-btn"
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="rmp-action-btn"
                         onClick={() => saveEdit(role.id)}
-                        disabled={isSaving}
+                        loading={isSaving}
+                        iconLeft={<Save size={14} />}
                       >
-                        <Save size={14} />
-                        {isSaving ? "Saving…" : "Save"}
-                      </button>
-                      <button
-                        className="btn btn-secondary rmp-action-btn"
+                        Save
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rmp-action-btn"
                         onClick={cancelEdit}
-                      >
-                        <X size={14} />
-                      </button>
+                        iconLeft={<X size={14} />}
+                      />
                     </>
                   ) : (
                     <>
-                      <button
-                        className="btn btn-secondary rmp-action-btn"
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="rmp-action-btn"
                         onClick={() => startEdit(role)}
                       >
                         Edit
-                      </button>
-                      <button
-                        className="btn rmp-action-btn rmp-delete-btn"
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="rmp-action-btn rmp-delete-btn"
                         onClick={() => deleteRole(role.id)}
                         disabled={isDeleting}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                        iconLeft={<Trash2 size={14} />}
+                      />
                     </>
                   )}
-                  <button
-                    className="btn btn-secondary rmp-action-btn rmp-expand-btn"
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rmp-action-btn rmp-expand-btn"
                     onClick={() => toggleUsersExpand(role.id)}
+                    iconLeft={role.usersExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   >
-                    {role.usersExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     Users
-                  </button>
-                  <button
-                    className="btn btn-secondary rmp-action-btn rmp-expand-btn"
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rmp-action-btn rmp-expand-btn"
                     onClick={() => togglePermsExpand(role.id)}
+                    iconLeft={role.permsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   >
-                    {role.permsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     Permissions
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -591,13 +607,13 @@ export default function RolesManagementPage() {
                                 key={perm.id}
                                 className={`rmp-perm-item${hasIt ? " rmp-perm-checked" : ""}${toggling ? " rmp-perm-toggling" : ""}`}
                               >
-                                <input
-                                  type="checkbox"
+                                <Checkbox
                                   checked={hasIt}
                                   onChange={() =>
                                     toggleRolePerm(role.id, perm.name, hasIt)
                                   }
                                   disabled={toggling}
+                                  size="sm"
                                 />
                                 <span className="rmp-perm-name">
                                   {perm.name}

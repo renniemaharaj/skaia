@@ -1,0 +1,153 @@
+/* ────────────────────────────────────────────────────────────
+ * Checkbox primitive — component-level CSS
+ *
+ * Layout, spacing, and transitions only.
+ * All colours reference design tokens from index.css.
+ * ──────────────────────────────────────────────────────────── */
+
+/* Wrapper ----------------------------------------------------------------- */
+.sk-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  cursor: pointer;
+}
+
+.sk-checkbox--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Control area ------------------------------------------------------------ */
+.sk-checkbox__control {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hidden native input ----------------------------------------------------- */
+.sk-checkbox__input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Visual box -------------------------------------------------------------- */
+.sk-checkbox__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+
+.sk-checkbox__input:focus-visible ~ .sk-checkbox__box {
+  box-shadow: var(--focus-ring);
+}
+
+.sk-checkbox__input:hover:not(:disabled) ~ .sk-checkbox__box {
+  border-color: var(--primary-color);
+}
+
+/* Checked state */
+.sk-checkbox__box--checked {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.sk-checkbox__box--checked .sk-checkbox__check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Check mark -------------------------------------------------------------- */
+.sk-checkbox__check {
+  color: var(--bg-color);
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sizes ------------------------------------------------------------------- */
+
+/* Small */
+.sk-checkbox--sm .sk-checkbox__box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+}
+
+.sk-checkbox--sm .sk-checkbox__check {
+  width: 10px;
+  height: 10px;
+}
+
+/* Medium (default) */
+.sk-checkbox--md .sk-checkbox__box {
+  width: 18px;
+  height: 18px;
+}
+
+.sk-checkbox--md .sk-checkbox__check {
+  width: 12px;
+  height: 12px;
+}
+
+/* Large */
+.sk-checkbox--lg .sk-checkbox__box {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+}
+
+.sk-checkbox--lg .sk-checkbox__check {
+  width: 15px;
+  height: 15px;
+}
+
+/* Text column ------------------------------------------------------------- */
+.sk-checkbox__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.sk-checkbox__label {
+  font-size: 0.93rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sk-checkbox--sm .sk-checkbox__label {
+  font-size: 0.82rem;
+}
+
+.sk-checkbox--lg .sk-checkbox__label {
+  font-size: 1.05rem;
+}
+
+.sk-checkbox__description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}

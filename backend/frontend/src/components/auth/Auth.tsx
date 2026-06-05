@@ -6,7 +6,6 @@ import {
   Lock,
   User,
   AlertCircle,
-  Loader,
   CheckCircle,
 } from "lucide-react";
 import {
@@ -18,6 +17,7 @@ import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 import MFAChallenge from "../../pages/MFAChallenge";
+import Button from "../input/Button";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
@@ -261,18 +261,9 @@ export const Auth: React.FC<AuthPageProps> = ({
               </div>
             )}
 
-            <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader size={20} className="spinning" />
-                  {isLogin ? "Logging in..." : "Creating account..."}
-                </>
-              ) : isLogin ? (
-                "Log In"
-              ) : (
-                "Create Account"
-              )}
-            </button>
+            <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
+              {isLogin ? "Log In" : "Create Account"}
+            </Button>
           </form>
 
           <div className="auth-divider">

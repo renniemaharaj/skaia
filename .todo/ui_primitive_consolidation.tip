@@ -3,15 +3,13 @@
 ## ui_primitive_consolidation
 
 ### Current Progress
-- **Phase 1: Primitive Components** — ⬜ Not started
-- **Phase 2: Input & Control Standardization** — ⬜ Not started
+- **Phase 1: Primitive Components** — ✅ Complete
+- **Phase 2: Input & Control Standardization** — ✅ Complete
 - **Phase 3: Route & Layout Consolidation** — ⬜ Not started
 - **Phase 4: Design Token Hardening** — ⬜ Not started
 
 ### Next Steps
-- [ ] Define generic `<Button>` with variants and sizes in `src/components/input/Button.tsx`.
-- [ ] Define generic `<Select>` with custom arrow placement in `src/components/input/Select.tsx`.
-- [ ] Define generic `<Checkbox>` with standardized checkmark.
-- [ ] Define generic `<Tile>` component.
+- [ ] Begin Phase 3: Builder & Editor Standardization — Convert Component Picker UI in DataSourceEditorPage, PageBuilder, CardDesigner, ColumnMapper, DerivedSectionBlock, CustomSectionBlock to use new primitives.
+- [ ] Begin Phase 4: CSS Token Standardization — Audit `index.css` tokens, remove legacy inline styles and one-off classes.
 
 <--/------->

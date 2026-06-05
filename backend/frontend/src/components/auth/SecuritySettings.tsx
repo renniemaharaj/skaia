@@ -4,7 +4,6 @@ import {
   ShieldOff,
   Mail,
   AlertCircle,
-  Loader,
   CheckCircle,
   Copy,
   Download,
@@ -24,6 +23,7 @@ import {
 import { customPrompt } from "../ui/Prompt";
 import { toast } from "sonner";
 import "./SecuritySettings.css";
+import Button from "../input/Button";
 
 interface SecuritySettingsProps {
   emailVerified: boolean;
@@ -197,26 +197,29 @@ export default function SecuritySettings({
                 ))}
               </div>
               <div className="sec-panel__actions">
-                <button
-                  className="sec-panel__btn sec-panel__btn--primary"
+                <Button
+                  className="sec-panel__btn"
+                  variant="primary"
                   onClick={copyAdminBackupCodes}
+                  iconLeft={<Copy size={14} />}
                 >
-                  <Copy size={14} />
                   Copy Codes
-                </button>
-                <button
-                  className="sec-panel__btn sec-panel__btn--primary"
+                </Button>
+                <Button
+                  className="sec-panel__btn"
+                  variant="primary"
                   onClick={downloadAdminBackupCodes}
+                  iconLeft={<Download size={14} />}
                 >
-                  <Download size={14} />
                   Download Codes
-                </button>
-                <button
-                  className="sec-panel__btn sec-panel__btn--primary"
+                </Button>
+                <Button
+                  className="sec-panel__btn"
+                  variant="primary"
                   onClick={() => setAdminBackupCodes(null)}
                 >
                   Done
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -267,8 +270,9 @@ export default function SecuritySettings({
                 autoFocus
               />
               <div className="sec-panel__actions">
-                <button
-                  className="sec-panel__btn sec-panel__btn--danger"
+                <Button
+                  className="sec-panel__btn"
+                  variant="danger"
                   onClick={() => {
                     setAdminSetupData(null);
                     setAdminSetupCode("");
@@ -277,17 +281,16 @@ export default function SecuritySettings({
                   disabled={adminLoading}
                 >
                   Cancel
-                </button>
-                <button
-                  className="sec-panel__btn sec-panel__btn--primary"
+                </Button>
+                <Button
+                  className="sec-panel__btn"
+                  variant="primary"
                   onClick={handleAdminEnableTOTP}
                   disabled={adminLoading || adminSetupCode.length !== 6}
+                  loading={adminLoading}
                 >
-                  {adminLoading ? (
-                    <Loader size={14} className="spinning" />
-                  ) : null}
                   Verify & Enable
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -320,43 +323,41 @@ export default function SecuritySettings({
           </p>
           <div className="sec-panel__actions">
             {totpEnabled ? (
-              <button
-                className="sec-panel__btn sec-panel__btn--danger"
+              <Button
+                className="sec-panel__btn"
+                variant="danger"
                 onClick={handleAdminDisableTOTP}
-                disabled={adminLoading}
+                loading={adminLoading}
               >
-                {adminLoading ? (
-                  <Loader size={14} className="spinning" />
-                ) : null}
                 Disable 2FA
-              </button>
+              </Button>
             ) : (
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
+              <Button
+                className="sec-panel__btn"
+                variant="primary"
                 onClick={handleAdminStartSetup}
-                disabled={adminLoading}
+                loading={adminLoading}
               >
-                {adminLoading ? (
-                  <Loader size={14} className="spinning" />
-                ) : null}
                 Enable 2FA
-              </button>
+              </Button>
             )}
             {/* TODO: Implement backup code and email verification admin actions */}
-            <button
-              className="sec-panel__btn sec-panel__btn--primary"
+            <Button
+              className="sec-panel__btn"
+              variant="primary"
               onClick={() => handleAdminGenerateBackupCodes()}
             >
               Generate Backup Codes
-            </button>
-            <button
-              className="sec-panel__btn sec-panel__btn--primary"
+            </Button>
+            <Button
+              className="sec-panel__btn"
+              variant="primary"
               onClick={() =>
                 toast.info("TODO: Setup email verification (admin)")
               }
             >
               Setup Email Verification
-            </button>
+            </Button>
           </div>
           {adminError && (
             <div className="sec-panel__error">
@@ -518,26 +519,29 @@ export default function SecuritySettings({
             </div>
 
             <div className="sec-panel__actions">
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
+              <Button
+                className="sec-panel__btn"
+                variant="primary"
                 onClick={copyBackupCodes}
+                iconLeft={<Copy size={14} />}
               >
-                <Copy size={14} />
                 Copy Codes
-              </button>
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
+              </Button>
+              <Button
+                className="sec-panel__btn"
+                variant="primary"
                 onClick={downloadBackupCodes}
+                iconLeft={<Download size={14} />}
               >
-                <Download size={14} />
                 Download Codes
-              </button>
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
+              </Button>
+              <Button
+                className="sec-panel__btn"
+                variant="primary"
                 onClick={() => setBackupCodes(null)}
               >
                 Done
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -591,8 +595,9 @@ export default function SecuritySettings({
             />
 
             <div className="sec-panel__actions">
-              <button
-                className="sec-panel__btn sec-panel__btn--danger"
+              <Button
+                className="sec-panel__btn"
+                variant="danger"
                 onClick={() => {
                   setSetupData(null);
                   setSetupCode("");
@@ -601,15 +606,16 @@ export default function SecuritySettings({
                 disabled={loading}
               >
                 Cancel
-              </button>
-              <button
-                className="sec-panel__btn sec-panel__btn--primary"
+              </Button>
+              <Button
+                className="sec-panel__btn"
+                variant="primary"
                 onClick={handleEnableTOTP}
                 disabled={loading || setupCode.length !== 6}
+                loading={loading}
               >
-                {loading ? <Loader size={14} className="spinning" /> : null}
                 Verify & Enable
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -646,18 +652,15 @@ export default function SecuritySettings({
               Verify your email address to secure your account and enable
               password recovery.
             </p>
-            <button
-              className="sec-panel__btn sec-panel__btn--primary"
+            <Button
+              className="sec-panel__btn"
+              variant="primary"
               onClick={handleResendVerification}
-              disabled={verifyLoading}
+              loading={verifyLoading}
+              iconLeft={verifyLoading ? undefined : <Mail size={14} />}
             >
-              {verifyLoading ? (
-                <Loader size={14} className="spinning" />
-              ) : (
-                <Mail size={14} />
-              )}
               Send Verification Email
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -687,27 +690,25 @@ export default function SecuritySettings({
             : "Add an extra layer of security by requiring a code from your authenticator app when signing in."}
         </p>
         {totpEnabled ? (
-          <button
-            className="sec-panel__btn sec-panel__btn--danger"
+          <Button
+            className="sec-panel__btn"
+            variant="danger"
             onClick={handleDisableTOTP}
             disabled={loading}
+            iconLeft={<ShieldOff size={14} />}
           >
-            <ShieldOff size={14} />
             Disable 2FA
-          </button>
+          </Button>
         ) : (
-          <button
-            className="sec-panel__btn sec-panel__btn--primary"
+          <Button
+            className="sec-panel__btn"
+            variant="primary"
             onClick={handleStartSetup}
-            disabled={loading}
+            loading={loading}
+            iconLeft={loading ? undefined : <ShieldCheck size={14} />}
           >
-            {loading ? (
-              <Loader size={14} className="spinning" />
-            ) : (
-              <ShieldCheck size={14} />
-            )}
             Set Up 2FA
-          </button>
+          </Button>
         )}
       </div>
 
@@ -761,10 +762,9 @@ export default function SecuritySettings({
               />
             </div>
             {pwError && <div className="sec-panel__error"><AlertCircle size={14} /><span>{pwError}</span></div>}
-            <button type="submit" className="sec-panel__btn sec-panel__btn--primary" disabled={pwLoading} style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
-              {pwLoading ? <Loader size={14} className="spinning" /> : null}
+            <Button type="submit" className="sec-panel__btn" variant="primary" loading={pwLoading} style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
               Update Password
-            </button>
+            </Button>
           </form>
         </div>
       )}

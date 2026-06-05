@@ -1,0 +1,73 @@
+/* ────────────────────────────────────────────────────────────
+ * Tile primitive — component-level CSS
+ *
+ * Layout, spacing, and transitions only.
+ * All colours reference design tokens from index.css.
+ * ──────────────────────────────────────────────────────────── */
+
+/* Base -------------------------------------------------------------------- */
+.sk-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Interactive variant ----------------------------------------------------- */
+.sk-tile--interactive {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sk-tile--interactive:hover:not(.sk-tile--disabled) {
+  background: var(--card-hover-bg);
+  border-color: var(--primary-color);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.sk-tile--interactive:active:not(.sk-tile--disabled) {
+  transform: translateY(0);
+  box-shadow: var(--card-shadow);
+}
+
+.sk-tile--interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: var(--primary-color);
+}
+
+/* Static variant ---------------------------------------------------------- */
+.sk-tile--static {
+  cursor: default;
+}
+
+/* Selected state ---------------------------------------------------------- */
+.sk-tile--selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow);
+}
+
+.sk-tile--selected.sk-tile--interactive:hover {
+  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow-hover);
+}
+
+/* Compact ----------------------------------------------------------------- */
+.sk-tile--compact {
+  padding: calc(var(--card-padding) * 0.6);
+  border-radius: var(--radius-lg);
+}
+
+/* Disabled ---------------------------------------------------------------- */
+.sk-tile--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
+import Button from "../input/Button";
+import Select from "../input/Select";
 
 // Types
 
@@ -513,15 +515,15 @@ export default function GrengoDashboard() {
       {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
 
       <div className="grengo-lock-bar">
-        <button className="btn" onClick={handleLock}>
+        <Button variant="ghost" onClick={handleLock}>
           End Session
-        </button>
+        </Button>
       </div>
 
       {/* Toolbar */}
       <div className="grengo-toolbar">
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={() => {
             setShowCreate(!showCreate);
             setShowImport(false);
@@ -529,9 +531,9 @@ export default function GrengoDashboard() {
           }}
         >
           {showCreate ? "Cancel" : "+ New Site"}
-        </button>
-        <button
-          className="btn"
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setShowImport(!showImport);
             setShowCreate(false);
@@ -539,17 +541,17 @@ export default function GrengoDashboard() {
           }}
         >
           {showImport ? "Cancel" : "Import Site"}
-        </button>
+        </Button>
         <span className="toolbar-separator" />
-        <button
-          className="btn"
+        <Button
+          variant="ghost"
           onClick={handleExportNode}
-          disabled={nodeExportBusy}
+          loading={nodeExportBusy}
         >
-          {nodeExportBusy ? "Exporting…" : "Export Node"}
-        </button>
-        <button
-          className="btn"
+          Export Node
+        </Button>
+        <Button
+          variant="ghost"
           onClick={() => {
             setShowImportNode(!showImportNode);
             setShowCreate(false);
@@ -557,55 +559,55 @@ export default function GrengoDashboard() {
           }}
         >
           {showImportNode ? "Cancel" : "Import Node"}
-        </button>
+        </Button>
         <span className="toolbar-separator" />
-        <button
-          className="btn"
+        <Button
+          variant="ghost"
           onClick={() => {
             fetchSites();
             fetchStats();
             fetchStorage();
             fetchSysInfo();
           }}
-          disabled={loading || statsLoading}
+          loading={loading || statsLoading}
         >
-          {loading || statsLoading ? "Refreshing…" : "Refresh"}
-        </button>
+          Refresh
+        </Button>
       </div>
 
       {/* Compose Controls */}
       <div className="grengo-compose">
         <h3>Compose</h3>
         <div className="compose-actions">
-          <button
-            className="btn btn-primary"
+          <Button
+            variant="primary"
             onClick={() => handleComposeUp(true)}
-            disabled={composeBusy}
+            loading={composeBusy}
           >
-            {composeBusy ? "Running…" : "Up --build"}
-          </button>
-          <button
-            className="btn"
+            Up --build
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => handleComposeUp(false)}
             disabled={composeBusy}
           >
             Up
-          </button>
-          <button
-            className="btn btn-danger"
+          </Button>
+          <Button
+            variant="danger"
             onClick={handleComposeDown}
             disabled={composeBusy}
           >
             Down
-          </button>
+          </Button>
           <span className="toolbar-separator" />
-          <button
-            className="btn btn-warning"
+          <Button
+            variant="warning"
             onClick={() => handleMigrateAll(false)}
-            disabled={migrateAllBusy}
+            loading={migrateAllBusy}
           >
-            {migrateAllBusy ? "Migrating…" : "Migrate All"}
-          </button>
+            Migrate All
+          </Button>
         </div>
         {composeOutput && <pre className="compose-output">{composeOutput}</pre>}
         {migrateAllOutput && (
@@ -835,84 +837,95 @@ function SiteTable({
                 <td className="domains">{site.domains.join(", ")}</td>
                 <td className="actions">
                   {site.running ? (
-                    <button
-                      className="btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "stop")}
                       disabled={busy[site.name]}
                     >
                       Stop
-                    </button>
+                    </Button>
                   ) : (
-                    <button
-                      className="btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "start")}
                       disabled={busy[site.name]}
                     >
                       Start
-                    </button>
+                    </Button>
                   )}
                   {site.status === "enabled" ? (
-                    <button
-                      className="btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "disable")}
                       disabled={busy[site.name]}
                     >
                       Disable
-                    </button>
+                    </Button>
                   ) : (
-                    <button
-                      className="btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "enable")}
                       disabled={busy[site.name]}
                     >
                       Enable
-                    </button>
+                    </Button>
                   )}
                   {site.armed ? (
-                    <button
-                      className="btn btn-warning"
+                    <Button
+                      variant="warning"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "disarm")}
                       disabled={busy[site.name]}
                     >
                       Disarm
-                    </button>
+                    </Button>
                   ) : (
-                    <button
-                      className="btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onSiteAction(site.name, "arm")}
                       disabled={busy[site.name]}
                     >
                       Arm
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    className="btn"
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onMigrate(site.name)}
                     disabled={busy[site.name] || migrateBusy[site.name]}
+                    loading={migrateBusy[site.name]}
                   >
-                    {migrateBusy[site.name] ? "Migrating…" : "Migrate"}
-                  </button>
-                  <button
-                    className="btn"
+                    Migrate
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onEnvEdit(site.name)}
                     disabled={busy[site.name]}
                   >
                     Env
-                  </button>
-                  <button
-                    className="btn"
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => onExport(site.name)}
                     disabled={busy[site.name]}
                   >
                     Export
-                  </button>
-                  <button
-                    className="btn btn-danger"
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => onDelete(site.name)}
                     disabled={busy[site.name]}
                   >
                     Delete
-                  </button>
+                  </Button>
                   {migrateOutput[site.name] && (
                     <div className="migrate-output-inline">
                       {migrateOutput[site.name]}
@@ -959,16 +972,17 @@ function EnvEditorPanel({
           {envDirty && (
             <span className="grengo-env-unsaved">unsaved changes</span>
           )}
-          <button
-            className="btn btn-primary"
+          <Button
+            variant="primary"
             onClick={onSave}
-            disabled={envSaving || !envDirty}
+            disabled={!envDirty}
+            loading={envSaving}
           >
-            {envSaving ? "Saving…" : "Save"}
-          </button>
-          <button className="btn" onClick={onClose}>
+            Save
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
       </div>
       {envError && <div className="error">{envError}</div>}
@@ -1265,13 +1279,14 @@ function CreateSiteForm({
         </label>
         <label>
           Environment
-          <select
+          <Select
             value={form.environment}
             onChange={(e) => set("environment", e.target.value)}
-          >
-            <option value="production">production</option>
-            <option value="development">development</option>
-          </select>
+            options={[
+              { value: "production", label: "production" },
+              { value: "development", label: "development" },
+            ]}
+          />
         </label>
         <label style={{ gridColumn: "1 / -1" }}>
           Features (comma separated)
@@ -1283,13 +1298,14 @@ function CreateSiteForm({
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={handleSubmit}
-          disabled={saving || !form.name}
+          disabled={!form.name}
+          loading={saving}
         >
-          {saving ? "Creating…" : "Create Site"}
-        </button>
+          Create Site
+        </Button>
       </div>
     </div>
   );
@@ -1371,13 +1387,14 @@ function ImportSiteForm({
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={handleImport}
-          disabled={importing || !file}
+          disabled={!file}
+          loading={importing}
         >
-          {importing ? "Importing…" : "Import"}
-        </button>
+          Import
+        </Button>
       </div>
     </div>
   );
@@ -1455,13 +1472,14 @@ function ImportNodeForm({
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={handleImport}
-          disabled={importing || !file}
+          disabled={!file}
+          loading={importing}
         >
-          {importing ? "Importing…" : "Import Node"}
-        </button>
+          Import Node
+        </Button>
       </div>
     </div>
   );

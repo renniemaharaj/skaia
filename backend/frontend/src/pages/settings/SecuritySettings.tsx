@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
+import Button from "../../components/input/Button";
 
 export default function SecuritySettings() {
   const [oldPassword, setOldPassword] = useState("");
@@ -92,14 +93,14 @@ export default function SecuritySettings() {
 
             {error && <div style={{ color: "var(--error-color)", fontSize: "0.875rem", marginTop: "0.5rem" }}>{error}</div>}
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary"
-              disabled={loading}
+              variant="primary"
+              loading={loading}
               style={{ marginTop: "1rem" }}
             >
-              {loading ? "Updating..." : "Update Password"}
-            </button>
+              Update Password
+            </Button>
           </form>
         </div>
       </section>

@@ -2,6 +2,8 @@ import { Save, Loader, Trash2 } from "lucide-react";
 import { useProfileEdit } from "../users/useProfileEdit";
 import type { ProfileUser } from "../users/types";
 import "../users/UserProfile.css";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 
 interface Props {
   user: ProfileUser;
@@ -121,9 +123,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     onChange={(e) => handleAvatarChange(e.target.files?.[0] ?? null)}
                     style={{ fontSize: "0.875rem", flex: 1 }}
                   />
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => { setEditAvatarUrl(""); handleAvatarChange(null); }} title="Reset Avatar">
+                  <Button variant="danger" size="icon" onClick={() => { setEditAvatarUrl(""); handleAvatarChange(null); }} title="Reset Avatar">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 {(avatarPreview || editAvatarUrl) && (
                   <img
@@ -143,9 +145,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     onChange={(e) => handleBannerChange(e.target.files?.[0] ?? null)}
                     style={{ fontSize: "0.875rem", flex: 1 }}
                   />
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => { setEditBannerUrl(""); handleBannerChange(null); }} title="Reset Banner">
+                  <Button variant="danger" size="icon" onClick={() => { setEditBannerUrl(""); handleBannerChange(null); }} title="Reset Banner">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 {(bannerPreview || editBannerUrl) && (
                   <img
@@ -160,9 +162,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
             <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "1rem 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h4 style={{ margin: 0 }}>Cosmetics &amp; Skins</h4>
-              <button 
-                type="button" 
-                className="btn btn-secondary btn-sm" 
+              <Button 
+                variant="secondary" 
+                size="sm" 
                 onClick={() => {
                   setEditBackgroundImageUrl("");
                   handleBackgroundImageChange(null);
@@ -173,7 +175,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 }}
               >
                 Reset Media Cosmetics
-              </button>
+              </Button>
             </div>
 
             <div className="grid grid-2" style={{ gap: "1.5rem" }}>
@@ -201,9 +203,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL…"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => { setEditBackgroundImageUrl(""); handleBackgroundImageChange(null); }} title="Reset Background Image">
+                  <Button variant="danger" size="icon" onClick={() => { setEditBackgroundImageUrl(""); handleBackgroundImageChange(null); }} title="Reset Background Image">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 <input
                   type="file"
@@ -232,9 +234,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL… (mp4/webm)"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => { setEditBackgroundVideoUrl(""); handleBackgroundVideoChange(null); }} title="Reset Background Video">
+                  <Button variant="danger" size="icon" onClick={() => { setEditBackgroundVideoUrl(""); handleBackgroundVideoChange(null); }} title="Reset Background Video">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 <input
                   type="file"
@@ -258,22 +260,15 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between" }}>
                   <label style={{ fontWeight: 500 }}>Background Position</label>
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => setEditBackgroundPosition("")} title="Reset Background Position">
+                  <Button variant="danger" size="icon" onClick={() => setEditBackgroundPosition("")} title="Reset Background Position">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
-                <select
-                  className="input"
+                <Select
                   value={editBackgroundPosition}
                   onChange={(e) => setEditBackgroundPosition(e.target.value)}
-                  style={inputStyle}
-                >
-                  {BACKGROUND_POSITION_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  options={BACKGROUND_POSITION_OPTIONS}
+                />
               </div>
 
               {/* Profile Card Art - file upload + URL fallback */}
@@ -288,9 +283,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL…"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <button type="button" className="icon-btn icon-btn--sm icon-btn--danger" onClick={() => { setEditProfileCardArtUrl(""); handleProfileCardArtChange(null); }} title="Reset Profile Card Art">
+                  <Button variant="danger" size="icon" onClick={() => { setEditProfileCardArtUrl(""); handleProfileCardArtChange(null); }} title="Reset Profile Card Art">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
                 <input
                   type="file"
@@ -310,15 +305,15 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
 
             {editError && <div style={{ color: "var(--error-color)", padding: "0.5rem", background: "var(--error-bg)", borderRadius: "var(--radius-md)" }}>{editError}</div>}
 
-            <button
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               onClick={handleSave}
-              disabled={editSaving}
+              loading={editSaving}
+              iconLeft={editSaving ? <Loader size={16} className="spinning" /> : <Save size={16} />}
               style={{ alignSelf: "flex-start", marginTop: "1rem" }}
             >
-              {editSaving ? <Loader size={16} className="spinning" /> : <Save size={16} />}
-              <span style={{ marginLeft: "0.5rem" }}>Save Profile</span>
-            </button>
+              Save Profile
+            </Button>
           </div>
         </div>
       </section>
