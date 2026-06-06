@@ -718,7 +718,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
       )}
 
       {/* Lightbox preview */}
-      {selectedUpload && isImage(selectedUpload) && typeof document !== "undefined" && createPortal(
+      {selectedUpload && (isImage(selectedUpload) || isVideo(selectedUpload)) && typeof document !== "undefined" && createPortal(
         <div
           className="up-upload-lightbox"
           onClick={() => setSelectedUpload(null)}
@@ -727,7 +727,11 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
             className="up-upload-lightbox-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <img src={selectedUpload.url} alt={selectedUpload.filename} />
+            {isImage(selectedUpload) ? (
+              <img src={selectedUpload.url} alt={selectedUpload.filename} />
+            ) : (
+              <video src={selectedUpload.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '80vh', backgroundColor: '#000' }} />
+            )}
             <div className="up-upload-lightbox-bar">
               <span className="up-upload-lightbox-name">
                 {selectedUpload.filename}
