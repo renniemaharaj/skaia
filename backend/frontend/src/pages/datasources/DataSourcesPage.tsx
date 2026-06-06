@@ -206,7 +206,7 @@ export default function DataSourcesPage() {
       tableColumns={[
         {
           header: "Name",
-          width: "2fr",
+          width: "minmax(200px, 2fr)",
           className: "table-view__cell--bold",
           cell: (ds) => (
             <>
@@ -217,18 +217,18 @@ export default function DataSourcesPage() {
         },
         {
           header: "Description",
-          width: "3fr",
+          width: "minmax(250px, 3fr)",
           className: "table-view__cell--muted",
           cell: (ds) => ds.description || "—",
         },
         {
           header: "Creator",
-          width: "1.5fr",
+          width: "minmax(150px, 1.5fr)",
           cell: (ds) => <CreatorChip creator={ds.creator} />,
         },
         {
           header: "Updated",
-          width: "1fr",
+          width: "minmax(120px, 1fr)",
           className: "table-view__cell--muted",
           cell: (ds) => relativeTimeAgo(ds.updated_at),
         },

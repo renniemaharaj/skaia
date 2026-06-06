@@ -56,7 +56,7 @@ const ThreadsFeed = ({
           columns={[
             {
               header: "Thread",
-              width: "4fr",
+              width: "minmax(300px, 4fr)",
               className: "table-view__cell--bold",
               cell: (t) => (
                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '4px' }}>
@@ -82,7 +82,7 @@ const ThreadsFeed = ({
             },
             ...(showAuthor ? [{
               header: "Author",
-              width: "1.5fr",
+              width: "minmax(150px, 1.5fr)",
               cell: (t: FeedThread) => (
                 <div onClick={(e) => e.preventDefault()} style={{ display: "flex", alignItems: "center" }}>
                   <UserProfileOverlay
@@ -108,7 +108,7 @@ const ThreadsFeed = ({
             }] : []),
             {
               header: "Stats",
-              width: "2fr",
+              width: "minmax(180px, 2fr)",
               className: "table-view__cell--muted",
               cell: (t) => (
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -120,7 +120,7 @@ const ThreadsFeed = ({
             },
             {
               header: "Date",
-              width: "1fr",
+              width: "minmax(120px, 1fr)",
               className: "table-view__cell--muted",
               cell: (t) => formatDate(t.created_at)
             }

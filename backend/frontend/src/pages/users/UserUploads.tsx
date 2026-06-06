@@ -616,7 +616,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
             },
             {
               header: "File",
-              width: "3fr",
+              width: "minmax(250px, 3fr)",
               className: "table-view__cell--bold",
               cell: (u) => (
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", minWidth: 0, width: "100%" }} onClick={() => setSelectedUpload(u)}>
@@ -641,7 +641,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
             },
             {
               header: "Type",
-              width: "1fr",
+              width: "minmax(120px, 1fr)",
               className: "table-view__cell--muted",
               cell: (u) => (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", minWidth: 0, width: "100%" }}>
@@ -651,13 +651,13 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
             },
             {
               header: "Size",
-              width: "1fr",
+              width: "minmax(80px, 1fr)",
               className: "table-view__cell--muted",
               cell: (u) => formatSize(u.size),
             },
             {
               header: "Date",
-              width: "1.5fr",
+              width: "minmax(140px, 1.5fr)",
               className: "table-view__cell--muted",
               cell: (u) => formatDate(u.created_at),
             },

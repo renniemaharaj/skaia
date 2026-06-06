@@ -17,7 +17,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
-  min-width: 700px;
+  min-width: min-content;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -39,7 +39,7 @@
   font-size: 0.8125rem;
   transition: background 0.12s;
   align-items: center;
-  min-width: 700px;
+  min-width: min-content;
 }
 
 .table-view__row:last-child {

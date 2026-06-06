@@ -374,7 +374,7 @@ export default function CustomPages() {
         tableColumns={[
           {
             header: "Page",
-            width: "2fr",
+            width: "minmax(200px, 2fr)",
             className: "table-view__cell--bold",
             cell: (page) => (
               <>
@@ -411,18 +411,18 @@ export default function CustomPages() {
           },
           {
             header: "Description",
-            width: "3fr",
+            width: "minmax(250px, 3fr)",
             className: "table-view__cell--muted",
             cell: (page) => page.description || "—",
           },
           {
             header: "Owner",
-            width: "1.5fr",
+            width: "minmax(150px, 1.5fr)",
             cell: (page) => page.owner ? <UserChip user={page.owner} /> : <span className="cp-list__none">—</span>,
           },
           {
             header: "Updated",
-            width: "1fr",
+            width: "minmax(120px, 1fr)",
             className: "table-view__cell--muted",
             cell: (page) => relativeTimeAgo(page.updated_at),
           },
