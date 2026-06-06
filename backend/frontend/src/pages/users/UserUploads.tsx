@@ -450,6 +450,17 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
                 />
               </>
             )}
+            {filteredUploads.length > 0 && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                <input 
+                  type="checkbox" 
+                  className="up-checkbox"
+                  checked={selectedItems.size === filteredUploads.length && filteredUploads.length > 0} 
+                  onChange={toggleSelectAll} 
+                />
+                All
+              </label>
+            )}
             {selectedItems.size > 0 && canDelete && (
               <button
                 className="icon-btn icon-btn--danger"
