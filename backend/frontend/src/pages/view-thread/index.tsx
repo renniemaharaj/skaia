@@ -354,7 +354,9 @@ const ViewThreadPage = () => {
             }
           />
         </div>
-
+        <div className="view-thread-mobile-only">
+          <TableOfContentsTile htmlContent={currentThread.content} />
+        </div>
         <ThreadMediaViewer />
 
         {currentThread.is_shared && currentThread.original_thread && (
@@ -393,8 +395,12 @@ const ViewThreadPage = () => {
           
           {!readingMode && (
             <aside className="view-thread-sidebar">
-              <VoicePanel mediaOnly={true} />
-              <TableOfContentsTile htmlContent={currentThread.content} />
+              <div className="view-thread-desktop-only">
+                <VoicePanel mediaOnly={true} />
+              </div>
+              <div className="view-thread-desktop-only">
+                <TableOfContentsTile htmlContent={currentThread.content} />
+              </div>
               <RecentThreadsTile currentCategoryId={currentThread.category_id} currentThreadId={currentThread.id} />
               <ThreadUserTiles threadId={threadId!} type="likers" />
               <ThreadUserTiles threadId={threadId!} type="viewers" />

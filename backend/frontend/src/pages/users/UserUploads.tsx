@@ -53,9 +53,12 @@ interface Props {
   hideHeader?: boolean;
   externalViewMode?: "grid" | "list";
   externalSearch?: string;
+  externalUploads?: UserUpload[];
+  title?: React.ReactNode;
+  emptyMessage?: React.ReactNode;
 }
 
-const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, externalSearch }: Props) => {
+const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, externalSearch, externalUploads, title, emptyMessage }: Props) => {
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
 
@@ -75,6 +78,11 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchUploads = useCallback(async () => {
+    if (externalUploads) {
+      setUploads(externalUploads);
+      setLoading(false);
+      return;
+    }
     if (!userId) return;
     try {
       setLoading(true);
@@ -86,7 +94,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, externalUploads]);
 
   useEffect(() => {
     fetchUploads();
@@ -399,8 +407,8 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
             </div>
           </h2>
         )}
-        <StorageBar />
-        <p className="up-empty-hint">No uploads yet</p>
+        {!externalUploads && <StorageBar />}
+        {emptyMessage ? emptyMessage : <p className="up-empty-hint">No uploads yet</p>}
       </div>
     );
   }
@@ -417,11 +425,13 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
     <div className="up-uploads-section">
       {!hideHeader && (
         <h2 className="up-section-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <ImageIcon size={18} />
-            Uploads by {displayName}
-            <span className="up-uploads-count">{uploads.length}</span>
-          </div>
+          {title ? title : (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <ImageIcon size={18} />
+              Uploads by {displayName}
+              <span className="up-uploads-count">{uploads.length}</span>
+            </div>
+          )}
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             {isOwnProfile && (
               <>
@@ -476,7 +486,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
         </h2>
       )}
 
-      {!hideHeader && <StorageBar />}
+      {!hideHeader && !externalUploads && <StorageBar />}
 
       {viewMode === "grid" ? (
         <div className="up-uploads-scroll">

@@ -73,9 +73,21 @@
   width: 100%;
 }
 
+.view-thread-mobile-only {
+  display: none !important;
+}
+
 @media (max-width: 992px) {
   .view-thread-page {
     grid-template-columns: 1fr;
+  }
+  
+  .view-thread-desktop-only {
+    display: none !important;
+  }
+  
+  .view-thread-mobile-only {
+    display: block !important;
   }
 }
 
