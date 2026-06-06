@@ -15,7 +15,7 @@ export default function UserUploadsDirectory() {
 
   useEffect(() => {
     if (!userId) return;
-    apiRequest(`/users/${userId}/profile`)
+    apiRequest(`/users/${userId}`)
       .then((data: any) => {
         if (data) {
           setUser(data);
