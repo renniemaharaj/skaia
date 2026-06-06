@@ -499,6 +499,24 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
 
       {!hideHeader && !externalUploads && <StorageBar />}
 
+      <div style={{ 
+        backgroundColor: "var(--bg-tertiary)", 
+        color: "var(--text-secondary)", 
+        padding: "12px 16px", 
+        borderRadius: "8px", 
+        display: "flex", 
+        gap: "12px", 
+        alignItems: "flex-start", 
+        marginBottom: "16px", 
+        fontSize: "13px",
+        border: "1px solid var(--border-subtle)"
+      }}>
+        <AlertCircle size={16} style={{ flexShrink: 0, marginTop: "2px", color: "var(--text-warning)" }} />
+        <div style={{ lineHeight: "1.5" }}>
+          <strong>Disclaimer:</strong> This platform is not liable for what is uploaded by users. Please only download files from trusted users. Additionally, please report any non-conforming content to the site's forum.
+        </div>
+      </div>
+
       {viewMode === "grid" ? (
         <div className="up-uploads-scroll">
           <div className="up-uploads-grid">
