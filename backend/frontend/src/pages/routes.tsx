@@ -79,5 +79,5 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "forgot-password", element: <ForgotPasswordPage /> },
   { path: "reset-password", element: <ResetPasswordPage /> },
   { path: "visualizer", element: <VisualizerPage /> },
-  { path: "uploads/:userId", element: <UserUploadsDirectory /> },
+  { path: "directory/:userId", element: <UserUploadsDirectory /> },
 ];

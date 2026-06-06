@@ -450,7 +450,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
               </button>
             )}
             <Link
-              to={`/uploads/${userId}`}
+              to={`/directory/${userId}`}
               className="icon-btn icon-btn--subtle"
               title="Open Full Directory"
             >
@@ -619,7 +619,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
               width: "3fr",
               className: "table-view__cell--bold",
               cell: (u) => (
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => setSelectedUpload(u)}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", minWidth: 0, width: "100%" }} onClick={() => setSelectedUpload(u)}>
                   {isImage(u) ? (
                     <div style={{ width: "32px", height: "32px", borderRadius: "4px", overflow: "hidden", flexShrink: 0 }}>
                       <img src={u.url} alt={u.filename} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -644,8 +644,8 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
               width: "1fr",
               className: "table-view__cell--muted",
               cell: (u) => (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                  {getTypeIcon(u)} {getTypeLabel(u.type)}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", minWidth: 0, width: "100%" }}>
+                  {getTypeIcon(u)} <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getTypeLabel(u.type)}</span>
                 </span>
               ),
             },
