@@ -205,7 +205,7 @@ export default function RolesManagementPage() {
     if (!createName.trim()) return;
     setCreating(true);
     try {
-      const role = await apiRequest<Role>("/roles", {
+      const role = await apiRequest<Role>("/users/roles", {
         method: "POST",
         body: JSON.stringify({
           name: createName.trim(),
