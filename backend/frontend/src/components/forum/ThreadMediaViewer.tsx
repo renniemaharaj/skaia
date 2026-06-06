@@ -8,7 +8,7 @@ import UserUploads from "../../pages/users/UserUploads";
 
 interface ParsedMedia {
   url: string;
-  type: "images" | "videos";
+  type: "images" | "videos" | "file";
 }
 
 interface MediaMeta {
@@ -38,11 +38,22 @@ const ThreadMediaViewer = () => {
     });
 
     // Extract videos
-    const videos = doc.querySelectorAll("video");
+    const videos = doc.querySelectorAll("video, iframe");
     videos.forEach((video) => {
       const src = video.getAttribute("src") || video.querySelector("source")?.getAttribute("src");
-      if (src) {
+      // If it's an iframe, we only want internal uploads. If it's a video tag, we can take it.
+      if (src && (src.startsWith("/uploads/") || video.tagName.toLowerCase() === "video")) {
         items.push({ url: src, type: "videos" });
+      }
+    });
+
+    // Extract attachments
+    const attachments = doc.querySelectorAll(".attachment, [data-type='attachment']");
+    attachments.forEach((attachment) => {
+      const a = attachment.querySelector("a");
+      const url = a?.getAttribute("href") || attachment.getAttribute("data-url") || attachment.getAttribute("src");
+      if (url && url !== "#") {
+        items.push({ url, type: "file" });
       }
     });
 
@@ -75,7 +86,7 @@ const ThreadMediaViewer = () => {
         filename: m.url.split('/').pop() || m.url,
         size: meta?.size || 0,
         type: m.type,
-        mime_type: m.type === "images" ? "image/jpeg" : "video/mp4",
+        mime_type: m.type === "images" ? "image/jpeg" : m.type === "videos" ? "video/mp4" : "application/octet-stream",
         created_at: meta?.date || new Date().toISOString(),
       };
     });
