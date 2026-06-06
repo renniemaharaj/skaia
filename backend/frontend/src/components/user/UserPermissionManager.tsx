@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import SearchField from "../ui/SearchField";
+import UserAvatar from "./UserAvatar";
+import UserProfileOverlay from "./UserProfileOverlay";
 import "./UserPermissionManager.css";
 
 interface User {
@@ -9,6 +11,7 @@ interface User {
   username: string;
   email: string;
   display_name: string;
+  avatar_url: string;
   permissions: string[];
 }
 
@@ -199,11 +202,23 @@ const UserPermissionManager: React.FC = () => {
               key={user.id}
               className="card card--interactive card--compact upm-user-card"
             >
-              <div className="upm-user-info">
-                <div className="upm-user-name">
-                  {user.display_name || user.username}
+              <div className="upm-user-info" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url}>
+                  <div style={{ cursor: "pointer" }}>
+                    <UserAvatar 
+                      src={user.avatar_url} 
+                      alt={user.display_name || user.username} 
+                      size={40} 
+                      initials={(user.display_name || user.username)[0]?.toUpperCase()}
+                    />
+                  </div>
+                </UserProfileOverlay>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div className="upm-user-name">
+                    {user.display_name || user.username}
+                  </div>
+                  <div className="upm-user-email">{user.email}</div>
                 </div>
-                <div className="upm-user-email">{user.email}</div>
                 <div className="upm-user-perms">
                   {(user.permissions?.length ?? 0) > 0 ? (
                     <span className="upm-perm-count">
@@ -239,10 +254,16 @@ const UserPermissionManager: React.FC = () => {
             className="upm-dialog card card--outlined"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="upm-dialog-header">
-              <div>
-                <h3>{selectedUser.display_name || selectedUser.username}</h3>
-                <p>{selectedUser.email}</p>
+            <div className="upm-dialog-header" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <UserAvatar 
+                src={selectedUser.avatar_url} 
+                alt={selectedUser.display_name || selectedUser.username} 
+                size={48} 
+                initials={(selectedUser.display_name || selectedUser.username)[0]?.toUpperCase()}
+              />
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: "18px" }}>{selectedUser.display_name || selectedUser.username}</h3>
+                <p style={{ margin: "4px 0 0 0", color: "var(--text-secondary)", fontSize: "14px" }}>{selectedUser.email}</p>
               </div>
               <button
                 className="upm-dialog-close"
