@@ -8,8 +8,9 @@ type Role struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	PowerLevel  int       `json:"power_level"`
-	Permissions []string  `json:"permissions,omitempty"`
-	ThemeColor  *string   `json:"theme_color,omitempty"`
-	GlowColor   *string   `json:"glow_color,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	Permissions  []string  `json:"permissions,omitempty"`
+	ThemeColor   *string   `json:"theme_color,omitempty"`
+	GlowColor    *string   `json:"glow_color,omitempty"`
+	StorageBonus int64     `json:"storage_bonus"`
+	CreatedAt    time.Time `json:"created_at"`
 }

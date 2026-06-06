@@ -1,11 +1,20 @@
 import { useAtom } from "jotai";
+import { Link } from "react-router-dom";
 import { physicsSettingsAtom } from "../../../atoms/physics";
 import {
   defaultSettings,
   type PhysicsSettings,
 } from "../../../components/ui/GravityParticles/engine";
 
-const Section = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => (
+const Section = ({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => (
   <details className="pp-physics-section" open={defaultOpen}>
     <summary className="pp-physics-section-title">{title}</summary>
     <div className="pp-physics-section-content">{children}</div>
@@ -30,25 +39,43 @@ const PhysicsControls = () => {
     <div className="pp-physics-controls">
       <Section title="Renderer" defaultOpen>
         <div className="pp-physics-control">
-          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+          <label
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "1rem",
+            }}
+          >
             <span>Style</span>
             <select
               value={settings.rendererType}
               onChange={(e) =>
-                updateSetting("rendererType", e.target.value as PhysicsSettings["rendererType"])
+                updateSetting(
+                  "rendererType",
+                  e.target.value as PhysicsSettings["rendererType"],
+                )
               }
               className="pp-physics-select"
             >
               <option value="default">Default Gravity</option>
               <option value="center-anchored">Center Anchored System</option>
-              <option value="text" disabled>Text Swarm (Not Ready)</option>
+              <option value="text" disabled>
+                Text Swarm (Not Ready)
+              </option>
             </select>
           </label>
         </div>
-        
+
         {settings.rendererType === "text" && (
           <div className="pp-physics-control">
-            <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <span>Text</span>
               <input
                 type="text"
@@ -240,12 +267,21 @@ const PhysicsControls = () => {
         </div>
 
         <div className="pp-physics-control">
-          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <label
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <span>Cursor Mode</span>
             <select
               value={settings.cursorMode}
               onChange={(e) =>
-                updateSetting("cursorMode", e.target.value as PhysicsSettings["cursorMode"])
+                updateSetting(
+                  "cursorMode",
+                  e.target.value as PhysicsSettings["cursorMode"],
+                )
               }
               className="pp-physics-select"
             >
@@ -288,7 +324,9 @@ const PhysicsControls = () => {
             <input
               type="checkbox"
               checked={settings.particlesAreAlive}
-              onChange={(e) => updateSetting("particlesAreAlive", e.target.checked)}
+              onChange={(e) =>
+                updateSetting("particlesAreAlive", e.target.checked)
+              }
               style={{ width: "auto", margin: 0 }}
             />
           </label>
@@ -296,6 +334,26 @@ const PhysicsControls = () => {
       </Section>
 
       <Section title="Visuals">
+        <div className="pp-physics-control pp-physics-checkbox">
+          <label
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              display: "flex",
+            }}
+          >
+            <span>Audio Visualization</span>
+            <input
+              type="checkbox"
+              checked={settings.audioVisualization}
+              onChange={(e) =>
+                updateSetting("audioVisualization", e.target.checked)
+              }
+              style={{ width: "auto", margin: 0 }}
+            />
+          </label>
+        </div>
         <div className="pp-physics-control">
           <label>
             <span>Trail Length</span>
@@ -326,6 +384,14 @@ const PhysicsControls = () => {
       >
         Reset to Defaults
       </button>
+
+      <Link
+        to="/visualizer"
+        className="btn btn-sm"
+        style={{ marginTop: "10px", textAlign: "center" }}
+      >
+        Open Fullscreen Visualizer
+      </Link>
     </div>
   );
 };

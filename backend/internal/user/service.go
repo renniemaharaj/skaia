@@ -197,13 +197,13 @@ func (s *Service) GetRoleByID(id int64) (*models.Role, error) {
 }
 
 // CreateRole creates a new role.
-func (s *Service) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
-	return s.repo.CreateRole(name, description, powerLevel, themeColor, glowColor)
+func (s *Service) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
+	return s.repo.CreateRole(name, description, powerLevel, themeColor, glowColor, storageBonus)
 }
 
 // UpdateRole updates an existing role's attributes.
-func (s *Service) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
-	return s.repo.UpdateRole(id, name, description, powerLevel, themeColor, glowColor)
+func (s *Service) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
+	return s.repo.UpdateRole(id, name, description, powerLevel, themeColor, glowColor, storageBonus)
 }
 
 // DeleteRole deletes a role by ID.

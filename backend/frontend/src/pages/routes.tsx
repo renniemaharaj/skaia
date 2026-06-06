@@ -24,6 +24,8 @@ import ActivityPage from "./activity/index.tsx";
 import VerifyEmailPage from "./verify-email/index.tsx";
 import ForgotPasswordPage from "./forgot-password/index.tsx";
 import ResetPasswordPage from "./reset-password/index.tsx";
+import VisualizerPage from "./visualizer/index.tsx";
+import UserUploadsDirectory from "./users/UserUploadsDirectory.tsx";
 
 import SettingsPage from "./settings/index.tsx";
 
@@ -76,4 +78,6 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "verify-email", element: <VerifyEmailPage /> },
   { path: "forgot-password", element: <ForgotPasswordPage /> },
   { path: "reset-password", element: <ResetPasswordPage /> },
+  { path: "visualizer", element: <VisualizerPage /> },
+  { path: "uploads/:userId", element: <UserUploadsDirectory /> },
 ];

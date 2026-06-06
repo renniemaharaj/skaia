@@ -24,7 +24,6 @@ import (
 const (
 	uploadsDir  = "./uploads"
 	usersDir    = uploadsDir + "/users"
-	maxFileSize = 10 * 1024 * 1024 // 10 MB
 )
 
 // userContentDir returns (and creates) ./uploads/users/{userID}/{subdir}.

@@ -40,6 +40,7 @@ export interface DirectoryLayoutProps<T> {
   listHeader?: ReactNode;
 
   customListContent?: ReactNode;
+  customGridContent?: ReactNode;
 
   // View mode
   viewMode?: ViewMode;
@@ -65,6 +66,7 @@ export function DirectoryLayout<T>({
   renderListRow,
   listHeader,
   customListContent,
+  customGridContent,
   viewMode = "grid",
   onViewModeChange,
   emptyState,
@@ -127,7 +129,7 @@ export function DirectoryLayout<T>({
         </div>
       )}
 
-      {items.length === 0 && !prependGridCard && emptyState ? (
+      {items?.length === 0 && !prependGridCard && emptyState ? (
         <div className="directory-layout__empty-container">{emptyState}</div>
       ) : isList ? (
         customListContent ? (
@@ -136,7 +138,7 @@ export function DirectoryLayout<T>({
           <div className="directory-layout__list">
             {tableColumns ? (
               <TableView
-                data={items}
+                data={items || []}
                 columns={tableColumns}
                 renderRowWrapper={renderRowWrapper}
                 rowKey={(_item, i) => i}
@@ -148,15 +150,17 @@ export function DirectoryLayout<T>({
                     {listHeader}
                   </div>
                 )}
-                {items.map((item, index) => renderListRow!(item, index))}
+                {items?.map((item, index) => renderListRow!(item, index))}
               </>
             )}
           </div>
         )
+      ) : customGridContent ? (
+        customGridContent
       ) : (
         <div className="directory-layout__grid">
           {prependGridCard}
-          {items.map((item, index) => renderGridCard(item, index))}
+          {items?.map((item, index) => renderGridCard!(item, index))}
         </div>
       )}
     </div>

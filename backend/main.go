@@ -158,10 +158,10 @@ func main() {
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher),
-		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 15)) * time.Second,
+		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 3600)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 15)) * time.Second,
-		IdleTimeout:       time.Duration(envInt("HTTP_IDLE_TIMEOUT_SEC", 60)) * time.Second,
+		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 3600)) * time.Second,
+		IdleTimeout:       time.Duration(envInt("HTTP_IDLE_TIMEOUT_SEC", 120)) * time.Second,
 	}
 
 	go func() {

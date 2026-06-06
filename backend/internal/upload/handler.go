@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"database/sql"
+	"github.com/skaia/backend/database"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/internal/utils"
@@ -68,27 +70,47 @@ func DirSize(path string) (int64, error) {
 	return total, err
 }
 
+// GetUserStorageLimit calculates the user's max storage limit, including any bonus from their roles.
+func GetUserStorageLimit(userID int64) int64 {
+	baseLimit := MaxUploadPerUser
+	if baseLimit <= 0 {
+		return 0 // unlimited
+	}
+	var bonus sql.NullInt64
+	err := database.DB.QueryRow(`
+		SELECT MAX(r.storage_bonus)
+		FROM roles r
+		JOIN user_roles ur ON r.id = ur.role_id
+		WHERE ur.user_id = $1
+	`, userID).Scan(&bonus)
+	if err == nil && bonus.Valid {
+		return baseLimit + bonus.Int64
+	}
+	return baseLimit
+}
+
 // CheckUserQuota returns an error string if the user would exceed their per-user quota.
-func CheckUserQuota(userID int64) string {
-	if MaxUploadPerUser <= 0 {
+func CheckUserQuota(userID int64, additional int64) string {
+	limit := GetUserStorageLimit(userID)
+	if limit <= 0 {
 		return ""
 	}
 	dir := filepath.Join(UsersDir, strconv.FormatInt(userID, 10))
 	used, _ := DirSize(dir)
-	if used >= MaxUploadPerUser {
-		return fmt.Sprintf("upload quota exceeded (used %s of %s)",
-			humanSize(used), humanSize(MaxUploadPerUser))
+	if used+additional > limit {
+		return fmt.Sprintf("upload quota exceeded (used %s of %s, trying to add %s)",
+			humanSize(used), humanSize(limit), humanSize(additional))
 	}
 	return ""
 }
 
 // CheckTotalQuota returns an error string if the backend-wide quota would be exceeded.
-func CheckTotalQuota() string {
+func CheckTotalQuota(additional int64) string {
 	if MaxUploadTotal <= 0 {
 		return ""
 	}
 	used, _ := DirSize(UploadsDir)
-	if used >= MaxUploadTotal {
+	if used+additional > MaxUploadTotal {
 		return fmt.Sprintf("backend storage limit reached (%s of %s)",
 			humanSize(used), humanSize(MaxUploadTotal))
 	}
@@ -115,18 +137,20 @@ func GetStorageInfo(userID int64) StorageInfo {
 	userUsed, _ := DirSize(userDir)
 	totalUsed, _ := DirSize(UploadsDir)
 
+	userLimit := GetUserStorageLimit(userID)
+
 	info := StorageInfo{
 		UserUsed:    userUsed,
-		UserLimit:   MaxUploadPerUser,
+		UserLimit:   userLimit,
 		TotalUsed:   totalUsed,
 		TotalLimit:  MaxUploadTotal,
 		UserHuman:   humanSize(userUsed),
-		UserLimitH:  humanSize(MaxUploadPerUser),
+		UserLimitH:  humanSize(userLimit),
 		TotalHuman:  humanSize(totalUsed),
 		TotalLimitH: humanSize(MaxUploadTotal),
 	}
-	if MaxUploadPerUser > 0 {
-		info.UserPercent = float64(userUsed) / float64(MaxUploadPerUser) * 100
+	if userLimit > 0 {
+		info.UserPercent = float64(userUsed) / float64(userLimit) * 100
 	}
 	if MaxUploadTotal > 0 {
 		info.TotalPercent = float64(totalUsed) / float64(MaxUploadTotal) * 100
@@ -206,6 +230,9 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Post("/upload/video", h.uploadVideo)
 		r.Post("/upload/file", h.uploadFile)
 		r.Post("/upload/banner", h.uploadBanner)
+		r.Post("/upload/chunked/init", h.InitChunked)
+		r.Post("/upload/chunked/upload/{uploadID}", h.UploadChunk)
+		r.Post("/upload/chunked/complete/{uploadID}", h.CompleteChunked)
 	})
 }
 
@@ -230,16 +257,16 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := CheckUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := CheckTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(MaxImgSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
 		return
@@ -252,6 +279,15 @@ func (h *Handler) uploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	ct := detectContentType(file, header)
 	if !typeAllowed(ct, AllowedImageTypes) {
@@ -295,16 +331,16 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := CheckUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := CheckTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(MaxFileSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
 		return
@@ -317,6 +353,15 @@ func (h *Handler) uploadVideo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	ct := detectContentType(file, header)
 	if !typeAllowed(ct, AllowedVideoTypes) {
@@ -360,16 +405,16 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := CheckUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := CheckTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(MaxFileSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
 		return
@@ -382,6 +427,15 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	dir, err := userDir(userID, "files")
 	if err != nil {
@@ -425,16 +479,16 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := CheckUserQuota(userID); msg != "" {
+	if msg := CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := CheckTotalQuota(); msg != "" {
+	if msg := CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(MaxImgSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"error": "failed to parse form"})
 		return
@@ -447,6 +501,15 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	ct := detectContentType(file, header)
 	if !typeAllowed(ct, AllowedImageTypes) {

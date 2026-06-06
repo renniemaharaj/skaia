@@ -134,6 +134,44 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
     }
     particlesRef.current = particles;
 
+    // Audio Visualization Setup
+    let audioCtx: AudioContext | null = null;
+    let analyser: AnalyserNode | null = null;
+    let dataArray: Uint8Array | null = null;
+    let stream: MediaStream | null | "pending" = null;
+    let isAudioActive = false;
+
+    const setupAudio = async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = s;
+        audioCtx = new AudioContext();
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        isAudioActive = true;
+      } catch (err) {
+        console.error("Audio capture failed", err);
+        stream = null;
+      }
+    };
+
+    const cleanupAudio = () => {
+      isAudioActive = false;
+      if (stream && stream !== "pending") {
+        stream.getTracks().forEach(t => t.stop());
+      }
+      stream = null;
+      if (audioCtx) {
+        audioCtx.close().catch(() => {});
+        audioCtx = null;
+      }
+      analyser = null;
+      dataArray = null;
+    };
+
     let animationFrameId: number;
     let frameCount = 0;
 
@@ -141,11 +179,45 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       frameCount++;
       ctx.clearRect(0, 0, width, height);
 
+      if (settingsRef.current.audioVisualization && !isAudioActive && !stream) {
+        stream = "pending";
+        setupAudio();
+      } else if (!settingsRef.current.audioVisualization && isAudioActive) {
+        cleanupAudio();
+      }
+
+      const currentSettings = { ...settingsRef.current };
+
+      if (isAudioActive && analyser && dataArray) {
+        analyser.getByteFrequencyData(dataArray as any);
+        
+        let bassSum = 0;
+        for (let i = 0; i < 5; i++) { bassSum += dataArray[i]; }
+        const bass = bassSum / (5 * 255);
+        
+        let highSum = 0;
+        const half = Math.floor(dataArray.length / 2);
+        for (let i = half; i < dataArray.length; i++) { highSum += dataArray[i]; }
+        const highs = highSum / ((dataArray.length - half) * 255);
+        
+        // Map gravity to bass
+        currentSettings.gravityConstant = settingsRef.current.gravityConstant * (1 + bass * 15);
+        
+        // Map highs to velocity
+        if (highs > 0.05) {
+          const kick = highs * 10;
+          for (const p of particlesRef.current) {
+            p.vx += (Math.random() - 0.5) * kick;
+            p.vy += (Math.random() - 0.5) * kick;
+          }
+        }
+      }
+
       // Step physics via engine logic
       const { nextParts, newExplosions } = stepPhysics(
         particlesRef.current,
         explosionsRef.current,
-        settingsRef.current,
+        currentSettings,
         externalCursorsRef.current,
         grabbedParticleRef.current,
         mousePosRef.current,
@@ -187,6 +259,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       window.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('mouseout', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
+      cleanupAudio();
     };
   }, [particleCount]);
 

@@ -40,8 +40,8 @@ type Repository interface {
 	GetSuperuserDemotionStatus(targetID int64) (*SuperuserDemotionStatus, error)
 
 	// Role CRUD
-	CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error)
-	UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error)
+	CreateRole(name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error)
+	UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error)
 	DeleteRole(id int64) error
 	GetRoleByID(id int64) (*models.Role, error)
 	GetRolePermissions(roleID int64) ([]*models.Permission, error)

@@ -1,5 +1,6 @@
 import { customConfirm } from "../../components/ui/Prompt";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useAtomValue } from "jotai";
 import {
   ImageIcon,
@@ -10,10 +11,19 @@ import {
   FileIcon,
   AlertCircle,
   X,
+  Download,
+  LayoutGrid,
+  List,
+  ExternalLink,
+  Upload,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
+import { uploader } from "../../atoms/uploadAtom";
+import { TableView } from "../../components/ui/TableView/TableView";
 import "../../components/forum/ThreadActions.css";
+import "../page/layout/templates/DirectoryLayout.css";
 
 interface UserUpload {
   url: string;
@@ -40,9 +50,12 @@ interface UserStorageInfo {
 interface Props {
   userId: string | undefined;
   displayName: string;
+  hideHeader?: boolean;
+  externalViewMode?: "grid" | "list";
+  externalSearch?: string;
 }
 
-const UserUploads = ({ userId, displayName }: Props) => {
+const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, externalSearch }: Props) => {
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
 
@@ -56,7 +69,10 @@ const UserUploads = ({ userId, displayName }: Props) => {
   const [deletingSet, setDeletingSet] = useState<Set<string>>(new Set());
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [selectedUpload, setSelectedUpload] = useState<UserUpload | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [lastSelectedUrl, setLastSelectedUrl] = useState<string | null>(null);
   const [storageInfo, setStorageInfo] = useState<UserStorageInfo | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchUploads = useCallback(async () => {
     if (!userId) return;
@@ -112,6 +128,11 @@ const UserUploads = ({ userId, displayName }: Props) => {
         });
         setUploads((prev) => prev.filter((u) => u.url !== url));
         if (selectedUpload?.url === url) setSelectedUpload(null);
+        setSelectedItems((prev) => {
+          const next = new Set(prev);
+          next.delete(url);
+          return next;
+        });
       } catch {
         alert("Failed to delete upload");
       } finally {
@@ -125,6 +146,82 @@ const UserUploads = ({ userId, displayName }: Props) => {
     [selectedUpload],
   );
 
+  const handleMultiDelete = async () => {
+    const urls = Array.from(selectedItems);
+    if (urls.length === 0) return;
+    if (!await customConfirm(`Delete ${urls.length} upload(s) permanently?`)) return;
+
+    const deleting = new Set(urls);
+    setDeletingSet((prev) => new Set([...prev, ...deleting]));
+
+    try {
+      await apiRequest("/upload/file", {
+        method: "DELETE",
+        body: JSON.stringify({ urls }),
+      });
+      setUploads((prev) => prev.filter((u) => !deleting.has(u.url)));
+      if (selectedUpload && deleting.has(selectedUpload.url)) setSelectedUpload(null);
+      setSelectedItems(new Set());
+    } catch {
+      alert("Failed to delete uploads");
+    } finally {
+      setDeletingSet((prev) => {
+        const next = new Set(prev);
+        for (const url of deleting) next.delete(url);
+        return next;
+      });
+    }
+  };
+
+  const handleSelect = useCallback((url: string, e?: React.MouseEvent | React.ChangeEvent) => {
+    e?.stopPropagation();
+    
+    // Determine the active list
+    const filtered = externalSearch
+      ? uploads.filter((u) => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
+      : uploads;
+
+    setSelectedItems((prev) => {
+      const next = new Set(prev);
+      const isShift = (e as React.MouseEvent)?.shiftKey;
+      const isCtrl = (e as React.MouseEvent)?.ctrlKey || (e as React.MouseEvent)?.metaKey;
+      
+      if (isShift && lastSelectedUrl) {
+        const allUrls = filtered.map(u => u.url);
+        const startIdx = allUrls.indexOf(lastSelectedUrl);
+        const endIdx = allUrls.indexOf(url);
+        if (startIdx !== -1 && endIdx !== -1) {
+          const min = Math.min(startIdx, endIdx);
+          const max = Math.max(startIdx, endIdx);
+          for (let i = min; i <= max; i++) {
+            next.add(allUrls[i]);
+          }
+        }
+      } else if (isCtrl || e?.type === "change") {
+        if (next.has(url)) next.delete(url);
+        else next.add(url);
+        setLastSelectedUrl(url);
+      } else {
+        if (next.has(url)) next.delete(url);
+        else next.add(url);
+        setLastSelectedUrl(url);
+      }
+      return next;
+    });
+  }, [uploads, externalSearch, lastSelectedUrl]);
+
+  const toggleSelectAll = () => {
+    const filtered = externalSearch
+      ? uploads.filter((u) => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
+      : uploads;
+      
+    if (selectedItems.size === filtered.length && filtered.length > 0) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(filtered.map(u => u.url)));
+    }
+  };
+
   const handleCopyUrl = useCallback((url: string) => {
     const fullUrl = `${window.location.origin}${url}`;
     navigator.clipboard.writeText(fullUrl).then(() => {
@@ -132,6 +229,24 @@ const UserUploads = ({ userId, displayName }: Props) => {
       setTimeout(() => setCopiedUrl(null), 2000);
     });
   }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    try {
+      setLoading(true);
+      await uploader.upload(file);
+      fetchUploads();
+      fetchStorage();
+    } catch (err: any) {
+      setError(err.message || "Failed to upload file");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -212,17 +327,25 @@ const UserUploads = ({ userId, displayName }: Props) => {
     );
   };
 
-  // Filter to only show images/media by default
-  const imageUploads = uploads.filter((u) => isImage(u) || isVideo(u));
-  const fileUploads = uploads.filter((u) => !isImage(u) && !isVideo(u));
+
+  const [internalViewMode, setInternalViewMode] = useState<"grid" | "list">("grid");
+  const viewMode = externalViewMode || internalViewMode;
+  const setViewMode = (m: "grid" | "list") => setInternalViewMode(m);
+
+  // Filter uploads by search
+  const filteredUploads = externalSearch
+    ? uploads.filter((u) => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
+    : uploads;
 
   if (loading) {
     return (
       <div className="up-uploads-section">
-        <h2 className="up-section-heading">
-          <ImageIcon size={18} />
-          Uploads
-        </h2>
+        {!hideHeader && (
+          <h2 className="up-section-heading">
+            <ImageIcon size={18} />
+            Uploads
+          </h2>
+        )}
         <div className="up-uploads-loading">
           <span className="up-spinner" /> Loading uploads…
         </div>
@@ -233,10 +356,12 @@ const UserUploads = ({ userId, displayName }: Props) => {
   if (error) {
     return (
       <div className="up-uploads-section">
-        <h2 className="up-section-heading">
-          <ImageIcon size={18} />
-          Uploads
-        </h2>
+        {!hideHeader && (
+          <h2 className="up-section-heading">
+            <ImageIcon size={18} />
+            Uploads
+          </h2>
+        )}
         <p className="up-uploads-error">
           <AlertCircle size={14} /> {error}
         </p>
@@ -247,46 +372,153 @@ const UserUploads = ({ userId, displayName }: Props) => {
   if (uploads.length === 0) {
     return (
       <div className="up-uploads-section">
-        <h2 className="up-section-heading">
-          <ImageIcon size={18} />
-          Uploads by {displayName}
-        </h2>
+        {!hideHeader && (
+          <h2 className="up-section-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <ImageIcon size={18} />
+              Uploads by {displayName}
+            </div>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              {isOwnProfile && (
+                <>
+                  <button
+                    className="icon-btn icon-btn--subtle"
+                    title="Upload File"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={16} />
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    onChange={handleFileUpload}
+                  />
+                </>
+              )}
+            </div>
+          </h2>
+        )}
         <StorageBar />
         <p className="up-empty-hint">No uploads yet</p>
       </div>
     );
   }
 
+  const handleDownload = (u: UserUpload, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const a = document.createElement("a");
+    a.href = u.url;
+    a.download = u.filename;
+    a.click();
+  };
+
   return (
     <div className="up-uploads-section">
-      <h2 className="up-section-heading">
-        <ImageIcon size={18} />
-        Uploads by {displayName}
-        <span className="up-uploads-count">{uploads.length}</span>
-      </h2>
+      {!hideHeader && (
+        <h2 className="up-section-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <ImageIcon size={18} />
+            Uploads by {displayName}
+            <span className="up-uploads-count">{uploads.length}</span>
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            {isOwnProfile && (
+              <>
+                <button
+                  className="icon-btn icon-btn--subtle"
+                  title="Upload File"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload size={16} />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: "none" }}
+                  onChange={handleFileUpload}
+                />
+              </>
+            )}
+            {selectedItems.size > 0 && canDelete && (
+              <button
+                className="icon-btn icon-btn--danger"
+                title={`Delete ${selectedItems.size} selected items`}
+                onClick={handleMultiDelete}
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            <Link
+              to={`/uploads/${userId}`}
+              className="icon-btn icon-btn--subtle"
+              title="Open Full Directory"
+            >
+              <ExternalLink size={16} />
+            </Link>
+            <div className="directory-layout__view-toggle">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "grid" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                title="Grid view"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "list" ? "icon-btn--active" : "icon-btn--subtle"}`}
+                title="List view"
+              >
+                <List size={16} />
+              </button>
+            </div>
+          </div>
+        </h2>
+      )}
 
-      <StorageBar />
+      {!hideHeader && <StorageBar />}
 
-      {/* Image/Video grid */}
-      {imageUploads.length > 0 && (
+      {viewMode === "grid" ? (
         <div className="up-uploads-scroll">
           <div className="up-uploads-grid">
-            {imageUploads.map((u) => (
+            {filteredUploads.map((u) => (
               <div
                 key={u.url}
-                className={`up-upload-card${deletingSet.has(u.url) ? " up-upload-deleting" : ""}${selectedUpload?.url === u.url ? " up-upload-selected" : ""}`}
+                className={`up-upload-card${deletingSet.has(u.url) ? " up-upload-deleting" : ""}${selectedUpload?.url === u.url ? " up-upload-selected" : ""}${selectedItems.has(u.url) ? " up-upload-checked" : ""}`}
+                onClick={(e) => {
+                  if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                    handleSelect(u.url, e);
+                  } else {
+                    setSelectedUpload(selectedUpload?.url === u.url ? null : u);
+                  }
+                }}
               >
                 <div
                   className="up-upload-thumb"
-                  onClick={() =>
-                    setSelectedUpload(selectedUpload?.url === u.url ? null : u)
-                  }
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "var(--bg-tertiary)",
+                    position: "relative"
+                  }}
                 >
+                  <div style={{ position: "absolute", top: "8px", left: "8px", zIndex: 10 }}>
+                    <input 
+                      type="checkbox" 
+                      className="up-checkbox"
+                      checked={selectedItems.has(u.url)} 
+                      onChange={(e) => handleSelect(u.url, e)} 
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                   {isImage(u) ? (
                     <img src={u.url} alt={u.filename} loading="lazy" />
                   ) : isVideo(u) ? (
                     <video src={u.url} muted preload="metadata" />
-                  ) : null}
+                  ) : (
+                    <FileIcon size={32} color="var(--text-tertiary)" />
+                  )}
                   <span className="up-upload-type-badge">
                     {getTypeIcon(u)} {getTypeLabel(u.type)}
                   </span>
@@ -302,6 +534,13 @@ const UserUploads = ({ userId, displayName }: Props) => {
                 </div>
 
                 <div className="thread-actions">
+                  <button
+                    className="thread-action-btn view-btn"
+                    title="Download"
+                    onClick={(e) => handleDownload(u, e)}
+                  >
+                    <Download size={14} />
+                  </button>
                   <button
                     className="thread-action-btn copy-btn"
                     title="Copy URL"
@@ -334,36 +573,113 @@ const UserUploads = ({ userId, displayName }: Props) => {
             ))}
           </div>
         </div>
-      )}
-
-      {/* File list */}
-      {fileUploads.length > 0 && (
-        <>
-          <h3 className="up-uploads-subheading">Files</h3>
-          <div className="up-uploads-file-list">
-            {fileUploads.map((u) => (
-              <div
-                key={u.url}
-                className={`up-upload-file-row${deletingSet.has(u.url) ? " up-upload-deleting" : ""}`}
-              >
-                <FileIcon size={16} className="up-upload-file-icon" />
-                <a
-                  href={u.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="up-upload-file-name"
-                  title={u.filename}
-                >
-                  {u.filename}
-                </a>
-                <span className="up-upload-file-meta">
-                  {formatSize(u.size)} · {formatDate(u.created_at)}
+      ) : (
+        <TableView<UserUpload>
+          data={filteredUploads}
+          renderRowWrapper={(u, _i, rowProps, cells) => (
+            <div 
+              key={u.url} 
+              {...rowProps} 
+              className={`${rowProps.className}${selectedItems.has(u.url) ? ' up-upload-checked' : ''}${deletingSet.has(u.url) ? ' up-upload-deleting' : ''}`}
+              onClick={(e) => {
+                if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                  handleSelect(u.url, e);
+                } else {
+                  setSelectedUpload(u);
+                }
+              }}
+            >
+              {cells}
+            </div>
+          )}
+          columns={[
+            {
+              header: (
+                <input 
+                  type="checkbox" 
+                  className="up-checkbox"
+                  checked={selectedItems.size === filteredUploads.length && filteredUploads.length > 0} 
+                  onChange={toggleSelectAll} 
+                />
+              ),
+              width: "40px",
+              className: "table-view__cell--center",
+              cell: (u) => (
+                <input 
+                  type="checkbox" 
+                  className="up-checkbox"
+                  checked={selectedItems.has(u.url)} 
+                  onChange={(e) => handleSelect(u.url, e)} 
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )
+            },
+            {
+              header: "File",
+              width: "3fr",
+              className: "table-view__cell--bold",
+              cell: (u) => (
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }} onClick={() => setSelectedUpload(u)}>
+                  {isImage(u) ? (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "4px", overflow: "hidden", flexShrink: 0 }}>
+                      <img src={u.url} alt={u.filename} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ) : isVideo(u) ? (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "4px", overflow: "hidden", flexShrink: 0, backgroundColor: "black" }}>
+                      <video src={u.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  ) : (
+                    <div style={{ width: "32px", height: "32px", borderRadius: "4px", backgroundColor: "var(--bg-tertiary)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <FileIcon size={16} color="var(--text-tertiary)" />
+                    </div>
+                  )}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {u.filename}
+                  </span>
+                </div>
+              ),
+            },
+            {
+              header: "Type",
+              width: "1fr",
+              className: "table-view__cell--muted",
+              cell: (u) => (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                  {getTypeIcon(u)} {getTypeLabel(u.type)}
                 </span>
+              ),
+            },
+            {
+              header: "Size",
+              width: "1fr",
+              className: "table-view__cell--muted",
+              cell: (u) => formatSize(u.size),
+            },
+            {
+              header: "Date",
+              width: "1.5fr",
+              className: "table-view__cell--muted",
+              cell: (u) => formatDate(u.created_at),
+            },
+            {
+              header: "Actions",
+              width: "120px",
+              cell: (u) => (
                 <div className="thread-actions">
+                  <button
+                    className="thread-action-btn view-btn"
+                    title="Download"
+                    onClick={(e) => handleDownload(u, e)}
+                  >
+                    <Download size={14} />
+                  </button>
                   <button
                     className="thread-action-btn copy-btn"
                     title="Copy URL"
-                    onClick={() => handleCopyUrl(u.url)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyUrl(u.url);
+                    }}
                   >
                     {copiedUrl === u.url ? (
                       <Check size={14} />
@@ -376,20 +692,23 @@ const UserUploads = ({ userId, displayName }: Props) => {
                       className="thread-action-btn delete-btn"
                       title="Delete"
                       disabled={deletingSet.has(u.url)}
-                      onClick={() => handleDelete(u.url)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(u.url);
+                      }}
                     >
                       <Trash2 size={14} />
                     </button>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </>
+              ),
+            },
+          ]}
+        />
       )}
 
       {/* Lightbox preview */}
-      {selectedUpload && isImage(selectedUpload) && (
+      {selectedUpload && isImage(selectedUpload) && typeof document !== "undefined" && createPortal(
         <div
           className="up-upload-lightbox"
           onClick={() => setSelectedUpload(null)}
@@ -404,6 +723,13 @@ const UserUploads = ({ userId, displayName }: Props) => {
                 {selectedUpload.filename}
               </span>
               <div className="thread-actions">
+                <button
+                  className="thread-action-btn view-btn"
+                  title="Download"
+                  onClick={() => handleDownload(selectedUpload)}
+                >
+                  <Download size={14} />
+                </button>
                 <button
                   className="thread-action-btn copy-btn"
                   title="Copy URL"
@@ -435,7 +761,8 @@ const UserUploads = ({ userId, displayName }: Props) => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

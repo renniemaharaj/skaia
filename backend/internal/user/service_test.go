@@ -148,10 +148,10 @@ func (r *fakeUserRepo) HasPermission(userID int64, permission string) (bool, err
 func (r *fakeUserRepo) AddPermission(userID int64, permissionName string) error { return nil }
 func (r *fakeUserRepo) GetAllPermissions() ([]*models.Permission, error)        { return nil, nil }
 func (r *fakeUserRepo) GetUserMaxPowerLevel(userID int64) (int, error)          { return 0, nil }
-func (r *fakeUserRepo) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
+func (r *fakeUserRepo) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
 	return nil, nil
 }
-func (r *fakeUserRepo) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
+func (r *fakeUserRepo) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
 	return nil, nil
 }
 func (r *fakeUserRepo) DeleteRole(id int64) error                  { return nil }

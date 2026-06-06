@@ -63,7 +63,13 @@ func listUserUploads(authz utils.Authorizer) http.HandlerFunc {
 
 		// Walk all subdirectories: images, videos, files, banners, photos
 		_ = filepath.Walk(userDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
+			if err != nil {
+				return nil
+			}
+			if info.IsDir() {
+				if info.Name() == "tmp" {
+					return filepath.SkipDir
+				}
 				return nil
 			}
 
@@ -99,7 +105,7 @@ func listUserUploads(authz utils.Authorizer) http.HandlerFunc {
 	}
 }
 
-// deleteUploadFile deletes a single upload file. Body: {"url": "/uploads/users/…"}
+// deleteUploadFile deletes upload files. Body: {"url": "...", "urls": ["..."]}
 func deleteUploadFile(authz utils.Authorizer, hub *ws.Hub) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callerID, ok := utils.UserIDFromCtx(r)
@@ -109,52 +115,60 @@ func deleteUploadFile(authz utils.Authorizer, hub *ws.Hub) http.HandlerFunc {
 		}
 
 		var req struct {
-			URL string `json:"url"`
+			URL  string   `json:"url"`
+			URLs []string `json:"urls"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.URL == "" {
-			utils.WriteError(w, http.StatusBadRequest, "url required")
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "invalid request")
 			return
 		}
 
-		// Validate URL format and extract the owner user ID.
-		if !strings.HasPrefix(req.URL, "/uploads/users/") || strings.Contains(req.URL, "..") {
-			utils.WriteError(w, http.StatusBadRequest, "invalid upload url")
+		urls := req.URLs
+		if req.URL != "" {
+			urls = append(urls, req.URL)
+		}
+
+		if len(urls) == 0 {
+			utils.WriteError(w, http.StatusBadRequest, "url or urls required")
 			return
 		}
 
-		parts := strings.SplitN(strings.TrimPrefix(req.URL, "/uploads/users/"), "/", 2)
-		if len(parts) < 2 {
-			utils.WriteError(w, http.StatusBadRequest, "invalid upload url")
-			return
-		}
-		ownerID, err := strconv.ParseInt(parts[0], 10, 64)
-		if err != nil {
-			utils.WriteError(w, http.StatusBadRequest, "invalid upload url")
-			return
-		}
+		deletedAny := false
+		for _, rawURL := range urls {
+			// Validate URL format and extract the owner user ID.
+			if !strings.HasPrefix(rawURL, "/uploads/users/") || strings.Contains(rawURL, "..") {
+				continue
+			}
 
-		// Only the owner or an admin may delete.
-		if callerID != ownerID {
-			canManage, _ := authz.HasPermission(callerID, "user.manage-others")
-			if !canManage {
-				utils.WriteError(w, http.StatusForbidden, "forbidden")
-				return
+			parts := strings.SplitN(strings.TrimPrefix(rawURL, "/uploads/users/"), "/", 2)
+			if len(parts) < 2 {
+				continue
+			}
+			ownerID, err := strconv.ParseInt(parts[0], 10, 64)
+			if err != nil {
+				continue
+			}
+
+			// Only the owner or an admin may delete.
+			if callerID != ownerID {
+				canManage, _ := authz.HasPermission(callerID, "user.manage-others")
+				if !canManage {
+					continue
+				}
+			}
+
+			localPath := filepath.Join(UsersDir, strconv.FormatInt(ownerID, 10), parts[1])
+			if err := os.Remove(localPath); err == nil {
+				deletedAny = true
 			}
 		}
 
-		fsPath := "." + req.URL
-		if _, err := os.Stat(fsPath); os.IsNotExist(err) {
-			utils.WriteError(w, http.StatusNotFound, "file not found")
-			return
+		if deletedAny {
+			w.WriteHeader(http.StatusNoContent)
+			hub.PropagateUser(callerID, map[string]interface{}{"action": "uploads_changed"})
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, "failed to delete files")
 		}
-
-		if err := os.Remove(fsPath); err != nil {
-			utils.WriteError(w, http.StatusInternalServerError, "failed to delete file")
-			return
-		}
-
-		hub.PropagateUser(ownerID, map[string]interface{}{"action": "uploads_changed"})
-		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 	}
 }
 

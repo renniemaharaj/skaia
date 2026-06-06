@@ -165,7 +165,7 @@ proxy_cache_path /var/cache/nginx/uploads
 	}
 
 	// Server block
-	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 50M;\n\n", strings.Join(serverNames, " "))
+	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 0;\n\n", strings.Join(serverNames, " "))
 
 	// Security headers
 	b.WriteString(`    # Security headers

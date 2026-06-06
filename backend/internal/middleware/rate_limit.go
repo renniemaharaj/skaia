@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/httprate"
@@ -39,6 +40,10 @@ func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			key, _ := httprate.KeyByRealIP(r)
 			if rem, active := pb.check(key); active {
 				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))
@@ -66,6 +71,10 @@ func RateLimitByClient() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			key, _ := KeyByClientID(r)
 			if rem, active := pb.check(key); active {
 				writeRateLimitJSON(w, "rate limit exceeded", http.StatusTooManyRequests, int(math.Ceil(rem.Seconds())))

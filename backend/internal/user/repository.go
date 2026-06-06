@@ -280,7 +280,7 @@ func (r *sqlRepository) RemoveRoleByName(userID int64, roleName string) error {
 }
 
 func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
-	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at FROM roles ORDER BY power_level DESC, id`)
+	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles ORDER BY power_level DESC, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +289,7 @@ func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
 	var roles []*models.Role
 	for rows.Next() {
 		ro := &models.Role{}
-		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt); err != nil {
+		if err := rows.Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.StorageBonus, &ro.CreatedAt); err != nil {
 			return nil, err
 		}
 		roles = append(roles, ro)
@@ -467,29 +467,29 @@ func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {
 func (r *sqlRepository) GetRoleByID(id int64) (*models.Role, error) {
 	ro := &models.Role{}
 	err := r.db.QueryRow(
-		`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at FROM roles WHERE id = $1`, id,
-	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt)
+		`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles WHERE id = $1`, id,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.StorageBonus, &ro.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return ro, nil
 }
 
-func (r *sqlRepository) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
+func (r *sqlRepository) CreateRole(name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
 	ro := &models.Role{}
 	err := r.db.QueryRow(
-		`INSERT INTO roles (name, description, power_level, theme_color, glow_color)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, name, COALESCE(description, ''), power_level, theme_color, glow_color, created_at`,
-		name, description, powerLevel, themeColor, glowColor,
-	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.CreatedAt)
+		`INSERT INTO roles (name, description, power_level, theme_color, glow_color, storage_bonus)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at`,
+		name, description, powerLevel, themeColor, glowColor, storageBonus,
+	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.StorageBonus, &ro.CreatedAt)
 	return ro, err
 }
 
-func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string) (*models.Role, error) {
+func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLevel int, themeColor, glowColor *string, storageBonus int64) (*models.Role, error) {
 	_, err := r.db.Exec(
-		`UPDATE roles SET name=$1, description=$2, power_level=$3, theme_color=$4, glow_color=$5 WHERE id=$6`,
-		name, description, powerLevel, themeColor, glowColor, id,
+		`UPDATE roles SET name=$1, description=$2, power_level=$3, theme_color=$4, glow_color=$5, storage_bonus=$6 WHERE id=$7`,
+		name, description, powerLevel, themeColor, glowColor, storageBonus, id,
 	)
 	if err != nil {
 		return nil, err

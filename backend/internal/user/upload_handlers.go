@@ -31,16 +31,16 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := iupload.CheckUserQuota(userID); msg != "" {
+	if msg := iupload.CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := iupload.CheckTotalQuota(); msg != "" {
+	if msg := iupload.CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "failed to parse form")
 		return
 	}
@@ -51,6 +51,15 @@ func (h *Handler) uploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := iupload.CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := iupload.CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	if err := validateImageFile(file, header.Header); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
@@ -142,16 +151,16 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := iupload.CheckUserQuota(targetID); msg != "" {
+	if msg := iupload.CheckUserQuota(targetID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := iupload.CheckTotalQuota(); msg != "" {
+	if msg := iupload.CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "failed to parse form")
 		return
 	}
@@ -161,6 +170,15 @@ func (h *Handler) uploadUserPhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	if msg := iupload.CheckUserQuota(targetID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := iupload.CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	if err := validateImageFile(file, header.Header); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
@@ -237,16 +255,16 @@ func (h *Handler) uploadUserBanner(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, userID int64) {
-	if msg := iupload.CheckUserQuota(userID); msg != "" {
+	if msg := iupload.CheckUserQuota(userID, 0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
-	if msg := iupload.CheckTotalQuota(); msg != "" {
+	if msg := iupload.CheckTotalQuota(0); msg != "" {
 		utils.WriteError(w, http.StatusForbidden, msg)
 		return
 	}
 
-	if err := r.ParseMultipartForm(maxFileSize); err != nil {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "failed to parse form")
 		return
 	}
@@ -256,6 +274,15 @@ func (h *Handler) saveAndStoreBanner(w http.ResponseWriter, r *http.Request, use
 		return
 	}
 	defer file.Close()
+
+	if msg := iupload.CheckUserQuota(userID, header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
+	if msg := iupload.CheckTotalQuota(header.Size); msg != "" {
+		utils.WriteError(w, http.StatusForbidden, msg)
+		return
+	}
 
 	if err := validateImageFile(file, header.Header); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())

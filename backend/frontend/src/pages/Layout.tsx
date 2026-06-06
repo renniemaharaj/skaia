@@ -28,6 +28,7 @@ import { usePresence } from "../hooks/usePresence";
 import { useCursorTracking } from "../hooks/useCursorTracking";
 import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
+import GlobalUploader from "../components/ui/GlobalUploader";
 import PresencePanel from "./page/layout/PresencePanel";
 import CursorOverlay from "./page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
@@ -546,6 +547,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         closeButton
         theme={isDarkMode ? "dark" : "light"}
       />
+      <GlobalUploader />
       <PromptContainer />
     </div>
   );

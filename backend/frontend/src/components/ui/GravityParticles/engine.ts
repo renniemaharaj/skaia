@@ -115,6 +115,8 @@ export type PhysicsSettings = {
    * Default = ringSpacing (one ring-width).
    */
   collapseGuardRadius: number;
+  /** Audio Visualization Mode: map gravity to bass and highs to velocity */
+  audioVisualization: boolean;
 };
 
 // Constants
@@ -158,6 +160,7 @@ export const defaultSettings: PhysicsSettings = {
   ringSpacing: 30,
   ringSpringK: 0.12,
   collapseGuardRadius: 30, // = ringSpacing by default
+  audioVisualization: false,
 };
 
 // Colour helpers

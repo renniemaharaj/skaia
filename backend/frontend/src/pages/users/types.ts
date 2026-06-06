@@ -35,4 +35,6 @@ export interface Role {
   power_level: number;
   theme_color?: string;
   glow_color?: string;
+  storage_bonus: number;
+  created_at: string;
 }

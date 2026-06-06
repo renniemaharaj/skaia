@@ -31,6 +31,7 @@ export default function RolesManagementPage() {
   const [createDesc, setCreateDesc] = useState("");
   const [createPower, setCreatePower] = useState(0);
   const [createThemeColor, setCreateThemeColor] = useState("");
+  const [createStorageBonus, setCreateStorageBonus] = useState(0);
   const [creating, setCreating] = useState(false);
 
   // Per-role edit state
@@ -39,6 +40,7 @@ export default function RolesManagementPage() {
   const [editDesc, setEditDesc] = useState("");
   const [editPower, setEditPower] = useState(0);
   const [editThemeColor, setEditThemeColor] = useState("");
+  const [editStorageBonus, setEditStorageBonus] = useState(0);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -150,6 +152,7 @@ export default function RolesManagementPage() {
     setEditDesc(role.description);
     setEditPower(role.power_level);
     setEditThemeColor(role.theme_color || "");
+    setEditStorageBonus(role.storage_bonus || 0);
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -164,6 +167,7 @@ export default function RolesManagementPage() {
           description: editDesc,
           power_level: editPower,
           theme_color: editThemeColor || undefined,
+          storage_bonus: editStorageBonus,
         }),
       });
       if (updated) {
@@ -208,6 +212,7 @@ export default function RolesManagementPage() {
           description: createDesc,
           power_level: createPower,
           theme_color: createThemeColor || undefined,
+          storage_bonus: createStorageBonus,
         }),
       });
       if (role) {
@@ -220,6 +225,7 @@ export default function RolesManagementPage() {
         setCreateDesc("");
         setCreatePower(0);
         setCreateThemeColor("");
+        setCreateStorageBonus(0);
         setShowCreate(false);
       }
     } catch (e: unknown) {
@@ -374,6 +380,16 @@ export default function RolesManagementPage() {
                 </Button>
               </div>
             </div>
+            <div className="rmp-field rmp-field--narrow">
+              <label className="rmp-label">Storage Bonus (bytes)</label>
+              <input
+                className="rmp-input"
+                type="number"
+                min={0}
+                value={createStorageBonus}
+                onChange={(e) => setCreateStorageBonus(Number(e.target.value))}
+              />
+            </div>
           </div>
           <div className="rmp-field">
             <label className="rmp-label">Description</label>
@@ -460,6 +476,16 @@ export default function RolesManagementPage() {
                            </Button>
                         )}
                       </div>
+                      <div className="rmp-power-field">
+                        <span className="rmp-label">Storage (bytes)</span>
+                        <input
+                          className="rmp-input rmp-input--power"
+                          type="number"
+                          min={0}
+                          value={editStorageBonus}
+                          onChange={(e) => setEditStorageBonus(Number(e.target.value))}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -472,6 +498,11 @@ export default function RolesManagementPage() {
                       <span className="rmp-power-badge">
                         ⚡ {role.power_level}
                       </span>
+                      {role.storage_bonus > 0 && (
+                        <span className="rmp-power-badge" style={{ background: 'var(--bg-tertiary)' }}>
+                          💾 +{(role.storage_bonus / (1024 * 1024)).toFixed(0)} MB
+                        </span>
+                      )}
                     </>
                   )}
                 </div>
