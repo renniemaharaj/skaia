@@ -102,6 +102,7 @@
 }
 
 .directory-layout__list {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 40px;
@@ -120,9 +121,13 @@
 
   .directory-layout__header,
   .directory-layout__toolbar,
-  .directory-layout__grid,
-  .directory-layout__list {
+  .directory-layout__grid {
     padding: 0 16px;
+  }
+
+  .directory-layout__list {
+    padding: 0;
+    border-radius: 0;
   }
 
   .directory-layout__header {

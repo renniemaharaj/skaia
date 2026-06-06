@@ -403,7 +403,7 @@ export const Forum: React.FC = () => {
         viewMode={viewMode}
         onViewModeChange={toggleView}
         customListContent={
-          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 40px", height: "calc(100vh - 200px)" }}>
+          <div className="directory-layout__list">
             <CategoryThreadsFeed
               threads={listThreads}
               isLoading={threadsLoading}
