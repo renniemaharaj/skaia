@@ -1,0 +1,34 @@
+# Legacy Data Migration
+
+## Context
+The ancient project `KingdomMarket01'01'2024` stores user data, emails, and content in flat JSON files within its `public_html/home/Storage` directory. The new architecture is a high-performance Go backend with a proper relational database (PostgreSQL/Redis) defined in `backend/models/`. We need to migrate the legacy JSON data into the new normalized schema to preserve user history and accounts.
+
+## Goal
+- Extract user accounts and emails from `Storage/Accounts/Credentials/`. We do not need to migrate passwords or active login credentials.
+- Extract user data, forum posts, inbox messages, and other relevant entities from the legacy `Storage` directory.
+- Map and import these entities into the new Go backend database schema (`user.go`, `auth.go`, `forum.go`, `inbox.go`, etc.).
+
+## Non-Goals
+- We will not migrate active sessions or temporary caching data.
+- We will not migrate user passwords or authentication secrets. Accounts are migrated for data-ownership purposes only (returning users will recover access via email/admin).
+- We will not migrate raw server logs or email blacklists (unless required by specs).
+- We will not run the legacy PHP code, only read its JSON data files.
+
+## Steps
+1. **Analyze Legacy Data Structure**: Write a script to recursively scan the `KingdomMarket01'01'2024/public_html/home/Storage` directory and map out all JSON schemas used for Users, Posts, Messages.
+2. **Schema Mapping**: Map the fields from the legacy JSON objects to the new Go structs in `backend/models/` (e.g., legacy `EMAIL` to `user.Email`).
+3. **Write Migration Script**: Create a Go or Python migration tool that reads the JSON files, transforms them, and inserts them into the new PostgreSQL database using the models or raw SQL.
+4. **Test Migration Locally**: Run the migration script against a local database instance and verify data integrity.
+5. **Execute Dry Run and Final Migration**: Run on the target database environment.
+
+## Verification
+- Verify that migrated user accounts exist and are linked to their respective content (posts, messages).
+- Verify that forum posts and inbox messages are correctly associated with the migrated user IDs.
+- Run database integrity checks on the migrated dataset.
+
+## References
+- `backend/models/user.go`
+- `backend/models/auth.go`
+- `backend/models/forum.go`
+- `backend/models/inbox.go`
+- Legacy data dir: `KingdomMarket01'01'2024/public_html/home/Storage`

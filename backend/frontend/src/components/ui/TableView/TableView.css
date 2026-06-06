@@ -1,0 +1,69 @@
+.table-view {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.table-view__header {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.table-view__col-header {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-view__row {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.8125rem;
+  transition: background 0.12s;
+  align-items: center;
+}
+
+.table-view__row:last-child {
+  border-bottom: none;
+}
+
+.table-view__row:hover {
+  background: var(--bg-secondary);
+}
+
+.table-view__cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
+/* Common cell modifiers (optional, derived from data sources) */
+.table-view__cell--bold {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.table-view__cell--muted {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.table-view__cell--actions {
+  display: flex;
+  justify-content: center;
+}

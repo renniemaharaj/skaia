@@ -460,10 +460,12 @@
 /* Subtle action buttons (rename/duplicate) shown in grid/list rows */
 .cp-action-btn {
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 
 .cp-card:hover .cp-action-btn,
-.cp-list__row:hover .cp-action-btn {
+.cp-list__row:hover .cp-action-btn,
+.table-view__row:hover .cp-action-btn,
+.table-view__row:hover .cp-delete-btn {
   opacity: 1;
 }

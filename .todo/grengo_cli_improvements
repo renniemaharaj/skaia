@@ -1,0 +1,36 @@
+# Grengo CLI Developer Experience Improvements
+
+## Context
+The `grengo` CLI currently lacks a seamless developer experience for local development. There are issues with node exports from the API, and developers lack an automated way to watch the backend and frontend directories for changes to trigger rebuilds or updates. When developing locally, the frontend needs to seamlessly connect to the local API.
+
+## Goal
+- Fix export node issues from the API.
+- Introduce a `watch` command in the `grengo` CLI with a `--dev` flag.
+- Watch the `backend` and `frontend` directories for changes.
+- Automatically notify Vite of updates when running in dev mode.
+- Ensure the frontend connects seamlessly to the local API in dev mode.
+- Support production mode when the `--dev` flag is omitted.
+
+## Non-Goals
+- Full rewrite of the CLI into a nested directory structure (this can be a separate architectural improvement plan).
+- Modifying production deployment scripts beyond ensuring the default non-dev mode still functions.
+
+## Steps
+1. Identify and fix the export node issues originating from the API.
+2. Add a `watch` command to `grengo` CLI (`grengo watch`).
+3. Implement a `--dev` flag for the `watch` command.
+4. Implement file watching logic in `grengo` CLI for both `/backend` and `/backend/frontend` directories.
+5. Configure `grengo` to signal Vite and rebuild/restart the backend automatically upon file changes when in `--dev` mode.
+6. Configure the frontend's environment or Vite proxy to connect seamlessly to the local API in `--dev` mode.
+7. Ensure that omitting `--dev` defaults to the standard production mode build and run process.
+
+## Verification
+- Run `grengo watch --dev` and modify a frontend file; verify Vite hot-reloads or rebuilds.
+- Run `grengo watch --dev` and modify a backend file; verify the backend restarts.
+- Verify the frontend successfully makes requests to the local API during dev mode.
+- Verify `grengo watch` (without `--dev`) runs the production build.
+- Verify the API export node issue is resolved.
+
+## References
+- `grengo/`
+- `backend/frontend/vite.config.ts`

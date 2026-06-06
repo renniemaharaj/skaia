@@ -1,0 +1,16 @@
+<--/------->
+
+## legacy_data_migration
+
+### Current Progress
+- **Phase 1: Analyze Legacy Data Structure** — ⬜ Not started
+- **Phase 2: Schema Mapping** — ⬜ Not started
+- **Phase 3: Write Migration Script** — ⬜ Not started
+- **Phase 4: Execute & Verify Migration** — ⬜ Not started
+
+### Next Steps
+- [ ] Explore the legacy JSON files in `KingdomMarket01'01'2024/public_html/home/Storage` to document their exact schema.
+- [ ] Map the discovered JSON fields to the Go structs in `backend/models/user.go`, `forum.go`, etc.
+- [ ] Create a standalone migration script to parse JSON and connect to Postgres.
+
+<--/------->

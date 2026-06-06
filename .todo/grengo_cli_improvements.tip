@@ -1,0 +1,15 @@
+<--/------->
+
+## grengo_cli_improvements
+
+### Current Progress
+- **Phase 1: Fix API export node issues** — ⬜ Not started
+- **Phase 2: Implement watch command and --dev flag** — ⬜ Not started
+- **Phase 3: Directory watching and Vite integration** — ⬜ Not started
+- **Phase 4: Dev vs Prod mode routing and testing** — ⬜ Not started
+
+### Next Steps
+- [ ] Investigate and resolve the current export node issues in the API.
+- [ ] Add the `watch` command and `--dev` flag to the `grengo` CLI.
+
+<--/------->

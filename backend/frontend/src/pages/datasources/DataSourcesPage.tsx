@@ -160,15 +160,6 @@ export default function DataSourcesPage() {
           </div>
         ) : null
       }
-      listHeader={
-        <div className="ds-list__header">
-          <span className="ds-list__col ds-list__col--name">Name</span>
-          <span className="ds-list__col ds-list__col--desc">Description</span>
-          <span className="ds-list__col ds-list__col--creator">Creator</span>
-          <span className="ds-list__col ds-list__col--updated">Updated</span>
-          <span className="ds-list__col ds-list__col--actions" />
-        </div>
-      }
       renderGridCard={(ds) => (
         <Link
           key={ds.id}
@@ -212,26 +203,40 @@ export default function DataSourcesPage() {
           </div>
         </Link>
       )}
-      renderListRow={(ds) => (
-        <Link
-          key={ds.id}
-          to={`/datasources/${ds.id}`}
-          className="ds-list__row"
-        >
-          <span className="ds-list__col ds-list__col--name">
-            <Zap size={14} className="ds-card__type-icon" />
-            {ds.name}
-          </span>
-          <span className="ds-list__col ds-list__col--desc">
-            {ds.description || "—"}
-          </span>
-          <span className="ds-list__col ds-list__col--creator">
-            <CreatorChip creator={ds.creator} />
-          </span>
-          <span className="ds-list__col ds-list__col--updated">
-            {relativeTimeAgo(ds.updated_at)}
-          </span>
-          <span className="ds-list__col ds-list__col--actions">
+      tableColumns={[
+        {
+          header: "Name",
+          width: "2fr",
+          className: "table-view__cell--bold",
+          cell: (ds) => (
+            <>
+              <Zap size={14} className="ds-card__type-icon" style={{ marginRight: '0.5rem' }} />
+              {ds.name}
+            </>
+          ),
+        },
+        {
+          header: "Description",
+          width: "3fr",
+          className: "table-view__cell--muted",
+          cell: (ds) => ds.description || "—",
+        },
+        {
+          header: "Creator",
+          width: "1.5fr",
+          cell: (ds) => <CreatorChip creator={ds.creator} />,
+        },
+        {
+          header: "Updated",
+          width: "1fr",
+          className: "table-view__cell--muted",
+          cell: (ds) => relativeTimeAgo(ds.updated_at),
+        },
+        {
+          header: "",
+          width: "48px",
+          className: "table-view__cell--actions",
+          cell: (ds) => (
             <button
               className="icon-btn icon-btn--sm icon-btn--danger ds-card__delete-btn"
               onClick={(e) => handleDelete(e, ds.id)}
@@ -239,7 +244,16 @@ export default function DataSourcesPage() {
             >
               <Trash2 size={14} />
             </button>
-          </span>
+          ),
+        },
+      ]}
+      renderRowWrapper={(ds, _, props, cells) => (
+        <Link
+          key={ds.id}
+          to={`/datasources/${ds.id}`}
+          {...props}
+        >
+          {cells}
         </Link>
       )}
     />

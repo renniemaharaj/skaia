@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import SearchField from "../../../../components/ui/SearchField";
 import { LayoutGrid, List } from "lucide-react";
+import {
+  TableView,
+  type TableColumn,
+} from "../../../../components/ui/TableView/TableView";
 import "./DirectoryLayout.css";
 
 export type ViewMode = "grid" | "list";
@@ -23,6 +27,15 @@ export interface DirectoryLayoutProps<T> {
   prependGridCard?: ReactNode;
 
   // List mode props
+  tableColumns?: TableColumn<T>[];
+  renderRowWrapper?: (
+    item: T,
+    index: number,
+    rowProps: { className: string; style: React.CSSProperties },
+    cells: ReactNode[],
+  ) => ReactNode;
+
+  // Legacy List mode props (deprecated, migrating to tableColumns)
   renderListRow?: (item: T, index: number) => ReactNode;
   listHeader?: ReactNode;
 
@@ -47,6 +60,8 @@ export function DirectoryLayout<T>({
   items,
   renderGridCard,
   prependGridCard,
+  tableColumns,
+  renderRowWrapper,
   renderListRow,
   listHeader,
   customListContent,
@@ -55,7 +70,8 @@ export function DirectoryLayout<T>({
   emptyState,
   className = "",
 }: DirectoryLayoutProps<T>) {
-  const isList = viewMode === "list" && (renderListRow || customListContent);
+  const isList =
+    viewMode === "list" && (tableColumns || renderListRow || customListContent);
 
   return (
     <div className={`directory-layout ${className}`}>
@@ -112,27 +128,36 @@ export function DirectoryLayout<T>({
       )}
 
       {items.length === 0 && !prependGridCard && emptyState ? (
-        <div className="directory-layout__empty-container">
-          {emptyState}
-        </div>
-      ) : (
-        isList ? (
-          customListContent ? customListContent : (
-            <div className="directory-layout__list">
-              {listHeader && (
-                <div className="directory-layout__list-header">
-                  {listHeader}
-                </div>
-              )}
-              {items.map((item, index) => renderListRow!(item, index))}
-            </div>
-          )
+        <div className="directory-layout__empty-container">{emptyState}</div>
+      ) : isList ? (
+        customListContent ? (
+          customListContent
         ) : (
-          <div className="directory-layout__grid">
-            {prependGridCard}
-            {items.map((item, index) => renderGridCard(item, index))}
+          <div className="directory-layout__list">
+            {tableColumns ? (
+              <TableView
+                data={items}
+                columns={tableColumns}
+                renderRowWrapper={renderRowWrapper}
+                rowKey={(_item, i) => i}
+              />
+            ) : (
+              <>
+                {listHeader && (
+                  <div className="directory-layout__list-header">
+                    {listHeader}
+                  </div>
+                )}
+                {items.map((item, index) => renderListRow!(item, index))}
+              </>
+            )}
           </div>
         )
+      ) : (
+        <div className="directory-layout__grid">
+          {prependGridCard}
+          {items.map((item, index) => renderGridCard(item, index))}
+        </div>
       )}
     </div>
   );

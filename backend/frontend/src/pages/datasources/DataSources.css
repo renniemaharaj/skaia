@@ -147,7 +147,8 @@
 }
 
 .ds-card:hover .ds-card__delete-btn,
-.ds-list__row:hover .ds-card__delete-btn {
+.ds-list__row:hover .ds-card__delete-btn,
+.table-view__row:hover .ds-card__delete-btn {
   opacity: 1;
 }
 
