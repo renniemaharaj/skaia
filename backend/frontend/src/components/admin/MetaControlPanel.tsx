@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { Trash2 } from "lucide-react";
-import "./MetaControlPanel.css";
 import Button from "../input/Button";
 import Select from "../input/Select";
 
@@ -14,9 +13,11 @@ interface MetaConfigForm {
 }
 
 export default function MetaControlPanel({
+  category,
   initialConfig,
   onUpdate,
 }: {
+  category: "seo" | "visuals";
   initialConfig: MetaConfigForm;
   onUpdate?: (config: MetaConfigForm) => void;
 }) {
@@ -92,91 +93,128 @@ export default function MetaControlPanel({
   };
 
   return (
-    <form className="meta-control-panel" onSubmit={handleSubmit}>
-      <h2>Site Meta Settings</h2>
-      <label>
-        Description
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleInput}
-          required
-        />
-      </label>
-      <div className="meta-field-group">
-        <Select
-          label="Particle Style"
-          name="particle_style"
-          value={form.particle_style || "none"}
-          onChange={handleInput}
-          options={[
-            { value: "none", label: "None" },
-            { value: "default", label: "Default Particles" },
-            { value: "gravity", label: "Gravity Particles" },
-          ]}
-        />
-      </div>
-      <div className="meta-field-group">
-        <label>
-          OG Image
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <input
-              type="text"
-              name="og_image"
-              value={form.og_image}
+    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
+        {category === "seo" ? "SEO Settings" : "Visual Settings"}
+      </h2>
+      
+      {category === "seo" && (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>Description</label>
+            <textarea
+              name="description"
+              value={form.description}
               onChange={handleInput}
-              placeholder="Image URL or upload below"
-              style={{ flex: 1 }}
+              required
+              style={{
+                padding: "0.75rem",
+                border: "1px solid var(--border-color)",
+                borderRadius: "8px",
+                background: "var(--bg-color)",
+                color: "var(--text-primary)",
+                minHeight: "100px",
+                fontFamily: "inherit"
+              }}
             />
-            <Button variant="danger" size="icon" onClick={() => handleReset("og_image")} title="Reset OG Image">
-              <Trash2 size={14} />
-            </Button>
           </div>
-          <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} />
-        </label>
-      </div>
-      <div className="meta-field-group">
-        <label>
-          DOM Skin Background Image
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <input
-              type="text"
-              name="dom_skin"
-              value={form.dom_skin}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>OG Image</label>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                type="text"
+                name="og_image"
+                value={form.og_image}
+                onChange={handleInput}
+                placeholder="Image URL or upload below"
+                style={{
+                  flex: 1,
+                  padding: "0.75rem",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  background: "var(--bg-color)",
+                  color: "var(--text-primary)",
+                }}
+              />
+              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("og_image"); }} title="Reset OG Image">
+                <Trash2 size={14} />
+              </Button>
+            </div>
+            <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
+          </div>
+        </>
+      )}
+
+      {category === "visuals" && (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <Select
+              label="Particle Style"
+              name="particle_style"
+              value={form.particle_style || "none"}
               onChange={handleInput}
-              placeholder="Image URL or upload below (e.g. Minecraft texture)"
-              style={{ flex: 1 }}
+              options={[
+                { value: "none", label: "None" },
+                { value: "default", label: "Default Particles" },
+                { value: "gravity", label: "Gravity Particles" },
+              ]}
             />
-            <Button variant="danger" size="icon" onClick={() => handleReset("dom_skin")} title="Reset Background Image">
-              <Trash2 size={14} />
-            </Button>
           </div>
-          <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} />
-        </label>
-      </div>
-      <div className="meta-field-group">
-        <label>
-          DOM Skin Background Video
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <input
-              type="text"
-              name="dom_video"
-              value={form.dom_video}
-              onChange={handleInput}
-              placeholder="Video URL or upload below (e.g. mp4)"
-              style={{ flex: 1 }}
-            />
-            <Button variant="danger" size="icon" onClick={() => handleReset("dom_video")} title="Reset Background Video">
-              <Trash2 size={14} />
-            </Button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>DOM Skin Background Image</label>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                type="text"
+                name="dom_skin"
+                value={form.dom_skin}
+                onChange={handleInput}
+                placeholder="Image URL or upload below (e.g. Minecraft texture)"
+                style={{
+                  flex: 1,
+                  padding: "0.75rem",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  background: "var(--bg-color)",
+                  color: "var(--text-primary)",
+                }}
+              />
+              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("dom_skin"); }} title="Reset Background Image">
+                <Trash2 size={14} />
+              </Button>
+            </div>
+            <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
           </div>
-          <input type="file" name="dom_video_file" accept="video/mp4,video/webm" onChange={handleFile} />
-        </label>
-      </div>
-      {error && <div className="error">{error}</div>}
-      <div className="actions">
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>DOM Skin Background Video</label>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                type="text"
+                name="dom_video"
+                value={form.dom_video}
+                onChange={handleInput}
+                placeholder="Video URL or upload below (e.g. mp4)"
+                style={{
+                  flex: 1,
+                  padding: "0.75rem",
+                  border: "1px solid var(--border-color)",
+                  borderRadius: "8px",
+                  background: "var(--bg-color)",
+                  color: "var(--text-primary)",
+                }}
+              />
+              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("dom_video"); }} title="Reset Background Video">
+                <Trash2 size={14} />
+              </Button>
+            </div>
+            <input type="file" name="dom_video_file" accept="video/mp4,video/webm" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
+          </div>
+        </>
+      )}
+
+      {error && <div style={{ color: "var(--error-color)", fontWeight: 600 }}>{error}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
         <Button type="submit" variant="primary" loading={saving}>
-          Save
+          Save Changes
         </Button>
       </div>
     </form>

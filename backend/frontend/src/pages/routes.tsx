@@ -40,7 +40,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "users", element: <UserDiscovery />, conditional: "users" },
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
-  { path: "admin/meta", element: <AdminMetaSettings /> },
+  { path: "admin/meta/*", element: <AdminMetaSettings /> },
   { path: "admin/roles", element: <RolesManagementPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
