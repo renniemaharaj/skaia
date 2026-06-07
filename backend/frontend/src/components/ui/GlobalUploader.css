@@ -1,25 +1,26 @@
 .global-uploader-overlay {
   position: fixed;
-  inset: 0;
-  background: var(--overlay-dark);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  bottom: 24px;
+  right: 24px;
   z-index: 9999;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
+  pointer-events: none;
 }
 
 .global-uploader-modal {
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: var(--shadow-lg);
+  width: 400px;
+  max-width: calc(100vw - 48px);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  pointer-events: auto;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .global-uploader-header {
@@ -31,15 +32,48 @@
   background: var(--bg-secondary);
   font-weight: 600;
   font-size: 15px;
+  user-select: none;
+}
+
+.global-uploader-header:hover {
+  background: var(--bg-tertiary);
+}
+
+.global-uploader-completed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.global-uploader-completed-header:hover {
+  background: var(--bg-secondary);
+}
+
+.global-uploader-list-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .global-uploader-list {
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-height: 50vh;
-  overflow-y: auto;
+  gap: 12px;
+}
+
+.global-uploader-item-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .global-uploader-item {
@@ -48,6 +82,12 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.global-uploader-item:hover {
+  background: var(--bg-tertiary);
 }
 
 .global-uploader-item-info {
@@ -69,6 +109,9 @@
 .global-uploader-meta {
   font-size: 12px;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .global-uploader-stats {
@@ -85,9 +128,9 @@
 
 .global-uploader-progress-bar {
   position: absolute;
-  bottom: -6px;
-  left: 0;
-  right: 0;
+  bottom: 0px;
+  left: 8px;
+  right: 8px;
   height: 3px;
   background: var(--bg-tertiary);
   border-radius: 2px;
@@ -96,8 +139,78 @@
 
 .global-uploader-progress-fill {
   height: 100%;
-  background: var(--brand-color);
+  background: var(--primary-color);
   transition: width 0.2s ease;
+}
+
+/* Chunks styling */
+.global-uploader-chunks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 8px 8px 24px;
+  font-size: 12px;
+}
+
+.global-uploader-chunks-live {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.global-uploader-chunk {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.global-uploader-chunk-status {
+  text-transform: capitalize;
+  font-size: 11px;
+}
+
+.global-uploader-chunk-status.status-pending { color: var(--text-secondary); }
+.global-uploader-chunk-status.status-uploading { color: var(--primary-color); font-weight: 600; }
+.global-uploader-chunk-status.status-complete { color: var(--success-color); }
+.global-uploader-chunk-status.status-error { color: var(--error-color); }
+
+.global-uploader-chunks-completed-section {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.global-uploader-chunks-completed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.global-uploader-chunks-completed-header:hover {
+  background: var(--bg-tertiary);
+}
+
+.global-uploader-chunks-completed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-color);
 }
 
 .spin {

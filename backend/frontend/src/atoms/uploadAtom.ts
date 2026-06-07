@@ -5,6 +5,11 @@ const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
 export type UploadStatus = "queued" | "initializing" | "uploading" | "rebuilding" | "complete" | "error";
 
+export interface ChunkStatus {
+  index: number;
+  status: "pending" | "uploading" | "complete" | "error";
+}
+
 export interface UploadJob {
   id: string;
   file: File;
@@ -17,6 +22,7 @@ export interface UploadJob {
   etaSeconds?: number;
   speedBps?: number;
   _lastChunkStartTime?: number;
+  chunks: ChunkStatus[];
 }
 
 export const activeUploadsAtom = atom<UploadJob[]>([]);
@@ -54,7 +60,11 @@ class UploadManager {
       totalChunks,
       uploadedChunks: 0,
       status: "queued",
-      _uploadType: finalUploadType
+      _uploadType: finalUploadType,
+      chunks: Array.from({ length: totalChunks }).map((_, i) => ({
+        index: i,
+        status: "pending"
+      }))
     };
 
     this.queue.push(job);
@@ -104,6 +114,9 @@ class UploadManager {
           const idx = currentIndex++;
           if (idx >= nextJob.totalChunks) break;
 
+          nextJob.chunks[idx].status = "uploading";
+          this.dispatchStoreUpdate();
+
           const start = idx * CHUNK_SIZE;
           const end = Math.min(start + CHUNK_SIZE, nextJob.size);
           const chunk = nextJob.file.slice(start, end);
@@ -113,10 +126,16 @@ class UploadManager {
           fd.append("file", chunk);
 
           const startTime = Date.now();
-          await apiRequest(`/upload/chunked/upload/${uploadId}`, {
-            method: "POST",
-            body: fd,
-          });
+          try {
+            await apiRequest(`/upload/chunked/upload/${uploadId}`, {
+              method: "POST",
+              body: fd,
+            });
+            nextJob.chunks[idx].status = "complete";
+          } catch (e) {
+            nextJob.chunks[idx].status = "error";
+            throw e;
+          }
 
           const timeTaken = Date.now() - startTime;
           const speed = chunk.size / (timeTaken / 1000);
