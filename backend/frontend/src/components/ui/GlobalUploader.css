@@ -155,63 +155,51 @@
 .global-uploader-chunks-live {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 150px;
-  overflow-y: auto;
+  gap: 6px;
 }
 
 .global-uploader-chunk {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
+  padding: 6px 10px;
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.chunk-active {
+  background: var(--bg-color);
+  border-left: 3px solid var(--primary-color);
+  border-top: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chunk-rollup-completed {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-color);
+}
+
+.chunk-rollup-pending {
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-color);
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
 
 .global-uploader-chunk-status {
   text-transform: capitalize;
   font-size: 11px;
+  display: flex;
+  align-items: center;
 }
 
 .global-uploader-chunk-status.status-pending { color: var(--text-secondary); }
 .global-uploader-chunk-status.status-uploading { color: var(--primary-color); font-weight: 600; }
 .global-uploader-chunk-status.status-complete { color: var(--success-color); }
 .global-uploader-chunk-status.status-error { color: var(--error-color); }
-
-.global-uploader-chunks-completed-section {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-top: 4px;
-}
-
-.global-uploader-chunks-completed-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--bg-secondary);
-  cursor: pointer;
-  color: var(--text-secondary);
-  user-select: none;
-}
-
-.global-uploader-chunks-completed-header:hover {
-  background: var(--bg-tertiary);
-}
-
-.global-uploader-chunks-completed-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  max-height: 150px;
-  overflow-y: auto;
-  border-top: 1px solid var(--border-color);
-}
 
 .spin {
   animation: spin 1s linear infinite;

@@ -88,7 +88,6 @@ export default function GlobalUploader() {
 
 function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
-  const [completedChunksExpanded, setCompletedChunksExpanded] = useState(false);
 
   const percent = job.totalChunks > 0 
     ? Math.round((job.uploadedChunks / job.totalChunks) * 100) 
@@ -106,8 +105,9 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
     ? `${(job.speedBps / 1024 / 1024).toFixed(1)} MB/s`
     : "";
 
-  const liveChunks = job.chunks?.filter((c: any) => c.status !== "complete") || [];
-  const completedChunks = job.chunks?.filter((c: any) => c.status === "complete") || [];
+  const pendingCount = job.chunks?.filter((c: any) => c.status === "pending").length || 0;
+  const completedCount = job.chunks?.filter((c: any) => c.status === "complete").length || 0;
+  const uploadingChunks = job.chunks?.filter((c: any) => c.status === "uploading" || c.status === "error") || [];
 
   return (
     <div className="global-uploader-item-container">
@@ -138,38 +138,32 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
 
       {expanded && job.chunks && job.chunks.length > 0 && (
         <div className="global-uploader-chunks-container">
-          {liveChunks.length > 0 && (
-            <div className="global-uploader-chunks-live">
-              {liveChunks.map((c: any) => (
-                <div key={c.index} className="global-uploader-chunk">
-                  <span>Part {c.index + 1}</span>
-                  <span className={`global-uploader-chunk-status status-${c.status}`}>{c.status}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {completedChunks.length > 0 && (
-            <div className="global-uploader-chunks-completed-section">
-              <div 
-                className="global-uploader-chunks-completed-header"
-                onClick={(e) => { e.stopPropagation(); setCompletedChunksExpanded(!completedChunksExpanded); }}
-              >
-                <span>Completed Parts ({completedChunks.length})</span>
-                {completedChunksExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <div className="global-uploader-chunks-live">
+            
+            {completedCount > 0 && (
+              <div className="global-uploader-chunk chunk-rollup-completed">
+                <span>{completedCount} Completed {completedCount === 1 ? 'Part' : 'Parts'}</span>
+                <span className="global-uploader-chunk-status status-complete">
+                  <CheckCircle2 size={14} />
+                </span>
               </div>
-              {completedChunksExpanded && (
-                <div className="global-uploader-chunks-completed-list">
-                  {completedChunks.map((c: any) => (
-                    <div key={c.index} className="global-uploader-chunk">
-                      <span>Part {c.index + 1}</span>
-                      <span className="global-uploader-chunk-status status-complete">complete</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+            )}
+            
+            {uploadingChunks.map((c: any) => (
+              <div key={c.index} className="global-uploader-chunk chunk-active">
+                <span>Part {c.index + 1}</span>
+                <span className={`global-uploader-chunk-status status-${c.status}`}>{c.status}</span>
+              </div>
+            ))}
+
+            {pendingCount > 0 && (
+              <div className="global-uploader-chunk chunk-rollup-pending">
+                <span>{pendingCount} Pending {pendingCount === 1 ? 'Part' : 'Parts'}</span>
+                <span className="global-uploader-chunk-status status-pending">waiting</span>
+              </div>
+            )}
+
+          </div>
         </div>
       )}
     </div>
