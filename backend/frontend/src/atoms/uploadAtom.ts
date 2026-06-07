@@ -89,18 +89,28 @@ class UploadManager {
     this.dispatchStoreUpdate();
 
     try {
-      const initRes = await apiRequest<{ upload_id: string }>("/upload/chunked/init", {
+      const fingerprint = btoa(encodeURIComponent(`${nextJob.filename}-${nextJob.size}-${nextJob.file.lastModified || 0}`)).replace(/[/+=]/g, '_');
+      const initRes = await apiRequest<{ upload_id: string, completed_chunks?: number[] }>("/upload/chunked/init", {
         method: "POST",
         body: JSON.stringify({
           filename: nextJob.filename,
           total_chunks: nextJob.totalChunks,
           total_size: nextJob.size,
           upload_type: (nextJob as any)._uploadType,
+          fingerprint: fingerprint,
         }),
       });
 
       if (!initRes) throw new Error("Failed to init chunked upload");
       const uploadId = initRes.upload_id;
+      const completedChunks = initRes.completed_chunks || [];
+
+      for (const idx of completedChunks) {
+        if (idx >= 0 && idx < nextJob.totalChunks) {
+          nextJob.chunks[idx].status = "complete";
+          nextJob.uploadedChunks++;
+        }
+      }
 
       nextJob.status = "uploading";
       nextJob._lastChunkStartTime = Date.now();
@@ -113,6 +123,8 @@ class UploadManager {
         while (true) {
           const idx = currentIndex++;
           if (idx >= nextJob.totalChunks) break;
+
+          if (nextJob.chunks[idx].status === "complete") continue;
 
           nextJob.chunks[idx].status = "uploading";
           this.dispatchStoreUpdate();

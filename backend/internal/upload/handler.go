@@ -57,11 +57,17 @@ func init() {
 	}
 }
 
-// DirSize returns the total size of all files under a directory (recursive).
+// DirSize returns the total size of all files under a directory (recursive), excluding 'tmp' directories.
 func DirSize(path string) (int64, error) {
 	var total int64
-	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if info.IsDir() {
+			if info.Name() == "tmp" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		total += info.Size()

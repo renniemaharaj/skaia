@@ -21,10 +21,12 @@ type InitChunkedReq struct {
 	TotalChunks int    `json:"total_chunks"`
 	TotalSize   int64  `json:"total_size"`
 	UploadType  string `json:"upload_type"` // "image", "video", "file"
+	Fingerprint string `json:"fingerprint"`
 }
 
 type InitChunkedRes struct {
-	UploadID string `json:"upload_id"`
+	UploadID        string `json:"upload_id"`
+	CompletedChunks []int  `json:"completed_chunks,omitempty"`
 }
 
 func (h *Handler) InitChunked(w http.ResponseWriter, r *http.Request) {
@@ -54,11 +56,28 @@ func (h *Handler) InitChunked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploadID := uuid.New().String()
+	uploadID := req.Fingerprint
+	if uploadID == "" {
+		uploadID = uuid.New().String()
+	}
+
 	tmpDir, err := userDir(userID, "tmp/"+uploadID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to create tmp dir")
 		return
+	}
+
+	var completedChunks []int
+	entries, err := os.ReadDir(tmpDir)
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() || entry.Name() == "meta.json" || entry.Name() == "combined" || filepath.Ext(entry.Name()) == ".tmp" {
+				continue
+			}
+			if idx, err := strconv.Atoi(entry.Name()); err == nil {
+				completedChunks = append(completedChunks, idx)
+			}
+		}
 	}
 
 	// Save metadata
@@ -69,7 +88,7 @@ func (h *Handler) InitChunked(w http.ResponseWriter, r *http.Request) {
 		metaFile.Close()
 	}
 
-	utils.WriteJSON(w, http.StatusOK, InitChunkedRes{UploadID: uploadID})
+	utils.WriteJSON(w, http.StatusOK, InitChunkedRes{UploadID: uploadID, CompletedChunks: completedChunks})
 }
 
 func (h *Handler) UploadChunk(w http.ResponseWriter, r *http.Request) {
@@ -105,15 +124,25 @@ func (h *Handler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 
 	tmpDir, _ := userDir(userID, "tmp/"+uploadID)
 	chunkPath := filepath.Join(tmpDir, fmt.Sprintf("%d", chunkIndex))
+	tmpChunkPath := chunkPath + ".tmp"
 
-	out, err := os.Create(chunkPath)
+	out, err := os.Create(tmpChunkPath)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to save chunk")
 		return
 	}
-	defer out.Close()
 
-	io.Copy(out, file)
+	_, err = io.Copy(out, file)
+	out.Close()
+	
+	if err != nil {
+		os.Remove(tmpChunkPath)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to write chunk")
+		return
+	}
+
+	os.Rename(tmpChunkPath, chunkPath)
+
 	w.WriteHeader(http.StatusOK)
 }
 
