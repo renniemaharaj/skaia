@@ -141,6 +141,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
           next.delete(url);
           return next;
         });
+        fetchStorage();
       } catch {
         alert("Failed to delete upload");
       } finally {
@@ -151,7 +152,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
         });
       }
     },
-    [selectedUpload],
+    [selectedUpload, fetchStorage],
   );
 
   const handleMultiDelete = async () => {
@@ -170,6 +171,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
       setUploads((prev) => prev.filter((u) => !deleting.has(u.url)));
       if (selectedUpload && deleting.has(selectedUpload.url)) setSelectedUpload(null);
       setSelectedItems(new Set());
+      fetchStorage();
     } catch {
       alert("Failed to delete uploads");
     } finally {
