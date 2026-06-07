@@ -266,7 +266,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [setAccessToken, setRefreshToken, setCurrentUser]);
 
   const location = useLocation();
-  const effectiveLayoutMode = location.pathname.startsWith("/inbox") ? "application" : layoutMode;
+  const isAppModeRoute = (pathname: string) => {
+    if (pathname.startsWith("/inbox")) return true;
+    if (pathname === "/users") return true;
+    if (pathname.startsWith("/activity")) return true;
+    if (pathname.startsWith("/datasources")) return true;
+    if (pathname.startsWith("/settings")) return true;
+    if (pathname.startsWith("/admin")) return true;
+    if (pathname.startsWith("/tmp/")) return true;
+    return false;
+  };
+  const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
 
   // Normal navigation and hash scrolling
   // Normal navigation and hash scrolling

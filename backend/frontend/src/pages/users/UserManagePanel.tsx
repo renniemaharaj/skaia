@@ -1,5 +1,6 @@
 import { customConfirm } from "../../components/ui/Prompt";
 import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 import type { Permission, ProfileUser, Role } from "./types";
@@ -83,6 +84,17 @@ const UserManagePanel = ({
   onPermissionToggle,
   currentUserRoles = [],
 }: Props) => {
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
   const actorPower = maxPowerLevel(currentUserRoles, allRoles);
   const targetPower = maxPowerLevel(user.roles ?? [], allRoles);
   const canManageTarget = actorPower > targetPower;
@@ -148,34 +160,42 @@ const UserManagePanel = ({
         <h3 className="up-manage-heading">Permissions</h3>
         {Object.entries(groupedPermissions).map(([category, perms]) => (
           <div key={category} className="up-perm-group">
-            <h4 className="up-perm-category">{category}</h4>
-            <div className="up-checkbox-grid">
-              {perms.map((perm) => {
-                const checked = (user.permissions ?? []).includes(perm.name);
-                const toggling = permTogglingSet.has(perm.name);
-                const disabled = !canManageTarget || toggling;
-                return (
-                  <label
-                    key={perm.id}
-                    className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}${!canManageTarget ? " up-checkbox-disabled" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => onPermissionToggle(perm.name)}
-                      disabled={disabled}
-                    />
-                    <span className="up-checkbox-label">{perm.name}</span>
-                    {perm.description && (
-                      <span className="up-checkbox-desc">
-                        {perm.description}
-                      </span>
-                    )}
-                    {toggling && <span className="up-spinner" />}
-                  </label>
-                );
-              })}
-            </div>
+            <h4 
+              className="up-perm-category"
+              onClick={() => toggleCategory(category)}
+            >
+              <span>{category}</span>
+              {expandedCategories.has(category) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </h4>
+            {expandedCategories.has(category) && (
+              <div className="up-checkbox-grid">
+                {perms.map((perm) => {
+                  const checked = (user.permissions ?? []).includes(perm.name);
+                  const toggling = permTogglingSet.has(perm.name);
+                  const disabled = !canManageTarget || toggling;
+                  return (
+                    <label
+                      key={perm.id}
+                      className={`up-checkbox-item${checked ? " up-checkbox-checked" : ""}${toggling ? " up-checkbox-loading" : ""}${!canManageTarget ? " up-checkbox-disabled" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => onPermissionToggle(perm.name)}
+                        disabled={disabled}
+                      />
+                      <span className="up-checkbox-label">{perm.name}</span>
+                      {perm.description && (
+                        <span className="up-checkbox-desc">
+                          {perm.description}
+                        </span>
+                      )}
+                      {toggling && <span className="up-spinner" />}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
         {allPermissions.length === 0 && (
