@@ -16,7 +16,7 @@
   border-radius: 12px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 12px 48px color-mix(in srgb, var(--text-primary) 20%, transparent);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   display: flex;
   flex-direction: column;

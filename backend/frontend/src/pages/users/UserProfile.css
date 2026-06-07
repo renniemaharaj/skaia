@@ -341,7 +341,9 @@
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 6px;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   user-select: none;
 }
 
@@ -828,8 +830,7 @@
   background: var(--bg-color);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 48px
-    color-mix(in srgb, var(--text-primary) 30%, transparent);
+  box-shadow: var(--shadow-lg);
   cursor: default;
 }
 .up-upload-lightbox-content img {
@@ -889,8 +890,7 @@
   width: 100%;
   max-width: 480px;
   max-height: min(600px, 90dvh);
-  box-shadow: 0 8px 32px
-    color-mix(in srgb, var(--text-primary) 18%, transparent);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
