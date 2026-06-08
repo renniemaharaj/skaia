@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
-import { activeUploadsAtom, uploader } from "../../atoms/uploadAtom";
-import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { activeUploadsAtom, showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
+import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, ChevronRight, RefreshCw, X } from "lucide-react";
 import "./GlobalUploader.css";
 
 function formatETA(seconds: number) {
@@ -18,16 +18,18 @@ function formatETA(seconds: number) {
 
 export default function GlobalUploader() {
   const [jobs, setJobs] = useAtom(activeUploadsAtom);
+  const [showManager, setShowManager] = useAtom(showUploadManagerAtom);
   const [minimized, setMinimized] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(false);
 
   useEffect(() => {
+    uploader.loadIncompleteUploads();
     uploader.setStoreDispatcher(() => {
       setJobs([...uploader.getJobs()]);
     });
   }, [setJobs]);
 
-  if (jobs.length === 0) return null;
+  if (jobs.length === 0 && !showManager) return null;
 
   const activeJobs = jobs.filter(j => ["queued", "initializing", "uploading", "error"].includes(j.status));
   const completedJobs = jobs.filter(j => ["rebuilding", "complete"].includes(j.status));
@@ -46,14 +48,28 @@ export default function GlobalUploader() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <UploadCloud size={20} />
-            <span>Upload Manager {overallPercent < 100 ? `(${overallPercent}%)` : ""}</span>
+            <span>Upload Manager {overallPercent < 100 && jobs.length > 0 ? `(${overallPercent}%)` : ""}</span>
           </div>
-          {minimized ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {minimized ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+            {showManager && jobs.length === 0 && (
+              <X 
+                size={18} 
+                onClick={(e) => { e.stopPropagation(); setShowManager(false); }} 
+              />
+            )}
+          </div>
         </div>
         
         {!minimized && (
           <div className="global-uploader-list-container">
-            {activeJobs.length > 0 && (
+            {jobs.length === 0 ? (
+              <div style={{ padding: "16px", textAlign: "center", color: "var(--text-secondary)", fontSize: "13px" }}>
+                No active or recent uploads
+              </div>
+            ) : (
+              <>
+                {activeJobs.length > 0 && (
               <div className="global-uploader-list">
                 {activeJobs.map(job => (
                   <JobItem key={job.id} job={job} defaultExpanded={true} />
@@ -78,6 +94,8 @@ export default function GlobalUploader() {
                   </div>
                 )}
               </div>
+            )}
+              </>
             )}
           </div>
         )}
@@ -127,7 +145,28 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
           </div>
         </div>
         <div className="global-uploader-item-status">
-          {statusIcon}
+          {job.status === "error" ? (
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); uploader.retryUpload(job.id); }}
+                className="icon-btn icon-btn--subtle" 
+                title="Retry Upload"
+                style={{ padding: "4px" }}
+              >
+                <RefreshCw size={14} />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); uploader.removeUpload(job.id); }}
+                className="icon-btn icon-btn--danger" 
+                title="Dismiss"
+                style={{ padding: "4px" }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            statusIcon
+          )}
         </div>
         {(job.status === "uploading" || job.status === "rebuilding") && (
           <div className="global-uploader-progress-bar">

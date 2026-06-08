@@ -1,7 +1,7 @@
 import { customConfirm } from "../../components/ui/Prompt";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   ImageIcon,
   Trash2,
@@ -16,11 +16,12 @@ import {
   List,
   ExternalLink,
   Upload,
+  UploadCloud,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
-import { uploader } from "../../atoms/uploadAtom";
+import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
 import { TableView } from "../../components/ui/TableView/TableView";
 import "../../components/forum/ThreadActions.css";
 import "../page/layout/templates/DirectoryLayout.css";
@@ -61,6 +62,7 @@ interface Props {
 const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, externalSearch, externalUploads, title, emptyMessage }: Props) => {
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
+  const setShowManager = useSetAtom(showUploadManagerAtom);
 
   const isOwnProfile = String(currentUser?.id) === String(userId);
   const canManage = hasPermission("user.manage-others");
@@ -398,6 +400,13 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
                   >
                     <Upload size={16} />
                   </button>
+                  <button
+                    className="icon-btn icon-btn--subtle"
+                    title="Toggle Upload Manager"
+                    onClick={() => setShowManager(prev => !prev)}
+                  >
+                    <UploadCloud size={16} />
+                  </button>
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -444,6 +453,13 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
                 >
                   <Upload size={16} />
                 </button>
+                <button
+                  className="icon-btn icon-btn--subtle"
+                  title="Toggle Upload Manager"
+                  onClick={() => setShowManager(prev => !prev)}
+                >
+                  <UploadCloud size={16} />
+                </button>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -453,15 +469,18 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
               </>
             )}
             {filteredUploads.length > 0 && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                <input 
-                  type="checkbox" 
-                  className="up-checkbox"
-                  checked={selectedItems.size === filteredUploads.length && filteredUploads.length > 0} 
-                  onChange={toggleSelectAll} 
-                />
-                All
-              </label>
+              <>
+                <div style={{ width: '1px', height: '16px', background: 'var(--border-color)', margin: '0 4px' }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <input 
+                    type="checkbox" 
+                    className="up-checkbox"
+                    checked={selectedItems.size === filteredUploads.length && filteredUploads.length > 0} 
+                    onChange={toggleSelectAll} 
+                  />
+                  All
+                </label>
+              </>
             )}
             {selectedItems.size > 0 && canDelete && (
               <button

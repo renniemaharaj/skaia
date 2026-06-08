@@ -6,6 +6,7 @@ export type PromptConfig = {
   defaultValue: string;
   placeholder?: string;
   isConfirm?: boolean;
+  isAlert?: boolean;
   type?: string;
   resolve: (value: any) => void;
 };
@@ -33,6 +34,16 @@ export const customConfirm = (message: string): Promise<boolean> => {
       setPromptConfigGlobal({ message, defaultValue: "", isConfirm: true, resolve });
     } else {
       resolve(false);
+    }
+  });
+};
+
+export const customAlert = (message: string): Promise<void> => {
+  return new Promise((resolve) => {
+    if (setPromptConfigGlobal) {
+      setPromptConfigGlobal({ message, defaultValue: "", isAlert: true, resolve });
+    } else {
+      resolve();
     }
   });
 };
@@ -93,7 +104,7 @@ export const PromptContainer = () => {
       <div className="ui-dialog" style={{ maxWidth: "420px" }}>
         <div className="ui-dialog__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "none", paddingBottom: "0" }}>
           <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>
-            {config.isConfirm ? "Please Confirm" : "Input Required"}
+            {config.isAlert ? "Notice" : config.isConfirm ? "Please Confirm" : "Input Required"}
           </h3>
           <button
             onClick={handleClose}
@@ -109,7 +120,7 @@ export const PromptContainer = () => {
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
               {config.message}
             </p>
-            {!config.isConfirm && (
+            {!config.isConfirm && !config.isAlert && (
               <input
                 ref={inputRef}
                 type={config.type || "text"}
@@ -121,16 +132,28 @@ export const PromptContainer = () => {
             )}
           </div>
           <div className="ui-dialog__footer" style={{ borderTop: "none", paddingTop: "0" }}>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-primary">
-              Confirm
-            </button>
+            {config.isAlert ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                className="btn btn-primary"
+              >
+                Close
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Confirm
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>

@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { apiRequest } from "../utils/api";
+import { customAlert } from "../components/ui/Prompt";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -8,6 +9,15 @@ export type UploadStatus = "queued" | "initializing" | "uploading" | "rebuilding
 export interface ChunkStatus {
   index: number;
   status: "pending" | "uploading" | "complete" | "error";
+}
+
+export interface IncompleteUpload {
+  upload_id: string;
+  filename: string;
+  total_chunks: number;
+  total_size: number;
+  completed_chunks: number[];
+  upload_type: string;
 }
 
 export interface UploadJob {
@@ -26,6 +36,7 @@ export interface UploadJob {
 }
 
 export const activeUploadsAtom = atom<UploadJob[]>([]);
+export const showUploadManagerAtom = atom(false);
 
 class UploadManager {
   private queue: UploadJob[] = [];
@@ -189,15 +200,93 @@ class UploadManager {
     } finally {
       this.activeCount--;
       
-      // Cleanup after a bit
-      setTimeout(() => {
-        this.queue = this.queue.filter(j => j.id !== nextJob.id);
-        this.resolveMap.delete(nextJob.id);
-        this.dispatchStoreUpdate();
-      }, 3000);
+      // Cleanup after a bit, but keep errors visible
+      if (nextJob.status !== "error") {
+        setTimeout(() => {
+          this.queue = this.queue.filter(j => j.id !== nextJob.id);
+          this.resolveMap.delete(nextJob.id);
+          this.dispatchStoreUpdate();
+        }, 3000);
+      }
 
       this.processQueue();
     }
+  }
+
+  async loadIncompleteUploads() {
+    try {
+      const res = await apiRequest<IncompleteUpload[]>("/upload/chunked/incomplete");
+      if (!res) return;
+      let changed = false;
+      for (const inc of res) {
+        if (this.queue.some(j => j.id === inc.upload_id)) continue;
+        
+        const job: UploadJob & { _uploadType?: string } = {
+          id: inc.upload_id,
+          file: null as any,
+          filename: inc.filename,
+          size: inc.total_size,
+          totalChunks: inc.total_chunks,
+          uploadedChunks: inc.completed_chunks.length,
+          status: "error",
+          error: "Incomplete upload. Click Retry and select the original file to resume.",
+          _uploadType: inc.upload_type,
+          chunks: Array.from({ length: inc.total_chunks }).map((_, i) => ({
+            index: i,
+            status: inc.completed_chunks.includes(i) ? "complete" : "pending"
+          }))
+        };
+        this.queue.push(job);
+        changed = true;
+      }
+      if (changed) this.dispatchStoreUpdate();
+    } catch (e) {
+      console.error("Failed to load incomplete uploads", e);
+    }
+  }
+
+  retryUpload(id: string) {
+    const job = this.queue.find(j => j.id === id);
+    if (!job || job.status !== "error") return;
+    
+    if (!job.file) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.onchange = (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.name !== job.filename || file.size !== job.size) {
+          customAlert(`File mismatch. Expected: ${job.filename} (${Math.round(job.size / 1024 / 1024)}MB). Please select the exact original file.`);
+          return;
+        }
+        job.file = file;
+        this.doRetry(job);
+      };
+      input.click();
+      return;
+    }
+    
+    this.doRetry(job);
+  }
+
+  private doRetry(job: UploadJob) {
+    job.status = "queued";
+    job.error = undefined;
+    job.chunks.forEach(c => c.status = "pending");
+    job.uploadedChunks = 0;
+    
+    this.dispatchStoreUpdate();
+    this.processQueue();
+  }
+
+  async removeUpload(id: string) {
+    this.queue = this.queue.filter(j => j.id !== id);
+    this.resolveMap.delete(id);
+    this.dispatchStoreUpdate();
+
+    try {
+      await apiRequest(`/upload/chunked/incomplete/${id}`, { method: "DELETE" });
+    } catch {}
   }
 
   cancelUpload(_id: string) {

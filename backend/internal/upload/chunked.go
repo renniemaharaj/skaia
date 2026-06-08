@@ -260,3 +260,101 @@ func (h *Handler) CompleteChunked(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(UploadResponse{URL: url, Filename: finalName, Size: size, Type: ct})
 	h.hub.PropagateUser(userID, map[string]interface{}{"action": "uploads_changed"})
 }
+
+type IncompleteUpload struct {
+	UploadID        string `json:"upload_id"`
+	Filename        string `json:"filename"`
+	TotalChunks     int    `json:"total_chunks"`
+	TotalSize       int64  `json:"total_size"`
+	CompletedChunks []int  `json:"completed_chunks"`
+	UploadType      string `json:"upload_type"`
+}
+
+func (h *Handler) GetIncompleteUploads(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	tmpDir, err := userDir(userID, "tmp")
+	if err != nil {
+		utils.WriteJSON(w, http.StatusOK, []IncompleteUpload{})
+		return
+	}
+
+	var incomplete []IncompleteUpload
+	entries, err := os.ReadDir(tmpDir)
+	if err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			uploadID := entry.Name()
+			uploadDir := filepath.Join(tmpDir, uploadID)
+			
+			metaPath := filepath.Join(uploadDir, "meta.json")
+			metaBytes, err := os.ReadFile(metaPath)
+			if err != nil {
+				continue
+			}
+			
+			var req InitChunkedReq
+			if err := json.Unmarshal(metaBytes, &req); err != nil {
+				continue
+			}
+			
+			var completedChunks []int
+			chunks, _ := os.ReadDir(uploadDir)
+			for _, chunk := range chunks {
+				if chunk.IsDir() || chunk.Name() == "meta.json" || chunk.Name() == "combined" || filepath.Ext(chunk.Name()) == ".tmp" {
+					continue
+				}
+				if idx, err := strconv.Atoi(chunk.Name()); err == nil {
+					completedChunks = append(completedChunks, idx)
+				}
+			}
+			
+			if completedChunks == nil {
+				completedChunks = []int{}
+			}
+
+			incomplete = append(incomplete, IncompleteUpload{
+				UploadID:        uploadID,
+				Filename:        req.Filename,
+				TotalChunks:     req.TotalChunks,
+				TotalSize:       req.TotalSize,
+				CompletedChunks: completedChunks,
+				UploadType:      req.UploadType,
+			})
+		}
+	}
+	
+	if incomplete == nil {
+		incomplete = []IncompleteUpload{}
+	}
+	utils.WriteJSON(w, http.StatusOK, incomplete)
+}
+
+func (h *Handler) DeleteIncompleteUpload(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	uploadID := chi.URLParam(r, "uploadID")
+	if uploadID == "" {
+		utils.WriteError(w, http.StatusBadRequest, "missing uploadID")
+		return
+	}
+
+	tmpDir, err := userDir(userID, "tmp")
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to get tmp dir")
+		return
+	}
+
+	uploadDir := filepath.Join(tmpDir, uploadID)
+	os.RemoveAll(uploadDir)
+	w.WriteHeader(http.StatusOK)
+}

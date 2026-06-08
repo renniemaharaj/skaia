@@ -239,6 +239,8 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Post("/upload/chunked/init", h.InitChunked)
 		r.Post("/upload/chunked/upload/{uploadID}", h.UploadChunk)
 		r.Post("/upload/chunked/complete/{uploadID}", h.CompleteChunked)
+		r.Get("/upload/chunked/incomplete", h.GetIncompleteUploads)
+		r.Delete("/upload/chunked/incomplete/{uploadID}", h.DeleteIncompleteUpload)
 	})
 }
 
