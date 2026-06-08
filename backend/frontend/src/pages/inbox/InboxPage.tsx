@@ -61,7 +61,6 @@ const InboxPage = () => {
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [sending, setSending] = useState(false);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
@@ -504,7 +503,6 @@ const InboxPage = () => {
                 <button
                   className="inbox-new-btn"
                   onClick={startConversation}
-                  disabled={sending}
                   title="Create"
                 >
                   <Check size={16} />
@@ -719,8 +717,7 @@ const InboxPage = () => {
                   <Input
                     className="inbox-chat-input"
                     handleSend={async (msg) => {
-                      if (!msg.trim() || !activeId || sending) return;
-                      setSending(true);
+                      if (!msg.trim() || !activeId) return;
                       try {
                         await apiRequest<InboxMessage>(
                           `/inbox/conversations/${activeId}/messages`,
@@ -731,11 +728,9 @@ const InboxPage = () => {
                         );
                       } catch (err) {
                         console.error("Failed to send message:", err);
-                      } finally {
-                        setSending(false);
                       }
                     }}
-                    disabled={sending || isBlocked || activeConv?.is_locked || !!(activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
+                    disabled={isBlocked || activeConv?.is_locked || !!(activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
                     placeholder={activeConv?.is_locked ? "Conversation is locked" : (activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted) ? "You are muted" : "Write a message…")}
                     maxRows={4}
                     maxLength={2000}

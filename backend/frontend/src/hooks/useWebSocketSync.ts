@@ -790,7 +790,9 @@ export const useWebSocketSync = () => {
                         ...c,
                         last_message: inboxData,
                         unread_count:
-                          convStr !== activeId ? (c.unread_count ?? 0) + 1 : 0,
+                          convStr !== activeId && String(inboxData.sender_id) !== String(currentUserIdRef.current)
+                            ? (c.unread_count ?? 0) + 1
+                            : (convStr === activeId ? 0 : c.unread_count),
                       }
                     : c,
                 ),
@@ -802,27 +804,32 @@ export const useWebSocketSync = () => {
             // Direct push to recipient - no subscription required.
             // Bump global badge and update the sidebar so the conversation
             // list stays current even when no specific chat is open.
-            playMessageSound();
-            const inboxMsgConvId = String(
-              (payload as any)?.conversation_id ?? "",
-            );
+            const msgPayload = payload as any;
+            const msgSenderId = String(msgPayload?.sender_id ?? "");
+            const isFromCurrentUser = msgSenderId === String(currentUserIdRef.current);
+            const inboxMsgConvId = String(msgPayload?.conversation_id ?? "");
             const isActiveConv =
               inboxMsgConvId &&
               inboxMsgConvId === String(_activeConversationId);
-            if (!isActiveConv) {
+
+            if (!isFromCurrentUser) {
+              playMessageSound();
+            }
+
+            if (!isActiveConv && !isFromCurrentUser) {
               setInboxUnreadCount((prev) => prev + 1);
             }
             // Always refresh last_message in the sidebar; only bump
-            // unread_count when the conversation is not currently open.
+            // unread_count when the conversation is not currently open AND it's not from the current user.
             if (inboxMsgConvId) {
               setInboxConversations((prev) =>
                 prev.map((c) =>
                   String(c.id) === inboxMsgConvId
                     ? {
                         ...c,
-                        last_message: payload as any,
-                        unread_count: isActiveConv
-                          ? 0
+                        last_message: msgPayload,
+                        unread_count: isActiveConv || isFromCurrentUser
+                          ? (isActiveConv ? 0 : c.unread_count)
                           : (c.unread_count ?? 0) + 1,
                       }
                     : c,
