@@ -9,7 +9,9 @@ type Repository interface {
 	GetConversation(id int64) (*models.InboxConversation, error)
 	GetConversationBetween(user1ID, user2ID int64) (*models.InboxConversation, error)
 	GetOrCreateConversation(user1ID, user2ID int64) (*models.InboxConversation, error)
+	CreateGroupConversation(title string, participantIDs []int64) (*models.InboxConversation, error)
 	ListConversations(userID int64) ([]*models.InboxConversation, error)
+	GetParticipants(conversationID int64) ([]int64, error)
 	DeleteConversation(id int64) error
 
 	// Messages

@@ -69,11 +69,23 @@ func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		TargetUserID   int64  `json:"target_user_id"`
-		TargetUsername string `json:"target_username"`
+		TargetUserID   int64   `json:"target_user_id"`
+		TargetUsername string  `json:"target_username"`
+		ParticipantIDs []int64 `json:"participant_ids"`
+		Title          string  `json:"title"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if len(body.ParticipantIDs) > 0 {
+		conv, err := h.svc.CreateGroupConversation(userID, body.ParticipantIDs, body.Title)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		utils.WriteJSON(w, http.StatusOK, conv)
 		return
 	}
 
@@ -88,7 +100,7 @@ func (h *Handler) startConversation(w http.ResponseWriter, r *http.Request) {
 		targetID = u.ID
 	}
 	if targetID == 0 {
-		utils.WriteError(w, http.StatusBadRequest, "target_user_id or target_username required")
+		utils.WriteError(w, http.StatusBadRequest, "target_user_id, target_username, or participant_ids required")
 		return
 	}
 	if targetID == userID {

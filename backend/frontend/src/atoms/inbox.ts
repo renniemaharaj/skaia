@@ -19,10 +19,16 @@ export interface InboxMessage {
 
 export interface InboxConversation {
   id: string;
-  user1_id: string;
-  user2_id: string;
+  is_group: boolean;
+  title?: string;
   created_at: string;
   updated_at: string;
+  participants?: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string;
+  }[];
   other_user?: {
     id: string;
     username: string;

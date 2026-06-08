@@ -53,7 +53,7 @@ class UploadManager {
     return this.queue;
   }
 
-  async upload(file: File, options?: { uploadType?: string }): Promise<any> {
+  async upload(file: File, options?: { uploadType?: string; inboxConversationId?: string }): Promise<any> {
     const id = Math.random().toString(36).substring(2, 9);
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE) || 1;
     
@@ -63,7 +63,7 @@ class UploadManager {
     
     const finalUploadType = options?.uploadType || defaultType;
 
-    const job: UploadJob & { _uploadType?: string } = {
+    const job: UploadJob & { _uploadType?: string; _inboxConversationId?: string } = {
       id,
       file,
       filename: file.name,
@@ -72,6 +72,7 @@ class UploadManager {
       uploadedChunks: 0,
       status: "queued",
       _uploadType: finalUploadType,
+      _inboxConversationId: options?.inboxConversationId,
       chunks: Array.from({ length: totalChunks }).map((_, i) => ({
         index: i,
         status: "pending"
@@ -196,9 +197,35 @@ class UploadManager {
       nextJob.status = "rebuilding";
       this.dispatchStoreUpdate();
 
-      const completeRes = await apiRequest(`/upload/chunked/complete/${uploadId}`, {
+      const completeRes = await apiRequest<any>(`/upload/chunked/complete/${uploadId}`, {
         method: "POST",
       });
+
+      if ((nextJob as any)._inboxConversationId) {
+        try {
+          let messageType = "file";
+          if (nextJob.file.type.startsWith("image/")) messageType = "image";
+          else if (nextJob.file.type.startsWith("video/")) messageType = "video";
+          else if (nextJob.file.type.startsWith("audio/")) messageType = "audio";
+
+          await apiRequest(
+            `/inbox/conversations/${(nextJob as any)._inboxConversationId}/messages`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                content: nextJob.filename,
+                message_type: messageType,
+                attachment_url: completeRes.url,
+                attachment_name: nextJob.filename,
+                attachment_size: nextJob.size,
+                attachment_mime: nextJob.file.type,
+              }),
+            }
+          );
+        } catch (e) {
+          console.error("Failed to send inbox message from background upload", e);
+        }
+      }
 
       nextJob.status = "complete";
       this.dispatchStoreUpdate();

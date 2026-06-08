@@ -43,21 +43,65 @@ func (s *Service) GetOrStartConversation(user1ID, user2ID int64) (*models.InboxC
 	if err != nil {
 		return nil, err
 	}
-	// Enrich the other user so the frontend has display info immediately.
-	otherID := user2ID
-	if conv.User1ID != user1ID {
-		otherID = user1ID
-	}
-	// user1ID is always the caller here
-	if otherID == user1ID {
-		otherID = user2ID
-	}
-	if u, err := s.userSvc.GetByID(otherID); err == nil {
-		conv.OtherUser = u
+	participantIDs, err := s.repo.GetParticipants(conv.ID)
+	if err == nil {
+		for _, pid := range participantIDs {
+			if u, err := s.userSvc.GetByID(pid); err == nil {
+				conv.Participants = append(conv.Participants, u)
+				if pid != user1ID && conv.OtherUser == nil {
+					conv.OtherUser = u
+				}
+			}
+		}
 	}
 	if err := s.populateBlockState(conv, user1ID); err == nil {
 		return conv, nil
 	}
+	return conv, nil
+}
+
+func (s *Service) CreateGroupConversation(creatorID int64, participantIDs []int64, title string) (*models.InboxConversation, error) {
+	hasCreator := false
+	for _, id := range participantIDs {
+		if id == creatorID {
+			hasCreator = true
+		}
+	}
+	if !hasCreator {
+		participantIDs = append(participantIDs, creatorID)
+	}
+
+	conv, err := s.repo.CreateGroupConversation(title, participantIDs)
+	if err != nil {
+		return nil, err
+	}
+	
+	for _, pid := range participantIDs {
+		if u, err := s.userSvc.GetByID(pid); err == nil {
+			conv.Participants = append(conv.Participants, u)
+		}
+	}
+
+	msg, _ := s.repo.CreateMessage(&models.InboxMessage{
+		ConversationID: conv.ID,
+		SenderID:       creatorID,
+		Content:        fmt.Sprintf("created this group with %d other(s)", len(participantIDs)-1),
+		MessageType:    "system_group_created",
+	})
+	if msg != nil {
+		if u, err := s.userSvc.GetByID(creatorID); err == nil {
+			msg.SenderName = u.DisplayName
+			msg.SenderAvatar = u.AvatarURL
+		}
+		s.hub.PropagateInboxConversation(conv.ID, msg, "message_created")
+		for _, pid := range participantIDs {
+			if payload, err2 := json.Marshal(msg); err2 == nil {
+				notifMsg := &ws.Message{Type: ws.InboxMsg, Payload: payload}
+				s.hub.SendToUser(pid, notifMsg)
+			}
+		}
+	}
+
 	return conv, nil
 }
 
@@ -72,7 +116,23 @@ func (s *Service) GetConversation(id, callerID int64) (*models.InboxConversation
 	if err != nil {
 		return nil, err
 	}
-	if c.User1ID != callerID && c.User2ID != callerID {
+	participantIDs, err := s.repo.GetParticipants(id)
+	if err != nil {
+		return nil, err
+	}
+	isParticipant := false
+	for _, pid := range participantIDs {
+		if pid == callerID {
+			isParticipant = true
+		}
+		if u, err := s.userSvc.GetByID(pid); err == nil {
+			c.Participants = append(c.Participants, u)
+			if pid != callerID && c.OtherUser == nil {
+				c.OtherUser = u
+			}
+		}
+	}
+	if !isParticipant {
 		return nil, errForbidden
 	}
 	_ = s.populateBlockState(c, callerID)
@@ -86,12 +146,14 @@ func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, 
 		return nil, err
 	}
 	for _, c := range convs {
-		otherID := c.User2ID
-		if c.User1ID != userID {
-			otherID = c.User1ID
-		}
-		if u, err := s.userSvc.GetByID(otherID); err == nil {
-			c.OtherUser = u
+		participantIDs, _ := s.repo.GetParticipants(c.ID)
+		for _, pid := range participantIDs {
+			if u, err := s.userSvc.GetByID(pid); err == nil {
+				c.Participants = append(c.Participants, u)
+				if pid != userID && c.OtherUser == nil {
+					c.OtherUser = u
+				}
+			}
 		}
 		msgs, err := s.repo.ListMessages(c.ID, 1, 0)
 		if err == nil && len(msgs) > 0 {
@@ -113,12 +175,9 @@ func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, 
 // ListMessages returns paginated messages for a conversation, enriched with sender info.
 // Messages are returned oldest-first (DESC from DB, reversed here) matching the thread comment UX.
 func (s *Service) ListMessages(conversationID, callerID, limit, offset int64) ([]*models.InboxMessage, error) {
-	c, err := s.repo.GetConversation(conversationID)
+	_, err := s.GetConversation(conversationID, callerID)
 	if err != nil {
 		return nil, err
-	}
-	if c.User1ID != callerID && c.User2ID != callerID {
-		return nil, errForbidden
 	}
 	msgs, err := s.repo.ListMessages(conversationID, int(limit), int(offset))
 	if err != nil {
@@ -136,20 +195,20 @@ func (s *Service) ListMessages(conversationID, callerID, limit, offset int64) ([
 
 // SendMessage creates a message and propagates it to conversation subscribers.
 func (s *Service) SendMessage(msg *models.InboxMessage) (*models.InboxMessage, error) {
-	c, err := s.repo.GetConversation(msg.ConversationID)
+	c, err := s.GetConversation(msg.ConversationID, msg.SenderID)
 	if err != nil {
 		return nil, err
-	}
-	if c.User1ID != msg.SenderID && c.User2ID != msg.SenderID {
-		return nil, errForbidden
 	}
 
-	blocked, err := s.repo.IsBlockedEither(c.User1ID, c.User2ID)
-	if err != nil {
-		return nil, err
-	}
-	if blocked {
-		return nil, errBlocked
+	// For 1-on-1, check block status
+	if !c.IsGroup && c.OtherUser != nil {
+		blocked, err := s.repo.IsBlockedEither(msg.SenderID, c.OtherUser.ID)
+		if err != nil {
+			return nil, err
+		}
+		if blocked {
+			return nil, errBlocked
+		}
 	}
 
 	created, err := s.repo.CreateMessage(msg)
@@ -163,18 +222,15 @@ func (s *Service) SendMessage(msg *models.InboxMessage) (*models.InboxMessage, e
 		created.SenderAvatar = u.AvatarURL
 	}
 
-	// Push to conversation subscribers (both parties if they have the conversation open)
+	// Push to conversation subscribers
 	s.hub.PropagateInboxConversation(msg.ConversationID, created, "message_created")
 
-	// Also push a direct inbox notification to the recipient so they see
-	// the unread badge even when the conversation isn't open.
-	recipientID := c.User2ID
-	if c.User2ID == msg.SenderID {
-		recipientID = c.User1ID
-	}
-	if payload, err2 := json.Marshal(created); err2 == nil {
-		notifMsg := &ws.Message{Type: ws.InboxMsg, Payload: payload}
-		s.hub.SendToUser(recipientID, notifMsg)
+	// Also push a direct inbox notification to all participants
+	for _, p := range c.Participants {
+		if payload, err2 := json.Marshal(created); err2 == nil {
+			notifMsg := &ws.Message{Type: ws.InboxMsg, Payload: payload}
+			s.hub.SendToUser(p.ID, notifMsg)
+		}
 	}
 
 	return created, nil
@@ -187,12 +243,9 @@ func (s *Service) DeleteMessage(id, senderID int64) error {
 
 // MarkRead marks all messages from the other user as read.
 func (s *Service) MarkRead(conversationID, callerID int64) error {
-	c, err := s.repo.GetConversation(conversationID)
+	_, err := s.GetConversation(conversationID, callerID)
 	if err != nil {
 		return err
-	}
-	if c.User1ID != callerID && c.User2ID != callerID {
-		return errForbidden
 	}
 	return s.repo.MarkConversationRead(conversationID, callerID)
 }
@@ -204,21 +257,18 @@ func (s *Service) UnreadTotal(userID int64) (int, error) {
 
 // DeleteConversation deletes a conversation and all its messages.
 func (s *Service) DeleteConversation(conversationID, callerID int64) error {
-	c, err := s.repo.GetConversation(conversationID)
+	_, err := s.GetConversation(conversationID, callerID)
 	if err != nil {
 		return err
-	}
-	if c.User1ID != callerID && c.User2ID != callerID {
-		return errForbidden
 	}
 	return s.repo.DeleteConversation(conversationID)
 }
 
 func (s *Service) populateBlockState(c *models.InboxConversation, callerID int64) error {
-	otherID := c.User2ID
-	if c.User1ID != callerID {
-		otherID = c.User1ID
+	if c.IsGroup || c.OtherUser == nil {
+		return nil
 	}
+	otherID := c.OtherUser.ID
 	blockedByCurrentUser, err := s.repo.IsBlocked(callerID, otherID)
 	if err != nil {
 		return err

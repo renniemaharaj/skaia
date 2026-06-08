@@ -2,15 +2,16 @@ package models
 
 import "time"
 
-// InboxConversation represents a private conversation between two users.
+// InboxConversation represents a conversation between multiple users.
 type InboxConversation struct {
 	ID        int64     `json:"id"`
-	User1ID   int64     `json:"user1_id"`
-	User2ID   int64     `json:"user2_id"`
+	IsGroup   bool      `json:"is_group"`
+	Title     string    `json:"title,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	// Enriched fields resolved at the service layer
-	OtherUser            *User         `json:"other_user,omitempty"`
+	Participants         []*User       `json:"participants,omitempty"`
+	OtherUser            *User         `json:"other_user,omitempty"` // Kept for backwards compatibility on 1-on-1s
 	LastMessage          *InboxMessage `json:"last_message,omitempty"`
 	UnreadCount          int           `json:"unread_count,omitempty"`
 	BlockedByCurrentUser bool          `json:"blocked_by_current_user,omitempty"`

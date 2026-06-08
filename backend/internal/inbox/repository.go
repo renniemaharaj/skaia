@@ -18,54 +18,108 @@ func NewRepository(db *sql.DB) Repository {
 
 func (r *sqlRepository) GetConversation(id int64) (*models.InboxConversation, error) {
 	c := &models.InboxConversation{}
+	var title sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, user1_id, user2_id, created_at, updated_at
+		`SELECT id, is_group, title, created_at, updated_at
 		 FROM inbox_conversations WHERE id = $1`, id,
-	).Scan(&c.ID, &c.User1ID, &c.User2ID, &c.CreatedAt, &c.UpdatedAt)
+	).Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("conversation not found")
+	}
+	if title.Valid {
+		c.Title = title.String
 	}
 	return c, err
 }
 
 func (r *sqlRepository) GetConversationBetween(user1ID, user2ID int64) (*models.InboxConversation, error) {
 	c := &models.InboxConversation{}
+	var title sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, user1_id, user2_id, created_at, updated_at
-		 FROM inbox_conversations
-		 WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)`,
+		`SELECT c.id, c.is_group, c.title, c.created_at, c.updated_at
+		 FROM inbox_conversations c
+		 JOIN inbox_conversation_participants p1 ON p1.conversation_id = c.id
+		 JOIN inbox_conversation_participants p2 ON p2.conversation_id = c.id
+		 WHERE c.is_group = FALSE AND p1.user_id = $1 AND p2.user_id = $2`,
 		user1ID, user2ID,
-	).Scan(&c.ID, &c.User1ID, &c.User2ID, &c.CreatedAt, &c.UpdatedAt)
+	).Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("conversation not found")
+	}
+	if title.Valid {
+		c.Title = title.String
 	}
 	return c, err
 }
 
 func (r *sqlRepository) GetOrCreateConversation(user1ID, user2ID int64) (*models.InboxConversation, error) {
-	// Canonical: lower ID is always user1_id to satisfy the UNIQUE constraint.
-	a, b := user1ID, user2ID
-	if a > b {
-		a, b = b, a
+	c, err := r.GetConversationBetween(user1ID, user2ID)
+	if err == nil {
+		return c, nil
 	}
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	c = &models.InboxConversation{}
+	err = tx.QueryRow(
+		`INSERT INTO inbox_conversations (is_group) VALUES (false) RETURNING id, is_group, created_at, updated_at`,
+	).Scan(&c.ID, &c.IsGroup, &c.CreatedAt, &c.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)`, c.ID, user1ID, user2ID)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (r *sqlRepository) CreateGroupConversation(title string, participantIDs []int64) (*models.InboxConversation, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	c := &models.InboxConversation{}
-	err := r.db.QueryRow(
-		`INSERT INTO inbox_conversations (user1_id, user2_id)
-		 VALUES ($1, $2)
-		 ON CONFLICT (user1_id, user2_id) DO UPDATE
-		   SET updated_at = CURRENT_TIMESTAMP
-		 RETURNING id, user1_id, user2_id, created_at, updated_at`,
-		a, b,
-	).Scan(&c.ID, &c.User1ID, &c.User2ID, &c.CreatedAt, &c.UpdatedAt)
-	return c, err
+	var t sql.NullString
+	if title != "" {
+		t.String = title
+		t.Valid = true
+	}
+	err = tx.QueryRow(
+		`INSERT INTO inbox_conversations (is_group, title) VALUES (true, $1) RETURNING id, is_group, title, created_at, updated_at`, t,
+	).Scan(&c.ID, &c.IsGroup, &t, &c.CreatedAt, &c.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	if t.Valid {
+		c.Title = t.String
+	}
+	for _, pid := range participantIDs {
+		_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2)`, c.ID, pid)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversation, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user1_id, user2_id, created_at, updated_at
-		 FROM inbox_conversations
-		 WHERE user1_id = $1 OR user2_id = $1
-		 ORDER BY updated_at DESC`,
+		`SELECT c.id, c.is_group, c.title, c.created_at, c.updated_at
+		 FROM inbox_conversations c
+		 JOIN inbox_conversation_participants p ON p.conversation_id = c.id
+		 WHERE p.user_id = $1
+		 ORDER BY c.updated_at DESC`,
 		userID,
 	)
 	if err != nil {
@@ -76,12 +130,33 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 	var out []*models.InboxConversation
 	for rows.Next() {
 		c := &models.InboxConversation{}
-		if err := rows.Scan(&c.ID, &c.User1ID, &c.User2ID, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		var title sql.NullString
+		if err := rows.Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
+		}
+		if title.Valid {
+			c.Title = title.String
 		}
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+func (r *sqlRepository) GetParticipants(conversationID int64) ([]int64, error) {
+	rows, err := r.db.Query(`SELECT user_id FROM inbox_conversation_participants WHERE conversation_id = $1`, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 // Messages
@@ -203,8 +278,8 @@ func (r *sqlRepository) UnreadTotal(userID int64) (int, error) {
 	err := r.db.QueryRow(
 		`SELECT COUNT(*)
 		 FROM inbox_messages im
-		 JOIN inbox_conversations ic ON ic.id = im.conversation_id
-		 WHERE (ic.user1_id = $1 OR ic.user2_id = $1)
+		 JOIN inbox_conversation_participants ic ON ic.conversation_id = im.conversation_id
+		 WHERE ic.user_id = $1
 		   AND im.sender_id != $1
 		   AND im.is_read = FALSE`,
 		userID,

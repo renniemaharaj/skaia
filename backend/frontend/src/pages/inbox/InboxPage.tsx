@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner";
 import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
-import SearchField from "../../components/ui/SearchField";
+import PersonPicker from "../../components/ui/PersonPicker";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
@@ -30,6 +30,7 @@ import {
   type InboxMessage,
 } from "../../atoms/inbox";
 import { currentUserAtom } from "../../atoms/auth";
+import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
 import type { User } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -48,6 +49,7 @@ const InboxPage = () => {
   const [messages, setMessages] = useAtom(inboxMessagesAtom);
   const [activeId, setActiveId] = useAtom(activeConversationIdAtom);
   const setUnreadCount = useSetAtom(inboxUnreadCountAtom);
+  const setShowManager = useSetAtom(showUploadManagerAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -55,14 +57,8 @@ const InboxPage = () => {
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [showNewDm, setShowNewDm] = useState(false);
-  const [newDmTarget, setNewDmTarget] = useState("");
-  const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchOffset, setSearchOffset] = useState(0);
-  const [searchHasMore, setSearchHasMore] = useState(true);
-  const [searchLoadingMore, setSearchLoadingMore] = useState(false);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchListRef = useRef<HTMLDivElement>(null);
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+  const [groupTitle, setGroupTitle] = useState("");
 
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 640);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
@@ -76,7 +72,6 @@ const InboxPage = () => {
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState(false);
 
   // Keep the inbox flush with the remaining viewport height
   useEffect(() => {
@@ -257,38 +252,28 @@ const InboxPage = () => {
     isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 80;
   }, []);
 
-  const startNewDm = async () => {
-    if (!newDmTarget.trim()) return;
+  const startConversation = async () => {
     try {
-      const conv = await apiRequest<InboxConversation>("/inbox/conversations", {
-        method: "POST",
-        body: JSON.stringify({ target_username: newDmTarget.trim() }),
-      });
-      if (conv) {
-        setConversations((prev) => {
-          if (prev.some((c) => c.id === conv.id)) return prev;
-          return [conv, ...prev];
-        });
-        setActiveId(conv.id);
+      if (selectedUsers.length === 0) return;
+      
+      let body: any = {};
+      if (selectedUsers.length === 1 && !groupTitle.trim()) {
+        body = { target_user_id: Number(selectedUsers[0].id) };
+      } else {
+        body = {
+          participant_ids: selectedUsers.map((u) => Number(u.id)),
+          title: groupTitle.trim(),
+        };
       }
-    } catch {
-      toast.error("User not found or cannot start conversation.");
-    } finally {
-      setShowNewDm(false);
-      setNewDmTarget("");
-      setSearchResults([]);
-    }
-  };
 
-  const startDmWithUser = async (user: User) => {
-    try {
       const conv = await apiRequest<InboxConversation>("/inbox/conversations", {
         method: "POST",
-        body: JSON.stringify({ target_user_id: Number(user.id) }),
+        body: JSON.stringify(body),
       });
       if (conv) {
-        // Ensure other_user is populated even if backend didn't return it
-        if (!conv.other_user) {
+        // Ensure other_user is populated if it's 1-on-1 and backend didn't return it
+        if (!conv.is_group && !conv.other_user && selectedUsers.length === 1) {
+          const user = selectedUsers[0];
           conv.other_user = {
             id: String(user.id),
             username: user.username,
@@ -299,7 +284,6 @@ const InboxPage = () => {
         setConversations((prev) => {
           const existing = prev.find((c) => c.id === conv.id);
           if (existing) {
-            // Update existing conversation with enriched other_user
             return prev.map((c) =>
               c.id === conv.id ? { ...c, other_user: conv.other_user } : c,
             );
@@ -309,91 +293,14 @@ const InboxPage = () => {
         setActiveId(conv.id);
       }
     } catch {
-      toast.error("Cannot start conversation with this user.");
+      toast.error("Cannot start conversation.");
     } finally {
       setShowNewDm(false);
-      setNewDmTarget("");
-      setSearchResults([]);
+      setSelectedUsers([]);
+      setGroupTitle("");
     }
   };
-
-  // Debounced user search (resets on query change)
-  const SEARCH_PAGE_SIZE = 50;
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (!showNewDm) {
-      setSearchResults([]);
-      setSearchOffset(0);
-      setSearchHasMore(true);
-      return;
-    }
-    setSearchLoading(true);
-    setSearchOffset(0);
-    setSearchHasMore(true);
-    searchTimerRef.current = setTimeout(async () => {
-      try {
-        const q = newDmTarget.trim();
-        const url = q
-          ? `/users/search?q=${encodeURIComponent(q)}&limit=${SEARCH_PAGE_SIZE}&offset=0`
-          : `/users/search?limit=${SEARCH_PAGE_SIZE}&offset=0`;
-        const users = await apiRequest<User[]>(url);
-        const filtered = (users ?? []).filter(
-          (u) => String(u.id) !== String(currentUser?.id),
-        );
-        setSearchResults(filtered);
-        setSearchOffset(SEARCH_PAGE_SIZE);
-        setSearchHasMore((users ?? []).length >= SEARCH_PAGE_SIZE);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 300);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, [newDmTarget, showNewDm, currentUser?.id]);
-
-  // Load more users (infinite scroll)
-  const loadMoreUsers = useCallback(async () => {
-    if (searchLoadingMore || !searchHasMore) return;
-    setSearchLoadingMore(true);
-    try {
-      const q = newDmTarget.trim();
-      const url = q
-        ? `/users/search?q=${encodeURIComponent(q)}&limit=${SEARCH_PAGE_SIZE}&offset=${searchOffset}`
-        : `/users/search?limit=${SEARCH_PAGE_SIZE}&offset=${searchOffset}`;
-      const users = await apiRequest<User[]>(url);
-      const filtered = (users ?? []).filter(
-        (u) => String(u.id) !== String(currentUser?.id),
-      );
-      setSearchResults((prev) => {
-        const ids = new Set(prev.map((u) => u.id));
-        return [...prev, ...filtered.filter((u) => !ids.has(u.id))];
-      });
-      setSearchOffset((prev) => prev + SEARCH_PAGE_SIZE);
-      setSearchHasMore((users ?? []).length >= SEARCH_PAGE_SIZE);
-    } catch {
-      // ignore
-    } finally {
-      setSearchLoadingMore(false);
-    }
-  }, [
-    searchOffset,
-    searchHasMore,
-    searchLoadingMore,
-    newDmTarget,
-    currentUser?.id,
-  ]);
-
   // Infinite scroll handler for search results
-  const handleSearchScroll = useCallback(() => {
-    if (!searchListRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = searchListRef.current;
-    if (scrollHeight - scrollTop - clientHeight < 100) {
-      loadMoreUsers();
-    }
-  }, [loadMoreUsers]);
 
   const activeConv = conversations.find((c) => c.id === activeId);
   const blockedByCurrentUser = activeConv?.blocked_by_current_user ?? false;
@@ -403,63 +310,24 @@ const InboxPage = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeId) return;
-    setUploadingFile(true);
+    
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // Determine upload endpoint based on file type
-      let endpoint = "/upload/file";
-      if (file.type.startsWith("image/")) endpoint = "/upload/image";
-      else if (file.type.startsWith("video/")) endpoint = "/upload/video";
-
-      const uploadRes = await apiRequest<{ url: string }>(endpoint, {
-        method: "POST",
-        body: formData,
-      });
-      if (!uploadRes?.url) {
-        toast.error("Upload failed");
-        return;
-      }
-
+      setShowManager(true);
+      
       // Determine message type from mime
       let messageType = "file";
       if (file.type.startsWith("image/")) messageType = "image";
       else if (file.type.startsWith("video/")) messageType = "video";
       else if (file.type.startsWith("audio/")) messageType = "audio";
 
-      const sentMsg = await apiRequest<InboxMessage>(
-        `/inbox/conversations/${activeId}/messages`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            content: file.name,
-            message_type: messageType,
-            attachment_url: uploadRes.url,
-            attachment_name: file.name,
-            attachment_size: file.size,
-            attachment_mime: file.type,
-          }),
-        },
-      );
-      if (sentMsg) {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === sentMsg.id)) return prev;
-          return [...prev, sentMsg];
-        });
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeId
-              ? { ...c, last_message: sentMsg, updated_at: sentMsg.created_at }
-              : c,
-          ),
-        );
-      }
-    } catch {
-      toast.error("Failed to upload file");
-    } finally {
-      setUploadingFile(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      await uploader.upload(file, { 
+        uploadType: messageType,
+        inboxConversationId: activeId
+      });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload file");
     }
   };
 
@@ -564,38 +432,76 @@ const InboxPage = () => {
           </div>
 
           {showNewDm && (
-            <div className="inbox-new-dm">
-              <SearchField
-                className="inbox-search-input-wrapper"
-                inputClassName="inbox-new-dm-input"
-                iconClassName="inbox-search-icon"
-                iconSize={14}
-                placeholder="Search users…"
-                value={newDmTarget}
-                autoFocus
-                onChange={setNewDmTarget}
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") startNewDm();
-                    if (e.key === "Escape") {
-                      setShowNewDm(false);
-                      setNewDmTarget("");
-                      setSearchResults([]);
-                    }
-                }}
-              >
-                <button
-                  type="button"
-                  className="inbox-search-clear"
-                  onClick={() => {
-                    setShowNewDm(false);
-                    setNewDmTarget("");
-                    setSearchResults([]);
+            <div className="inbox-new-dm" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {selectedUsers.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {selectedUsers.map((u) => (
+                    <span
+                      key={u.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'var(--color-bg-secondary)',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {u.display_name || u.username}
+                      <button
+                        onClick={() =>
+                          setSelectedUsers((prev) =>
+                            prev.filter((x) => x.id !== u.id),
+                          )
+                        }
+                        style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0, color: 'var(--color-text-secondary)' }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {selectedUsers.length > 1 && (
+                <input
+                  type="text"
+                  className="inbox-new-dm-input"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: 'var(--color-bg-secondary)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text)',
                   }}
-                  title="Close search"
-                >
-                  <X size={14} />
-                </button>
-              </SearchField>
+                  placeholder="Group Name (Optional)"
+                  value={groupTitle}
+                  onChange={(e) => setGroupTitle(e.target.value)}
+                />
+              )}
+              <PersonPicker
+                onSelect={(user) => {
+                  if (!selectedUsers.find((u) => u.id === user.id)) {
+                    setSelectedUsers((prev) => [...prev, user]);
+                  }
+                }}
+                excludeIds={selectedUsers.map(u => u.id)}
+                placeholder={selectedUsers.length > 0 ? "Add more users…" : "Search users…"}
+                onClose={() => {
+                  setShowNewDm(false);
+                  setSelectedUsers([]);
+                  setGroupTitle("");
+                }}
+              />
+              <button
+                className="btn-primary"
+                style={{ width: '100%', padding: '8px', borderRadius: '8px', fontWeight: 500 }}
+                onClick={startConversation}
+                disabled={selectedUsers.length === 0}
+              >
+                {selectedUsers.length > 1 ? "Create Group" : "Start Chat"}
+              </button>
             </div>
           )}
 
@@ -603,30 +509,6 @@ const InboxPage = () => {
             {loadingConvs && <p className="inbox-loading">Loading…</p>}
             {!loadingConvs && conversations.length === 0 && !showNewDm && (
               <p className="inbox-empty">No conversations yet.</p>
-            )}
-
-            {/* Search results (shown when search panel is open) */}
-            {showNewDm && (
-              <div
-                className="inbox-search-results"
-                ref={searchListRef}
-                onScroll={handleSearchScroll}
-              >
-                {searchLoading && <p className="inbox-loading">Searching…</p>}
-                {!searchLoading && searchResults.length === 0 && (
-                  <p className="inbox-empty">No users found.</p>
-                )}
-                {searchResults.map((user) => (
-                  <UserSearchResult
-                    key={user.id}
-                    user={user}
-                    onSelect={() => startDmWithUser(user)}
-                  />
-                ))}
-                {searchLoadingMore && (
-                  <p className="inbox-loading">Loading more…</p>
-                )}
-              </div>
             )}
 
             {/* Existing conversations (dimmed when search is active) */}
@@ -704,7 +586,7 @@ const InboxPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach file"
                     type="button"
-                    disabled={uploadingFile || isBlocked}
+                    disabled={isBlocked}
                   >
                     <Paperclip size={18} />
                   </button>
@@ -734,31 +616,13 @@ const InboxPage = () => {
                       if (!msg.trim() || !activeId || sending) return;
                       setSending(true);
                       try {
-                        const sentMsg = await apiRequest<InboxMessage>(
+                        await apiRequest<InboxMessage>(
                           `/inbox/conversations/${activeId}/messages`,
                           {
                             method: "POST",
                             body: JSON.stringify({ content: msg }),
                           },
                         );
-                        if (sentMsg) {
-                          setMessages((prev) => {
-                            if (prev.some((m) => m.id === sentMsg.id))
-                              return prev;
-                            return [...prev, sentMsg];
-                          });
-                          setConversations((prev) =>
-                            prev.map((c) =>
-                              c.id === activeId
-                                ? {
-                                    ...c,
-                                    last_message: sentMsg,
-                                    updated_at: sentMsg.created_at,
-                                  }
-                                : c,
-                            ),
-                          );
-                        }
                       } catch (err) {
                         console.error("Failed to send message:", err);
                       } finally {
@@ -787,40 +651,6 @@ export default InboxPage;
 
 // Sub-components
 
-function UserSearchResult({
-  user,
-  onSelect,
-}: {
-  user: User;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      className="inbox-conv-row inbox-search-result-row"
-      onClick={onSelect}
-    >
-      <span className="inbox-conv-avatar">
-        <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url || undefined} disableClick={true}>
-          <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-            <UserAvatar
-              src={user.avatar_url || undefined}
-              alt={user.display_name || user.username}
-              size={36}
-              initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
-            />
-          </div>
-        </UserProfileOverlay>
-      </span>
-      <span className="inbox-conv-info">
-        <span className="inbox-conv-name">
-          {user.display_name || user.username}
-        </span>
-        <span className="inbox-conv-preview">@{user.username}</span>
-      </span>
-    </button>
-  );
-}
-
 function ConversationRow({
   c,
   activeId,
@@ -833,7 +663,10 @@ function ConversationRow({
   onSelect: () => void;
 }) {
   const other = c.other_user;
+  const isGroup = c.is_group;
   const isActive = c.id === activeId;
+  const displayName = isGroup ? (c.title || `Group Chat (${c.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
+
   return (
     <button
       className={`inbox-conv-row${
@@ -842,7 +675,11 @@ function ConversationRow({
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
-        {other ? (
+        {isGroup ? (
+          <div className="inbox-group-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', backgroundColor: '#333' }}>
+            <UserAvatar src={undefined} alt="Group" size={36} initials="G" />
+          </div>
+        ) : other ? (
           <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
             <div style={{ display: 'flex', width: '100%', height: '100%' }}>
               <UserAvatar
@@ -864,9 +701,7 @@ function ConversationRow({
         )}
       </span>
       <span className="inbox-conv-info">
-        <span className="inbox-conv-name">
-          {other?.display_name || other?.username || "Unknown"}
-        </span>
+        <span className="inbox-conv-name">{displayName}</span>
         {c.last_message && (
           <span className="inbox-conv-preview">
             {c.last_message.content.slice(0, 50)}
@@ -912,6 +747,10 @@ function InboxChatHeader({
   onBlock: () => void;
   onUnblock: () => void;
 }) {
+  const isGroup = activeConv?.is_group;
+  const other = activeConv?.other_user;
+  const displayName = isGroup ? (activeConv.title || `Group Chat (${activeConv.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
+
   return (
     <div className="inbox-chat-header">
       {isMobile && (
@@ -923,43 +762,51 @@ function InboxChatHeader({
           ←
         </button>
       )}
-      {activeConv?.other_user ? (
-        <div className="inbox-chat-user">
-          <Link
-            to={`/users/${activeConv.other_user.id}`}
-            className="inbox-chat-user-link"
-          >
-            <span className="inbox-chat-avatar">
-              <UserProfileOverlay userId={activeConv.other_user.id} fallbackName={activeConv.other_user.display_name || activeConv.other_user.username} fallbackAvatar={activeConv.other_user.avatar_url || undefined} disableClick={true}>
-                <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-                  <UserAvatar
-                    src={activeConv.other_user.avatar_url || undefined}
-                    alt={
-                      activeConv.other_user.display_name ||
-                      activeConv.other_user.username
-                    }
-                    size={32}
-                  />
-                </div>
-              </UserProfileOverlay>
+      <div className="inbox-chat-user">
+        {isGroup ? (
+          <>
+            <span className="inbox-chat-avatar" style={{ marginRight: 12 }}>
+              <UserAvatar src={undefined} alt="Group" size={32} initials="G" />
             </span>
-            <span className="inbox-chat-username">
-              {activeConv.other_user.display_name ||
-                activeConv.other_user.username}
-            </span>
-          </Link>
-          {isBlocked && (
-            <span className="inbox-block-status">
-              <Info size={14} />
-              {blockedByCurrentUser
-                ? "You blocked this user"
-                : "Blocked by user"}
-            </span>
-          )}
-        </div>
-      ) : (
-        <span className="inbox-chat-username">Conversation</span>
-      )}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="inbox-chat-username">{displayName}</span>
+              <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                {activeConv.participants?.map(p => p.display_name || p.username).join(', ')}
+              </span>
+            </div>
+          </>
+        ) : other ? (
+          <>
+            <Link
+              to={`/users/${other.id}`}
+              className="inbox-chat-user-link"
+            >
+              <span className="inbox-chat-avatar">
+                <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
+                  <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+                    <UserAvatar
+                      src={other.avatar_url || undefined}
+                      alt={displayName}
+                      size={32}
+                    />
+                  </div>
+                </UserProfileOverlay>
+              </span>
+              <span className="inbox-chat-username">{displayName}</span>
+            </Link>
+            {isBlocked && (
+              <span className="inbox-block-status">
+                <Info size={14} />
+                {blockedByCurrentUser
+                  ? "You blocked this user"
+                  : "Blocked by user"}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="inbox-chat-username">Conversation</span>
+        )}
+      </div>
       <div className="inbox-chat-actions">
         <button
           className="inbox-action-btn"
@@ -973,7 +820,7 @@ function InboxChatHeader({
             <button onClick={onDelete}>
               <Trash2 size={14} /> Delete conversation
             </button>
-            {blockedByCurrentUser ? (
+            {!isGroup && (blockedByCurrentUser ? (
               <button onClick={onUnblock}>
                 <Ban size={14} /> Unblock user
               </button>
@@ -985,7 +832,7 @@ function InboxChatHeader({
               <button onClick={onBlock}>
                 <Ban size={14} /> Block user
               </button>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -1000,6 +847,14 @@ function MessageBubble({
   m: InboxMessage;
   currentUserId: string | undefined;
 }) {
+  if (m.message_type === "system_group_created") {
+    return (
+      <div className="inbox-msg-system" style={{ textAlign: "center", margin: "1rem 0", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+        <span><strong>{m.sender_name}</strong> {m.content} on {formatLocalTime(m.created_at)}</span>
+      </div>
+    );
+  }
+
   const isMe = String(m.sender_id) === String(currentUserId);
   return (
     <div className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}>
