@@ -136,6 +136,7 @@ export const useWebSocketSync = () => {
   const setInboxUnreadCount = useSetAtom(inboxUnreadCountAtom);
   const activeConversationId = useAtomValue(activeConversationIdAtom);
   const activeConversationIdRef = useRef<string | null>(null);
+  const setActiveConversationId = useSetAtom(activeConversationIdAtom);
   activeConversationIdRef.current = activeConversationId;
   // Keep module-level var in sync so all setupWebSocket closures see the latest value.
   _activeConversationId = activeConversationId;
@@ -707,6 +708,67 @@ export const useWebSocketSync = () => {
           // Inbox
           if (message.type === "inbox:update") {
             const { action: inboxAction, data: inboxData } = payload as any;
+            if (inboxAction === "conversation_created" && inboxData) {
+              setInboxConversations((prev) => {
+                if (prev.some((c) => String(c.id) === String(inboxData.id))) return prev;
+                return [inboxData, ...prev];
+              });
+            }
+            if (inboxAction === "conversation_deleted" && inboxData) {
+              setInboxConversations((prev) => prev.filter(c => String(c.id) !== String(inboxData.id)));
+              if (String(_activeConversationId) === String(inboxData.id)) {
+                setActiveConversationId(null);
+                toast.error("You are no longer in this conversation");
+              }
+            }
+            if (inboxAction === "participant_removed" && inboxData) {
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(inboxData.conversation_id)
+                    ? { ...c, participants: c.participants?.filter((p) => String(p.id) !== String(inboxData.user_id)) }
+                    : c
+                )
+              );
+            }
+            if (inboxAction === "participant_added" && inboxData) {
+              setInboxConversations((prev) =>
+                prev.map((c) => {
+                  if (String(c.id) === String(inboxData.conversation_id)) {
+                    const existing = c.participants?.find((p) => String(p.id) === String(inboxData.participant.id));
+                    if (existing) return c;
+                    return { ...c, participants: [...(c.participants || []), inboxData.participant] };
+                  }
+                  return c;
+                })
+              );
+            }
+            if (inboxAction === "participant_muted" && inboxData) {
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(inboxData.conversation_id)
+                    ? { ...c, participants: c.participants?.map((p) => String(p.id) === String(inboxData.user_id) ? { ...p, is_muted: inboxData.is_muted } : p) }
+                    : c
+                )
+              );
+            }
+            if (inboxAction === "participant_role_changed" && inboxData) {
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(inboxData.conversation_id)
+                    ? { ...c, participants: c.participants?.map((p) => String(p.id) === String(inboxData.user_id) ? { ...p, role: inboxData.role } : p) }
+                    : c
+                )
+              );
+            }
+            if (inboxAction === "conversation_locked" && inboxData) {
+              setInboxConversations((prev) =>
+                prev.map((c) =>
+                  String(c.id) === String(inboxData.conversation_id)
+                    ? { ...c, is_locked: inboxData.is_locked }
+                    : c
+                )
+              );
+            }
             if (inboxAction === "message_created" && inboxData) {
               const convStr = String(inboxData.conversation_id);
               const activeId = _activeConversationId;

@@ -43,12 +43,16 @@ func (s *Service) GetOrStartConversation(user1ID, user2ID int64) (*models.InboxC
 	if err != nil {
 		return nil, err
 	}
-	participantIDs, err := s.repo.GetParticipants(conv.ID)
+	participantRows, err := s.repo.GetParticipants(conv.ID)
 	if err == nil {
-		for _, pid := range participantIDs {
-			if u, err := s.userSvc.GetByID(pid); err == nil {
-				conv.Participants = append(conv.Participants, u)
-				if pid != user1ID && conv.OtherUser == nil {
+		for _, row := range participantRows {
+			if u, err := s.userSvc.GetByID(row.UserID); err == nil {
+				conv.Participants = append(conv.Participants, &models.InboxParticipant{
+					User:    *u,
+					Role:    row.Role,
+					IsMuted: row.IsMuted,
+				})
+				if row.UserID != user1ID && conv.OtherUser == nil {
 					conv.OtherUser = u
 				}
 			}
@@ -65,20 +69,30 @@ func (s *Service) CreateGroupConversation(creatorID int64, participantIDs []int6
 	for _, id := range participantIDs {
 		if id == creatorID {
 			hasCreator = true
+		} else {
+			blocked, err := s.repo.IsBlockedEither(creatorID, id)
+			if err == nil && blocked {
+				return nil, fmt.Errorf("cannot add user %d due to block settings", id)
+			}
 		}
 	}
 	if !hasCreator {
 		participantIDs = append(participantIDs, creatorID)
 	}
 
-	conv, err := s.repo.CreateGroupConversation(title, participantIDs)
+	conv, err := s.repo.CreateGroupConversation(title, creatorID, participantIDs)
 	if err != nil {
 		return nil, err
 	}
 	
-	for _, pid := range participantIDs {
-		if u, err := s.userSvc.GetByID(pid); err == nil {
-			conv.Participants = append(conv.Participants, u)
+	participantRows, _ := s.repo.GetParticipants(conv.ID)
+	for _, row := range participantRows {
+		if u, err := s.userSvc.GetByID(row.UserID); err == nil {
+			conv.Participants = append(conv.Participants, &models.InboxParticipant{
+				User:    *u,
+				Role:    row.Role,
+				IsMuted: row.IsMuted,
+			})
 		}
 	}
 
@@ -99,6 +113,12 @@ func (s *Service) CreateGroupConversation(creatorID int64, participantIDs []int6
 				notifMsg := &ws.Message{Type: ws.InboxMsg, Payload: payload}
 				s.hub.SendToUser(pid, notifMsg)
 			}
+			if payload, err2 := json.Marshal(map[string]interface{}{
+				"action": "conversation_created",
+				"data":   conv,
+			}); err2 == nil {
+				s.hub.SendToUser(pid, &ws.Message{Type: ws.InboxUpdate, Payload: payload})
+			}
 		}
 	}
 
@@ -116,18 +136,22 @@ func (s *Service) GetConversation(id, callerID int64) (*models.InboxConversation
 	if err != nil {
 		return nil, err
 	}
-	participantIDs, err := s.repo.GetParticipants(id)
+	participantRows, err := s.repo.GetParticipants(id)
 	if err != nil {
 		return nil, err
 	}
 	isParticipant := false
-	for _, pid := range participantIDs {
-		if pid == callerID {
+	for _, row := range participantRows {
+		if row.UserID == callerID {
 			isParticipant = true
 		}
-		if u, err := s.userSvc.GetByID(pid); err == nil {
-			c.Participants = append(c.Participants, u)
-			if pid != callerID && c.OtherUser == nil {
+		if u, err := s.userSvc.GetByID(row.UserID); err == nil {
+			c.Participants = append(c.Participants, &models.InboxParticipant{
+				User:    *u,
+				Role:    row.Role,
+				IsMuted: row.IsMuted,
+			})
+			if row.UserID != callerID && c.OtherUser == nil {
 				c.OtherUser = u
 			}
 		}
@@ -146,11 +170,15 @@ func (s *Service) ListConversations(userID int64) ([]*models.InboxConversation, 
 		return nil, err
 	}
 	for _, c := range convs {
-		participantIDs, _ := s.repo.GetParticipants(c.ID)
-		for _, pid := range participantIDs {
-			if u, err := s.userSvc.GetByID(pid); err == nil {
-				c.Participants = append(c.Participants, u)
-				if pid != userID && c.OtherUser == nil {
+		participantRows, _ := s.repo.GetParticipants(c.ID)
+		for _, row := range participantRows {
+			if u, err := s.userSvc.GetByID(row.UserID); err == nil {
+				c.Participants = append(c.Participants, &models.InboxParticipant{
+					User:    *u,
+					Role:    row.Role,
+					IsMuted: row.IsMuted,
+				})
+				if row.UserID != userID && c.OtherUser == nil {
 					c.OtherUser = u
 				}
 			}
@@ -200,8 +228,19 @@ func (s *Service) SendMessage(msg *models.InboxMessage) (*models.InboxMessage, e
 		return nil, err
 	}
 
-	// For 1-on-1, check block status
-	if !c.IsGroup && c.OtherUser != nil {
+	if c.IsLocked {
+		return nil, fmt.Errorf("conversation is locked")
+	}
+
+	// For groups, check if muted
+	if c.IsGroup {
+		for _, p := range c.Participants {
+			if p.ID == msg.SenderID && p.IsMuted {
+				return nil, fmt.Errorf("you are muted in this conversation")
+			}
+		}
+	} else if c.OtherUser != nil {
+		// For 1-on-1, check block status
 		blocked, err := s.repo.IsBlockedEither(msg.SenderID, c.OtherUser.ID)
 		if err != nil {
 			return nil, err
@@ -257,12 +296,273 @@ func (s *Service) UnreadTotal(userID int64) (int, error) {
 
 // DeleteConversation deletes a conversation and all its messages.
 func (s *Service) DeleteConversation(conversationID, callerID int64) error {
-	_, err := s.GetConversation(conversationID, callerID)
+	c, err := s.GetConversation(conversationID, callerID)
 	if err != nil {
 		return err
 	}
+	if c.IsGroup {
+		// Only owner or manager can delete
+		canDelete := false
+		for _, p := range c.Participants {
+			if p.ID == callerID && (p.Role == "owner" || p.Role == "manager") {
+				canDelete = true
+				break
+			}
+		}
+		if !canDelete {
+			return errForbidden
+		}
+	}
 	return s.repo.DeleteConversation(conversationID)
 }
+
+func (s *Service) isManagerOrOwner(c *models.InboxConversation, userID int64) bool {
+	if !c.IsGroup {
+		return true // 1-on-1 doesn't have roles
+	}
+	for _, p := range c.Participants {
+		if p.ID == userID && (p.Role == "owner" || p.Role == "manager") {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Service) LockConversation(conversationID, callerID int64, locked bool) error {
+	c, err := s.GetConversation(conversationID, callerID)
+	if err != nil {
+		return err
+	}
+	if !s.isManagerOrOwner(c, callerID) {
+		return errForbidden
+	}
+	err = s.repo.SetConversationLocked(conversationID, locked)
+	if err == nil {
+		s.hub.PropagateInboxConversation(conversationID, map[string]interface{}{
+			"conversation_id": conversationID,
+			"is_locked":       locked,
+		}, "conversation_locked")
+	}
+	return err
+}
+
+func (s *Service) KickParticipant(conversationID, callerID, targetID int64) error {
+	c, err := s.GetConversation(conversationID, callerID)
+	if err != nil {
+		return err
+	}
+	if callerID != targetID {
+		if !s.isManagerOrOwner(c, callerID) {
+			return errForbidden
+		}
+		// Check if target is owner
+		for _, p := range c.Participants {
+			if p.ID == targetID && p.Role == "owner" {
+				return errForbidden // Cannot kick owner
+			}
+		}
+	}
+	err = s.repo.RemoveParticipant(conversationID, targetID)
+	if err != nil {
+		return err
+	}
+
+	var targetName string
+	if targetUser, err := s.userSvc.GetByID(targetID); err == nil {
+		targetName = targetUser.DisplayName
+		if targetName == "" {
+			targetName = targetUser.Username
+		}
+	} else {
+		targetName = "A user"
+	}
+
+	var content string
+	if callerID == targetID {
+		content = fmt.Sprintf("%s left the group", targetName)
+	} else {
+		var callerName string
+		if callerUser, err := s.userSvc.GetByID(callerID); err == nil {
+			callerName = callerUser.DisplayName
+			if callerName == "" {
+				callerName = callerUser.Username
+			}
+		} else {
+			callerName = "Someone"
+		}
+		content = fmt.Sprintf("%s removed %s from the group", callerName, targetName)
+	}
+
+	msg, _ := s.repo.CreateMessage(&models.InboxMessage{
+		ConversationID: conversationID,
+		SenderID:       callerID,
+		Content:        content,
+		MessageType:    "system_group_update",
+	})
+	if msg != nil {
+		if u, err := s.userSvc.GetByID(callerID); err == nil {
+			msg.SenderName = u.DisplayName
+			msg.SenderAvatar = u.AvatarURL
+		}
+		s.hub.PropagateInboxConversation(conversationID, msg, "message_created")
+	}
+
+	s.hub.PropagateInboxConversation(conversationID, map[string]interface{}{
+		"conversation_id": conversationID,
+		"user_id":         targetID,
+	}, "participant_removed")
+
+	if payload, err2 := json.Marshal(map[string]interface{}{
+		"action": "conversation_deleted",
+		"data": map[string]interface{}{
+			"id": conversationID,
+		},
+	}); err2 == nil {
+		s.hub.SendToUser(targetID, &ws.Message{Type: ws.InboxUpdate, Payload: payload})
+	}
+
+	return nil
+}
+
+func (s *Service) AddParticipant(conversationID, callerID, targetID int64) error {
+	c, err := s.GetConversation(conversationID, callerID)
+	if err != nil {
+		return err
+	}
+	if !c.IsGroup {
+		return fmt.Errorf("cannot add participants to a 1-on-1 conversation")
+	}
+	if !s.isManagerOrOwner(c, callerID) {
+		return errForbidden
+	}
+
+	for _, p := range c.Participants {
+		if p.ID == targetID {
+			return fmt.Errorf("user is already a participant")
+		}
+	}
+
+	err = s.repo.AddParticipant(conversationID, targetID, "member")
+	if err != nil {
+		return err
+	}
+
+	var targetName string
+	if targetUser, err := s.userSvc.GetByID(targetID); err == nil {
+		targetName = targetUser.DisplayName
+		if targetName == "" {
+			targetName = targetUser.Username
+		}
+	} else {
+		targetName = "A user"
+	}
+
+	var callerName string
+	if callerUser, err := s.userSvc.GetByID(callerID); err == nil {
+		callerName = callerUser.DisplayName
+		if callerName == "" {
+			callerName = callerUser.Username
+		}
+	} else {
+		callerName = "Someone"
+	}
+	content := fmt.Sprintf("%s added %s to the group", callerName, targetName)
+
+	msg, _ := s.repo.CreateMessage(&models.InboxMessage{
+		ConversationID: conversationID,
+		SenderID:       callerID,
+		Content:        content,
+		MessageType:    "system_group_update",
+	})
+	if msg != nil {
+		if u, err := s.userSvc.GetByID(callerID); err == nil {
+			msg.SenderName = u.DisplayName
+			msg.SenderAvatar = u.AvatarURL
+		}
+		s.hub.PropagateInboxConversation(conversationID, msg, "message_created")
+	}
+
+	var p models.InboxParticipant
+	if targetUser, err := s.userSvc.GetByID(targetID); err == nil {
+		p.ID = targetUser.ID
+		p.Username = targetUser.Username
+		p.DisplayName = targetUser.DisplayName
+		p.AvatarURL = targetUser.AvatarURL
+	} else {
+		p.ID = targetID
+	}
+	p.Role = "member"
+
+	s.hub.PropagateInboxConversation(conversationID, map[string]interface{}{
+		"conversation_id": conversationID,
+		"participant":     p,
+	}, "participant_added")
+
+	cNew, _ := s.GetConversation(conversationID, targetID)
+	if payload, err2 := json.Marshal(map[string]interface{}{
+		"action": "conversation_created",
+		"data":   cNew,
+	}); err2 == nil {
+		s.hub.SendToUser(targetID, &ws.Message{Type: ws.InboxUpdate, Payload: payload})
+	}
+
+	return nil
+}
+
+func (s *Service) MuteParticipant(conversationID, callerID, targetID int64, muted bool) error {
+	c, err := s.GetConversation(conversationID, callerID)
+	if err != nil {
+		return err
+	}
+	if !s.isManagerOrOwner(c, callerID) {
+		return errForbidden
+	}
+	for _, p := range c.Participants {
+		if p.ID == targetID && p.Role == "owner" {
+			return errForbidden // Cannot mute owner
+		}
+	}
+	err = s.repo.SetParticipantMuted(conversationID, targetID, muted)
+	if err == nil {
+		s.hub.PropagateInboxConversation(conversationID, map[string]interface{}{
+			"conversation_id": conversationID,
+			"user_id":         targetID,
+			"is_muted":        muted,
+		}, "participant_muted")
+	}
+	return err
+}
+
+func (s *Service) ChangeParticipantRole(conversationID, callerID, targetID int64, newRole string) error {
+	c, err := s.GetConversation(conversationID, callerID)
+	if err != nil {
+		return err
+	}
+	// Only owner can change roles
+	isOwner := false
+	for _, p := range c.Participants {
+		if p.ID == callerID && p.Role == "owner" {
+			isOwner = true
+			break
+		}
+	}
+	if !isOwner {
+		return errForbidden
+	}
+	if newRole != "owner" && newRole != "manager" && newRole != "member" {
+		return fmt.Errorf("invalid role")
+	}
+	err = s.repo.UpdateParticipantRole(conversationID, targetID, newRole)
+	if err == nil {
+		s.hub.PropagateInboxConversation(conversationID, map[string]interface{}{
+			"conversation_id": conversationID,
+			"user_id":         targetID,
+			"role":            newRole,
+		}, "participant_role_changed")
+	}
+	return err
+}
+
 
 func (s *Service) populateBlockState(c *models.InboxConversation, callerID int64) error {
 	if c.IsGroup || c.OtherUser == nil {

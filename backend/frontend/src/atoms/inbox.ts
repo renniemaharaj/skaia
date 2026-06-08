@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import type { User } from "./auth";
 
 export interface InboxMessage {
   id: string;
@@ -17,26 +18,22 @@ export interface InboxMessage {
   updated_at: string;
 }
 
+export interface InboxParticipant extends User {
+  role: string;
+  is_muted: boolean;
+}
+
 export interface InboxConversation {
   id: string;
   is_group: boolean;
   title?: string;
   created_at: string;
   updated_at: string;
-  participants?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  }[];
-  other_user?: {
-    id: string;
-    username: string;
-    display_name: string;
-    avatar_url: string;
-  };
+  is_locked: boolean;
+  participants?: InboxParticipant[];
+  other_user?: User;
   last_message?: InboxMessage;
-  unread_count: number;
+  unread_count?: number;
   blocked_by_current_user?: boolean;
   blocked_by_other_user?: boolean;
 }

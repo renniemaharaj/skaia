@@ -20,9 +20,9 @@ func (r *sqlRepository) GetConversation(id int64) (*models.InboxConversation, er
 	c := &models.InboxConversation{}
 	var title sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, is_group, title, created_at, updated_at
+		`SELECT id, is_group, title, is_locked, created_at, updated_at
 		 FROM inbox_conversations WHERE id = $1`, id,
-	).Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt)
+	).Scan(&c.ID, &c.IsGroup, &title, &c.IsLocked, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("conversation not found")
 	}
@@ -36,13 +36,13 @@ func (r *sqlRepository) GetConversationBetween(user1ID, user2ID int64) (*models.
 	c := &models.InboxConversation{}
 	var title sql.NullString
 	err := r.db.QueryRow(
-		`SELECT c.id, c.is_group, c.title, c.created_at, c.updated_at
+		`SELECT c.id, c.is_group, c.title, c.is_locked, c.created_at, c.updated_at
 		 FROM inbox_conversations c
 		 JOIN inbox_conversation_participants p1 ON p1.conversation_id = c.id
 		 JOIN inbox_conversation_participants p2 ON p2.conversation_id = c.id
-		 WHERE c.is_group = FALSE AND p1.user_id = $1 AND p2.user_id = $2`,
+		 WHERE p1.user_id = $1 AND p2.user_id = $2 AND c.is_group = false`,
 		user1ID, user2ID,
-	).Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt)
+	).Scan(&c.ID, &c.IsGroup, &title, &c.IsLocked, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("conversation not found")
 	}
@@ -79,7 +79,7 @@ func (r *sqlRepository) GetOrCreateConversation(user1ID, user2ID int64) (*models
 	return c, nil
 }
 
-func (r *sqlRepository) CreateGroupConversation(title string, participantIDs []int64) (*models.InboxConversation, error) {
+func (r *sqlRepository) CreateGroupConversation(title string, creatorID int64, participantIDs []int64) (*models.InboxConversation, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return nil, err
@@ -102,7 +102,11 @@ func (r *sqlRepository) CreateGroupConversation(title string, participantIDs []i
 		c.Title = t.String
 	}
 	for _, pid := range participantIDs {
-		_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2)`, c.ID, pid)
+		role := "member"
+		if pid == creatorID {
+			role = "owner"
+		}
+		_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3)`, c.ID, pid, role)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +119,7 @@ func (r *sqlRepository) CreateGroupConversation(title string, participantIDs []i
 
 func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversation, error) {
 	rows, err := r.db.Query(
-		`SELECT c.id, c.is_group, c.title, c.created_at, c.updated_at
+		`SELECT c.id, c.is_group, c.title, c.is_locked, c.created_at, c.updated_at
 		 FROM inbox_conversations c
 		 JOIN inbox_conversation_participants p ON p.conversation_id = c.id
 		 WHERE p.user_id = $1
@@ -131,7 +135,7 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 	for rows.Next() {
 		c := &models.InboxConversation{}
 		var title sql.NullString
-		if err := rows.Scan(&c.ID, &c.IsGroup, &title, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.IsGroup, &title, &c.IsLocked, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if title.Valid {
@@ -142,21 +146,46 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 	return out, rows.Err()
 }
 
-func (r *sqlRepository) GetParticipants(conversationID int64) ([]int64, error) {
-	rows, err := r.db.Query(`SELECT user_id FROM inbox_conversation_participants WHERE conversation_id = $1`, conversationID)
+func (r *sqlRepository) GetParticipants(conversationID int64) ([]ParticipantRow, error) {
+	rows, err := r.db.Query(`SELECT user_id, role, is_muted FROM inbox_conversation_participants WHERE conversation_id = $1`, conversationID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var ids []int64
+	var out []ParticipantRow
 	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var row ParticipantRow
+		if err := rows.Scan(&row.UserID, &row.Role, &row.IsMuted); err != nil {
 			return nil, err
 		}
-		ids = append(ids, id)
+		out = append(out, row)
 	}
-	return ids, nil
+	return out, nil
+}
+
+func (r *sqlRepository) SetConversationLocked(id int64, locked bool) error {
+	_, err := r.db.Exec(`UPDATE inbox_conversations SET is_locked = $1 WHERE id = $2`, locked, id)
+	return err
+}
+
+func (r *sqlRepository) UpdateParticipantRole(conversationID, userID int64, role string) error {
+	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET role = $1 WHERE conversation_id = $2 AND user_id = $3`, role, conversationID, userID)
+	return err
+}
+
+func (r *sqlRepository) SetParticipantMuted(conversationID, userID int64, muted bool) error {
+	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET is_muted = $1 WHERE conversation_id = $2 AND user_id = $3`, muted, conversationID, userID)
+	return err
+}
+
+func (r *sqlRepository) RemoveParticipant(conversationID, userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM inbox_conversation_participants WHERE conversation_id = $1 AND user_id = $2`, conversationID, userID)
+	return err
+}
+
+func (r *sqlRepository) AddParticipant(conversationID, userID int64, role string) error {
+	_, err := r.db.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, conversationID, userID, role)
+	return err
 }
 
 // Messages

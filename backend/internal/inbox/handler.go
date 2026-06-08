@@ -34,6 +34,11 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Post("/conversations/{id}/messages", h.sendMessage)
 		r.Put("/conversations/{id}/read", h.markRead)
 		r.Delete("/conversations/{id}", h.deleteConversation)
+		r.Put("/conversations/{id}/lock", h.lockConversation)
+		r.Post("/conversations/{id}/participants", h.addParticipant)
+		r.Delete("/conversations/{id}/participants/{user_id}", h.kickParticipant)
+		r.Put("/conversations/{id}/participants/{user_id}/mute", h.muteParticipant)
+		r.Put("/conversations/{id}/participants/{user_id}/role", h.changeParticipantRole)
 		// Message deletion
 		r.Delete("/messages/{id}", h.deleteMessage)
 		// Unread total badge
@@ -282,6 +287,37 @@ func (h *Handler) unreadTotal(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]int{"count": count})
 }
 
+func (h *Handler) addParticipant(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid conversation id")
+		return
+	}
+
+	var req struct {
+		UserID int64 `json:"user_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.svc.AddParticipant(id, callerID, req.UserID); err != nil {
+		if err == errForbidden {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
 func (h *Handler) deleteConversation(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -377,4 +413,100 @@ func (h *Handler) listBlockedUsers(w http.ResponseWriter, r *http.Request) {
 		users = []*models.User{}
 	}
 	utils.WriteJSON(w, http.StatusOK, users)
+}
+
+func (h *Handler) lockConversation(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	
+	var req struct {
+		Locked bool `json:"locked"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	if err := h.svc.LockConversation(id, callerID, req.Locked); err != nil {
+		if err == errForbidden {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+		} else {
+			utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+func (h *Handler) kickParticipant(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	targetStr := chi.URLParam(r, "user_id")
+	var targetID int64
+	if targetStr == "me" {
+		targetID = callerID
+	} else {
+		targetID, _ = strconv.ParseInt(targetStr, 10, 64)
+	}
+	
+	if err := h.svc.KickParticipant(id, callerID, targetID); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+func (h *Handler) muteParticipant(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	targetID, _ := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
+	
+	var req struct {
+		Muted bool `json:"muted"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	
+	if err := h.svc.MuteParticipant(id, callerID, targetID, req.Muted); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+func (h *Handler) changeParticipantRole(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	targetID, _ := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
+	
+	var req struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	
+	if err := h.svc.ChangeParticipantRole(id, callerID, targetID, req.Role); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"success": true})
 }

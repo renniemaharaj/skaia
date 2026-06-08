@@ -14,6 +14,14 @@ import {
   FileIcon,
   Info,
   FileText,
+  Lock,
+  Unlock,
+  Shield,
+  UserMinus,
+  UserPlus,
+  VolumeX,
+  Volume2,
+  Check
 } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "../../components/user/UserAvatar";
@@ -274,12 +282,7 @@ const InboxPage = () => {
         // Ensure other_user is populated if it's 1-on-1 and backend didn't return it
         if (!conv.is_group && !conv.other_user && selectedUsers.length === 1) {
           const user = selectedUsers[0];
-          conv.other_user = {
-            id: String(user.id),
-            username: user.username,
-            display_name: user.display_name || user.username,
-            avatar_url: user.avatar_url,
-          };
+          conv.other_user = user;
         }
         setConversations((prev) => {
           const existing = prev.find((c) => c.id === conv.id);
@@ -400,6 +403,66 @@ const InboxPage = () => {
     setShowChatMenu(false);
   };
 
+  const handleLock = async (locked: boolean) => {
+    if (!activeId) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}/lock`, {
+        method: "PUT",
+        body: JSON.stringify({ locked }),
+      });
+      setConversations((prev) => prev.map((c) => c.id.toString() === activeId ? { ...c, is_locked: locked } : c));
+      toast.success(locked ? "Conversation locked" : "Conversation unlocked");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update lock state");
+    }
+  };
+
+  const handleKick = async (userId: string) => {
+    if (!activeId) return;
+    const isMe = userId === currentUser?.id?.toString();
+    if (!await customConfirm(isMe ? "Are you sure you want to leave this group?" : "Remove this participant?")) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${isMe ? "me" : userId}`, {
+        method: "DELETE",
+      });
+      if (isMe) {
+        setConversations((prev) => prev.filter((c) => c.id.toString() !== activeId));
+        setActiveId(null);
+      } else {
+        setConversations((prev) => prev.map((c) => c.id.toString() === activeId ? { ...c, participants: c.participants?.filter((p) => p.id.toString() !== userId) } : c));
+      }
+      toast.success(isMe ? "You left the group" : "Participant removed");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to remove participant");
+    }
+  };
+
+  const handleMute = async (userId: string, muted: boolean) => {
+    if (!activeId) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/mute`, {
+        method: "PUT",
+        body: JSON.stringify({ muted }),
+      });
+      toast.success(muted ? "Participant muted" : "Participant unmuted");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to mute participant");
+    }
+  };
+
+  const handleChangeRole = async (userId: string, role: string) => {
+    if (!activeId) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ role }),
+      });
+      toast.success("Role updated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update role");
+    }
+  };
+
   const handleEmojiSelect = (emoji: { native: string }) => {
     // We need to insert the emoji into the Input component
     // Since Input manages its own state, we'll use the handleSend approach
@@ -407,6 +470,20 @@ const InboxPage = () => {
     // append to a message draft ref.
     setEmojiToInsert(emoji.native);
     setShowEmojiPicker(false);
+  };
+
+  const handleAddUser = async (user: any) => {
+    if (!activeId) return;
+    try {
+      await apiRequest(`/inbox/conversations/${activeId}/participants`, {
+        method: "POST",
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      toast.success("User added to group");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to add user");
+      throw e;
+    }
   };
 
   const [emojiToInsert, setEmojiToInsert] = useState<string | null>(null);
@@ -422,13 +499,33 @@ const InboxPage = () => {
         <aside className="inbox-sidebar">
           <div className="inbox-sidebar-header">
             <h2 className="inbox-sidebar-title">Messages</h2>
-            <button
-              className="inbox-new-btn"
-              onClick={() => setShowNewDm(true)}
-              title="New message"
-            >
-              <Plus size={16} />
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              {showNewDm && selectedUsers.length > 0 && (
+                <button
+                  className="inbox-new-btn"
+                  onClick={startConversation}
+                  disabled={sending}
+                  title="Create"
+                >
+                  <Check size={16} />
+                </button>
+              )}
+              <button
+                className="inbox-new-btn"
+                onClick={() => {
+                  if (showNewDm) {
+                    setShowNewDm(false);
+                    setSelectedUsers([]);
+                    setGroupTitle("");
+                  } else {
+                    setShowNewDm(true);
+                  }
+                }}
+                title={showNewDm ? "Cancel" : "New message"}
+              >
+                {showNewDm ? <X size={16} /> : <Plus size={16} />}
+              </button>
+            </div>
           </div>
 
           {showNewDm && (
@@ -494,14 +591,6 @@ const InboxPage = () => {
                   setGroupTitle("");
                 }}
               />
-              <button
-                className="btn-primary"
-                style={{ width: '100%', padding: '8px', borderRadius: '8px', fontWeight: 500 }}
-                onClick={startConversation}
-                disabled={selectedUsers.length === 0}
-              >
-                {selectedUsers.length > 1 ? "Create Group" : "Start Chat"}
-              </button>
             </div>
           )}
 
@@ -542,7 +631,7 @@ const InboxPage = () => {
               <InboxChatHeader
                 isMobile={isMobile}
                 onMobileBack={() => setMobileView("list")}
-                activeConv={activeConv}
+                activeConv={activeConv!}
                 isBlocked={isBlocked}
                 blockedByCurrentUser={blockedByCurrentUser}
                 blockedByOtherUser={blockedByOtherUser}
@@ -551,11 +640,28 @@ const InboxPage = () => {
                 onDelete={handleDeleteConversation}
                 onBlock={handleBlockUser}
                 onUnblock={handleUnblockUser}
+                currentUserId={currentUser?.id?.toString()}
+                onLock={handleLock}
+                onKick={handleKick}
+                onMute={handleMute}
+                onChangeRole={handleChangeRole}
+                onAddUser={handleAddUser}
               />
               {/* Messages */}
               <div className="inbox-feed" ref={feedRef} onScroll={handleScroll}>
                 {loadingMsgs && (
                   <p className="inbox-loading">Loading messages…</p>
+                )}
+                {activeConv?.is_group && !loadingMsgs && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', margin: '24px 0 16px' }}>
+                    <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--color-text-secondary)', background: 'var(--bg-tertiary)', padding: '6px 12px', borderRadius: '8px', maxWidth: '85%' }}>
+                      <Lock size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4, marginBottom: 2 }} />
+                      This is the start of the group chat. No one outside of this chat can read or listen to them.
+                    </div>
+                    <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--color-text-secondary)', background: 'var(--bg-tertiary)', padding: '6px 12px', borderRadius: '8px', maxWidth: '85%' }}>
+                      {activeConv?.participants?.find(p => p.role === 'owner')?.display_name || activeConv?.participants?.find(p => p.role === 'owner')?.username || 'Someone'} created this group "{activeConv?.title}". You and {Math.max(0, (activeConv?.participants?.length || 0) - 2)} others were added.
+                    </div>
+                  </div>
                 )}
                 {!loadingMsgs && messages.length === 0 && (
                   <p className="inbox-empty">No messages yet. Say hello!</p>
@@ -577,7 +683,7 @@ const InboxPage = () => {
                     onClick={() => setShowEmojiPicker((v) => !v)}
                     title="Emoji"
                     type="button"
-                    disabled={isBlocked}
+                    disabled={isBlocked || activeConv?.is_locked || (activeConv?.is_group && !!activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
                   >
                     <Smile size={18} />
                   </button>
@@ -586,7 +692,7 @@ const InboxPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach file"
                     type="button"
-                    disabled={isBlocked}
+                    disabled={isBlocked || activeConv?.is_locked || (activeConv?.is_group && !!activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
                   >
                     <Paperclip size={18} />
                   </button>
@@ -629,8 +735,8 @@ const InboxPage = () => {
                         setSending(false);
                       }
                     }}
-                    disabled={sending}
-                    placeholder="Write a message…"
+                    disabled={sending || isBlocked || activeConv?.is_locked || !!(activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
+                    placeholder={activeConv?.is_locked ? "Conversation is locked" : (activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted) ? "You are muted" : "Write a message…")}
                     maxRows={4}
                     maxLength={2000}
                     compact
@@ -671,7 +777,7 @@ function ConversationRow({
     <button
       className={`inbox-conv-row${
         isActive ? " inbox-conv-row--active" : ""
-      }${c.unread_count > 0 ? " inbox-conv-row--unread" : ""}`}
+      }${(c.unread_count || 0) > 0 ? " inbox-conv-row--unread" : ""}`}
       onClick={onSelect}
     >
       <span className="inbox-conv-avatar">
@@ -714,7 +820,7 @@ function ConversationRow({
             {relativeTime(c.last_message.created_at)}
           </span>
         )}
-        {c.unread_count > 0 && c.id !== activeId && (
+        {(c.unread_count || 0) > 0 && c.id !== activeId && (
           <span className="inbox-unread-badge">{c.unread_count}</span>
         )}
       </span>
@@ -723,33 +829,50 @@ function ConversationRow({
 }
 
 function InboxChatHeader({
-  isMobile,
-  onMobileBack,
   activeConv,
   isBlocked,
   blockedByCurrentUser,
   blockedByOtherUser,
+  isMobile,
   showChatMenu,
+  onMobileBack,
   onToggleChatMenu,
   onDelete,
   onBlock,
   onUnblock,
+  currentUserId,
+  onLock,
+  onKick,
+  onMute,
+  onChangeRole,
+  onAddUser,
 }: {
+  activeConv: InboxConversation;
+  isBlocked: boolean | undefined;
+  blockedByCurrentUser: boolean | undefined;
+  blockedByOtherUser: boolean | undefined;
   isMobile: boolean;
-  onMobileBack: () => void;
-  activeConv: InboxConversation | undefined;
-  isBlocked: boolean;
-  blockedByCurrentUser: boolean;
-  blockedByOtherUser: boolean;
   showChatMenu: boolean;
+  onMobileBack: () => void;
   onToggleChatMenu: () => void;
   onDelete: () => void;
   onBlock: () => void;
   onUnblock: () => void;
+  currentUserId?: string;
+  onLock: (locked: boolean) => void;
+  onKick: (userId: string) => void;
+  onMute: (userId: string, muted: boolean) => void;
+  onChangeRole: (userId: string, role: string) => void;
+  onAddUser: (user: any) => Promise<void>;
 }) {
+  const [showAddUser, setShowAddUser] = useState(false);
   const isGroup = activeConv?.is_group;
   const other = activeConv?.other_user;
   const displayName = isGroup ? (activeConv.title || `Group Chat (${activeConv.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
+
+  const myParticipant = isGroup ? activeConv.participants?.find(p => p.id.toString() === currentUserId) : null;
+  const isOwner = myParticipant?.role === "owner";
+  const isManager = myParticipant?.role === "manager" || isOwner;
 
   return (
     <div className="inbox-chat-header">
@@ -769,7 +892,7 @@ function InboxChatHeader({
               <UserAvatar src={undefined} alt="Group" size={32} initials="G" />
             </span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="inbox-chat-username">{displayName}</span>
+              <span className="inbox-chat-username">{displayName} {activeConv.is_locked && <Lock size={12} style={{ display: 'inline', marginLeft: 4 }} />}</span>
               <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                 {activeConv.participants?.map(p => p.display_name || p.username).join(', ')}
               </span>
@@ -807,19 +930,108 @@ function InboxChatHeader({
           <span className="inbox-chat-username">Conversation</span>
         )}
       </div>
-      <div className="inbox-chat-actions">
+      <div className="inbox-chat-actions" style={{ position: 'relative' }}>
+        {isGroup && isManager && (
+          <button
+            className="inbox-action-btn"
+            onClick={() => {
+              setShowAddUser(!showAddUser);
+              if (showChatMenu) onToggleChatMenu(); // close menu if open
+            }}
+            title="Add People"
+          >
+            <UserPlus size={16} />
+          </button>
+        )}
         <button
           className="inbox-action-btn"
-          onClick={onToggleChatMenu}
+          onClick={() => {
+            onToggleChatMenu();
+            if (showAddUser) setShowAddUser(false); // close picker if open
+          }}
           title="More options"
         >
           <MoreVertical size={16} />
         </button>
+
+        {showAddUser && isGroup && isManager && (
+          <div className="inbox-chat-menu" style={{ width: 300, right: 30, padding: '12px' }}>
+            <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--color-text)' }}>Add to Group</h4>
+            <PersonPicker
+              onSelect={(user) => {
+                onAddUser(user).then(() => setShowAddUser(false)).catch(() => {});
+              }}
+              excludeIds={activeConv.participants?.map(p => p.id) || []}
+              placeholder="Search users..."
+              onClose={() => setShowAddUser(false)}
+            />
+          </div>
+        )}
+
         {showChatMenu && (
           <div className="inbox-chat-menu">
-            <button onClick={onDelete}>
-              <Trash2 size={14} /> Delete conversation
-            </button>
+            {(!isGroup || isManager) && (
+              <button onClick={onDelete}>
+                <Trash2 size={14} /> Delete conversation
+              </button>
+            )}
+            {isGroup && isManager && (
+              <button onClick={() => onLock(!activeConv.is_locked)}>
+                {activeConv.is_locked ? <Unlock size={14} /> : <Lock size={14} />} 
+                {activeConv.is_locked ? "Unlock Group" : "Lock Group"}
+              </button>
+            )}
+            {isGroup && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-color)' }}>
+                <button onClick={() => onKick(currentUserId || "")} style={{ color: 'var(--color-danger)' }}>
+                  <UserMinus size={14} /> Leave group
+                </button>
+              </div>
+            )}
+            {isGroup && (
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', padding: '0 12px 4px', color: 'var(--color-text-secondary)' }}>Participants</div>
+                {activeConv.participants?.map(p => {
+                  const pIsMe = p.id.toString() === currentUserId;
+                  return (
+                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, paddingRight: '1rem' }}>
+                        <UserProfileOverlay userId={p.id} fallbackName={p.display_name || p.username} fallbackAvatar={p.avatar_url || undefined}>
+                          <div style={{ display: 'flex', flexShrink: 0 }}>
+                            <UserAvatar src={p.avatar_url || undefined} alt={p.display_name || p.username} size={20} initials={(p.display_name || p.username)?.[0]?.toUpperCase()} />
+                          </div>
+                        </UserProfileOverlay>
+                        <span style={{ fontSize: '13px', color: pIsMe ? 'var(--color-primary)' : 'inherit', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {p.display_name || p.username} {pIsMe && "(You)"}
+                        </span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        {p.role === "owner" && <span title="Owner" style={{ display: 'flex' }}><Shield size={14} style={{ color: 'gold' }} /></span>}
+                        {p.role === "manager" && <span title="Manager" style={{ display: 'flex' }}><Shield size={14} style={{ color: 'silver' }} /></span>}
+                        {p.is_muted && <span title="Muted" style={{ display: 'flex' }}><VolumeX size={14} style={{ color: 'var(--color-danger)' }} /></span>}
+                        
+                        {isManager && !pIsMe && p.role !== "owner" && (
+                          <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
+                            <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onMute(p.id.toString(), !p.is_muted)} title={p.is_muted ? "Unmute" : "Mute"}>
+                              {p.is_muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                            </button>
+                            {isOwner && p.role !== "owner" && (
+                              <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onChangeRole(p.id.toString(), p.role === "manager" ? "member" : "manager")} title={p.role === "manager" ? "Demote" : "Promote"}>
+                                <Shield size={14} />
+                              </button>
+                            )}
+                            <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onKick(p.id.toString())} title="Remove">
+                              <UserMinus size={14} style={{ color: 'var(--color-danger)' }} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {!isGroup && (blockedByCurrentUser ? (
               <button onClick={onUnblock}>
                 <Ban size={14} /> Unblock user
@@ -847,10 +1059,16 @@ function MessageBubble({
   m: InboxMessage;
   currentUserId: string | undefined;
 }) {
-  if (m.message_type === "system_group_created") {
+  if (m.message_type === "system_group_created" || m.message_type === "system_group_update") {
     return (
       <div className="inbox-msg-system" style={{ textAlign: "center", margin: "1rem 0", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
-        <span><strong>{m.sender_name}</strong> {m.content} on {formatLocalTime(m.created_at)}</span>
+        <span>
+          {m.message_type === "system_group_created" ? (
+            <><strong>{m.sender_name}</strong> {m.content} on {formatLocalTime(m.created_at)}</>
+          ) : (
+            <>{m.content}</>
+          )}
+        </span>
       </div>
     );
   }

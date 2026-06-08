@@ -9,8 +9,9 @@ type InboxConversation struct {
 	Title     string    `json:"title,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	IsLocked  bool      `json:"is_locked"`
 	// Enriched fields resolved at the service layer
-	Participants         []*User       `json:"participants,omitempty"`
+	Participants         []*InboxParticipant `json:"participants,omitempty"`
 	OtherUser            *User         `json:"other_user,omitempty"` // Kept for backwards compatibility on 1-on-1s
 	LastMessage          *InboxMessage `json:"last_message,omitempty"`
 	UnreadCount          int           `json:"unread_count,omitempty"`
@@ -34,4 +35,11 @@ type InboxMessage struct {
 	IsRead         bool      `json:"is_read"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// InboxParticipant extends User with conversation-specific fields
+type InboxParticipant struct {
+	User
+	Role    string `json:"role"`     // 'owner', 'manager', 'member'
+	IsMuted bool   `json:"is_muted"`
 }

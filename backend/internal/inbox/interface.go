@@ -3,15 +3,27 @@ package inbox
 
 import "github.com/skaia/backend/models"
 
+// ParticipantRow represents a raw row from the junction table
+type ParticipantRow struct {
+	UserID  int64
+	Role    string
+	IsMuted bool
+}
+
 // Repository is the storage contract for the inbox domain.
 type Repository interface {
 	// Conversations
 	GetConversation(id int64) (*models.InboxConversation, error)
 	GetConversationBetween(user1ID, user2ID int64) (*models.InboxConversation, error)
 	GetOrCreateConversation(user1ID, user2ID int64) (*models.InboxConversation, error)
-	CreateGroupConversation(title string, participantIDs []int64) (*models.InboxConversation, error)
+	CreateGroupConversation(title string, creatorID int64, participantIDs []int64) (*models.InboxConversation, error)
 	ListConversations(userID int64) ([]*models.InboxConversation, error)
-	GetParticipants(conversationID int64) ([]int64, error)
+	GetParticipants(conversationID int64) ([]ParticipantRow, error)
+	SetConversationLocked(id int64, locked bool) error
+	UpdateParticipantRole(conversationID, userID int64, role string) error
+	SetParticipantMuted(conversationID, userID int64, muted bool) error
+	RemoveParticipant(conversationID, userID int64) error
+	AddParticipant(conversationID, userID int64, role string) error
 	DeleteConversation(id int64) error
 
 	// Messages
