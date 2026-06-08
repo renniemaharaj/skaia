@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAtom } from "jotai";
 import { activeUploadsAtom, showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
-import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, ChevronRight, RefreshCw, X } from "lucide-react";
+import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, ChevronRight, RefreshCw, X, Pause, Play } from "lucide-react";
 import "./GlobalUploader.css";
 
 function formatETA(seconds: number) {
@@ -31,12 +31,15 @@ export default function GlobalUploader() {
 
   if (jobs.length === 0 && !showManager) return null;
 
-  const activeJobs = jobs.filter(j => ["queued", "initializing", "uploading", "error"].includes(j.status));
+  const activeJobs = jobs.filter(j => ["queued", "initializing", "uploading", "error", "paused"].includes(j.status));
   const completedJobs = jobs.filter(j => ["rebuilding", "complete"].includes(j.status));
 
   const totalChunks = jobs.reduce((acc, job) => acc + job.totalChunks, 0);
   const uploadedChunks = jobs.reduce((acc, job) => acc + job.uploadedChunks, 0);
   const overallPercent = totalChunks > 0 ? Math.round((uploadedChunks / totalChunks) * 100) : 0;
+
+  const canPauseAll = activeJobs.some(j => ["queued", "initializing", "uploading"].includes(j.status));
+  const canResumeAll = activeJobs.some(j => ["paused", "error"].includes(j.status));
 
   return (
     <div className="global-uploader-overlay">
@@ -51,6 +54,30 @@ export default function GlobalUploader() {
             <span>Upload Manager {overallPercent < 100 && jobs.length > 0 ? `(${overallPercent}%)` : ""}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {activeJobs.length > 0 && (
+              <div style={{ display: "flex", gap: "4px", marginRight: "8px" }}>
+                {canPauseAll && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); uploader.pauseAll(); }} 
+                    className="icon-btn icon-btn--subtle" 
+                    title="Pause All"
+                    style={{ padding: "4px" }}
+                  >
+                    <Pause size={14} />
+                  </button>
+                )}
+                {canResumeAll && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); uploader.resumeAll(); }} 
+                    className="icon-btn icon-btn--subtle" 
+                    title="Resume All"
+                    style={{ padding: "4px" }}
+                  >
+                    <Play size={14} />
+                  </button>
+                )}
+              </div>
+            )}
             {minimized ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
             {showManager && jobs.length === 0 && (
               <X 
@@ -138,22 +165,23 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
               <span className="global-uploader-stats">{percent}% • {speedStr} {etaStr ? `• ${etaStr}` : ""}</span>
             )}
             {job.status === "rebuilding" && <span className="global-uploader-stats">Rebuilding...</span>}
-            {job.status === "queued" && <span className="global-uploader-stats">Queued</span>}
-            {job.status === "initializing" && <span className="global-uploader-stats">Initializing...</span>}
+            {job.status === "queued" && <span className="global-uploader-stats">Queued ({percent}%)</span>}
+            {job.status === "initializing" && <span className="global-uploader-stats">Initializing... ({percent}%)</span>}
+            {job.status === "paused" && <span className="global-uploader-stats">Paused ({percent}%)</span>}
             {job.status === "error" && <span className="global-uploader-error">{job.error}</span>}
             {job.status === "complete" && <span className="global-uploader-success">Done</span>}
           </div>
         </div>
         <div className="global-uploader-item-status">
-          {job.status === "error" ? (
+          {job.status === "error" || job.status === "paused" ? (
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <button 
-                onClick={(e) => { e.stopPropagation(); uploader.retryUpload(job.id); }}
+                onClick={(e) => { e.stopPropagation(); job.status === "error" ? uploader.retryUpload(job.id) : uploader.resumeUpload(job.id); }}
                 className="icon-btn icon-btn--subtle" 
-                title="Retry Upload"
+                title={job.status === "error" ? "Retry Upload" : "Resume Upload"}
                 style={{ padding: "4px" }}
               >
-                <RefreshCw size={14} />
+                {job.status === "error" ? <RefreshCw size={14} /> : <Play size={14} />}
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); uploader.removeUpload(job.id); }}
@@ -165,10 +193,22 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
               </button>
             </div>
           ) : (
-            statusIcon
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              {["uploading", "queued", "initializing"].includes(job.status) && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); uploader.pauseUpload(job.id); }}
+                  className="icon-btn icon-btn--subtle" 
+                  title="Pause Upload"
+                  style={{ padding: "4px" }}
+                >
+                  <Pause size={14} />
+                </button>
+              )}
+              {statusIcon}
+            </div>
           )}
         </div>
-        {(job.status === "uploading" || job.status === "rebuilding") && (
+        {(job.status === "uploading" || job.status === "rebuilding" || job.status === "paused") && (
           <div className="global-uploader-progress-bar">
             <div className="global-uploader-progress-fill" style={{ width: `${percent}%` }} />
           </div>

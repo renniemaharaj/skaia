@@ -4,7 +4,7 @@ import { customAlert } from "../components/ui/Prompt";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
-export type UploadStatus = "queued" | "initializing" | "uploading" | "rebuilding" | "complete" | "error";
+export type UploadStatus = "queued" | "initializing" | "uploading" | "rebuilding" | "complete" | "error" | "paused";
 
 export interface ChunkStatus {
   index: number;
@@ -116,12 +116,16 @@ class UploadManager {
       const uploadId = initRes.upload_id;
       const completedChunks = initRes.completed_chunks || [];
 
-      for (const idx of completedChunks) {
-        if (idx >= 0 && idx < nextJob.totalChunks) {
-          nextJob.chunks[idx].status = "complete";
-          nextJob.uploadedChunks++;
+      let actualUploaded = 0;
+      for (let i = 0; i < nextJob.totalChunks; i++) {
+        if (completedChunks.includes(i)) {
+          nextJob.chunks[i].status = "complete";
+          actualUploaded++;
+        } else {
+          nextJob.chunks[i].status = "pending";
         }
       }
+      nextJob.uploadedChunks = actualUploaded;
 
       nextJob.status = "uploading";
       nextJob._lastChunkStartTime = Date.now();
@@ -132,7 +136,9 @@ class UploadManager {
 
       const uploadWorker = async () => {
         while (true) {
-          const idx = currentIndex++;
+          if ((nextJob.status as UploadStatus) === "paused" || (nextJob.status as UploadStatus) === "error") break;
+
+          let idx = currentIndex++;
           if (idx >= nextJob.totalChunks) break;
 
           if (nextJob.chunks[idx].status === "complete") continue;
@@ -154,9 +160,11 @@ class UploadManager {
               method: "POST",
               body: fd,
             });
+            if ((nextJob.status as UploadStatus) === "paused") continue; // If paused during upload, don't mark complete? We can mark complete because backend got it.
             nextJob.chunks[idx].status = "complete";
           } catch (e) {
             nextJob.chunks[idx].status = "error";
+            nextJob.status = "error";
             throw e;
           }
 
@@ -177,6 +185,13 @@ class UploadManager {
       const workers = [];
       for (let i = 0; i < CONCURRENCY; i++) workers.push(uploadWorker());
       await Promise.all(workers);
+
+      if ((nextJob.status as UploadStatus) === "paused") {
+        return; // Exits try block and goes to finally
+      }
+      if ((nextJob.status as UploadStatus) === "error") {
+        throw new Error("Upload failed");
+      }
 
       nextJob.status = "rebuilding";
       this.dispatchStoreUpdate();
@@ -200,8 +215,8 @@ class UploadManager {
     } finally {
       this.activeCount--;
       
-      // Cleanup after a bit, but keep errors visible
-      if (nextJob.status !== "error") {
+      // Cleanup after a bit, but keep errors and paused visible
+      if ((nextJob.status as UploadStatus) !== "error" && (nextJob.status as UploadStatus) !== "paused") {
         setTimeout(() => {
           this.queue = this.queue.filter(j => j.id !== nextJob.id);
           this.resolveMap.delete(nextJob.id);
@@ -272,8 +287,6 @@ class UploadManager {
   private doRetry(job: UploadJob) {
     job.status = "queued";
     job.error = undefined;
-    job.chunks.forEach(c => c.status = "pending");
-    job.uploadedChunks = 0;
     
     this.dispatchStoreUpdate();
     this.processQueue();
@@ -287,6 +300,63 @@ class UploadManager {
     try {
       await apiRequest(`/upload/chunked/incomplete/${id}`, { method: "DELETE" });
     } catch {}
+  }
+
+  pauseUpload(id: string) {
+    const job = this.queue.find(j => j.id === id);
+    if (!job || !["queued", "initializing", "uploading"].includes(job.status)) return;
+    
+    job.status = "paused";
+    this.dispatchStoreUpdate();
+  }
+
+  resumeUpload(id: string) {
+    const job = this.queue.find(j => j.id === id);
+    if (!job || job.status !== "paused") return;
+    
+    if (!job.file) {
+      job.status = "error";
+      job.error = "File missing. Click Retry to re-select it.";
+      this.dispatchStoreUpdate();
+      return;
+    }
+    
+    this.doRetry(job);
+  }
+
+  pauseAll() {
+    let changed = false;
+    this.queue.forEach(j => {
+      if (["queued", "initializing", "uploading"].includes(j.status)) {
+        j.status = "paused";
+        changed = true;
+      }
+    });
+    if (changed) this.dispatchStoreUpdate();
+  }
+
+  resumeAll() {
+    let triggered = false;
+    this.queue.forEach(job => {
+      if (job.status === "paused" || job.status === "error") {
+        if (job.file) {
+          job.status = "queued";
+          job.error = undefined;
+          triggered = true;
+        } else {
+          if (job.status === "paused") {
+            job.status = "error";
+            job.error = "File missing. Click Retry to re-select it.";
+            triggered = true;
+          }
+        }
+      }
+    });
+    
+    if (triggered) {
+      this.dispatchStoreUpdate();
+      this.processQueue();
+    }
   }
 
   cancelUpload(_id: string) {
