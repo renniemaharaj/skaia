@@ -50,6 +50,11 @@
   background: var(--bg-secondary);
 }
 
+.table-view__row:hover .thread-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .table-view__cell {
   overflow: hidden;
   text-overflow: ellipsis;
