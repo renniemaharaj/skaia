@@ -506,7 +506,7 @@ export default function RolesManagementPage() {
                       <Button
                         variant="danger"
                         size="sm"
-                        className="rmp-action-btn rmp-delete-btn"
+                        className="rmp-action-btn danger"
                         onClick={() => deleteRole(role.id)}
                         disabled={isDeleting}
                         iconLeft={<Trash2 size={14} />}

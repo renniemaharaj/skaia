@@ -277,7 +277,7 @@ export default function ResourceAnalytics({
           </h3>
           <button
             type="button"
-            className="icon-btn icon-btn--sm"
+            className="action-btn"
             onClick={onClose}
             title="Close"
           >

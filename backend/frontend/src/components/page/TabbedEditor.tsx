@@ -513,7 +513,7 @@ export default function TabbedEditor({
           {activeTab === ".env" && (
             <>
               <button
-                className={`icon-btn icon-btn--sm ${envLocked ? "" : "icon-btn--active"}`}
+                className={`action-btn ${envLocked ? "" : "active"}`}
                 onClick={() => setEnvLocked((v) => !v)}
                 title={envLocked ? "Unlock to edit" : "Lock editor"}
               >
@@ -521,7 +521,7 @@ export default function TabbedEditor({
               </button>
               {!envLocked && datasourceId > 0 && (
                 <button
-                  className="icon-btn icon-btn--sm icon-btn--primary"
+                  className="action-btn edit-btn"
                   onClick={handleEnvSave}
                   disabled={envSaving}
                   title="Save env vars"
@@ -531,7 +531,7 @@ export default function TabbedEditor({
               )}
               {!envLocked && envData.trim() && (
                 <button
-                  className="icon-btn icon-btn--sm icon-btn--danger"
+                  className="action-btn danger"
                   onClick={handleEnvClear}
                   disabled={envSaving}
                   title="Clear env vars"

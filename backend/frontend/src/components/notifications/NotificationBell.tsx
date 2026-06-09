@@ -268,7 +268,7 @@ const NotificationBell = () => {
                   </span>
                 </div>
                 <button
-                  className="notif-delete-btn"
+                  className="notif-action-btn danger"
                   title="Dismiss"
                   onClick={(e) => deleteNotif(n.id, e)}
                 >

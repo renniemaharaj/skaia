@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
-import "../forum/ThreadActions.css";
+
 
 interface CreateStoreCategoryDialogProps {
   isOpen: boolean;

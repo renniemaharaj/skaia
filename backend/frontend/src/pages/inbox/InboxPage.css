@@ -604,22 +604,6 @@
   display: flex;
 }
 
-.inbox-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-}
-.inbox-action-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
 .inbox-chat-menu {
   position: absolute;
   top: 100%;
@@ -655,30 +639,6 @@
 }
 
 /* Input toolbar (emoji, file upload) */
-.inbox-toolbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.18s ease;
-}
-.inbox-toolbar-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-tertiary);
-  transform: translateY(-1px);
-}
-.inbox-toolbar-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
 
 .inbox-file-input {
   display: none;

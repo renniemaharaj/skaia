@@ -677,7 +677,7 @@ const InboxPage = () => {
               <div className="inbox-input-row">
                 <div className="inbox-input-toolbar">
                   <button
-                    className="inbox-toolbar-btn"
+                    className="action-btn"
                     onClick={() => setShowEmojiPicker((v) => !v)}
                     title="Emoji"
                     type="button"
@@ -686,7 +686,7 @@ const InboxPage = () => {
                     <Smile size={18} />
                   </button>
                   <button
-                    className="inbox-toolbar-btn"
+                    className="action-btn"
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach file"
                     type="button"
@@ -928,7 +928,7 @@ function InboxChatHeader({
       <div className="inbox-chat-actions" style={{ position: 'relative' }}>
         {isGroup && isManager && (
           <button
-            className="inbox-action-btn"
+            className="action-btn"
             onClick={() => {
               setShowAddUser(!showAddUser);
               if (showChatMenu) onToggleChatMenu(); // close menu if open
@@ -939,7 +939,7 @@ function InboxChatHeader({
           </button>
         )}
         <button
-          className="inbox-action-btn"
+          className="action-btn"
           onClick={() => {
             onToggleChatMenu();
             if (showAddUser) setShowAddUser(false); // close picker if open
@@ -1008,15 +1008,15 @@ function InboxChatHeader({
                         
                         {isManager && !pIsMe && p.role !== "owner" && (
                           <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
-                            <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onMute(p.id.toString(), !p.is_muted)} title={p.is_muted ? "Unmute" : "Mute"}>
+                            <button className="action-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onMute(p.id.toString(), !p.is_muted)} title={p.is_muted ? "Unmute" : "Mute"}>
                               {p.is_muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
                             </button>
                             {isOwner && p.role !== "owner" && (
-                              <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onChangeRole(p.id.toString(), p.role === "manager" ? "member" : "manager")} title={p.role === "manager" ? "Demote" : "Promote"}>
+                              <button className="action-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onChangeRole(p.id.toString(), p.role === "manager" ? "member" : "manager")} title={p.role === "manager" ? "Demote" : "Promote"}>
                                 <Shield size={14} />
                               </button>
                             )}
-                            <button className="inbox-toolbar-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onKick(p.id.toString())} title="Remove">
+                            <button className="action-btn danger" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onKick(p.id.toString())} title="Remove">
                               <UserMinus size={14} style={{ color: 'var(--color-danger)' }} />
                             </button>
                           </div>

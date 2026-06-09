@@ -5,7 +5,7 @@ import "./NewThread.css";
 import { CheckIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./IconButton.css";
-import "./ThreadActions.css";
+
 import { apiRequest } from "../../utils/api";
 
 interface CreateThreadResponse {
@@ -89,14 +89,14 @@ const NewThread = () => {
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
           <button
-            className="thread-action-btn btn-close"
+            className="action-btn btn-close"
             onClick={() => navigate("/forum")}
             title="Close"
           >
             <X size={20} />
           </button>
           <button
-            className="thread-action-btn btn-submit"
+            className="action-btn btn-submit"
             onClick={handleCreateThread}
             disabled={loading}
             title="Submit"

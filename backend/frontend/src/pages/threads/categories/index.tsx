@@ -14,7 +14,7 @@ import SearchField from "../../../components/ui/SearchField";
 import { Trash2, Lock, Unlock } from "lucide-react";
 
 import "../../../components/forum/NewThread.css";
-import "../../../components/forum/ThreadActions.css";
+
 import "../../../components/forum/IconButton.css";
 
 const CategoryThreadsPage = () => {
@@ -150,7 +150,7 @@ const CategoryThreadsPage = () => {
             />
             {canEditCategories && category && (
               <button
-                className={`thread-action-btn lock-btn${category.is_locked ? " locked" : ""}`}
+                className={`action-btn lock-btn${category.is_locked ? " locked" : ""}`}
                 onClick={handleToggleCategoryLock}
                 title={category.is_locked ? "Unlock category" : "Lock category"}
               >
@@ -159,7 +159,7 @@ const CategoryThreadsPage = () => {
             )}
             {canDeleteCategory && category && (
               <button
-                className="thread-action-btn delete-btn"
+                className="action-btn danger"
                 onClick={handleDeleteCategory}
                 title="Delete category"
               >
@@ -167,7 +167,7 @@ const CategoryThreadsPage = () => {
               </button>
             )}
             <button
-              className="thread-action-btn btn-close"
+              className="action-btn btn-close"
               onClick={() => navigate("/forum")}
               title="Back to Forum"
             >

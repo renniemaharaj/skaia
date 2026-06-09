@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type { StoreCategory } from "../../atoms/store";
-import "../forum/ThreadActions.css";
+
 
 interface CreateProductDialogProps {
   isOpen: boolean;

@@ -5,7 +5,7 @@ import { useAtom } from "jotai";
 import ForumCategory from "./ForumCategory";
 import Editor from "./Editor";
 import "./IconButton.css";
-import "./ThreadActions.css";
+
 import { apiRequest } from "../../utils/api";
 import { currentThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -154,14 +154,14 @@ const EditThread = () => {
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
           <button
-            className="thread-action-btn btn-close"
+            className="action-btn btn-close"
             onClick={() => navigate(`/view-thread/${threadId}`)}
             title="Close"
           >
             <X size={20} />
           </button>
           <button
-            className="thread-action-btn btn-submit"
+            className="action-btn btn-submit"
             onClick={handleUpdateThread}
             disabled={submitting}
             title="Submit"

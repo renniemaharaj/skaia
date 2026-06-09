@@ -59,7 +59,7 @@ export default function GlobalUploader() {
                 {canPauseAll && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); uploader.pauseAll(); }} 
-                    className="icon-btn icon-btn--subtle" 
+                    className="action-btn" 
                     title="Pause All"
                     style={{ padding: "4px" }}
                   >
@@ -69,7 +69,7 @@ export default function GlobalUploader() {
                 {canResumeAll && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); uploader.resumeAll(); }} 
-                    className="icon-btn icon-btn--subtle" 
+                    className="action-btn" 
                     title="Resume All"
                     style={{ padding: "4px" }}
                   >
@@ -177,7 +177,7 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <button 
                 onClick={(e) => { e.stopPropagation(); job.status === "error" ? uploader.retryUpload(job.id) : uploader.resumeUpload(job.id); }}
-                className="icon-btn icon-btn--subtle" 
+                className="action-btn" 
                 title={job.status === "error" ? "Retry Upload" : "Resume Upload"}
                 style={{ padding: "4px" }}
               >
@@ -185,7 +185,7 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); uploader.removeUpload(job.id); }}
-                className="icon-btn icon-btn--danger" 
+                className="action-btn danger" 
                 title="Dismiss"
                 style={{ padding: "4px" }}
               >
@@ -197,7 +197,7 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
               {["uploading", "queued", "initializing"].includes(job.status) && (
                 <button 
                   onClick={(e) => { e.stopPropagation(); uploader.pauseUpload(job.id); }}
-                  className="icon-btn icon-btn--subtle" 
+                  className="action-btn" 
                   title="Pause Upload"
                   style={{ padding: "4px" }}
                 >

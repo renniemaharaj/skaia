@@ -83,7 +83,7 @@ export default function EnvVarsEditor({
         <div className="env-vars-actions">
           <button
             type="button"
-            className={`icon-btn icon-btn--sm ${locked ? "" : "icon-btn--active"}`}
+            className={`action-btn ${locked ? "" : "active"}`}
             onClick={() => setLocked((v) => !v)}
             title={locked ? "Unlock to edit" : "Lock editor"}
           >
@@ -94,7 +94,7 @@ export default function EnvVarsEditor({
               {isPersisted && (
                 <button
                   type="button"
-                  className="icon-btn icon-btn--sm icon-btn--primary"
+                  className="action-btn edit-btn"
                   onClick={handleSave}
                   disabled={saving}
                   title="Save environment variables"
@@ -105,7 +105,7 @@ export default function EnvVarsEditor({
               {value.trim() && (
                 <button
                   type="button"
-                  className="icon-btn icon-btn--sm icon-btn--danger"
+                  className="action-btn danger"
                   onClick={handleClear}
                   disabled={saving}
                   title="Clear all environment variables"

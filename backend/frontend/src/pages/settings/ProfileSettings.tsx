@@ -123,9 +123,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     onChange={(e) => handleAvatarChange(e.target.files?.[0] ?? null)}
                     style={{ fontSize: "0.875rem", flex: 1 }}
                   />
-                  <Button variant="danger" size="icon" onClick={() => { setEditAvatarUrl(""); handleAvatarChange(null); }} title="Reset Avatar">
+                  <button className="action-btn danger" onClick={() => { setEditAvatarUrl(""); handleAvatarChange(null); }} title="Reset Avatar">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 {(avatarPreview || editAvatarUrl) && (
                   <img
@@ -145,9 +145,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     onChange={(e) => handleBannerChange(e.target.files?.[0] ?? null)}
                     style={{ fontSize: "0.875rem", flex: 1 }}
                   />
-                  <Button variant="danger" size="icon" onClick={() => { setEditBannerUrl(""); handleBannerChange(null); }} title="Reset Banner">
+                  <button className="action-btn danger" onClick={() => { setEditBannerUrl(""); handleBannerChange(null); }} title="Reset Banner">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 {(bannerPreview || editBannerUrl) && (
                   <img
@@ -203,9 +203,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL…"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <Button variant="danger" size="icon" onClick={() => { setEditBackgroundImageUrl(""); handleBackgroundImageChange(null); }} title="Reset Background Image">
+                  <button className="action-btn danger" onClick={() => { setEditBackgroundImageUrl(""); handleBackgroundImageChange(null); }} title="Reset Background Image">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 <input
                   type="file"
@@ -234,9 +234,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL… (mp4/webm)"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <Button variant="danger" size="icon" onClick={() => { setEditBackgroundVideoUrl(""); handleBackgroundVideoChange(null); }} title="Reset Background Video">
+                  <button className="action-btn danger" onClick={() => { setEditBackgroundVideoUrl(""); handleBackgroundVideoChange(null); }} title="Reset Background Video">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 <input
                   type="file"
@@ -260,9 +260,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between" }}>
                   <label style={{ fontWeight: 500 }}>Background Position</label>
-                  <Button variant="danger" size="icon" onClick={() => setEditBackgroundPosition("")} title="Reset Background Position">
+                  <button className="action-btn danger" onClick={() => setEditBackgroundPosition("")} title="Reset Background Position">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 <Select
                   value={editBackgroundPosition}
@@ -283,9 +283,9 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                     placeholder="Or paste a URL…"
                     style={{ ...inputStyle, fontSize: "0.8125rem", flex: 1 }}
                   />
-                  <Button variant="danger" size="icon" onClick={() => { setEditProfileCardArtUrl(""); handleProfileCardArtChange(null); }} title="Reset Profile Card Art">
+                  <button className="action-btn danger" onClick={() => { setEditProfileCardArtUrl(""); handleProfileCardArtChange(null); }} title="Reset Profile Card Art">
                     <Trash2 size={14} />
-                  </Button>
+                  </button>
                 </div>
                 <input
                   type="file"

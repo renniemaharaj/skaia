@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
-import "./ThreadActions.css";
+
 
 const animationStyles = `
   @keyframes spinCheck {
@@ -150,7 +150,7 @@ export const CreateCategoryDialog: React.FC<CreateCategoryDialogProps> = ({
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="thread-action-btn btn-close"
+              className="action-btn btn-close"
               title="Close"
               style={{
                 background: "none",
@@ -168,7 +168,7 @@ export const CreateCategoryDialog: React.FC<CreateCategoryDialogProps> = ({
               type="submit"
               form="create-category-form"
               disabled={loading || !formData.name.trim()}
-              className={`thread-action-btn ${loading ? "submit-btn-animated" : ""}`}
+              className={`action-btn ${loading ? "submit-btn-animated" : ""}`}
               title={loading ? "Submitting..." : "Submit"}
               style={{
                 background: "none",

@@ -210,14 +210,14 @@
   text-align: center;
 }
 
-.cp-delete-btn {
+.cp-danger-btn {
   min-width: 0;
   padding: 0.45rem;
   border-radius: 9999px;
   color: var(--text-danger);
 }
 
-.cp-delete-btn:hover {
+.cp-danger-btn:hover {
   color: var(--error-color);
   background: var(--error-bg);
 }
@@ -466,6 +466,6 @@
 .cp-card:hover .cp-action-btn,
 .cp-list__row:hover .cp-action-btn,
 .table-view__row:hover .cp-action-btn,
-.table-view__row:hover .cp-delete-btn {
+.table-view__row:hover .cp-danger-btn {
   opacity: 1;
 }

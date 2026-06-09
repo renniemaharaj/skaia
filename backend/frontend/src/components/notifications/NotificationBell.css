@@ -235,7 +235,7 @@
   opacity: 0.65;
 }
 
-.notif-delete-btn {
+.notif-action-btn.danger {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -254,10 +254,10 @@
     color 0.12s ease;
   margin-top: 2px;
 }
-.notif-item:hover .notif-delete-btn {
+.notif-item:hover .notif-action-btn.danger {
   opacity: 1;
 }
-.notif-delete-btn:hover {
+.notif-action-btn.danger:hover {
   background: var(--error-bg);
   color: var(--error-color);
 }

@@ -281,7 +281,7 @@ Before merging any new `.css` file:
 - [ ] No `!important` unless overriding third-party library or page builder inline styles
 - [ ] Uses `.card` base class for any card-like container
 - [ ] Uses `.section` base class for any section container
-- [ ] Uses `.icon-btn` + modifiers for icon-only buttons
+- [ ] Uses `.thread-action-btn` + modifiers for icon-only buttons
 - [ ] Border radius uses `var(--card-radius)` for cards/modals
 
 ### 4. Responsive behavior
@@ -400,7 +400,7 @@ When `guestSandboxMode` is active, ALL components should show their edit/managem
 
 ---
 
-## Icon Buttons — `.icon-btn` System
+## Icon Buttons — `.thread-action-btn` System
 
 ### Root cause of the padding issue
 
@@ -411,25 +411,25 @@ the box, but icon-only buttons overflow or become invisible inside fixed-size
 containers because the large padding pushes the icon content outside the box.
 
 **DO NOT remove the global reset** — many existing text buttons rely on it.
-Instead, always apply `.icon-btn` on icon-only `<button>` elements. The class
+Instead, always apply `.thread-action-btn` on icon-only `<button>` elements. The class
 lives in `index.css` and resets `padding: 0`, `border: none`, `background: transparent`.
 
 ### Usage (global utility in index.css)
 
 ```html
 <!-- Size + variant modifiers compose freely -->
-<button className="icon-btn icon-btn--sm icon-btn--danger" title="Delete">
+<button className="thread-action-btn thread-action-btn--sm thread-action-btn--danger" title="Delete">
   <Trash2 size="{14}" />
 </button>
 
 <button
-  className="icon-btn icon-btn--md icon-btn--outlined icon-btn--danger"
+  className="thread-action-btn thread-action-btn--md thread-action-btn--outlined thread-action-btn--danger"
   title="Delete"
 >
   <Trash2 size="{14}" />
 </button>
 
-<button className="icon-btn icon-btn--lg icon-btn--active">
+<button className="thread-action-btn thread-action-btn--lg thread-action-btn--active">
   <LayoutGrid size="{16}" />
 </button>
 ```
@@ -438,29 +438,29 @@ lives in `index.css` and resets `padding: 0`, `border: none`, `background: trans
 
 | Modifier       | Size  | Use case                             |
 | -------------- | ----- | ------------------------------------ |
-| `icon-btn--xs` | 20×20 | Tiny inline actions (presence panel) |
-| `icon-btn--sm` | 28×28 | Card/row actions (default choice)    |
-| `icon-btn--md` | 32×32 | Toolbar actions                      |
-| `icon-btn--lg` | 36×36 | Header actions, toggle groups        |
+| `thread-action-btn--xs` | 20×20 | Tiny inline actions (presence panel) |
+| `thread-action-btn--sm` | 28×28 | Card/row actions (default choice)    |
+| `thread-action-btn--md` | 32×32 | Toolbar actions                      |
+| `thread-action-btn--lg` | 36×36 | Header actions, toggle groups        |
 
 ### Variant modifiers
 
 | Modifier             | Style                                                   |
 | -------------------- | ------------------------------------------------------- |
-| `icon-btn--ghost`    | Transparent bg (default)                                |
-| `icon-btn--subtle`   | `--bg-secondary` bg                                     |
-| `icon-btn--outlined` | Transparent bg + `--border-color` border                |
-| `icon-btn--danger`   | Hover: `--error-bg` + `--error-color`                   |
-| `icon-btn--primary`  | Hover: `--primary-color` bg + white text                |
-| `icon-btn--active`   | Solid `--primary-color` bg + white (for selected state) |
+| `thread-action-btn--ghost`    | Transparent bg (default)                                |
+| `thread-action-btn--subtle`   | `--bg-secondary` bg                                     |
+| `thread-action-btn--outlined` | Transparent bg + `--border-color` border                |
+| `thread-action-btn--danger`   | Hover: `--error-bg` + `--error-color`                   |
+| `thread-action-btn--primary`  | Hover: `--primary-color` bg + white text                |
+| `thread-action-btn--active`   | Solid `--primary-color` bg + white (for selected state) |
 
 ### Legacy patterns (existing code, don't refactor unless touching)
 
 - `.pp-action-btn` (PresencePanel) — manual `padding: 0; width: 20px`
 - `.thread-action-btn` (Forum) — `padding: 4px 6px` (includes text label)
 - `.btn-admin-icon` (Store) — `padding: 6px` with `--bg-tertiary` bg
-- `.up-icon-btn` / `.inbox-action-btn` — `padding: 4px`
-  These all predate `.icon-btn`; new code should use the global utility.
+- `.up-thread-action-btn` / `.inbox-action-btn` — `padding: 4px`
+  These all predate `.thread-action-btn`; new code should use the global utility.
 
 ---
 
@@ -471,7 +471,7 @@ lives in `index.css` and resets `padding: 0`, `border: none`, `background: trans
 | Primary action   | `.ds-page__create-btn` or `.btn-primary` | Solid `--primary-color`      | One per page max      |
 | Secondary action | `.ds-editor__run-btn`                    | Solid green (#22c55e)        | Run/execute           |
 | Tertiary action  | `.ds-editor__back-btn`                   | Outlined, `--text-secondary` | Navigation            |
-| Icon action      | `.icon-btn` + modifiers                  | See above                    | Toolbars, cards, rows |
+| Icon action      | `.thread-action-btn` + modifiers                  | See above                    | Toolbars, cards, rows |
 
 Text buttons (with labels) keep the global `button` padding. Always add:
 
@@ -496,7 +496,7 @@ Text buttons (with labels) keep the global `button` padding. Always add:
 
 - **Page header**: Title + subtitle left, action buttons right (flex, space-between)
 - **Toolbar**: Search input (border-radius: 8px, focus => primary-color) + count + view toggle
-- **Grid/List toggle**: Paired `.icon-btn` in border-group container (first/last radius override)
+- **Grid/List toggle**: Paired `.thread-action-btn` in border-group container (first/last radius override)
 - Max width: `1400px` for list pages, `1600px` for editor pages
 
 ### Data tables / List view

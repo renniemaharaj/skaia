@@ -277,14 +277,14 @@ Completed primitive moves:
 
 Route CSS audit findings:
 
-- Low-drift routes already using primitives: cart, forum category/view thread surfaces, datasource list cards, custom pages, several page blocks using `.card`, `.btn`, `.icon-btn`, `.badge`, and skeleton helpers.
+- Low-drift routes already using primitives: cart, forum category/view thread surfaces, datasource list cards, custom pages, several page blocks using `.card`, `.btn`, `.action-btn`, `.badge`, and skeleton helpers.
 - Medium-drift routes should migrate local controls to primitives as touched: store admin actions, activity feed badges/empty states, resource analytics panel tabs/toolbar/empty state, notification panel buttons, data source editor tabs/toolbars/forms, roles management action rows and permission cards.
 - High-drift route/components should be broken down before registry metadata work: `InboxPage`, `GrengoDashboard`, `UserProfile` plus profile subpanels, `SecuritySettings`, `PageBuilder`, `CardDesigner`, `TabbedEditor`, and integration blocks (`DataSourcesBlock`, `DerivedSectionBlock`, `CustomSectionBlock`, `CodeEditorBlock`). These files combine route orchestration, local primitives, data state, and repeated control patterns.
 
 Modular UI system extraction targets:
 
 - `RouteShell`: page header, title/subtitle, actions, toolbar, and empty state metadata.
-- `ActionButton` / primitive class metadata: maps to `.btn`, `.icon-btn`, semantic variants, sizes, disabled/loading state, and destructive action intent.
+- `ActionButton` / primitive class metadata: maps to `.btn`, `.action-btn`, semantic variants, sizes, disabled/loading state, and destructive action intent.
 - `StatusBadge`: maps semantic status names to `.badge-*` variants for registry-driven status rendering.
 - `DialogSurface`: overlay, shell, header/body/footer/action rows, close affordance, and fixed-width variants.
 - `TabSurface`: tab list, tab button, active/error/warning badge, overflow behavior.

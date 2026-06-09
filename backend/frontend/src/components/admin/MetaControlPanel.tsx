@@ -136,9 +136,9 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("og_image"); }} title="Reset OG Image">
+              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("og_image"); }} title="Reset OG Image">
                 <Trash2 size={14} />
-              </Button>
+              </button>
             </div>
             <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
           </div>
@@ -178,9 +178,9 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("dom_skin"); }} title="Reset Background Image">
+              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("dom_skin"); }} title="Reset Background Image">
                 <Trash2 size={14} />
-              </Button>
+              </button>
             </div>
             <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
           </div>
@@ -202,9 +202,9 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <Button variant="danger" size="icon" onClick={(e: any) => { e.preventDefault(); handleReset("dom_video"); }} title="Reset Background Video">
+              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("dom_video"); }} title="Reset Background Video">
                 <Trash2 size={14} />
-              </Button>
+              </button>
             </div>
             <input type="file" name="dom_video_file" accept="video/mp4,video/webm" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
           </div>

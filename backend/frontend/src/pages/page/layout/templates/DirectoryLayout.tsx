@@ -2,167 +2,167 @@ import type { ReactNode } from "react";
 import SearchField from "../../../../components/ui/SearchField";
 import { LayoutGrid, List } from "lucide-react";
 import {
-  TableView,
-  type TableColumn,
+ TableView,
+ type TableColumn,
 } from "../../../../components/ui/TableView/TableView";
 import "./DirectoryLayout.css";
 
 export type ViewMode = "grid" | "list";
 
 export interface DirectoryLayoutProps<T> {
-  title: ReactNode;
-  subtitle?: ReactNode;
-  headerActions?: ReactNode;
+ title: ReactNode;
+ subtitle?: ReactNode;
+ headerActions?: ReactNode;
 
-  searchPlaceholder?: string;
-  searchValue?: string;
-  onSearchChange?: (val: string) => void;
+ searchPlaceholder?: string;
+ searchValue?: string;
+ onSearchChange?: (val: string) => void;
 
-  metrics?: ReactNode[];
+ metrics?: ReactNode[];
 
-  items: T[];
+ items: T[];
 
-  // Grid mode props
-  renderGridCard: (item: T, index: number) => ReactNode;
-  prependGridCard?: ReactNode;
+ // Grid mode props
+ renderGridCard: (item: T, index: number) => ReactNode;
+ prependGridCard?: ReactNode;
 
-  // List mode props
-  tableColumns?: TableColumn<T>[];
-  renderRowWrapper?: (
-    item: T,
-    index: number,
-    rowProps: { className: string; style: React.CSSProperties },
-    cells: ReactNode[],
-  ) => ReactNode;
+ // List mode props
+ tableColumns?: TableColumn<T>[];
+ renderRowWrapper?: (
+ item: T,
+ index: number,
+ rowProps: { className: string; style: React.CSSProperties },
+ cells: ReactNode[],
+ ) => ReactNode;
 
-  // Legacy List mode props (deprecated, migrating to tableColumns)
-  renderListRow?: (item: T, index: number) => ReactNode;
-  listHeader?: ReactNode;
+ // Legacy List mode props (deprecated, migrating to tableColumns)
+ renderListRow?: (item: T, index: number) => ReactNode;
+ listHeader?: ReactNode;
 
-  customListContent?: ReactNode;
-  customGridContent?: ReactNode;
+ customListContent?: ReactNode;
+ customGridContent?: ReactNode;
 
-  // View mode
-  viewMode?: ViewMode;
-  onViewModeChange?: (mode: ViewMode) => void;
+ // View mode
+ viewMode?: ViewMode;
+ onViewModeChange?: (mode: ViewMode) => void;
 
-  emptyState?: ReactNode;
-  className?: string;
+ emptyState?: ReactNode;
+ className?: string;
 }
 
 export function DirectoryLayout<T>({
-  title,
-  subtitle,
-  headerActions,
-  searchPlaceholder = "Search...",
-  searchValue,
-  onSearchChange,
-  metrics,
-  items,
-  renderGridCard,
-  prependGridCard,
-  tableColumns,
-  renderRowWrapper,
-  renderListRow,
-  listHeader,
-  customListContent,
-  customGridContent,
-  viewMode = "grid",
-  onViewModeChange,
-  emptyState,
-  className = "",
+ title,
+ subtitle,
+ headerActions,
+ searchPlaceholder = "Search...",
+ searchValue,
+ onSearchChange,
+ metrics,
+ items,
+ renderGridCard,
+ prependGridCard,
+ tableColumns,
+ renderRowWrapper,
+ renderListRow,
+ listHeader,
+ customListContent,
+ customGridContent,
+ viewMode = "grid",
+ onViewModeChange,
+ emptyState,
+ className = "",
 }: DirectoryLayoutProps<T>) {
-  const isList =
-    viewMode === "list" && (tableColumns || renderListRow || customListContent);
+ const isList =
+ viewMode === "list" && (tableColumns || renderListRow || customListContent);
 
-  return (
-    <div className={`directory-layout ${className}`}>
-      <div className="directory-layout__header">
-        <div className="directory-layout__header-left">
-          <h1 className="directory-layout__title">{title}</h1>
-          {subtitle && <p className="directory-layout__subtitle">{subtitle}</p>}
-        </div>
-        {(headerActions || onViewModeChange) && (
-          <div className="directory-layout__header-actions">
-            {headerActions}
-            {onViewModeChange && (
-              <div className="directory-layout__view-toggle">
-                <button
-                  className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "grid" ? "icon-btn--active" : "icon-btn--subtle"}`}
-                  onClick={() => onViewModeChange("grid")}
-                  title="Grid view"
-                >
-                  <LayoutGrid size={16} />
-                </button>
-                <button
-                  className={`icon-btn icon-btn--lg directory-view-btn ${viewMode === "list" ? "icon-btn--active" : "icon-btn--subtle"}`}
-                  onClick={() => onViewModeChange("list")}
-                  title="List view"
-                >
-                  <List size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+ return (
+ <div className={`directory-layout ${className}`}>
+ <div className="directory-layout__header">
+ <div className="directory-layout__header-left">
+ <h1 className="directory-layout__title">{title}</h1>
+ {subtitle && <p className="directory-layout__subtitle">{subtitle}</p>}
+ </div>
+ {(headerActions || onViewModeChange) && (
+ <div className="directory-layout__header-actions">
+ {headerActions}
+ {onViewModeChange && (
+ <div className="directory-layout__view-toggle">
+ <button
+ className={`directory-view-btn ${viewMode === "grid" ? "active" : ""}`}
+ onClick={() => onViewModeChange("grid")}
+ title="Grid view"
+ >
+ <LayoutGrid size={16} />
+ </button>
+ <button
+ className={`directory-view-btn ${viewMode === "list" ? "active" : ""}`}
+ onClick={() => onViewModeChange("list")}
+ title="List view"
+ >
+ <List size={16} />
+ </button>
+ </div>
+ )}
+ </div>
+ )}
+ </div>
 
-      {(!!onSearchChange || (metrics && metrics.length > 0)) && (
-        <div className="directory-layout__toolbar">
-          {onSearchChange && searchValue !== undefined && (
-            <SearchField
-              value={searchValue}
-              onChange={onSearchChange}
-              placeholder={searchPlaceholder}
-              className="directory-layout__search"
-            />
-          )}
-          {metrics && metrics.length > 0 && (
-            <div className="directory-layout__metrics">
-              {metrics.map((metric, i) => (
-                <span key={i} className="directory-layout__metric">
-                  {metric}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+ {(!!onSearchChange || (metrics && metrics.length > 0)) && (
+ <div className="directory-layout__toolbar">
+ {onSearchChange && searchValue !== undefined && (
+ <SearchField
+ value={searchValue}
+ onChange={onSearchChange}
+ placeholder={searchPlaceholder}
+ className="directory-layout__search"
+ />
+ )}
+ {metrics && metrics.length > 0 && (
+ <div className="directory-layout__metrics">
+ {metrics.map((metric, i) => (
+ <span key={i} className="directory-layout__metric">
+ {metric}
+ </span>
+ ))}
+ </div>
+ )}
+ </div>
+ )}
 
-      {items?.length === 0 && !prependGridCard && emptyState ? (
-        <div className="directory-layout__empty-container">{emptyState}</div>
-      ) : isList ? (
-        customListContent ? (
-          customListContent
-        ) : (
-          <div className="directory-layout__list">
-            {tableColumns ? (
-              <TableView
-                data={items || []}
-                columns={tableColumns}
-                renderRowWrapper={renderRowWrapper}
-                rowKey={(_item, i) => i}
-              />
-            ) : (
-              <>
-                {listHeader && (
-                  <div className="directory-layout__list-header">
-                    {listHeader}
-                  </div>
-                )}
-                {items?.map((item, index) => renderListRow!(item, index))}
-              </>
-            )}
-          </div>
-        )
-      ) : customGridContent ? (
-        customGridContent
-      ) : (
-        <div className="directory-layout__grid">
-          {prependGridCard}
-          {items?.map((item, index) => renderGridCard!(item, index))}
-        </div>
-      )}
-    </div>
-  );
+ {items?.length === 0 && !prependGridCard && emptyState ? (
+ <div className="directory-layout__empty-container">{emptyState}</div>
+ ) : isList ? (
+ customListContent ? (
+ customListContent
+ ) : (
+ <div className="directory-layout__list">
+ {tableColumns ? (
+ <TableView
+ data={items || []}
+ columns={tableColumns}
+ renderRowWrapper={renderRowWrapper}
+ rowKey={(_item, i) => i}
+ />
+ ) : (
+ <>
+ {listHeader && (
+ <div className="directory-layout__list-header">
+ {listHeader}
+ </div>
+ )}
+ {items?.map((item, index) => renderListRow!(item, index))}
+ </>
+ )}
+ </div>
+ )
+ ) : customGridContent ? (
+ customGridContent
+ ) : (
+ <div className="directory-layout__grid">
+ {prependGridCard}
+ {items?.map((item, index) => renderGridCard!(item, index))}
+ </div>
+ )}
+ </div>
+ );
 }

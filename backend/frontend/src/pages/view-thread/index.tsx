@@ -257,7 +257,7 @@ const ViewThreadPage = () => {
               <div className="view-thread-actions-group">
                 {currentUser && (
                   <button
-                    className={`thread-action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}
+                    className={`action-btn like-btn${currentThread?.is_liked ? " liked" : ""}`}
                     onClick={handleLikeThread}
                     title="Like"
                     type="button"
@@ -271,7 +271,7 @@ const ViewThreadPage = () => {
 
                 {/* Reading Mode */}
                 <button
-                  className={`thread-action-btn ${readingMode ? 'active' : ''}`}
+                  className={`action-btn ${readingMode ? 'active' : ''}`}
                   onClick={() => setReadingMode(!readingMode)}
                   title={readingMode ? "Disable Reading Mode" : "Enable Reading Mode"}
                 >
@@ -281,7 +281,7 @@ const ViewThreadPage = () => {
                 {/* Share */}
                 {currentUser && (
                   <button
-                    className="thread-action-btn share-btn"
+                    className="action-btn share-btn"
                     onClick={handleShareThread}
                     title="Share thread"
                     type="button"
@@ -293,7 +293,7 @@ const ViewThreadPage = () => {
                 {/* Lock/Unlock */}
                 {canLock && (
                   <button
-                    className={`thread-action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
+                    className={`action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
                     onClick={handleLockThread}
                     title={
                       currentThread?.is_locked ? "Unlock thread" : "Lock thread"
@@ -311,7 +311,7 @@ const ViewThreadPage = () => {
                 {/* Edit - derived from live user permissions atom */}
                 {canEdit && (
                   <button
-                    className="thread-action-btn edit-btn"
+                    className="action-btn edit-btn"
                     onClick={handleEdit}
                     title="Edit"
                   >
@@ -322,7 +322,7 @@ const ViewThreadPage = () => {
                 {/* Delete - derived from live user permissions atom */}
                 {canDelete && (
                   <button
-                    className="thread-action-btn delete-btn"
+                    className="action-btn danger"
                     onClick={handleDelete}
                     title="Delete"
                   >
@@ -333,7 +333,7 @@ const ViewThreadPage = () => {
                 {/* Analytics */}
                 {currentUser && (canEdit || canDelete) && (
                   <button
-                    className="thread-action-btn"
+                    className="action-btn"
                     onClick={() => setShowAnalytics(true)}
                     title="Analytics"
                     type="button"
@@ -344,7 +344,7 @@ const ViewThreadPage = () => {
 
                 {/* Close */}
                 <button
-                  className="thread-action-btn close-btn"
+                  className="action-btn close-btn"
                   onClick={() => navigate("/forum")}
                   title="Close"
                 >

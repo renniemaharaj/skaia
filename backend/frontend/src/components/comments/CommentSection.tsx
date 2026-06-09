@@ -205,7 +205,7 @@ const CommentSection = ({
                   <div className="comment-actions">
                     {currentUserId && onLike && (
                       <button
-                        className={`thread-action-btn like-btn${comment.is_liked ? " liked" : ""}`}
+                        className={`action-btn like-btn${comment.is_liked ? " liked" : ""}`}
                         onClick={() => void onLike(comment)}
                         title={comment.is_liked ? "Unlike" : "Like"}
                         type="button"
@@ -221,7 +221,7 @@ const CommentSection = ({
                     )}
                     {onDelete && comment.can_delete && (
                       <button
-                        className="thread-action-btn delete-btn"
+                        className="action-btn danger"
                         onClick={() => void onDelete(comment)}
                         title="Delete"
                         type="button"
@@ -253,7 +253,7 @@ const CommentSection = ({
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <button
-                    className="thread-action-btn btn-cancel"
+                    className="action-btn btn-cancel"
                     style={{ padding: '6px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
                     onClick={() => {
                       setIsEditorVisible(false);
@@ -263,7 +263,7 @@ const CommentSection = ({
                     Cancel
                   </button>
                   <button
-                    className="thread-action-btn btn-submit"
+                    className="action-btn btn-submit"
                     style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
                     disabled={disabled || !richTextContent.trim() || richTextContent === "<p></p>"}
                     onClick={async () => {

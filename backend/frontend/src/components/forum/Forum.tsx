@@ -26,7 +26,7 @@ import "./Forum.css";
 import "../ui/FeatureCard.css";
 import "./NewThread.css";
 import "../ui/FormGroup.css";
-import "./ThreadActions.css";
+
 import { useNavigate } from "react-router-dom";
 import UserLink from "../user/UserLink";
 import UserAvatar from "../user/UserAvatar";
@@ -103,7 +103,7 @@ const CategoryThreadsPreview = ({
               </div>
               <div className="thread-actions">
                 <button
-                  className="thread-action-btn view-btn"
+                  className="action-btn view-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/view-thread/${thread.id}`);
@@ -114,7 +114,7 @@ const CategoryThreadsPreview = ({
                 </button>
                 {canEditThread && (
                   <button
-                    className="thread-action-btn edit-btn"
+                    className="action-btn edit-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/edit-thread/${thread.id}`);
@@ -126,7 +126,7 @@ const CategoryThreadsPreview = ({
                 )}
                 {canEditThread && (
                   <button
-                    className={`thread-action-btn pin-btn${thread.is_pinned ? " pinned" : ""}`}
+                    className={`action-btn pin-btn${thread.is_pinned ? " pinned" : ""}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleThreadPin(thread.id, !thread.is_pinned);
@@ -139,7 +139,7 @@ const CategoryThreadsPreview = ({
                 )}
                 {canDeleteThread && (
                   <button
-                    className="thread-action-btn delete-btn"
+                    className="action-btn danger"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteThread(thread.id, forum.id);
@@ -558,7 +558,7 @@ export const Forum: React.FC = () => {
                       {canEditCategories && !loading && (
                         <>
                           <button
-                            className={`thread-action-btn pin-btn${forum.is_pinned ? " pinned" : ""}`}
+                            className={`action-btn pin-btn${forum.is_pinned ? " pinned" : ""}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleCategoryPin(
@@ -576,7 +576,7 @@ export const Forum: React.FC = () => {
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
                           </button>
                         <button
-                          className={`thread-action-btn lock-btn${forum.is_locked ? " locked" : ""}`}
+                          className={`action-btn lock-btn${forum.is_locked ? " locked" : ""}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleCategoryLock(
@@ -600,7 +600,7 @@ export const Forum: React.FC = () => {
                       )}
                       {canDeleteCategory && (
                         <button
-                          className="thread-action-btn delete-btn"
+                          className="action-btn danger"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteCategory(forum.id);

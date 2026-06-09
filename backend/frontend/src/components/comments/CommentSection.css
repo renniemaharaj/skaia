@@ -209,7 +209,7 @@
   padding-top: 0.75rem;
 }
 
-.comment-section .thread-action-btn {
+.comment-section .action-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -226,15 +226,15 @@
     transform 0.12s ease;
 }
 
-.comment-section .thread-action-btn:hover {
+.comment-section .action-btn:hover {
   background: color-mix(in srgb, var(--text-primary) 4%, transparent);
 }
 
-.comment-section .thread-action-btn.like-btn.liked {
+.comment-section .action-btn.like-btn.liked {
   color: var(--primary-color);
 }
 
-.comment-section .thread-action-btn.delete-btn:hover {
+.comment-section .action-btn.danger:hover {
   color: var(--error-color);
   background: color-mix(in srgb, var(--error-color) 10%, transparent);
 }

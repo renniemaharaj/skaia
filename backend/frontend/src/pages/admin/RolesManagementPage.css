@@ -273,13 +273,13 @@
   font-size: 0.8125rem;
 }
 
-.rmp-delete-btn {
+.rmp-action-btn.danger {
   color: var(--error-color);
   border-color: var(--error-color);
   background: color-mix(in srgb, var(--error-color) 8%, transparent);
 }
 
-.rmp-delete-btn:hover {
+.rmp-action-btn.danger:hover {
   background: color-mix(in srgb, var(--error-color) 16%, transparent);
 }
 

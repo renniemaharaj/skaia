@@ -126,7 +126,7 @@
 }
 
 .page-comment__like-btn,
-.page-comment__delete-btn {
+.page-comment__action-btn.danger {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -151,7 +151,7 @@
   color: var(--primary-color);
 }
 
-.page-comment__delete-btn:hover {
+.page-comment__action-btn.danger:hover {
   color: var(--error-color);
   background: var(--error-bg);
 }
