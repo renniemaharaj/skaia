@@ -7,7 +7,7 @@
 - **Phase 2: Section metadata** — ✅ Complete
 - **Phase 3: Integration primitives** — ✅ Complete
 - **Phase 4: Component registry & bind-point contracts** — ✅ Complete
-- **Phase 5: Open derived/custom sections to registered components** — ⬜ Not started
+- **Phase 5: Open derived/custom sections to registered components** — 🟡 In progress
 - **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
 - **Phase 7: Add versioning and migration** — ⬜ Not started
 
@@ -28,10 +28,11 @@
 - [x] Verification: `go test ./...` all pass, `tsc --noEmit` clean
 
 ### Next Steps
-- [ ] Implement Phase 5: Open derived/custom sections to registered components
-  - Add component picker UI in DerivedSectionBlock and CustomSectionBlock
-  - Add bind-point mapping UI (column → bind-point)
-  - Implement component-driven row rendering in DesignedCardGrid
+- [x] 2026-06-09: Added component picker UI in `DerivedSectionBlock` and `CustomSectionBlock`.
+- [x] 2026-06-09: Added bind-point mapping UI (column → bind-point) for derived/custom sections with `ComponentBindMapper`.
+- [x] 2026-06-09: Added component-driven row rendering for derived/custom section rows with `ComponentGrid`.
+- [ ] Continue Phase 5 by adding component group rendering/editing to derived/custom sections.
+- [ ] Add focused tests for component-rendered section behavior when the frontend test harness is normalized.
 - [ ] Verify the newly refactored UI components as part of `.todo/live_testing`
 
 <--/------->

@@ -15,6 +15,7 @@ import type {
   FactTableConfig,
   CardTemplate,
   CardZone,
+  ComponentDefinition,
 } from "../types";
 import { DEFAULT_CARD_TEMPLATE } from "../types";
 import {
@@ -29,7 +30,7 @@ import {
   setSectionAnimationIntensity,
 } from "../EditControls";
 import { ColumnMapper } from "../ColumnMapper";
-import { mapRowsToItems, detectColumns } from "../mapRows";
+import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
 import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
@@ -38,6 +39,8 @@ import { toast } from "sonner";
 
 import { DesignedCardGrid } from "./DesignedCardGrid";
 import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
+import { ComponentBindMapper } from "../ComponentBindMapper";
+import { ComponentGrid } from "../ComponentRenderer";
 
 interface Props {
   section: PageSection;
@@ -85,6 +88,9 @@ interface ExecuteResult {
   cached_at?: string;
   cache_ttl?: number;
 }
+
+const isAuthError = (message: string) =>
+  /unauthorized|authentication|login required|401/i.test(message);
 
 async function evaluateDataSource(
   datasourceId: number,
@@ -212,7 +218,7 @@ function TablePreview({
           </thead>
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
+              <tr key={rowKey(row, rowIndex)}>
                 {columns.map((col) => (
                   <td key={col} style={getColumnStyle(col)}>
                     {formatCellValue(row[col])}
@@ -245,9 +251,13 @@ export const CustomSectionBlock = ({
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [dscacheTTL, setDsCacheTTL] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
-
-  const isAuthError = (message: string) =>
-    /unauthorized|authentication|login required|401/i.test(message);
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
+    [],
+  );
+  const [loadingComponents, setLoadingComponents] = useState(true);
+  const customSectionSelectId = `custom-section-source-${section.id}`;
+  const rowKeySelectId = `custom-section-row-key-${section.id}`;
+  const componentSelectId = `custom-section-component-${section.id}`;
 
   // Load available custom sections
   useEffect(() => {
@@ -262,6 +272,13 @@ export const CustomSectionBlock = ({
         console.error(err);
       })
       .finally(() => setLoadingList(false));
+  }, []);
+
+  useEffect(() => {
+    apiRequest<ComponentDefinition[]>("/config/components")
+      .then((list) => setComponentsList(list ?? []))
+      .catch(console.error)
+      .finally(() => setLoadingComponents(false));
   }, []);
 
   const selectedCS = useMemo(
@@ -298,7 +315,7 @@ export const CustomSectionBlock = ({
       setEvalError(auth ? null : msg);
       setRawRows([]);
       toast.error(
-        "Evaluation failed" + (auth ? ": authentication required" : ": " + msg),
+        `Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`,
       );
     } finally {
       setEvaluating(false);
@@ -331,6 +348,16 @@ export const CustomSectionBlock = ({
       DEFAULT_CARD_TEMPLATE
     );
   }, [cfg.card_template, selectedCSConfig.card_template]);
+
+  const effectiveComponentType =
+    cfg.component_type ?? selectedCSConfig.component_type;
+  const selectedComponent = useMemo(
+    () => componentsList.find((c) => c.type === effectiveComponentType),
+    [componentsList, effectiveComponentType],
+  );
+  const effectiveBindings = cfg.bindings ?? selectedCSConfig.bindings ?? {};
+  const effectiveStyleOverrides =
+    cfg.style_overrides ?? selectedCSConfig.style_overrides;
 
   const hasColumnMap = cfg.column_map && Object.keys(cfg.column_map).length > 0;
 
@@ -406,6 +433,25 @@ export const CustomSectionBlock = ({
     });
   };
 
+  const handleComponentChange = (componentType: string) => {
+    const component = componentsList.find((c) => c.type === componentType);
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, {
+        component_type: componentType || undefined,
+        component_version: component?.version,
+        bindings: {},
+      }),
+    });
+  };
+
+  const handleBindingsChange = (bindings: Record<string, string>) => {
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, { bindings }),
+    });
+  };
+
   // Determine if we're in legacy table mode (no column map, section_type = "table")
   const isLegacyTable = selectedCS?.section_type === "table" && !hasColumnMap;
 
@@ -445,6 +491,7 @@ export const CustomSectionBlock = ({
           }
           extra={
             <button
+              type="button"
               className="pb-section-toolbar-btn"
               onClick={runEvaluation}
               disabled={evaluating || !cfg.custom_section_id}
@@ -460,12 +507,16 @@ export const CustomSectionBlock = ({
       {/* Controls bar */}
       {canEdit && (
         <div className="custom-section-controls">
-          <label className="custom-section-control">
+          <label
+            className="custom-section-control"
+            htmlFor={customSectionSelectId}
+          >
             <span>Custom Section</span>
             {loadingList ? (
               <span>Loading…</span>
             ) : (
               <select
+                id={customSectionSelectId}
                 value={cfg.custom_section_id ?? ""}
                 onChange={(e) => handleCSChange(Number(e.target.value))}
               >
@@ -480,9 +531,10 @@ export const CustomSectionBlock = ({
           </label>
 
           {availableColumns.length > 0 && !isLegacyTable && (
-            <label className="custom-section-control">
+            <label className="custom-section-control" htmlFor={rowKeySelectId}>
               <span>Row Key</span>
               <select
+                id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
                 onChange={(e) => handleRowKeyColumnChange(e.target.value)}
               >
@@ -501,11 +553,50 @@ export const CustomSectionBlock = ({
               <Zap size={14} /> {selectedCS.name}
             </span>
           )}
+
+          {availableColumns.length > 0 && !isLegacyTable && (
+            <label
+              className="custom-section-control"
+              htmlFor={componentSelectId}
+            >
+              <span>Component</span>
+              {loadingComponents ? (
+                <span>Loading…</span>
+              ) : (
+                <select
+                  id={componentSelectId}
+                  value={effectiveComponentType ?? ""}
+                  onChange={(e) => handleComponentChange(e.target.value)}
+                >
+                  <option value="">— Saved layout —</option>
+                  {componentsList
+                    .filter((component) => component.repeatable)
+                    .map((component) => (
+                      <option key={component.type} value={component.type}>
+                        {component.label}
+                      </option>
+                    ))}
+                </select>
+              )}
+            </label>
+          )}
         </div>
       )}
 
+      {canEdit && availableColumns.length > 0 && selectedComponent && (
+        <ComponentBindMapper
+          availableColumns={availableColumns}
+          component={selectedComponent}
+          bindings={effectiveBindings}
+          onChange={handleBindingsChange}
+        />
+      )}
+
       {/* Column mapping UI */}
-      {canEdit && availableColumns.length > 0 && !isLegacyTable && (
+      {canEdit &&
+        availableColumns.length > 0 &&
+        !isLegacyTable &&
+        !selectedComponent && (
         <ColumnMapper
           availableColumns={availableColumns}
           columnMap={cfg.column_map ?? {}}
@@ -564,13 +655,26 @@ export const CustomSectionBlock = ({
           </div>
         )}
 
+        {!authError && selectedComponent && rawRows.length > 0 && (
+          <ComponentGrid
+            component={selectedComponent}
+            bindings={effectiveBindings}
+            rows={rawRows}
+            styleOverrides={effectiveStyleOverrides}
+          />
+        )}
+
         {/* Rendered cards (column-mapped) */}
-        {!authError && hasColumnMap && mappedItems.length > 0 && (
+        {!authError &&
+          !selectedComponent &&
+          hasColumnMap &&
+          mappedItems.length > 0 && (
           <DesignedCardGrid items={mappedItems} template={effectiveTemplate} />
         )}
 
         {/* Render saved custom section preview items */}
         {!authError &&
+          !selectedComponent &&
           !hasColumnMap &&
           selectedCS?.section_type !== "table" &&
           previewItems.length > 0 && (
@@ -582,6 +686,7 @@ export const CustomSectionBlock = ({
 
         {/* Render table preview for saved table custom sections */}
         {!authError &&
+          !selectedComponent &&
           !hasColumnMap &&
           selectedCS?.section_type === "table" &&
           rawRows.length > 0 && (
@@ -599,6 +704,7 @@ export const CustomSectionBlock = ({
           rawRows.length > 0 &&
           !hasColumnMap &&
           selectedCS &&
+          !selectedComponent &&
           selectedCS.section_type !== "table" &&
           previewItems.length === 0 && (
             <div className="custom-section-empty">

@@ -9,7 +9,8 @@
 - **Phase 4: Design Token Hardening** — ⬜ Not started
 
 ### Next Steps
-- [ ] Begin Phase 3: Builder & Editor Standardization — Convert Component Picker UI in DataSourceEditorPage, PageBuilder, CardDesigner, ColumnMapper, DerivedSectionBlock, CustomSectionBlock to use new primitives.
+- [x] 2026-06-09: `DerivedSectionBlock` and `CustomSectionBlock` now share the registered component picker/bind mapper path used by datasource previews.
+- [ ] Continue Phase 3: Builder & Editor Standardization — Convert remaining Component Picker UI in DataSourceEditorPage, PageBuilder, CardDesigner, and ColumnMapper to use new primitives.
 - [ ] Begin Phase 4: CSS Token Standardization — Audit `index.css` tokens, remove legacy inline styles and one-off classes.
 
 <--/------->

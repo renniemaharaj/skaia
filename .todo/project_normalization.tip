@@ -4,12 +4,12 @@
 
 ### Current Progress
 - **Phase 1: Remove LandingSkeleton** — ✅ Complete
-- **Phase 2: Spec Alignment** — ⬜ Not started
+- **Phase 2: Spec Alignment** — ✅ Complete
 - **Phase 3: Codebase Refactor** — ⬜ Not started
 - **Phase 4: UI Refactor Alignment** — ⬜ Not started
 
 ### Next Steps
-- [ ] Update `backend_spec` to rename `landing_sections` and `landing_items` to `page_sections` and `page_items`
-- [ ] Rename `.specs/landing_page_spec` to `route_resolution_spec`
+- [ ] Audit remaining `landing_*` compatibility names and decide which are intentional protocol aliases versus rename candidates.
+- [ ] Reconcile `landing_page_updated` and `landing_updated` event names with `.specs/route_resolution_spec` before any protocol rename.
 
 <--/------->

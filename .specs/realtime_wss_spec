@@ -198,7 +198,7 @@ the page:update WS push was missed.
 | `page_updated`         | PageBuilderPage    | broadcast (except sender)         |
 | `page_deleted`         | `{ id, slug }`     | broadcast                         |
 | `landing_page_changed` | PageBuilderPage    | broadcast (full new landing page) |
-| `landing_updated`      | `LandingSection[]` | broadcast                         |
+| `landing_updated`      | `PageSection[]`    | broadcast                         |
 
 **`landing_page_changed`** is emitted by `setLandingPage` via `hub.BroadcastPage`.
 It carries the full enriched page so clients can swap the landing page via

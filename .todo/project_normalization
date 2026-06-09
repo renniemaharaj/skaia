@@ -3,6 +3,7 @@ Project-wide Normalization: 'landing' vs 'page'
 This plan tracks the renaming of all 'landing' references to 'page' across the codebase.
 
 ## Status
-- Blocked on manual spec-file renames and broad codebase audit.
-- Spec drift: `backend_spec` still references `landing_sections` and `landing_items`, but migration 007 renamed them to `page_sections` and `page_items`. This must be corrected in the spec.
-- `ui_component_refactor_plan` still uses `LandingSection` and `LandingItem` type names.
+- 2026-06-09 correctness pass fixed the stale `backend_spec` key-table reference to `page_sections` and `page_items`.
+- `.specs/route_resolution_spec` is the active route/page resolution spec; the remaining `landing_page_spec` mention is historical replacement context.
+- Remaining `landing_*` references need a compatibility audit before renaming because several are live WebSocket/API event names.
+- Future page-builder/component work should use `PageSection` and `PageItem` terminology unless preserving a documented compatibility event name.

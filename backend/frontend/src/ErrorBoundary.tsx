@@ -1,11 +1,12 @@
-import { type ReactNode } from "react";
+import type { ErrorInfo, ReactNode } from "react";
+import type { FallbackProps } from "react-error-boundary";
 import { ErrorBoundary as ErrorBoundaryLib } from "react-error-boundary";
 import ErrorPage from "./pages/ErrorPage";
 
 /**
  * Error fallback component that displays error details
  */
-const ErrorFallback = ({ error }: { error: Error }) => {
+const ErrorFallback = ({ error }: FallbackProps) => {
   return (
     <ErrorPage
       errorCode={500}
@@ -27,21 +28,20 @@ interface Props {
  * and displays a user-friendly error page using react-error-boundary
  */
 export default function ErrorBoundary({ children }: Props) {
-  const handleError = (error: Error, info: { componentStack: string }) => {
+  const handleError = (error: Error, info: ErrorInfo) => {
     // Log error details for debugging
     console.error("ErrorBoundary caught an error:", error, info);
   };
 
-  // Type assertion to work around react-error-boundary's class component typing issues
-  const ErrorBoundaryComponent = ErrorBoundaryLib as any;
-
   return (
-    <ErrorBoundaryComponent
+    <ErrorBoundaryLib
       FallbackComponent={ErrorFallback}
       onError={handleError}
-      onReset={() => (window.location.href = "/")}
+      onReset={() => {
+        window.location.href = "/";
+      }}
     >
       {children}
-    </ErrorBoundaryComponent>
+    </ErrorBoundaryLib>
   );
 }

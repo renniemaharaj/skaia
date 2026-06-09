@@ -421,8 +421,12 @@ func (h *Handler) lockConversation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid conversation id")
+		return
+	}
+
 	var req struct {
 		Locked bool `json:"locked"`
 	}
@@ -447,15 +451,23 @@ func (h *Handler) kickParticipant(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid conversation id")
+		return
+	}
 	targetStr := chi.URLParam(r, "user_id")
 	var targetID int64
 	if targetStr == "me" {
 		targetID = callerID
 	} else {
-		targetID, _ = strconv.ParseInt(targetStr, 10, 64)
+		targetID, err = strconv.ParseInt(targetStr, 10, 64)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+			return
+		}
 	}
-	
+
 	if err := h.svc.KickParticipant(id, callerID, targetID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -469,9 +481,17 @@ func (h *Handler) muteParticipant(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	targetID, _ := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
-	
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid conversation id")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
 	var req struct {
 		Muted bool `json:"muted"`
 	}
@@ -479,7 +499,7 @@ func (h *Handler) muteParticipant(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid payload")
 		return
 	}
-	
+
 	if err := h.svc.MuteParticipant(id, callerID, targetID, req.Muted); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -493,9 +513,17 @@ func (h *Handler) changeParticipantRole(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	targetID, _ := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
-	
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid conversation id")
+		return
+	}
+	targetID, err := strconv.ParseInt(chi.URLParam(r, "user_id"), 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid user id")
+		return
+	}
+
 	var req struct {
 		Role string `json:"role"`
 	}
@@ -503,7 +531,7 @@ func (h *Handler) changeParticipantRole(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusBadRequest, "invalid payload")
 		return
 	}
-	
+
 	if err := h.svc.ChangeParticipantRole(id, callerID, targetID, req.Role); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return

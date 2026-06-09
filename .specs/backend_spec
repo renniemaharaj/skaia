@@ -123,7 +123,7 @@ Prices stored as `BIGINT` cents. Timestamps are primarily `TIMESTAMP` with datab
 - `forum_categories`, `forum_threads`, `thread_comments`, `thread_likes`, `thread_comment_likes`
 - `products`, `store_categories`, `cart_items`, `orders`, `order_items`, `payments`, `subscription_plans`, `subscriptions`
 - `inbox_conversations`, `inbox_messages`, `notifications`
-- `site_config`, `landing_sections`, `landing_items`, `pages`
+- `site_config`, `page_sections`, `page_items`, `pages`
 
 ## Cache Layer
 

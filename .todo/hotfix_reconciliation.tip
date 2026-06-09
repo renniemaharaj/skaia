@@ -1,0 +1,19 @@
+<--/------->
+
+## hotfix_reconciliation
+
+### Current Progress
+- **Phase 1: Backend hotfixes** — ✅ Complete
+- **Phase 2: Spec and todo reconciliation** — ✅ Complete
+- **Phase 3: Frontend verification unblock** — ✅ Complete
+- **Phase 4: UI reconciliation handoff** — ✅ Complete
+
+### Next Steps
+- [x] 2026-06-09: Backend verification passed: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`.
+- [x] 2026-06-09: Staged backend/spec/todo checkpoint after inbox route validation changes.
+- [x] 2026-06-09: Frontend verification unblocked with `mise exec node@24.16.0 -- ...`.
+- [x] 2026-06-09: UI checkpoint build passed: `mise exec node@24.16.0 -- npm run build`.
+- [x] 2026-06-09: Focused lint passed for touched UI files: `mise exec node@24.16.0 -- ./node_modules/.bin/biome lint src/ErrorBoundary.tsx src/pages/page/blocks/DerivedSectionBlock.tsx src/pages/page/blocks/CustomSectionBlock.tsx`. Biome still reports the existing deprecated `trailingComma` config warning.
+- [ ] Full frontend lint remains blocked by existing repo-wide diagnostics outside this checkpoint.
+
+<--/------->

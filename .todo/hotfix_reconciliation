@@ -1,0 +1,32 @@
+# Hotfix Reconciliation
+
+## Context
+The 2026-06-09 correctness pass found a green backend test suite but stale planning/spec references and malformed group-inbox route handling introduced during the group conversation work. Frontend verification is currently blocked in this shell because only `mise` shims for `node`/`npm` are available and no Node version is selected.
+
+## Goal
+- Keep critical backend endpoints defensive against malformed input.
+- Reconcile stale specs/todos before larger UI component work resumes.
+- Track verification blockers and remaining stabilization work in one small hotfix plan.
+
+## Non-Goals
+- Do not rename live WebSocket event names without a compatibility plan.
+- Do not execute broad UI primitive consolidation under this hotfix plan.
+- Do not touch the existing local `nginx/default.conf` change.
+
+## Steps
+1. Add request-path validation for group inbox participant and lock endpoints.
+2. Update stale table/type references in specs and normalization todo status.
+3. Re-run backend tests and record frontend environment blocker.
+4. Continue with UI reconciliation through `ui_primitive_consolidation` once Node verification is available.
+
+## Verification
+- From `backend/`: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- From `backend/frontend/`: `npm run build` and `npm run lint` once `mise` has a Node version selected.
+
+## References
+- `.routines/correctness`
+- `.routines/todo_planner`
+- `.routines/worker`
+- `.todo/project_normalization`
+- `.todo/ui_primitive_consolidation`
+- `backend/internal/inbox/handler.go`

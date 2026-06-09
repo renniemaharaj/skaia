@@ -7,6 +7,7 @@ import type {
   ColumnMap,
   FactTableConfig,
   CardTemplate,
+  ComponentDefinition,
 } from "../types";
 import { DEFAULT_CARD_TEMPLATE } from "../types";
 import "./DerivedSectionBlock.css";
@@ -32,6 +33,8 @@ import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
 
 import { DesignedCardGrid } from "./DesignedCardGrid";
 import { CardDesigner } from "../CardDesigner";
+import { ComponentBindMapper } from "../ComponentBindMapper";
+import { ComponentGrid } from "../ComponentRenderer";
 
 interface Props {
   section: PageSection;
@@ -76,6 +79,9 @@ interface ExecuteResult {
   cache_ttl?: number;
 }
 
+const isAuthError = (message: string) =>
+  /unauthorized|authentication|login required|401/i.test(message);
+
 async function evaluateDataSource(
   datasourceId: number,
   envData?: string,
@@ -118,6 +124,13 @@ export const DerivedSectionBlock = ({
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [dsCacheTTL, setDsCacheTTL] = useState(0);
   const [loadingDS, setLoadingDS] = useState(true);
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
+    [],
+  );
+  const [loadingComponents, setLoadingComponents] = useState(true);
+  const datasourceSelectId = `derived-datasource-${section.id}`;
+  const rowKeySelectId = `derived-row-key-${section.id}`;
+  const componentSelectId = `derived-component-${section.id}`;
 
   // Load available data sources
   useEffect(() => {
@@ -127,8 +140,12 @@ export const DerivedSectionBlock = ({
       .finally(() => setLoadingDS(false));
   }, []);
 
-  const isAuthError = (message: string) =>
-    /unauthorized|authentication|login required|401/i.test(message);
+  useEffect(() => {
+    apiRequest<ComponentDefinition[]>("/config/components")
+      .then((list) => setComponentsList(list ?? []))
+      .catch(console.error)
+      .finally(() => setLoadingComponents(false));
+  }, []);
 
   const runEvaluation = useCallback(async () => {
     if (!cfg.datasource_id) {
@@ -158,7 +175,7 @@ export const DerivedSectionBlock = ({
       setEvalError(auth ? null : msg);
       setRawRows([]);
       toast.error(
-        `Evaluation failed${auth ? ": authentication required" : ": " + msg}`,
+        `Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`,
       );
     } finally {
       setEvaluating(false);
@@ -170,8 +187,7 @@ export const DerivedSectionBlock = ({
     if (cfg.datasource_id) {
       runEvaluation();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cfg.datasource_id]);
+  }, [cfg.datasource_id, runEvaluation]);
 
   // Detect available columns from raw rows
   const availableColumns = useMemo(() => detectColumns(rawRows), [rawRows]);
@@ -225,9 +241,32 @@ export const DerivedSectionBlock = ({
     });
   };
 
+  const handleComponentChange = (componentType: string) => {
+    const component = componentsList.find((c) => c.type === componentType);
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, {
+        component_type: componentType || undefined,
+        component_version: component?.version,
+        bindings: {},
+      }),
+    });
+  };
+
+  const handleBindingsChange = (bindings: Record<string, string>) => {
+    onUpdate({
+      ...section,
+      config: updateConfig(section.config, { bindings }),
+    });
+  };
+
   const selectedDS = useMemo(
     () => dataSources.find((d) => d.id === cfg.datasource_id),
     [dataSources, cfg.datasource_id],
+  );
+  const selectedComponent = useMemo(
+    () => componentsList.find((c) => c.type === cfg.component_type),
+    [componentsList, cfg.component_type],
   );
 
   return (
@@ -266,6 +305,7 @@ export const DerivedSectionBlock = ({
           }
           extra={
             <button
+              type="button"
               className="pb-section-toolbar-btn"
               onClick={runEvaluation}
               disabled={evaluating || !cfg.datasource_id}
@@ -281,12 +321,16 @@ export const DerivedSectionBlock = ({
       {/* Controls bar */}
       {canEdit && (
         <div className="derived-section-controls">
-          <label className="derived-section-control">
+          <label
+            className="derived-section-control"
+            htmlFor={datasourceSelectId}
+          >
             <span>Data Source</span>
             {loadingDS ? (
               <span>Loading…</span>
             ) : (
               <select
+                id={datasourceSelectId}
                 value={cfg.datasource_id ?? ""}
                 onChange={(e) => handleDatasourceChange(Number(e.target.value))}
               >
@@ -301,9 +345,10 @@ export const DerivedSectionBlock = ({
           </label>
 
           {availableColumns.length > 0 && (
-            <label className="derived-section-control">
+            <label className="derived-section-control" htmlFor={rowKeySelectId}>
               <span>Row Key</span>
               <select
+                id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
                 onChange={(e) => handleRowKeyColumnChange(e.target.value)}
               >
@@ -322,11 +367,47 @@ export const DerivedSectionBlock = ({
               <Zap size={14} /> {selectedDS.name}
             </span>
           )}
+
+          {availableColumns.length > 0 && (
+            <label
+              className="derived-section-control"
+              htmlFor={componentSelectId}
+            >
+              <span>Component</span>
+              {loadingComponents ? (
+                <span>Loading…</span>
+              ) : (
+                <select
+                  id={componentSelectId}
+                  value={cfg.component_type ?? ""}
+                  onChange={(e) => handleComponentChange(e.target.value)}
+                >
+                  <option value="">— Designed cards —</option>
+                  {componentsList
+                    .filter((component) => component.repeatable)
+                    .map((component) => (
+                      <option key={component.type} value={component.type}>
+                        {component.label}
+                      </option>
+                    ))}
+                </select>
+              )}
+            </label>
+          )}
         </div>
       )}
 
+      {canEdit && availableColumns.length > 0 && selectedComponent && (
+        <ComponentBindMapper
+          availableColumns={availableColumns}
+          component={selectedComponent}
+          bindings={cfg.bindings ?? {}}
+          onChange={handleBindingsChange}
+        />
+      )}
+
       {/* Column mapping UI */}
-      {canEdit && availableColumns.length > 0 && (
+      {canEdit && availableColumns.length > 0 && !selectedComponent && (
         <ColumnMapper
           availableColumns={availableColumns}
           columnMap={cfg.column_map ?? {}}
@@ -335,7 +416,7 @@ export const DerivedSectionBlock = ({
       )}
 
       {/* Card designer */}
-      {canEdit && availableColumns.length > 0 && (
+      {canEdit && availableColumns.length > 0 && !selectedComponent && (
         <CardDesigner
           template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
           onChange={handleCardTemplateChange}
@@ -392,7 +473,16 @@ export const DerivedSectionBlock = ({
         )}
 
         {/* Rendered cards */}
-        {!authError && mappedItems.length > 0 && (
+        {!authError && selectedComponent && rawRows.length > 0 && (
+          <ComponentGrid
+            component={selectedComponent}
+            bindings={cfg.bindings ?? {}}
+            rows={rawRows}
+            styleOverrides={cfg.style_overrides}
+          />
+        )}
+
+        {!authError && !selectedComponent && mappedItems.length > 0 && (
           <DesignedCardGrid
             items={mappedItems}
             template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
@@ -416,7 +506,8 @@ export const DerivedSectionBlock = ({
           !evalError &&
           rawRows.length > 0 &&
           mappedItems.length === 0 &&
-          canEdit && (
+          canEdit &&
+          !selectedComponent && (
             <div className="derived-section-empty">
               <p>
                 Configure the column mapping above to map datasource rows to
