@@ -42,6 +42,7 @@ import (
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
+	immediascraper "github.com/skaia/backend/internal/mediascraper"
 )
 
 // SimpleResponse is a basic JSON response.
@@ -644,6 +645,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			grengoSvc := igrengo.NewService(grengoAPI)
 			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
 		}
+
+		immediascraper.SetHub(hub)
+		immediascraper.ClearCache()
+		immediascraper.NewHandler().Mount(api)
 	})
 
 	// SSR: serve index.html with injected SEO head tags

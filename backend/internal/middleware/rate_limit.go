@@ -40,7 +40,7 @@ func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") {
+			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") || strings.HasPrefix(r.URL.Path, "/api/mediascraper/") {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -71,7 +71,7 @@ func RateLimitByClient() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		limited := rateLimiter(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") {
+			if strings.HasPrefix(r.URL.Path, "/api/upload/chunked/") || strings.HasPrefix(r.URL.Path, "/api/mediascraper/") {
 				next.ServeHTTP(w, r)
 				return
 			}

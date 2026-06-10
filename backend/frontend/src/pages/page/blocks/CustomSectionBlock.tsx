@@ -33,7 +33,7 @@ import { ColumnMapper } from "../ColumnMapper";
 import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
-import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, Zap, ExternalLink } from "lucide-react";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +41,8 @@ import { DesignedCardGrid } from "./DesignedCardGrid";
 import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
 import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGrid } from "../ComponentRenderer";
+import { ActiveJobsBadge } from "../../../components/mediascraper/ActiveJobsBadge";
+import { ComponentGroupRenderer } from "../ComponentGroupEditor";
 
 interface Props {
   section: PageSection;
@@ -351,6 +353,8 @@ export const CustomSectionBlock = ({
 
   const effectiveComponentType =
     cfg.component_type ?? selectedCSConfig.component_type;
+  const effectiveComponentGroup =
+    cfg.component_group ?? selectedCSConfig.component_group;
   const selectedComponent = useMemo(
     () => componentsList.find((c) => c.type === effectiveComponentType),
     [componentsList, effectiveComponentType],
@@ -549,8 +553,16 @@ export const CustomSectionBlock = ({
           )}
 
           {selectedCS && (
-            <span className="custom-section-cs-info">
+            <span className="custom-section-cs-info" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <Zap size={14} /> {selectedCS.name}
+              <Link 
+                to={`/admin/datasources/${selectedCS.datasource_id}`} 
+                target="_blank" 
+                title="Edit Data Source"
+                style={{ color: "var(--accent-color)", display: "flex" }}
+              >
+                <ExternalLink size={14} />
+              </Link>
             </span>
           )}
 
@@ -629,7 +641,7 @@ export const CustomSectionBlock = ({
         )}
 
         {compileCached !== null && lastRunAt && (
-          <div className="ds-last-updated">
+          <div className="ds-last-updated" style={{ marginRight: "10px" }}>
             <Clock size={11} />
             <span>Updated {formatTimeAgo(lastRunAt)}</span>
             {dscacheTTL > 0 && (
@@ -638,6 +650,10 @@ export const CustomSectionBlock = ({
               </span>
             )}
           </div>
+        )}
+
+        {(selectedComponent?.type === "compound.mediascraper" || effectiveComponentGroup?.items.some((c) => c.component_type === "compound.mediascraper")) && (
+          <ActiveJobsBadge />
         )}
 
         {/* Loading state */}
@@ -664,9 +680,23 @@ export const CustomSectionBlock = ({
           />
         )}
 
+        {!authError && effectiveComponentGroup && rawRows.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: effectiveComponentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+            {rawRows.map((row, i) => (
+              <ComponentGroupRenderer
+                key={rowKey(row, i)}
+                group={effectiveComponentGroup}
+                components={componentsList}
+                row={row}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Rendered cards (column-mapped) */}
         {!authError &&
           !selectedComponent &&
+          !effectiveComponentGroup &&
           hasColumnMap &&
           mappedItems.length > 0 && (
           <DesignedCardGrid items={mappedItems} template={effectiveTemplate} />
@@ -675,6 +705,7 @@ export const CustomSectionBlock = ({
         {/* Render saved custom section preview items */}
         {!authError &&
           !selectedComponent &&
+          !effectiveComponentGroup &&
           !hasColumnMap &&
           selectedCS?.section_type !== "table" &&
           previewItems.length > 0 && (

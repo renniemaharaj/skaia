@@ -277,6 +277,8 @@
 
 .custom-section-frame {
   position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .custom-section-protected {

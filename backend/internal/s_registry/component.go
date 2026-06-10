@@ -223,6 +223,19 @@ var componentDefinitions = []ComponentDefinition{
 		},
 		Version: 1,
 	},
+	{
+		Type:        "compound.mediascraper",
+		Label:       "Media Scraper",
+		Group:       "compound",
+		Description: "Fetches and displays media from a given URL binding.",
+		Repeatable:  true,
+		PropsSchema: json.RawMessage(`{}`),
+		StyleTargets: []string{"root"},
+		BindPoints: []BindPoint{
+			{Key: "url", Label: "Target URL", Description: "The URL to scrape media from.", Kind: BindURL, Required: true},
+		},
+		Version: 1,
+	},
 }
 
 func init() {

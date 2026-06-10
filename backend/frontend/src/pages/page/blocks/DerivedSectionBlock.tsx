@@ -26,7 +26,7 @@ import { ColumnMapper } from "../ColumnMapper";
 import { mapRowsToItems, detectColumns } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import { apiRequest } from "../../../utils/api";
-import { AlertTriangle, Loader2, RefreshCw, Zap } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, Zap, ExternalLink } from "lucide-react";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
@@ -35,6 +35,8 @@ import { DesignedCardGrid } from "./DesignedCardGrid";
 import { CardDesigner } from "../CardDesigner";
 import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGrid } from "../ComponentRenderer";
+import { ActiveJobsBadge } from "../../../components/mediascraper/ActiveJobsBadge";
+import { ComponentGroupRenderer } from "../ComponentGroupEditor";
 
 interface Props {
   section: PageSection;
@@ -363,8 +365,16 @@ export const DerivedSectionBlock = ({
           )}
 
           {selectedDS && (
-            <span className="derived-section-ds-info">
+            <span className="derived-section-ds-info" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
               <Zap size={14} /> {selectedDS.name}
+              <Link 
+                to={`/admin/datasources/${selectedDS.id}`} 
+                target="_blank" 
+                title="Edit Data Source"
+                style={{ color: "var(--accent-color)", display: "flex" }}
+              >
+                <ExternalLink size={14} />
+              </Link>
             </span>
           )}
 
@@ -447,7 +457,7 @@ export const DerivedSectionBlock = ({
         )}
 
         {compileCached !== null && lastRunAt && (
-          <div className="ds-last-updated">
+          <div className="ds-last-updated" style={{ marginRight: "10px" }}>
             <Clock size={11} />
             <span>Updated {formatTimeAgo(lastRunAt)}</span>
             {dsCacheTTL > 0 && (
@@ -458,15 +468,18 @@ export const DerivedSectionBlock = ({
           </div>
         )}
 
+        {(selectedComponent?.type === "compound.mediascraper" || cfg.component_group?.items.some((c) => c.component_type === "compound.mediascraper")) && (
+          <ActiveJobsBadge />
+        )}
+
         {evaluating && (
           <div className="derived-section-loading">
             <Loader2 size={24} className="spin" />
-            <span>Evaluating data source…</span>
+            <span>Evaluating…</span>
           </div>
         )}
 
-        {/* No data source selected */}
-        {!cfg.datasource_id && !canEdit && (
+        {!evaluating && !cfg.datasource_id && (
           <div className="derived-section-empty">
             <p>No data source configured.</p>
           </div>
@@ -474,15 +487,30 @@ export const DerivedSectionBlock = ({
 
         {/* Rendered cards */}
         {!authError && selectedComponent && rawRows.length > 0 && (
-          <ComponentGrid
-            component={selectedComponent}
-            bindings={cfg.bindings ?? {}}
-            rows={rawRows}
-            styleOverrides={cfg.style_overrides}
-          />
+          <div style={{ position: "relative" }}>
+            <ComponentGrid
+              component={selectedComponent}
+              bindings={cfg.bindings ?? {}}
+              rows={rawRows}
+              styleOverrides={cfg.style_overrides}
+            />
+          </div>
         )}
 
-        {!authError && !selectedComponent && mappedItems.length > 0 && (
+        {!authError && cfg.component_group && rawRows.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: cfg.component_group.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+            {rawRows.map((row, i) => (
+              <ComponentGroupRenderer
+                key={i}
+                group={cfg.component_group!}
+                components={componentsList}
+                row={row}
+              />
+            ))}
+          </div>
+        )}
+
+        {!authError && !selectedComponent && !cfg.component_group && mappedItems.length > 0 && (
           <DesignedCardGrid
             items={mappedItems}
             template={cfg.card_template ?? DEFAULT_CARD_TEMPLATE}
@@ -507,7 +535,8 @@ export const DerivedSectionBlock = ({
           rawRows.length > 0 &&
           mappedItems.length === 0 &&
           canEdit &&
-          !selectedComponent && (
+          !selectedComponent &&
+          !cfg.component_group && (
             <div className="derived-section-empty">
               <p>
                 Configure the column mapping above to map datasource rows to

@@ -45,6 +45,7 @@ const (
 	MediaHistoryClear    MessageType = "media:history:clear"    // client => server: clear route history
 	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
 	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
+	MediaScraperJobs     MessageType = "mediascraper:jobs"      // server => all: update active jobs count
 	ErrorMessage         MessageType = "error"
 )
 

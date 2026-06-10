@@ -223,6 +223,16 @@ export const useWebSocketSync = () => {
             return;
           }
 
+          if (message.type === "mediascraper:jobs") {
+            const { active_jobs, cache_hits_1h, new_scrapes_1h } = payload as { active_jobs?: number; cache_hits_1h?: number; new_scrapes_1h?: number };
+            if (active_jobs !== undefined) {
+              window.dispatchEvent(
+                new CustomEvent("mediascraper:jobs", { detail: { active_jobs, cache_hits_1h, new_scrapes_1h } }),
+              );
+            }
+            return;
+          }
+
           // Handle user update propagation
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;

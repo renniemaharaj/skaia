@@ -29,7 +29,7 @@ WORKDIR /app
 # Runtime stage
 FROM alpine:3.21
 
-RUN apk --no-cache add ca-certificates su-exec nodejs && \
+RUN apk --no-cache add ca-certificates su-exec nodejs chromium && \
     adduser -D -h /app appuser
 
 WORKDIR /app

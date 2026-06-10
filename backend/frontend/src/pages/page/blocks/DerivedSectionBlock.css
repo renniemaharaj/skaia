@@ -269,3 +269,9 @@
   );
   border-radius: 4px;
 }
+
+.derived-section-frame {
+  position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
+}

@@ -43,8 +43,6 @@ import type {
  ComponentGroup,
  EventHook,
 } from "../page/types";
-import { ComponentBindMapper } from "../page/ComponentBindMapper";
-import { ComponentGrid } from "../page/ComponentRenderer";
 import { ComponentGroupEditor, ComponentGroupRenderer } from "../page/ComponentGroupEditor";
 import { EventHookEditor } from "../page/EventHookEditor";
 import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
@@ -316,13 +314,10 @@ export default function DataSourceEditorPage() {
  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
  [],
  );
- const [componentMode, setComponentMode] = useState<"single" | "group">("single");
- const [selectedComponentType, setSelectedComponentType] = useState<string>("");
- const [componentBindings, setComponentBindings] = useState<Record<string, string>>({});
  const [componentGroup, setComponentGroup] = useState<ComponentGroup>({
- items: [],
- gap: 16,
- max_width: 800,
+  items: [],
+  gap: 16,
+  max_width: 800,
  });
  const [componentHooks, setComponentHooks] = useState<EventHook[]>([]);
 
@@ -708,16 +703,9 @@ export default function DataSourceEditorPage() {
  section_type: previewType,
  config: JSON.stringify(
  previewType === "component"
- ? componentMode === "group"
  ? {
  columns: 1,
  component_group: componentGroup,
- event_hooks: componentHooks,
- }
- : {
- columns: 3,
- component_type: selectedComponentType,
- bindings: componentBindings,
  event_hooks: componentHooks,
  }
  : {
@@ -1026,50 +1014,6 @@ export default function DataSourceEditorPage() {
  )}
 
  {previewItems.length > 0 && previewType === "component" && (
- <div className="ds-component-mode-picker">
- <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
- <button
- className={`action-btn ${componentMode === "single" ? "active" : ""}`}
- onClick={() => setComponentMode("single")}
- >
- Single Component
- </button>
- <button
- className={`action-btn ${componentMode === "group" ? "active" : ""}`}
- onClick={() => setComponentMode("group")}
- >
- Component Group
- </button>
- </div>
-
- {componentMode === "single" ? (
- <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
- <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>Select Component</label>
- <select
- value={selectedComponentType}
- onChange={(e) => setSelectedComponentType(e.target.value)}
- style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border-color)", width: "100%", backgroundColor: "var(--bg-color)" }}
- >
- <option value="">— Select a component —</option>
- {componentsList.map((c) => (
- <option key={c.type} value={c.type}>
- {c.label} ({c.type})
- </option>
- ))}
- </select>
- {componentsList.find((c) => c.type === selectedComponentType) && (
- <ComponentBindMapper
- availableColumns={tableColumns}
- component={componentsList.find((c) => c.type === selectedComponentType)!}
- bindings={componentBindings}
- onChange={setComponentBindings}
- />
- )}
- <div style={{ marginTop: "16px" }}>
- <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
- </div>
- </div>
- ) : (
  <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
  <ComponentGroupEditor
  group={componentGroup}
@@ -1083,8 +1027,6 @@ export default function DataSourceEditorPage() {
  </div>
  </div>
  )}
- </div>
- )}
 
  {previewItems.length > 0 && previewType === "table" && (
  <TablePreview
@@ -1094,16 +1036,8 @@ export default function DataSourceEditorPage() {
  />
  )}
 
- {previewItems.length > 0 && previewType === "component" && componentMode === "single" && selectedComponentType && (
- <ComponentGrid
- component={componentsList.find((c) => c.type === selectedComponentType)!}
- bindings={componentBindings}
- rows={previewItems}
- />
- )}
-
- {previewItems.length > 0 && previewType === "component" && componentMode === "group" && (
- <div style={{ display: "flex", flexDirection: "column", gap: componentGroup.gap, marginTop: "16px" }}>
+ {previewItems.length > 0 && previewType === "component" && (
+ <div style={{ display: "flex", flexWrap: "wrap", gap: componentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
  {previewItems.map((row, i) => (
  <ComponentGroupRenderer
  key={i}

@@ -5,6 +5,9 @@
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
+import { MediaViewer, type MediaScrapeJob } from "../../components/mediascraper/MediaViewer";
+import { apiRequest } from "../../utils/api";
+import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";
 
 /* ──── helpers ──── */
@@ -302,6 +305,55 @@ function CompoundMediaCard({
   );
 }
 
+function CompoundMediaScraper({
+  data,
+  styles,
+}: {
+  data: Resolved;
+  styles: StyleMap;
+}) {
+  const url = str(data.url);
+  const [job, setJob] = useState<MediaScrapeJob>({ url, status: "pending" });
+
+  useEffect(() => {
+    if (!url) return;
+    let active = true;
+    
+    setJob({ url, status: "pending" });
+    const timer = setTimeout(() => {
+      if (!active) return;
+      setJob({ url, status: "scraping" });
+      apiRequest<{images: string[], last_scanned: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, { method: "GET" })
+        .then((res) => {
+          if (active) {
+            setJob({ 
+              url, 
+              status: "done", 
+              images: res?.images || [], 
+              lastScanned: res?.last_scanned 
+            });
+          }
+        })
+        .catch((err) => {
+          if (active) {
+             setJob({ url, status: "error", error: err.message });
+          }
+        });
+    }, 500);
+
+    return () => { 
+      active = false; 
+      clearTimeout(timer);
+    };
+  }, [url]);
+
+  return (
+    <div style={styles.root} className="cr-compound-media-scraper">
+      <MediaViewer job={job} />
+    </div>
+  );
+}
+
 function CompoundProfile({
   data,
   styles,
@@ -389,6 +441,8 @@ export function ComponentRenderer({
       );
     case "compound.profile":
       return <CompoundProfile data={data} styles={styles} />;
+    case "compound.mediascraper":
+      return <CompoundMediaScraper data={data} styles={styles} />;
     default:
       return (
         <div className="cr-unknown">
