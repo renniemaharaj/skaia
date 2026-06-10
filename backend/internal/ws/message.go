@@ -46,6 +46,7 @@ const (
 	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
 	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
 	MediaScraperJobs     MessageType = "mediascraper:jobs"      // server => all: update active jobs count
+	MediaScraperResult   MessageType = "mediascraper:result"    // server => all: job completion
 	ErrorMessage         MessageType = "error"
 )
 

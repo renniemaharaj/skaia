@@ -59,6 +59,11 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const [videoIdx, setVideoIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  }, [section]);
+
   // Clamp index when the array shrinks
   useEffect(() => {
     if (videoIdx >= videos.length) setVideoIdx(Math.max(0, videos.length - 1));
@@ -67,9 +72,11 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const currentVideo = videos[videoIdx] || "";
 
   const updateCfg = (updates: Partial<HeroCfg>) => {
+    const latestSection = sectionRef.current;
+    const currentCfg = parseCfg(latestSection.config);
     onUpdate({
-      ...section,
-      config: JSON.stringify({ ...cfg, ...updates }),
+      ...latestSection,
+      config: JSON.stringify({ ...currentCfg, ...updates }),
     });
   };
 
@@ -233,12 +240,16 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
 
               <EditableText
                 value={section.heading}
-                onSave={(v) => onUpdate({ ...section, heading: v })}
+                onSave={(v) =>
+                  onUpdate({ ...sectionRef.current, heading: v })
+                }
                 tag="h1"
               />
               <EditableText
                 value={section.subheading}
-                onSave={(v) => onUpdate({ ...section, subheading: v })}
+                onSave={(v) =>
+                  onUpdate({ ...sectionRef.current, subheading: v })
+                }
                 tag="p"
               />
             </>

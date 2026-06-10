@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { Check, Plus, Trash2, ExternalLink } from "lucide-react";
 import type { PageSection, PageItem } from "../types";
 import "./ProfileCardBlock.css";
@@ -65,8 +66,17 @@ export const ProfileCardBlock = ({
   const avatarUrl =
     JSON.parse(section.config || "{}").avatar_url || "/logo.png";
 
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  }, [section]);
+
   const updateConfig = (updates: Record<string, unknown>) => {
-    onUpdate({ ...section, config: setCfg(section.config, updates) });
+    const latestSection = sectionRef.current;
+    onUpdate({
+      ...latestSection,
+      config: setCfg(latestSection.config, updates),
+    });
   };
 
   // Checklist CRUD
@@ -147,12 +157,16 @@ export const ProfileCardBlock = ({
           <>
             <EditableText
               value={section.heading}
-              onSave={(v) => onUpdate({ ...section, heading: v })}
+              onSave={(v) =>
+                onUpdate({ ...sectionRef.current, heading: v })
+              }
               tag="h2"
             />
             <EditableText
               value={section.subheading}
-              onSave={(v) => onUpdate({ ...section, subheading: v })}
+              onSave={(v) =>
+                onUpdate({ ...sectionRef.current, subheading: v })
+              }
               tag="p"
             />
           </>

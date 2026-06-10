@@ -469,7 +469,7 @@ export const DerivedSectionBlock = ({
         )}
 
         {(selectedComponent?.type === "compound.mediascraper" || cfg.component_group?.items.some((c) => c.component_type === "compound.mediascraper")) && (
-          <ActiveJobsBadge />
+          <ActiveJobsBadge canEdit={canEdit} />
         )}
 
         {evaluating && (

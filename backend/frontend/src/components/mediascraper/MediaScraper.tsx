@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { MediaViewer, type MediaScrapeJob } from "./MediaViewer";
 import { toast } from "sonner";
@@ -8,6 +8,27 @@ export function MediaScraper() {
   const [url, setUrl] = useState("");
   const [job, setJob] = useState<MediaScrapeJob | null>(null);
 
+  useEffect(() => {
+    const handleResult = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string; result?: { images: string[], last_scanned: string }; error?: string }>;
+      const data = customEvent.detail;
+      if (data.url === url && job?.status === "scraping") {
+        if (data.error) {
+          setJob({ url, status: "error", error: data.error });
+          toast.error(`Scrape failed: ${data.error}`);
+        } else if (data.result && data.result.images && data.result.images.length > 0) {
+          setJob({ url, status: "done", images: data.result.images, lastScanned: data.result.last_scanned });
+          toast.success(`Scraped ${data.result.images.length} images`);
+        } else {
+          setJob({ url, status: "done", images: [], lastScanned: data.result?.last_scanned });
+          toast.info("No images found on this URL");
+        }
+      }
+    };
+    window.addEventListener("mediascraper:result", handleResult);
+    return () => window.removeEventListener("mediascraper:result", handleResult);
+  }, [url, job?.status]);
+
   const handleScrape = async () => {
     if (!url) {
       toast.error("Please enter a URL to scrape");
@@ -15,15 +36,20 @@ export function MediaScraper() {
     }
     setJob({ url, status: "scraping" });
     try {
-      const res = await apiRequest<{images: string[], last_scanned: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, {
+      const res = await apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, {
         method: "GET"
       });
-      if (res && res.images && res.images.length > 0) {
-        setJob({ url, status: "done", images: res.images, lastScanned: res.last_scanned });
-        toast.success(`Scraped ${res.images.length} images`);
+      // If it returned instantly from cache
+      if (res && res.images) {
+        if (res.images.length > 0) {
+          setJob({ url, status: "done", images: res.images, lastScanned: res.last_scanned });
+          toast.success(`Scraped ${res.images.length} images`);
+        } else {
+          setJob({ url, status: "done", images: [], lastScanned: res.last_scanned });
+          toast.info("No images found on this URL");
+        }
       } else {
-        setJob({ url, status: "done", images: [], lastScanned: res?.last_scanned });
-        toast.info("No images found on this URL");
+        // Just queued, we will wait for WS
       }
     } catch (e: any) {
       if (e.status === 401) {

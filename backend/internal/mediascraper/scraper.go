@@ -20,15 +20,84 @@ import (
 
 var (
 	singleton  *rod.Browser
-	scrapeMu   sync.Mutex // Enforces conveyor belt processing
+	singletonMu sync.Mutex
 	rdb        *redis.Client
 	rdbOnce    sync.Once
 	activeJobs int32
 	wsHub      *ws.Hub
+
+	jobQueue chan jobRequest
+	initOnce sync.Once
 )
+
+type jobRequest struct {
+	targetURL string
+}
+
+func initScraper() {
+	initOnce.Do(func() {
+		jobQueue = make(chan jobRequest, 100)
+		go workerLoop()
+	})
+}
+
+func workerLoop() {
+	for req := range jobQueue {
+		res, err := doScrape(req.targetURL)
+		
+		atomic.AddInt32(&activeJobs, -1)
+		broadcastJobsUpdate()
+
+		broadcastJobResult(req.targetURL, res, err)
+	}
+}
+
+func broadcastJobResult(targetURL string, res *ScrapeResult, err error) {
+	if wsHub == nil {
+		return
+	}
+	type resultPayload struct {
+		URL    string        `json:"url"`
+		Result *ScrapeResult `json:"result,omitempty"`
+		Error  string        `json:"error,omitempty"`
+	}
+	p := resultPayload{URL: targetURL, Result: res}
+	if err != nil {
+		p.Error = err.Error()
+	}
+	payload, _ := json.Marshal(p)
+	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperResult, Payload: payload})
+}
 
 func SetHub(hub *ws.Hub) {
 	wsHub = hub
+}
+
+func ClearJobsAndCache() {
+	initScraper()
+
+	// Drain the queue to drop pending requests
+	drained := false
+	for !drained {
+		select {
+		case req := <-jobQueue:
+			atomic.AddInt32(&activeJobs, -1)
+			broadcastJobResult(req.targetURL, nil, fmt.Errorf("job cleared"))
+		default:
+			drained = true
+		}
+	}
+
+	ClearCache()
+	broadcastJobsUpdate()
+
+	// Kill the browser so it's recreated fresh
+	singletonMu.Lock()
+	if singleton != nil {
+		_ = singleton.Close()
+		singleton = nil
+	}
+	singletonMu.Unlock()
 }
 
 func ClearCache() {
@@ -116,6 +185,8 @@ func getRedis() *redis.Client {
 }
 
 func Get() *rod.Browser {
+	singletonMu.Lock()
+	defer singletonMu.Unlock()
 	if singleton == nil {
 		path := launcher.New().
 			Bin("/usr/bin/chromium-browser").
@@ -175,23 +246,29 @@ func GetCachedImages(targetURL string) *ScrapeResult {
 	return nil
 }
 
-func ScrapeImages(targetURL string) (*ScrapeResult, error) {
+func QueueScrape(targetURL string) error {
+	initScraper()
+
 	if cached := GetCachedImages(targetURL); cached != nil {
-		return cached, nil
+		recordCacheHit()
+		broadcastJobResult(targetURL, cached, nil)
+		return nil
 	}
 
 	atomic.AddInt32(&activeJobs, 1)
 	broadcastJobsUpdate()
-	defer func() {
+
+	select {
+	case jobQueue <- jobRequest{targetURL}:
+		return nil
+	default:
 		atomic.AddInt32(&activeJobs, -1)
 		broadcastJobsUpdate()
-	}()
+		return fmt.Errorf("scraping queue is full")
+	}
+}
 
-	// Enforce conveyor belt: process one link at a time
-	scrapeMu.Lock()
-	defer scrapeMu.Unlock()
-
-	// Double check cache after acquiring lock
+func doScrape(targetURL string) (*ScrapeResult, error) {
 	if cached := GetCachedImages(targetURL); cached != nil {
 		recordCacheHit()
 		return cached, nil
@@ -200,7 +277,11 @@ func ScrapeImages(targetURL string) (*ScrapeResult, error) {
 	redisKey := "mediascraper:cache:" + targetURL
 	client := getRedis()
 
-	b := Get()
+	// 25-second limit for the rod operations
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+
+	b := Get().Context(ctx)
 	page, err := b.Page(proto.TargetCreateTarget{URL: targetURL})
 	if err != nil {
 		return nil, err
@@ -213,7 +294,6 @@ func ScrapeImages(targetURL string) (*ScrapeResult, error) {
 	// Try to get images, wait up to 5 seconds for at least one to appear
 	imgEls, err := page.Timeout(5 * time.Second).Elements("img")
 	if err != nil {
-		// If it timed out or no images found, continue with an empty list
 		imgEls = nil
 	}
 

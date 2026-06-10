@@ -648,7 +648,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		immediascraper.SetHub(hub)
 		immediascraper.ClearCache()
-		immediascraper.NewHandler().Mount(api)
+		immediascraper.NewHandler(userSvc).Mount(api)
 	})
 
 	// SSR: serve index.html with injected SEO head tags

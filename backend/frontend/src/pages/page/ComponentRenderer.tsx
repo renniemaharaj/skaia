@@ -318,19 +318,37 @@ function CompoundMediaScraper({
   useEffect(() => {
     if (!url) return;
     let active = true;
+
+    const handleResult = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string; result?: { images: string[], last_scanned: string }; error?: string }>;
+      const data = customEvent.detail;
+      if (active && data.url === url) {
+        if (data.error) {
+          setJob({ url, status: "error", error: data.error });
+        } else if (data.result && data.result.images) {
+          setJob({ 
+            url, 
+            status: "done", 
+            images: data.result.images, 
+            lastScanned: data.result.last_scanned 
+          });
+        }
+      }
+    };
+    window.addEventListener("mediascraper:result", handleResult);
     
     setJob({ url, status: "pending" });
     const timer = setTimeout(() => {
       if (!active) return;
       setJob({ url, status: "scraping" });
-      apiRequest<{images: string[], last_scanned: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, { method: "GET" })
+      apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, { method: "GET" })
         .then((res) => {
-          if (active) {
+          if (active && res && res.images) {
             setJob({ 
               url, 
               status: "done", 
-              images: res?.images || [], 
-              lastScanned: res?.last_scanned 
+              images: res.images || [], 
+              lastScanned: res.last_scanned 
             });
           }
         })
@@ -344,6 +362,7 @@ function CompoundMediaScraper({
     return () => { 
       active = false; 
       clearTimeout(timer);
+      window.removeEventListener("mediascraper:result", handleResult);
     };
   }, [url]);
 

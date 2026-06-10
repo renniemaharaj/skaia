@@ -653,7 +653,7 @@ export const CustomSectionBlock = ({
         )}
 
         {(selectedComponent?.type === "compound.mediascraper" || effectiveComponentGroup?.items.some((c) => c.component_type === "compound.mediascraper")) && (
-          <ActiveJobsBadge />
+          <ActiveJobsBadge canEdit={canEdit} />
         )}
 
         {/* Loading state */}

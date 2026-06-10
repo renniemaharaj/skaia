@@ -233,6 +233,13 @@ export const useWebSocketSync = () => {
             return;
           }
 
+          if (message.type === "mediascraper:result") {
+            window.dispatchEvent(
+              new CustomEvent("mediascraper:result", { detail: payload })
+            );
+            return;
+          }
+
           // Handle user update propagation
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;

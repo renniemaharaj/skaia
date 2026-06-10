@@ -1,8 +1,23 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
-export function ActiveJobsBadge() {
+export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
   const [metrics, setMetrics] = useState<{ active_jobs: number; cache_hits_1h: number; new_scrapes_1h: number } | null>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
+
+  const handleRestart = async () => {
+    try {
+      setIsRestarting(true);
+      await apiRequest("/mediascraper/restart", { method: "POST" });
+      toast.success("Jobs cleared and browser restarted!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to restart jobs");
+    } finally {
+      setIsRestarting(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -60,23 +75,50 @@ export function ActiveJobsBadge() {
       }}
     >
       {metrics.active_jobs > 0 && (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div 
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRadius: "50%",
-              border: "2px solid rgba(187, 134, 252, 0.3)",
-              borderTopColor: "#bb86fc",
-              animation: "spin 1s linear infinite"
-            }}
-          />
-          <span style={{ color: "#bb86fc" }}>{metrics.active_jobs} running</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div 
+              style={{
+                width: "12px",
+                height: "12px",
+                borderRadius: "50%",
+                border: "2px solid rgba(187, 134, 252, 0.3)",
+                borderTopColor: "#bb86fc",
+                animation: "spin 1s linear infinite"
+              }}
+            />
+            <span style={{ color: "#bb86fc" }}>1 scraping</span>
+          </div>
+          {metrics.active_jobs > 1 && (
+            <span style={{ color: "var(--text-secondary)" }}>
+              {metrics.active_jobs - 1} queued
+            </span>
+          )}
         </div>
       )}
-      <div style={{ display: "flex", gap: "10px", opacity: 0.8 }}>
-        <span>{metrics.cache_hits_1h} hit{metrics.cache_hits_1h !== 1 ? 's' : ''}/h</span>
-        <span>{metrics.new_scrapes_1h} new/h</span>
+      <div style={{ display: "flex", gap: "10px", opacity: 0.8, alignItems: "center" }}>
+        <span>{metrics.cache_hits_1h} cache hit{metrics.cache_hits_1h !== 1 ? 's' : ''}/h</span>
+        <span>{metrics.new_scrapes_1h} cache miss{metrics.new_scrapes_1h !== 1 ? 'es' : ''}/h</span>
+        {canEdit && (
+          <button
+            onClick={handleRestart}
+            disabled={isRestarting}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "2px",
+              marginLeft: "4px",
+              display: "flex",
+              alignItems: "center",
+              color: "inherit",
+              opacity: isRestarting ? 0.5 : 1
+            }}
+            title="Restart Scraper Jobs"
+          >
+            <RefreshCw size={12} className={isRestarting ? "spin" : ""} />
+          </button>
+        )}
       </div>
     </div>
   );
