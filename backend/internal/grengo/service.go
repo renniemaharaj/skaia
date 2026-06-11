@@ -9,7 +9,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/skaia/backend/internal/ws"
 )
 
 // SiteInfo describes a single client visible to the dashboard.
@@ -42,13 +47,18 @@ type Service struct {
 	apiURL   string
 	client   *http.Client
 	passcode string // "p1:p2" for X-Grengo-Passcode header; empty = no auth
+	hub      *ws.Hub
+
+	wsConn   *websocket.Conn
+	wsConnMu sync.Mutex
 }
 
 // NewService creates a grengo service that talks to the internal API.
-func NewService(apiURL string) *Service {
+func NewService(apiURL string, hub *ws.Hub) *Service {
 	return &Service{
 		apiURL: apiURL,
 		client: &http.Client{Timeout: 120 * time.Second},
+		hub:    hub,
 	}
 }
 
@@ -59,6 +69,7 @@ func (s *Service) WithPasscode(p1, p2 string) *Service {
 	return &Service{
 		apiURL:   s.apiURL,
 		passcode: passcode,
+		hub:      s.hub,
 		client: &http.Client{
 			Timeout: 120 * time.Second,
 			Transport: &passcodeTransport{
@@ -331,7 +342,7 @@ func (s *Service) DisarmSite(name string) error {
 // Export / Import
 // ---------------------------------------------------------------------------
 
-// ExportSite downloads the archive from the grengo API and returns a temp file path.
+// ExportSite starts an async export job via the grengo API and returns the job ID.
 func (s *Service) ExportSite(name string) (string, error) {
 	resp, err := s.client.Get(fmt.Sprintf("%s/export/%s", s.apiURL, name))
 	if err != nil {
@@ -339,28 +350,24 @@ func (s *Service) ExportSite(name string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusAccepted {
 		return "", s.readAPIError(resp)
 	}
 
-	tmpFile, err := os.CreateTemp("", "grengo-export-*.tar.gz")
-	if err != nil {
-		return "", fmt.Errorf("create temp file: %w", err)
+	var result struct {
+		JobID string `json:"job_id"`
 	}
-	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("download export: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode export response: %w", err)
 	}
-	tmpFile.Close()
-	return tmpFile.Name(), nil
+	return result.JobID, nil
 }
 
 // ImportSite uploads an archive to the grengo API for import.
-func (s *Service) ImportSite(archivePath, newName, newPort string) error {
+func (s *Service) ImportSite(archivePath, newName, newPort string) (string, error) {
 	f, err := os.Open(archivePath)
 	if err != nil {
-		return fmt.Errorf("open archive: %w", err)
+		return "", fmt.Errorf("open archive: %w", err)
 	}
 	defer f.Close()
 
@@ -369,10 +376,10 @@ func (s *Service) ImportSite(archivePath, newName, newPort string) error {
 
 	fw, err := w.CreateFormFile("archive", filepath.Base(archivePath))
 	if err != nil {
-		return fmt.Errorf("create form file: %w", err)
+		return "", fmt.Errorf("create form file: %w", err)
 	}
 	if _, err := io.Copy(fw, f); err != nil {
-		return fmt.Errorf("write form file: %w", err)
+		return "", fmt.Errorf("write form file: %w", err)
 	}
 	if newName != "" {
 		w.WriteField("name", newName)
@@ -384,14 +391,20 @@ func (s *Service) ImportSite(archivePath, newName, newPort string) error {
 
 	resp, err := s.client.Post(s.apiURL+"/import", w.FormDataContentType(), &buf)
 	if err != nil {
-		return fmt.Errorf("grengo API: %w", err)
+		return "", fmt.Errorf("grengo API: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
+	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
+		return "", s.readAPIError(resp)
 	}
-	return nil
+	var result struct {
+		JobID string `json:"job_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		return result.JobID, nil
+	}
+	return "", nil
 }
 
 // ---------------------------------------------------------------------------
@@ -489,9 +502,58 @@ func (s *Service) MigrateAll(rebuild bool) (*MigrateResult, error) {
 // Node Export / Import
 // ---------------------------------------------------------------------------
 
-// ExportNode downloads the full node archive from the grengo API and returns a temp file path.
+// ExportNode starts an async node export job via the grengo API and returns the job ID.
 func (s *Service) ExportNode() (string, error) {
-	resp, err := s.client.Get(s.apiURL + "/export-node")
+	resp, err := s.client.Post(s.apiURL+"/export-node", "application/json", nil)
+	if err != nil {
+		return "", fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusAccepted {
+		return "", s.readAPIError(resp)
+	}
+
+	var result struct {
+		JobID string `json:"job_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode export-node response: %w", err)
+	}
+	return result.JobID, nil
+}
+
+// JobStatus represents the state of an async export job.
+type JobStatus struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	Status    string    `json:"status"`
+	Error     string    `json:"error,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// GetJob returns the status of a background job.
+func (s *Service) GetJob(id string) (*JobStatus, error) {
+	resp, err := s.client.Get(fmt.Sprintf("%s/jobs/%s", s.apiURL, id))
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, s.readAPIError(resp)
+	}
+
+	var j JobStatus
+	if err := json.NewDecoder(resp.Body).Decode(&j); err != nil {
+		return nil, fmt.Errorf("decode job: %w", err)
+	}
+	return &j, nil
+}
+
+// DownloadJob streams the completed job archive from the grengo API and returns a temp file path.
+func (s *Service) DownloadJob(id string) (string, error) {
+	resp, err := s.client.Get(fmt.Sprintf("%s/jobs/%s/download", s.apiURL, id))
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
@@ -501,24 +563,97 @@ func (s *Service) ExportNode() (string, error) {
 		return "", s.readAPIError(resp)
 	}
 
-	tmpFile, err := os.CreateTemp("", "grengo-node-export-*.tar.gz")
+	tmpFile, err := os.CreateTemp("", "grengo-job-*.tar.gz")
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)
 	}
 	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("download node export: %w", err)
+		return "", fmt.Errorf("download job archive: %w", err)
 	}
 	tmpFile.Close()
 	return tmpFile.Name(), nil
 }
 
-// ImportNode uploads a node archive to the grengo API for import.
-func (s *Service) ImportNode(archivePath string) error {
+// WatchJobs connects to the grengo WebSocket and broadcasts job updates to the frontend hub.
+func (s *Service) WatchJobs() {
+	wsURL := strings.Replace(s.apiURL, "http://", "ws://", 1) + "/ws"
+
+	for {
+		headers := make(http.Header)
+		if s.passcode != "" {
+			headers.Set("X-Grengo-Passcode", s.passcode)
+		}
+		conn, _, err := websocket.DefaultDialer.Dial(wsURL, headers)
+		if err != nil {
+			fmt.Printf("grengo ws: failed to connect to %s: %v, retrying in 5s...\n", wsURL, err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		fmt.Printf("grengo ws: connected to %s\n", wsURL)
+
+		s.wsConnMu.Lock()
+		s.wsConn = conn
+		s.wsConnMu.Unlock()
+
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				fmt.Printf("grengo ws: disconnected: %v\n", err)
+				conn.Close()
+				s.wsConnMu.Lock()
+				if s.wsConn == conn {
+					s.wsConn = nil
+				}
+				s.wsConnMu.Unlock()
+				break
+			}
+
+			var parsed struct {
+				Type    string          `json:"type"`
+				Payload json.RawMessage `json:"payload"`
+			}
+			json.Unmarshal(msg, &parsed)
+			
+			msgType := ws.GrengoJobUpdate
+			if parsed.Type == "stats_update" {
+				msgType = ws.GrengoStatsUpdate
+			} else if parsed.Type == "storage_update" {
+				msgType = ws.GrengoStorageUpdate
+			}
+
+			// Broadcast only the payload to frontend clients (not the full grengo envelope)
+			broadcastPayload := parsed.Payload
+			if broadcastPayload == nil {
+				broadcastPayload = json.RawMessage(msg)
+			}
+
+			if s.hub != nil {
+				s.hub.Broadcast(&ws.Message{
+					Type:    msgType,
+					Payload: broadcastPayload,
+				})
+			}
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+}
+
+// SendAction sends a command to grengo via the established WebSocket connection.
+func (s *Service) SendAction(action []byte) {
+	s.wsConnMu.Lock()
+	defer s.wsConnMu.Unlock()
+	if s.wsConn != nil {
+		_ = s.wsConn.WriteMessage(websocket.TextMessage, action)
+	}
+}
+
+func (s *Service) ImportNode(archivePath string) (string, error) {
 	f, err := os.Open(archivePath)
 	if err != nil {
-		return fmt.Errorf("open archive: %w", err)
+		return "", fmt.Errorf("open archive: %w", err)
 	}
 	defer f.Close()
 
@@ -527,23 +662,29 @@ func (s *Service) ImportNode(archivePath string) error {
 
 	fw, err := w.CreateFormFile("archive", filepath.Base(archivePath))
 	if err != nil {
-		return fmt.Errorf("create form file: %w", err)
+		return "", fmt.Errorf("create form file: %w", err)
 	}
 	if _, err := io.Copy(fw, f); err != nil {
-		return fmt.Errorf("write form file: %w", err)
+		return "", fmt.Errorf("write form file: %w", err)
 	}
 	w.Close()
 
 	resp, err := s.client.Post(s.apiURL+"/import-node", w.FormDataContentType(), &buf)
 	if err != nil {
-		return fmt.Errorf("grengo API: %w", err)
+		return "", fmt.Errorf("grengo API: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
+	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
+		return "", s.readAPIError(resp)
 	}
-	return nil
+	var result struct {
+		JobID string `json:"job_id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		return result.JobID, nil
+	}
+	return "", nil
 }
 
 // ---------------------------------------------------------------------------

@@ -252,6 +252,25 @@ export const useWebSocketSync = () => {
             return;
           }
 
+          if (message.type === "grengo:job_update") {
+            window.dispatchEvent(
+              new CustomEvent("grengo:job_update", { detail: payload })
+            );
+          }
+          if (message.type === "grengo:stats_update") {
+            window.dispatchEvent(
+              new CustomEvent("grengo:stats_update", { detail: payload })
+            );
+          }
+          if (message.type === "grengo:storage_update") {
+            window.dispatchEvent(
+              new CustomEvent("grengo:storage_update", { detail: payload })
+            );
+          }
+          if (message.type === "grengo:job_update" || message.type === "grengo:stats_update" || message.type === "grengo:storage_update") {
+             return;
+          }
+
           // Handle user update propagation
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;
@@ -1226,4 +1245,12 @@ export const useWebSocketSync = () => {
   }, []);
 
   return { subscribe, unsubscribe };
+};
+
+export const sendGrengoJobAction = (action: string, name?: string, command?: string, args?: string[]) => {
+  if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
+    _globalWs.send(JSON.stringify({ type: "grengo:action", payload: { action, name, command, args } }));
+  } else {
+    console.warn("WebSocket not connected, cannot send grengo action");
+  }
 };

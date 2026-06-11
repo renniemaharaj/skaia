@@ -13,8 +13,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -55,6 +58,8 @@ func cmdAPIStart(port int) {
 		warn("Cannot write PID file: %v", err)
 	}
 
+	go broadcastStatsAndStorageLoop()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", apiHealth)
 	mux.HandleFunc("GET /sites", apiListSites)
@@ -70,8 +75,11 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("POST /sites/{name}/disarm", apiDisarmSite)
 	mux.HandleFunc("POST /sites/{name}/migrate", apiMigrateSite)
 	mux.HandleFunc("POST /migrate-all", apiMigrateAll)
-	mux.HandleFunc("GET /export-node", apiExportNode)
+	mux.HandleFunc("POST /export-node", apiExportNode)
 	mux.HandleFunc("POST /import-node", apiImportNode)
+	mux.HandleFunc("GET /jobs/{id}", apiGetJob)
+	mux.HandleFunc("GET /jobs/{id}/download", apiDownloadJob)
+	mux.HandleFunc("GET /ws", apiWebSocket)
 	mux.HandleFunc("POST /verify-passcode", apiVerifyPasscode)
 	mux.HandleFunc("GET /passcode/status", apiPasscodeStatus)
 
@@ -156,11 +164,43 @@ func readPIDFile() (int, error) {
 }
 
 func processRunning(pid int) bool {
-	proc, err := os.FindProcess(pid)
+	p, err := os.FindProcess(pid)
 	if err != nil {
 		return false
 	}
-	return proc.Signal(syscall.Signal(0)) == nil
+	return p.Signal(syscall.Signal(0)) == nil
+}
+
+func broadcastStatsAndStorageLoop() {
+	for {
+		time.Sleep(5 * time.Second)
+		wsClientsMu.Lock()
+		if len(wsClients) == 0 {
+			wsClientsMu.Unlock()
+			continue
+		}
+		wsClientsMu.Unlock()
+
+		stats := gatherStats()
+		if stats != nil {
+			data, _ := json.Marshal(map[string]any{"type": "stats_update", "payload": stats})
+			wsClientsMu.Lock()
+			for conn := range wsClients {
+				conn.WriteMessage(websocket.TextMessage, data)
+			}
+			wsClientsMu.Unlock()
+		}
+
+		storage := gatherStorage()
+		if storage != nil {
+			data, _ := json.Marshal(map[string]any{"type": "storage_update", "payload": storage})
+			wsClientsMu.Lock()
+			for conn := range wsClients {
+				conn.WriteMessage(websocket.TextMessage, data)
+			}
+			wsClientsMu.Unlock()
+		}
+	}
 }
 
 func apiJSON(w http.ResponseWriter, status int, v any) {
@@ -183,6 +223,7 @@ func apiPasscodeMiddleware(next http.Handler) http.Handler {
 		"/health":          true,
 		"/verify-passcode": true,
 		"/passcode/status": true,
+		"/ws":              true,
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -217,7 +258,136 @@ func apiPasscodeMiddleware(next http.Handler) http.Handler {
 // API Handlers
 
 func apiHealth(w http.ResponseWriter, r *http.Request) {
-	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
+	apiJSON(w, http.StatusOK, map[string]any{"status": "ok"})
+}
+
+// ---------------------------------------------------------------------------
+// Background Jobs (Exports)
+// ---------------------------------------------------------------------------
+
+type jobStatus struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`   // "export-node", "export-site"
+	Status    string    `json:"status"` // "running", "completed", "failed"
+	Error     string    `json:"error,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	filePath  string    // hidden from JSON
+}
+
+var (
+	jobsMu sync.RWMutex
+	jobs   = make(map[string]*jobStatus)
+
+	wsClientsMu sync.Mutex
+	wsClients   = make(map[*websocket.Conn]bool)
+	wsUpgrader  = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+)
+
+func apiWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	wsClientsMu.Lock()
+	wsClients[conn] = true
+	wsClientsMu.Unlock()
+
+	defer func() {
+		wsClientsMu.Lock()
+		delete(wsClients, conn)
+		wsClientsMu.Unlock()
+		conn.Close()
+	}()
+
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		var req struct {
+			Action  string   `json:"action"`
+			Name    string   `json:"name"`
+			Command string   `json:"command"`
+			Args    []string `json:"args"`
+		}
+		if err := json.Unmarshal(msg, &req); err == nil {
+			if req.Action == "export-node" {
+				startNodeExport()
+			} else if req.Action == "export-site" {
+				if req.Name != "" {
+					startSiteExport(req.Name)
+				}
+			} else if req.Action == "site-cmd" {
+				if req.Name != "" && req.Command != "" {
+					startSiteCommand(req.Name, req.Command, req.Args)
+				}
+			} else if req.Action == "global-cmd" {
+				if req.Command != "" {
+					startGlobalCommand(req.Command, req.Args)
+				}
+			}
+		}
+	}
+}
+
+func broadcastJobStatus(j *jobStatus) {
+	data, err := json.Marshal(j)
+	if err != nil {
+		return
+	}
+	wsClientsMu.Lock()
+	defer wsClientsMu.Unlock()
+	for conn := range wsClients {
+		_ = conn.WriteMessage(websocket.TextMessage, data)
+	}
+}
+
+func apiGetJob(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	jobsMu.RLock()
+	j, ok := jobs[id]
+	jobsMu.RUnlock()
+
+	if !ok {
+		apiError(w, http.StatusNotFound, "job not found")
+		return
+	}
+	apiJSON(w, http.StatusOK, j)
+}
+
+func apiDownloadJob(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	jobsMu.Lock()
+	j, ok := jobs[id]
+	if !ok {
+		jobsMu.Unlock()
+		apiError(w, http.StatusNotFound, "job not found")
+		return
+	}
+	// Optionally remove job from map after download starts
+	delete(jobs, id)
+	jobsMu.Unlock()
+
+	if j.Status != "completed" {
+		apiError(w, http.StatusBadRequest, "job not completed")
+		return
+	}
+
+	f, err := os.Open(j.filePath)
+	if err != nil {
+		os.Remove(j.filePath)
+		apiError(w, http.StatusInternalServerError, "cannot open archive")
+		return
+	}
+
+	archiveName := filepath.Base(j.filePath)
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
+	io.Copy(w, f)
+	f.Close()
+	os.Remove(j.filePath)
 }
 
 // apiSiteInfo holds structured site data returned by the internal API.
@@ -499,9 +669,8 @@ func humanBytes(b uint64) string {
 	}
 }
 
-// apiStats returns docker stats for all running grengo-managed containers.
-func apiStats(w http.ResponseWriter, r *http.Request) {
-	// Get running container names matching *-backend plus shared infra.
+// gatherStats returns docker stats for all running grengo-managed containers.
+func gatherStats() []containerStats {
 	entries, _ := os.ReadDir(backendsDir())
 	var names []string
 	for _, e := range entries {
@@ -526,8 +695,7 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(names) == 0 {
-		apiJSON(w, http.StatusOK, []containerStats{})
-		return
+		return []containerStats{}
 	}
 
 	// Fetch stats concurrently via Docker Engine API (Unix socket).
@@ -537,21 +705,25 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 	}
 	ch := make(chan result, len(names))
 	for _, n := range names {
-		go func(name string) {
-			s, err := fetchContainerStats(name)
+		go func(container string) {
+			s, err := fetchContainerStats(container)
 			ch <- result{s, err}
 		}(n)
 	}
 
-	var stats []containerStats
-	for range names {
+	results := []containerStats{}
+	for i := 0; i < len(names); i++ {
 		res := <-ch
 		if res.err == nil && res.stats != nil {
-			stats = append(stats, *res.stats)
+			results = append(results, *res.stats)
 		}
 	}
+	return results
+}
 
-	apiJSON(w, http.StatusOK, stats)
+// apiStats returns docker stats for all running grengo-managed containers.
+func apiStats(w http.ResponseWriter, r *http.Request) {
+	apiJSON(w, http.StatusOK, gatherStats())
 }
 
 // storageInfo holds per-site and total upload storage metrics for the dashboard.
@@ -570,11 +742,10 @@ type siteStorageInfo struct {
 	UsedHuman string `json:"used_human"`
 }
 
-// apiStorage returns upload storage usage for all sites.
-func apiStorage(w http.ResponseWriter, r *http.Request) {
+func gatherStorage() *storageInfo {
 	entries, _ := os.ReadDir(backendsDir())
 
-	var sites []siteStorageInfo
+	sites := []siteStorageInfo{}
 	var grandTotal int64
 
 	for _, e := range entries {
@@ -614,19 +785,24 @@ func apiStorage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	totalPct := 0.0
+	pct := 0.0
 	if totalLimit > 0 {
-		totalPct = float64(grandTotal) / float64(totalLimit) * 100
+		pct = float64(grandTotal) / float64(totalLimit) * 100.0
 	}
 
-	apiJSON(w, http.StatusOK, storageInfo{
+	return &storageInfo{
 		Sites:      sites,
 		TotalUsed:  grandTotal,
 		TotalLimit: totalLimit,
-		TotalPct:   totalPct,
+		TotalPct:   pct,
 		TotalHuman: humanBytes(uint64(grandTotal)),
 		LimitHuman: humanBytes(uint64(totalLimit)),
-	})
+	}
+}
+
+// apiStorage returns upload storage usage for all sites.
+func apiStorage(w http.ResponseWriter, r *http.Request) {
+	apiJSON(w, http.StatusOK, gatherStorage())
 }
 
 // apiExec is the generic command executor.
@@ -690,7 +866,121 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// apiExportSite runs export and streams the archive back.
+func startSiteExport(name string) string {
+	jobID := fmt.Sprintf("job-site-%d", time.Now().UnixNano())
+	archiveName := fmt.Sprintf("grengo-client-%s-%s.tar.gz", name, time.Now().Format("20060102-150405"))
+	outPath := filepath.Join(os.TempDir(), archiveName)
+
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "export-site",
+		Status:    "running",
+		CreatedAt: time.Now(),
+		filePath:  outPath,
+	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
+
+	go func() {
+		self, _ := os.Executable()
+		cmd := exec.Command(self, "export", name, "-o", outPath)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("export failed: %s", string(output))
+			broadcastJobStatus(j)
+			os.Remove(outPath)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}()
+	return jobID
+}
+
+func startSiteCommand(name, command string, extraArgs []string) string {
+	jobID := fmt.Sprintf("job-cmd-%d", time.Now().UnixNano())
+
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "site-cmd",
+		Status:    "running",
+		CreatedAt: time.Now(),
+	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
+
+	go func() {
+		self, _ := os.Executable()
+		cmdArgs := append([]string{command, name}, extraArgs...)
+		cmd := exec.Command(self, cmdArgs...)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("%s failed: %s", command, string(output))
+			broadcastJobStatus(j)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}()
+	return jobID
+}
+
+func startGlobalCommand(command string, extraArgs []string) string {
+	jobID := fmt.Sprintf("job-cmd-%d", time.Now().UnixNano())
+
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "global-cmd",
+		Status:    "running",
+		CreatedAt: time.Now(),
+	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
+
+	go func() {
+		self, _ := os.Executable()
+		cmdArgs := append([]string{command}, extraArgs...)
+		cmd := exec.Command(self, cmdArgs...)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("%s failed: %s", command, string(output))
+			broadcastJobStatus(j)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}()
+	return jobID
+}
+
+// apiExportSite runs export in the background and returns a job ID.
 func apiExportSite(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
@@ -704,32 +994,8 @@ func apiExportSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	archiveName := fmt.Sprintf("grengo-client-%s-%s.tar.gz", name, time.Now().Format("20060102-150405"))
-	outPath := filepath.Join(os.TempDir(), archiveName)
-
-	self, _ := os.Executable()
-	cmd := exec.Command(self, "export", name, "-o", outPath)
-	cmd.Dir = ProjectRoot()
-	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		os.Remove(outPath)
-		apiError(w, http.StatusInternalServerError, fmt.Sprintf("export failed: %s", string(output)))
-		return
-	}
-
-	f, err := os.Open(outPath)
-	if err != nil {
-		os.Remove(outPath)
-		apiError(w, http.StatusInternalServerError, "cannot open export archive")
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/gzip")
-	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
-	io.Copy(w, f)
-	f.Close()
-	os.Remove(outPath)
+	jobID := startSiteExport(name)
+	apiJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 // apiImportSite accepts a multipart archive upload and imports it.
@@ -768,18 +1034,40 @@ func apiImportSite(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "--port", p)
 	}
 
-	self, _ := os.Executable()
-	cmd := exec.Command(self, args...)
-	cmd.Dir = ProjectRoot()
-	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		apiError(w, http.StatusInternalServerError, fmt.Sprintf("import failed: %s", string(output)))
-		return
+	jobID := fmt.Sprintf("job-import-%d", time.Now().UnixNano())
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "import-site",
+		Status:    "running",
+		CreatedAt: time.Now(),
 	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
 
-	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
+	go func(tmpPath string) {
+		defer os.Remove(tmpPath)
+		self, _ := os.Executable()
+		cmd := exec.Command(self, args...)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("import failed: %s", string(output))
+			broadcastJobStatus(j)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}(tmpFile.Name())
+
+	apiJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 // apiArmSite creates a .armed sentinel file in the site's armed/ directory.
@@ -993,34 +1281,49 @@ func apiMigrateAll(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// apiExportNode exports all clients as a single node archive.
-func apiExportNode(w http.ResponseWriter, r *http.Request) {
+func startNodeExport() string {
+	jobID := fmt.Sprintf("job-node-%d", time.Now().UnixNano())
 	outPath := filepath.Join(os.TempDir(), fmt.Sprintf("grengo-node-%s.tar.gz", time.Now().Format("20060102-150405")))
 
-	self, _ := os.Executable()
-	cmd := exec.Command(self, "export-node", "-o", outPath)
-	cmd.Dir = ProjectRoot()
-	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-	if output, err := cmd.CombinedOutput(); err != nil {
-		os.Remove(outPath)
-		apiError(w, http.StatusInternalServerError, fmt.Sprintf("export-node failed: %s", string(output)))
-		return
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "export-node",
+		Status:    "running",
+		CreatedAt: time.Now(),
+		filePath:  outPath,
 	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
 
-	f, err := os.Open(outPath)
-	if err != nil {
-		os.Remove(outPath)
-		apiError(w, http.StatusInternalServerError, "cannot open node archive")
-		return
-	}
+	go func() {
+		self, _ := os.Executable()
+		cmd := exec.Command(self, "export-node", "-o", outPath)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
 
-	archiveName := filepath.Base(outPath)
-	w.Header().Set("Content-Type", "application/gzip")
-	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
-	io.Copy(w, f)
-	f.Close()
-	os.Remove(outPath)
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("export-node failed: %s", string(output))
+			broadcastJobStatus(j)
+			os.Remove(outPath)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}()
+	return jobID
+}
+
+// apiExportNode exports all clients in the background and returns a job ID.
+func apiExportNode(w http.ResponseWriter, r *http.Request) {
+	jobID := startNodeExport()
+	apiJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 // apiImportNode accepts a multipart node archive upload and imports it.
@@ -1051,18 +1354,40 @@ func apiImportNode(w http.ResponseWriter, r *http.Request) {
 	}
 	tmpFile.Close()
 
-	self, _ := os.Executable()
-	cmd := exec.Command(self, "import-node", tmpFile.Name())
-	cmd.Dir = ProjectRoot()
-	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-	output, cmdErr := cmd.CombinedOutput()
-	if cmdErr != nil {
-		apiError(w, http.StatusInternalServerError, fmt.Sprintf("import-node failed: %s", string(output)))
-		return
+	jobID := fmt.Sprintf("job-import-node-%d", time.Now().UnixNano())
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "import-node",
+		Status:    "running",
+		CreatedAt: time.Now(),
 	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
 
-	apiJSON(w, http.StatusOK, map[string]any{"ok": true})
+	go func(tmpPath string) {
+		defer os.Remove(tmpPath)
+		self, _ := os.Executable()
+		cmd := exec.Command(self, "import", tmpPath)
+		cmd.Dir = ProjectRoot()
+		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
+
+		output, err := cmd.CombinedOutput()
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("node import failed: %s", string(output))
+			broadcastJobStatus(j)
+			return
+		}
+		j.Status = "completed"
+		broadcastJobStatus(j)
+	}(tmpFile.Name())
+
+	apiJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 // apiVerifyPasscode checks a passcode pair against the stored .pcode file.

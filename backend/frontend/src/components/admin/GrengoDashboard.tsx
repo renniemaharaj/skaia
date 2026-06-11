@@ -6,6 +6,7 @@ import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import { useWebSocketSync, sendGrengoJobAction } from "../../hooks/useWebSocketSync";
 
 // Types
 
@@ -68,12 +69,6 @@ interface SysInfo {
   load_avg?: string;
 }
 
-interface MigrateResult {
-  ok: boolean;
-  output: string;
-  exit_code: number;
-}
-
 const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 
 // Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
@@ -82,6 +77,7 @@ const KEEPALIVE_MS = 2 * 60 * 1000;
 // Component
 
 export default function GrengoDashboard() {
+  useWebSocketSync();
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
 
@@ -235,7 +231,15 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   useEffect(() => {
-    if (sessionValid) fetchStats();
+    if (sessionValid) {
+      fetchStats();
+      const handleStatsUpdate = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        setStats(Array.isArray(detail) ? detail : []);
+      };
+      window.addEventListener("grengo:stats_update", handleStatsUpdate);
+      return () => window.removeEventListener("grengo:stats_update", handleStatsUpdate);
+    }
   }, [sessionValid, fetchStats]);
 
   // Fetch storage
@@ -250,7 +254,15 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   useEffect(() => {
-    if (sessionValid) fetchStorage();
+    if (sessionValid) {
+      fetchStorage();
+      const handleStorageUpdate = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        setStorage(detail ?? null);
+      };
+      window.addEventListener("grengo:storage_update", handleStorageUpdate);
+      return () => window.removeEventListener("grengo:storage_update", handleStorageUpdate);
+    }
   }, [sessionValid, fetchStorage]);
 
   // Fetch sysinfo
@@ -274,15 +286,12 @@ export default function GrengoDashboard() {
     setComposeBusy(true);
     setComposeOutput("");
     try {
-      await grengoRequest("/compose/up", {
-        method: "POST",
-        body: JSON.stringify({ build }),
-      });
+      const waitPromise = triggerAndWaitForJob("global-cmd");
+      sendGrengoJobAction("global-cmd", undefined, "compose", build ? ["up", "--build", "-d"] : ["up", "-d"]);
+      await waitPromise;
       setComposeOutput(
         build ? "compose up --build completed" : "compose up completed",
       );
-      await fetchSites();
-      await fetchStats();
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Compose up failed");
     } finally {
@@ -294,10 +303,10 @@ export default function GrengoDashboard() {
     setComposeBusy(true);
     setComposeOutput("");
     try {
-      await grengoRequest("/compose/down", { method: "POST" });
+      const waitPromise = triggerAndWaitForJob("global-cmd");
+      sendGrengoJobAction("global-cmd", undefined, "compose", ["down"]);
+      await waitPromise;
       setComposeOutput("compose down completed");
-      await fetchSites();
-      await fetchStats();
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Compose down failed");
     } finally {
@@ -311,18 +320,12 @@ export default function GrengoDashboard() {
     setMigrateBusy((prev) => ({ ...prev, [name]: true }));
     setMigrateOutput((prev) => ({ ...prev, [name]: "" }));
     try {
-      const result = await grengoRequest<MigrateResult>(
-        `/sites/${name}/migrate`,
-        {
-          method: "POST",
-          body: JSON.stringify({ rebuild }),
-        },
-      );
+      const waitPromise = triggerAndWaitForJob("site-cmd");
+      sendGrengoJobAction("site-cmd", name, "migrate", rebuild ? ["--rebuild"] : undefined);
+      await waitPromise;
       setMigrateOutput((prev) => ({
         ...prev,
-        [name]: result.ok
-          ? "Migration completed successfully"
-          : `Migration failed (exit ${result.exit_code}):\n${result.output}`,
+        [name]: "Migration completed successfully",
       }));
     } catch (e: unknown) {
       setMigrateOutput((prev) => ({
@@ -338,15 +341,10 @@ export default function GrengoDashboard() {
     setMigrateAllBusy(true);
     setMigrateAllOutput("");
     try {
-      const result = await grengoRequest<MigrateResult>("/migrate-all", {
-        method: "POST",
-        body: JSON.stringify({ rebuild }),
-      });
-      setMigrateAllOutput(
-        result.ok
-          ? "All migrations completed successfully"
-          : `Migration failed (exit ${result.exit_code}):\n${result.output}`,
-      );
+      const waitPromise = triggerAndWaitForJob("site-cmd");
+      sendGrengoJobAction("site-cmd", "all", "migrate", rebuild ? ["--rebuild"] : undefined);
+      await waitPromise;
+      setMigrateAllOutput("All migrations completed successfully");
     } catch (e: unknown) {
       setMigrateAllOutput(
         e instanceof Error ? e.message : "Migrate all failed",
@@ -358,30 +356,99 @@ export default function GrengoDashboard() {
 
   // Node export / import
 
+  const triggerAndWaitForJob = (actionType: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      let trackedJobId: string | null = null;
+
+      const handleUpdate = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        const job = customEvent.detail;
+
+        if (!trackedJobId) {
+          if (job.type === actionType) {
+            trackedJobId = job.id;
+          } else {
+            return;
+          }
+        } else if (job.id !== trackedJobId) {
+          return;
+        }
+
+        if (job.status === "failed") {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          reject(new Error(job.error || "Job failed"));
+          return;
+        }
+
+        if (job.status === "completed") {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          resolve();
+        }
+      };
+
+      window.addEventListener("grengo:job_update", handleUpdate);
+    });
+  };
+
+  const triggerAndDownloadJob = (actionType: string, defaultFilename: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      let trackedJobId: string | null = null;
+
+      const handleUpdate = async (e: Event) => {
+        const customEvent = e as CustomEvent;
+        const job = customEvent.detail;
+
+        if (!trackedJobId) {
+          if (job.type === actionType) {
+            trackedJobId = job.id;
+          } else {
+            return;
+          }
+        } else if (job.id !== trackedJobId) {
+          return;
+        }
+
+        if (job.status === "failed") {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          reject(new Error(job.error || "Job failed"));
+          return;
+        }
+
+        if (job.status === "completed") {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          try {
+            const token = localStorage.getItem("auth.accessToken");
+            const headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+            const dlRes = await fetch(`/api${apiBase}/jobs/${trackedJobId}/download`, { headers });
+            if (!dlRes.ok) throw new Error("Failed to download job archive");
+            const blob = await dlRes.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const disposition = dlRes.headers.get("Content-Disposition") || "";
+            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+            a.download = filenameMatch?.[1] || defaultFilename;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        }
+      };
+
+      window.addEventListener("grengo:job_update", handleUpdate);
+    });
+  };
+
   const handleExportNode = async () => {
     setNodeExportBusy(true);
     try {
-      const token = localStorage.getItem("auth.accessToken");
-      const res = await fetch(`/api${apiBase}/export-node`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || "Export failed");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const disposition = res.headers.get("Content-Disposition") || "";
-      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-      a.download = filenameMatch?.[1] || `grengo-node-export.tar.gz`;
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const waitPromise = triggerAndDownloadJob("export-node", "grengo-node-export.tar.gz");
+      sendGrengoJobAction("export-node");
+      await waitPromise;
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Node export failed");
     } finally {
@@ -394,11 +461,13 @@ export default function GrengoDashboard() {
   const siteAction = async (
     name: string,
     action: string,
-    method: string = "POST",
+    _method: string = "POST",
   ) => {
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      await grengoRequest(`/sites/${name}/${action}`, { method });
+      const waitPromise = triggerAndWaitForJob("site-cmd");
+      sendGrengoJobAction("site-cmd", name, action);
+      await waitPromise;
       await fetchSites();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Action failed");
@@ -411,7 +480,9 @@ export default function GrengoDashboard() {
     if (!await customConfirm(`Permanently delete site "${name}" and all its data?`)) return;
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      await grengoRequest(`/sites/${name}`, { method: "DELETE" });
+      const waitPromise = triggerAndWaitForJob("site-cmd");
+      sendGrengoJobAction("site-cmd", name, "remove");
+      await waitPromise;
       await fetchSites();
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Delete failed");
@@ -420,30 +491,14 @@ export default function GrengoDashboard() {
     }
   };
 
+
+
   const handleExport = async (name: string) => {
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      const token = localStorage.getItem("auth.accessToken");
-      const res = await fetch(`/api${apiBase}/sites/${name}/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || "Export failed");
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const disposition = res.headers.get("Content-Disposition") || "";
-      const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-      a.download = filenameMatch?.[1] || `${name}-export.tar.gz`;
-      a.href = url;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      const waitPromise = triggerAndDownloadJob("export-site", `${name}-export.tar.gz`);
+      sendGrengoJobAction("export-site", name);
+      await waitPromise;
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Export failed");
     } finally {
@@ -618,7 +673,7 @@ export default function GrengoDashboard() {
       {/* Create form */}
       {showCreate && (
         <CreateSiteForm
-          apiBase={apiBase}
+          triggerAndWaitForJob={triggerAndWaitForJob}
           onCreated={() => {
             setShowCreate(false);
             fetchSites();
@@ -630,6 +685,7 @@ export default function GrengoDashboard() {
       {showImport && (
         <ImportSiteForm
           apiBase={apiBase}
+          triggerAndWaitForJob={triggerAndWaitForJob}
           onImported={() => {
             setShowImport(false);
             fetchSites();
@@ -641,6 +697,7 @@ export default function GrengoDashboard() {
       {showImportNode && (
         <ImportNodeForm
           apiBase={apiBase}
+          triggerAndWaitForJob={triggerAndWaitForJob}
           onImported={() => {
             setShowImportNode(false);
             fetchSites();
@@ -1031,7 +1088,7 @@ function StoragePanel({ storage }: { storage: StorageInfo }) {
             )}
           </span>
         </div>
-        {storage.sites.length > 0 && (
+        {storage.sites && storage.sites.length > 0 && (
           <div className="storage-sites">
             <h3>Per Site</h3>
             <div className="storage-site-list">
@@ -1172,11 +1229,11 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
 // Create Site Form
 
 function CreateSiteForm({
-  apiBase,
   onCreated,
+  triggerAndWaitForJob,
 }: {
-  apiBase: string;
   onCreated: () => void;
+  triggerAndWaitForJob: (actionType: string) => Promise<void>;
 }) {
   const [form, setForm] = useState<CreateSiteParams>({
     name: "",
@@ -1200,16 +1257,21 @@ function CreateSiteForm({
     setSaving(true);
     setError("");
     try {
-      await apiRequest(`${apiBase}/sites`, {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          domains: domainsText
-            .split(/[\s,]+/)
-            .map((d) => d.trim())
-            .filter(Boolean),
-        }),
+      const args = [form.name];
+      if (form.port) {
+        args.push("--port", form.port);
+      }
+      const parsedDomains = domainsText
+        .split(/[\s,]+/)
+        .map((d) => d.trim())
+        .filter(Boolean);
+      parsedDomains.forEach((d) => {
+        args.push("--domain", d);
       });
+
+      const waitPromise = triggerAndWaitForJob("global-cmd");
+      sendGrengoJobAction("global-cmd", undefined, "new", args);
+      await waitPromise;
       onCreated();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create site");
@@ -1316,9 +1378,11 @@ function CreateSiteForm({
 function ImportSiteForm({
   apiBase,
   onImported,
+  triggerAndWaitForJob,
 }: {
   apiBase: string;
   onImported: () => void;
+  triggerAndWaitForJob: (actionType: string) => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
@@ -1347,6 +1411,11 @@ function ImportSiteForm({
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
         throw new Error(err.error || "Import failed");
+      }
+      const data = await res.json();
+      if (data.job_id) {
+        const waitPromise = triggerAndWaitForJob("import-site");
+        await waitPromise;
       }
       onImported();
     } catch (e: unknown) {
@@ -1405,9 +1474,11 @@ function ImportSiteForm({
 function ImportNodeForm({
   apiBase,
   onImported,
+  triggerAndWaitForJob,
 }: {
   apiBase: string;
   onImported: () => void;
+  triggerAndWaitForJob: (actionType: string) => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -1438,6 +1509,11 @@ function ImportNodeForm({
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
         throw new Error(err.error || "Node import failed");
+      }
+      const data = await res.json();
+      if (data.job_id) {
+        const waitPromise = triggerAndWaitForJob("import-node");
+        await waitPromise;
       }
       onImported();
     } catch (e: unknown) {

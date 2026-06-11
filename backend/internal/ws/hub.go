@@ -139,6 +139,9 @@ type Hub struct {
 	// extract mentions and dispatch notifications.
 	MentionProcessor func(content string, senderID int64, message string, route string)
 
+	// GrengoActionHandler, when set, is called when a client sends a grengo action.
+	GrengoActionHandler func(action []byte)
+
 	// channels
 	clients         map[*Client]bool
 	broadcast       chan *Message
@@ -155,6 +158,7 @@ type Hub struct {
 	audioUpdates    chan AudioBroadcast
 	voiceControl    chan VoiceControlAction
 	mediaUpdates    chan MediaUpdateAction
+	grengoActions   chan []byte
 
 	// voice permissions - protected by voiceMu
 	voiceMu     sync.RWMutex
@@ -218,6 +222,7 @@ func NewHub() *Hub {
 		audioUpdates:    make(chan AudioBroadcast, 4096),
 		voiceControl:    make(chan VoiceControlAction, 256),
 		mediaUpdates:    make(chan MediaUpdateAction, 256),
+		grengoActions:   make(chan []byte, 1024),
 		voiceRoutes:     make(map[string]*VoicePermissions),
 		mediaRoutes:     make(map[string]*MediaState),
 		sessions:        make(map[int64]int),
@@ -232,7 +237,6 @@ func (h *Hub) SetDB(db *sql.DB) {
 	h.mediaRepo.DB = db
 }
 
-// clientLabel returns a human-readable string for a Client suitable for log output.
 // SetChatSlowMode updates the global chat slow-mode configuration.
 // This takes effect immediately for all connected clients on the next message.
 func (h *Hub) SetChatSlowMode(enabled bool, intervalSeconds int) {
@@ -323,6 +327,8 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleVoiceControl(vc) })
 		case mu := <-h.mediaUpdates:
 			h.dispatch(func() { h.handleMediaUpdate(mu) })
+		case ga := <-h.grengoActions:
+			h.dispatch(func() { h.handleGrengoJobAction(ga) })
 		}
 	}
 }
@@ -345,6 +351,16 @@ func (h *Hub) markPresenceDirty() {
 }
 
 // Public API
+
+// MediaActions returns a channel providing raw media sync actions directly from connected clients
+func (h *Hub) MediaActions() <-chan MediaUpdateAction {
+	return h.mediaUpdates
+}
+
+// GrengoActions returns a channel providing grengo job actions directly from connected clients
+func (h *Hub) GrengoActions() <-chan []byte {
+	return h.grengoActions
+}
 
 // Broadcast enqueues a message for delivery to all connected clients.
 func (h *Hub) Broadcast(msg *Message) {
@@ -380,6 +396,12 @@ func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	case h.teleport <- TeleportRequest{TargetUserID: targetUserID, Route: route}:
 	default:
 		log.Println("ws: teleport channel full, request dropped")
+	}
+}
+
+func (h *Hub) handleGrengoJobAction(ga []byte) {
+	if h.GrengoActionHandler != nil {
+		h.GrengoActionHandler(ga)
 	}
 }
 

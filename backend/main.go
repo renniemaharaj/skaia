@@ -642,7 +642,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")
 		if grengoAPI != "" {
-			grengoSvc := igrengo.NewService(grengoAPI)
+			grengoSvc := igrengo.NewService(grengoAPI, hub)
+			hub.GrengoActionHandler = grengoSvc.SendAction
+			go grengoSvc.WatchJobs()
 			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
 		}
 

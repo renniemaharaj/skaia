@@ -108,7 +108,7 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 			sr.Post("/sites/{name}/arm", h.handleArmSite)
 			sr.Post("/sites/{name}/disarm", h.handleDisarmSite)
 
-			sr.Get("/sites/{name}/export", h.handleExportSite)
+			sr.Post("/sites/{name}/export", h.handleExportSite)
 			sr.Post("/import", h.handleImportSite)
 
 			sr.Get("/sites/{name}/env", h.handleGetSiteEnv)
@@ -121,8 +121,11 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 			sr.Post("/sites/{name}/migrate", h.handleMigrateSite)
 			sr.Post("/migrate-all", h.handleMigrateAll)
 
-			sr.Get("/export-node", h.handleExportNode)
+			sr.Post("/export-node", h.handleExportNode)
 			sr.Post("/import-node", h.handleImportNode)
+
+			sr.Get("/jobs/{id}", h.handleGetJob)
+			sr.Get("/jobs/{id}/download", h.handleDownloadJob)
 
 			sr.Post("/compose/up", h.handleComposeUp)
 			sr.Post("/compose/down", h.handleComposeDown)
@@ -374,23 +377,12 @@ func (h *Handler) handleDisarmSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleExportSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	archivePath, err := h.svcFor(r).ExportSite(name)
+	jobID, err := h.svcFor(r).ExportSite(name)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	defer os.Remove(archivePath)
-
-	f, err := os.Open(archivePath)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "cannot open export archive")
-		return
-	}
-	defer f.Close()
-
-	w.Header().Set("Content-Type", "application/gzip")
-	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(archivePath))
-	io.Copy(w, f)
+	utils.WriteJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 func (h *Handler) handleGetSiteEnv(w http.ResponseWriter, r *http.Request) {
@@ -482,23 +474,12 @@ func (h *Handler) handleMigrateAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleExportNode(w http.ResponseWriter, r *http.Request) {
-	archivePath, err := h.svcFor(r).ExportNode()
+	jobID, err := h.svcFor(r).ExportNode()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	defer os.Remove(archivePath)
-
-	f, err := os.Open(archivePath)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "cannot open node archive")
-		return
-	}
-	defer f.Close()
-
-	w.Header().Set("Content-Type", "application/gzip")
-	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(archivePath))
-	io.Copy(w, f)
+	utils.WriteJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
 func (h *Handler) handleImportNode(w http.ResponseWriter, r *http.Request) {
@@ -531,12 +512,13 @@ func (h *Handler) handleImportNode(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("grengo: importing node archive %s", header.Filename)
 
-	if err := h.svcFor(r).ImportNode(tmpFile.Name()); err != nil {
+	jobID, err := h.svcFor(r).ImportNode(tmpFile.Name())
+	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "job_id": jobID})
 }
 
 func (h *Handler) handleComposeUp(w http.ResponseWriter, r *http.Request) {
@@ -592,10 +574,52 @@ func (h *Handler) handleImportSite(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("grengo: importing %s (name=%s port=%s)", header.Filename, newName, newPort)
 
-	if err := h.svcFor(r).ImportSite(tmpFile.Name(), newName, newPort); err != nil {
+	jobID, err := h.svcFor(r).ImportSite(tmpFile.Name(), newName, newPort)
+	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "job_id": jobID})
+}
+
+func (h *Handler) handleGetJob(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	j, err := h.svcFor(r).GetJob(id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		utils.WriteError(w, status, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, j)
+}
+
+func (h *Handler) handleDownloadJob(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	archivePath, err := h.svcFor(r).DownloadJob(id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		} else if strings.Contains(err.Error(), "not completed") {
+			status = http.StatusBadRequest
+		}
+		utils.WriteError(w, status, err.Error())
+		return
+	}
+	defer os.Remove(archivePath)
+
+	f, err := os.Open(archivePath)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "cannot open job archive")
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(archivePath))
+	io.Copy(w, f)
 }

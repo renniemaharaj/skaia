@@ -113,6 +113,11 @@ func (c *Client) ReadPump() {
 			c.handleVoiceControlMsg(msg)
 		case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
 			c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
+		case GrengoJobAction:
+			select {
+			case c.Hub.grengoActions <- msg.Payload:
+			default:
+			}
 		default:
 			if c.broadcastLimit.allow() {
 				c.Hub.Broadcast(&msg)
