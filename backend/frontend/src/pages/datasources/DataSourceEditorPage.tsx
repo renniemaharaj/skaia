@@ -4,50 +4,41 @@ import {
  useEffect,
  useMemo,
  useState,
- type CSSProperties,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
- ArrowLeft,
- Save,
- Play,
- Trash2,
- AlertTriangle,
- CheckCircle2,
- Loader2,
- Code2,
- FileJson,
- Eye,
- LayoutGrid,
- BarChart3,
- Table2,
- Bookmark,
- X,
- Clock,
- Globe,
- ChevronDown,
- ChevronRight,
- Filter,
- Maximize2,
- AlignCenterHorizontal,
- MoveVertical,
- Paintbrush,
+  ArrowLeft,
+  Save,
+  Play,
+  Trash2,
+  AlertTriangle,
+  CheckCircle2,
+  Loader2,
+  Code2,
+  FileJson,
+  Eye,
+  LayoutGrid,
+  Bookmark,
+  X,
+  Clock,
+  Globe,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+  Maximize2,
+  AlignCenterHorizontal,
+  MoveVertical,
 } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type {
- DataSource,
- CustomSection,
- CardTemplate,
- CardZone,
- ComponentDefinition,
- ComponentGroup,
- EventHook,
+  DataSource,
+  CustomSection,
+  ComponentDefinition,
+  ComponentGroup,
+  EventHook,
 } from "../page/types";
 import { ComponentGroupEditor, ComponentGroupRenderer } from "../page/ComponentGroupEditor";
 import { EventHookEditor } from "../page/EventHookEditor";
-import { DesignedCardGrid } from "../page/blocks/DesignedCardGrid";
-import { CardDesigner } from "../page/CardDesigner";
-import { PREVIEW_TYPES, DEFAULT_CARD_TEMPLATE } from "../page/types";
 import { toast } from "sonner";
 import TabbedEditor from "../../components/page/TabbedEditor";
 import "./DataSources.css";
@@ -122,125 +113,17 @@ import {
 } from "../../utils/cache";
 
 const DATASOURCE_PREVIEW_TYPES = [
- ...PREVIEW_TYPES,
- "feature",
- "image",
- "designed_card",
- "component",
+  "component",
 ] as const;
 
 type DataSourcePreviewType = (typeof DATASOURCE_PREVIEW_TYPES)[number];
 
 const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
- cards: "Cards",
- stat_cards: "Stats",
- table: "Table",
- feature: "Feature Grid",
- image: "Image Grid",
- designed_card: "Card Designer",
- component: "Component Registry",
+  component: "Component Registry",
 };
 
-function formatCellValue(value: unknown): string {
- if (value === null || value === undefined) return "";
- if (typeof value === "object") return JSON.stringify(value);
- return String(value);
-}
 
-const DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS: Record<
- DataSourcePreviewType,
- CardTemplate
-> = {
- cards: {
- ...DEFAULT_CARD_TEMPLATE,
- cardWidth: "regular",
- cardStyle: "default",
- imagePosition: "top",
- contentAlign: "start",
- gap: 12,
- gridGap: 24,
- zones: [
- { field: "image_url", align: "center", size: "lg", visible: true },
- { field: "icon", align: "center", size: "md", visible: false },
- { field: "heading", align: "left", size: "md", visible: true },
- { field: "subheading", align: "left", size: "sm", visible: true },
- { field: "link_url", align: "left", size: "sm", visible: false },
- ],
- },
- stat_cards: {
- ...DEFAULT_CARD_TEMPLATE,
- cardWidth: "narrow",
- cardStyle: "flat",
- imagePosition: "none",
- contentAlign: "stretch",
- gap: 8,
- gridGap: 20,
- borderRadius: 14,
- zones: [
- { field: "image_url", align: "center", size: "lg", visible: false },
- { field: "icon", align: "left", size: "md", visible: true },
- { field: "heading", align: "left", size: "md", visible: true },
- { field: "subheading", align: "left", size: "sm", visible: true },
- { field: "link_url", align: "left", size: "sm", visible: false },
- ],
- },
- feature: {
- ...DEFAULT_CARD_TEMPLATE,
- cardWidth: "narrow",
- cardStyle: "minimal",
- imagePosition: "none",
- contentAlign: "center",
- gap: 8,
- gridGap: 24,
- borderRadius: 16,
- zones: [
- { field: "image_url", align: "center", size: "lg", visible: false },
- { field: "icon", align: "center", size: "lg", visible: true },
- { field: "heading", align: "center", size: "md", visible: true },
- { field: "subheading", align: "center", size: "sm", visible: true },
- { field: "link_url", align: "center", size: "sm", visible: false },
- ],
- },
- image: {
- ...DEFAULT_CARD_TEMPLATE,
- cardWidth: "regular",
- cardStyle: "flat",
- imagePosition: "top",
- contentAlign: "start",
- gap: 10,
- gridGap: 24,
- zones: [
- { field: "image_url", align: "center", size: "lg", visible: true },
- { field: "icon", align: "center", size: "md", visible: false },
- { field: "heading", align: "left", size: "md", visible: true },
- { field: "subheading", align: "left", size: "sm", visible: true },
- { field: "link_url", align: "left", size: "sm", visible: false },
- ],
- },
- table: {
- ...DEFAULT_CARD_TEMPLATE,
- cardWidth: "full",
- cardStyle: "minimal",
- imagePosition: "none",
- contentAlign: "stretch",
- gap: 10,
- gridGap: 12,
- borderRadius: 10,
- zones: [
- { field: "image_url", align: "left", size: "lg", visible: false },
- { field: "icon", align: "left", size: "md", visible: false },
- { field: "heading", align: "left", size: "md", visible: true },
- { field: "subheading", align: "left", size: "sm", visible: true },
- { field: "link_url", align: "left", size: "sm", visible: false },
- ],
- },
- designed_card: {
- ...DEFAULT_CARD_TEMPLATE,
- },
- component: {
- ...DEFAULT_CARD_TEMPLATE,
- },
-};
+
 
 export default function DataSourceEditorPage() {
  const { id } = useParams<{ id: string }>();
@@ -281,9 +164,6 @@ export default function DataSourceEditorPage() {
  type RightPanel = "preview" | "compiled" | "diagnostics";
  const [activePanel, setActivePanel] = useState<RightPanel>("preview");
 
- // Preview section type
- const [previewType, setPreviewType] =
- useState<DataSourcePreviewType>("cards");
 
  type LayoutMode = "default" | "wide" | "center";
  const [layoutMode, setLayoutMode] = useState<LayoutMode>("default");
@@ -295,50 +175,26 @@ export default function DataSourceEditorPage() {
  // Save as custom section
  const [showSaveSection, setShowSaveSection] = useState(false);
  const [sectionName, setSectionName] = useState("");
- const [sectionDesc, setSectionDesc] = useState("");
- const [savingSection, setSavingSection] = useState(false);
+  const [sectionDesc, setSectionDesc] = useState("");
+  const [savingSection, setSavingSection] = useState(false);
 
- // Card designer templates for each preview mode.
- const [cardTemplates, setCardTemplates] = useState<
- Record<DataSourcePreviewType, CardTemplate>
- >(() => ({
- cards: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.cards,
- stat_cards: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.stat_cards,
- feature: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.feature,
- image: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.image,
- table: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.table,
- designed_card: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.designed_card,
- component: DATASOURCE_PREVIEW_CARD_TEMPLATE_PRESETS.component,
- }));
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
+  [],
+  );
+  const [componentGroup, setComponentGroup] = useState<ComponentGroup>({
+   items: [],
+   gap: 16,
+   max_width: 800,
+  });
+  const [componentHooks, setComponentHooks] = useState<EventHook[]>([]);
 
- const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
- [],
- );
- const [componentGroup, setComponentGroup] = useState<ComponentGroup>({
-  items: [],
-  gap: 16,
-  max_width: 800,
- });
- const [componentHooks, setComponentHooks] = useState<EventHook[]>([]);
+  useEffect(() => {
+  apiRequest<ComponentDefinition[]>("/config/components")
+  .then(setComponentsList)
+  .catch(console.error);
+  }, []);
 
- useEffect(() => {
- apiRequest<ComponentDefinition[]>("/config/components")
- .then(setComponentsList)
- .catch(console.error);
- }, []);
-
- const currentCardTemplate = cardTemplates[previewType];
- const handleCardTemplateChange = useCallback(
- (template: CardTemplate) => {
- setCardTemplates((prev) => ({
- ...prev,
- [previewType]: template,
- }));
- },
- [previewType],
- );
-
- const fetchDS = useCallback(async () => {
+  const fetchDS = useCallback(async () => {
  if (isNew) return;
  try {
  const ds = await apiRequest<DataSource>(`/config/datasources/${id}`);
@@ -586,7 +442,6 @@ export default function DataSourceEditorPage() {
  // Per-item validation and sanitization - skip bad entries, never throw
  const sanitized: EvalItem[] = [];
  let skippedItems = 0;
- const isTablePreview = previewType === "table";
  for (const raw of rawItems as unknown[]) {
  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
  skippedItems++;
@@ -605,7 +460,7 @@ export default function DataSourceEditorPage() {
  (typeof obj.description === "string" && obj.description.trim()) ||
  (typeof obj.subtitle === "string" && obj.subtitle.trim()) ||
  null;
- if (!isTablePreview && (!heading || !subheading)) {
+ if (!heading || !subheading) {
  skippedItems++;
  continue;
  }
@@ -700,19 +555,12 @@ export default function DataSourceEditorPage() {
  name: sectionName,
  description: sectionDesc,
  datasource_id: Number(id),
- section_type: previewType,
- config: JSON.stringify(
- previewType === "component"
- ? {
+ section_type: "component",
+ config: JSON.stringify({
  columns: 1,
  component_group: componentGroup,
  event_hooks: componentHooks,
- }
- : {
- columns: 3,
- card_template: currentCardTemplate,
- },
- ),
+ }),
  }),
  });
  toast.success(`Section "${sectionName}" saved`);
@@ -925,148 +773,103 @@ export default function DataSourceEditorPage() {
  <div className="ds-editor__panel-content">
  {/* Preview */}
  {activePanel === "preview" && (
- <div className="ds-editor__preview">
- {/* Preview type selector + save section */}
- {previewItems.length > 0 && (
- <div className="ds-preview__toolbar">
- <div className="ds-preview__type-tabs">
- {DATASOURCE_PREVIEW_TYPES.map((type) => (
- <button
- key={type}
- className={`ds-preview__type-tab ${previewType === type ? "ds-preview__type-tab--active" : ""}`}
- onClick={() => setPreviewType(type)}
- >
- {type === "cards" && <LayoutGrid size={13} />}
- {type === "feature" && <BarChart3 size={13} />}
- {type === "image" && <Table2 size={13} />}
- {type === "stat_cards" && <BarChart3 size={13} />}
- {type === "table" && <Table2 size={13} />}
- {type === "designed_card" && <Paintbrush size={13} />}
- {DATASOURCE_PREVIEW_TYPE_LABELS[type]}
- </button>
- ))}
- </div>
- {!isNew && (
- <button
- className="ds-preview__save-section-btn"
- onClick={() => setShowSaveSection((v) => !v)}
- >
- <Bookmark size={13} /> Save as Section
- </button>
- )}
- </div>
- )}
+  <div className="ds-editor__preview">
+  {/* Preview type selector + save section */}
+  {previewItems.length > 0 && (
+  <div className="ds-preview__toolbar">
+  <div className="ds-preview__type-tabs">
+  <button className="ds-preview__type-tab ds-preview__type-tab--active">
+  <LayoutGrid size={13} /> Component Registry
+  </button>
+  </div>
+  {!isNew && (
+  <button
+  className="ds-preview__save-section-btn"
+  onClick={() => setShowSaveSection((v) => !v)}
+  >
+  <Bookmark size={13} /> Save as Section
+  </button>
+  )}
+  </div>
+  )}
 
- {/* Save as section form */}
- {showSaveSection && (
- <SaveAsSectionForm
- sectionName={sectionName}
- sectionDesc={sectionDesc}
- onSectionNameChange={setSectionName}
- onSectionDescChange={setSectionDesc}
- previewType={previewType}
- onClose={() => setShowSaveSection(false)}
- onSubmit={handleSaveSection}
- saving={savingSection}
- isNew={isNew}
- />
- )}
+  {/* Save as section form */}
+  {showSaveSection && (
+  <SaveAsSectionForm
+  sectionName={sectionName}
+  sectionDesc={sectionDesc}
+  onSectionNameChange={setSectionName}
+  onSectionDescChange={setSectionDesc}
+  previewType="component"
+  onClose={() => setShowSaveSection(false)}
+  onSubmit={handleSaveSection}
+  saving={savingSection}
+  isNew={isNew}
+  />
+  )}
 
- {runStats && <RunSummaryCard runStats={runStats} />}
+  {runStats && <RunSummaryCard runStats={runStats} />}
 
- {runStats && runStats.fetchLog.length > 0 && (
- <FetchLogPanel
- fetchLog={runStats.fetchLog}
- expandedFetch={expandedFetch}
- onToggle={(i) =>
- setExpandedFetch((prev) => {
- const next = new Set(prev);
- if (next.has(i)) next.delete(i);
- else next.add(i);
- return next;
- })
- }
- />
- )}
+  {runStats && runStats.fetchLog.length > 0 && (
+  <FetchLogPanel
+  fetchLog={runStats.fetchLog}
+  expandedFetch={expandedFetch}
+  onToggle={(i) =>
+  setExpandedFetch((prev) => {
+  const next = new Set(prev);
+  if (next.has(i)) next.delete(i);
+  else next.add(i);
+  return next;
+  })
+  }
+  />
+  )}
 
- {previewItems.length === 0 && !evalError && (
- <div className="ds-editor__preview-empty">
- <Play size={32} />
- <p>
- Click "Run" to evaluate the data source and preview
- results.
- </p>
- </div>
- )}
- {evalError && (
- <div className="ds-editor__error">
- <AlertTriangle size={16} />
- <pre>{evalError}</pre>
- </div>
- )}
+  {previewItems.length === 0 && !evalError && (
+  <div className="ds-editor__preview-empty">
+  <Play size={32} />
+  <p>
+  Click "Run" to evaluate the data source and preview
+  results.
+  </p>
+  </div>
+  )}
+  {evalError && (
+  <div className="ds-editor__error">
+  <AlertTriangle size={16} />
+  <pre>{evalError}</pre>
+  </div>
+  )}
 
- {previewItems.length > 0 && previewType !== "component" && (
- <CardDesigner
- template={currentCardTemplate}
- onChange={handleCardTemplateChange}
- mode={previewType === "table" ? "table" : "card"}
- />
- )}
+  {previewItems.length > 0 && (
+  <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
+  <ComponentGroupEditor
+  group={componentGroup}
+  components={componentsList}
+  availableColumns={tableColumns}
+  firstRow={previewItems[0] || null}
+  onChange={setComponentGroup}
+  />
+  <div style={{ marginTop: "16px" }}>
+  <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
+  </div>
+  </div>
+  )}
 
- {previewItems.length > 0 && previewType === "component" && (
- <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
- <ComponentGroupEditor
- group={componentGroup}
- components={componentsList}
- availableColumns={tableColumns}
- firstRow={previewItems[0] || null}
- onChange={setComponentGroup}
- />
- <div style={{ marginTop: "16px" }}>
- <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
- </div>
- </div>
- )}
-
- {previewItems.length > 0 && previewType === "table" && (
- <TablePreview
- items={previewItems}
- columns={tableColumns}
- template={currentCardTemplate}
- />
- )}
-
- {previewItems.length > 0 && previewType === "component" && (
- <div style={{ display: "flex", flexWrap: "wrap", gap: componentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
- {previewItems.map((row, i) => (
- <ComponentGroupRenderer
- key={i}
- group={componentGroup}
- components={componentsList}
- row={row}
- />
- ))}
- </div>
- )}
-
- {previewItems.length > 0 && previewType !== "table" && previewType !== "component" && (
- <DesignedCardGrid
- items={previewItems.map((item, index) => ({
- id: -(index + 1),
- section_id: 0,
- display_order: index + 1,
- icon: item.icon ?? "",
- heading: item.heading ?? "",
- subheading: item.subheading ?? "",
- image_url: item.image_url ?? "",
- link_url: item.link_url ?? "",
- config: "{}",
- }))}
- template={currentCardTemplate}
- />
- )}
- </div>
- )}
+  {previewItems.length > 0 && (
+  <div style={{ display: "flex", flexWrap: "wrap", gap: componentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+  {previewItems.map((row, i) => (
+  <ComponentGroupRenderer
+  key={i}
+  group={componentGroup}
+  components={componentsList}
+  row={row}
+  />
+  ))}
+  </div>
+  )}
+  </div>
+  )}
 
  {/* Compiled JS */}
  {activePanel === "compiled" && (
@@ -1143,80 +946,6 @@ export default function DataSourceEditorPage() {
  );
 }
 
-function TablePreview({
- items,
- columns,
- template,
-}: {
- items: EvalItem[];
- columns: string[];
- template: CardTemplate;
-}) {
- const tableClass = [
- "ds-table",
- template.tableBordered ? "ds-table--bordered" : "",
- template.tableCompact ? "ds-table--compact" : "",
- !template.tableStriped ? "ds-table--no-stripes" : "",
- !template.tableHover ? "ds-table--no-hover" : "",
- ]
- .filter(Boolean)
- .join(" ");
-
- const zoneMap = Object.fromEntries(
- template.zones.map((zone) => [zone.field, zone]),
- ) as Record<string, CardZone>;
-
- const getColumnStyle = (col: string): CSSProperties => {
- const zone = zoneMap[col];
- const style: CSSProperties = {
- textAlign: zone?.align ?? "left",
- };
- if (zone) {
- style.fontSize =
- zone.size === "sm"
- ? "0.85rem"
- : zone.size === "lg"
- ? "1.05rem"
- : "0.95rem";
- }
- return style;
- };
-
- const containerStyle: React.CSSProperties = {
- margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
- padding: `${template.paddingTop ?? 0}px ${template.paddingRight ?? 16}px ${template.paddingBottom ?? 16}px ${template.paddingLeft ?? 16}px`,
- };
-
- return (
- <div className="ds-table-wrap" style={containerStyle}>
- {template.customCss ? <style>{template.customCss}</style> : null}
- <div className="ds-table-container dtable--custom-css">
- <table className={tableClass}>
- <thead>
- <tr>
- {columns.map((col) => (
- <th key={col} style={getColumnStyle(col)}>
- {col}
- </th>
- ))}
- </tr>
- </thead>
- <tbody>
- {items.map((item, rowIndex) => (
- <tr key={rowIndex}>
- {columns.map((col) => (
- <td key={col} style={getColumnStyle(col)}>
- {formatCellValue(item[col])}
- </td>
- ))}
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- </div>
- );
-}
 
 // Sub-components
 

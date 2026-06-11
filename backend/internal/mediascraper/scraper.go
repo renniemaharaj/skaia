@@ -43,6 +43,7 @@ func initScraper() {
 
 func workerLoop() {
 	for req := range jobQueue {
+		broadcastJobStarted(req.targetURL)
 		res, err := doScrape(req.targetURL)
 		
 		atomic.AddInt32(&activeJobs, -1)
@@ -50,6 +51,28 @@ func workerLoop() {
 
 		broadcastJobResult(req.targetURL, res, err)
 	}
+}
+
+func broadcastJobStarted(targetURL string) {
+	if wsHub == nil {
+		return
+	}
+	type startedPayload struct {
+		URL string `json:"url"`
+	}
+	payload, _ := json.Marshal(startedPayload{URL: targetURL})
+	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperStarted, Payload: payload})
+}
+
+func broadcastJobPending(targetURL string) {
+	if wsHub == nil {
+		return
+	}
+	type pendingPayload struct {
+		URL string `json:"url"`
+	}
+	payload, _ := json.Marshal(pendingPayload{URL: targetURL})
+	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperPending, Payload: payload})
 }
 
 func broadcastJobResult(targetURL string, res *ScrapeResult, err error) {
@@ -82,7 +105,7 @@ func ClearJobsAndCache() {
 		select {
 		case req := <-jobQueue:
 			atomic.AddInt32(&activeJobs, -1)
-			broadcastJobResult(req.targetURL, nil, fmt.Errorf("job cleared"))
+			broadcastJobPending(req.targetURL)
 		default:
 			drained = true
 		}
@@ -110,6 +133,7 @@ func ClearCache() {
 	if err == nil && len(keys) > 0 {
 		client.Del(ctx, keys...)
 	}
+	client.Del(ctx, "mediascraper:stats:cache_hits", "mediascraper:stats:new_scrapes")
 }
 
 func GetActiveJobs() int {

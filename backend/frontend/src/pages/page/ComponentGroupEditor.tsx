@@ -15,6 +15,9 @@ import type {
 } from "./types";
 import { ComponentBindMapper } from "./ComponentBindMapper";
 import { ComponentRenderer } from "./ComponentRenderer";
+import { CardDesigner } from "./CardDesigner";
+import { DEFAULT_CARD_TEMPLATE } from "./types";
+import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
 import "./ComponentGroupEditor.css";
 
 interface ComponentGroupEditorProps {
@@ -38,6 +41,7 @@ export function ComponentGroupEditor({
   onChange,
 }: ComponentGroupEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"components" | "styles">("components");
   const [resizing, setResizing] = useState<{
     itemId: string;
     startX: number;
@@ -99,150 +103,178 @@ export function ComponentGroupEditor({
 
   return (
     <div className="cge">
-      {/* ── item list ── */}
-      <div className="cge__header">
-        <span className="cge__title">Component Group</span>
-        <button
-          type="button"
-          className="cge__add-btn"
-          onClick={addComponent}
+      <div className="cge__tabs">
+        <button 
+          className={`cge__tab ${activeTab === "components" ? "cge__tab--active" : ""}`}
+          onClick={() => setActiveTab("components")}
         >
-          <Plus size={13} /> Add Component
+          Components
+        </button>
+        <button 
+          className={`cge__tab ${activeTab === "styles" ? "cge__tab--active" : ""}`}
+          onClick={() => setActiveTab("styles")}
+        >
+          Styles
         </button>
       </div>
 
-      <div className="cge__items">
-        {sorted.map((item) => {
-          return (
-            <div key={item.id} className="cge__item">
-              <GripVertical size={14} className="cge__item-grip" />
-              <select
-                className="cge__item-select"
-                value={item.component_type}
+      {activeTab === "components" && (
+        <>
+          {/* ── item list ── */}
+          <div className="cge__header">
+            <span className="cge__title">Component Group</span>
+            <button
+              type="button"
+              className="cge__add-btn"
+              onClick={addComponent}
+            >
+              <Plus size={13} /> Add Component
+            </button>
+          </div>
+
+          <div className="cge__items">
+            {sorted.map((item) => {
+              return (
+                <div key={item.id} className="cge__item">
+                  <GripVertical size={14} className="cge__item-grip" />
+                  <select
+                    className="cge__item-select"
+                    value={item.component_type}
+                    onChange={(e) =>
+                      updateItem(item.id, {
+                        component_type: e.target.value,
+                        bindings: {},
+                      })
+                    }
+                  >
+                    {components.map((c) => (
+                      <option key={c.type} value={c.type}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="cge__item-width">
+                    <input
+                      type="number"
+                      min={10}
+                      max={100}
+                      value={item.width}
+                      onChange={(e) =>
+                        updateItem(item.id, {
+                          width: Math.max(
+                            10,
+                            Math.min(100, Number(e.target.value)),
+                          ),
+                        })
+                      }
+                    />
+                    <span>%</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="cge__item-remove"
+                    onClick={() => removeComponent(item.id)}
+                    title="Remove"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── group settings ── */}
+          <div className="cge__settings">
+            <label className="cge__setting">
+              <span>Gap</span>
+              <input
+                type="number"
+                min={0}
+                max={48}
+                value={group.gap}
+                onChange={(e) => onChange({ ...group, gap: Number(e.target.value) })}
+              />
+              <span>px</span>
+            </label>
+            <label className="cge__setting">
+              <span>Max Width</span>
+              <input
+                type="number"
+                min={200}
+                max={1600}
+                step={50}
+                value={group.max_width}
                 onChange={(e) =>
-                  updateItem(item.id, {
-                    component_type: e.target.value,
-                    bindings: {},
-                  })
+                  onChange({ ...group, max_width: Number(e.target.value) })
                 }
-              >
-                {components.map((c) => (
-                  <option key={c.type} value={c.type}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <label className="cge__item-width">
-                <input
-                  type="number"
-                  min={10}
-                  max={100}
-                  value={item.width}
-                  onChange={(e) =>
-                    updateItem(item.id, {
-                      width: Math.max(
-                        10,
-                        Math.min(100, Number(e.target.value)),
-                      ),
-                    })
-                  }
-                />
-                <span>%</span>
-              </label>
-              <button
-                type="button"
-                className="cge__item-remove"
-                onClick={() => removeComponent(item.id)}
-                title="Remove"
-              >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+              />
+              <span>px</span>
+            </label>
+          </div>
 
-      {/* ── group settings ── */}
-      <div className="cge__settings">
-        <label className="cge__setting">
-          <span>Gap</span>
-          <input
-            type="number"
-            min={0}
-            max={48}
-            value={group.gap}
-            onChange={(e) => onChange({ ...group, gap: Number(e.target.value) })}
-          />
-          <span>px</span>
-        </label>
-        <label className="cge__setting">
-          <span>Max Width</span>
-          <input
-            type="number"
-            min={200}
-            max={1600}
-            step={50}
-            value={group.max_width}
-            onChange={(e) =>
-              onChange({ ...group, max_width: Number(e.target.value) })
-            }
-          />
-          <span>px</span>
-        </label>
-      </div>
+          {/* ── per-component bind mappers ── */}
+          {sorted.map((item) => {
+            const comp = components.find((c) => c.type === item.component_type);
+            if (!comp) return null;
+            return (
+              <ComponentBindMapper
+                key={item.id}
+                availableColumns={availableColumns}
+                component={comp}
+                bindings={item.bindings}
+                onChange={(b) => updateItem(item.id, { bindings: b })}
+              />
+            );
+          })}
+        </>
+      )}
 
-      {/* ── per-component bind mappers ── */}
-      {sorted.map((item) => {
-        const comp = components.find((c) => c.type === item.component_type);
-        if (!comp) return null;
-        return (
-          <ComponentBindMapper
-            key={item.id}
-            availableColumns={availableColumns}
-            component={comp}
-            bindings={item.bindings}
-            onChange={(b) => updateItem(item.id, { bindings: b })}
-          />
-        );
-      })}
+      {activeTab === "styles" && (
+        <CardDesigner
+          template={group.wrapper ?? DEFAULT_CARD_TEMPLATE}
+          onChange={(template) => onChange({ ...group, wrapper: template })}
+        />
+      )}
 
       {/* ── live preview ── */}
       {firstRow && sorted.length > 0 && (
         <>
           <div className="cge__preview-label">Preview (first row)</div>
-          <div
-            ref={previewRef}
-            className="cge__preview"
-            style={{
-              maxWidth: group.max_width,
-              gap: group.gap,
-            }}
-          >
-            {sorted.map((item) => {
-              const comp = components.find(
-                (c) => c.type === item.component_type,
-              );
-              if (!comp) return null;
-              return (
-                <div
-                  key={item.id}
-                  className={`cge__preview-item${resizing?.itemId === item.id ? " cge__preview-item--resizing" : ""}`}
-                  style={{ width: `${item.width}%` }}
-                >
-                  <ComponentRenderer
-                    component={comp}
-                    bindings={item.bindings}
-                    row={firstRow}
-                  />
+          <DesignedCardWrapper template={group.wrapper}>
+            <div
+              ref={previewRef}
+              className="cge__preview"
+              style={{
+                maxWidth: group.max_width,
+                gap: group.gap,
+              }}
+            >
+              {sorted.map((item) => {
+                const comp = components.find(
+                  (c) => c.type === item.component_type,
+                );
+                if (!comp) return null;
+                return (
                   <div
-                    className="cge__resize-handle"
-                    onMouseDown={(e) => startResize(item.id, e)}
-                    title="Drag to resize"
-                  />
-                </div>
-              );
-            })}
-          </div>
+                    key={item.id}
+                    className={`cge__preview-item${resizing?.itemId === item.id ? " cge__preview-item--resizing" : ""}`}
+                    style={{ width: `${item.width}%` }}
+                  >
+                    <ComponentRenderer
+                      component={comp}
+                      bindings={item.bindings}
+                      row={firstRow}
+                    />
+                    <div
+                      className="cge__resize-handle"
+                      onMouseDown={(e) => startResize(item.id, e)}
+                      title="Drag to resize"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </DesignedCardWrapper>
         </>
       )}
     </div>
@@ -261,27 +293,29 @@ export function ComponentGroupRenderer({
 }) {
   const sorted = [...group.items].sort((a, b) => a.order - b.order);
   return (
-    <div
-      className="cge__preview"
-      style={{ maxWidth: group.max_width, gap: group.gap }}
-    >
-      {sorted.map((item) => {
-        const comp = components.find((c) => c.type === item.component_type);
-        if (!comp) return null;
-        return (
-          <div
-            key={item.id}
-            style={{ width: `${item.width}%` }}
-            className="cge__preview-item"
-          >
-            <ComponentRenderer
-              component={comp}
-              bindings={item.bindings}
-              row={row}
-            />
-          </div>
-        );
-      })}
-    </div>
+    <DesignedCardWrapper template={group.wrapper}>
+      <div
+        className="cge__preview"
+        style={{ maxWidth: group.max_width, gap: group.gap }}
+      >
+        {sorted.map((item) => {
+          const comp = components.find((c) => c.type === item.component_type);
+          if (!comp) return null;
+          return (
+            <div
+              key={item.id}
+              style={{ width: `${item.width}%` }}
+              className="cge__preview-item"
+            >
+              <ComponentRenderer
+                component={comp}
+                bindings={item.bindings}
+                row={row}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </DesignedCardWrapper>
   );
 }

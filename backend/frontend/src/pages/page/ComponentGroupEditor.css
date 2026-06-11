@@ -173,3 +173,29 @@
   background: var(--primary-color);
   opacity: 0.5;
 }
+
+/* ── tabs ── */
+.cge__tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+.cge__tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 400;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  transition: color 0.15s;
+}
+.cge__tab:hover {
+  color: var(--text-primary);
+}
+.cge__tab--active {
+  color: var(--text-primary);
+  font-weight: 600;
+}

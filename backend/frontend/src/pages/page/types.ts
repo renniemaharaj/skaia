@@ -503,6 +503,7 @@ export interface ComponentGroup {
   items: ComponentGroupItem[];
   gap: number;
   max_width: number; // px
+  wrapper?: CardTemplate; // The card template used to wrap the entire group
 }
 
 /** A TypeScript event hook attached to a component. */

@@ -239,6 +239,18 @@ export const useWebSocketSync = () => {
             );
             return;
           }
+          if (message.type === "mediascraper:started") {
+            window.dispatchEvent(
+              new CustomEvent("mediascraper:started", { detail: payload })
+            );
+            return;
+          }
+          if (message.type === "mediascraper:pending") {
+            window.dispatchEvent(
+              new CustomEvent("mediascraper:pending", { detail: payload })
+            );
+            return;
+          }
 
           // Handle user update propagation
           if (message.type === "user:update") {

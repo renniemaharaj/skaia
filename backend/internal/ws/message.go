@@ -47,6 +47,8 @@ const (
 	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
 	MediaScraperJobs     MessageType = "mediascraper:jobs"      // server => all: update active jobs count
 	MediaScraperResult   MessageType = "mediascraper:result"    // server => all: job completion
+	MediaScraperStarted  MessageType = "mediascraper:started"   // server => all: job started processing
+	MediaScraperPending  MessageType = "mediascraper:pending"   // server => all: job cleared and back to pending
 	ErrorMessage         MessageType = "error"
 )
 

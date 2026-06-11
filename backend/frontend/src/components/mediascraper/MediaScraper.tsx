@@ -25,8 +25,34 @@ export function MediaScraper() {
         }
       }
     };
+    
+    const handleStarted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string }>;
+      const data = customEvent.detail;
+      if (data.url === url && job?.status === "pending") {
+        setJob({ url, status: "scraping" });
+      }
+    };
+    
+    const handlePending = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string }>;
+      const data = customEvent.detail;
+      if (data.url === url && (job?.status === "scraping" || job?.status === "pending")) {
+        setJob({ url, status: "pending" });
+        // The user must click scrape again manually, or we could auto trigger,
+        // but since this is the explicit tester UI, just setting to pending is safe
+        // and provides a natural update
+      }
+    };
+    
     window.addEventListener("mediascraper:result", handleResult);
-    return () => window.removeEventListener("mediascraper:result", handleResult);
+    window.addEventListener("mediascraper:started", handleStarted);
+    window.addEventListener("mediascraper:pending", handlePending);
+    return () => {
+      window.removeEventListener("mediascraper:result", handleResult);
+      window.removeEventListener("mediascraper:started", handleStarted);
+      window.removeEventListener("mediascraper:pending", handlePending);
+    };
   }, [url, job?.status]);
 
   const handleScrape = async () => {
@@ -34,7 +60,7 @@ export function MediaScraper() {
       toast.error("Please enter a URL to scrape");
       return;
     }
-    setJob({ url, status: "scraping" });
+    setJob({ url, status: "pending" });
     try {
       const res = await apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, {
         method: "GET"

@@ -49,6 +49,7 @@
   object-fit: cover;
   border: 4px solid var(--bg-secondary);
   box-shadow: var(--shadow);
+  aspect-ratio: 1 / 1;
 }
 
 .profile-card-avatar-edit {

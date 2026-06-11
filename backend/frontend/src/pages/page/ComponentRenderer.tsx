@@ -335,12 +335,17 @@ function CompoundMediaScraper({
         }
       }
     };
-    window.addEventListener("mediascraper:result", handleResult);
-    
-    setJob({ url, status: "pending" });
-    const timer = setTimeout(() => {
+    const handleStarted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string }>;
+      const data = customEvent.detail;
+      if (active && data.url === url && job?.status === "pending") {
+        setJob({ url, status: "scraping" });
+      }
+    };
+
+    const doScrape = () => {
       if (!active) return;
-      setJob({ url, status: "scraping" });
+      setJob({ url, status: "pending" });
       apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, { method: "GET" })
         .then((res) => {
           if (active && res && res.images) {
@@ -357,12 +362,28 @@ function CompoundMediaScraper({
              setJob({ url, status: "error", error: err.message });
           }
         });
-    }, 500);
+    };
+
+    const handlePending = (e: Event) => {
+      const customEvent = e as CustomEvent<{ url: string }>;
+      const data = customEvent.detail;
+      if (active && data.url === url) {
+        doScrape();
+      }
+    };
+
+    window.addEventListener("mediascraper:result", handleResult);
+    window.addEventListener("mediascraper:started", handleStarted);
+    window.addEventListener("mediascraper:pending", handlePending);
+    
+    const timer = setTimeout(doScrape, 500);
 
     return () => { 
       active = false; 
       clearTimeout(timer);
       window.removeEventListener("mediascraper:result", handleResult);
+      window.removeEventListener("mediascraper:started", handleStarted);
+      window.removeEventListener("mediascraper:pending", handlePending);
     };
   }, [url]);
 
