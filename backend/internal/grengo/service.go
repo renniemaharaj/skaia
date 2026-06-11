@@ -39,8 +39,9 @@ type CreateSiteParams struct {
 
 // Service communicates with the internal grengo API server over HTTP.
 type Service struct {
-	apiURL string
-	client *http.Client
+	apiURL   string
+	client   *http.Client
+	passcode string // "p1:p2" for X-Grengo-Passcode header; empty = no auth
 }
 
 // NewService creates a grengo service that talks to the internal API.
@@ -49,6 +50,37 @@ func NewService(apiURL string) *Service {
 		apiURL: apiURL,
 		client: &http.Client{Timeout: 120 * time.Second},
 	}
+}
+
+// WithPasscode returns a new Service that authenticates with the given passcode pair.
+// The original Service is not modified.
+func (s *Service) WithPasscode(p1, p2 string) *Service {
+	passcode := p1 + ":" + p2
+	return &Service{
+		apiURL:   s.apiURL,
+		passcode: passcode,
+		client: &http.Client{
+			Timeout: 120 * time.Second,
+			Transport: &passcodeTransport{
+				base:     http.DefaultTransport,
+				passcode: passcode,
+			},
+		},
+	}
+}
+
+// passcodeTransport injects X-Grengo-Passcode on every outgoing request.
+type passcodeTransport struct {
+	base     http.RoundTripper
+	passcode string
+}
+
+func (t *passcodeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.passcode != "" {
+		req = req.Clone(req.Context())
+		req.Header.Set("X-Grengo-Passcode", t.passcode)
+	}
+	return t.base.RoundTrip(req)
 }
 
 // ---------------------------------------------------------------------------

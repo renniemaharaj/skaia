@@ -3,7 +3,7 @@
 ## grengo_cli_improvements
 
 ### Current Progress
-- **Phase 1: Fix API export node issues** — ⬜ Not started
+- **Phase 1: Fix API export node issues** — ➡️ Moved to `grengo_backend_refactor` Phase 1
 - **Phase 2: Implement watch command and --dev flag** — ⬜ Not started
 - **Phase 3: Directory watching and Vite integration** — ⬜ Not started
 - **Phase 4: Dev vs Prod mode routing and testing** — ⬜ Not started

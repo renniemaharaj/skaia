@@ -75,7 +75,7 @@ func cmdAPIStart(port int) {
 	mux.HandleFunc("POST /verify-passcode", apiVerifyPasscode)
 	mux.HandleFunc("GET /passcode/status", apiPasscodeStatus)
 
-	srv := &http.Server{Handler: mux}
+	srv := &http.Server{Handler: apiPasscodeMiddleware(mux)}
 
 	// Graceful shutdown on SIGINT / SIGTERM.
 	done := make(chan os.Signal, 1)
@@ -171,6 +171,47 @@ func apiJSON(w http.ResponseWriter, status int, v any) {
 
 func apiError(w http.ResponseWriter, status int, msg string) {
 	apiJSON(w, status, map[string]any{"error": msg})
+}
+
+// apiPasscodeMiddleware gates internal API routes behind passcode authentication.
+// Routes that are always open: GET /health, POST /verify-passcode, GET /passcode/status.
+// When no passcode is configured (.pcode absent), all routes are open for backward
+// compatibility — the server logs a warning on startup in that case.
+func apiPasscodeMiddleware(next http.Handler) http.Handler {
+	// Paths exempt from passcode checks.
+	openPaths := map[string]bool{
+		"/health":          true,
+		"/verify-passcode": true,
+		"/passcode/status": true,
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if openPaths[r.URL.Path] {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// If no passcode is configured, allow all requests (backward compat).
+		if !passcodeConfigured() {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Expect header: X-Grengo-Passcode: <p1>:<p2>
+		header := r.Header.Get("X-Grengo-Passcode")
+		if header == "" {
+			apiError(w, http.StatusUnauthorized, "passcode required")
+			return
+		}
+
+		parts := strings.SplitN(header, ":", 2)
+		if len(parts) != 2 || !verifyPasscode(parts[0], parts[1]) {
+			apiError(w, http.StatusUnauthorized, "invalid passcode")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // API Handlers
@@ -309,8 +350,14 @@ func apiPutEnv(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Content string `json:"content"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB limit
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		apiError(w, http.StatusBadRequest, "invalid json")
+		apiError(w, http.StatusBadRequest, "invalid json or body too large")
+		return
+	}
+
+	if !strings.Contains(body.Content, "CLIENT_NAME=") || !strings.Contains(body.Content, "PORT=") {
+		apiError(w, http.StatusBadRequest, "content missing required CLIENT_NAME= or PORT= declarations")
 		return
 	}
 
@@ -590,8 +637,9 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 		Command string   `json:"command"`
 		Args    []string `json:"args"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10MB limit
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		apiError(w, http.StatusBadRequest, "invalid json")
+		apiError(w, http.StatusBadRequest, "invalid json or body too large")
 		return
 	}
 	if req.Command == "" {
@@ -600,7 +648,13 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Block recursive / dangerous commands.
-	blocked := map[string]bool{"api": true}
+	blocked := map[string]bool{
+		"api":      true, // recursive
+		"wipe":     true, // destructive
+		"remove":   true, // destructive
+		"rm":       true, // destructive
+		"passcode": true, // credential management
+	}
 	if blocked[req.Command] {
 		apiError(w, http.StatusBadRequest, fmt.Sprintf("command %q not allowed via API", req.Command))
 		return
@@ -652,7 +706,6 @@ func apiExportSite(w http.ResponseWriter, r *http.Request) {
 
 	archiveName := fmt.Sprintf("grengo-client-%s-%s.tar.gz", name, time.Now().Format("20060102-150405"))
 	outPath := filepath.Join(os.TempDir(), archiveName)
-	defer os.Remove(outPath)
 
 	self, _ := os.Executable()
 	cmd := exec.Command(self, "export", name, "-o", outPath)
@@ -660,20 +713,23 @@ func apiExportSite(w http.ResponseWriter, r *http.Request) {
 	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
 
 	if output, err := cmd.CombinedOutput(); err != nil {
+		os.Remove(outPath)
 		apiError(w, http.StatusInternalServerError, fmt.Sprintf("export failed: %s", string(output)))
 		return
 	}
 
 	f, err := os.Open(outPath)
 	if err != nil {
+		os.Remove(outPath)
 		apiError(w, http.StatusInternalServerError, "cannot open export archive")
 		return
 	}
-	defer f.Close()
 
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
 	io.Copy(w, f)
+	f.Close()
+	os.Remove(outPath)
 }
 
 // apiImportSite accepts a multipart archive upload and imports it.
@@ -940,7 +996,6 @@ func apiMigrateAll(w http.ResponseWriter, r *http.Request) {
 // apiExportNode exports all clients as a single node archive.
 func apiExportNode(w http.ResponseWriter, r *http.Request) {
 	outPath := filepath.Join(os.TempDir(), fmt.Sprintf("grengo-node-%s.tar.gz", time.Now().Format("20060102-150405")))
-	defer os.Remove(outPath)
 
 	self, _ := os.Executable()
 	cmd := exec.Command(self, "export-node", "-o", outPath)
@@ -948,21 +1003,24 @@ func apiExportNode(w http.ResponseWriter, r *http.Request) {
 	cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
 
 	if output, err := cmd.CombinedOutput(); err != nil {
+		os.Remove(outPath)
 		apiError(w, http.StatusInternalServerError, fmt.Sprintf("export-node failed: %s", string(output)))
 		return
 	}
 
 	f, err := os.Open(outPath)
 	if err != nil {
+		os.Remove(outPath)
 		apiError(w, http.StatusInternalServerError, "cannot open node archive")
 		return
 	}
-	defer f.Close()
 
 	archiveName := filepath.Base(outPath)
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
 	io.Copy(w, f)
+	f.Close()
+	os.Remove(outPath)
 }
 
 // apiImportNode accepts a multipart node archive upload and imports it.

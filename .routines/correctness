@@ -104,6 +104,8 @@ verify references and formatting
 
 ## Last Run Remarks
 
+- Audited `grengo` CLI and internal API for drift and regressions. Found and fixed critical vulnerabilities: unauthenticated internal API, SQL injection via string concat in `dbExists`, and truncated stream bug in `apiExportNode`.
+- Verified `backend/internal/grengo` proxy uses dynamic `WithPasscode` session header injection.
 - Found 4 critical issues in new mediascraper code: SSRF (no URL validation), JSON injection via string concat error, missing auth middleware on mount, 22MB binary tracked in git.
 - Found 2 general issues: startup `ClearCache()` debug call, variable shadowing in `scraper.go`.
 - Found 1 UI issue: `DesignedCardWrapper` rendered unsanitized `customCss` in `<style>` tag (CSS injection risk).

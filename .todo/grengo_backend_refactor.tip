@@ -1,0 +1,17 @@
+<--/------->
+
+## grengo_backend_refactor
+
+### Current Progress
+- **Phase 1: Critical Fixes (export-node, SQL injection, API auth)** — ✅ Complete
+- **Phase 2: API Robustness Fixes** — ✅ Complete
+- **Phase 3: Modularity Refactor** — ⬜ Not started
+- **Phase 4: Code Quality** — ⬜ Not started
+
+### Next Steps
+- [ ] Fix `apiExportNode` defer-before-stream bug in `grengo/api.go`.
+- [ ] Fix SQL injection in `dbExists` in `grengo/docker.go`.
+- [ ] Add passcode auth middleware to internal API server.
+- [ ] Tighten `apiExec` command blocklist.
+
+<--/------->

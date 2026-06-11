@@ -175,6 +175,15 @@ func (h *Handler) requireSession(next http.Handler) http.Handler {
 	})
 }
 
+// svcFor returns an authenticated Service for the request's session.
+func (h *Handler) svcFor(r *http.Request) *Service {
+	sid := chi.URLParam(r, "sessionId")
+	if s := h.touchSession(sid); s != nil {
+		return h.svc.WithPasscode(s.p1, s.p2)
+	}
+	return h.svc
+}
+
 // ---------------------------------------------------------------------------
 // Session handlers
 // ---------------------------------------------------------------------------
@@ -271,7 +280,7 @@ func (h *Handler) handleDestroySession(w http.ResponseWriter, r *http.Request) {
 // ---------------------------------------------------------------------------
 
 func (h *Handler) handleListSites(w http.ResponseWriter, r *http.Request) {
-	sites, err := h.svc.ListSites()
+	sites, err := h.svcFor(r).ListSites()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -285,7 +294,7 @@ func (h *Handler) handleCreateSite(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if err := h.svc.CreateSite(p); err != nil {
+	if err := h.svcFor(r).CreateSite(p); err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "already exists") || strings.Contains(err.Error(), "is required") {
 			status = http.StatusBadRequest
@@ -298,7 +307,7 @@ func (h *Handler) handleCreateSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleDeleteSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.DeleteSite(name); err != nil {
+	if err := h.svcFor(r).DeleteSite(name); err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "not found") {
 			status = http.StatusNotFound
@@ -311,7 +320,7 @@ func (h *Handler) handleDeleteSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleStartSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.StartSite(name); err != nil {
+	if err := h.svcFor(r).StartSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -320,7 +329,7 @@ func (h *Handler) handleStartSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleStopSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.StopSite(name); err != nil {
+	if err := h.svcFor(r).StopSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -329,7 +338,7 @@ func (h *Handler) handleStopSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleEnableSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.EnableSite(name); err != nil {
+	if err := h.svcFor(r).EnableSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -338,7 +347,7 @@ func (h *Handler) handleEnableSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleDisableSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.DisableSite(name); err != nil {
+	if err := h.svcFor(r).DisableSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -347,7 +356,7 @@ func (h *Handler) handleDisableSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleArmSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.ArmSite(name); err != nil {
+	if err := h.svcFor(r).ArmSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -356,7 +365,7 @@ func (h *Handler) handleArmSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleDisarmSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	if err := h.svc.DisarmSite(name); err != nil {
+	if err := h.svcFor(r).DisarmSite(name); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -365,7 +374,7 @@ func (h *Handler) handleDisarmSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleExportSite(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	archivePath, err := h.svc.ExportSite(name)
+	archivePath, err := h.svcFor(r).ExportSite(name)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -386,7 +395,7 @@ func (h *Handler) handleExportSite(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetSiteEnv(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	content, err := h.svc.GetSiteEnv(name)
+	content, err := h.svcFor(r).GetSiteEnv(name)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "not found") {
@@ -407,7 +416,7 @@ func (h *Handler) handleUpdateSiteEnv(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	if err := h.svc.UpdateSiteEnv(name, body.Content); err != nil {
+	if err := h.svcFor(r).UpdateSiteEnv(name, body.Content); err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "not found") {
 			status = http.StatusNotFound
@@ -419,7 +428,7 @@ func (h *Handler) handleUpdateSiteEnv(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleStats(w http.ResponseWriter, r *http.Request) {
-	stats, err := h.svc.Stats()
+	stats, err := h.svcFor(r).Stats()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -428,7 +437,7 @@ func (h *Handler) handleStats(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleStorage(w http.ResponseWriter, r *http.Request) {
-	info, err := h.svc.Storage()
+	info, err := h.svcFor(r).Storage()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -437,7 +446,7 @@ func (h *Handler) handleStorage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleSysInfo(w http.ResponseWriter, r *http.Request) {
-	info, err := h.svc.GetSysInfo()
+	info, err := h.svcFor(r).GetSysInfo()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -451,7 +460,7 @@ func (h *Handler) handleMigrateSite(w http.ResponseWriter, r *http.Request) {
 		Rebuild bool `json:"rebuild"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	result, err := h.svc.MigrateSite(name, body.Rebuild)
+	result, err := h.svcFor(r).MigrateSite(name, body.Rebuild)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -464,7 +473,7 @@ func (h *Handler) handleMigrateAll(w http.ResponseWriter, r *http.Request) {
 		Rebuild bool `json:"rebuild"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	result, err := h.svc.MigrateAll(body.Rebuild)
+	result, err := h.svcFor(r).MigrateAll(body.Rebuild)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -473,7 +482,7 @@ func (h *Handler) handleMigrateAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleExportNode(w http.ResponseWriter, r *http.Request) {
-	archivePath, err := h.svc.ExportNode()
+	archivePath, err := h.svcFor(r).ExportNode()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -522,7 +531,7 @@ func (h *Handler) handleImportNode(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("grengo: importing node archive %s", header.Filename)
 
-	if err := h.svc.ImportNode(tmpFile.Name()); err != nil {
+	if err := h.svcFor(r).ImportNode(tmpFile.Name()); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -535,7 +544,7 @@ func (h *Handler) handleComposeUp(w http.ResponseWriter, r *http.Request) {
 		Build bool `json:"build"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body)
-	if err := h.svc.ComposeUp(body.Build); err != nil {
+	if err := h.svcFor(r).ComposeUp(body.Build); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -543,7 +552,7 @@ func (h *Handler) handleComposeUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleComposeDown(w http.ResponseWriter, r *http.Request) {
-	if err := h.svc.ComposeDown(); err != nil {
+	if err := h.svcFor(r).ComposeDown(); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -583,7 +592,7 @@ func (h *Handler) handleImportSite(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("grengo: importing %s (name=%s port=%s)", header.Filename, newName, newPort)
 
-	if err := h.svc.ImportSite(tmpFile.Name(), newName, newPort); err != nil {
+	if err := h.svcFor(r).ImportSite(tmpFile.Name(), newName, newPort); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

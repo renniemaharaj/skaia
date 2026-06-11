@@ -1,0 +1,57 @@
+# Grengo Backend Refactor & Stabilization
+
+## Context
+The grengo CLI is the orchestration heart of Skaia — it manages multi-tenant client lifecycle, Docker operations, nginx config, database migrations, import/export, and an internal HTTP API. While the server backend (`backend/`) follows clean layered architecture (service → handler → repository), grengo is a flat single-package Go binary where all 1,043 lines of `api.go`, 704 lines of `commands.go`, and similar monoliths live in `package main`. This makes testing impossible, reuse difficult, and the code hard to navigate.
+
+Additionally, the export-node feature has issues surfaced by the UI panel: the grengo internal API's `apiExportNode` handler runs a subprocess that itself writes to a file then the API streams that file back — but the 10-second HTTP client timeout on `dockerAPIClient` and race conditions with `defer os.Remove` can cause truncated or missing archives.
+
+## Goal
+- Fix the broken export-node API flow so the UI dashboard can reliably download node archives.
+- Fix the SQL injection vector in `dbExists` (string-interpolated `dbName` in raw SQL).
+- Add passcode authentication middleware to the internal API (currently completely unauthenticated).
+- Refactor grengo into a modular package structure for testability and maintainability.
+- Eliminate repeated patterns: backends-dir scanning, subprocess exec-and-capture, client lookup.
+
+## Non-Goals
+- Full CLI framework migration (cobra/urfave) — keep the current switch dispatch.
+- Adding the `watch` command — that stays in `grengo_cli_improvements`.
+- Changing the external CLI surface area or breaking existing invocations.
+
+## Steps
+
+### Phase 1: Critical Fixes (export-node, SQL injection, API auth)
+1. Fix `apiExportNode` in `grengo/api.go`: the handler calls `cmdExportNode` as a subprocess which writes a tar.gz to `outPath`, then streams it back — but `defer os.Remove(outPath)` fires before streaming completes for large archives. **Fix**: remove the `defer` and explicitly clean up after `io.Copy`, or stream directly from the subprocess stdout without temp files.
+2. Fix the `dbExists` function in `grengo/docker.go:149` which interpolates `dbName` directly into a SQL string: `SELECT 1 FROM pg_database WHERE datname='%s'`. This is a SQL injection vector. **Fix**: use parameterized query via `psql -v` or sanitize the name.
+3. Add passcode authentication middleware to the internal API server (`api.go`): currently all 20+ endpoints are completely unauthenticated — anyone on the network can list sites, exec arbitrary grengo commands, read/write .env files (which contain secrets), and export all data. **Fix**: add a middleware that checks `X-Grengo-Passcode` header against stored `.pcode`, gating all routes except `GET /health` and `POST /verify-passcode`.
+
+### Phase 2: API Robustness Fixes
+4. The `apiExec` command-execution endpoint (`api.go:588`) only blocks `api` but allows `wipe`, `remove`, and `passcode clear` — all destructive. Tighten the blocklist.
+5. The `apiPutEnv` endpoint writes arbitrary content to `.env` files with no validation. Add basic validation: ensure content contains `CLIENT_NAME=` and `PORT=` at minimum.
+6. Add request body size limits — `apiExec` accepts unlimited JSON, `apiPutEnv` accepts unlimited content.
+7. Increase the internal HTTP client timeout in `backend/internal/grengo/service.go` for export-node (currently 120s may not be enough for large multi-client archives with DB dumps).
+
+### Phase 3: Modularity Refactor
+8. Extract `grengo/api.go` handlers into a `grengo/api/` sub-package with proper handler struct, separating HTTP concerns from business logic.
+9. Extract `grengo/env.go` + env-related functions from `transfer.go` into `grengo/envutil/` package.
+10. Extract `grengo/docker.go` into `grengo/docker/` package — pure Docker interaction layer.
+11. Extract `grengo/transfer.go` archive helpers into `grengo/archive/` package.
+12. Keep `grengo/main.go` as thin CLI dispatch that wires everything together.
+
+### Phase 4: Code Quality
+13. Replace duplicated backends-dir scanning pattern (appears 8+ times across `api.go`, `commands.go`, `nginx.go`, `env.go`) with a single `ListClients()` function.
+14. Replace duplicated "exec self as subprocess and capture output" pattern in API handlers with a shared helper.
+15. Add `go.mod` module path (currently just `module grengo` with no Go version directive).
+
+## Verification
+- `go build ./...` from `grengo/` must pass after each phase.
+- Export-node: manually verify `grengo export-node` produces valid archive AND the API endpoint streams it without truncation.
+- SQL injection: verify `dbExists` no longer interpolates user input into raw SQL.
+- API auth: verify unauthenticated requests to `/sites` return 401.
+- Backend proxy: `go build ./...` from `backend/` must pass.
+- Test suite: `JWT_SECRET=test-secret go test ./...` from `backend/`.
+
+## References
+- `grengo/` — all source files
+- `backend/internal/grengo/` — backend proxy layer (service.go, handler.go)
+- `.specs/infrastructure_spec`
+- `.todo/grengo_cli_improvements` — related but separate (watch command)
