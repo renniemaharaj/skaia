@@ -5,6 +5,8 @@ redis_data/
 dist/
 .DS_Store
 *.log
+tmp_build
+pgadmin_data/
 .env
 .env.local
 .env.*.local

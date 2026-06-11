@@ -11,28 +11,18 @@
 - **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
 - **Phase 7: Add versioning and migration** — ⬜ Not started
 
-### Phase 4 Deliverables
-- [x] Component registry in `backend/internal/s_registry/component.go` with 11 canonical component definitions (7 primitive, 4 compound)
-- [x] Bind-point contracts: key, label, description, kind, required, fallback on every component
-- [x] Style target lists on every component for safe style override validation
-- [x] `ValidateComponentConfig()` validates: component_type known, bind-point keys exist, required bind-points mapped, style-override targets and properties safe
-- [x] Content validation pipeline wired: derived_section and custom_section configs validated at save time
-- [x] API endpoints: `GET /config/components` and `GET /config/components/{type}` mounted in config handler
-- [x] 14 focused unit tests in `component_test.go` — all passing
-- [x] Full backend test suite passing (19 s_registry tests, all packages green)
-- [x] Frontend types: `BindPointKind`, `BindPoint`, `ComponentDefinition` added to `types.ts`
-- [x] `FactTableConfig` extended with `component_type`, `component_version`, `bindings`, `style_overrides`
-- [x] TypeScript compiles cleanly with zero errors
-- [x] Plan terminology updated: `LandingSection` → `PageSection`, `LandingItem` → `PageItem`
-- [x] `backend_spec` updated with component registry endpoints
-- [x] Verification: `go test ./...` all pass, `tsc --noEmit` clean
+### Phase 5 Progress
+- [x] Component picker UI in `DerivedSectionBlock` and `CustomSectionBlock` (2026-06-09)
+- [x] Bind-point mapping UI (column → bind-point) with `ComponentBindMapper` (2026-06-09)
+- [x] Component-driven row rendering with `ComponentGrid` (2026-06-09)
+- [x] `DesignedCardWrapper` added for card-level style composition (2026-06-11)
+- [x] `ComponentGroupEditor` refactored with tab UI (layout/styles) and `CardDesigner` integration (2026-06-11)
+- [x] `ComponentRenderer` extended with `MediaScraperCard` compound component (2026-06-11)
+- [x] CSS sanitization added to `DesignedCardWrapper` for safe `customCss` rendering (2026-06-11)
 
 ### Next Steps
-- [x] 2026-06-09: Added component picker UI in `DerivedSectionBlock` and `CustomSectionBlock`.
-- [x] 2026-06-09: Added bind-point mapping UI (column → bind-point) for derived/custom sections with `ComponentBindMapper`.
-- [x] 2026-06-09: Added component-driven row rendering for derived/custom section rows with `ComponentGrid`.
-- [ ] Continue Phase 5 by adding component group rendering/editing to derived/custom sections.
+- [ ] Continue Phase 5: add component group rendering/editing to remaining section types.
 - [ ] Add focused tests for component-rendered section behavior when the frontend test harness is normalized.
-- [ ] Verify the newly refactored UI components as part of `.todo/live_testing`
+- [ ] Verify refactored UI components as part of `.todo/live_testing`.
 
 <--/------->

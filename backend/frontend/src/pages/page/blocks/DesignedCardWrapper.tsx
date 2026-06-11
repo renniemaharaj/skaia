@@ -2,6 +2,20 @@ import React from "react";
 import type { CardTemplate } from "../types";
 import { migrateCardTemplate } from "../types";
 
+/**
+ * Basic CSS sanitization — strips constructs that could execute scripts or
+ * load external resources when injected into a <style> tag.
+ */
+function sanitizeCSS(css: string): string {
+  return css
+    .replace(/url\s*\(/gi, "/* blocked */")
+    .replace(/expression\s*\(/gi, "/* blocked */")
+    .replace(/@import/gi, "/* blocked */")
+    .replace(/javascript\s*:/gi, "/* blocked */")
+    .replace(/-moz-binding/gi, "/* blocked */")
+    .replace(/behavior\s*:/gi, "/* blocked */");
+}
+
 export const DesignedCardWrapper = ({
   template: rawTemplate,
   children,
@@ -49,8 +63,9 @@ export const DesignedCardWrapper = ({
       className={`dcard card card--interactive dcard--${template.cardWidth}${styleClass}${customCssClass}`}
       style={cardCss}
     >
-      {template.customCss ? <style>{template.customCss}</style> : null}
+      {template.customCss ? <style>{sanitizeCSS(template.customCss)}</style> : null}
       {children}
     </div>
   );
 };
+

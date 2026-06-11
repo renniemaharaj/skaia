@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,6 +33,45 @@ func (h *Handler) Mount(r chi.Router, authMiddlewares ...func(http.Handler) http
 	})
 }
 
+// validateScrapeURL ensures the URL uses http/https and does not point at
+// private or loopback addresses (SSRF protection).
+func validateScrapeURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid URL")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("only http and https URLs are allowed")
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("URL must contain a hostname")
+	}
+	// Block loopback and private IPs
+	ip := net.ParseIP(host)
+	if ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+			return fmt.Errorf("URLs targeting internal addresses are not allowed")
+		}
+	}
+	// Block common internal hostnames
+	if host == "localhost" || host == "metadata.google.internal" {
+		return fmt.Errorf("URLs targeting internal addresses are not allowed")
+	}
+	return nil
+}
+
+// writeJSONError writes a safe JSON error response using json.Marshal to
+// prevent injection through attacker-controlled error messages.
+func writeJSONError(w http.ResponseWriter, msg string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	resp := struct {
+		Error string `json:"error"`
+	}{Error: msg}
+	json.NewEncoder(w).Encode(resp)
+}
+
 func (h *Handler) getJobs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(GetMetrics())
@@ -39,7 +80,12 @@ func (h *Handler) getJobs(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) scrape(w http.ResponseWriter, r *http.Request) {
 	targetURL := r.URL.Query().Get("url")
 	if targetURL == "" {
-		http.Error(w, `{"error":"url is required"}`, http.StatusBadRequest)
+		writeJSONError(w, "url is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := validateScrapeURL(targetURL); err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -53,14 +99,12 @@ func (h *Handler) scrape(w http.ResponseWriter, r *http.Request) {
 
 	_, authOK := utils.UserIDFromCtx(r)
 	if !authOK {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"this route requires authorization to fetch results"}`))
+		writeJSONError(w, "this route requires authorization to fetch results", http.StatusUnauthorized)
 		return
 	}
 
 	if err := QueueScrape(targetURL); err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		writeJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -71,17 +115,13 @@ func (h *Handler) scrape(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) restartJobs(w http.ResponseWriter, r *http.Request) {
 	userID, authOK := utils.UserIDFromCtx(r)
 	if !authOK {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		writeJSONError(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	powerLevel, err := h.userSvc.GetUserMaxPowerLevel(userID)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"failed to fetch user power level"}`))
+		writeJSONError(w, "failed to fetch user power level", http.StatusInternalServerError)
 		return
 	}
 
@@ -94,9 +134,7 @@ func (h *Handler) restartJobs(w http.ResponseWriter, r *http.Request) {
 			// Increment the counter
 			count, err := client.Incr(ctx, key).Result()
 			if err != nil {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error":"failed to process rate limit"}`))
+				writeJSONError(w, "failed to process rate limit", http.StatusInternalServerError)
 				return
 			}
 			
@@ -106,9 +144,7 @@ func (h *Handler) restartJobs(w http.ResponseWriter, r *http.Request) {
 			}
 			
 			if count > 5 {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusTooManyRequests)
-				w.Write([]byte(`{"error":"Rate limit exceeded. You can only restart jobs 5 times per hour."}`))
+				writeJSONError(w, "Rate limit exceeded. You can only restart jobs 5 times per hour.", http.StatusTooManyRequests)
 				return
 			}
 		}

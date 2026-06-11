@@ -100,12 +100,18 @@ verify references and formatting
 
 ## Last Ran
 
-- 2026-06-03
+- 2026-06-11
 
 ## Last Run Remarks
 
-- Worker follow-up: `RateLimitByIP` no longer triggers MFA database writes on limiter denial paths. The previous unbounded `lastIPs` finding is resolved by the LRU cache in `ip_hopping.go`; IP-hop MFA remains the intentional step-up path. Migration baseline and superuser demotion correctness plans were executed with tests/spec updates.
+- Found 4 critical issues in new mediascraper code: SSRF (no URL validation), JSON injection via string concat error, missing auth middleware on mount, 22MB binary tracked in git.
+- Found 2 general issues: startup `ClearCache()` debug call, variable shadowing in `scraper.go`.
+- Found 1 UI issue: `DesignedCardWrapper` rendered unsanitized `customCss` in `<style>` tag (CSS injection risk).
+- Found `hotfix_reconciliation` fully complete but not yet retired.
+- All findings resolved in same session via `critical_fixes_stabilization` todo.
+- No spec drift detected between `backend_spec` and actual mediascraper endpoints (new endpoints not yet in spec — flagged for `.specs_specialist`).
 
 ## Next Steps
 
-- Continue using `.todo/*` entries for remaining product work; no dangling `.todo/middleware_performance_refactor` reference remains.
+- Update `backend_spec` with mediascraper API endpoints via `.routines/.specs_specialist`.
+- Review `legacy_code_removal_plan` and `legacy_data_migration` for retirement candidacy (3+ weeks idle).

@@ -347,8 +347,8 @@ func doScrape(targetURL string) (*ScrapeResult, error) {
 	}
 
 	if client != nil {
-		if b, err := json.Marshal(res); err == nil {
-			client.Set(context.Background(), redisKey, string(b), 24*time.Hour)
+		if data, err := json.Marshal(res); err == nil {
+			client.Set(context.Background(), redisKey, string(data), 24*time.Hour)
 		}
 	}
 

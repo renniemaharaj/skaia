@@ -1,0 +1,31 @@
+<--/------->
+
+## critical_fixes_stabilization
+
+### Current Progress
+- **Phase 1: Critical Fixes** — ✅ Complete
+- **Phase 2: General Fixes** — ✅ Complete
+- **Phase 3: UI Stabilization** — ✅ Complete
+- **Phase 4: Project Audit & Todo Cleanup** — ✅ Complete
+
+### Completed Work (2026-06-11)
+- [x] Added `validateScrapeURL` SSRF protection: scheme whitelist, private/loopback IP blocking
+- [x] Replaced string concat error with `writeJSONError` helper using `json.Marshal`
+- [x] Added `imw.JWTAuthMiddleware` to mediascraper mount in `main.go`
+- [x] Removed 22MB `backend/tmp_build` from git tracking, added to `.gitignore`
+- [x] Removed startup `ClearCache()` debug call from `main.go`
+- [x] Fixed `b` variable shadowing in `scraper.go:350`
+- [x] Added `sanitizeCSS` function to `DesignedCardWrapper` for safe `customCss` rendering
+- [x] Retired `hotfix_reconciliation` todo pair (all phases verified complete)
+- [x] Cleaned `ui_component_refactor_plan.tip` with Phase 5 progress
+- [x] Updated `todo_planner`, `worker`, and `correctness` routine run remarks
+
+### Verification
+- [x] `go build ./...` passes from `backend/` (2026-06-11)
+
+### Next Steps
+- [ ] Run full backend test suite: `JWT_SECRET=test-secret go test ./...`
+- [ ] Run `tsc --noEmit` from `backend/frontend/`
+- [ ] Update `backend_spec` with mediascraper API endpoints
+
+<--/------->

@@ -1,0 +1,51 @@
+# Critical Fixes, UI Stabilization & Project Audit
+
+## Context
+Post 2026-06-11 audit of recent commits (a956df0..660ab84) covering media scraper, component registry, and ComponentGroupEditor changes. Found security, hygiene, and correctness issues requiring immediate attention.
+
+## Goal
+- Fix critical security/safety issues in the new media scraper endpoints.
+- Remove accidentally committed binary from git tracking.
+- Stabilize UI components added in recent work (ComponentGroupEditor, DesignedCardWrapper).
+- Retire completed todos and update stale `.tip` files.
+
+## Non-Goals
+- Do not implement new features (inbox group chats, smart rate limiter, etc.).
+- Do not refactor large UI pages (DataSourceEditorPage) beyond what is needed for stability.
+
+## Steps
+
+### Phase 1: Critical Fixes
+1. **SSRF mitigation** — `mediascraper/handler.go` scrape endpoint accepts arbitrary URLs with zero validation. Add scheme whitelist (`http`, `https` only) and block private/loopback IPs before passing to `QueueScrape`.
+2. **Error message injection** — Line 63 of `handler.go` interpolates `err.Error()` directly into a JSON string literal (`{\"error\":\"` + err.Error() + `\"}`). Attacker-controlled errors could break JSON or inject fields. Use `json.Marshal` instead.
+3. **Missing auth middleware on mediascraper mount** — `immediascraper.NewHandler(userSvc).Mount(api)` is the only handler mounted without `imw.JWTAuthMiddleware`. The handler does manual auth checks but the `/mediascraper/jobs` endpoint has no auth at all, leaking metrics. Pass auth middleware.
+4. **Binary tracked in git** — `backend/tmp_build` (22MB Go binary) is committed and tracked. Remove from git and add to `.gitignore`.
+
+### Phase 2: General Fixes
+5. **ClearCache on startup** — `main.go` calls `immediascraper.ClearCache()` on every server boot, wiping all cached scrapes. This is likely debug code. Remove or gate behind an env flag.
+6. **Redis key collision risk** — `mediascraper:cache:` keys use raw user-supplied URLs as suffixes without sanitization. Normalize URLs before using as cache keys.
+7. **scraper.go variable shadowing** — Line 350 shadows `b` (already the `*rod.Browser` at line 308). Rename the marshalled bytes variable.
+
+### Phase 3: UI Stabilization
+8. **DesignedCardWrapper XSS** — Line 52 renders `template.customCss` inside a raw `<style>` tag. This allows CSS injection if the template data comes from user input. Add basic CSS sanitization.
+9. **ComponentGroupEditor type safety** — Ensure `group.wrapper` (the `CardTemplate`) is validated/defaulted when undefined to prevent runtime crashes in preview mode.
+
+### Phase 4: Project Audit & Todo Cleanup
+10. **Retire `hotfix_reconciliation`** — All 4 phases are ✅ Complete. Full frontend lint is the only unchecked item and is documented as a repo-wide pre-existing issue.
+11. **Update `ui_component_refactor_plan.tip`** — Phase 5 next steps have completed items mixed with unchecked items. Clean up checked items, update phase status.
+12. **Update routine run remarks** — Update `todo_planner`, `worker`, and `correctness` Last Ran dates and remarks.
+
+## Verification
+- Backend: `JWT_SECRET=test-secret go test ./...` from `backend/`
+- Frontend: `tsc --noEmit` from `backend/frontend/`
+- Git: `git status` confirms `tmp_build` untracked and `.gitignore` updated
+
+## References
+- `.routines/correctness`
+- `.routines/worker`
+- `.routines/audit_backend`
+- `.todo/hotfix_reconciliation`
+- `.todo/ui_component_refactor_plan`
+- `backend/internal/mediascraper/handler.go`
+- `backend/internal/mediascraper/scraper.go`
+- `backend/main.go`
