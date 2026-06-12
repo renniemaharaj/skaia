@@ -150,9 +150,9 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
     ? `${(job.speedBps / 1024 / 1024).toFixed(1)} MB/s`
     : "";
 
-  const pendingCount = job.chunks?.filter((c: any) => c.status === "pending").length || 0;
-  const completedCount = job.chunks?.filter((c: any) => c.status === "complete").length || 0;
-  const uploadingChunks = job.chunks?.filter((c: any) => c.status === "uploading" || c.status === "error") || [];
+  const completedCount = job.uploadedChunks || 0;
+  const uploadingChunks = job.activeChunks || [];
+  const pendingCount = job.totalChunks - completedCount - uploadingChunks.length;
 
   return (
     <div className="global-uploader-item-container">
@@ -215,7 +215,7 @@ function JobItem({ job, defaultExpanded }: { job: any, defaultExpanded?: boolean
         )}
       </div>
 
-      {expanded && job.chunks && job.chunks.length > 0 && (
+      {expanded && (
         <div className="global-uploader-chunks-container">
           <div className="global-uploader-chunks-live">
             

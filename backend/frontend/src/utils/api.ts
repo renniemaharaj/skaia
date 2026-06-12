@@ -86,7 +86,8 @@ export async function adminGenerateBackupCodes(
  * Get authorization headers with token
  */
 function getAuthHeaders(includeContentType = true): Record<string, string> {
-  const token = localStorage.getItem("auth.accessToken");
+  let token = localStorage.getItem("auth.accessToken");
+  if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
 
   if (token) {
     console.debug(
@@ -327,7 +328,8 @@ export async function uploadFile(
   const formData = new FormData();
   formData.append("file", file);
 
-  const token = localStorage.getItem("auth.accessToken");
+  let token = localStorage.getItem("auth.accessToken");
+  if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     body: formData,

@@ -17,4 +17,5 @@ scratch/
 backends/
 nginx/default.conf
 .grengo-api.pid
+exports/
 .pcode

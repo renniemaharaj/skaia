@@ -218,6 +218,15 @@ func pruneBackups(name, dbName string, keep int) {
 	}
 }
 
+// pgDump runs pg_dump inside the postgres container and returns the SQL bytes.
+func pgDump(dbName string) ([]byte, error) {
+	env := loadSharedEnv()
+	return exec.Command(
+		"docker", "exec", "skaia-postgres",
+		"pg_dump", "-U", env.PostgresUser, dbName,
+	).Output()
+}
+
 // pgDumpDataOnly runs pg_dump --data-only --disable-triggers inside the postgres
 // container and returns the SQL bytes.
 func pgDumpDataOnly(dbName string) ([]byte, error) {

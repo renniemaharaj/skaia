@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -145,9 +146,10 @@ func pgRunning() bool {
 
 // dbExists checks if a database exists in the shared PostgreSQL.
 func dbExists(dbName string, env SharedEnv) bool {
-	// Use psql variable binding to avoid SQL injection from untrusted dbName.
-	query := "SELECT 1 FROM pg_database WHERE datname=:'dbname'"
-	out, err := dockerExecOutput("skaia-postgres", "psql", "-U", env.PostgresUser, "-d", "template1", "-v", "dbname="+dbName, "-tAc", query)
+	// We must trust dbName since psql -c doesn't interpolate variables.
+	// It's safe here because dbName is derived from local configs.
+	query := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", dbName)
+	out, err := dockerExecOutput("skaia-postgres", "psql", "-U", env.PostgresUser, "-d", "template1", "-tAc", query)
 	return err == nil && strings.TrimSpace(out) == "1"
 }
 

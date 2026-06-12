@@ -1,12 +1,13 @@
-import { customConfirm } from "../ui/Prompt";
+import { customConfirm, customAlert } from "../ui/Prompt";
+import { Download, Trash2, Play, Square, Settings, UploadCloud, DownloadCloud, Server, ShieldOff, ShieldAlert, RefreshCw, FileEdit, Plus, Archive, Database, Activity } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
-import Button from "../input/Button";
 import Select from "../input/Select";
 import { useWebSocketSync, sendGrengoJobAction } from "../../hooks/useWebSocketSync";
+import { uploader } from "../../atoms/uploadAtom";
 
 // Types
 
@@ -128,6 +129,13 @@ export default function GrengoDashboard() {
   const [envSaving, setEnvSaving] = useState(false);
   const [envError, setEnvError] = useState("");
 
+  // Exports
+  const [exports, setExports] = useState<{name: string, size: number, created_at: string}[]>([]);
+  const [fetchingExports, setFetchingExports] = useState(false);
+
+  // Jobs
+  const [activeJobs, setActiveJobs] = useState<Record<string, any>>({});
+
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Session-scoped API helper
@@ -215,6 +223,67 @@ export default function GrengoDashboard() {
   useEffect(() => {
     if (sessionValid) fetchSites();
   }, [sessionValid, fetchSites]);
+
+  // Fetch exports
+
+  const fetchExports = useCallback(async () => {
+    setFetchingExports(true);
+    try {
+      const data = await grengoRequest<{name: string, size: number, created_at: string}[]>("/exports");
+      setExports(Array.isArray(data) ? data.sort((a, b) => b.name.localeCompare(a.name)) : []);
+    } catch {
+      // ignore
+    } finally {
+      setFetchingExports(false);
+    }
+  }, [grengoRequest]);
+
+  useEffect(() => {
+    if (sessionValid) fetchExports();
+  }, [sessionValid, fetchExports]);
+
+  // Fetch jobs
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      const data = await grengoRequest<any[]>("/jobs");
+      if (Array.isArray(data)) {
+        const jobsMap: Record<string, any> = {};
+        data.forEach(job => {
+          if (job.status === "running") {
+             jobsMap[job.id] = job;
+          }
+        });
+        setActiveJobs(jobsMap);
+      }
+    } catch {
+      // ignore
+    }
+  }, [grengoRequest]);
+
+  useEffect(() => {
+    if (sessionValid) {
+      fetchJobs();
+      const handleJobUpdate = (e: Event) => {
+        const job = (e as CustomEvent).detail;
+        setActiveJobs(prev => {
+          const next = { ...prev };
+          if (job.status === "running") {
+            next[job.id] = job;
+          } else {
+            delete next[job.id];
+          }
+          return next;
+        });
+        
+        if (job.status === "completed" && (job.type === "export-site" || job.type === "export-node" || job.type === "delete-export")) {
+          fetchExports();
+        }
+      };
+      window.addEventListener("grengo:job_update", handleJobUpdate);
+      return () => window.removeEventListener("grengo:job_update", handleJobUpdate);
+    }
+  }, [sessionValid, fetchJobs]);
 
   // Fetch stats
 
@@ -360,6 +429,7 @@ export default function GrengoDashboard() {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
 
+
       const handleUpdate = (e: Event) => {
         const customEvent = e as CustomEvent;
         const job = customEvent.detail;
@@ -373,6 +443,8 @@ export default function GrengoDashboard() {
         } else if (job.id !== trackedJobId) {
           return;
         }
+
+
 
         if (job.status === "failed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
@@ -390,9 +462,10 @@ export default function GrengoDashboard() {
     });
   };
 
-  const triggerAndDownloadJob = (actionType: string, defaultFilename: string): Promise<void> => {
+  const triggerAndDownloadJob = (actionType: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
+
 
       const handleUpdate = async (e: Event) => {
         const customEvent = e as CustomEvent;
@@ -408,6 +481,8 @@ export default function GrengoDashboard() {
           return;
         }
 
+
+
         if (job.status === "failed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
           reject(new Error(job.error || "Job failed"));
@@ -416,26 +491,11 @@ export default function GrengoDashboard() {
 
         if (job.status === "completed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
-          try {
-            const token = localStorage.getItem("auth.accessToken");
-            const headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-            const dlRes = await fetch(`/api${apiBase}/jobs/${trackedJobId}/download`, { headers });
-            if (!dlRes.ok) throw new Error("Failed to download job archive");
-            const blob = await dlRes.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            const disposition = dlRes.headers.get("Content-Disposition") || "";
-            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-            a.download = filenameMatch?.[1] || defaultFilename;
-            a.href = url;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
+          
+          // Job is complete, fetch the updated list of exports
+          fetchExports().then(() => {
             resolve();
-          } catch (err) {
-            reject(err);
-          }
+          }).catch(reject);
         }
       };
 
@@ -446,11 +506,11 @@ export default function GrengoDashboard() {
   const handleExportNode = async () => {
     setNodeExportBusy(true);
     try {
-      const waitPromise = triggerAndDownloadJob("export-node", "grengo-node-export.tar.gz");
-      sendGrengoJobAction("export-node");
+      const waitPromise = triggerAndDownloadJob("export-node");
+      sendGrengoJobAction("export-node", "");
       await waitPromise;
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Node export failed");
+    } catch (e: any) {
+      customAlert(e.message);
     } finally {
       setNodeExportBusy(false);
     }
@@ -470,7 +530,7 @@ export default function GrengoDashboard() {
       await waitPromise;
       await fetchSites();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Action failed");
+      customAlert(e instanceof Error ? e.message : "Action failed");
     } finally {
       setBusy((prev) => ({ ...prev, [name]: false }));
     }
@@ -485,7 +545,7 @@ export default function GrengoDashboard() {
       await waitPromise;
       await fetchSites();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Delete failed");
+      customAlert(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setBusy((prev) => ({ ...prev, [name]: false }));
     }
@@ -496,11 +556,11 @@ export default function GrengoDashboard() {
   const handleExport = async (name: string) => {
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
-      const waitPromise = triggerAndDownloadJob("export-site", `${name}-export.tar.gz`);
+      const waitPromise = triggerAndDownloadJob("export-site");
       sendGrengoJobAction("export-site", name);
       await waitPromise;
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Export failed");
+      customAlert(e instanceof Error ? e.message : "Export failed");
     } finally {
       setBusy((prev) => ({ ...prev, [name]: false }));
     }
@@ -570,99 +630,108 @@ export default function GrengoDashboard() {
       {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
 
       <div className="grengo-lock-bar">
-        <Button variant="ghost" onClick={handleLock}>
+        <button className="action-btn" onClick={handleLock}>
           End Session
-        </Button>
+        </button>
       </div>
 
       {/* Toolbar */}
       <div className="grengo-toolbar">
-        <Button
-          variant="primary"
+        <button
+          className="action-btn"
           onClick={() => {
             setShowCreate(!showCreate);
             setShowImport(false);
             setShowImportNode(false);
           }}
         >
-          {showCreate ? "Cancel" : "+ New Site"}
-        </Button>
-        <Button
-          variant="ghost"
+          <Plus size={14} /> {showCreate ? "Cancel" : "New Site"}
+        </button>
+        <button
+          className="action-btn"
           onClick={() => {
             setShowImport(!showImport);
             setShowCreate(false);
             setShowImportNode(false);
           }}
         >
-          {showImport ? "Cancel" : "Import Site"}
-        </Button>
+          <DownloadCloud size={14} /> {showImport ? "Cancel" : "Import Site"}
+        </button>
         <span className="toolbar-separator" />
-        <Button
-          variant="ghost"
+        <button
+          className="action-btn"
           onClick={handleExportNode}
-          loading={nodeExportBusy}
+          disabled={nodeExportBusy || Object.values(activeJobs).some(j => j.type === 'export-node')}
         >
-          Export Node
-        </Button>
-        <Button
-          variant="ghost"
+          <Archive size={14} /> Export Node
+        </button>
+        <button
+          className="action-btn"
           onClick={() => {
             setShowImportNode(!showImportNode);
             setShowCreate(false);
             setShowImport(false);
           }}
         >
-          {showImportNode ? "Cancel" : "Import Node"}
-        </Button>
+          <Database size={14} /> {showImportNode ? "Cancel" : "Import Node"}
+        </button>
         <span className="toolbar-separator" />
-        <Button
-          variant="ghost"
+        <button
+          className="action-btn"
           onClick={() => {
             fetchSites();
             fetchStats();
             fetchStorage();
             fetchSysInfo();
           }}
-          loading={loading || statsLoading}
+          disabled={loading}
         >
-          Refresh
-        </Button>
+          <RefreshCw size={14} className={loading ? "spin" : ""} /> {loading ? "Refreshing..." : "Refresh All"}
+        </button>
+        <div className="active-jobs-status" style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: "0.85rem", color: "var(--color-primary)" }}>
+          {Object.values(activeJobs).map((job: any) => (
+             job.message ? (
+               <span key={job.id} className="job-message" style={{ animation: "pulse 2s infinite" }}>
+                 {job.message.replace(/\x1B\[[0-9;]*[mK]/g, '')}
+               </span>
+             ) : null
+          ))}
+        </div>
       </div>
 
       {/* Compose Controls */}
       <div className="grengo-compose">
         <h3>Compose</h3>
         <div className="compose-actions">
-          <Button
-            variant="primary"
+          <button
+            className="action-btn"
             onClick={() => handleComposeUp(true)}
-            loading={composeBusy}
+            disabled={composeBusy}
           >
-            Up --build
-          </Button>
-          <Button
-            variant="ghost"
+            <Activity size={14} /> Up --build
+          </button>
+          <button
+            className="action-btn"
             onClick={() => handleComposeUp(false)}
             disabled={composeBusy}
           >
-            Up
-          </Button>
-          <Button
-            variant="danger"
+            <Play size={14} /> Up
+          </button>
+          <button
+            className="action-btn danger"
             onClick={handleComposeDown}
             disabled={composeBusy}
           >
-            Down
-          </Button>
+            <Square size={14} /> Down
+          </button>
           <span className="toolbar-separator" />
-          <Button
-            variant="warning"
+          <button
+            className="action-btn"
             onClick={() => handleMigrateAll(false)}
-            loading={migrateAllBusy}
+            disabled={migrateAllBusy}
           >
-            Migrate All
-          </Button>
+            <RefreshCw size={14} className={migrateAllBusy ? "spin" : ""} /> {migrateAllBusy ? "Migrating..." : "Migrate All"}
+          </button>
         </div>
         {composeOutput && <pre className="compose-output">{composeOutput}</pre>}
         {migrateAllOutput && (
@@ -705,6 +774,74 @@ export default function GrengoDashboard() {
         />
       )}
 
+      {/* Exports Table */}
+      <div className="grengo-exports" style={{ marginBottom: "2rem", borderBottom: "1px solid #ccc", paddingBottom: "2rem" }}>
+        <h3>Available Exports</h3>
+        {fetchingExports ? (
+          <p>Loading exports...</p>
+        ) : exports.length === 0 ? (
+          <p>No exports available.</p>
+        ) : (
+          <table className="grengo-table">
+            <thead>
+              <tr>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {exports.map((exp) => (
+                <tr key={exp.name}>
+                  <td>{exp.name}</td>
+                  <td>{(exp.size / 1024 / 1024).toFixed(2)} MB</td>
+                  <td>{new Date(exp.created_at).toLocaleString()}</td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", alignItems: "center" }}>
+                      <button
+                        className="action-btn"
+                        title="Download"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          let token = localStorage.getItem("auth.accessToken");
+                          if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+                          const url = `/api${apiBase}/exports/${exp.name}/download` + (token ? `?token=${token}` : "");
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = exp.name; // Force download behavior
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                      >
+                        <Download size={14} />
+                      </button>
+                      <button
+                        className="action-btn danger"
+                        title="Delete"
+                        disabled={Object.values(activeJobs).some(j => j.type === 'delete-export' && j.target === exp.name)}
+                        onClick={async () => {
+                          const confirmed = await customConfirm(`Delete ${exp.name}?`);
+                          if (!confirmed) return;
+                          try {
+                            await grengoRequest(`/exports/${exp.name}`, { method: "DELETE" });
+                          } catch (e: any) {
+                            customAlert(e.message || "Failed to delete");
+                          }
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
       {/* Error */}
       {error && (
         <div className="error" style={{ marginBottom: "1rem" }}>
@@ -717,6 +854,7 @@ export default function GrengoDashboard() {
         storage={storage}
         loading={loading}
         busy={busy}
+        activeJobs={activeJobs}
         migrateBusy={migrateBusy}
         migrateOutput={migrateOutput}
         onSiteAction={siteAction}
@@ -796,6 +934,7 @@ function SiteTable({
   storage,
   loading,
   busy,
+  activeJobs,
   migrateBusy,
   migrateOutput,
   onSiteAction,
@@ -808,6 +947,7 @@ function SiteTable({
   storage: StorageInfo | null;
   loading: boolean;
   busy: Record<string, boolean>;
+  activeJobs: Record<string, any>;
   migrateBusy: Record<string, boolean>;
   migrateOutput: Record<string, string>;
   onSiteAction: (name: string, action: string) => void;
@@ -893,96 +1033,97 @@ function SiteTable({
                 </td>
                 <td className="domains">{site.domains.join(", ")}</td>
                 <td className="actions">
-                  {site.running ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "stop")}
+                  <div style={{ display: "flex", gap: "0.25rem", justifyContent: "center", flexWrap: "wrap" }}>
+                    {site.status === "running" ? (
+                      <button
+                        className="action-btn"
+                        title="Stop"
+                        onClick={() => onSiteAction(site.name, "stop")}
+                        disabled={busy[site.name]}
+                      >
+                        <Square size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        className="action-btn"
+                        title="Start"
+                        onClick={() => onSiteAction(site.name, "start")}
+                        disabled={busy[site.name]}
+                      >
+                        <Play size={14} />
+                      </button>
+                    )}
+                    {site.status === "enabled" ? (
+                      <button
+                        className="action-btn"
+                        title="Disable"
+                        onClick={() => onSiteAction(site.name, "disable")}
+                        disabled={busy[site.name]}
+                      >
+                        <Server size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        className="action-btn"
+                        title="Enable"
+                        onClick={() => onSiteAction(site.name, "enable")}
+                        disabled={busy[site.name]}
+                      >
+                        <Server size={14} />
+                      </button>
+                    )}
+                    {site.armed ? (
+                      <button
+                        className="action-btn danger"
+                        title="Disarm"
+                        onClick={() => onSiteAction(site.name, "disarm")}
+                        disabled={busy[site.name]}
+                      >
+                        <ShieldOff size={14} />
+                      </button>
+                    ) : (
+                      <button
+                        className="action-btn"
+                        title="Arm"
+                        onClick={() => onSiteAction(site.name, "arm")}
+                        disabled={busy[site.name]}
+                      >
+                        <ShieldAlert size={14} />
+                      </button>
+                    )}
+                    <button
+                      className="action-btn"
+                      title={migrateBusy[site.name] ? "Migrating..." : "Migrate"}
+                      onClick={() => onMigrate(site.name)}
+                      disabled={busy[site.name] || migrateBusy[site.name]}
+                    >
+                      <RefreshCw size={14} className={migrateBusy[site.name] ? "spin" : ""} />
+                    </button>
+                    <button
+                      className="action-btn"
+                      title="Env Editor"
+                      onClick={() => onEnvEdit(site.name)}
                       disabled={busy[site.name]}
                     >
-                      Stop
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "start")}
+                      <FileEdit size={14} />
+                    </button>
+                    <button
+                      className="action-btn"
+                      title={busy[site.name] || Object.values(activeJobs).some((j: any) => j.type === 'export-site' && j.target === site.name) ? "Exporting..." : "Export"}
+                      onClick={() => onExport(site.name)}
+                      disabled={busy[site.name] || Object.values(activeJobs).some((j: any) => j.type === 'export-site' && j.target === site.name)}
+                    >
+                      <DownloadCloud size={14} />
+                    </button>
+                    <button
+                      className="action-btn danger"
+                      title="Delete"
+                      onClick={() => onDelete(site.name)}
                       disabled={busy[site.name]}
                     >
-                      Start
-                    </Button>
-                  )}
-                  {site.status === "enabled" ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "disable")}
-                      disabled={busy[site.name]}
-                    >
-                      Disable
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "enable")}
-                      disabled={busy[site.name]}
-                    >
-                      Enable
-                    </Button>
-                  )}
-                  {site.armed ? (
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "disarm")}
-                      disabled={busy[site.name]}
-                    >
-                      Disarm
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onSiteAction(site.name, "arm")}
-                      disabled={busy[site.name]}
-                    >
-                      Arm
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onMigrate(site.name)}
-                    disabled={busy[site.name] || migrateBusy[site.name]}
-                    loading={migrateBusy[site.name]}
-                  >
-                    Migrate
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEnvEdit(site.name)}
-                    disabled={busy[site.name]}
-                  >
-                    Env
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onExport(site.name)}
-                    disabled={busy[site.name]}
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => onDelete(site.name)}
-                    disabled={busy[site.name]}
-                  >
-                    Delete
-                  </Button>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                   {migrateOutput[site.name] && (
                     <div className="migrate-output-inline">
                       {migrateOutput[site.name]}
@@ -1029,17 +1170,16 @@ function EnvEditorPanel({
           {envDirty && (
             <span className="grengo-env-unsaved">unsaved changes</span>
           )}
-          <Button
-            variant="primary"
+          <button
+            className="action-btn"
             onClick={onSave}
-            disabled={!envDirty}
-            loading={envSaving}
+            disabled={!envDirty || envSaving}
           >
-            Save
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
+            <Settings size={14} /> Save
+          </button>
+          <button className="action-btn danger" onClick={onClose}>
             Close
-          </Button>
+          </button>
         </div>
       </div>
       {envError && <div className="error">{envError}</div>}
@@ -1360,14 +1500,13 @@ function CreateSiteForm({
         </label>
       </div>
       <div className="form-actions">
-        <Button
-          variant="primary"
+        <button
+          className="action-btn"
           onClick={handleSubmit}
-          disabled={!form.name}
-          loading={saving}
+          disabled={!form.name || saving}
         >
-          Create Site
-        </Button>
+          <Plus size={14} /> {saving ? "Creating..." : "Create Site"}
+        </button>
       </div>
     </div>
   );
@@ -1395,18 +1534,24 @@ function ImportSiteForm({
     setImporting(true);
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("archive", file);
-      if (name) fd.append("name", name);
-      if (port) fd.append("port", port);
+      const uploadRes = await uploader.upload(file, { uploadType: "archive" });
+      if (!uploadRes || !uploadRes.url) {
+        throw new Error("Failed to upload archive");
+      }
 
-      const token = localStorage.getItem("auth.accessToken");
+      let token = localStorage.getItem("auth.accessToken");
+      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: fd,
+        body: JSON.stringify({
+          archive_url: uploadRes.url,
+          name: name || undefined,
+          port: port || undefined,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -1456,14 +1601,13 @@ function ImportSiteForm({
         </label>
       </div>
       <div className="form-actions">
-        <Button
-          variant="primary"
+        <button
+          className="action-btn"
           onClick={handleImport}
-          disabled={!file}
-          loading={importing}
+          disabled={!file || importing}
         >
-          Import
-        </Button>
+          <UploadCloud size={14} /> {importing ? "Importing..." : "Import"}
+        </button>
       </div>
     </div>
   );
@@ -1495,16 +1639,22 @@ function ImportNodeForm({
     setImporting(true);
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("archive", file);
+      const uploadRes = await uploader.upload(file, { uploadType: "archive" });
+      if (!uploadRes || !uploadRes.url) {
+        throw new Error("Failed to upload archive");
+      }
 
-      const token = localStorage.getItem("auth.accessToken");
+      let token = localStorage.getItem("auth.accessToken");
+      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import-node`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: fd,
+        body: JSON.stringify({
+          archive_url: uploadRes.url,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -1548,14 +1698,13 @@ function ImportNodeForm({
         </label>
       </div>
       <div className="form-actions">
-        <Button
-          variant="primary"
+        <button
+          className="action-btn"
           onClick={handleImport}
-          disabled={!file}
-          loading={importing}
+          disabled={!file || importing}
         >
-          Import Node
-        </Button>
+          <UploadCloud size={14} /> {importing ? "Importing..." : "Import Node"}
+        </button>
       </div>
     </div>
   );

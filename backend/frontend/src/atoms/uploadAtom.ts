@@ -32,7 +32,8 @@ export interface UploadJob {
   etaSeconds?: number;
   speedBps?: number;
   _lastChunkStartTime?: number;
-  chunks: ChunkStatus[];
+  _completedSet?: Set<number>;
+  activeChunks?: { index: number; status: "uploading" | "error" }[];
 }
 
 export const activeUploadsAtom = atom<UploadJob[]>([]);
@@ -73,10 +74,8 @@ class UploadManager {
       status: "queued",
       _uploadType: finalUploadType,
       _inboxConversationId: options?.inboxConversationId,
-      chunks: Array.from({ length: totalChunks }).map((_, i) => ({
-        index: i,
-        status: "pending"
-      }))
+      activeChunks: [],
+      _completedSet: new Set()
     };
 
     this.queue.push(job);
@@ -116,17 +115,10 @@ class UploadManager {
       if (!initRes) throw new Error("Failed to init chunked upload");
       const uploadId = initRes.upload_id;
       const completedChunks = initRes.completed_chunks || [];
-
-      let actualUploaded = 0;
-      for (let i = 0; i < nextJob.totalChunks; i++) {
-        if (completedChunks.includes(i)) {
-          nextJob.chunks[i].status = "complete";
-          actualUploaded++;
-        } else {
-          nextJob.chunks[i].status = "pending";
-        }
-      }
-      nextJob.uploadedChunks = actualUploaded;
+      
+      nextJob._completedSet = new Set(completedChunks);
+      nextJob.uploadedChunks = completedChunks.length;
+      nextJob.activeChunks = [];
 
       nextJob.status = "uploading";
       nextJob._lastChunkStartTime = Date.now();
@@ -142,29 +134,33 @@ class UploadManager {
           let idx = currentIndex++;
           if (idx >= nextJob.totalChunks) break;
 
-          if (nextJob.chunks[idx].status === "complete") continue;
+          if (nextJob._completedSet?.has(idx)) continue;
 
-          nextJob.chunks[idx].status = "uploading";
+          let activeChunk: { index: number; status: "uploading" | "error" } = { index: idx, status: "uploading" };
+          nextJob.activeChunks!.push(activeChunk);
           this.dispatchStoreUpdate();
 
           const start = idx * CHUNK_SIZE;
           const end = Math.min(start + CHUNK_SIZE, nextJob.size);
           const chunk = nextJob.file.slice(start, end);
 
-          const fd = new FormData();
-          fd.append("chunk_index", idx.toString());
-          fd.append("file", chunk);
-
           const startTime = Date.now();
           try {
-            await apiRequest(`/upload/chunked/upload/${uploadId}`, {
+            await apiRequest(`/upload/chunked/upload/${uploadId}?chunk_index=${idx}`, {
               method: "POST",
-              body: fd,
+              headers: {
+                "Content-Type": "application/octet-stream"
+              },
+              body: chunk,
             });
-            if ((nextJob.status as UploadStatus) === "paused") continue; // If paused during upload, don't mark complete? We can mark complete because backend got it.
-            nextJob.chunks[idx].status = "complete";
+            if ((nextJob.status as UploadStatus) === "paused") {
+              nextJob.activeChunks = nextJob.activeChunks!.filter(c => c.index !== idx);
+              continue;
+            }
+            nextJob._completedSet!.add(idx);
+            nextJob.activeChunks = nextJob.activeChunks!.filter(c => c.index !== idx);
           } catch (e) {
-            nextJob.chunks[idx].status = "error";
+            activeChunk.status = "error";
             nextJob.status = "error";
             throw e;
           }
@@ -273,10 +269,8 @@ class UploadManager {
           status: "error",
           error: "Incomplete upload. Click Retry and select the original file to resume.",
           _uploadType: inc.upload_type,
-          chunks: Array.from({ length: inc.total_chunks }).map((_, i) => ({
-            index: i,
-            status: inc.completed_chunks.includes(i) ? "complete" : "pending"
-          }))
+          _completedSet: new Set(inc.completed_chunks),
+          activeChunks: []
         };
         this.queue.push(job);
         changed = true;

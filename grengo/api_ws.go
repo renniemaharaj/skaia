@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,7 +20,9 @@ import (
 type jobStatus struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`   // "export-node", "export-site"
+	Target    string    `json:"target,omitempty"` // site name or node
 	Status    string    `json:"status"` // "running", "completed", "failed"
+	Message   string    `json:"message,omitempty"`
 	Error     string    `json:"error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	filePath  string    // hidden from JSON
@@ -144,6 +147,16 @@ func apiGetJob(w http.ResponseWriter, r *http.Request) {
 	apiJSON(w, http.StatusOK, j)
 }
 
+func apiListJobs(w http.ResponseWriter, r *http.Request) {
+	jobsMu.RLock()
+	list := make([]*jobStatus, 0, len(jobs))
+	for _, j := range jobs {
+		list = append(list, j)
+	}
+	jobsMu.RUnlock()
+	apiJSON(w, http.StatusOK, list)
+}
+
 func apiDownloadJob(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	jobsMu.Lock()
@@ -170,6 +183,12 @@ func apiDownloadJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	archiveName := filepath.Base(j.filePath)
+
+	info, err := f.Stat()
+	if err == nil {
+		w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
+	}
+
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", "attachment; filename="+archiveName)
 	io.Copy(w, f)

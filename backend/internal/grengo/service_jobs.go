@@ -9,16 +9,37 @@ import (
 	"time"
 )
 
-// JobStatus represents the state of an async export job.
+// JobStatus represents the state of an asynchronous grengo job.
 type JobStatus struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`
-	Status    string    `json:"status"`
+	Target    string    `json:"target,omitempty"`
+	Status    string    `json:"status"` // "running", "completed", "failed"
+	Message   string    `json:"message,omitempty"`
 	Error     string    `json:"error,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// GetJob returns the status of a background job.
+// ListJobs fetches all currently running or cached jobs.
+func (s *Service) ListJobs() ([]*JobStatus, error) {
+	resp, err := s.client.Get(s.apiURL + "/jobs")
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, s.readAPIError(resp)
+	}
+
+	var jobs []*JobStatus
+	if err := json.NewDecoder(resp.Body).Decode(&jobs); err != nil {
+		return nil, fmt.Errorf("decode list jobs: %w", err)
+	}
+	return jobs, nil
+}
+
+// GetJob fetches the current status of a job.
 func (s *Service) GetJob(id string) (*JobStatus, error) {
 	resp, err := s.client.Get(fmt.Sprintf("%s/jobs/%s", s.apiURL, id))
 	if err != nil {

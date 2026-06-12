@@ -179,7 +179,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   // Validate session on mount - clear stale tokens if session is invalid
   useEffect(() => {
     // Read directly from localStorage to avoid stale Jotai atom hydration
-    const token = localStorage.getItem("auth.accessToken");
+    let token = localStorage.getItem("auth.accessToken");
+    if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     if (!token) return; // No token, nothing to validate
 
     const validateSession = async () => {

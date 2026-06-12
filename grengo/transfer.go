@@ -56,8 +56,8 @@ func cmdExportClient(name, outFile string) {
 		ExportedAt: time.Now().UTC().Format(time.RFC3339),
 	})
 
-	addFileToArchive(tw, clientEnvFile(name), "env")
-	addFileToArchive(tw, clientComposeFile(name), "compose.yml")
+	addFileToArchive(tw, clientEnvFile(name), "env", nil)
+	addFileToArchive(tw, clientComposeFile(name), "compose.yml", nil)
 
 	uploadsDir := filepath.Join(clientDir(name), "uploads")
 	if _, err := os.Stat(uploadsDir); err == nil {
@@ -68,11 +68,9 @@ func cmdExportClient(name, outFile string) {
 		dbName := envVal(clientEnvFile(name), "POSTGRES_DB")
 		if dbName != "" {
 			log("Dumping database '%s'…", dbName)
-			dump, err := pgDump(dbName)
+			err := addPgDumpToArchive(tw, dbName, "db.sql")
 			if err != nil {
 				warn("Database dump failed: %v — archive will not include DB data", err)
-			} else {
-				addBytesToArchive(tw, dump, "db.sql")
 			}
 		}
 	} else {
@@ -172,8 +170,8 @@ func cmdExportNode(outFile string) {
 	for _, name := range names {
 		log("Exporting client '%s'…", name)
 		pfx := "clients/" + name + "/"
-		addFileToArchive(tw, clientEnvFile(name), pfx+"env")
-		addFileToArchive(tw, clientComposeFile(name), pfx+"compose.yml")
+		addFileToArchive(tw, clientEnvFile(name), pfx+"env", nil)
+		addFileToArchive(tw, clientComposeFile(name), pfx+"compose.yml", nil)
 
 		uploadsDir := filepath.Join(clientDir(name), "uploads")
 		if _, err := os.Stat(uploadsDir); err == nil {
@@ -183,11 +181,9 @@ func cmdExportNode(outFile string) {
 		if pgUp {
 			dbName := envVal(clientEnvFile(name), "POSTGRES_DB")
 			if dbName != "" {
-				dump, err := pgDump(dbName)
+				err := addPgDumpToArchive(tw, dbName, pfx+"db.sql")
 				if err != nil {
 					warn("  DB dump failed for '%s': %v", name, err)
-				} else {
-					addBytesToArchive(tw, dump, pfx+"db.sql")
 				}
 			}
 		}
@@ -411,38 +407,198 @@ func addBytesToArchive(tw *tar.Writer, data []byte, name string) {
 	}
 }
 
-// addFileToArchive reads src from disk and appends it to the archive as archiveName.
-func addFileToArchive(tw *tar.Writer, src, archiveName string) {
-	data, err := os.ReadFile(src)
+type progressReader struct {
+	io.Reader
+	totalBytes     *int64
+	processedBytes *int64
+	lastReportTime *time.Time
+	archivePrefix  string
+}
+
+func (pr *progressReader) Read(p []byte) (int, error) {
+	n, err := pr.Reader.Read(p)
+	if n > 0 && pr.totalBytes != nil && *pr.totalBytes > 0 {
+		*pr.processedBytes += int64(n)
+		now := time.Now()
+		if now.Sub(*pr.lastReportTime) > 2*time.Second {
+			pct := (*pr.processedBytes * 100) / *pr.totalBytes
+			log("  Compressing %s... %d%% (%d MB / %d MB)", pr.archivePrefix, pct, *pr.processedBytes/1024/1024, *pr.totalBytes/1024/1024)
+			*pr.lastReportTime = now
+		}
+	}
+	return n, err
+}
+
+// addFileToArchive opens src from disk and streams it to the archive as archiveName.
+func addFileToArchive(tw *tar.Writer, src, archiveName string, pr *progressReader) {
+	info, err := os.Stat(src)
 	if err != nil {
-		warn("Skipping %s: %v", src, err)
+		warn("Skipping %s (stat failed): %v", src, err)
 		return
 	}
-	addBytesToArchive(tw, data, archiveName)
+
+	f, err := os.Open(src)
+	if err != nil {
+		warn("Skipping %s (open failed): %v", src, err)
+		return
+	}
+	defer f.Close()
+
+	hdr := &tar.Header{
+		Name:    archiveName,
+		Mode:    int64(info.Mode().Perm()),
+		Size:    info.Size(),
+		ModTime: info.ModTime(),
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		die("tar header error (%s): %v", archiveName, err)
+	}
+
+	var reader io.Reader = f
+	if pr != nil {
+		pr.Reader = f
+		reader = pr
+	}
+
+	if _, err := io.Copy(tw, reader); err != nil {
+		die("tar write error (%s): %v", archiveName, err)
+	}
 }
 
 // addDirToArchive walks dir recursively and adds each file under archivePrefix/.
 func addDirToArchive(tw *tar.Writer, dir, archivePrefix string) {
 	archivePrefix = strings.TrimRight(archivePrefix, "/")
+
+	var totalBytes int64
+	var processedBytes int64
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			if info, err := d.Info(); err == nil {
+				totalBytes += info.Size()
+			}
+		}
+		return nil
+	})
+
+	now := time.Now()
+	pr := &progressReader{
+		totalBytes:     &totalBytes,
+		processedBytes: &processedBytes,
+		lastReportTime: &now,
+		archivePrefix:  archivePrefix,
+	}
+
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
 			return nil
 		}
 		rel, _ := filepath.Rel(dir, path)
-		addFileToArchive(tw, path, archivePrefix+"/"+rel)
+		
+		addFileToArchive(tw, path, archivePrefix+"/"+rel, pr)
 		return nil
 	})
 }
 
 // Postgres helpers
 
-// pgDump runs pg_dump inside the postgres container and returns the SQL bytes.
-func pgDump(dbName string) ([]byte, error) {
+// addPgDumpToArchive runs pg_dump inside the postgres container and streams the output to the tar archive.
+func addPgDumpToArchive(tw *tar.Writer, dbName, archiveName string) error {
 	env := loadSharedEnv()
-	return exec.Command(
+	cmd := exec.Command(
 		"docker", "exec", "skaia-postgres",
 		"pg_dump", "-U", env.PostgresUser, dbName,
-	).Output()
+	)
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	// We don't know the size of the dump beforehand. So we cannot write it as a normal tar file header easily!
+	// Wait, standard tar format requires size in the header! If we don't know the size, we can't write it to the tar stream without buffering it.
+	// Is there a way to write a tar header without size? No.
+	// Instead, we can dump it to a temporary file, stat it, and stream it!
+	
+	tmpFile, err := os.CreateTemp("", "pgdump-*.sql")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	var dumpedBytes int64
+	lastReport := time.Now()
+	dumpPr := &dumpProgressReader{
+		Reader:         stdout,
+		processedBytes: &dumpedBytes,
+		lastReportTime: &lastReport,
+		dbName:         dbName,
+	}
+
+	if _, err := io.Copy(tmpFile, dumpPr); err != nil {
+		return err
+	}
+	if err := cmd.Wait(); err != nil {
+		return err
+	}
+
+	info, err := tmpFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	hdr := &tar.Header{
+		Name:    archiveName,
+		Mode:    0644,
+		Size:    info.Size(),
+		ModTime: info.ModTime(),
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		return err
+	}
+
+	if _, err := tmpFile.Seek(0, 0); err != nil {
+		return err
+	}
+
+	var copiedBytes int64
+	totalBytes := info.Size()
+	lastReportCopy := time.Now()
+	copyPr := &progressReader{
+		Reader:         tmpFile,
+		totalBytes:     &totalBytes,
+		processedBytes: &copiedBytes,
+		lastReportTime: &lastReportCopy,
+		archivePrefix:  archiveName,
+	}
+
+	if _, err := io.Copy(tw, copyPr); err != nil {
+		return err
+	}
+	return nil
+}
+
+type dumpProgressReader struct {
+	io.Reader
+	processedBytes *int64
+	lastReportTime *time.Time
+	dbName         string
+}
+
+func (pr *dumpProgressReader) Read(p []byte) (int, error) {
+	n, err := pr.Reader.Read(p)
+	if n > 0 {
+		*pr.processedBytes += int64(n)
+		now := time.Now()
+		if now.Sub(*pr.lastReportTime) > 2*time.Second {
+			log("  Dumping %s... %d MB", pr.dbName, *pr.processedBytes/1024/1024)
+			*pr.lastReportTime = now
+		}
+	}
+	return n, err
 }
 
 // Env helpers

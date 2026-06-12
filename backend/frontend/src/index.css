@@ -916,6 +916,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   border-radius: 4px;
   transition: all 0.2s ease;
   color: var(--text-secondary);

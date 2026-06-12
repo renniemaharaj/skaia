@@ -13,18 +13,28 @@ import (
 // and injects claims into the context. It does not enforce authentication.
 func ExtractTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenStr := ""
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "" {
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) == 2 && parts[0] == "Bearer" {
-				if claims, err := ijwt.ValidateToken(parts[1]); err == nil {
-					ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)
-					ctx = context.WithValue(ctx, ictx.CtxKeyUserID, claims.UserID)
-					ctx = context.WithValue(ctx, ictx.CtxKeyUserRoles, claims.Roles)
-					r = r.WithContext(ctx)
-				}
+				tokenStr = parts[1]
 			}
 		}
+
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("token")
+		}
+
+		if tokenStr != "" {
+			if claims, err := ijwt.ValidateToken(tokenStr); err == nil {
+				ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)
+				ctx = context.WithValue(ctx, ictx.CtxKeyUserID, claims.UserID)
+				ctx = context.WithValue(ctx, ictx.CtxKeyUserRoles, claims.Roles)
+				r = r.WithContext(ctx)
+			}
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

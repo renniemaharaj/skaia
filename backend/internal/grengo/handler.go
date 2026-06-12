@@ -124,8 +124,13 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 			sr.Post("/export-node", h.handleExportNode)
 			sr.Post("/import-node", h.handleImportNode)
 
+			sr.Get("/jobs", h.handleListJobs)
 			sr.Get("/jobs/{id}", h.handleGetJob)
 			sr.Get("/jobs/{id}/download", h.handleDownloadJob)
+
+			sr.Get("/exports", h.handleListExports)
+			sr.Get("/exports/{filename}/download", h.handleDownloadExport)
+			sr.Delete("/exports/{filename}", h.handleDeleteExport)
 
 			sr.Post("/compose/up", h.handleComposeUp)
 			sr.Post("/compose/down", h.handleComposeDown)
@@ -482,41 +487,38 @@ func (h *Handler) handleExportNode(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusAccepted, map[string]any{"job_id": jobID})
 }
 
+type ImportNodeReq struct {
+	ArchiveURL string `json:"archive_url"`
+}
+
 func (h *Handler) handleImportNode(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(512 << 20); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "multipart form required (max 512MB)")
+	var req ImportNodeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
 
-	file, header, err := r.FormFile("archive")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "archive file required")
+	if req.ArchiveURL == "" {
+		utils.WriteError(w, http.StatusBadRequest, "archive_url required")
 		return
 	}
-	defer file.Close()
 
-	tmpDir := os.TempDir()
-	tmpFile, err := os.CreateTemp(tmpDir, "grengo-import-node-*.tar.gz")
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "cannot create temp file")
+	physicalPath := strings.TrimPrefix(req.ArchiveURL, "/")
+	if !strings.HasPrefix(physicalPath, "uploads/") {
+		utils.WriteError(w, http.StatusBadRequest, "invalid archive_url")
 		return
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
 
-	if _, err := io.Copy(tmpFile, file); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "failed to save upload")
-		return
-	}
-	tmpFile.Close()
+	log.Printf("grengo: importing node archive %s", physicalPath)
 
-	log.Printf("grengo: importing node archive %s", header.Filename)
-
-	jobID, err := h.svcFor(r).ImportNode(tmpFile.Name())
+	jobID, err := h.svcFor(r).ImportNode(physicalPath)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// Clean up user upload now that it has been streamed to grengo
+	os.Remove(physicalPath)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "job_id": jobID})
 }
@@ -541,44 +543,40 @@ func (h *Handler) handleComposeDown(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
+type ImportSiteReq struct {
+	ArchiveURL string `json:"archive_url"`
+	Name       string `json:"name"`
+	Port       string `json:"port"`
+}
+
 func (h *Handler) handleImportSite(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(256 << 20); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "multipart form required (max 256MB)")
+	var req ImportSiteReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
 
-	file, header, err := r.FormFile("archive")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "archive file required")
+	if req.ArchiveURL == "" {
+		utils.WriteError(w, http.StatusBadRequest, "archive_url required")
 		return
 	}
-	defer file.Close()
 
-	tmpDir := os.TempDir()
-	tmpFile, err := os.CreateTemp(tmpDir, "grengo-import-*.tar.gz")
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "cannot create temp file")
+	physicalPath := strings.TrimPrefix(req.ArchiveURL, "/")
+	if !strings.HasPrefix(physicalPath, "uploads/") {
+		utils.WriteError(w, http.StatusBadRequest, "invalid archive_url")
 		return
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
 
-	if _, err := io.Copy(tmpFile, file); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, "failed to save upload")
-		return
-	}
-	tmpFile.Close()
+	log.Printf("grengo: importing %s (name=%s port=%s)", physicalPath, req.Name, req.Port)
 
-	newName := r.FormValue("name")
-	newPort := r.FormValue("port")
-
-	log.Printf("grengo: importing %s (name=%s port=%s)", header.Filename, newName, newPort)
-
-	jobID, err := h.svcFor(r).ImportSite(tmpFile.Name(), newName, newPort)
+	jobID, err := h.svcFor(r).ImportSite(physicalPath, req.Name, req.Port)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	// Clean up user upload now that it has been streamed to grengo
+	os.Remove(physicalPath)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "job_id": jobID})
 }
@@ -595,6 +593,15 @@ func (h *Handler) handleGetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, j)
+}
+
+func (h *Handler) handleListJobs(w http.ResponseWriter, r *http.Request) {
+	jobs, err := h.svcFor(r).ListJobs()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, jobs)
 }
 
 func (h *Handler) handleDownloadJob(w http.ResponseWriter, r *http.Request) {
@@ -622,4 +629,38 @@ func (h *Handler) handleDownloadJob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(archivePath))
 	io.Copy(w, f)
+}
+
+func (h *Handler) handleListExports(w http.ResponseWriter, r *http.Request) {
+	files, err := h.svcFor(r).ListExports()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, files)
+}
+
+func (h *Handler) handleDownloadExport(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	if err := h.svcFor(r).DownloadExport(w, filename); err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		utils.WriteError(w, status, err.Error())
+	}
+}
+
+func (h *Handler) handleDeleteExport(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	jobID, err := h.svcFor(r).DeleteExport(filename)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		utils.WriteError(w, status, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusAccepted, map[string]any{"ok": true, "job_id": jobID})
 }

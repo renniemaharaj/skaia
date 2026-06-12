@@ -215,9 +215,29 @@ proxy_cache_path /var/cache/nginx/uploads
         proxy_buffer_size  16k;
         proxy_buffers      8 16k;
 
+        # Chunked upload completion can take minutes for large files
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
+
         # Prevent CDN / browser caching of API responses
         add_header Cache-Control "no-store, no-cache, must-revalidate" always;
         add_header Pragma        "no-cache" always;
+    }
+
+    # ── Downloads (No Buffering) ──────────────────────────────────────────
+    location ~ ^/api/s/.*/(?:exports|jobs)/.*/download$ {
+        proxy_pass         http://$backend_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_set_header   Connection        "";
+        proxy_buffering    off;
+        
+        # Prevent timeouts during long downloads
+        proxy_read_timeout 3600;
+        proxy_send_timeout 3600;
     }
 
     # ── Config / page endpoints ───────────────────────────────────────────
@@ -288,7 +308,7 @@ proxy_cache_path /var/cache/nginx/uploads
         proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $scheme;
         proxy_set_header   Connection        "";
-        proxy_buffering    on;
+        proxy_buffering    off;
         proxy_buffer_size  16k;
         proxy_buffers      8 16k;
     }

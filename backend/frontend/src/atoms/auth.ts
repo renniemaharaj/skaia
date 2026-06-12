@@ -45,7 +45,12 @@ function customStorageAtom<T extends string | null>(
   const hasLocalStorage = typeof localStorage !== "undefined" && typeof localStorage.getItem === "function";
   const getValue = () => {
     if (hasLocalStorage) {
-      return (localStorage.getItem(key) as T) || initialValue;
+      let val = localStorage.getItem(key);
+      if (val && val.startsWith('"') && val.endsWith('"')) {
+        val = val.slice(1, -1);
+        localStorage.setItem(key, val);
+      }
+      return (val as T) || initialValue;
     } else {
       return (memoryStore[key] as T) || initialValue;
     }

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
     "mime"
 
@@ -103,22 +104,37 @@ func (h *Handler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "failed to parse form")
-		return
-	}
+	var file io.ReadCloser
+	chunkIndex := -1
 
-	chunkIndexStr := r.FormValue("chunk_index")
-	chunkIndex, err := strconv.Atoi(chunkIndexStr)
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid chunk index")
-		return
-	}
-
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "missing file")
-		return
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		if err := r.ParseMultipartForm(32 << 20); err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "failed to parse form")
+			return
+		}
+		chunkIndexStr := r.FormValue("chunk_index")
+		var err error
+		chunkIndex, err = strconv.Atoi(chunkIndexStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "invalid chunk index")
+			return
+		}
+		f, _, err := r.FormFile("file")
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "missing file")
+			return
+		}
+		file = f
+	} else {
+		// Raw binary body
+		chunkIndexStr := r.URL.Query().Get("chunk_index")
+		var err error
+		chunkIndex, err = strconv.Atoi(chunkIndexStr)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, "invalid chunk index")
+			return
+		}
+		file = r.Body
 	}
 	defer file.Close()
 

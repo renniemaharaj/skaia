@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/internal/ws"
@@ -27,7 +26,7 @@ type Service struct {
 func NewService(apiURL string, hub *ws.Hub) *Service {
 	return &Service{
 		apiURL: apiURL,
-		client: &http.Client{Timeout: 120 * time.Second},
+		client: &http.Client{},
 		hub:    hub,
 	}
 }
@@ -40,7 +39,6 @@ func (s *Service) WithPasscode(p1, p2 string) *Service {
 		passcode: passcode,
 		hub:      s.hub,
 		client: &http.Client{
-			Timeout: 120 * time.Second,
 			Transport: &passcodeTransport{
 				base:     http.DefaultTransport,
 				passcode: passcode,
