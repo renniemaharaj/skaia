@@ -117,8 +117,8 @@ func CheckTotalQuota(additional int64) string {
 	}
 	used, _ := DirSize(UploadsDir)
 	if used+additional > MaxUploadTotal {
-		return fmt.Sprintf("backend storage limit reached (%s of %s)",
-			humanSize(used), humanSize(MaxUploadTotal))
+		return fmt.Sprintf("backend storage usage exceeded (used %s of %s, trying to add %s)",
+			humanSize(used), humanSize(MaxUploadTotal), humanSize(additional))
 	}
 	return ""
 }
@@ -162,6 +162,20 @@ func GetStorageInfo(userID int64) StorageInfo {
 		info.TotalPercent = float64(totalUsed) / float64(MaxUploadTotal) * 100
 	}
 	return info
+}
+
+// HandleInternalStorage serves the global upload storage limits and usage for internal queries (e.g., from grengo).
+func HandleInternalStorage(w http.ResponseWriter, r *http.Request) {
+	used, _ := DirSize(UploadsDir)
+	info := struct {
+		Limit int64 `json:"limit"`
+		Used  int64 `json:"used"`
+	}{
+		Limit: MaxUploadTotal,
+		Used:  used,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(info)
 }
 
 // GetTotalStorageInfo returns backend-wide storage usage (no user-specific data).

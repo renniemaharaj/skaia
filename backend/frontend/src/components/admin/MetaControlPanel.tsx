@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiRequest } from "../../utils/api";
+import { uploader } from "../../atoms/uploadAtom";
 import { Trash2 } from "lucide-react";
 import Button from "../input/Button";
 import Select from "../input/Select";
@@ -53,13 +54,7 @@ export default function MetaControlPanel({
   };
 
   async function uploadFile(file: File, type: "image" | "video" = "image"): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-    const endpoint = `/upload/${type}`;
-    const res = await apiRequest<{ url: string }>(endpoint, {
-      method: "POST",
-      body: formData,
-    });
+    const res = await uploader.upload(file, { uploadType: type });
     return res.url;
   }
 

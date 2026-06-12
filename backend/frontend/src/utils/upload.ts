@@ -1,11 +1,4 @@
-import { apiRequest } from "./api";
-
-interface UploadResponse {
-  url: string;
-  filename: string;
-  size: number;
-  type: string;
-}
+import { uploader } from "../atoms/uploadAtom";
 
 /**
  * Upload a file to the server via the TipTap editor upload endpoints.
@@ -18,13 +11,7 @@ export async function uploadEditorFile(
   file: File,
   type: "image" | "video" | "file",
 ): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-
-  const res = await apiRequest<UploadResponse>(`/upload/${type}`, {
-    method: "POST",
-    body: fd,
-  });
+  const res = await uploader.upload(file, { uploadType: type });
 
   if (!res?.url) {
     throw new Error("Upload failed: no URL returned");

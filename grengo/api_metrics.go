@@ -239,6 +239,7 @@ func gatherStorage() *storageInfo {
 
 	sites := []siteStorageInfo{}
 	var grandTotal int64
+	var totalLimit int64
 
 	for _, e := range entries {
 		if !e.IsDir() {
@@ -250,16 +251,28 @@ func gatherStorage() *storageInfo {
 		}
 
 		name := envVal(ef, "CLIENT_NAME")
-		uploadsDir := filepath.Join(backendsDir(), e.Name(), "uploads")
+		port := envVal(ef, "PORT")
+		if port == "" {
+			port = "1080"
+		}
 
 		var used int64
-		_ = filepath.Walk(uploadsDir, func(_ string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
+		client := &http.Client{Timeout: 3 * time.Second}
+		resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%s/api/internal/storage", port))
+		if err == nil && resp.StatusCode == http.StatusOK {
+			var payload struct {
+				Limit int64 `json:"limit"`
+				Used  int64 `json:"used"`
 			}
-			used += info.Size()
-			return nil
-		})
+			if err := json.NewDecoder(resp.Body).Decode(&payload); err == nil {
+				totalLimit += payload.Limit
+				used = payload.Used
+			}
+			resp.Body.Close()
+		} else if resp != nil {
+			resp.Body.Close()
+		}
+
 		grandTotal += used
 
 		sites = append(sites, siteStorageInfo{
@@ -269,12 +282,9 @@ func gatherStorage() *storageInfo {
 		})
 	}
 
-	// Total upload limit: read from env or default 5 GB.
-	var totalLimit int64 = 5 * 1024 * 1024 * 1024 // 5 GB
-	if v := os.Getenv("MAX_UPLOAD_TOTAL_MB"); v != "" {
-		if mb, err := strconv.ParseInt(v, 10, 64); err == nil && mb > 0 {
-			totalLimit = mb * 1024 * 1024
-		}
+	// If no backend had a limit set, fallback to 5 GB.
+	if totalLimit == 0 {
+		totalLimit = 5 * 1024 * 1024 * 1024 // 5 GB
 	}
 
 	pct := 0.0

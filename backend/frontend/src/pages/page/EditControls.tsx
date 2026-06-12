@@ -1,5 +1,6 @@
 import { ICON_MAP, ICON_NAMES } from "./iconMap";
 import type { PageItem } from "./types";
+import { uploader } from "../../atoms/uploadAtom";
 import "./page-builder-core.css";
 import {
   Pencil,
@@ -25,7 +26,6 @@ import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { debounce } from "lodash";
 import { usePageBuilderContext } from "./PageBuilderContext";
-import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
 
 export type SectionLayout = "center" | "left" | "right" | "wide";
@@ -882,13 +882,7 @@ export const ImagePickerButton = ({
 
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "landing");
-      const res = await apiRequest<{ url: string }>("/upload/image", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await uploader.upload(file, { uploadType: "image" });
       onUploaded(res.url);
       toast.success("Image uploaded");
     } catch {
@@ -961,13 +955,7 @@ export const VideoPickerButton = ({
 
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("type", "landing");
-      const res = await apiRequest<{ url: string }>("/upload/video", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await uploader.upload(file, { uploadType: "video" });
       onUploaded(res.url);
       toast.success("Video uploaded");
     } catch {

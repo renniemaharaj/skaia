@@ -1220,12 +1220,13 @@ function StoragePanel({ storage }: { storage: StorageInfo }) {
           </div>
           <span className="storage-total-pct">
             {storage.total_percent.toFixed(1)}% used
-            {storage.total_percent >= 80 && (
-              <span className="storage-warning"> — approaching limit!</span>
-            )}
-            {storage.total_percent >= 95 && (
+            {storage.total_percent >= 100 ? (
+              <span className="storage-critical"> — exceeded usage!</span>
+            ) : storage.total_percent >= 95 ? (
               <span className="storage-critical"> — critical!</span>
-            )}
+            ) : storage.total_percent >= 80 ? (
+              <span className="storage-warning"> — approaching limit!</span>
+            ) : null}
           </span>
         </div>
         {storage.sites && storage.sites.length > 0 && (

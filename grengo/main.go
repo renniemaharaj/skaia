@@ -115,6 +115,8 @@ func main() {
 					follow = true
 				case "--build":
 					build = true
+				case "-d", "--detach":
+					follow = false
 				default:
 					die("Unknown compose up option: %s", rest[i])
 				}

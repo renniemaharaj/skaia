@@ -569,6 +569,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			})
 		})
 
+		api.Get("/internal/storage", iupload.HandleInternalStorage)
+
 		api.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 			ws.HandleConnection(w, r, hub)
 		})

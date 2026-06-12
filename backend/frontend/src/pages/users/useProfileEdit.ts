@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { apiRequest, uploadFile } from "../../utils/api";
+import { apiRequest } from "../../utils/api";
+import { uploader } from "../../atoms/uploadAtom";
 import type { ProfileUser } from "./types";
 
 interface UseProfileEditOptions {
@@ -10,7 +11,6 @@ interface UseProfileEditOptions {
 
 export function useProfileEdit({
   user,
-  isOwnProfile,
   onSaved,
 }: UseProfileEditOptions) {
   const [editOpen, setEditOpen] = useState(false);
@@ -120,43 +120,27 @@ export function useProfileEdit({
       let finalCardArtUrl = editProfileCardArtUrl;
 
       if (avatarFile) {
-        const fd = new FormData();
-        fd.append("photo", avatarFile);
-        const endpoint = isOwnProfile
-          ? "/users/me/photo"
-          : `/users/${user.id}/photo`;
-        const res = await apiRequest<{ url: string }>(endpoint, {
-          method: "POST",
-          body: fd,
-        });
+        const res = await uploader.upload(avatarFile, { uploadType: "image" });
         if (res?.url) finalAvatarUrl = res.url;
       }
 
       if (bannerFile) {
-        const fd = new FormData();
-        fd.append("banner", bannerFile);
-        const endpoint = isOwnProfile
-          ? "/users/me/banner"
-          : `/users/${user.id}/banner`;
-        const res = await apiRequest<{ url: string }>(endpoint, {
-          method: "POST",
-          body: fd,
-        });
+        const res = await uploader.upload(bannerFile, { uploadType: "image" });
         if (res?.url) finalBannerUrl = res.url;
       }
 
       if (backgroundImageFile) {
-        const res = await uploadFile(backgroundImageFile, "/upload/image");
+        const res = await uploader.upload(backgroundImageFile, { uploadType: "image" });
         if (res?.url) finalBgImageUrl = res.url;
       }
 
       if (backgroundVideoFile) {
-        const res = await uploadFile(backgroundVideoFile, "/upload/video");
+        const res = await uploader.upload(backgroundVideoFile, { uploadType: "video" });
         if (res?.url) finalBgVideoUrl = res.url;
       }
 
       if (profileCardArtFile) {
-        const res = await uploadFile(profileCardArtFile, "/upload/image");
+        const res = await uploader.upload(profileCardArtFile, { uploadType: "image" });
         if (res?.url) finalCardArtUrl = res.url;
       }
 

@@ -195,6 +195,7 @@ func apiPasscodeMiddleware(next http.Handler) http.Handler {
 		"/verify-passcode": true,
 		"/passcode/status": true,
 		"/ws":              true,
+		"/storage":         true,
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
