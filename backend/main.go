@@ -43,6 +43,8 @@ import (
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	immediascraper "github.com/skaia/backend/internal/mediascraper"
+	defconmw "github.com/skaia/backend/middleware"
+	"github.com/skaia/backend/ratelimit"
 )
 
 // SimpleResponse is a basic JSON response.
@@ -156,9 +158,14 @@ func main() {
 		port = "8080"
 	}
 
+	ratelimit.InitCloudflare()
+
+	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher)
+	handler := defconmw.DEFCONRateLimit(rdb)(baseHandler)
+
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher),
+		Handler:           handler,
 		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 3600)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 3600)) * time.Second,

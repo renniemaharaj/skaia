@@ -1,0 +1,33 @@
+# Grengo Multi-Node Network
+
+## Context
+Currently, each Grengo daemon operates as a standalone orchestrator for a single physical node and its local backends. To scale horizontally, we need to connect multiple Grengo daemons into a clustered network. This allows them to act as a single logical orchestration layer, making it possible to query global limits, shift sites between physical nodes, and aggregate metrics across the entire network.
+
+## Goal
+- Connect multiple Grengo nodes into a seamless cluster network.
+- Allow any node in the network to query global data across all other backends/nodes.
+- Act as a single logical entity.
+- Support moving clients/sites seamlessly from one physical node to another.
+- Build a multi-node dashboard that either aggregates results from all nodes in a single view or adds a node-switcher to the header alongside the 'Grengo Dashboard' title.
+
+## Non-Goals
+- Real-time synchronous database clustering (nodes will orchestrate services, but DB syncing/replication should be handled by the services themselves or a separate protocol).
+- Complex leader-election algorithms if simple peer-to-peer or mesh approaches suffice initially.
+
+## Steps
+1. Define the internal inter-node communication protocol (e.g., shared secrets, mTLS, or VPN mesh).
+2. Implement peer discovery and registration so Grengo nodes know about each other.
+3. Update the `gatherStorage` and metrics endpoints to optionally broadcast and aggregate from peers.
+4. Implement the logic for moving a client/site: freeze site, export data, transfer to peer node, import, unfreeze, and route traffic.
+5. Update the Grengo UI dashboard to support multi-node visualization (decide on aggregation vs. switcher).
+
+## Verification
+- Spin up two Grengo nodes on different ports/servers.
+- Connect them and verify that metrics reflect both nodes.
+- Execute a site transfer from Node A to Node B and verify zero data loss and correct traffic routing.
+- Access the dashboard and verify both nodes are visible and manageable.
+
+## References
+- `grengo/api_metrics.go`
+- `grengo/commands.go`
+- `grengo/ui/`

@@ -13,7 +13,7 @@
 
 ### Phase 5 Progress
 - [x] Component picker UI in `DerivedSectionBlock` and `CustomSectionBlock` (2026-06-09)
-- [x] Bind-point mapping UI (column → bind-point) with `ComponentBindMapper` (2026-06-09)
+- [x] Bind-point mapping UI (column => bind-point) with `ComponentBindMapper` (2026-06-09)
 - [x] Component-driven row rendering with `ComponentGrid` (2026-06-09)
 - [x] `DesignedCardWrapper` added for card-level style composition (2026-06-11)
 - [x] `ComponentGroupEditor` refactored with tab UI (layout/styles) and `CardDesigner` integration (2026-06-11)

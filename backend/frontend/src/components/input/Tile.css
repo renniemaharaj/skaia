@@ -1,9 +1,9 @@
-/* ────────────────────────────────────────────────────────────
+/* 
  * Tile primitive — component-level CSS
  *
  * Layout, spacing, and transitions only.
  * All colours reference design tokens from index.css.
- * ──────────────────────────────────────────────────────────── */
+ *  */
 
 /* Base -------------------------------------------------------------------- */
 .sk-tile {
@@ -53,11 +53,15 @@
 /* Selected state ---------------------------------------------------------- */
 .sk-tile--selected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow);
+  box-shadow:
+    0 0 0 1px var(--primary-color),
+    var(--card-shadow);
 }
 
 .sk-tile--selected.sk-tile--interactive:hover {
-  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow-hover);
+  box-shadow:
+    0 0 0 1px var(--primary-color),
+    var(--card-shadow-hover);
 }
 
 /* Compact ----------------------------------------------------------------- */

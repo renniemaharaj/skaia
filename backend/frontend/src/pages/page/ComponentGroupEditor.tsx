@@ -41,7 +41,9 @@ export function ComponentGroupEditor({
   onChange,
 }: ComponentGroupEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<"components" | "styles">("components");
+  const [activeTab, setActiveTab] = useState<"components" | "styles">(
+    "components",
+  );
   const [resizing, setResizing] = useState<{
     itemId: string;
     startX: number;
@@ -77,7 +79,7 @@ export function ComponentGroupEditor({
   const updateItem = (id: string, patch: Partial<ComponentGroupItem>) =>
     update(group.items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
 
-  /* ── resize via mouse ── */
+  /*  resize via mouse  */
   const startResize = (itemId: string, e: React.MouseEvent) => {
     e.preventDefault();
     const item = group.items.find((i) => i.id === itemId);
@@ -104,13 +106,13 @@ export function ComponentGroupEditor({
   return (
     <div className="cge">
       <div className="cge__tabs">
-        <button 
+        <button
           className={`cge__tab ${activeTab === "components" ? "cge__tab--active" : ""}`}
           onClick={() => setActiveTab("components")}
         >
           Components
         </button>
-        <button 
+        <button
           className={`cge__tab ${activeTab === "styles" ? "cge__tab--active" : ""}`}
           onClick={() => setActiveTab("styles")}
         >
@@ -120,7 +122,7 @@ export function ComponentGroupEditor({
 
       {activeTab === "components" && (
         <>
-          {/* ── item list ── */}
+          {/*  item list  */}
           <div className="cge__header">
             <span className="cge__title">Component Group</span>
             <button
@@ -183,7 +185,7 @@ export function ComponentGroupEditor({
             })}
           </div>
 
-          {/* ── group settings ── */}
+          {/*  group settings  */}
           <div className="cge__settings">
             <label className="cge__setting">
               <span>Gap</span>
@@ -192,7 +194,9 @@ export function ComponentGroupEditor({
                 min={0}
                 max={48}
                 value={group.gap}
-                onChange={(e) => onChange({ ...group, gap: Number(e.target.value) })}
+                onChange={(e) =>
+                  onChange({ ...group, gap: Number(e.target.value) })
+                }
               />
               <span>px</span>
             </label>
@@ -212,7 +216,7 @@ export function ComponentGroupEditor({
             </label>
           </div>
 
-          {/* ── per-component bind mappers ── */}
+          {/*  per-component bind mappers  */}
           {sorted.map((item) => {
             const comp = components.find((c) => c.type === item.component_type);
             if (!comp) return null;
@@ -236,7 +240,7 @@ export function ComponentGroupEditor({
         />
       )}
 
-      {/* ── live preview ── */}
+      {/*  live preview  */}
       {firstRow && sorted.length > 0 && (
         <>
           <div className="cge__preview-label">Preview (first row)</div>

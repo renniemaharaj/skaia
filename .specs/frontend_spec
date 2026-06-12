@@ -330,27 +330,27 @@ When adding a new card/panel/section to the UI:
 
 ```
 src/
-├── index.css              # Design tokens + shared utility classes (THE source of truth)
-├── App.css                # App-level layout
-├── components/
-│   ├── ui/                # Shared UI primitives (SkeletonCard, FormGroup, FeatureCard)
-│   ├── forum/             # Forum domain components + layout CSS
-│   ├── store/             # Store domain components + layout CSS
-│   ├── admin/             # Admin dashboard components + layout CSS
-│   ├── layout/            # Header, Footer, Page System, PresencePanel
-│   ├── auth/              # Auth forms
-│   ├── pages/            # Page block renderers
-│   ├── input/             # Input components
-│   └── notifications/     # Notification components
-├── styles/
-│   ├── Base.css           # Shared page-level styles
-│   ├── Cart.css           # Cart page styles
-│   └── NotFound.css       # 404 page styles
-├── atoms/                 # Jotai state atoms
-├── hooks/                 # Custom React hooks
-├── context/               # React context providers
-├── pages/                 # Route-level page components
-└── utils/                 # API client, helpers
+├ index.css              # Design tokens + shared utility classes (THE source of truth)
+├ App.css                # App-level layout
+├ components/
+│   ├ ui/                # Shared UI primitives (SkeletonCard, FormGroup, FeatureCard)
+│   ├ forum/             # Forum domain components + layout CSS
+│   ├ store/             # Store domain components + layout CSS
+│   ├ admin/             # Admin dashboard components + layout CSS
+│   ├ layout/            # Header, Footer, Page System, PresencePanel
+│   ├ auth/              # Auth forms
+│   ├ pages/            # Page block renderers
+│   ├ input/             # Input components
+│   └ notifications/     # Notification components
+├ styles/
+│   ├ Base.css           # Shared page-level styles
+│   ├ Cart.css           # Cart page styles
+│   └ NotFound.css       # 404 page styles
+├ atoms/                 # Jotai state atoms
+├ hooks/                 # Custom React hooks
+├ context/               # React context providers
+├ pages/                 # Route-level page components
+└ utils/                 # API client, helpers
 ```
 
 ## Extended Patterns

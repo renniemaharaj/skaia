@@ -10,7 +10,7 @@ import { apiRequest } from "../../utils/api";
 import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";
 
-/* ──── helpers ──── */
+/*  helpers  */
 
 type Resolved = Record<string, unknown>;
 type StyleMap = Record<string, React.CSSProperties | undefined>;
@@ -55,7 +55,7 @@ function resolveStyles(
   return m;
 }
 
-/* ──── primitive renderers ──── */
+/*  primitive renderers  */
 
 function PrimitiveDiv({ styles }: { styles: StyleMap }) {
   return <div className="cr-div" style={styles.root} />;
@@ -195,7 +195,7 @@ function PrimitiveIcon({
   );
 }
 
-/* ──── compound renderers ──── */
+/*  compound renderers  */
 
 function CompoundCard({
   data,
@@ -229,7 +229,7 @@ function CompoundCard({
       {!!data.href && (
         <div className="cr-card__footer" style={styles.footer}>
           <a href={str(data.href)} target="_blank" rel="noopener noreferrer">
-            View →
+            View =>
           </a>
         </div>
       )}
@@ -432,7 +432,7 @@ function CompoundProfile({
   );
 }
 
-/* ──── public API ──── */
+/*  public API  */
 
 export interface ComponentRendererProps {
   component: ComponentDefinition;

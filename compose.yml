@@ -1,4 +1,4 @@
-# ─────────────────────────────────────────────────────────────────────────────
+#
 # Skaia — Shared infrastructure
 #
 # This compose file runs the shared services: nginx, postgres, redis.
@@ -8,11 +8,10 @@
 #   grengo new skaiacraft --domain skaiacraft.com
 #   grengo compose up
 #   grengo compose down
-# ─────────────────────────────────────────────────────────────────────────────
+#
 
 services:
-
-  # ── Nginx reverse-proxy (shared across all tenants) ────────────────────────
+  #  Nginx reverse-proxy (shared across all tenants)
   nginx:
     image: nginx:alpine
     container_name: skaia-nginx
@@ -27,13 +26,21 @@ services:
     networks:
       - skaia-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
 
-  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  #  PostgreSQL
   postgres:
     image: postgres:16-alpine
     container_name: skaia-postgres
@@ -51,13 +58,17 @@ services:
         aliases:
           - postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-skaia} -d template1 -p ${PGPORT:-5432}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-skaia} -d template1 -p ${PGPORT:-5432}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
 
-  # ── Redis ──────────────────────────────────────────────────────────────────
+  #  Redis
   redis:
     image: redis:7-alpine
     container_name: skaia-redis

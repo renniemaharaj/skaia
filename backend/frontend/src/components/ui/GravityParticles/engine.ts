@@ -372,7 +372,7 @@ const pickDestination = (
   let chosenIdx = 0;
 
   if (al > 0.6) {
-    // Antisocial → minimum pressure direction
+    // Antisocial => minimum pressure direction
     let minV = Infinity;
     for (let i = 0; i < numRays; i++) {
       if (biased[i] < minV) {
@@ -381,7 +381,7 @@ const pickDestination = (
       }
     }
   } else if (al < 0.4) {
-    // Social → maximum pressure direction
+    // Social => maximum pressure direction
     let maxV = -Infinity;
     for (let i = 0; i < numRays; i++) {
       if (biased[i] > maxV) {
@@ -390,7 +390,7 @@ const pickDestination = (
       }
     }
   } else {
-    // Ambivalent → weighted-random toward emptier rays
+    // Ambivalent => weighted-random toward emptier rays
     const weights = biased.map((v) => 1 / (v + 0.001));
     const total = weights.reduce((a, b) => a + b, 0);
     let r = Math.random() * total;
@@ -433,7 +433,7 @@ const computeTargetRing = (
   const orderNorm =
     maxOrder > minOrder ? (arrivalOrder - minOrder) / (maxOrder - minOrder) : 0;
 
-  // Score → ring index: heavy=inner, antisocial=outer, early=inner
+  // Score => ring index: heavy=inner, antisocial=outer, early=inner
   const score = (1 - massNorm) * 0.35 + al * 0.45 + orderNorm * 0.2;
   const ringIdx = Math.min(4, Math.floor(score * 5));
 
@@ -936,9 +936,8 @@ export const stepPhysics = (
         fy += (dy / dist) * force;
       }
 
-      
       // ALIVE BEHAVIOUR
-      
+
       if (particlesAreAlive && p1.antisocialLevel !== undefined) {
         const al = p1.antisocialLevel;
 
@@ -1201,9 +1200,8 @@ export const stepPhysics = (
           fy += bfy + lfy;
         }
       }
-      
+
       // END ALIVE
-      
 
       if (toRemove.has(p1.id)) continue;
 

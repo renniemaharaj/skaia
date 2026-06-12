@@ -1,9 +1,9 @@
-/* ────────────────────────────────────────────────────────────
+/* 
  * Select primitive — component-level CSS
  *
  * Layout, spacing, and transitions only.
  * All colours reference design tokens from index.css.
- * ──────────────────────────────────────────────────────────── */
+ *  */
 
 /* Wrapper ----------------------------------------------------------------- */
 .sk-select {

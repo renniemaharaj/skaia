@@ -10,11 +10,11 @@ This document replaces the previous `landing_page_spec` and clarifies the fronte
 
 ```
 Browser => GET /
-  └── nginx serves index.html (SSR-injected <title>, OG, favicon)
-        └── React mounts <Index /> => <PageBuilder /> (no slug prop)
+  └ nginx serves index.html (SSR-injected <title>, OG, favicon)
+        └ React mounts <Index /> => <PageBuilder /> (no slug prop)
 
 PageBuilder mounts:
-  └── usePageData(editingCount > 0).refresh() called with no slug
+  └ usePageData(editingCount > 0).refresh() called with no slug
 
 refresh() — index mode (no slug):
   1. GET /pages/landing-slug  =>  { "slug": "my-page" }

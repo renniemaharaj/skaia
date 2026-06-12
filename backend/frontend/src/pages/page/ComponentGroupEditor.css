@@ -1,4 +1,4 @@
-/* ──── ComponentGroupEditor ──── */
+/*  ComponentGroupEditor  */
 
 .cge {
   background: var(--bg-secondary);
@@ -37,7 +37,7 @@
   background: var(--bg-tertiary);
 }
 
-/* ── items list ── */
+/*  items list  */
 .cge__items {
   display: flex;
   flex-direction: column;
@@ -93,14 +93,16 @@
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 .cge__item-remove:hover {
   color: var(--error-color);
   background: var(--error-bg);
 }
 
-/* ── settings row ── */
+/*  settings row  */
 .cge__settings {
   display: flex;
   gap: 16px;
@@ -125,7 +127,7 @@
   color: var(--text-primary);
 }
 
-/* ── live preview ── */
+/*  live preview  */
 .cge__preview-label {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -155,7 +157,7 @@
   opacity: 0.8;
 }
 
-/* ── resize handle ── */
+/*  resize handle  */
 .cge__resize-handle {
   position: absolute;
   top: 0;
@@ -174,7 +176,7 @@
   opacity: 0.5;
 }
 
-/* ── tabs ── */
+/*  tabs  */
 .cge__tabs {
   display: flex;
   gap: 16px;

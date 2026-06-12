@@ -8,37 +8,37 @@ Go 1.24 server using chi/v5 router. Follows a strict **handler => service => rep
 
 ```
 backend/
-├── main.go                    # Entry: router setup, middleware wiring, server start
-├── database/db.go             # PostgreSQL + Redis client initialization
-├── models/
-│   ├── user.go                # Public user profile model
-│   ├── auth.go                # Auth response/credential/TOTP/backup-code models
-│   ├── commerce.go            # Store, order, payment, subscription models
-│   ├── page.go                # CMS page and allocation models
-│   └── *.go                   # Forum, datasource, inbox, notification, role, permission, analytics models
-└── internal/
-    ├── auth/                  # Credentials, registration/login, TOTP, backup codes, email/password tokens
-    ├── jwt/                   # JWT (HS256) generation and validation
-    ├── ctx/                   # Context helpers
-    ├── middleware/             # CORS, JWT auth, optional auth, RBAC, rate limit, armed guard
-    ├── user/                  # User CRUD, roles, permissions, suspension, Redis cache
-    ├── forum/                 # Categories, threads, comments, likes, Redis cache
-    ├── store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
-    ├── inbox/                 # 1-to-1 conversations + messages
-    ├── notification/          # Per-user notifications (typed, routed, real-time)
-    ├── config/                # site_config CRUD (branding, SEO, footer, features)
-    ├── page/                  # CMS pages (slug-based, JSONB block content)
-    ├── customsection/         # User-defined custom sections for pages
-    ├── datasource/            # Data source definitions, compiler, TS runner
-    ├── events/                # Event dispatcher and activity logging
-    ├── upload/                # Image/video/file/banner uploads (user-isolated dirs)
-    ├── ws/                    # WebSocket hub, presence, chat ring, cursor broadcast
-    ├── ssr/                   # index.html rewriting with SEO head tags
-    ├── utils/                 # Shared HTTP helpers
-    ├── grengo/                # Admin dashboard API proxy
-    ├── migrations/            # Idempotent ordered schema/seed/data migrations
-    ├── integration/           # Integration test suite
-    └── testutil/              # Test helpers (DB setup)
+├ main.go                    # Entry: router setup, middleware wiring, server start
+├ database/db.go             # PostgreSQL + Redis client initialization
+├ models/
+│   ├ user.go                # Public user profile model
+│   ├ auth.go                # Auth response/credential/TOTP/backup-code models
+│   ├ commerce.go            # Store, order, payment, subscription models
+│   ├ page.go                # CMS page and allocation models
+│   └ *.go                   # Forum, datasource, inbox, notification, role, permission, analytics models
+└ internal/
+    ├ auth/                  # Credentials, registration/login, TOTP, backup codes, email/password tokens
+    ├ jwt/                   # JWT (HS256) generation and validation
+    ├ ctx/                   # Context helpers
+    ├ middleware/             # CORS, JWT auth, optional auth, RBAC, rate limit, armed guard
+    ├ user/                  # User CRUD, roles, permissions, suspension, Redis cache
+    ├ forum/                 # Categories, threads, comments, likes, Redis cache
+    ├ store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
+    ├ inbox/                 # 1-to-1 conversations + messages
+    ├ notification/          # Per-user notifications (typed, routed, real-time)
+    ├ config/                # site_config CRUD (branding, SEO, footer, features)
+    ├ page/                  # CMS pages (slug-based, JSONB block content)
+    ├ customsection/         # User-defined custom sections for pages
+    ├ datasource/            # Data source definitions, compiler, TS runner
+    ├ events/                # Event dispatcher and activity logging
+    ├ upload/                # Image/video/file/banner uploads (user-isolated dirs)
+    ├ ws/                    # WebSocket hub, presence, chat ring, cursor broadcast
+    ├ ssr/                   # index.html rewriting with SEO head tags
+    ├ utils/                 # Shared HTTP helpers
+    ├ grengo/                # Admin dashboard API proxy
+    ├ migrations/            # Idempotent ordered schema/seed/data migrations
+    ├ integration/           # Integration test suite
+    └ testutil/              # Test helpers (DB setup)
 ```
 
 ## Handler => Service => Repository Pattern

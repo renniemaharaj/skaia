@@ -1,0 +1,31 @@
+# Grengo CLI Internal Refactor
+
+## Context
+As the `grengo` CLI daemon has grown, all files (`api.go`, `api_metrics.go`, `commands.go`, etc.) have been placed in the root of the `grengo/` directory. This flat structure makes the codebase harder to navigate and maintain, especially as we plan to introduce complex networking features (like multi-node support).
+
+## Goal
+- Refactor the `grengo/` directory into a standard Go application structure.
+- Move API routing and handlers into `internal/api/`.
+- Move business logic and orchestration into `internal/services/`.
+- Move data access and file-system interactions into `internal/repo/`.
+- Keep `main.go` and core command definitions at the root or `cmd/`.
+
+## Non-Goals
+- Adding new features or altering existing logic. This is strictly a structural refactoring for maintainability.
+
+## Steps
+1. Create `internal/api`, `internal/services`, and `internal/repo` directories inside `grengo/`.
+2. Extract the file-system and configuration operations from `api_metrics.go` and `api_exec.go` into `repo/`.
+3. Extract core orchestration logic (e.g., managing sites, docker compose commands) into `services/`.
+4. Move all HTTP handlers, middleware, and the mux router setup into `api/`.
+5. Update `main.go` to wire dependencies (repo -> service -> api) and start the daemon.
+6. Run full verification tests to ensure no regressions.
+
+## Verification
+- Run `go build .` inside `grengo/` and ensure it compiles without cyclic dependencies.
+- Start the API daemon and verify endpoints like `/storage` and `/jobs` return identical results to before the refactor.
+- Run `grengo compose build` and verify orchestration still works.
+
+## References
+- `.todo/grengo_cli_improvements` (related prior work on CLI dx)
+- `.todo/grengo_multi_node_network` (future work benefiting from this refactor)

@@ -1,0 +1,7 @@
+Phase: Planned
+Status: PENDING
+
+# Next Steps
+1. [ ] Finalize the protocol for inter-node communication.
+2. [ ] Set up the internal networking packages in the grengo daemon.
+3. [ ] Design the UI switcher/aggregation approach for the dashboard.

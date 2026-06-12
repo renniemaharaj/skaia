@@ -1,0 +1,7 @@
+Phase: Planned
+Status: PENDING
+
+# Next Steps
+1. [ ] Analyze `grengo/` to map existing functions to `api`, `services`, and `repo` layers.
+2. [ ] Create directories `internal/api`, `internal/services`, and `internal/repo`.
+3. [ ] Begin extracting configuration and file-system paths to the `repo` layer.

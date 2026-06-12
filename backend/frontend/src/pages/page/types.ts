@@ -444,7 +444,7 @@ export interface CustomSection {
   updated_at: string;
 }
 
-/* ──── Component Registry Types (Phase 4) ──── */
+/*  Component Registry Types (Phase 4)  */
 
 /** Data contract categories a bind point can accept. */
 export const BIND_POINT_KINDS = [
@@ -486,7 +486,7 @@ export interface ComponentDefinition {
   version: number;
 }
 
-/* ──── Component Groups (Phase 5) ──── */
+/*  Component Groups (Phase 5)  */
 
 /** A single component within a group layout. */
 export interface ComponentGroupItem {
@@ -521,4 +521,3 @@ export const COMPONENT_EVENTS = [
   "onMouseLeave",
 ] as const;
 export type ComponentEvent = (typeof COMPONENT_EVENTS)[number];
-
