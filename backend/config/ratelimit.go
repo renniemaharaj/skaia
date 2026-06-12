@@ -22,7 +22,7 @@ var RateLimit = rateLimitConfig{
 
 	// ── Tier 3: Purgatory (unknown IPs) ──────────────────────────────────────
 	// Starting allowance for a brand-new IP with no history.
-	BaseLimitPerMin: 1500,
+	BaseLimitPerMin: 100,
 
 	// Each additional jailed IP reduces the Purgatory allowance by this factor.
 	// Formula: allowance = BaseLimitPerMin / (1 + jailedCount * PenaltyFactor)

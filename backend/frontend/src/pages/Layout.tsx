@@ -66,6 +66,15 @@ function getStoredRateLimitUntil(): number | undefined {
   }
 }
 
+const RATE_LIMIT_CHALLENGE_KEY = "pb_rate_limit_challenge";
+function getStoredRateLimitChallenge(): string | undefined {
+  try {
+    return sessionStorage.getItem(RATE_LIMIT_CHALLENGE_KEY) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -93,12 +102,21 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     },
   );
 
+  const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(getStoredRateLimitChallenge());
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
-      const detail = (event as CustomEvent<{ retryAfter?: number }>).detail;
+      const detail = (event as CustomEvent<{ retryAfter?: number, challenge?: string }>).detail;
       const seconds = detail.retryAfter ?? 60;
+      
+      setRateLimitChallenge(detail.challenge);
+      if (detail.challenge) {
+        try {
+          sessionStorage.setItem(RATE_LIMIT_CHALLENGE_KEY, detail.challenge);
+        } catch {}
+      }
+      
       setHoldingSeconds((current) => {
         const next =
           current === undefined ? seconds : Math.max(current, seconds);
@@ -125,9 +143,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         if (seconds === undefined || seconds <= 1) {
           try {
             sessionStorage.removeItem(RATE_LIMIT_KEY);
+            sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
           } catch {
             /* ignore */
           }
+          setRateLimitChallenge(undefined);
           return undefined;
         }
         return seconds - 1;
@@ -365,7 +385,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const themeColor = topRole?.theme_color;
 
   if (holdingSeconds !== undefined) {
-    return <RateLimitedPage retrySeconds={holdingSeconds} />;
+    return <RateLimitedPage 
+      retrySeconds={holdingSeconds} 
+      challenge={rateLimitChallenge} 
+      onCleared={() => {
+        try {
+          sessionStorage.removeItem(RATE_LIMIT_KEY);
+          sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
+        } catch {}
+        setHoldingSeconds(undefined);
+        setRateLimitChallenge(undefined);
+      }}
+    />;
   }
 
   if (mfaRequired) {

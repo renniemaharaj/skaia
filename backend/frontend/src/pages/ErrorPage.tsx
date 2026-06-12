@@ -6,8 +6,8 @@ import "./ErrorPage.css";
 interface ErrorPageProps {
   errorCode?: number;
   errorTitle?: string;
-  errorMessage?: string;
-  details?: string;
+  errorMessage?: React.ReactNode;
+  details?: React.ReactNode;
   showBackButton?: boolean;
   showHomeButton?: boolean;
 }
@@ -42,7 +42,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
 
         <p className="error-message">{errorMessage}</p>
 
-        {details && <p className="error-details">{details}</p>}
+        {details && <div className="error-details">{details}</div>}
 
         <div className="ui-actions ui-actions--center ui-actions--stack-sm">
           {showBackButton && (

@@ -53,8 +53,7 @@
   border-left: 3px solid var(--error-color);
   text-align: left;
   border-radius: 4px;
-  max-height: 120px;
-  overflow-y: auto;
+  /* Removed max-height: 120px and overflow-y to prevent form clipping */
   word-break: break-word;
 }
 
@@ -74,5 +73,4 @@
   .error-message {
     font-size: 0.95rem;
   }
-
 }

@@ -8,6 +8,7 @@ const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should
 export interface ApiError {
   error: string;
   message?: string;
+  challenge?: string;
 }
 
 export interface ApiResponse<T> {
@@ -151,17 +152,23 @@ export async function apiRequest<T>(
     }
 
     if (response.status === 429) {
-      toast.error(
-        `${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`,
-      );
-      window.dispatchEvent(
-        new CustomEvent("api:rate-limit", {
-          detail: {
-            retryAfter,
-            requestUrl: url,
-          },
-        }),
-      );
+      const requestHeaders = new Headers(options.headers || {});
+      const isTotpBypass = requestHeaders.has("X-TOTP-Code") || requestHeaders.has("x-totp-code");
+      
+      if (!isTotpBypass) {
+        toast.error(
+          `${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`,
+        );
+        window.dispatchEvent(
+          new CustomEvent("api:rate-limit", {
+            detail: {
+              retryAfter,
+              requestUrl: url,
+              challenge: errorData?.challenge,
+            },
+          }),
+        );
+      }
     }
 
     // Handle 503 - site may be armed (maintenance mode)

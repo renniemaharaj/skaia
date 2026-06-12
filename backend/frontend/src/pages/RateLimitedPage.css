@@ -1,0 +1,32 @@
+.rate-limited-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.rate-limited-override-btn {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 0.75rem;
+  transition: color 0.2s;
+  opacity: 0.7;
+}
+
+.rate-limited-override-btn:hover {
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.rate-limited-form {
+  width: 100%;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+}

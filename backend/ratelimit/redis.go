@@ -16,9 +16,9 @@ func keyTrusted(ip string) string { return fmt.Sprintf("ip:trusted:%s", ip) }
 func keyHistory(ip string) string { return fmt.Sprintf("ip:history:%s", ip) }
 func keyCounter(ip string) string { return fmt.Sprintf("ip:counter:%s", ip) }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Tier 1 — Jail
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // IsJailed returns true if the IP is currently serving a jail sentence.
 func IsJailed(ctx context.Context, rdb *redis.Client, ip string) (bool, error) {
@@ -70,9 +70,9 @@ func JailedCount(ctx context.Context, rdb *redis.Client) (int64, error) {
 	return count, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Tier 2 — Trusted citizens
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // IsTrusted returns true if the IP holds a trusted citizen token.
 // It also slides the TTL forward on every hit so active users never expire.
@@ -107,9 +107,9 @@ func PromoteToTrusted(ctx context.Context, rdb *redis.Client, ip string) error {
 	return nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Tier 3 — Purgatory (unknown IPs)
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // AdaptiveAllowance computes the per-minute request ceiling for an unknown IP.
 // It fetches the current jailed count and applies the DEFCON formula.
@@ -157,9 +157,9 @@ func CheckAndCount(ctx context.Context, rdb *redis.Client, ip string, limit int)
 	return result, result > int64(limit), nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Graduation
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // RecordCleanRequest increments the graduation counter for a purgatory IP
 // and returns true if the IP has now met the graduation threshold.
@@ -188,9 +188,9 @@ func RecordCleanRequest(ctx context.Context, rdb *redis.Client, ip string) (bool
 	return count >= cfg.GraduationRequests, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Trusted IP rate limiting (high ceiling, not unlimited)
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // CheckTrustedLimit applies the hard ceiling to a trusted IP using the same
 // sliding-window counter. Trusted IPs get BaseLimitPerMin regardless of the
@@ -201,18 +201,21 @@ func CheckTrustedLimit(ctx context.Context, rdb *redis.Client, ip string) (bool,
 	return over, err
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+//
 // Utility
-// ─────────────────────────────────────────────────────────────────────────────
+//
 
 // RealIP extracts the client IP, preferring X-Forwarded-For (set by Cloudflare
 // or any upstream proxy) over the raw RemoteAddr.
 // In production behind Cloudflare, use CF-Connecting-IP instead.
-func RealIP(r interface{ Header() interface{ Get(string) string }; RemoteAddr() string }) string {
-	// This signature is illustrative — see middleware/ratelimit.go for the real
-	// http.Request-based implementation.
-	return ""
-}
+// func RealIP(r interface {
+// 	Header() interface{ Get(string) string }
+// 	RemoteAddr() string
+// }) string {
+// 	// This signature is illustrative — see middleware/ratelimit.go for the real
+// 	// http.Request-based implementation.
+// 	return ""
+// }
 
 // WindowRemaining returns the TTL left on an IP's rate-limit window,
 // useful for populating the Retry-After response header.

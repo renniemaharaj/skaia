@@ -4,13 +4,17 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"log/slog"
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/skaia/backend/ratelimit" // replace with your actual Go module path
+	"github.com/skaia/backend/internal/auth"
+	"github.com/skaia/backend/internal/jwt"
+	"github.com/skaia/backend/internal/user"
+	"github.com/skaia/backend/ratelimit"
 )
 
 // DEFCONRateLimit returns an http.Handler middleware that enforces adaptive
@@ -19,32 +23,36 @@ import (
 // Drop it into any standard net/http chain:
 //
 //	mux := http.NewServeMux()
-//	mux.Handle("/", middleware.DEFCONRateLimit(rdb)(yourHandler))
-//
-// Or wrap your entire router:
-//
-//	http.ListenAndServe(":8080", middleware.DEFCONRateLimit(rdb)(mux))
-func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
+//	mux.Handle("/", middleware.DEFCONRateLimit(rdb, userSvc, authSvc)(yourHandler))
+func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			ip := realIP(r)
 
 			//  Step 1: Jail check
-			// Fastest path — a jailed IP gets a 429 after a single Redis GET.
 			jailed, err := ratelimit.IsJailed(ctx, rdb, ip)
 			if err != nil {
 				slog.Error("jail check failed", "ip", ip, "err", err)
-				// Fail open — don't block legitimate users on a Redis error.
 			}
 			if jailed {
-				retryAfter := ratelimit.WindowRemaining(ctx, rdb, ip)
-				writeTooManyRequests(w, retryAfter)
+				if userSvc != nil && authSvc != nil {
+					eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
+					if promoted {
+						slog.Info("IP broke out of jail via TOTP", "ip", ip)
+						next.ServeHTTP(w, r)
+						return
+					}
+					if eligible {
+						writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), true)
+						return
+					}
+				}
+				writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), false)
 				return
 			}
 
 			//  Step 2: Trusted citizen check
-			// Trusted IPs bypass the adaptive formula but still have a ceiling.
 			trusted, err := ratelimit.IsTrusted(ctx, rdb, ip)
 			if err != nil {
 				slog.Error("trusted check failed", "ip", ip, "err", err)
@@ -55,17 +63,26 @@ func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 					slog.Error("trusted limit check failed", "ip", ip, "err", err)
 				}
 				if over {
-					// Trusted IP blew through the hard ceiling — jail it.
-					// This catches compromised machines and slow-roll bots.
+					if userSvc != nil && authSvc != nil {
+						eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
+						if promoted {
+							slog.Info("Trusted IP re-promoted via TOTP", "ip", ip)
+							next.ServeHTTP(w, r)
+							return
+						}
+						if eligible {
+							writeTooManyRequests(w, time.Minute, true)
+							return
+						}
+					}
 					count, jailErr := ratelimit.JailIP(ctx, rdb, ip)
 					if jailErr != nil {
 						slog.Error("jail write failed", "ip", ip, "err", jailErr)
 					}
 					ratelimit.PushBlockAsync(ip, count)
-					writeTooManyRequests(w, time.Minute)
+					writeTooManyRequests(w, time.Minute, false)
 					return
 				}
-				// Trusted and within ceiling — let through.
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -74,7 +91,6 @@ func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 			allowance, err := ratelimit.AdaptiveAllowance(ctx, rdb)
 			if err != nil {
 				slog.Error("allowance compute failed", "ip", ip, "err", err)
-				// Fail open with base limit.
 			}
 
 			count, over, err := ratelimit.CheckAndCount(ctx, rdb, ip, allowance)
@@ -83,7 +99,18 @@ func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 			}
 
 			if over {
-				// Exceeded adaptive allowance => jail the IP.
+				if userSvc != nil && authSvc != nil {
+					eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
+					if promoted {
+						slog.Info("Purgatory IP promoted via TOTP", "ip", ip)
+						next.ServeHTTP(w, r)
+						return
+					}
+					if eligible {
+						writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), true)
+						return
+					}
+				}
 				jailedCount, jailErr := ratelimit.JailIP(ctx, rdb, ip)
 				if jailErr != nil {
 					slog.Error("jail write failed", "ip", ip, "err", jailErr)
@@ -96,12 +123,11 @@ func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 					"adaptive_allowance", allowance,
 					"total_jailed", jailedCount,
 				)
-				writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip))
+				writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), false)
 				return
 			}
 
 			//  Step 4: Graduation check
-			// Request was clean — record it and promote if threshold is met.
 			graduated, err := ratelimit.RecordCleanRequest(ctx, rdb, ip)
 			if err != nil {
 				slog.Error("graduation record failed", "ip", ip, "err", err)
@@ -120,25 +146,57 @@ func DEFCONRateLimit(rdb *redis.Client) func(http.Handler) http.Handler {
 	}
 }
 
-//
-// Helpers
-//
+// tryTOTPPromotion handles the logic for a 2FA challenge when rate-limited
+func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Service, rdb *redis.Client, ip string) (bool, bool) {
+	tokenStr := ""
+	authHeader := r.Header.Get("Authorization")
+	if authHeader != "" {
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenStr = parts[1]
+		}
+	}
+	if tokenStr == "" {
+		tokenStr = r.URL.Query().Get("token")
+	}
+	if tokenStr == "" {
+		return false, false
+	}
+
+	claims, err := jwt.ValidateToken(tokenStr)
+	if err != nil {
+		return false, false
+	}
+
+	powerLevel, err := userSvc.GetUserMaxPowerLevel(claims.UserID)
+	if err != nil || powerLevel <= 10 {
+		return false, false
+	}
+
+	_, enabled, err := authSvc.GetTOTPEnabled(r.Context(), claims.UserID)
+	if err != nil || !enabled {
+		return false, false
+	}
+
+	totpCode := r.Header.Get("X-TOTP-Code")
+	if totpCode != "" {
+		valid, _ := authSvc.VerifyTOTP(r.Context(), claims.UserID, totpCode)
+		if valid {
+			_ = ratelimit.PromoteToTrusted(r.Context(), rdb, ip)
+			_ = rdb.Del(r.Context(), "ip:jailed:"+ip).Err()
+			return true, true
+		}
+	}
+
+	return true, false
+}
 
 // realIP extracts the true client IP from the request.
-// Priority order:
-//  1. CF-Connecting-IP  — set by Cloudflare (most trustworthy when behind CF)
-//  2. X-Forwarded-For   — set by most load balancers and reverse proxies
-//  3. RemoteAddr        — raw TCP connection IP (fallback)
-//
-// WARNING: Only trust CF-Connecting-IP / X-Forwarded-For if your Go server
-// is behind a proxy you control. If it's exposed directly to the internet,
-// use RemoteAddr only — these headers are trivially spoofed.
 func realIP(r *http.Request) string {
 	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
 		return ip
 	}
 	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		// X-Forwarded-For may be a comma-separated list; the leftmost is the client.
 		for i := 0; i < len(ip); i++ {
 			if ip[i] == ',' {
 				return ip[:i]
@@ -154,7 +212,7 @@ func realIP(r *http.Request) string {
 }
 
 // writeTooManyRequests writes a 429 response with standard rate-limit headers.
-func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration) {
+func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration, challenge bool) {
 	seconds := int(retryAfter.Seconds())
 	if seconds < 1 {
 		seconds = 60
@@ -163,6 +221,10 @@ func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration) {
 	w.Header().Set("X-RateLimit-Reason", "adaptive-defcon")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusTooManyRequests)
-	_, _ = w.Write([]byte(`{"error":"rate limit exceeded","retry_after":` +
-		strconv.Itoa(seconds) + `}`))
+	
+	if challenge {
+		_, _ = w.Write([]byte(`{"error":"rate limit exceeded","challenge":"totp","retry_after":` + strconv.Itoa(seconds) + `}`))
+	} else {
+		_, _ = w.Write([]byte(`{"error":"rate limit exceeded","retry_after":` + strconv.Itoa(seconds) + `}`))
+	}
 }

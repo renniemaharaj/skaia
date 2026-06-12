@@ -5,7 +5,10 @@
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
-import { MediaViewer, type MediaScrapeJob } from "../../components/mediascraper/MediaViewer";
+import {
+  MediaViewer,
+  type MediaScrapeJob,
+} from "../../components/mediascraper/MediaViewer";
 import { apiRequest } from "../../utils/api";
 import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";
@@ -61,13 +64,7 @@ function PrimitiveDiv({ styles }: { styles: StyleMap }) {
   return <div className="cr-div" style={styles.root} />;
 }
 
-function PrimitiveText({
-  data,
-  styles,
-}: {
-  data: Resolved;
-  styles: StyleMap;
-}) {
+function PrimitiveText({ data, styles }: { data: Resolved; styles: StyleMap }) {
   return (
     <p className="cr-text" style={styles.root}>
       {str(data.body)}
@@ -151,13 +148,7 @@ function PrimitiveImage({
   );
 }
 
-function PrimitiveLink({
-  data,
-  styles,
-}: {
-  data: Resolved;
-  styles: StyleMap;
-}) {
+function PrimitiveLink({ data, styles }: { data: Resolved; styles: StyleMap }) {
   return (
     <a
       className="cr-link"
@@ -171,13 +162,7 @@ function PrimitiveLink({
   );
 }
 
-function PrimitiveIcon({
-  data,
-  styles,
-}: {
-  data: Resolved;
-  styles: StyleMap;
-}) {
+function PrimitiveIcon({ data, styles }: { data: Resolved; styles: StyleMap }) {
   const icon = str(data.icon);
   const isUrl = /^https?:\/\//i.test(icon);
   return (
@@ -229,7 +214,7 @@ function CompoundCard({
       {!!data.href && (
         <div className="cr-card__footer" style={styles.footer}>
           <a href={str(data.href)} target="_blank" rel="noopener noreferrer">
-            View =>
+            View More
           </a>
         </div>
       )}
@@ -237,13 +222,7 @@ function CompoundCard({
   );
 }
 
-function CompoundStat({
-  data,
-  styles,
-}: {
-  data: Resolved;
-  styles: StyleMap;
-}) {
+function CompoundStat({ data, styles }: { data: Resolved; styles: StyleMap }) {
   return (
     <div className="cr-stat" style={styles.root}>
       {!!data.icon && (
@@ -289,11 +268,7 @@ function CompoundMediaCard({
       {!!data.title && (
         <div className="cr-media-card__caption" style={styles.caption}>
           {data.href ? (
-            <a
-              href={str(data.href)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={str(data.href)} target="_blank" rel="noopener noreferrer">
               {str(data.title)}
             </a>
           ) : (
@@ -320,17 +295,21 @@ function CompoundMediaScraper({
     let active = true;
 
     const handleResult = (e: Event) => {
-      const customEvent = e as CustomEvent<{ url: string; result?: { images: string[], last_scanned: string }; error?: string }>;
+      const customEvent = e as CustomEvent<{
+        url: string;
+        result?: { images: string[]; last_scanned: string };
+        error?: string;
+      }>;
       const data = customEvent.detail;
       if (active && data.url === url) {
         if (data.error) {
           setJob({ url, status: "error", error: data.error });
         } else if (data.result && data.result.images) {
-          setJob({ 
-            url, 
-            status: "done", 
-            images: data.result.images, 
-            lastScanned: data.result.last_scanned 
+          setJob({
+            url,
+            status: "done",
+            images: data.result.images,
+            lastScanned: data.result.last_scanned,
           });
         }
       }
@@ -346,20 +325,23 @@ function CompoundMediaScraper({
     const doScrape = () => {
       if (!active) return;
       setJob({ url, status: "pending" });
-      apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, { method: "GET" })
+      apiRequest<{ images?: string[]; last_scanned?: string; status?: string }>(
+        `/mediascraper/scrape?url=${encodeURIComponent(url)}`,
+        { method: "GET" },
+      )
         .then((res) => {
           if (active && res && res.images) {
-            setJob({ 
-              url, 
-              status: "done", 
-              images: res.images || [], 
-              lastScanned: res.last_scanned 
+            setJob({
+              url,
+              status: "done",
+              images: res.images || [],
+              lastScanned: res.last_scanned,
             });
           }
         })
         .catch((err) => {
           if (active) {
-             setJob({ url, status: "error", error: err.message });
+            setJob({ url, status: "error", error: err.message });
           }
         });
     };
@@ -375,11 +357,11 @@ function CompoundMediaScraper({
     window.addEventListener("mediascraper:result", handleResult);
     window.addEventListener("mediascraper:started", handleStarted);
     window.addEventListener("mediascraper:pending", handlePending);
-    
+
     const timer = setTimeout(doScrape, 500);
 
-    return () => { 
-      active = false; 
+    return () => {
+      active = false;
       clearTimeout(timer);
       window.removeEventListener("mediascraper:result", handleResult);
       window.removeEventListener("mediascraper:started", handleStarted);
@@ -458,9 +440,7 @@ export function ComponentRenderer({
     case "primitive.text":
       return <PrimitiveText data={data} styles={styles} />;
     case "primitive.button":
-      return (
-        <PrimitiveButton data={data} styles={styles} onEvent={onEvent} />
-      );
+      return <PrimitiveButton data={data} styles={styles} onEvent={onEvent} />;
     case "primitive.checkbox":
       return <PrimitiveCheckbox data={data} styles={styles} />;
     case "primitive.image":
@@ -470,9 +450,7 @@ export function ComponentRenderer({
     case "primitive.icon":
       return <PrimitiveIcon data={data} styles={styles} />;
     case "compound.card":
-      return (
-        <CompoundCard data={data} styles={styles} onEvent={onEvent} />
-      );
+      return <CompoundCard data={data} styles={styles} onEvent={onEvent} />;
     case "compound.stat":
       return <CompoundStat data={data} styles={styles} />;
     case "compound.media_card":

@@ -161,11 +161,10 @@ func main() {
 	ratelimit.InitCloudflare()
 
 	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher)
-	handler := defconmw.DEFCONRateLimit(rdb)(baseHandler)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           handler,
+		Handler:           baseHandler,
 		ReadTimeout:       time.Duration(envInt("HTTP_READ_TIMEOUT_SEC", 3600)) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      time.Duration(envInt("HTTP_WRITE_TIMEOUT_SEC", 3600)) * time.Second,
@@ -286,6 +285,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
 
+	authRepo := auth.NewSQLRepository(db)
+	authSvc := auth.NewService(authRepo, userSvc)
+
 	forumCatRepo := iforum.NewCategoryRepository(db)
 	forumThreadRepo := iforum.NewThreadRepository(db)
 	forumCommentRepo := iforum.NewCommentRepository(db)
@@ -370,11 +372,16 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   origins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "X-TOTP-Code"},
 		ExposedHeaders:   []string{},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+
+	// Note: We don't apply the rate limiter globally here because doing so would
+	// block the React frontend from loading its HTML/JS/CSS assets during a jail
+	// sentence, completely locking the user out of the TOTP bypass UI.
+	defconLimiter := defconmw.DEFCONRateLimit(rdb, userSvc, authSvc)
 
 	// Health check at root (for Docker healthcheck probes)
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -388,7 +395,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	// WebSocket at root (nginx proxies /ws directly)
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
-		ws.HandleConnection(w, r, hub)
+		defconLimiter(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ws.HandleConnection(w, r, hub)
+		})).ServeHTTP(w, r)
 	})
 
 	//  Static file serving for user uploads (at root - URLs are stored
@@ -437,11 +446,16 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
 		globalAuthSvc := auth.NewService(auth.NewSQLRepository(db), userSvc)
-		api.Use(imw.ExtractTokenMiddleware, imw.RateLimitByIP(globalAuthSvc), imw.RateLimitByClient(), imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
+		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+		})
+
+		api.Post("/auth/bypass-rate-limit", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(SimpleResponse{Message: "Rate limit bypass verified", Status: "ok"})
 		})
 
 		api.Get("/armed-status", func(w http.ResponseWriter, r *http.Request) {
@@ -610,8 +624,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		analyticsRepo := ianalytics.NewRepository(db)
 		analyticsSvc := ianalytics.NewService(analyticsRepo)
 
-		authRepo := auth.NewSQLRepository(db)
-		authSvc := auth.NewService(authRepo, userSvc)
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)

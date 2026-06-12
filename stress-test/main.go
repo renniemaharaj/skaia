@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	baseURL := "https://thewriterco.com/api/"
+	baseURL := "http://localhost/api/"
 	totalRequests := 2000
 	concurrency := 4
 
@@ -59,20 +59,20 @@ func main() {
 
 func worker(wg *sync.WaitGroup, baseURL string, jobs <-chan int, results chan<- int) {
 	defer wg.Done()
-	
+
 	// Set a reasonable timeout so hanging requests don't block a thread forever
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	for j := range jobs {
 		// Cache buster
 		reqURL := fmt.Sprintf("%s?nocache=%d", baseURL, j)
-		
+
 		resp, err := client.Get(reqURL)
 		if err != nil {
 			results <- 0 // 0 means the request failed entirely
 			continue
 		}
-		
+
 		results <- resp.StatusCode
 		resp.Body.Close()
 	}
