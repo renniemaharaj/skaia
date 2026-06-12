@@ -44,11 +44,11 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						return
 					}
 					if eligible {
-						writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), true)
+						writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), true)
 						return
 					}
 				}
-				writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), false)
+				writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
 				return
 			}
 
@@ -80,7 +80,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						slog.Error("jail write failed", "ip", ip, "err", jailErr)
 					}
 					ratelimit.PushBlockAsync(ip, count)
-					writeTooManyRequests(w, time.Minute, false)
+					writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
 					return
 				}
 				next.ServeHTTP(w, r)
@@ -123,7 +123,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 					"adaptive_allowance", allowance,
 					"total_jailed", jailedCount,
 				)
-				writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), false)
+				writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
 				return
 			}
 

@@ -17,6 +17,36 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challen
   const [showOverride, setShowOverride] = useState(challenge === "totp");
   const [totpCode, setTotpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(retrySeconds || 0);
+
+  React.useEffect(() => {
+    if (timeLeft <= 0) {
+      if (retrySeconds && timeLeft === 0) {
+        onCleared?.();
+      }
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft, retrySeconds, onCleared]);
+
+  const formatTime = (totalSeconds: number) => {
+    if (totalSeconds < 60) {
+      return `${totalSeconds} second${totalSeconds === 1 ? "" : "s"}`;
+    }
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0 || (hours === 0 && minutes === 0)) parts.push(`${seconds}s`);
+    
+    return parts.join(" ");
+  };
 
   const handleTotpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +71,8 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challen
   const detailsNode = (
     <div className="rate-limited-details">
       <p style={{ margin: 0 }}>
-        {retrySeconds
-          ? `Please wait ${retrySeconds} second${
-              retrySeconds === 1 ? "" : "s"
-            } before trying again.`
+        {timeLeft > 0
+          ? `Please wait ${formatTime(timeLeft)} before trying again.`
           : "Please wait while the rate-limit window clears."}
       </p>
 

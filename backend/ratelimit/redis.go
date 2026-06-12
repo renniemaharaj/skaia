@@ -226,3 +226,12 @@ func WindowRemaining(ctx context.Context, rdb *redis.Client, ip string) time.Dur
 	}
 	return ttl
 }
+
+// JailTimeRemaining returns the TTL left on an IP's jail sentence.
+func JailTimeRemaining(ctx context.Context, rdb *redis.Client, ip string) time.Duration {
+	ttl, err := rdb.TTL(ctx, keyJailed(ip)).Result()
+	if err != nil || ttl < 0 {
+		return config.RateLimit.JailTTL
+	}
+	return ttl
+}
