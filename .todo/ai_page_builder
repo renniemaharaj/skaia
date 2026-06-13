@@ -1,0 +1,38 @@
+# AI-Assisted Datasources & Custom Page Builder
+
+## Context
+Skaia's CMS currently supports generic page building, but users need a dynamic, AI-assisted way to generate and iterate on custom pages and datasources in real-time. By integrating a Model Context Protocol (MCP) toolchain and an LLM pipeline, users can simply type prompts into an overlay, and the AI will autonomously build or update the page sections and connect relevant datasources.
+
+For example: A user could prompt "Show me what's going on right now in the Middle East." The pipeline should empower the model to autonomously read news API docs, configure the backend datasource, map the fetched data fields to UI components, manage styles, check the current page layout, and either update an existing news section in-place or dynamically build a new section/page on the fly.
+
+## Goal
+- Build a real-time, dynamic frontend input overlay for AI page generation.
+- Implement a backend pipeline to process prompts and return structured output.
+- Equip the LLM with a powerful suite of MCP tools, specifically enabling it to:
+  - Create and manage backend datasources.
+  - Read component registry configurations and map datasource columns to UI fields.
+  - Read the current page layout to intelligently update in-place or append new sections.
+  - Reorder, move, or style sections autonomously.
+- Enable real-time frontend updates as the AI generates and fixes the page based on user feedback.
+
+## Non-Goals
+- Replacing the manual CMS editor entirely (AI should augment, not lock out manual edits).
+- Building our own LLM from scratch (we will integrate with existing models via API).
+- Creating a parallel "AI page" architecture (the system must tap seamlessly into the existing custom pages architecture without breaking it).
+
+## Steps
+1. **Pipeline & MCP Foundation:** Design the backend job pipeline and implement the MCP tool definitions for managing datasources and page sections.
+2. **Backend LLM Integration:** Create the integration layer to prompt the model with the user's request and the MCP tools, handling structured output responses.
+3. **Frontend Overlay:** Build the UI input overlay (prompt box, spinner, status indicators) on top of the custom page view.
+4. **Real-time Synchronization & Caching:** Tightly weave the AI's output into the existing WebSocket propagation functions and cache invalidation logic, ensuring AI updates broadcast identical state changes as manual CMS edits.
+5. **Conflict Resolution & State Reconciliation:** Ensure the AI always recalculates its actions against the *latest* state. If a user manually edits a section while the AI is processing, the AI must evaluate the delta, respect the user's work, and skip overriding it. Previous state must be remembered to ensure safe iteration.
+6. **Iteration & Feedback Loop:** Implement the ability for users to prompt fixes or refinements on the generated page, feeding context back to the model.
+
+## Verification
+- Test that prompting for a page layout successfully invokes the MCP tools and generates valid JSONB block content.
+- Verify that WebSockets correctly stream the generated sections to the frontend without requiring a page refresh.
+- Ensure manual CMS edits can coexist with AI-generated sections.
+
+## References
+- `backend/internal/datasource/`
+- `.routines/todo_planner`

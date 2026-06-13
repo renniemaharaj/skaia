@@ -1,0 +1,16 @@
+<--/------->
+
+## ai_page_builder
+
+### Current Progress
+- **Phase 1: Pipeline & MCP Foundation** — ⬜ Not started
+- **Phase 2: Backend LLM Integration** — ⬜ Not started
+- **Phase 3: Frontend Overlay & UX** — ⬜ Not started
+- **Phase 4: Real-time Sync & Rendering** — ⬜ Not started
+- **Phase 5: Iteration & Feedback Loop** — ⬜ Not started
+
+### Next Steps
+- [ ] Draft the MCP tool schemas for datasource management and page section manipulation.
+- [ ] Set up the basic backend job pipeline for async model prompting.
+
+<--/------->
