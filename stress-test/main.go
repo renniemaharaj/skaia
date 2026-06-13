@@ -3,77 +3,128 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 )
 
+type Result struct {
+	url       string
+	code      int
+	timestamp time.Time
+	duration  time.Duration
+}
+
 func main() {
-	baseURL := "http://localhost/api/"
-	totalRequests := 2000
-	concurrency := 4
+	targets := []string{}
 
-	fmt.Printf("Starting stress test...\n")
-	fmt.Printf("URL: %s\n", baseURL)
-	fmt.Printf("Total Requests: %d\n", totalRequests)
-	fmt.Printf("Concurrency: %d threads\n\n", concurrency)
+	totalRequestsPerTarget := 2000
+	concurrencyPerTarget := 200
 
-	// Channel to feed jobs
-	jobs := make(chan int, totalRequests)
-	// Channel to collect results (HTTP status codes)
-	results := make(chan int, totalRequests)
+	fmt.Printf("Starting dual stress test...\n")
+	fmt.Printf("Targets: %v\n", targets)
+	fmt.Printf("Requests per Target: %d\n", totalRequestsPerTarget)
+	fmt.Printf("Concurrency per Target: %d threads\n\n", concurrencyPerTarget)
 
+	results := make(chan Result, totalRequestsPerTarget*len(targets))
 	var wg sync.WaitGroup
 
-	// Start worker pool (exactly 4 threads)
-	for w := 1; w <= concurrency; w++ {
-		wg.Add(1)
-		go worker(&wg, baseURL, jobs, results)
+	for _, target := range targets {
+		jobs := make(chan int, totalRequestsPerTarget)
+
+		for w := 1; w <= concurrencyPerTarget; w++ {
+			wg.Add(1)
+			go worker(&wg, target, jobs, results)
+		}
+
+		go func(url string, jobChan chan<- int) {
+			for j := 1; j <= totalRequestsPerTarget; j++ {
+				jobChan <- j
+			}
+			close(jobChan)
+		}(target, jobs)
 	}
 
-	// Queue up all the jobs
-	for j := 1; j <= totalRequests; j++ {
-		jobs <- j
-	}
-	close(jobs)
-
-	// Wait for all workers to finish processing the jobs
 	wg.Wait()
 	close(results)
 
-	// Tally up the results
-	tally := make(map[int]int)
-	for code := range results {
-		tally[code]++
+	// Group results by URL
+	resultsByUrl := make(map[string][]Result)
+	for r := range results {
+		resultsByUrl[r.url] = append(resultsByUrl[r.url], r)
 	}
 
-	// Print results exactly like `sort | uniq -c`
-	fmt.Printf("--- Results ---\n")
-	for code, count := range tally {
-		if code == 0 {
-			fmt.Printf("%5d %s (Connection Failed/Timeout)\n", count, "000")
-		} else {
-			fmt.Printf("%5d %d\n", count, code)
+	for _, target := range targets {
+		allResults := resultsByUrl[target]
+		sort.Slice(allResults, func(i, j int) bool {
+			return allResults[i].timestamp.Before(allResults[j].timestamp)
+		})
+
+		tally := make(map[int]int)
+		for _, r := range allResults {
+			tally[r.code]++
 		}
+
+		fmt.Printf("===================================================\n")
+		fmt.Printf("Results for %s\n", target)
+		fmt.Printf("===================================================\n")
+		for code, count := range tally {
+			if code == 0 {
+				fmt.Printf("%5d %s (Connection Failed/Timeout)\n", count, "000")
+			} else {
+				fmt.Printf("%5d %d\n", count, code)
+			}
+		}
+
+		fmt.Printf("\n--- Escalation Curve ---\n")
+		bucketSize := 200
+		for i := 0; i < len(allResults); i += bucketSize {
+			end := i + bucketSize
+			if end > len(allResults) {
+				end = len(allResults)
+			}
+			bucket := allResults[i:end]
+			bucketTally := make(map[int]int)
+			var totalDuration time.Duration
+
+			for _, r := range bucket {
+				bucketTally[r.code]++
+				totalDuration += r.duration
+			}
+			avgLatency := totalDuration / time.Duration(len(bucket))
+
+			fmt.Printf("Reqs %4d - %4d | Avg Latency: %7s | ", i+1, end, avgLatency.Round(time.Millisecond))
+			for code, count := range bucketTally {
+				fmt.Printf("[%d: %d] ", code, count)
+			}
+			fmt.Println()
+		}
+		fmt.Println()
 	}
 }
 
-func worker(wg *sync.WaitGroup, baseURL string, jobs <-chan int, results chan<- int) {
+func worker(wg *sync.WaitGroup, targetURL string, jobs <-chan int, results chan<- Result) {
 	defer wg.Done()
-
-	// Set a reasonable timeout so hanging requests don't block a thread forever
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: 200,
+		},
+	}
 
 	for j := range jobs {
-		// Cache buster
-		reqURL := fmt.Sprintf("%s?nocache=%d", baseURL, j)
+		reqURL := fmt.Sprintf("%s?nocache=%d", targetURL, j)
+		start := time.Now()
 
 		resp, err := client.Get(reqURL)
+		duration := time.Since(start)
+
 		if err != nil {
-			results <- 0 // 0 means the request failed entirely
+			results <- Result{url: targetURL, code: 0, timestamp: time.Now(), duration: duration}
 			continue
 		}
 
-		results <- resp.StatusCode
+		results <- Result{url: targetURL, code: resp.StatusCode, timestamp: time.Now(), duration: duration}
 		resp.Body.Close()
 	}
 }
