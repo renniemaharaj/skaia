@@ -12,6 +12,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/skaia/backend/config"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/user"
@@ -31,11 +32,9 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 			ctx := r.Context()
 			ip := realIP(r)
 
-			//  Step 1: Jail check
-			jailed, err := ratelimit.IsJailed(ctx, rdb, ip)
-			if err != nil {
-				slog.Error("jail check failed", "ip", ip, "err", err)
-			}
+			//  Step 1: Jail check (optimized to 1 Redis roundtrip)
+			jailTTL := ratelimit.JailTimeRemaining(ctx, rdb, ip)
+			jailed := jailTTL > 0
 			if jailed {
 				if userSvc != nil && authSvc != nil {
 					eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
@@ -45,11 +44,11 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						return
 					}
 					if eligible {
-						writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), true)
+						writeTooManyRequests(w, jailTTL, true)
 						return
 					}
 				}
-				writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
+				writeTooManyRequests(w, jailTTL, false)
 				return
 			}
 
@@ -169,15 +168,25 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 		return false, false
 	}
 
-	powerLevel, err := userSvc.GetUserMaxPowerLevel(claims.UserID)
-	if err != nil || powerLevel <= 10 {
-		return false, false
-	}
-
+	// 1. Check if they already have an active bypass token (fastest)
 	bypassKey := fmt.Sprintf("jail_bypass:%d", claims.UserID)
 	bypassActive, _ := rdb.Exists(r.Context(), bypassKey).Result()
 	if bypassActive > 0 {
 		return true, true
+	}
+
+	// 2. Check if they are already marked as ineligible to save DB hits
+	ineligibleKey := fmt.Sprintf("totp_ineligible:%d", claims.UserID)
+	ineligible, _ := rdb.Exists(r.Context(), ineligibleKey).Result()
+	if ineligible > 0 {
+		return false, false
+	}
+
+	// 3. Hit the database for power level
+	powerLevel, err := userSvc.GetUserMaxPowerLevel(claims.UserID)
+	if err != nil || powerLevel <= 10 {
+		_ = rdb.Set(r.Context(), ineligibleKey, "1", 15*time.Minute).Err()
+		return false, false
 	}
 
 	_, enabled, err := authSvc.GetTOTPEnabled(r.Context(), claims.UserID)
@@ -189,7 +198,7 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 	if totpCode != "" {
 		valid, _ := authSvc.VerifyTOTP(r.Context(), claims.UserID, totpCode)
 		if valid {
-			_ = rdb.Set(r.Context(), bypassKey, "1", time.Hour).Err()
+			_ = rdb.Set(r.Context(), bypassKey, "1", config.RateLimit.BypassTTL).Err()
 			return true, true
 		}
 	}

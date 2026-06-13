@@ -10,6 +10,9 @@ var RateLimit = rateLimitConfig{
 	// How long a jailed IP stays blocked before being automatically released.
 	JailTTL: 15 * time.Minute,
 
+	// How long an admin user can bypass an IP jail before needing to re-auth
+	BypassTTL: 1 * time.Hour,
+
 	// ── Tier 2: Trusted citizens ─────────────────────────────────────────────
 	// Maximum requests per minute for a trusted IP (hard ceiling — not bypassed
 	// entirely, because trusted machines can be compromised).
@@ -66,6 +69,7 @@ var RateLimit = rateLimitConfig{
 
 type rateLimitConfig struct {
 	JailTTL               time.Duration
+	BypassTTL             time.Duration
 	TrustedLimitPerMin    int
 	TrustedTTL            time.Duration
 	BaseLimitPerMin       int
