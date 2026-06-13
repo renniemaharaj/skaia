@@ -1,0 +1,30 @@
+# NAT Jail Bypass & Admin Persistence
+
+## Context
+When an admin shares a public IP address with a malicious actor (e.g., behind a coffee shop NAT or corporate firewall), the malicious actor can trigger the DEFCON rate limit jail. Currently, when the admin uses a TOTP challenge to bypass this jail, the `tryTOTPPromotion` function deletes the `ip:jailed:<ip>` key from Redis entirely. This accidentally frees the malicious actor, who instantly hammers the server and triggers the jail again, trapping the admin in an infinite loop of re-authentication.
+
+## Goal
+- Allow admins to bypass an active IP jail for their own requests **without** clearing the IP jail for the rest of the network.
+- Maintain the ultra-fast, aggressive rejection path for alien requests. The expensive work (validating JWTs/cookies) must only happen *after* the IP is flagged, so the server isn't burning CPU validating tokens for botnets.
+- Ensure the admin doesn't have to manually submit a TOTP code on every single request while the jail is active.
+
+## Non-Goals
+- We are not changing the core `IsJailed` IP check for normal traffic.
+- We are not adding complex fingerprinting (IP + UserAgent) to the Redis keys right now; a secure cryptographic token bypass is sufficient and cleaner.
+
+## Steps
+1. **Middleware Update:** Modify `backend/middleware/ratelimit.go`. When `ratelimit.IsJailed` evaluates to true, intercept the request and check for a valid admin JWT or a newly introduced signed "Bypass Cookie".
+2. **Selective Bypass:** If the admin token is valid, invoke `next.ServeHTTP(w, r)` to allow the request to proceed, but **remove** the `rdb.Del("ip:jailed:"+ip)` logic so the IP stays locked for everyone else.
+3. **Durable Token:** Update the TOTP challenge logic so that completing a challenge issues a durable bypass token (e.g., a signed HTTP-only cookie). This ensures the admin can navigate seamlessly while the jail is active.
+4. **Token Expiry & Rotation:** Ensure the bypass cookie does not live forever to avoid creating a new attack surface. Tie its expiry to the session length or the TOTP secret rotation schedule.
+5. **Cleanup:** Remove the old logic that clears the jail state or promotes the entire IP to Trusted when an individual admin authenticates.
+
+## Verification
+- Simulate a jailed IP. 
+- Send a standard `cURL` request without a token -> Verify `429 Too Many Requests`.
+- Send a `cURL` request with the Admin Bypass token from the exact same IP -> Verify `200 OK`.
+- Ensure the Redis `ip:jailed:<ip>` key still exists after the admin successfully loads a page.
+
+## References
+- `backend/middleware/ratelimit.go`
+- `.routines/todo_planner`

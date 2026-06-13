@@ -16,7 +16,10 @@ type Result struct {
 }
 
 func main() {
-	targets := []string{}
+	targets := []string{
+		"https://thewriterco.com/api/",
+		"https://skaiacraft.com/api/",
+	}
 
 	totalRequestsPerTarget := 2000
 	concurrencyPerTarget := 200

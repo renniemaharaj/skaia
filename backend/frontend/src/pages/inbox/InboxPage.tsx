@@ -48,6 +48,7 @@ import {
   formatFullDateTime,
 } from "../../utils/serverTime";
 import Input from "../../components/input/Input";
+import { GlassMenu } from "../../components/ui/GlassMenu";
 import "./InboxPage.css";
 import { parseInt } from "lodash";
 
@@ -861,6 +862,8 @@ function InboxChatHeader({
   onAddUser: (user: any) => Promise<void>;
 }) {
   const [showAddUser, setShowAddUser] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
   const isGroup = activeConv?.is_group;
   const other = activeConv?.other_user;
   const displayName = isGroup ? (activeConv.title || `Group Chat (${activeConv.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
@@ -868,6 +871,52 @@ function InboxChatHeader({
   const myParticipant = isGroup ? activeConv.participants?.find(p => p.id.toString() === currentUserId) : null;
   const isOwner = myParticipant?.role === "owner";
   const isManager = myParticipant?.role === "manager" || isOwner;
+
+  const buildParticipantOptions = () => {
+    if (!activeConv?.participants) return [];
+    return activeConv.participants.map(p => {
+      const isTargetOwner = p.role === "owner";
+      const isTargetManager = p.role === "manager";
+      const isSelf = p.id.toString() === currentUserId;
+
+      const subOptions: any[] = [];
+      if (!isSelf && isManager) {
+        if (isOwner && !isTargetOwner) {
+          subOptions.push({
+            title: isTargetManager ? "Demote to Member" : "Promote to Manager",
+            icon: <Shield size={14} />,
+            onClick: () => onChangeRole(p.id.toString(), isTargetManager ? "member" : "manager"),
+          });
+        }
+        if (!isTargetOwner && (!isTargetManager || isOwner)) {
+          subOptions.push({
+            title: p.is_muted ? "Unmute User" : "Mute User",
+            icon: p.is_muted ? <Volume2 size={14} /> : <VolumeX size={14} />,
+            onClick: () => onMute(p.id.toString(), !p.is_muted),
+          });
+          subOptions.push({
+            title: "Remove from Group",
+            icon: <UserMinus size={14} />,
+            onClick: () => onKick(p.id.toString()),
+          });
+        }
+      }
+
+      return {
+        title: p.display_name || p.username,
+        info: p.role,
+        icon: (
+          <UserProfileOverlay userId={p.id} fallbackName={p.display_name || p.username} fallbackAvatar={p.avatar_url || undefined}>
+            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+              <UserAvatar src={p.avatar_url || undefined} alt={p.username} size={24} initials={p.username[0]?.toUpperCase()} />
+            </div>
+          </UserProfileOverlay>
+        ),
+        subOptions: subOptions.length > 0 ? subOptions : undefined,
+        onClick: subOptions.length === 0 ? () => {} : undefined,
+      };
+    });
+  };
 
   return (
     <div className="inbox-chat-header">
@@ -888,7 +937,13 @@ function InboxChatHeader({
             </span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className="inbox-chat-username">{displayName} {activeConv.is_locked && <Lock size={12} style={{ display: 'inline', marginLeft: 4 }} />}</span>
-              <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+              <span 
+                style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px', cursor: 'pointer' }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMenuPos({ x: e.clientX, y: e.clientY });
+                }}
+              >
                 {activeConv.participants?.map(p => p.display_name || p.username).join(', ')}
               </span>
             </div>
@@ -1043,6 +1098,14 @@ function InboxChatHeader({
           </div>
         )}
       </div>
+      {menuPos && (
+        <GlassMenu
+          x={menuPos.x}
+          y={menuPos.y}
+          options={buildParticipantOptions()}
+          onClose={() => setMenuPos(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1054,6 +1117,17 @@ function MessageBubble({
   m: InboxMessage;
   currentUserId: string | undefined;
 }) {
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+
+  const handleTextClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMenuPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const getGlassOptions = () => [
+    { title: "Copy Text", icon: <FileText size={14} />, onClick: () => { if (m.content) navigator.clipboard.writeText(m.content); toast.success("Copied to clipboard"); } },
+    { title: "Report", icon: <Ban size={14} />, onClick: () => toast.error("Reported message") },
+  ];
   if (m.message_type === "system_group_created" || m.message_type === "system_group_update") {
     return (
       <div className="inbox-msg-system" style={{ textAlign: "center", margin: "1rem 0", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
@@ -1154,7 +1228,7 @@ function MessageBubble({
             }
           })()}
         {m.content && (!m.message_type || m.message_type === "text") && (
-          <p className="inbox-msg-content">{m.content}</p>
+          <p className="inbox-msg-content" onClick={handleTextClick} style={{ cursor: 'pointer' }}>{m.content}</p>
         )}
         {m.content &&
           m.message_type &&
@@ -1169,6 +1243,14 @@ function MessageBubble({
           {formatLocalTime(m.created_at)}
         </span>
       </div>
+      {menuPos && (
+        <GlassMenu
+          x={menuPos.x}
+          y={menuPos.y}
+          options={getGlassOptions()}
+          onClose={() => setMenuPos(null)}
+        />
+      )}
     </div>
   );
 }
