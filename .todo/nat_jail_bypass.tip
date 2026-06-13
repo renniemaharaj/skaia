@@ -3,13 +3,13 @@
 ## nat_jail_bypass
 
 ### Current Progress
-- **Phase 1: Middleware Auth Evaluation Updates** — ⬜ Not started
-- **Phase 2: Durable Bypass Token Issuing** — ⬜ Not started
-- **Phase 3: Verification (Dual Role on Single IP)** — ⬜ Not started
+- **Phase 1: Middleware Auth Evaluation Updates** — ✅ Complete
+- **Phase 2: Durable Bypass Token Issuing** — ✅ Complete
+- **Phase 3: Verification (Dual Role on Single IP)** — ✅ Complete
 
 ### Next Steps
-- [ ] Update `backend/middleware/ratelimit.go` to invoke `next.ServeHTTP` directly when an admin token is found on a jailed IP.
-- [ ] Remove `rdb.Del` and `PromoteToTrusted` logic from the TOTP promotion flow to ensure the IP remains jailed.
-- [ ] Ensure the TOTP verification endpoint sets a signed HTTP-only cookie or durable token for subsequent requests.
+- [x] Update `backend/middleware/ratelimit.go` to invoke `next.ServeHTTP` directly when an admin token is found on a jailed IP.
+- [x] Remove `rdb.Del` and `PromoteToTrusted` logic from the TOTP promotion flow to ensure the IP remains jailed.
+- [x] Ensure the TOTP verification endpoint sets a signed HTTP-only cookie or durable token for subsequent requests.
 
 <--/------->

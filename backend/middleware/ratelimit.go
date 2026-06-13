@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -39,7 +40,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 				if userSvc != nil && authSvc != nil {
 					eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
 					if promoted {
-						slog.Info("IP broke out of jail via TOTP", "ip", ip)
+						slog.Info("Admin request bypassed jail via token", "ip", ip)
 						next.ServeHTTP(w, r)
 						return
 					}
@@ -66,7 +67,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 					if userSvc != nil && authSvc != nil {
 						eligible, promoted := tryTOTPPromotion(r, userSvc, authSvc, rdb, ip)
 						if promoted {
-							slog.Info("Trusted IP re-promoted via TOTP", "ip", ip)
+							slog.Info("Admin request bypassed trusted limit via active token", "ip", ip)
 							next.ServeHTTP(w, r)
 							return
 						}
@@ -173,6 +174,12 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 		return false, false
 	}
 
+	bypassKey := fmt.Sprintf("jail_bypass:%d", claims.UserID)
+	bypassActive, _ := rdb.Exists(r.Context(), bypassKey).Result()
+	if bypassActive > 0 {
+		return true, true
+	}
+
 	_, enabled, err := authSvc.GetTOTPEnabled(r.Context(), claims.UserID)
 	if err != nil || !enabled {
 		return false, false
@@ -182,8 +189,7 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 	if totpCode != "" {
 		valid, _ := authSvc.VerifyTOTP(r.Context(), claims.UserID, totpCode)
 		if valid {
-			_ = ratelimit.PromoteToTrusted(r.Context(), rdb, ip)
-			_ = rdb.Del(r.Context(), "ip:jailed:"+ip).Err()
+			_ = rdb.Set(r.Context(), bypassKey, "1", time.Hour).Err()
 			return true, true
 		}
 	}

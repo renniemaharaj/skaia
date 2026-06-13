@@ -17,11 +17,10 @@ type Result struct {
 
 func main() {
 	targets := []string{
-		"https://thewriterco.com/api/",
-		"https://skaiacraft.com/api/",
+		"http://localhost/api/",
 	}
 
-	totalRequestsPerTarget := 2000
+	totalRequestsPerTarget := 200000
 	concurrencyPerTarget := 200
 
 	fmt.Printf("Starting dual stress test...\n")
