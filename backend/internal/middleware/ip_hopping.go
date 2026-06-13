@@ -3,10 +3,10 @@ package middleware
 import (
 	"container/list"
 	"context"
+	"net"
 	"net/http"
 	"sync"
 
-	"github.com/go-chi/httprate"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/utils"
 )
@@ -73,7 +73,7 @@ func IPHoppingMiddleware(authSvc *auth.Service) func(http.Handler) http.Handler 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if userID, ok := utils.UserIDFromCtx(r); ok {
-				ip, _ := httprate.KeyByRealIP(r)
+				ip := extractRealIP(r)
 				if lastIP, loaded := lastIPs.load(userID); loaded {
 					if lastIP != ip {
 						_, enabled, _ := authSvc.GetTOTPEnabled(r.Context(), userID)
@@ -91,4 +91,27 @@ func IPHoppingMiddleware(authSvc *auth.Service) func(http.Handler) http.Handler 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// extractRealIP robustly extracts the client IP, handling Cloudflare, proxies, and stripping TCP ports.
+func extractRealIP(r *http.Request) string {
+	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
+		return ip
+	}
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		for i := 0; i < len(ip); i++ {
+			if ip[i] == ',' {
+				return ip[:i]
+			}
+		}
+		return ip
+	}
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }
