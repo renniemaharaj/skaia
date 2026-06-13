@@ -2,7 +2,10 @@
 import type { CustomRoute, IndexRoute } from "./routing.tsx";
 import Index from "./index/index.tsx";
 import { StorePage } from "./store/index.tsx";
+import { NewProductPage } from "./store/NewProductPage.tsx";
+import { NewStoreCategoryPage } from "./store/NewStoreCategoryPage.tsx";
 import { ForumPage } from "./forum/index.tsx";
+import { NewForumCategoryPage } from "./forum/NewForumCategoryPage.tsx";
 import { CartPage } from "./cart/index.tsx";
 import { NotFoundPage } from "./not-found/index.tsx";
 import { LoginPage } from "./login/index.tsx";
@@ -31,6 +34,9 @@ import SettingsPage from "./settings/index.tsx";
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
+  { path: "forum/new-category", element: <NewForumCategoryPage />, conditional: "forum" },
+  { path: "store/new-product", element: <NewProductPage />, conditional: "store" },
+  { path: "store/new-category", element: <NewStoreCategoryPage />, conditional: "store" },
   {
     path: "edit-thread/:threadId",
     element: <EditThreadPage />,

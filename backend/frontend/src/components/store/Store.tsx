@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, Edit2, Trash2, Tag } from "lucide-react";
+import { Package, Plus, Edit2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 
@@ -21,18 +21,15 @@ import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { SkeletonCard } from "../ui/SkeletonCard";
 import SpotlightCard from "../ui/SpotlightCard";
-import BlurText from "../ui/BlurText/BlurText";
-import { CreateStoreCategoryDialog } from "./CreateStoreCategoryDialog";
-import { CreateProductDialog } from "./CreateProductDialog";
+
 import { EditProductDialog } from "./EditProductDialog";
+import { useNavigate } from "react-router-dom";
 import "./Store.css";
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
-    useState(false);
-  const [showCreateProductDialog, setShowCreateProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const navigate = useNavigate();
 
   const currentUser = useAtomValue(currentUserAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -68,16 +65,16 @@ export const Store: React.FC = () => {
   const loadCatalog = useCallback(async () => {
     try {
       setLoading(true);
-      const [cats, prods] = await Promise.all([
+      const [catsRes, prodsRes] = await Promise.all([
         apiRequest<StoreCategory[]>("/store/categories"),
         apiRequest<Product[]>("/store/products"),
       ]);
-      if (Array.isArray(cats)) setCategories(cats);
-      if (Array.isArray(prods)) setProducts(prods);
+      setCategories(Array.isArray(catsRes) ? catsRes : []);
+      setProducts(Array.isArray(prodsRes) ? prodsRes : []);
 
       // Subscribe to per-category updates so admin mutations propagate
-      if (Array.isArray(cats)) {
-        cats.forEach((c) => subscribe("store_category", c.id));
+      if (Array.isArray(catsRes)) {
+        catsRes.forEach((c) => subscribe("store_category", c.id));
       }
     } catch (err) {
       console.error("Error loading store catalog:", err);
@@ -182,23 +179,8 @@ export const Store: React.FC = () => {
 
   return (
     <div className="store-container">
-      {/* Categories */}
-      <div className="categories-section">
-        <div className="categories-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Tag size={20} />
-            <span style={{ fontWeight: 600 }}>Categories</span>
-          </div>
-          {canCreateCategory && (
-            <button
-              className="btn-admin-action"
-              onClick={() => setShowCreateCategoryDialog(true)}
-              title="Create category"
-            >
-              <Plus size={16} /> New Category
-            </button>
-          )}
-        </div>
+      {/* Categories Bar */}
+      <div className="categories-bar">
         <div className="category-list">
           <button
             className={`category-button ${!selectedCategoryId ? "category-active" : ""}`}
@@ -230,30 +212,30 @@ export const Store: React.FC = () => {
               )}
             </div>
           ))}
+          {canCreateCategory && (
+            <button
+              className="btn-admin-action"
+              onClick={() => navigate("/store/new-category")}
+              title="New category"
+            >
+              <Plus size={16} /> New Category
+            </button>
+          )}
+          {canCreateProduct && categories.length > 0 && (
+            <button
+              className="btn-admin-action"
+              onClick={() => navigate("/store/new-product")}
+              title="New product"
+            >
+              <Plus size={16} /> New Product
+            </button>
+          )}
         </div>
       </div>
 
       {/* Products */}
       <div className="products-section">
-        <div className="products-header">
-          <h2 className="page-title">
-            <BlurText text={selectedCategoryId
-              ? (categories.find((c) => c.id === selectedCategoryId)?.name ??
-                "Products")
-              : "Featured Items"} delay={50} animateBy="letters" direction="top" />
-          </h2>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            {canCreateProduct && (
-              <button
-                className="btn-admin-action"
-                onClick={() => setShowCreateProductDialog(true)}
-                title="Create product"
-              >
-                <Plus size={16} /> New Product
-              </button>
-            )}
-          </div>
-        </div>
+
 
         {loading ? (
           <div className="products-grid">
@@ -369,21 +351,6 @@ export const Store: React.FC = () => {
       </div>
 
       {/* Admin dialogs */}
-      {showCreateCategoryDialog && (
-        <CreateStoreCategoryDialog
-          isOpen={showCreateCategoryDialog}
-          onClose={() => setShowCreateCategoryDialog(false)}
-          onSuccess={loadCatalog}
-        />
-      )}
-      {showCreateProductDialog && (
-        <CreateProductDialog
-          isOpen={showCreateProductDialog}
-          categories={categories}
-          onClose={() => setShowCreateProductDialog(false)}
-          onSuccess={loadCatalog}
-        />
-      )}
       {editingProduct && (
         <EditProductDialog
           isOpen={!!editingProduct}

@@ -17,7 +17,7 @@ type Result struct {
 
 func main() {
 	targets := []string{
-		"http://localhost/api/",
+		"https://thewriterco.com/api/",
 	}
 
 	totalRequestsPerTarget := 200000

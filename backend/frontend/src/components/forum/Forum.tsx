@@ -17,7 +17,6 @@ import {
 } from "../../atoms/auth";
 import { forumCategoriesAtom } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
-import { CreateCategoryDialog } from "./CreateCategoryDialog";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 
@@ -191,8 +190,6 @@ const CategoryThreadsPreview = ({
 
 export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
-  const [showCreateCategoryDialog, setShowCreateCategoryDialog] =
-    useState(false);
   const [hoveredSection, setHoveredSection] = useState<
     "discussion" | "category" | null
   >(null);
@@ -368,10 +365,6 @@ export const Forum: React.FC = () => {
 
   return (
     <>
-      <CreateCategoryDialog
-        isOpen={showCreateCategoryDialog}
-        onClose={() => setShowCreateCategoryDialog(false)}
-      />
       <DirectoryLayout
         className="forum-container"
         title="Forums"
@@ -454,7 +447,7 @@ export const Forum: React.FC = () => {
                   <div
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowCreateCategoryDialog(true);
+                      navigate("/forum/new-category");
                     }}
                     onMouseEnter={() => setHoveredSection("category")}
                     onMouseLeave={() => setHoveredSection(null)}

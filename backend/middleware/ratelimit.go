@@ -32,6 +32,14 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 			ctx := r.Context()
 			ip := realIP(r)
 
+			// Fast path: Exempt private/local network IPs to prevent
+			// locking out everyone when Docker/Nginx hides the real IP
+			// behind the gateway IP (e.g., 172.x.x.x) during local dev.
+			if isPrivateIP(ip) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			//  Step 1: Jail check (optimized to 1 Redis roundtrip)
 			jailTTL := ratelimit.JailTimeRemaining(ctx, rdb, ip)
 			jailed := jailTTL > 0
@@ -242,4 +250,13 @@ func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration, chall
 	} else {
 		_, _ = w.Write([]byte(`{"error":"rate limit exceeded","retry_after":` + strconv.Itoa(seconds) + `}`))
 	}
+}
+
+// isPrivateIP checks if an IP is a local/private network address.
+func isPrivateIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback() || ip.IsPrivate()
 }
