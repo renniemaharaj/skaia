@@ -54,7 +54,16 @@ func startSiteExport(name string) string {
 			broadcastJobStatus(j)
 			jobsMu.Unlock()
 		}
-
+		if err := scanner.Err(); err != nil {
+			jobsMu.Lock()
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("export-node output scan error: %v", err)
+			broadcastJobStatus(j)
+			jobsMu.Unlock()
+			cmd.Wait()
+			os.Remove(outPath)
+			return
+		}
 		err := cmd.Wait()
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
@@ -108,7 +117,16 @@ func startNodeExport() string {
 			broadcastJobStatus(j)
 			jobsMu.Unlock()
 		}
-
+		if err := scanner.Err(); err != nil {
+			jobsMu.Lock()
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("export-node output scan error: %v", err)
+			broadcastJobStatus(j)
+			jobsMu.Unlock()
+			cmd.Wait()
+			os.Remove(outPath)
+			return
+		}
 		err := cmd.Wait()
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
