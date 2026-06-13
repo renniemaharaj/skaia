@@ -10,10 +10,11 @@ import "./RateLimitedPage.css";
 interface RateLimitedPageProps {
   retrySeconds?: number;
   challenge?: string;
+  defconInfo?: any;
   onCleared?: () => void;
 }
 
-const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challenge, onCleared }) => {
+const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challenge, defconInfo, onCleared }) => {
   const [showOverride, setShowOverride] = useState(challenge === "totp");
   const [totpCode, setTotpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +77,10 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challen
           : "Please wait while the rate-limit window clears."}
       </p>
 
+      {/* DEFCON Info is now rendered as a fixed tile at the root level of the component */}
+
+      <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)", margin: "1.5rem 0" }} />
+
       {!showOverride && (
         <button 
           onClick={() => setShowOverride(true)}
@@ -126,14 +131,63 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challen
   );
 
   return (
-    <ErrorPage
-      errorCode={429}
-      errorTitle="Rate limit exceeded"
-      errorMessage="The application has reached its request limit and is temporarily blocked."
-      details={detailsNode}
-      showBackButton={false}
-      showHomeButton={false}
-    />
+    <>
+      <ErrorPage
+        errorCode={429}
+        errorTitle="Rate limit exceeded"
+        errorMessage="The application has reached its request limit and is temporarily blocked."
+        details={detailsNode}
+        showBackButton={false}
+        showHomeButton={false}
+      />
+      {defconInfo && (
+        <div className="defcon-telemetry-tile" style={{ 
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          width: "260px",
+          padding: "1rem", 
+          background: "rgba(0, 0, 0, 0.8)", 
+          border: "1px solid rgba(255, 60, 60, 0.3)",
+          borderTop: "3px solid rgba(255, 60, 60, 0.8)",
+          borderRadius: "6px", 
+          fontSize: "0.80rem", 
+          textAlign: "left", 
+          fontFamily: "monospace",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          backdropFilter: "blur(10px)",
+          zIndex: 1000
+        }}>
+          <div style={{ 
+            marginBottom: "0.8rem", 
+            fontWeight: 700, 
+            color: "rgba(255, 80, 80, 0.9)",
+            letterSpacing: "1px",
+            textTransform: "uppercase",
+            borderBottom: "1px dashed rgba(255, 60, 60, 0.3)",
+            paddingBottom: "0.4rem"
+          }}>
+            [ DEFCON THREAT TELEMETRY ]
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Active Jails:</span> 
+            <strong style={{ color: defconInfo.ips_jailed > 0 ? "#ff5555" : "#55ff55" }}>{defconInfo.ips_jailed}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Tracked Signatures:</span> 
+            <strong style={{ color: "#e0e0e0" }}>{defconInfo.distinct_ips_tracked}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Cleared Citizens:</span> 
+            <strong style={{ color: "#55ff55" }}>{defconInfo.citizens}</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem", paddingTop: "0.4rem", borderTop: "1px dashed rgba(255, 60, 60, 0.2)" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Dynamic Threshold:</span> 
+            <strong style={{ color: "#ffaa00" }}>{defconInfo.limiter_state} req/m</strong>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

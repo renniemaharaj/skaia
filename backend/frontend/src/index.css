@@ -944,3 +944,14 @@ button:focus-visible {
   color: var(--text-primary);
   opacity: 0.9;
 }
+
+/* DEFCON Telemetry Tile */
+.defcon-telemetry-tile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .defcon-telemetry-tile {
+    display: block;
+  }
+}

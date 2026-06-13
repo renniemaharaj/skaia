@@ -126,7 +126,7 @@ gzip_types
 	// Upstreams
 	b.WriteString("# ── Upstreams ──────────────────────────────────────────────────────────────\n")
 	for _, c := range clients {
-		fmt.Fprintf(&b, "upstream %s-backend {\n    server %s-backend:%s;\n    keepalive 32;\n}\n\n", c.Name, c.Name, c.Port)
+		fmt.Fprintf(&b, "upstream %s-backend {\n    server 127.0.0.1:%s;\n    keepalive 32;\n}\n\n", c.Name, c.Port)
 	}
 
 	// Host => backend mapping

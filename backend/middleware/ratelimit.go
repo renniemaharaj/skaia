@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,9 +33,6 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 			ctx := r.Context()
 			ip := realIP(r)
 
-			next.ServeHTTP(w, r)
-			return
-
 			//  Step 1: Jail check (optimized to 1 Redis roundtrip)
 			jailTTL := ratelimit.JailTimeRemaining(ctx, rdb, ip)
 			jailed := jailTTL > 0
@@ -47,11 +45,11 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						return
 					}
 					if eligible {
-						writeTooManyRequests(w, jailTTL, true)
+						writeTooManyRequests(ctx, rdb, w, jailTTL, true)
 						return
 					}
 				}
-				writeTooManyRequests(w, jailTTL, false)
+				writeTooManyRequests(ctx, rdb, w, jailTTL, false)
 				return
 			}
 
@@ -74,7 +72,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 							return
 						}
 						if eligible {
-							writeTooManyRequests(w, time.Minute, true)
+							writeTooManyRequests(ctx, rdb, w, time.Minute, true)
 							return
 						}
 					}
@@ -83,7 +81,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						slog.Error("jail write failed", "ip", ip, "err", jailErr)
 					}
 					ratelimit.PushBlockAsync(ip, count)
-					writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
+					writeTooManyRequests(ctx, rdb, w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
 					return
 				}
 				next.ServeHTTP(w, r)
@@ -110,7 +108,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 						return
 					}
 					if eligible {
-						writeTooManyRequests(w, ratelimit.WindowRemaining(ctx, rdb, ip), true)
+						writeTooManyRequests(ctx, rdb, w, ratelimit.WindowRemaining(ctx, rdb, ip), true)
 						return
 					}
 				}
@@ -126,7 +124,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 					"adaptive_allowance", allowance,
 					"total_jailed", jailedCount,
 				)
-				writeTooManyRequests(w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
+				writeTooManyRequests(ctx, rdb, w, ratelimit.JailTimeRemaining(ctx, rdb, ip), false)
 				return
 			}
 
@@ -230,7 +228,7 @@ func realIP(r *http.Request) string {
 }
 
 // writeTooManyRequests writes a 429 response with standard rate-limit headers.
-func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration, challenge bool) {
+func writeTooManyRequests(ctx context.Context, rdb *redis.Client, w http.ResponseWriter, retryAfter time.Duration, challenge bool) {
 	seconds := int(retryAfter.Seconds())
 	if seconds < 1 {
 		seconds = 60
@@ -240,9 +238,37 @@ func writeTooManyRequests(w http.ResponseWriter, retryAfter time.Duration, chall
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusTooManyRequests)
 
+	jailed, _ := ratelimit.JailedCount(ctx, rdb)
+	allowance, _ := ratelimit.AdaptiveAllowance(ctx, rdb)
+	
+	// Scan for distinct IPs and citizens
+	distinctIPs := make(map[string]bool)
+	var citizens int64 = 0
+	var cursor uint64 = 0
+	for {
+		keys, nextCursor, _ := rdb.Scan(ctx, cursor, "ip:*", 500).Result()
+		for _, key := range keys {
+			parts := strings.Split(key, ":")
+			if len(parts) >= 3 {
+				ip := parts[len(parts)-1]
+				distinctIPs[ip] = true
+				if parts[1] == "trusted" {
+					citizens++
+				}
+			}
+		}
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	info := fmt.Sprintf(`"defcon_info":{"ips_jailed":%d,"distinct_ips_tracked":%d,"citizens":%d,"limiter_state":%d}`, 
+		jailed, len(distinctIPs), citizens, allowance)
+
 	if challenge {
-		_, _ = w.Write([]byte(`{"error":"rate limit exceeded","challenge":"totp","retry_after":` + strconv.Itoa(seconds) + `}`))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","challenge":"totp","retry_after":%d,%s}`, seconds, info)))
 	} else {
-		_, _ = w.Write([]byte(`{"error":"rate limit exceeded","retry_after":` + strconv.Itoa(seconds) + `}`))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","retry_after":%d,%s}`, seconds, info)))
 	}
 }

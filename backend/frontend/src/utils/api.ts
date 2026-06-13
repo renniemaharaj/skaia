@@ -9,6 +9,7 @@ export interface ApiError {
   error: string;
   message?: string;
   challenge?: string;
+  defcon_info?: any;
 }
 
 export interface ApiResponse<T> {
@@ -165,6 +166,7 @@ export async function apiRequest<T>(
               retryAfter,
               requestUrl: url,
               challenge: errorData?.challenge,
+              defconInfo: errorData?.defcon_info,
             },
           }),
         );

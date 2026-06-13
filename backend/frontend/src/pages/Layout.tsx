@@ -75,6 +75,16 @@ function getStoredRateLimitChallenge(): string | undefined {
   }
 }
 
+const RATE_LIMIT_DEFCON_KEY = "pb_rate_limit_defcon";
+function getStoredRateLimitDefcon(): any {
+  try {
+    const data = sessionStorage.getItem(RATE_LIMIT_DEFCON_KEY);
+    return data ? JSON.parse(data) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -103,17 +113,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 
   const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(getStoredRateLimitChallenge());
+  const [rateLimitDefcon, setRateLimitDefcon] = useState<any>(getStoredRateLimitDefcon());
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
-      const detail = (event as CustomEvent<{ retryAfter?: number, challenge?: string }>).detail;
+      const detail = (event as CustomEvent<{ retryAfter?: number, challenge?: string, defconInfo?: any }>).detail;
       const seconds = detail.retryAfter ?? 60;
       
       setRateLimitChallenge(detail.challenge);
+      setRateLimitDefcon(detail.defconInfo);
       if (detail.challenge) {
         try {
           sessionStorage.setItem(RATE_LIMIT_CHALLENGE_KEY, detail.challenge);
+        } catch {}
+      }
+      if (detail.defconInfo) {
+        try {
+          sessionStorage.setItem(RATE_LIMIT_DEFCON_KEY, JSON.stringify(detail.defconInfo));
         } catch {}
       }
       
@@ -144,10 +161,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           try {
             sessionStorage.removeItem(RATE_LIMIT_KEY);
             sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
+            sessionStorage.removeItem(RATE_LIMIT_DEFCON_KEY);
           } catch {
             /* ignore */
           }
           setRateLimitChallenge(undefined);
+          setRateLimitDefcon(undefined);
           return undefined;
         }
         return seconds - 1;
@@ -387,15 +406,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   if (holdingSeconds !== undefined) {
     return <RateLimitedPage 
       retrySeconds={holdingSeconds} 
-      challenge={rateLimitChallenge} 
+      challenge={rateLimitChallenge}
+      defconInfo={rateLimitDefcon}
       onCleared={() => {
+        setHoldingSeconds(undefined);
         try {
           sessionStorage.removeItem(RATE_LIMIT_KEY);
           sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
+          sessionStorage.removeItem(RATE_LIMIT_DEFCON_KEY);
         } catch {}
-        setHoldingSeconds(undefined);
         setRateLimitChallenge(undefined);
-      }}
+        setRateLimitDefcon(undefined);
+        window.dispatchEvent(new CustomEvent("api:rate-limit-cleared"));
+      }} 
     />;
   }
 
