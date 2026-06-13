@@ -137,6 +137,10 @@ func envVal(file, key string) string {
 			return strings.TrimPrefix(line, prefix)
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		warn("Error reading %s: %v", file, err)
+	}
 	return ""
 }
 
@@ -160,6 +164,10 @@ func loadEnvMap(file string) map[string]string {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		warn("Error reading %s: %v", file, err)
+	}
+
 	return m
 }
 
@@ -175,6 +183,7 @@ func loadEnvKeys(file string) map[string]struct{} {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -193,6 +202,11 @@ func loadEnvKeys(file string) map[string]struct{} {
 			}
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		warn("Error reading %s: %v", file, err)
+	}
+
 	return m
 }
 
