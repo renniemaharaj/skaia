@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,22 +89,44 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		var routeTitle, routeDesc, routeImg string
+		var isMiss bool
 
 		if match := threadRx.FindStringSubmatch(path); match != nil {
-			var content string
-			_ = db.QueryRow("SELECT title, content FROM forum_threads WHERE id = $1", match[1]).Scan(&routeTitle, &content)
-			if content != "" {
-				routeDesc = snip(stripHTML(content), 160)
+			idStr := match[1]
+			if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
+				isMiss = true
+			} else {
+				var content string
+				err := db.QueryRow("SELECT title, content FROM forum_threads WHERE id = $1", idStr).Scan(&routeTitle, &content)
+				if err != nil {
+					isMiss = true
+				} else if content != "" {
+					routeDesc = snip(stripHTML(content), 160)
+				}
 			}
 		} else if match := itemRx.FindStringSubmatch(path); match != nil {
-			_ = db.QueryRow("SELECT name, description, image_url FROM store_products WHERE id = $1", match[1]).Scan(&routeTitle, &routeDesc, &routeImg)
-			if routeDesc != "" {
-				routeDesc = snip(stripHTML(routeDesc), 160)
+			idStr := match[1]
+			if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
+				isMiss = true
+			} else {
+				err := db.QueryRow("SELECT name, description, image_url FROM store_products WHERE id = $1", idStr).Scan(&routeTitle, &routeDesc, &routeImg)
+				if err != nil {
+					isMiss = true
+				} else if routeDesc != "" {
+					routeDesc = snip(stripHTML(routeDesc), 160)
+				}
 			}
 		} else if match := pageRx.FindStringSubmatch(path); match != nil {
-			_ = db.QueryRow("SELECT title, description FROM pages WHERE slug = $1", match[1]).Scan(&routeTitle, &routeDesc)
-			if routeDesc != "" {
-				routeDesc = snip(stripHTML(routeDesc), 160)
+			slug := match[1]
+			if len(slug) > 100 {
+				isMiss = true
+			} else {
+				err := db.QueryRow("SELECT title, description FROM pages WHERE slug = $1", slug).Scan(&routeTitle, &routeDesc)
+				if err != nil {
+					isMiss = true
+				} else if routeDesc != "" {
+					routeDesc = snip(stripHTML(routeDesc), 160)
+				}
 			}
 		}
 
@@ -154,8 +177,11 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 
 		// 3. Cache the result
 		if metaBytes, err := json.Marshal(meta); err == nil {
-			// Cache for 24h, relies on explicit invalidation on edits
-			rdb.Set(ctx, cacheKey, metaBytes, 24*time.Hour)
+			ttl := 24 * time.Hour
+			if isMiss {
+				ttl = 5 * time.Minute
+			}
+			rdb.Set(ctx, cacheKey, metaBytes, ttl)
 		}
 
 		serveInjected(w, data, meta)

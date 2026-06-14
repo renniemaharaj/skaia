@@ -161,6 +161,14 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 		tokenStr = r.URL.Query().Get("token")
 	}
 	if tokenStr == "" {
+		if cookie, err := r.Cookie("auth_token"); err == nil {
+			tokenStr = cookie.Value
+		}
+	}
+
+	tokenStr = strings.Trim(tokenStr, `"`)
+
+	if tokenStr == "" {
 		return false, false
 	}
 

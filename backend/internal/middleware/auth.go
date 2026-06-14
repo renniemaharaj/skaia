@@ -26,6 +26,14 @@ func ExtractTokenMiddleware(next http.Handler) http.Handler {
 			tokenStr = r.URL.Query().Get("token")
 		}
 
+		if tokenStr == "" {
+			if cookie, err := r.Cookie("auth_token"); err == nil {
+				tokenStr = cookie.Value
+			}
+		}
+
+		tokenStr = strings.Trim(tokenStr, `"`)
+
 		if tokenStr != "" {
 			if claims, err := ijwt.ValidateToken(tokenStr); err == nil {
 				ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)

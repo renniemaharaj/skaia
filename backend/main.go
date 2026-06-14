@@ -694,7 +694,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
 		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
-		ssrHandler(w, req)
+		ssrHandler.ServeHTTP(w, req)
 	})
 
 	// SPA fallback
@@ -722,7 +722,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 
 		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
-		ssrHandler(w, req)
+		ssrHandler.ServeHTTP(w, req)
 	})
 
 	return r
