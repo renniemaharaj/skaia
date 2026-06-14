@@ -12,45 +12,28 @@
 
 .loading-page-content {
   text-align: center;
-  z-index: 10;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  margin-top: -10vh;
 }
 
-.loading-logo-wrapper {
+.loading-spinner {
   margin-bottom: 2rem;
   display: flex;
   justify-content: center;
 }
 
-.loading-logo {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  animation: logo-float 3s ease-in-out infinite, logo-pulse 2s ease-in-out infinite alternate;
-  filter: drop-shadow(0 0 15px color-mix(in srgb, var(--primary-color) 40%, transparent));
+.spinner-circle {
+  width: 60px;
+  height: 60px;
+  border: 4px solid color-mix(in srgb, var(--primary-color) 15%, transparent);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-@keyframes logo-float {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes logo-pulse {
-  0% {
-    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--primary-color) 30%, transparent));
-  }
-  100% {
-    filter: drop-shadow(0 0 25px color-mix(in srgb, var(--primary-color) 70%, transparent));
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
