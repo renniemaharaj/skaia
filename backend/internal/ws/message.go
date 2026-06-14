@@ -50,6 +50,7 @@ const (
 	GrengoJobAction      MessageType = "grengo:action"          // client => server => grengo: trigger export
 	GrengoStatsUpdate    MessageType = "grengo:stats_update"    // server => client: live stats stream
 	GrengoStorageUpdate  MessageType = "grengo:storage_update"  // server => client: live storage stream
+	GrengoHardwareUpdate MessageType = "grengo:hardware_update" // server => client: live hardware stream
 	MediaScraperResult   MessageType = "mediascraper:result"    // server => all: job completion
 	MediaScraperStarted  MessageType = "mediascraper:started"   // server => all: job started processing
 	MediaScraperPending  MessageType = "mediascraper:pending"   // server => all: job cleared and back to pending

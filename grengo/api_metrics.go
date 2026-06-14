@@ -42,6 +42,7 @@ var dockerAPIClient = &http.Client{
 // dockerStatsJSON is the raw structure returned by GET /containers/{id}/stats?stream=false.
 type dockerStatsJSON struct {
 	Read     string `json:"read"`
+	Preread  string `json:"preread"`
 	CPUStats struct {
 		CPUUsage struct {
 			TotalUsage uint64 `json:"total_usage"`
@@ -102,21 +103,29 @@ func fetchContainerStats(name string) (*containerStats, error) {
 	prevCPUStats[name] = raw
 	cpuStatsMu.Unlock()
 
-	var prevCpuUsage, prevSysUsage float64
+	var prevCpuUsage float64
+	var prevReadStr string
+
 	if hasPrev {
 		prevCpuUsage = float64(prev.CPUStats.CPUUsage.TotalUsage)
-		prevSysUsage = float64(prev.CPUStats.SystemCPUUsage)
+		prevReadStr = prev.Read
 	} else {
 		prevCpuUsage = float64(raw.PrecpuStats.CPUUsage.TotalUsage)
-		prevSysUsage = float64(raw.PrecpuStats.SystemCPUUsage)
+		prevReadStr = raw.Preread
 	}
 
-	// CPU %
+	// Calculate CPU % using wall-clock time delta (supports cgroups v2 properly)
 	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage) - prevCpuUsage
-	sysDelta := float64(raw.CPUStats.SystemCPUUsage) - prevSysUsage
+	
+	readTime, _ := time.Parse(time.RFC3339Nano, raw.Read)
+	prevReadTime, _ := time.Parse(time.RFC3339Nano, prevReadStr)
+	timeDelta := float64(readTime.UnixNano() - prevReadTime.UnixNano())
+
 	cpuPct := 0.0
-	if sysDelta > 0 && cpuDelta > 0 {
-		cpuPct = cpuDelta / sysDelta * float64(raw.CPUStats.OnlineCPUs) * 100.0
+	if timeDelta > 0 && cpuDelta > 0 {
+		// cpuDelta is in nanoseconds of core time, timeDelta is in nanoseconds of wall time.
+		// So (cpuDelta / timeDelta) * 100 gives the direct CPU percentage across all cores.
+		cpuPct = (cpuDelta / timeDelta) * 100.0
 	}
 
 	// Memory

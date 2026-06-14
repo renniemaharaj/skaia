@@ -267,7 +267,12 @@ export const useWebSocketSync = () => {
               new CustomEvent("grengo:storage_update", { detail: payload })
             );
           }
-          if (message.type === "grengo:job_update" || message.type === "grengo:stats_update" || message.type === "grengo:storage_update") {
+          if (message.type === "grengo:hardware_update") {
+            window.dispatchEvent(
+              new CustomEvent("grengo:hardware_update", { detail: payload })
+            );
+          }
+          if (message.type === "grengo:job_update" || message.type === "grengo:stats_update" || message.type === "grengo:storage_update" || message.type === "grengo:hardware_update") {
              return;
           }
 

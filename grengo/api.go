@@ -13,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/skaia/grengo/internal/hardware"
 )
 
 const (
@@ -55,6 +57,7 @@ func cmdAPIStart(port int) {
 		warn("Cannot write PID file: %v", err)
 	}
 
+	hardware.InitAndWatch()
 	go broadcastStatsAndStorageLoop()
 
 	mux := http.NewServeMux()

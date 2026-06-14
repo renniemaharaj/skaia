@@ -56,6 +56,8 @@ func (s *Service) WatchJobs() {
 				msgType = ws.GrengoStatsUpdate
 			} else if parsed.Type == "storage_update" {
 				msgType = ws.GrengoStorageUpdate
+			} else if parsed.Type == "hardware_update" {
+				msgType = ws.GrengoHardwareUpdate
 			}
 
 			// Broadcast only the payload to frontend clients (not the full grengo envelope)

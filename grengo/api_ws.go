@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/skaia/grengo/internal/hardware"
 )
 
 // ---------------------------------------------------------------------------
@@ -127,6 +128,14 @@ func broadcastStatsAndStorageLoop() {
 			}
 			wsClientsMu.Unlock()
 		}
+
+		hwPayload := hardware.GetPayload()
+		data, _ := json.Marshal(map[string]any{"type": "hardware_update", "payload": hwPayload})
+		wsClientsMu.Lock()
+		for conn := range wsClients {
+			conn.WriteMessage(websocket.TextMessage, data)
+		}
+		wsClientsMu.Unlock()
 	}
 }
 

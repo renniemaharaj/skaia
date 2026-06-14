@@ -70,6 +70,24 @@ interface SysInfo {
   load_avg?: string;
 }
 
+interface HardwareInfo {
+  static: {
+    cpu_model: string;
+    total_cores: number;
+    memory_total: number;
+    memory_sticks: string[];
+    gpus: string[];
+    storage_drives: string[];
+  };
+  dynamic: {
+    core_percents: number[];
+    memory_used: number;
+    temps: number[];
+    disk_reads: number;
+    disk_writes: number;
+  };
+}
+
 const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 
 // Keep-alive interval: ping every 2 minutes to reset the 10-minute inactivity timer.
@@ -106,6 +124,9 @@ export default function GrengoDashboard() {
 
   // System info.
   const [sysInfo, setSysInfo] = useState<SysInfo | null>(null);
+
+  // Hardware info.
+  const [hardwareInfo, setHardwareInfo] = useState<HardwareInfo | null>(null);
 
   // Compose / migrate state.
   const [composeBusy, setComposeBusy] = useState(false);
@@ -307,7 +328,17 @@ export default function GrengoDashboard() {
         setStats(Array.isArray(detail) ? detail : []);
       };
       window.addEventListener("grengo:stats_update", handleStatsUpdate);
-      return () => window.removeEventListener("grengo:stats_update", handleStatsUpdate);
+
+      const handleHardwareUpdate = (e: Event) => {
+        const detail = (e as CustomEvent).detail;
+        setHardwareInfo(detail as HardwareInfo);
+      };
+      window.addEventListener("grengo:hardware_update", handleHardwareUpdate);
+
+      return () => {
+        window.removeEventListener("grengo:stats_update", handleStatsUpdate);
+        window.removeEventListener("grengo:hardware_update", handleHardwareUpdate);
+      };
     }
   }, [sessionValid, fetchStats]);
 
@@ -881,7 +912,7 @@ export default function GrengoDashboard() {
 
       {storage && <StoragePanel storage={storage} />}
 
-      <PerformanceMetrics stats={stats} statsLoading={statsLoading} />
+      <PerformanceMetrics stats={stats} statsLoading={statsLoading} hardwareInfo={hardwareInfo} />
     </div>
   );
 }
@@ -1252,16 +1283,104 @@ function StoragePanel({ storage }: { storage: StorageInfo }) {
 function PerformanceMetrics({
   stats,
   statsLoading,
+  hardwareInfo,
 }: {
   stats: ContainerStats[];
   statsLoading: boolean;
+  hardwareInfo: HardwareInfo | null;
 }) {
-  if (statsLoading && stats.length === 0) {
+  if (statsLoading && stats.length === 0 && !hardwareInfo) {
     return <div className="grengo-empty">Loading metrics…</div>;
   }
-  if (stats.length === 0) return null;
+  if (stats.length === 0 && !hardwareInfo) return null;
   return (
     <div className="grengo-stats">
+      {hardwareInfo && (
+        <>
+          <h2>Hardware & Thermals</h2>
+          <div className="grengo-stats-cards">
+            {/* CPU Cores */}
+            <div className="card grengo-stat-card">
+              <div className="stat-card-header">
+                <strong>CPU Load ({hardwareInfo.static.total_cores} Cores)</strong>
+              </div>
+              <div className="stat-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))' }}>
+                {hardwareInfo.dynamic.core_percents?.map((pct: number, i: number) => (
+                  <div className="stat-item" key={i}>
+                    <span className="stat-label">Core {i}</span>
+                    <span className="stat-value">{pct.toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* RAM & Memory */}
+            <div className="card grengo-stat-card">
+              <div className="stat-card-header">
+                <strong>Physical Memory</strong>
+              </div>
+              <div className="stat-card-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Total RAM</span>
+                  <span className="stat-value">{(hardwareInfo.static.memory_total / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Used RAM</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.memory_used / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+                {hardwareInfo.static.memory_sticks?.map((stick: string, i: number) => (
+                  <div key={i}>{stick}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Storage Drives */}
+            <div className="card grengo-stat-card">
+              <div className="stat-card-header">
+                <strong>Storage Drives</strong>
+              </div>
+              <div className="stat-card-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Read I/O</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024).toFixed(2)} MB/s</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Write I/O</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024).toFixed(2)} MB/s</span>
+                </div>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+                {hardwareInfo.static.storage_drives?.map((drive: string, i: number) => (
+                  <div key={i}>{drive}</div>
+                ))}
+              </div>
+            </div>
+
+            {/* Thermals & GPUs */}
+            <div className="card grengo-stat-card">
+              <div className="stat-card-header">
+                <strong>Thermals & Graphics</strong>
+              </div>
+              <div className="stat-card-grid">
+                {hardwareInfo.dynamic.temps?.slice(0, 4).map((temp: number, i: number) => (
+                  <div className="stat-item" key={i}>
+                    <span className="stat-label">Sensor {i+1}</span>
+                    <span className="stat-value">{temp.toFixed(1)}°C</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+                {hardwareInfo.static.gpus?.map((gpu: string, i: number) => (
+                  <div key={i}>{gpu}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <h2>Performance Metrics</h2>
       <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
