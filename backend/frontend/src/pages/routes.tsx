@@ -3,6 +3,8 @@ import type { CustomRoute, IndexRoute } from "./routing.tsx";
 
 const Index = lazy(() => import("./index/index.tsx"));
 const StorePage = lazy(() => import("./store/index.tsx").then(m => ({ default: m.StorePage })));
+const WalletPage = lazy(() => import("./store/WalletPage.tsx").then(m => ({ default: m.WalletPage })));
+const OrdersPage = lazy(() => import("./store/OrdersPage.tsx").then(m => ({ default: m.OrdersPage })));
 const NewProductPage = lazy(() => import("./store/NewProductPage.tsx").then(m => ({ default: m.NewProductPage })));
 const NewStoreCategoryPage = lazy(() => import("./store/NewStoreCategoryPage.tsx").then(m => ({ default: m.NewStoreCategoryPage })));
 const ForumPage = lazy(() => import("./forum/index.tsx").then(m => ({ default: m.ForumPage })));
@@ -42,6 +44,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
     element: <EditThreadPage />,
     conditional: "forum",
   },
+  { path: "wallet/:sessionId", element: <WalletPage />, conditional: "store" },
   { path: "cart", element: <CartPage />, conditional: "store" },
   { path: "users", element: <UserDiscovery />, conditional: "users" },
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
@@ -59,6 +62,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 /** Routes accessible to both guests and authenticated users. */
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage />, conditional: "store" },
+  { path: "store/orders", element: <OrdersPage />, conditional: "store" },
   { path: "forum", element: <ForumPage />, conditional: "forum" },
   {
     path: "view-thread/:threadId",

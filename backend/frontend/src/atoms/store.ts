@@ -34,13 +34,31 @@ export interface CartItem {
   product?: Product;
 }
 
+export interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: string;
+  quantity: number;
+  price: number;
+  created_at: string;
+}
+
 export interface Order {
   id: string;
-  user_id: string;
+  user_id?: string;
+  is_guest: boolean;
+  guest_email?: string;
+  guest_phone?: string;
+  delivery_location?: string;
+  delivery_date?: string;
+  delivery_time?: string;
+  extra_info?: string;
+  billing_info?: string;
   total_price: number;
   status: string; // pending | completed | failed | cancelled
   created_at: string;
   updated_at: string;
+  items?: OrderItem[];
 }
 
 export interface Payment {

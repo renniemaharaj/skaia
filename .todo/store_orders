@@ -1,0 +1,35 @@
+# Store Orders Implementation
+
+## Context
+The user wants a full implementation for store orders treating carts as orders, supporting guest checkouts, delivery scheduling, and a frontend workflow for viewing and managing orders. This replaces the basic `Order` model with a comprehensive e-commerce workflow.
+
+## Goal
+- Enhance the `Order` model to support guest checkout (phone, email), delivery location, and scheduling.
+- Support "payment on delivery" (cash).
+- Create a guest order lookup route.
+- Implement an admin interface to view, accept, complete, or remove orders.
+- Frontend checkouts: persist cart in local storage, allow guests to check out, remember billing info for signed-in users, provide clean success UI with read-only order details.
+
+## Non-Goals
+- Credit card payment integrations (Stripe/PayPal) are out of scope for this specific phase (only "delivery cash").
+- Complex tax calculations.
+
+## Steps
+1. **Backend Models & DB**: Update `Order` in `backend/models/commerce.go` to add `IsGuest`, `GuestEmail`, `GuestPhone`, `DeliveryLocation`, `DeliveryDate`, `DeliveryTime`, `ExtraInfo`, `BillingInfo`. Provide DB schema updates.
+2. **Backend API (Checkout)**: Implement checkout endpoint that creates an order from the cart, handles guest logic, "payment on delivery", and optional user account creation/billing saving.
+3. **Backend API (Order Lookup)**: Implement a public route to get a read-only order by ID + Phone + Email.
+4. **Backend API (Admin Orders)**: Implement admin endpoints to list all orders, accept/complete/remove them.
+5. **Frontend (Cart & Checkout)**: Persist cart in localStorage. Build the checkout UI with delivery picker, guest details, and billing save option.
+6. **Frontend (Order Success & Lookup)**: Build the clean success screen showing order status and time until ready. Build the guest lookup form.
+7. **Frontend (Admin Orders)**: Build the admin table view for orders.
+
+## Verification
+- Guest checkout successfully creates an order.
+- Order lookup works only with correct phone and email.
+- Admin can list and update order status.
+- Frontend correctly persists cart and clears it on success.
+
+## References
+- `.specs/commerce` (to be created/updated)
+- `backend/models/commerce.go`
+- `backend/frontend/`

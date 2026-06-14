@@ -220,7 +220,7 @@ func TestOrderRepository_CreateAndGet(t *testing.T) {
 	})
 
 	order, err := orderRepo.Create(&models.Order{
-		UserID:     uid,
+		UserID:     &uid,
 		TotalPrice: 2000,
 		Status:     "pending",
 	}, []*models.OrderItem{
@@ -251,7 +251,7 @@ func TestOrderRepository_UpdateStatus(t *testing.T) {
 	})
 
 	order, _ := orderRepo.Create(&models.Order{
-		UserID:     uid,
+		UserID:     &uid,
 		TotalPrice: 500,
 		Status:     "pending",
 	}, []*models.OrderItem{

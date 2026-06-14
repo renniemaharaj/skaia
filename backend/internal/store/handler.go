@@ -54,14 +54,25 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/cart/remove", h.removeFromCart)
 		r.With(jwt).Delete("/cart", h.clearCart)
 
+		// Wallet routes
+		r.With(jwt).Get("/wallet", h.getWallet)
+		r.With(jwt).Post("/wallet/topup", h.topUpWallet)
+		r.With(jwt).Get("/wallet/cards", h.getCards)
+		r.With(jwt).Post("/wallet/cards", h.addCard)
+		r.With(jwt).Put("/wallet/cards/{id}", h.updateCard)
+		r.With(jwt).Delete("/wallet/cards/{id}", h.deleteCard)
+
 		// Checkout - all payment logic is backend-only
-		r.With(jwt).Post("/checkout", h.checkout)
+		r.With(optJWT).Post("/checkout", h.checkout)
 
 		// Order routes
-		r.With(jwt).Post("/orders", h.createOrder)
+		r.With(optJWT).Post("/orders", h.createOrder)
 		r.With(jwt).Get("/orders", h.listOrders)
 		r.With(jwt).Get("/orders/{id}", h.getOrder)
 		r.With(jwt).Put("/orders/{id}/status", h.updateOrderStatus)
+		r.With(jwt).Delete("/orders/{id}", h.deleteOrder)
+
+		r.Post("/orders/guest-lookup", h.guestLookupOrder)
 
 		// Subscription plan routes
 		r.With(optJWT).Get("/plans", h.listPlans)
@@ -499,6 +510,92 @@ func (h *Handler) getCart(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": items})
 }
 
+func (h *Handler) resolveWalletUser(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	callerID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return 0, false
+	}
+	targetStr := r.URL.Query().Get("user_id")
+	if targetStr != "" {
+		targetID, err := strconv.ParseInt(targetStr, 10, 64)
+		if err == nil && targetID != callerID {
+			if !utils.CheckPerm(w, h.authz, callerID, "store.manageOrders") {
+				return 0, false
+			}
+			return targetID, true
+		}
+	}
+	return callerID, true
+}
+
+// getWallet returns the user's wallet balance and recent transactions.
+func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	balance, err := h.svc.WalletRepo.GetBalance(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get wallet balance")
+		return
+	}
+
+	txs, err := h.svc.WalletRepo.GetTransactions(userID, 50, 0)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get wallet transactions")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"balance":      balance,
+		"transactions": txs,
+	})
+}
+
+// topUpWallet creates a credit transaction for the user's wallet.
+func (h *Handler) topUpWallet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		Amount      int64  `json:"amount"` // in cents
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if req.Amount <= 0 {
+		utils.WriteError(w, http.StatusBadRequest, "Amount must be positive")
+		return
+	}
+	if req.Description == "" {
+		req.Description = "Wallet top up"
+	}
+
+	tx := &models.WalletTransaction{
+		UserID:      userID,
+		Amount:      req.Amount,
+		Type:        "credit",
+		Description: req.Description,
+	}
+
+	createdTx, err := h.svc.WalletRepo.CreateTransaction(tx)
+	if err != nil {
+		log.Printf("Wallet top up error: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to process top up")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"transaction": createdTx,
+	})
+}
+
 func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -646,7 +743,6 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// resolve server-side prices, never trust client
 	var total int64
 	var items []*models.OrderItem
 	for _, i := range req.Items {
@@ -675,8 +771,13 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	var parsedUserID *int64
+	if ok {
+		parsedUserID = &userID
+	}
+
 	order, err := h.svc.CreateOrder(&models.Order{
-		UserID:     userID,
+		UserID:     parsedUserID,
 		TotalPrice: total,
 		Status:     "pending",
 	}, items)
@@ -711,7 +812,20 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
 		offset = o
 	}
-	orders, err := h.svc.GetUserOrders(userID, limit, offset)
+
+	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	var orders []*models.Order
+	var err error
+
+	if canManage && r.URL.Query().Get("user_id") != "" {
+		targetUserID, _ := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 64)
+		orders, err = h.svc.GetUserOrders(targetUserID, limit, offset)
+	} else if canManage && r.URL.Query().Get("all") == "true" {
+		orders, err = h.svc.ListAllOrders(limit, offset)
+	} else {
+		orders, err = h.svc.GetUserOrders(userID, limit, offset)
+	}
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -737,7 +851,7 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	// Only allow user to see their own orders unless admin
 	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
-	if order.UserID != userID && !canManage {
+	if (order.UserID == nil || *order.UserID != userID) && !canManage {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -781,20 +895,71 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, order)
 }
 
-// Checkout handler
-
-func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
+		return
+	}
+	if err := h.svc.DeleteOrder(id); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete order")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (h *Handler) guestLookupOrder(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		OrderID string `json:"order_id"`
+		Email   string `json:"email"`
+		Phone   string `json:"phone"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request")
 		return
 	}
 
+	id, err := strconv.ParseInt(req.OrderID, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid order id")
+		return
+	}
+
+	order, err := h.svc.GetGuestOrder(id, req.Email, req.Phone)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "order not found or details incorrect")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, order)
+}
+
+// Checkout handler
+
+func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	var req models.CheckoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
 		utils.WriteError(w, http.StatusBadRequest, "items required")
 		return
 	}
+
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		if !req.IsGuest {
+			utils.WriteError(w, http.StatusUnauthorized, "unauthorized or missing guest info")
+			return
+		}
+		userID = 0 // Represents guest
+	}
+
 	if req.Currency == "" {
 		req.Currency = "usd"
 	}
@@ -1138,4 +1303,97 @@ func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": status})
+}
+func (h *Handler) getCards(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	cards, err := h.svc.WalletRepo.GetCards(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to get cards")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"cards": cards,
+	})
+}
+
+func (h *Handler) addCard(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req models.UserCard
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	req.UserID = userID
+
+	card, err := h.svc.WalletRepo.AddCard(&req)
+	if err != nil {
+		log.Printf("Wallet add card error: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to add card")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, card)
+}
+
+func (h *Handler) updateCard(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	cardIDStr := chi.URLParam(r, "id")
+	cardID, err := strconv.ParseInt(cardIDStr, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid card ID")
+		return
+	}
+
+	var req models.UserCard
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	req.ID = cardID
+	req.UserID = userID
+
+	card, err := h.svc.WalletRepo.UpdateCard(&req)
+	if err != nil {
+		log.Printf("Wallet update card error: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to update card")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, card)
+}
+
+func (h *Handler) deleteCard(w http.ResponseWriter, r *http.Request) {
+	userID, ok := h.resolveWalletUser(w, r)
+	if !ok {
+		return
+	}
+
+	cardIDStr := chi.URLParam(r, "id")
+	cardID, err := strconv.ParseInt(cardIDStr, 10, 64)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid card ID")
+		return
+	}
+
+	err = h.svc.WalletRepo.DeleteCard(cardID, userID)
+	if err != nil {
+		log.Printf("Wallet delete card error: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "Failed to delete card")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"success": true})
 }

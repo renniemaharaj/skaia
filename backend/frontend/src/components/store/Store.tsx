@@ -24,6 +24,7 @@ import SpotlightCard from "../ui/SpotlightCard";
 
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
+import { Wallet } from "lucide-react";
 import "./Store.css";
 
 export const Store: React.FC = () => {
@@ -230,6 +231,26 @@ export const Store: React.FC = () => {
               <Plus size={16} /> New Product
             </button>
           )}
+          {isAuthenticated && (
+            <>
+              <button
+                className="btn-admin-action"
+                style={{ marginLeft: "auto", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", color: "var(--text-primary)" }}
+                onClick={() => navigate(`/wallet/${crypto.randomUUID()}`)}
+                title="My Wallet"
+              >
+                <Wallet size={16} /> Wallet
+              </button>
+              <button
+                className="btn-admin-action"
+                style={{ marginLeft: "8px" }}
+                onClick={() => navigate("/store/orders")}
+                title="My Orders"
+              >
+                My Orders
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -304,20 +325,20 @@ export const Store: React.FC = () => {
                     <div style={{ display: "flex", gap: "6px" }}>
                       {canEditProduct && (
                         <button
-                          className="btn-admin-icon"
+                          className="action-btn edit-btn"
                           title="Edit product"
                           onClick={() => setEditingProduct(product)}
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={16} />
                         </button>
                       )}
                       {canDeleteProduct && (
                         <button
-                          className="btn-admin-icon btn-danger"
+                          className="action-btn danger"
                           title="Delete product"
                           onClick={() => handleDeleteProduct(product.id)}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       )}
                       <button

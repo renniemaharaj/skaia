@@ -214,7 +214,7 @@ Price: 500, IsActive: true,
 // Create 3 orders.
 for i := 0; i < 3; i++ {
 _, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 500, Status: "pending"},
+&models.Order{UserID: &uid, TotalPrice: 500, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 5.0}},
 )
 require.NoError(t, err)
@@ -223,7 +223,7 @@ orders, err := orderRepo.GetByUser(uid, 10, 0)
 require.NoError(t, err)
 assert.Len(t, orders, 3)
 for _, o := range orders {
-assert.Equal(t, uid, o.UserID)
+assert.Equal(t, uid, *o.UserID)
 }
 }
 
@@ -240,7 +240,7 @@ Price: 100, IsActive: true,
 })
 for i := 0; i < 5; i++ {
 _, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 100, Status: "pending"},
+&models.Order{UserID: &uid, TotalPrice: 100, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 1.0}},
 )
 require.NoError(t, err)
@@ -272,7 +272,7 @@ CategoryID: cat.ID, Name: testutil.UniqueStr("trans_prod"),
 Price: 100, IsActive: true,
 })
 order, err := orderRepo.Create(
-&models.Order{UserID: uid, TotalPrice: 100, Status: "pending"},
+&models.Order{UserID: &uid, TotalPrice: 100, Status: "pending"},
 []*models.OrderItem{{ProductID: prod.ID, Quantity: 1, Price: 1.0}},
 )
 require.NoError(t, err)

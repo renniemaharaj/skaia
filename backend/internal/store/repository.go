@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strconv"
 
 	"github.com/skaia/backend/models"
 )
@@ -258,6 +259,59 @@ func NewOrderRepository(db *sql.DB) OrderRepository {
 	return &sqlOrderRepository{db: db}
 }
 
+func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
+	if len(orders) == 0 {
+		return nil
+	}
+	
+	// Create a map for quick lookup
+	orderMap := make(map[int64]*models.Order)
+	var ids []any
+	
+	query := "SELECT id, order_id, product_id, quantity, price, created_at FROM order_items WHERE order_id IN ("
+	for i, o := range orders {
+		orderMap[o.ID] = o
+		o.Items = []*models.OrderItem{} // initialize
+		
+		if i > 0 {
+			query += ", "
+		}
+		query += "?"
+		ids = append(ids, o.ID)
+	}
+	query += ")"
+	
+	// Replace ? with $1, $2, etc for postgres/sqlite parameter binding
+	// actually since this uses standard sql driver ? might work for sqlite, 
+	// but $N is safer if they are using pg. The rest of the file uses $N.
+	// Let's rewrite the query building for $N
+	queryN := "SELECT id, order_id, product_id, quantity, price, created_at FROM order_items WHERE order_id IN ("
+	for i := range orders {
+		if i > 0 {
+			queryN += ", "
+		}
+		queryN += "$" + strconv.Itoa(i+1)
+	}
+	queryN += ")"
+	
+	rows, err := r.db.Query(queryN, ids...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	
+	for rows.Next() {
+		item := &models.OrderItem{}
+		if err := rows.Scan(&item.ID, &item.OrderID, &item.ProductID, &item.Quantity, &item.Price, &item.CreatedAt); err != nil {
+			return err
+		}
+		if o, ok := orderMap[item.OrderID]; ok {
+			o.Items = append(o.Items, item)
+		}
+	}
+	return rows.Err()
+}
+
 func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderItem) (*models.Order, error) {
 	tx, err := r.db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -266,11 +320,11 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 	defer tx.Rollback() //nolint:errcheck
 
 	err = tx.QueryRow(
-		`INSERT INTO orders (user_id, total_price, status)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, user_id, total_price, status, created_at, updated_at`,
-		order.UserID, order.TotalPrice, order.Status,
-	).Scan(&order.ID, &order.UserID, &order.TotalPrice, &order.Status, &order.CreatedAt, &order.UpdatedAt)
+		`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at`,
+		order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status,
+	).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -295,17 +349,20 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
 	o := &models.Order{}
 	err := r.db.QueryRow(
-		`SELECT id, user_id, total_price, status, created_at, updated_at FROM orders WHERE id = $1`, id,
-	).Scan(&o.ID, &o.UserID, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at FROM orders WHERE id = $1`, id,
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("order not found")
+	}
+	if err == nil {
+		err = r.loadItems(o)
 	}
 	return o, err
 }
 
 func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*models.Order, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, total_price, status, created_at, updated_at
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
 		 FROM orders WHERE user_id = $1
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset,
@@ -318,10 +375,13 @@ func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*mode
 	var orders []*models.Order
 	for rows.Next() {
 		o := &models.Order{}
-		if err := rows.Scan(&o.ID, &o.UserID, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, o)
+	}
+	if rows.Err() == nil {
+		_ = r.loadItems(orders...)
 	}
 	return orders, rows.Err()
 }
@@ -330,10 +390,57 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 	o := &models.Order{}
 	err := r.db.QueryRow(
 		`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2
-		 RETURNING id, user_id, total_price, status, created_at, updated_at`,
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at`,
 		status, id,
-	).Scan(&o.ID, &o.UserID, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
 	return o, err
+}
+
+func (r *sqlOrderRepository) GetGuestOrder(id int64, email, phone string) (*models.Order, error) {
+	o := &models.Order{}
+	err := r.db.QueryRow(
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
+		 FROM orders
+		 WHERE id = $1 AND is_guest = true AND guest_email = $2 AND guest_phone = $3`, id, email, phone,
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("guest order not found")
+	}
+	if err == nil {
+		err = r.loadItems(o)
+	}
+	return o, err
+}
+
+func (r *sqlOrderRepository) ListAll(limit, offset int) ([]*models.Order, error) {
+	rows, err := r.db.Query(
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
+		 FROM orders
+		 ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+		limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []*models.Order
+	for rows.Next() {
+		o := &models.Order{}
+		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	if rows.Err() == nil {
+		_ = r.loadItems(orders...)
+	}
+	return orders, rows.Err()
+}
+
+func (r *sqlOrderRepository) Delete(id int64) error {
+	_, err := r.db.Exec(`DELETE FROM orders WHERE id=$1`, id)
+	return err
 }
 
 // Payment repository

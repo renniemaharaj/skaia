@@ -38,12 +38,21 @@ type CartItem struct {
 
 // Order represents a completed order. TotalPrice is in cents.
 type Order struct {
-	ID         int64     `json:"id"`
-	UserID     int64     `json:"user_id"`
-	TotalPrice int64     `json:"total_price"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID               int64      `json:"id"`
+	UserID           *int64     `json:"user_id,omitempty"`
+	IsGuest          bool       `json:"is_guest"`
+	GuestEmail       string     `json:"guest_email,omitempty"`
+	GuestPhone       string     `json:"guest_phone,omitempty"`
+	DeliveryLocation string     `json:"delivery_location,omitempty"`
+	DeliveryDate     *time.Time `json:"delivery_date,omitempty"`
+	DeliveryTime     string     `json:"delivery_time,omitempty"`
+	ExtraInfo        string     `json:"extra_info,omitempty"`
+	BillingInfo      string     `json:"billing_info,omitempty"`
+	TotalPrice       int64        `json:"total_price"`
+	Status           string       `json:"status"`
+	CreatedAt        time.Time    `json:"created_at"`
+	UpdatedAt        time.Time    `json:"updated_at"`
+	Items            []*OrderItem `json:"items,omitempty"`
 }
 
 // OrderItem represents an item in an order. Price is in cents.
@@ -73,9 +82,18 @@ type Payment struct {
 
 // CheckoutRequest carries the items a user wants to purchase.
 type CheckoutRequest struct {
-	Items           []CheckoutItem `json:"items"`
-	PaymentMethodID string         `json:"payment_method_id,omitempty"`
-	Currency        string         `json:"currency,omitempty"`
+	Items            []CheckoutItem `json:"items"`
+	PaymentMethodID  string         `json:"payment_method_id,omitempty"`
+	Currency         string         `json:"currency,omitempty"`
+	IsGuest          bool           `json:"is_guest"`
+	GuestEmail       string         `json:"guest_email,omitempty"`
+	GuestPhone       string         `json:"guest_phone,omitempty"`
+	DeliveryLocation string         `json:"delivery_location,omitempty"`
+	DeliveryDate     string         `json:"delivery_date,omitempty"`
+	DeliveryTime     string         `json:"delivery_time,omitempty"`
+	ExtraInfo        string         `json:"extra_info,omitempty"`
+	RememberBilling  bool           `json:"remember_billing,omitempty"`
+	BillingInfo      string         `json:"billing_info,omitempty"`
 }
 
 // CheckoutItem is a single line in a checkout request.
@@ -125,4 +143,34 @@ type Subscription struct {
 	CancelledAt            *time.Time `json:"cancelled_at,omitempty"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
+}
+
+// WalletTransaction tracks a user's store wallet balance changes.
+type WalletTransaction struct {
+	ID          int64     `json:"id"`
+	UserID      int64     `json:"user_id"`
+	Amount      int64     `json:"amount"` // in cents
+	Type        string    `json:"type"`   // "credit" or "debit"
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// UserCard tracks a user's stored card.
+type UserCard struct {
+	ID              int64     `json:"id"`
+	UserID          int64     `json:"user_id"`
+	CardName        string    `json:"card_name"`
+	CardDescription string    `json:"card_description"`
+	CardType        string    `json:"card_type"` // visa, mastercard, etc.
+	IsCredit        bool      `json:"is_credit"` // false for debit, true for credit
+	CardNumber      string    `json:"card_number"`
+	CVV             string    `json:"cvv"`
+	ExpiryMonth     int       `json:"expiry_month"`
+	ExpiryYear      int       `json:"expiry_year"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+// WalletBalance represents the aggregate balance of a user.
+type WalletBalance struct {
+	Balance int64 `json:"balance"` // in cents (total credits - total debits)
 }

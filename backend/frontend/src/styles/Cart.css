@@ -1,5 +1,6 @@
 .cart-page-container {
-  max-width: 1200px;
+  max-width: 1600px;
+  width: 95%;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -22,8 +23,8 @@
 }
 
 .cart-content {
-  display: grid;
-  grid-template-columns: 1fr 300px;
+  display: flex;
+  flex-direction: row;
   gap: 2rem;
 }
 
@@ -71,7 +72,13 @@
   text-align: center;
 }
 
+.cart-items {
+  flex: 1;
+}
+
 .cart-summary {
+  flex: 1;
+  min-width: 500px;
   height: fit-content;
   position: sticky;
   top: 100px;
@@ -116,11 +123,13 @@
 
 @media (max-width: 768px) {
   .cart-content {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .cart-summary {
     position: static;
+    min-width: unset;
+    width: 100%;
   }
 
   .cart-item {

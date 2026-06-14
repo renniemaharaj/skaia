@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/skaia/backend/models"
@@ -17,12 +18,13 @@ type Service struct {
 	payments      PaymentRepository
 	plans         SubscriptionPlanRepository
 	subscriptions SubscriptionRepository
+	WalletRepo    WalletRepository
 	cache         *ProductCache
 	provider      PaymentProvider
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, cache *ProductCache, provider PaymentProvider) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider) *Service {
 	return &Service{
 		categories:    cats,
 		products:      products,
@@ -31,6 +33,7 @@ func NewService(cats CategoryRepository, products ProductRepository, cart CartRe
 		payments:      payments,
 		plans:         plans,
 		subscriptions: subs,
+		WalletRepo:    wallet,
 		cache:         cache,
 		provider:      provider,
 	}
@@ -136,6 +139,18 @@ func (s *Service) GetUserOrders(userID int64, limit, offset int) ([]*models.Orde
 	return s.orders.GetByUser(userID, limit, offset)
 }
 
+func (s *Service) GetGuestOrder(id int64, email, phone string) (*models.Order, error) {
+	return s.orders.GetGuestOrder(id, email, phone)
+}
+
+func (s *Service) ListAllOrders(limit, offset int) ([]*models.Order, error) {
+	return s.orders.ListAll(limit, offset)
+}
+
+func (s *Service) DeleteOrder(id int64) error {
+	return s.orders.Delete(id)
+}
+
 func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
 	return s.orders.UpdateStatus(id, status)
 }
@@ -179,31 +194,116 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 	}
 
 	// create order in pending state
+	var deliveryDate *time.Time
+	if req.DeliveryDate != "" {
+		if t, err := time.Parse("2006-01-02", req.DeliveryDate); err == nil {
+			deliveryDate = &t
+		}
+	}
+
+	var parsedUserID *int64
+	if !req.IsGuest {
+		parsedUserID = &userID
+	}
+
 	order, err := s.orders.Create(&models.Order{
-		UserID:     userID,
-		TotalPrice: total,
-		Status:     "pending",
+		UserID:           parsedUserID,
+		IsGuest:          req.IsGuest,
+		GuestEmail:       req.GuestEmail,
+		GuestPhone:       req.GuestPhone,
+		DeliveryLocation: req.DeliveryLocation,
+		DeliveryDate:     deliveryDate,
+		DeliveryTime:     req.DeliveryTime,
+		ExtraInfo:        req.ExtraInfo,
+		BillingInfo:      req.BillingInfo,
+		TotalPrice:       total,
+		Status:           "pending",
 	}, orderItems)
 	if err != nil {
 		return nil, fmt.Errorf("create order: %w", err)
 	}
 
-	// charge via provider
-	providerRef, payStatus, clientSecret, chargeErr := s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
-	if chargeErr != nil {
-		payStatus = "failed"
-	}
+	// charge via provider or handle cash on delivery
+	var providerRef, payStatus, clientSecret string
+	var failureReason string
 
-	failureReason := ""
-	if chargeErr != nil {
-		failureReason = chargeErr.Error()
+	if req.PaymentMethodID == "delivery_cash" {
+		payStatus = "succeeded"
+		providerRef = "cash_" + fmt.Sprint(order.ID)
+	} else if req.PaymentMethodID == "wallet" {
+		if req.IsGuest {
+			payStatus = "failed"
+			failureReason = "Wallet cannot be used by guests"
+		} else {
+			balance, err := s.WalletRepo.GetBalance(userID)
+			if err != nil {
+				payStatus = "failed"
+				failureReason = "Failed to retrieve wallet balance"
+			} else if balance < total {
+				payStatus = "failed"
+				failureReason = "Insufficient wallet balance"
+			} else {
+				_, err = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+					UserID:      userID,
+					Amount:      total,
+					Type:        "debit",
+					Description: fmt.Sprintf("Order #%d", order.ID),
+				})
+				if err != nil {
+					payStatus = "failed"
+					failureReason = "Failed to deduct from wallet"
+				} else {
+					payStatus = "succeeded"
+					providerRef = "wallet_" + fmt.Sprint(order.ID)
+				}
+			}
+		}
+	} else if strings.HasPrefix(req.PaymentMethodID, "card_") {
+		var cardID int64
+		fmt.Sscanf(req.PaymentMethodID, "card_%d", &cardID)
+		cards, _ := s.WalletRepo.GetCards(userID)
+		valid := false
+		for _, c := range cards {
+			if c.ID == cardID {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			payStatus = "failed"
+			failureReason = "Invalid or missing card"
+		} else {
+			var chargeErr error
+			providerRef, payStatus, clientSecret, chargeErr = s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
+			if chargeErr != nil {
+				payStatus = "failed"
+				failureReason = chargeErr.Error()
+			}
+		}
+	} else {
+		var chargeErr error
+		providerRef, payStatus, clientSecret, chargeErr = s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
+		if chargeErr != nil {
+			payStatus = "failed"
+			failureReason = chargeErr.Error()
+		}
 	}
 
 	// persist payment record
+	var parsedUserID2 int64
+	if !req.IsGuest {
+		parsedUserID2 = userID
+	}
 	payment, err := s.payments.Create(&models.Payment{
-		OrderID:       order.ID,
-		UserID:        userID,
-		Provider:      providerOfEnv(),
+		OrderID: order.ID,
+		UserID:  parsedUserID2,
+		Provider: func() string {
+			if req.PaymentMethodID == "delivery_cash" {
+				return "delivery_cash"
+			} else {
+				return providerOfEnv()
+			}
+		}(),
 		ProviderRef:   providerRef,
 		Amount:        total,
 		Currency:      req.Currency,

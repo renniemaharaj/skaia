@@ -332,6 +332,12 @@
   color: white;
 }
 
+.btn-admin-action.btn-danger:hover {
+  background: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
 .btn-add-to-cart:disabled {
   background: var(--bg-tertiary);
   color: var(--text-secondary);

@@ -39,7 +39,10 @@ type OrderRepository interface {
 	Create(order *models.Order, items []*models.OrderItem) (*models.Order, error)
 	GetByID(id int64) (*models.Order, error)
 	GetByUser(userID int64, limit, offset int) ([]*models.Order, error)
+	GetGuestOrder(id int64, email, phone string) (*models.Order, error)
+	ListAll(limit, offset int) ([]*models.Order, error)
 	UpdateStatus(id int64, status string) (*models.Order, error)
+	Delete(id int64) error
 }
 
 // PaymentRepository persists payment records.
@@ -76,4 +79,15 @@ type PaymentProvider interface {
 	CancelSubscription(providerSubID string, atPeriodEnd bool) error
 	GetSubscriptionStatus(providerSubID string) (string, error)
 	CreateCheckoutSession(plan *models.SubscriptionPlan, customerEmail, successURL, cancelURL string) (string, error)
+}
+
+// WalletRepository manages user wallet transactions and balances.
+type WalletRepository interface {
+	CreateTransaction(tx *models.WalletTransaction) (*models.WalletTransaction, error)
+	GetTransactions(userID int64, limit, offset int) ([]*models.WalletTransaction, error)
+	GetBalance(userID int64) (int64, error)
+	AddCard(card *models.UserCard) (*models.UserCard, error)
+	GetCards(userID int64) ([]*models.UserCard, error)
+	UpdateCard(card *models.UserCard) (*models.UserCard, error)
+	DeleteCard(cardID, userID int64) error
 }

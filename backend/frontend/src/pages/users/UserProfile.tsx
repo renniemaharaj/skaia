@@ -13,6 +13,7 @@ import UserProfileCard from "./UserProfileCard";
 import UserManagePanel from "./UserManagePanel";
 import UserThreadsFeed from "./UserThreadsFeed";
 import UserUploads from "./UserUploads";
+import UserOrders from "./UserOrders";
 import SuspendDialog from "./SuspendDialog";
 
 import { apiRequest } from "../../utils/api";
@@ -173,10 +174,16 @@ const UserProfile: React.FC<UserProfileProps> = ({
           : null}
 
       {!hideUploads && (
-        <UserUploads
-          userId={effectiveUserId}
-          displayName={user.display_name || user.username}
-        />
+        <>
+          <UserUploads
+            userId={effectiveUserId}
+            displayName={user.display_name || user.username}
+          />
+          <UserOrders
+            userId={effectiveUserId}
+            displayName={user.display_name || user.username}
+          />
+        </>
       )}
 
       {handleThreads ? handleThreads(threadsPanel) : threadsPanel}

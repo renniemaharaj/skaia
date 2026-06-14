@@ -301,9 +301,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	storePayRepo := istore.NewPaymentRepository(db)
 	storePlanRepo := istore.NewSubscriptionPlanRepository(db)
 	storeSubRepo := istore.NewSubscriptionRepository(db)
+	storeWalletRepo := istore.NewWalletRepository(db)
 	storeCache := istore.NewProductCacheWithClient(rdb)
 	storeProv := istore.NewPaymentProvider()
-	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storePlanRepo, storeSubRepo, storeCache, storeProv)
+	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storePlanRepo, storeSubRepo, storeWalletRepo, storeCache, storeProv)
 
 	origins := []string{}
 	if raw := os.Getenv("CORS_ORIGINS"); raw != "" {
