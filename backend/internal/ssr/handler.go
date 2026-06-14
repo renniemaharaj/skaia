@@ -1,9 +1,9 @@
 package ssr
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html"
 	"io/ioutil"
 	"log"
@@ -16,7 +16,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	icfg "github.com/skaia/backend/internal/config"
+	ictx "github.com/skaia/backend/internal/ctx"
+	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/models"
+	"github.com/skaia/backend/ratelimit"
+	"net"
 )
 
 type CachedMeta struct {
@@ -42,6 +46,26 @@ func ssrClientPrefix() string {
 	return name + ":"
 }
 
+// realIP extracts the true client IP from the request.
+func realIP(r *http.Request) string {
+	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
+		return ip
+	}
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		for i := 0; i < len(ip); i++ {
+			if ip[i] == ',' {
+				return ip[:i]
+			}
+		}
+		return ip
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
 // IndexHandler returns an http.HandlerFunc that serves the SPA index file
 // with server-injected SEO/head tags based on the site config and route context.
 func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.HandlerFunc {
@@ -59,8 +83,29 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		path := r.URL.Path
+		ip := realIP(r)
 		cacheKey := ssrClientPrefix() + "ssr:meta:" + path
-		ctx := context.Background()
+		ctx := r.Context()
+
+		// 0. Fast path: if IP is jailed, skip SSR entirely to prevent Redis/DB flooding.
+		// Serving the raw HTML allows the SPA to load and prompt the TOTP bypass.
+		if ratelimit.JailTimeRemaining(ctx, rdb, ip) > 0 {
+			hasBypass := false
+			if claims, ok := ctx.Value(ictx.CtxKeyClaims).(*ijwt.Claims); ok && claims != nil {
+				bypassKey := fmt.Sprintf("jail_bypass:%d", claims.UserID)
+				if bypassActive, _ := rdb.Exists(ctx, bypassKey).Result(); bypassActive > 0 {
+					hasBypass = true
+				}
+			}
+
+			if !hasBypass {
+				serveInjected(w, data, CachedMeta{
+					TitleTag: "<title>Rate Limit Exceeded</title>",
+					DescTag:  "<meta name=\"description\" content=\"You have been temporarily rate-limited. Please wait before accessing this page.\">",
+				})
+				return
+			}
+		}
 
 		var meta CachedMeta
 

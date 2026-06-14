@@ -50,6 +50,9 @@ function customStorageAtom<T extends string | null>(
         val = val.slice(1, -1);
         localStorage.setItem(key, val);
       }
+      if (key === "auth.accessToken" && val) {
+        document.cookie = `auth_token=${val}; path=/; max-age=2592000`;
+      }
       return (val as T) || initialValue;
     } else {
       return (memoryStore[key] as T) || initialValue;
@@ -63,8 +66,15 @@ function customStorageAtom<T extends string | null>(
       if (hasLocalStorage) {
         if (newValue === null) {
           localStorage.removeItem(key);
+          if (key === "auth.accessToken") {
+            document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          }
         } else {
           localStorage.setItem(key, newValue as string);
+          if (key === "auth.accessToken") {
+            // Store cookie for 30 days so SSR can see it
+            document.cookie = `auth_token=${newValue}; path=/; max-age=2592000`;
+          }
         }
       } else {
         if (newValue === null) {
