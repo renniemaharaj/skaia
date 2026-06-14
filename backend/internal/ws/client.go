@@ -34,6 +34,15 @@ type Client struct {
 	lastChatAt time.Time
 }
 
+func (c *Client) HasPermission(perm string) bool {
+	for _, p := range c.Permissions {
+		if p == perm || p == "*" || (len(p) > 2 && p[len(p)-2:] == ".*" && len(perm) >= len(p)-2 && perm[:len(p)-2] == p[:len(p)-2]) {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	// pongWait is how long we wait for a pong before considering the
 	// connection dead. Clients must respond to pings within this window.

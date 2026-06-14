@@ -147,43 +147,42 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({ retrySeconds, challen
           right: "20px",
           width: "260px",
           padding: "1rem", 
-          background: "rgba(0, 0, 0, 0.8)", 
-          border: "1px solid rgba(255, 60, 60, 0.3)",
-          borderTop: "3px solid rgba(255, 60, 60, 0.8)",
+          background: "var(--bg-secondary, rgba(0, 0, 0, 0.8))", 
+          border: "1px solid var(--border-color, rgba(255, 60, 60, 0.3))",
           borderRadius: "6px", 
-          fontSize: "0.80rem", 
+          fontSize: "0.85rem", 
           textAlign: "left", 
-          fontFamily: "monospace",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          fontFamily: "var(--font-mono, monospace)",
+          boxShadow: "var(--shadow-xl, 0 8px 32px rgba(0,0,0,0.5))",
           backdropFilter: "blur(10px)",
           zIndex: 1000
         }}>
           <div style={{ 
-            marginBottom: "0.8rem", 
+            marginBottom: "1rem", 
             fontWeight: 700, 
-            color: "rgba(255, 80, 80, 0.9)",
+            color: "var(--text-primary, rgba(255, 80, 80, 0.9))",
             letterSpacing: "1px",
             textTransform: "uppercase",
-            borderBottom: "1px dashed rgba(255, 60, 60, 0.3)",
-            paddingBottom: "0.4rem"
+            borderBottom: "1px dashed var(--border-color, rgba(255, 60, 60, 0.3))",
+            paddingBottom: "0.5rem"
           }}>
             [ DEFCON THREAT TELEMETRY ]
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Active Jails:</span> 
-            <strong style={{ color: defconInfo.ips_jailed > 0 ? "#ff5555" : "#55ff55" }}>{defconInfo.ips_jailed}</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>› Active Jails:</span> 
+            <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.ips_jailed}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Tracked Signatures:</span> 
-            <strong style={{ color: "#e0e0e0" }}>{defconInfo.distinct_ips_tracked}</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>› Tracked Signatures:</span> 
+            <strong style={{ color: "var(--text-primary, #e0e0e0)" }}>{defconInfo.distinct_ips_tracked}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Cleared Citizens:</span> 
-            <strong style={{ color: "#55ff55" }}>{defconInfo.citizens}</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>› Cleared Citizens:</span> 
+            <strong style={{ color: "var(--text-primary, #55ff55)" }}>{defconInfo.citizens}</strong>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.5rem", paddingTop: "0.4rem", borderTop: "1px dashed rgba(255, 60, 60, 0.2)" }}>
-            <span style={{ color: "rgba(255,255,255,0.6)" }}>› Dynamic Threshold:</span> 
-            <strong style={{ color: "#ffaa00" }}>{defconInfo.limiter_state} req/m</strong>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px dashed var(--border-color, rgba(255, 60, 60, 0.2))" }}>
+            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>› Dynamic Threshold:</span> 
+            <strong style={{ color: "var(--text-primary, #ffaa00)" }}>{defconInfo.limiter_state} req/m</strong>
           </div>
         </div>
       )}

@@ -53,7 +53,8 @@ const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
     typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
   );
-  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice' | 'physics'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice' | 'physics' | 'defcon'>('members');
+  const [defconInfo, setDefconInfo] = useState<any>(null);
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
@@ -80,6 +81,33 @@ const PresencePanel = () => {
   const isMediaActive = mediaState && mediaState.queue && mediaState.queue.length > 0;
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (activeTab === 'defcon') {
+      // Listen for WebSocket pushes from the backend
+      const handler = (e: MessageEvent) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "defcon:telemetry") {
+            setDefconInfo(msg.payload);
+          }
+        } catch {}
+      };
+
+      if (socket) {
+        socket.addEventListener("message", handler);
+      }
+
+      // Fetch initial cached state
+      apiRequest("/defcon/telemetry").then(setDefconInfo).catch(console.error);
+
+      return () => {
+        if (socket) {
+          socket.removeEventListener("message", handler);
+        }
+      };
+    }
+  }, [activeTab, socket]);
 
   // Deduplicate authenticated users (positive id) by user_id, prefer entry with name.
   // Guests have negative ids (unique per connection) - include as-is.
@@ -467,6 +495,15 @@ const PresencePanel = () => {
               <Atom size={13} strokeWidth={2.5} />
             </button>
           )}
+          {hasPermission("admin.general") && (
+            <button
+              className={`pp-tab${activeTab === 'defcon' ? " pp-tab--active" : ""}`}
+              onClick={() => setActiveTab('defcon')}
+              title="DEFCON Telemetry"
+            >
+              <ShieldCheck size={13} strokeWidth={2.5} />
+            </button>
+          )}
         </div>
         {canManagePresenceSettings && (
           <button
@@ -559,6 +596,47 @@ const PresencePanel = () => {
 
         <div style={{ display: activeTab === 'physics' ? 'flex' : 'none', flexDirection: 'column' }} className="pp-scroll">
           {activeTab === 'physics' && <PhysicsControls />}
+        </div>
+
+        <div style={{ display: activeTab === 'defcon' ? 'block' : 'none', padding: '1rem' }} className="pp-scroll">
+          {activeTab === 'defcon' && defconInfo && (
+            <div className="defcon-telemetry-tile" style={{ 
+              fontSize: "0.85rem", 
+              fontFamily: "var(--font-mono, monospace)",
+              textAlign: "left"
+            }}>
+              <div style={{ 
+                marginBottom: "1rem", 
+                fontWeight: 700, 
+                color: "var(--text-primary, #fff)",
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+                borderBottom: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
+                paddingBottom: "0.5rem"
+              }}>
+                [ DEFCON THREAT TELEMETRY ]
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span> 
+                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.ips_jailed}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Tracked Signatures:</span> 
+                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.distinct_ips_tracked}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span> 
+                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.citizens}</strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))" }}>
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span> 
+                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.limiter_state} req/m</strong>
+              </div>
+            </div>
+          )}
+          {activeTab === 'defcon' && !defconInfo && (
+            <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}>Loading telemetry...</div>
+          )}
         </div>
       </div>
     </div>

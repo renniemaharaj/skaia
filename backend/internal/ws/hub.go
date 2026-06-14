@@ -371,6 +371,22 @@ func (h *Hub) Broadcast(msg *Message) {
 	}
 }
 
+// BroadcastToPermission sends a message to all clients holding the specified permission.
+func (h *Hub) BroadcastToPermission(permission string, msg *Message) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for client := range h.clients {
+		if !client.HasPermission(permission) {
+			continue
+		}
+		select {
+		case client.Send <- msg:
+		default:
+		}
+	}
+}
+
 // BroadcastExceptUser sends a message to every connected client except those
 // authenticated as userID. This is useful for update flows where the sender
 // already has the latest state and should not be reloaded by its own broadcast.

@@ -16,6 +16,16 @@ func keyTrusted(ip string) string { return fmt.Sprintf("ip:trusted:%s", ip) }
 func keyHistory(ip string) string { return fmt.Sprintf("ip:history:%s", ip) }
 func keyCounter(ip string) string { return fmt.Sprintf("ip:counter:%s", ip) }
 
+var TelemetryTrigger = make(chan struct{}, 1)
+
+// TriggerUpdate sends a lightweight signal to update DEFCON telemetry asynchronously.
+func TriggerUpdate() {
+	select {
+	case TelemetryTrigger <- struct{}{}:
+	default:
+	}
+}
+
 //
 // Tier 1 — Jail
 //
@@ -43,6 +53,8 @@ func JailIP(ctx context.Context, rdb *redis.Client, ip string) (int64, error) {
 	if _, err := pipe.Exec(ctx); err != nil {
 		return 0, fmt.Errorf("jail pipeline: %w", err)
 	}
+
+	TriggerUpdate()
 
 	// Return live jailed IP count so the caller can log / alert.
 	count, err := JailedCount(ctx, rdb)

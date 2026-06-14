@@ -238,37 +238,11 @@ func writeTooManyRequests(ctx context.Context, rdb *redis.Client, w http.Respons
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusTooManyRequests)
 
-	jailed, _ := ratelimit.JailedCount(ctx, rdb)
-	allowance, _ := ratelimit.AdaptiveAllowance(ctx, rdb)
-	
-	// Scan for distinct IPs and citizens
-	distinctIPs := make(map[string]bool)
-	var citizens int64 = 0
-	var cursor uint64 = 0
-	for {
-		keys, nextCursor, _ := rdb.Scan(ctx, cursor, "ip:*", 500).Result()
-		for _, key := range keys {
-			parts := strings.Split(key, ":")
-			if len(parts) >= 3 {
-				ip := parts[len(parts)-1]
-				distinctIPs[ip] = true
-				if parts[1] == "trusted" {
-					citizens++
-				}
-			}
-		}
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
-	}
-
-	info := fmt.Sprintf(`"defcon_info":{"ips_jailed":%d,"distinct_ips_tracked":%d,"citizens":%d,"limiter_state":%d}`, 
-		jailed, len(distinctIPs), citizens, allowance)
+	ratelimit.TriggerUpdate()
 
 	if challenge {
-		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","challenge":"totp","retry_after":%d,%s}`, seconds, info)))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","challenge":"totp","retry_after":%d}`, seconds)))
 	} else {
-		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","retry_after":%d,%s}`, seconds, info)))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":"rate limit exceeded","retry_after":%d}`, seconds)))
 	}
 }

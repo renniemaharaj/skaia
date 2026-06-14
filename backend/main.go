@@ -453,6 +453,24 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 		})
 
+		api.Get("/defcon/telemetry", func(w http.ResponseWriter, r *http.Request) {
+			stats := ratelimit.GetLatestStats()
+			if stats == nil {
+				http.Error(w, `{"error":"telemetry uninitialized"}`, http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(stats)
+		})
+
+		go ratelimit.WatchTelemetry(context.Background(), rdb, func(stats ratelimit.TelemetryStats) {
+			b, _ := json.Marshal(stats)
+			hub.BroadcastToPermission("admin.general", &ws.Message{
+				Type:    "defcon:telemetry",
+				Payload: b,
+			})
+		})
+
 		api.Post("/auth/bypass-rate-limit", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Rate limit bypass verified", Status: "ok"})
