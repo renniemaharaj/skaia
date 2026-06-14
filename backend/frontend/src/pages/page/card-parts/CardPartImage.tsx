@@ -43,6 +43,7 @@ export const CardPartImage = ({
       <img
         src={src}
         alt={alt}
+        loading="lazy"
         className="cdp-image__img"
         style={{ objectPosition: align }}
       />

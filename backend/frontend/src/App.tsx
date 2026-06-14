@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 import {
@@ -34,11 +35,13 @@ export default function App() {
         <SiteConfigLoader>
           <Layout>
             <ErrorBoundary>
-              <Routes>
-                {publicRoutesFunc(features, guestSandboxMode)}
-                {guestRoutesFunc(features, guestSandboxMode)}
-                {protectedRoutesFunc(features, guestSandboxMode)}
-              </Routes>
+              <Suspense fallback={<div className="grengo-empty">Loading page...</div>}>
+                <Routes>
+                  {publicRoutesFunc(features, guestSandboxMode)}
+                  {guestRoutesFunc(features, guestSandboxMode)}
+                  {protectedRoutesFunc(features, guestSandboxMode)}
+                </Routes>
+              </Suspense>
             </ErrorBoundary>
             <GrengoSessionDialog />
           </Layout>

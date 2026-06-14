@@ -807,7 +807,7 @@ export default function GrengoDashboard() {
 
       {/* Exports Table */}
       <div className="grengo-exports" style={{ marginBottom: "2rem", borderBottom: "1px solid #ccc", paddingBottom: "2rem" }}>
-        <h3>Available Exports</h3>
+        <h2>Available Exports</h2>
         {fetchingExports ? (
           <p>Loading exports...</p>
         ) : exports.length === 0 ? (
@@ -1294,9 +1294,9 @@ function PerformanceMetrics({
   }
   if (stats.length === 0 && !hardwareInfo) return null;
   return (
-    <div className="grengo-stats">
+    <div className="grengo-performance-section">
       {hardwareInfo && (
-        <>
+        <div className="grengo-hardware" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
           <h2>Hardware & Thermals</h2>
           <div className="grengo-stats-cards">
             {/* CPU Cores */}
@@ -1378,11 +1378,13 @@ function PerformanceMetrics({
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      <h2>Performance Metrics</h2>
-      <div className="grengo-stats-cards">
+      {stats.length > 0 && (
+        <div className="grengo-stats" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+          <h2>Container Stats</h2>
+          <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
         {stats.map((s) => (
           <div className="card grengo-stat-card" key={s.name}>
@@ -1428,6 +1430,8 @@ function PerformanceMetrics({
           </div>
         ))}
       </div>
+        </div>
+      )}
     </div>
   );
 }

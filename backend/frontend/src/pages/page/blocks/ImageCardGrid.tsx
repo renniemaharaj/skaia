@@ -23,7 +23,7 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
         >
           <div className="image-card-image">
             {item.image_url ? (
-              <img src={item.image_url} alt={item.heading ?? ""} />
+              <img src={item.image_url} alt={item.heading ?? ""} loading="lazy" />
             ) : item.icon ? (
               <div className="image-card-placeholder">
                 {typeof item.icon === "string" ? (
