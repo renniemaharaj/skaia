@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -76,6 +77,9 @@ type dockerStatsJSON struct {
 	} `json:"pids_stats"`
 }
 
+var prevCPUStats = make(map[string]dockerStatsJSON)
+var cpuStatsMu sync.Mutex
+
 // fetchContainerStats fetches stats for one container via the Docker Engine API.
 func fetchContainerStats(name string) (*containerStats, error) {
 	url := fmt.Sprintf("http://localhost/containers/%s/stats?stream=false&one-shot=true", name)
@@ -93,9 +97,23 @@ func fetchContainerStats(name string) (*containerStats, error) {
 		return nil, err
 	}
 
+	cpuStatsMu.Lock()
+	prev, hasPrev := prevCPUStats[name]
+	prevCPUStats[name] = raw
+	cpuStatsMu.Unlock()
+
+	var prevCpuUsage, prevSysUsage float64
+	if hasPrev {
+		prevCpuUsage = float64(prev.CPUStats.CPUUsage.TotalUsage)
+		prevSysUsage = float64(prev.CPUStats.SystemCPUUsage)
+	} else {
+		prevCpuUsage = float64(raw.PrecpuStats.CPUUsage.TotalUsage)
+		prevSysUsage = float64(raw.PrecpuStats.SystemCPUUsage)
+	}
+
 	// CPU %
-	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage - raw.PrecpuStats.CPUUsage.TotalUsage)
-	sysDelta := float64(raw.CPUStats.SystemCPUUsage - raw.PrecpuStats.SystemCPUUsage)
+	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage) - prevCpuUsage
+	sysDelta := float64(raw.CPUStats.SystemCPUUsage) - prevSysUsage
 	cpuPct := 0.0
 	if sysDelta > 0 && cpuDelta > 0 {
 		cpuPct = cpuDelta / sysDelta * float64(raw.CPUStats.OnlineCPUs) * 100.0

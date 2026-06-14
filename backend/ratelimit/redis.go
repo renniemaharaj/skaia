@@ -161,12 +161,19 @@ func CheckAndCount(ctx context.Context, rdb *redis.Client, ip string, limit int)
 		return count
 	`)
 
-	result, err := script.Run(ctx, rdb, []string{key}, windowSecs).Int64()
+	val, err := script.Run(ctx, rdb, []string{key}, windowSecs).Result()
 	if err != nil {
-		return 0, false, fmt.Errorf("counter script: %w", err)
+		return 0, false, fmt.Errorf("check counter: %w", err)
 	}
 
-	return result, result > int64(limit), nil
+	count := val.(int64)
+
+	// If count == 1, a new signature just started tracking, let's update telemetry
+	if count == 1 {
+		TriggerUpdate()
+	}
+
+	return count, count > int64(limit), nil
 }
 
 //

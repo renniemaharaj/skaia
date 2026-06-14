@@ -25,21 +25,21 @@ var RateLimit = rateLimitConfig{
 
 	// ── Tier 3: Purgatory (unknown IPs) ──────────────────────────────────────
 	// Starting allowance for a brand-new IP with no history.
-	BaseLimitPerMin: 1000,
+	BaseLimitPerMin: 256,
 
 	// Each additional jailed IP reduces the Purgatory allowance by this factor.
 	// Formula: allowance = BaseLimitPerMin / (1 + jailedCount * PenaltyFactor)
-	// Example: 50 jailed IPs => 1500 / (1 + 50*0.05) = 1500/3.5 ≈ 428 req/min.
-	PenaltyFactor: 0.05,
+	// Example: 50 jailed IPs => 1500 / (1 + 50*0.10) = 1500/6 ≈ 250 req/min.
+	PenaltyFactor: 0.10,
 
 	// Floor: even during a full-scale botnet attack, unknown IPs still get this
 	// many requests per minute so a brand-new legitimate user isn't locked out.
-	MinFloorPerMin: 20,
+	MinFloorPerMin: 60,
 
 	// ── Graduation thresholds ────────────────────────────────────────────────
 	// A Purgatory IP graduates to Trusted after this many requests WITHOUT ever
 	// hitting the rate limiter — they must complete all of these cleanly.
-	GraduationRequests: 50,
+	GraduationRequests: 1280,
 
 	// The window in which those GraduationRequests must occur.
 	GraduationWindow: 10 * time.Minute,
