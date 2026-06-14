@@ -63,8 +63,7 @@ export const PromptContainer = () => {
   }, []);
 
   useEffect(() => {
-    if (config && !config.isConfirm) {
-      setValue(config.defaultValue);
+    if (config && !config.isConfirm && !config.isAlert && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [config]);
@@ -94,7 +93,9 @@ export const PromptContainer = () => {
     setConfig(null);
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div
       className="ui-dialog-overlay"
       onMouseDown={(e) => {
@@ -157,6 +158,7 @@ export const PromptContainer = () => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

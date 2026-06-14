@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: var(--overlay-dark-heavy);
+  background: var(--overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,7 +110,7 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: var(--overlay-dark-heavy);
+  background: var(--overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -52,7 +52,7 @@
   /* Focus & overlay tokens */
   --focus-ring: 0 0 0 3px rgba(91, 158, 142, 0.15);
   --overlay-dark: rgba(0, 0, 0, 0.5);
-  --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
+  --overlay-dark-heavy: rgba(0, 0, 0, 0.88);
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
   /* Typography & Modern Layout Tokens */
@@ -142,7 +142,7 @@ html[data-theme="dark"] {
   /* Focus & overlay tokens */
   --focus-ring: 0 0 0 3px rgba(123, 179, 160, 0.2);
   --overlay-dark: rgba(0, 0, 0, 0.6);
-  --overlay-dark-heavy: rgba(15, 23, 42, 0.88);
+  --overlay-dark-heavy: rgba(0, 0, 0, 0.88);
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
 
   /* Typography & Modern Layout Tokens */

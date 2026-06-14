@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import type { Product, StoreCategory } from "../../atoms/store";
@@ -80,12 +81,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: "var(--overlay-dark)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -322,6 +323,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

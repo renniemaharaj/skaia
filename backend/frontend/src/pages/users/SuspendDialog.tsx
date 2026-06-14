@@ -1,4 +1,5 @@
 import { Shield, X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 interface Props {
  displayName: string;
@@ -17,7 +18,7 @@ const SuspendDialog = ({
  onConfirm,
  onClose,
 }: Props) => {
- return (
+ return createPortal(
  <div className="up-dialog-overlay" onClick={onClose}>
  <div className="up-dialog" onClick={(e) => e.stopPropagation()}>
  <div className="up-dialog-header up-dialog-header-danger">
@@ -64,7 +65,8 @@ const SuspendDialog = ({
  </button>
  </div>
  </div>
- </div>
+ </div>,
+ document.body
  );
 };
 

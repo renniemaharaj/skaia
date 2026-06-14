@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
 import { useAtomValue } from "jotai";
@@ -45,7 +46,7 @@ export default function GrengoSessionDialog() {
   };
 
   if (showMaintenance) {
-    return (
+    return createPortal(
       <div className="grengo-maintenance-overlay">
         <div className="grengo-maintenance-card">
           <h2>Under Maintenance</h2>
@@ -54,13 +55,14 @@ export default function GrengoSessionDialog() {
             shortly.
           </p>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   if (!showDialog) return null;
 
-  return (
+  return createPortal(
     <div className="grengo-session-overlay" onClick={handleClose}>
       <div
         className="grengo-session-dialog"
@@ -109,6 +111,7 @@ export default function GrengoSessionDialog() {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
