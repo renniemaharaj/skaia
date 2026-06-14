@@ -103,29 +103,28 @@ func fetchContainerStats(name string) (*containerStats, error) {
 	prevCPUStats[name] = raw
 	cpuStatsMu.Unlock()
 
-	var prevCpuUsage float64
-	var prevReadStr string
+	var prevCpu float64
+	var prevSystem float64
 
 	if hasPrev {
-		prevCpuUsage = float64(prev.CPUStats.CPUUsage.TotalUsage)
-		prevReadStr = prev.Read
+		prevCpu = float64(prev.CPUStats.CPUUsage.TotalUsage)
+		prevSystem = float64(prev.CPUStats.SystemCPUUsage)
 	} else {
-		prevCpuUsage = float64(raw.PrecpuStats.CPUUsage.TotalUsage)
-		prevReadStr = raw.Preread
+		prevCpu = float64(raw.PrecpuStats.CPUUsage.TotalUsage)
+		prevSystem = float64(raw.PrecpuStats.SystemCPUUsage)
 	}
 
-	// Calculate CPU % using wall-clock time delta (supports cgroups v2 properly)
-	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage) - prevCpuUsage
-	
-	readTime, _ := time.Parse(time.RFC3339Nano, raw.Read)
-	prevReadTime, _ := time.Parse(time.RFC3339Nano, prevReadStr)
-	timeDelta := float64(readTime.UnixNano() - prevReadTime.UnixNano())
+	cpuDelta := float64(raw.CPUStats.CPUUsage.TotalUsage) - prevCpu
+	systemDelta := float64(raw.CPUStats.SystemCPUUsage) - prevSystem
+
+	onlineCPUs := float64(raw.CPUStats.OnlineCPUs)
+	if onlineCPUs == 0.0 {
+		onlineCPUs = 1.0 // fallback
+	}
 
 	cpuPct := 0.0
-	if timeDelta > 0 && cpuDelta > 0 {
-		// cpuDelta is in nanoseconds of core time, timeDelta is in nanoseconds of wall time.
-		// So (cpuDelta / timeDelta) * 100 gives the direct CPU percentage across all cores.
-		cpuPct = (cpuDelta / timeDelta) * 100.0
+	if systemDelta > 0 && cpuDelta > 0 {
+		cpuPct = (cpuDelta / systemDelta) * onlineCPUs * 100.0
 	}
 
 	// Memory

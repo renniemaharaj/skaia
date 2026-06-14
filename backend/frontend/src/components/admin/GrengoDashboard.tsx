@@ -656,9 +656,11 @@ export default function GrengoDashboard() {
 
   return (
     <div className="grengo-dashboard">
-      <h1>Grengo Dashboard</h1>
+      <h3>Grengo Dashboard</h3>
 
-      {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
+      <div className="grengo-layout-split">
+        <div className="grengo-layout-left">
+          {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
 
       <div className="grengo-lock-bar">
         <button className="action-btn" onClick={handleLock}>
@@ -807,7 +809,7 @@ export default function GrengoDashboard() {
 
       {/* Exports Table */}
       <div className="grengo-exports" style={{ marginBottom: "2rem", borderBottom: "1px solid #ccc", paddingBottom: "2rem" }}>
-        <h2>Available Exports</h2>
+        <h3>Available Exports</h3>
         {fetchingExports ? (
           <p>Loading exports...</p>
         ) : exports.length === 0 ? (
@@ -909,10 +911,39 @@ export default function GrengoDashboard() {
           onDraftChange={setEnvDraft}
         />
       )}
+        </div>
+        <div className="grengo-layout-right">
 
       {storage && <StoragePanel storage={storage} />}
 
       <PerformanceMetrics stats={stats} statsLoading={statsLoading} hardwareInfo={hardwareInfo} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Gauge Component
+function Gauge({ percent, label, subtext }: { percent: number, label: string, subtext?: string }) {
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const pct = Math.max(0, Math.min(100, percent));
+  const offset = circumference - (pct / 100) * circumference;
+  const colorClass = pct >= 80 ? 'danger' : pct >= 50 ? 'warning' : 'ok';
+  
+  return (
+    <div className="gauge-container">
+      <svg className="gauge-svg" viewBox="0 0 100 100">
+        <circle className="gauge-bg" cx="50" cy="50" r={radius} />
+        <circle 
+          className={`gauge-fill ${colorClass}`}
+          cx="50" cy="50" r={radius}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="gauge-label">{label}</div>
+      {subtext && <div className="gauge-subtext">{subtext}</div>}
     </div>
   );
 }
@@ -1196,7 +1227,7 @@ function EnvEditorPanel({
   return (
     <div className="grengo-env-editor">
       <div className="grengo-env-header">
-        <h2>.env — {envSite}</h2>
+        <h3>.env — {envSite}</h3>
         <div className="grengo-env-actions">
           {envDirty && (
             <span className="grengo-env-unsaved">unsaved changes</span>
@@ -1234,7 +1265,7 @@ function EnvEditorPanel({
 function StoragePanel({ storage }: { storage: StorageInfo }) {
   return (
     <div className="grengo-storage">
-      <h2>Storage</h2>
+      <h3>Storage</h3>
       <div className="grengo-storage-overview">
         <div className="storage-total">
           <div className="storage-total-header">
@@ -1243,26 +1274,11 @@ function StoragePanel({ storage }: { storage: StorageInfo }) {
               {storage.total_used_human} / {storage.total_limit_human}
             </span>
           </div>
-          <div className="stat-bar">
-            <div
-              className={`stat-bar-fill ${barClass(storage.total_percent)}`}
-              style={{ width: `${Math.min(storage.total_percent, 100)}%` }}
-            />
-          </div>
-          <span className="storage-total-pct">
-            {storage.total_percent.toFixed(1)}% used
-            {storage.total_percent >= 100 ? (
-              <span className="storage-critical"> — exceeded usage!</span>
-            ) : storage.total_percent >= 95 ? (
-              <span className="storage-critical"> — critical!</span>
-            ) : storage.total_percent >= 80 ? (
-              <span className="storage-warning"> — approaching limit!</span>
-            ) : null}
-          </span>
+        <Gauge percent={storage.total_percent} label={`${storage.total_percent.toFixed(1)}%`} subtext="Used" />
         </div>
         {storage.sites && storage.sites.length > 0 && (
-          <div className="storage-sites">
-            <h3>Per Site</h3>
+          <div className="storage-sites" style={{ marginTop: "1rem" }}>
+            <h4>Per Site</h4>
             <div className="storage-site-list">
               {storage.sites.map((s) => (
                 <div className="storage-site-row" key={s.name}>
@@ -1293,18 +1309,31 @@ function PerformanceMetrics({
     return <div className="grengo-empty">Loading metrics…</div>;
   }
   if (stats.length === 0 && !hardwareInfo) return null;
+
+  let avgCpu = 0;
+  let memPct = 0;
+  let avgTemp = 0;
+
+  if (hardwareInfo) {
+    avgCpu = hardwareInfo.dynamic.core_percents?.length ? hardwareInfo.dynamic.core_percents.reduce((a, b) => a + b, 0) / hardwareInfo.dynamic.core_percents.length : 0;
+    memPct = hardwareInfo.static.memory_total > 0 ? (hardwareInfo.dynamic.memory_used / hardwareInfo.static.memory_total) * 100 : 0;
+    const temps = hardwareInfo.dynamic.temps || [];
+    avgTemp = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
+  }
+
   return (
     <div className="grengo-performance-section">
       {hardwareInfo && (
         <div className="grengo-hardware" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-          <h2>Hardware & Thermals</h2>
+          <h3>Hardware & Thermals</h3>
           <div className="grengo-stats-cards">
             {/* CPU Cores */}
             <div className="card grengo-stat-card">
               <div className="stat-card-header">
                 <strong>CPU Load ({hardwareInfo.static.total_cores} Cores)</strong>
               </div>
-              <div className="stat-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))' }}>
+              <Gauge percent={avgCpu} label={`${avgCpu.toFixed(1)}%`} subtext="Avg CPU" />
+              <div className="stat-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', marginTop: '1rem' }}>
                 {hardwareInfo.dynamic.core_percents?.map((pct: number, i: number) => (
                   <div className="stat-item" key={i}>
                     <span className="stat-label">Core {i}</span>
@@ -1319,7 +1348,8 @@ function PerformanceMetrics({
               <div className="stat-card-header">
                 <strong>Physical Memory</strong>
               </div>
-              <div className="stat-card-grid">
+              <Gauge percent={memPct} label={`${memPct.toFixed(1)}%`} subtext="Memory" />
+              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
                 <div className="stat-item">
                   <span className="stat-label">Total RAM</span>
                   <span className="stat-value">{(hardwareInfo.static.memory_total / 1024 / 1024 / 1024).toFixed(2)} GB</span>
@@ -1344,11 +1374,11 @@ function PerformanceMetrics({
               <div className="stat-card-grid">
                 <div className="stat-item">
                   <span className="stat-label">Read I/O</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024).toFixed(2)} MB/s</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB/s</span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Write I/O</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024).toFixed(2)} MB/s</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB/s</span>
                 </div>
               </div>
               <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
@@ -1363,7 +1393,8 @@ function PerformanceMetrics({
               <div className="stat-card-header">
                 <strong>Thermals & Graphics</strong>
               </div>
-              <div className="stat-card-grid">
+              <Gauge percent={Math.min(avgTemp, 100)} label={`${avgTemp.toFixed(1)}°C`} subtext="Avg Temp" />
+              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
                 {hardwareInfo.dynamic.temps?.slice(0, 4).map((temp: number, i: number) => (
                   <div className="stat-item" key={i}>
                     <span className="stat-label">Sensor {i+1}</span>
@@ -1383,7 +1414,7 @@ function PerformanceMetrics({
 
       {stats.length > 0 && (
         <div className="grengo-stats" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-          <h2>Container Stats</h2>
+          <h3>Container Stats</h3>
           <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
         {stats.map((s) => (
@@ -1546,7 +1577,7 @@ function CreateSiteForm({
 
   return (
     <div className="card grengo-create-form">
-      <h2>Create New Site</h2>
+      <h3>Create New Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="form-grid">
         <label>
@@ -1696,7 +1727,7 @@ function ImportSiteForm({
 
   return (
     <div className="card grengo-import-form">
-      <h2>Import Site</h2>
+      <h3>Import Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="import-fields">
         <label>
