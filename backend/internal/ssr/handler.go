@@ -1,23 +1,49 @@
 package ssr
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
+	"html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	icfg "github.com/skaia/backend/internal/config"
 	"github.com/skaia/backend/models"
 )
 
+type CachedMeta struct {
+	TitleTag   string `json:"title_tag"`
+	DescTag    string `json:"desc_tag"`
+	OGTag      string `json:"og_tag"`
+	FaviconTag string `json:"favicon_tag"`
+}
+
+var (
+	threadRx     = regexp.MustCompile(`^/view-thread/(\d+)`)
+	itemRx       = regexp.MustCompile(`^/store/item/(\d+)`)
+	pageRx       = regexp.MustCompile(`^/page/([^/]+)`)
+	htmlTagRx    = regexp.MustCompile(`<[^>]*>`)
+	multiSpaceRx = regexp.MustCompile(`\s+`)
+)
+
+func ssrClientPrefix() string {
+	name := os.Getenv("CLIENT_NAME")
+	if name == "" {
+		return ""
+	}
+	return name + ":"
+}
+
 // IndexHandler returns an http.HandlerFunc that serves the SPA index file
-// with server-injected SEO/head tags based on the site config.
-func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
-	// determine the file to serve. during development we can override
-	// via INDEX_FILE_PATH env var, but in production the build lives under
-	// /app/frontend/dist as created by our Docker build step.
+// with server-injected SEO/head tags based on the site config and route context.
+func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.HandlerFunc {
 	indexPath := os.Getenv("INDEX_FILE_PATH")
 	if indexPath == "" {
 		indexPath = "frontend/dist/index.html"
@@ -31,7 +57,21 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 			return
 		}
 
-		// load branding and seo from site_config
+		path := r.URL.Path
+		cacheKey := ssrClientPrefix() + "ssr:meta:" + path
+		ctx := context.Background()
+
+		var meta CachedMeta
+
+		// 1. Try to fetch from Redis
+		if cached, err := rdb.Get(ctx, cacheKey).Result(); err == nil {
+			if json.Unmarshal([]byte(cached), &meta) == nil {
+				serveInjected(w, data, meta)
+				return
+			}
+		}
+
+		// 2. Cache miss: build meta
 		var branding models.Branding
 		var seo models.SEO
 
@@ -42,58 +82,114 @@ func IndexHandler(cfgSvc *icfg.Service) http.HandlerFunc {
 			_ = json.Unmarshal([]byte(sc.Value), &seo)
 		}
 
-		// Build SSR title from branding (the source of truth for site identity).
-		// Try site_name first, then header_title, then header_subtitle.
-		title := branding.SiteName
-		if title == "" {
-			title = branding.HeaderTitle
-		}
-		if title == "" {
-			title = branding.HeaderSubtitle
-		}
-		tagline := branding.Tagline
-		if tagline == "" && branding.HeaderSubtitle != "" && branding.HeaderSubtitle != title {
-			tagline = branding.HeaderSubtitle
-		}
-		if tagline != "" && title != "" {
-			title += " – " + tagline
-		}
-		titleTag := ""
-		if title != "" {
-			titleTag = "<title>" + htmlEscape(title) + "</title>"
+		siteName := branding.SiteName
+		if siteName == "" {
+			siteName = branding.HeaderTitle
 		}
 
-		// Description from SEO config, fallback to branding tagline if absent.
-		descTag := ""
-		if seo.Description != "" {
-			descTag = "<meta name=\"description\" content=\"" + htmlEscape(seo.Description) + "\">"
-		} else if tagline != "" {
-			descTag = "<meta name=\"description\" content=\"" + htmlEscape(tagline) + "\">"
+		var routeTitle, routeDesc, routeImg string
+
+		if match := threadRx.FindStringSubmatch(path); match != nil {
+			var content string
+			_ = db.QueryRow("SELECT title, content FROM forum_threads WHERE id = $1", match[1]).Scan(&routeTitle, &content)
+			if content != "" {
+				routeDesc = snip(stripHTML(content), 160)
+			}
+		} else if match := itemRx.FindStringSubmatch(path); match != nil {
+			_ = db.QueryRow("SELECT name, description, image_url FROM store_products WHERE id = $1", match[1]).Scan(&routeTitle, &routeDesc, &routeImg)
+			if routeDesc != "" {
+				routeDesc = snip(stripHTML(routeDesc), 160)
+			}
+		} else if match := pageRx.FindStringSubmatch(path); match != nil {
+			_ = db.QueryRow("SELECT title, description FROM pages WHERE slug = $1", match[1]).Scan(&routeTitle, &routeDesc)
+			if routeDesc != "" {
+				routeDesc = snip(stripHTML(routeDesc), 160)
+			}
 		}
 
-		ogTag := ""
-		if seo.OGImage != "" {
-			ogTag = "<meta property=\"og:image\" content=\"" + htmlEscape(seo.OGImage) + "\">"
-		} else if branding.LogoURL != "" {
-			ogTag = "<meta property=\"og:image\" content=\"" + htmlEscape(branding.LogoURL) + "\">"
+		// Title
+		finalTitle := siteName
+		if routeTitle != "" {
+			if siteName != "" {
+				finalTitle = routeTitle + " – " + siteName
+			} else {
+				finalTitle = routeTitle
+			}
+		} else if branding.Tagline != "" {
+			finalTitle += " – " + branding.Tagline
 		}
 
-		faviconTag := ""
+		if finalTitle != "" {
+			meta.TitleTag = "<title>" + htmlEscape(finalTitle) + "</title>"
+		}
+
+		// Description
+		finalDesc := routeDesc
+		if finalDesc == "" {
+			finalDesc = seo.Description
+		}
+		if finalDesc == "" {
+			finalDesc = branding.Tagline
+		}
+		if finalDesc != "" {
+			meta.DescTag = "<meta name=\"description\" content=\"" + htmlEscape(finalDesc) + "\">"
+		}
+
+		// OG Image
+		finalImg := routeImg
+		if finalImg == "" {
+			finalImg = seo.OGImage
+		}
+		if finalImg == "" {
+			finalImg = branding.LogoURL
+		}
+		if finalImg != "" {
+			meta.OGTag = "<meta property=\"og:image\" content=\"" + htmlEscape(finalImg) + "\">"
+		}
+
+		// Favicon
 		if branding.LogoURL != "" {
-			faviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(branding.LogoURL) + "\">"
+			meta.FaviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(branding.LogoURL) + "\">"
 		}
 
-		out := string(data)
-		out = replacePlaceholder(out, "%TITLE_PLACEHOLDER%", titleTag)
-		out = replacePlaceholder(out, "%META_DESCRIPTION_PLACEHOLDER%", descTag)
-		out = replacePlaceholder(out, "%OG_IMAGE_PLACEHOLDER%", ogTag)
-		out = replacePlaceholder(out, "%FAVICON_PLACEHOLDER%", faviconTag)
+		// 3. Cache the result
+		if metaBytes, err := json.Marshal(meta); err == nil {
+			// Cache for 24h, relies on explicit invalidation on edits
+			rdb.Set(ctx, cacheKey, metaBytes, 24*time.Hour)
+		}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Write([]byte(out))
+		serveInjected(w, data, meta)
 	}
+}
+
+func serveInjected(w http.ResponseWriter, data []byte, meta CachedMeta) {
+	out := string(data)
+	out = replacePlaceholder(out, "%TITLE_PLACEHOLDER%", meta.TitleTag)
+	out = replacePlaceholder(out, "%META_DESCRIPTION_PLACEHOLDER%", meta.DescTag)
+	out = replacePlaceholder(out, "%OG_IMAGE_PLACEHOLDER%", meta.OGTag)
+	out = replacePlaceholder(out, "%FAVICON_PLACEHOLDER%", meta.FaviconTag)
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Write([]byte(out))
+}
+
+func stripHTML(s string) string {
+	// Replace all HTML tags with a space to prevent words from mashing together
+	s = htmlTagRx.ReplaceAllString(s, " ")
+	// Unescape any HTML entities like &amp; back to normal text
+	s = html.UnescapeString(s)
+	// Collapse multiple spaces into one
+	s = multiSpaceRx.ReplaceAllString(s, " ")
+	return strings.TrimSpace(s)
+}
+
+func snip(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }
 
 func replacePlaceholder(doc, placeholder, replacement string) string {
@@ -101,11 +197,5 @@ func replacePlaceholder(doc, placeholder, replacement string) string {
 }
 
 func htmlEscape(s string) string {
-	// minimal escaping for quotes and ampersand
-	b, _ := json.Marshal(s)
-	// json.Marshal wraps the string in quotes; strip them
-	if len(b) >= 2 && b[0] == '"' && b[len(b)-1] == '"' {
-		return string(b[1 : len(b)-1])
-	}
-	return s
+	return html.EscapeString(s)
 }

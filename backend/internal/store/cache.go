@@ -83,9 +83,13 @@ func (c *ProductCache) SetByID(id int64, p *models.Product) {
 
 // Invalidate removes the cached entry for id.
 func (c *ProductCache) Invalidate(id int64) {
-	if err := c.rdb.Del(context.Background(), productKey(id)).Err(); err != nil {
+	ctx := context.Background()
+	if err := c.rdb.Del(ctx, productKey(id)).Err(); err != nil {
 		log.Printf("store.ProductCache.Invalidate(%d): %v", id, err)
 	}
+	// Also invalidate SSR meta
+	ssrKey := storeClientPrefix() + "ssr:meta:/store/item/" + strconv.FormatInt(id, 10)
+	c.rdb.Del(ctx, ssrKey)
 }
 
 // Flush removes all store product cache entries.

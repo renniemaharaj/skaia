@@ -83,9 +83,13 @@ func (c *ThreadCache) SetByID(id int64, t *models.ForumThread) {
 
 // Invalidate removes the cached entry for id.
 func (c *ThreadCache) Invalidate(id int64) {
-	if err := c.rdb.Del(context.Background(), threadKey(id)).Err(); err != nil {
+	ctx := context.Background()
+	if err := c.rdb.Del(ctx, threadKey(id)).Err(); err != nil {
 		log.Printf("forum.ThreadCache.Invalidate(%d): %v", id, err)
 	}
+	// Also invalidate SSR meta
+	ssrKey := forumClientPrefix() + "ssr:meta:/view-thread/" + strconv.FormatInt(id, 10)
+	c.rdb.Del(ctx, ssrKey)
 }
 
 // Flush removes all forum thread cache entries.

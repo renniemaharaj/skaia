@@ -668,7 +668,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		ics.NewHandler(csSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		pageRepo := ipage.NewRepository(db)
-		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc))
+		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb))
 		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 
 		// Events log admin API.
@@ -693,7 +693,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		ssrHandler := ssr.IndexHandler(cfgSvc)
+		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
 		ssrHandler(w, req)
 	})
 
@@ -721,7 +721,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return
 		}
 
-		ssrHandler := ssr.IndexHandler(cfgSvc)
+		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
 		ssrHandler(w, req)
 	})
 

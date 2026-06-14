@@ -1,11 +1,14 @@
 package page
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/s_registry"
 	"github.com/skaia/backend/models"
 )
@@ -69,11 +72,18 @@ func WithIntegrationResolvers(dataSources DataSourceGetter, customSections Custo
 	}
 }
 
+func WithRedisClient(rdb *redis.Client) Option {
+	return func(s *Service) {
+		s.rdb = rdb
+	}
+}
+
 // Service wraps the page repository with business logic.
 type Service struct {
 	repo            Repository
 	inboxSvc        InboxSender
 	contentResolver s_registry.Resolver
+	rdb             *redis.Client
 }
 
 // NewService creates a new page Service.
@@ -101,6 +111,18 @@ func (s *Service) DeleteAll() error {
 	return s.repo.DeleteAll()
 }
 
+func (s *Service) invalidateSSR(slug string) {
+	if s.rdb == nil {
+		return
+	}
+	name := os.Getenv("CLIENT_NAME")
+	if name != "" {
+		name = name + ":"
+	}
+	ssrKey := name + "ssr:meta:/page/" + slug
+	s.rdb.Del(context.Background(), ssrKey)
+}
+
 func (s *Service) Create(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"
@@ -121,7 +143,11 @@ func (s *Service) Update(p *models.Page) error {
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
-	return s.repo.Update(p)
+	err := s.repo.Update(p)
+	if err == nil {
+		s.invalidateSSR(p.Slug)
+	}
+	return err
 }
 
 func (s *Service) validateContent(content string) error {
