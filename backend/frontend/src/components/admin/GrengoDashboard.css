@@ -789,13 +789,21 @@
   align-items: flex-start;
 }
 
-.grengo-layout-left,
-.grengo-layout-right {
-  flex: 1 1 400px;
+.grengo-layout-left {
+  flex: 3 1 600px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   min-width: 0;
+}
+
+.grengo-layout-right {
+  flex: 1 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .grengo-layout-split h3 {

@@ -18,6 +18,7 @@ Commands:
   remove <name>                              Remove a client (with confirmation)
   update <name|all>                          Update FEATURES_ENABLED in client(s) .env with selected features
   build                                      Build / rebuild the backend Docker image
+  dev                                        Start dev environment (infra, API, and vite dev server)
   compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything
   nginx reload                               Regenerate nginx config & hot-reload
@@ -102,6 +103,9 @@ func main() {
 
 	case "build":
 		cmdBuild()
+
+	case "dev":
+		cmdDev()
 
 	case "compose":
 		sub := requireArg(rest, "compose <up|down>")

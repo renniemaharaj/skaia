@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { activeUploadsAtom, showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
+import { isAuthenticatedAtom } from "../../atoms/auth";
 import { UploadCloud, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp, ChevronRight, RefreshCw, X, Pause, Play } from "lucide-react";
 import "./GlobalUploader.css";
 
@@ -17,17 +18,20 @@ function formatETA(seconds: number) {
 }
 
 export default function GlobalUploader() {
+  const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const [jobs, setJobs] = useAtom(activeUploadsAtom);
   const [showManager, setShowManager] = useAtom(showUploadManagerAtom);
   const [minimized, setMinimized] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(false);
 
   useEffect(() => {
-    uploader.loadIncompleteUploads();
+    if (isAuthenticated) {
+      uploader.loadIncompleteUploads();
+    }
     uploader.setStoreDispatcher(() => {
       setJobs([...uploader.getJobs()]);
     });
-  }, [setJobs]);
+  }, [setJobs, isAuthenticated]);
 
   if (jobs.length === 0 && !showManager) return null;
 

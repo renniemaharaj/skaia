@@ -26,6 +26,11 @@ func checkOrigin(r *http.Request) bool {
 		return false
 	}
 
+	// Allow localhost development origins
+	if strings.HasPrefix(origin, "http://localhost:") || strings.HasPrefix(origin, "https://localhost:") || strings.Contains(origin, ".localhost:") {
+		return true
+	}
+
 	// Check explicit CORS_ORIGINS first (exact match).
 	if allowed := os.Getenv("CORS_ORIGINS"); allowed != "" {
 		for _, o := range strings.Split(allowed, ",") {

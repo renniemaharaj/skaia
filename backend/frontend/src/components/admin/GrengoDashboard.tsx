@@ -911,6 +911,8 @@ export default function GrengoDashboard() {
           onDraftChange={setEnvDraft}
         />
       )}
+
+      <ContainerStatsPanel stats={stats} />
         </div>
         <div className="grengo-layout-right">
 
@@ -1411,11 +1413,18 @@ function PerformanceMetrics({
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {stats.length > 0 && (
-        <div className="grengo-stats" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-          <h3>Container Stats</h3>
-          <div className="grengo-stats-cards">
+// Container Stats Panel
+
+function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
+  if (stats.length === 0) return null;
+  return (
+    <div className="grengo-stats" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+      <h3>Container Stats</h3>
+      <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
         {stats.map((s) => (
           <div className="card grengo-stat-card" key={s.name}>
@@ -1461,8 +1470,6 @@ function PerformanceMetrics({
           </div>
         ))}
       </div>
-        </div>
-      )}
     </div>
   );
 }
