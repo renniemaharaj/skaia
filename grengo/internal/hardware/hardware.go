@@ -27,6 +27,8 @@ type DynamicInfo struct {
 	Temps        []float64 `json:"temps"`
 	DiskReads    uint64    `json:"disk_reads"`
 	DiskWrites   uint64    `json:"disk_writes"`
+	DiskTotal    uint64    `json:"disk_total"`
+	DiskFree     uint64    `json:"disk_free"`
 }
 
 type HardwarePayload struct {
@@ -137,6 +139,12 @@ func gatherDynamic() *DynamicInfo {
 	for _, io := range ioStats {
 		d.DiskReads += io.ReadBytes
 		d.DiskWrites += io.WriteBytes
+	}
+
+	usage, _ := disk.Usage("/")
+	if usage != nil {
+		d.DiskTotal = usage.Total
+		d.DiskFree = usage.Free
 	}
 
 	return d

@@ -85,6 +85,8 @@ interface HardwareInfo {
     temps: number[];
     disk_reads: number;
     disk_writes: number;
+    disk_total: number;
+    disk_free: number;
   };
 }
 
@@ -916,7 +918,7 @@ export default function GrengoDashboard() {
         </div>
         <div className="grengo-layout-right">
 
-      {storage && <StoragePanel storage={storage} />}
+      {storage && <StoragePanel storage={storage} hardwareInfo={hardwareInfo} />}
 
       <PerformanceMetrics stats={stats} statsLoading={statsLoading} hardwareInfo={hardwareInfo} />
         </div>
@@ -1264,33 +1266,78 @@ function EnvEditorPanel({
 
 // StoragePanel
 
-function StoragePanel({ storage }: { storage: StorageInfo }) {
+function StoragePanel({ storage, hardwareInfo }: { storage: StorageInfo; hardwareInfo: HardwareInfo | null }) {
+  let diskUsedPct = 0;
+  if (hardwareInfo && hardwareInfo.dynamic.disk_total > 0) {
+    const used = hardwareInfo.dynamic.disk_total - hardwareInfo.dynamic.disk_free;
+    diskUsedPct = (used / hardwareInfo.dynamic.disk_total) * 100;
+  }
+
   return (
-    <div className="grengo-storage">
-      <h3>Storage</h3>
-      <div className="grengo-storage-overview">
-        <div className="storage-total">
-          <div className="storage-total-header">
-            <strong>Total Upload Storage</strong>
-            <span className="storage-total-value">
-              {storage.total_used_human} / {storage.total_limit_human}
-            </span>
-          </div>
-        <Gauge percent={storage.total_percent} label={`${storage.total_percent.toFixed(1)}%`} subtext="Used" />
-        </div>
-        {storage.sites && storage.sites.length > 0 && (
-          <div className="storage-sites" style={{ marginTop: "1rem" }}>
-            <h4>Per Site</h4>
-            <div className="storage-site-list">
-              {storage.sites.map((s) => (
-                <div className="storage-site-row" key={s.name}>
-                  <span className="storage-site-name">{s.name}</span>
-                  <span className="storage-site-used">{s.used_human}</span>
-                </div>
-              ))}
+    <div className="grengo-performance-section" style={{ marginBottom: '2rem' }}>
+      <div className="grengo-hardware">
+        <h3>Storage Dashboard</h3>
+        <div className="grengo-stats-cards">
+          {/* Tenant Upload Storage */}
+          <div className="card grengo-stat-card">
+            <div className="stat-card-header">
+              <strong>Tenant Upload Provisioning</strong>
             </div>
+            <Gauge percent={storage.total_percent} label={`${storage.total_percent.toFixed(1)}%`} subtext="Provisioned" />
+            <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+              <div className="stat-item">
+                <span className="stat-label">Total Assigned</span>
+                <span className="stat-value">{storage.total_used_human} / {storage.total_limit_human}</span>
+              </div>
+            </div>
+            {storage.sites && storage.sites.length > 0 && (
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+                <strong>Per Client:</strong>
+                {storage.sites.map((s) => (
+                  <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span>{s.name}</span>
+                    <span>{s.used_human}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Physical Disk */}
+          {hardwareInfo && (
+            <div className="card grengo-stat-card">
+              <div className="stat-card-header">
+                <strong>Physical Disk Usage (Host)</strong>
+              </div>
+              <Gauge percent={diskUsedPct} label={`${diskUsedPct.toFixed(1)}%`} subtext="Disk Used" />
+              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+                <div className="stat-item">
+                  <span className="stat-label">Total Disk</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_total / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Free Space</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_free / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+              </div>
+              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+                <div className="stat-item">
+                  <span className="stat-label">Total Read</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Total Write</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                </div>
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+                {hardwareInfo.static.storage_drives?.map((drive: string, i: number) => (
+                  <div key={i}>{drive}</div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1364,28 +1411,6 @@ function PerformanceMetrics({
               <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
                 {hardwareInfo.static.memory_sticks?.map((stick: string, i: number) => (
                   <div key={i}>{stick}</div>
-                ))}
-              </div>
-            </div>
-
-            {/* Storage Drives */}
-            <div className="card grengo-stat-card">
-              <div className="stat-card-header">
-                <strong>Storage Drives</strong>
-              </div>
-              <div className="stat-card-grid">
-                <div className="stat-item">
-                  <span className="stat-label">Total Read</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Total Write</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                </div>
-              </div>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
-                {hardwareInfo.static.storage_drives?.map((drive: string, i: number) => (
-                  <div key={i}>{drive}</div>
                 ))}
               </div>
             </div>
