@@ -25,6 +25,8 @@ function SiteConfigLoader({ children }: { children: React.ReactNode }) {
   );
 }
 
+import LoadingPage from "./pages/LoadingPage";
+
 export default function App() {
   const features = useFeatures();
   const [guestSandboxMode] = useGuestSandboxMode();
@@ -35,7 +37,7 @@ export default function App() {
         <SiteConfigLoader>
           <Layout>
             <ErrorBoundary>
-              <Suspense fallback={<div className="grengo-empty">Loading page...</div>}>
+              <Suspense fallback={<LoadingPage />}>
                 <Routes>
                   {publicRoutesFunc(features, guestSandboxMode)}
                   {guestRoutesFunc(features, guestSandboxMode)}
