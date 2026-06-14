@@ -135,14 +135,14 @@
 
 .input-icon {
   position: absolute;
-  left: 12px;
+  right: 1rem;
   color: var(--text-secondary);
   pointer-events: none;
 }
 
 .form-group input {
   width: 100%;
-  padding: 12px 12px 12px 44px;
+  padding: 12px 44px 12px 12px;
   /* background-color: var(--bg-tertiary); */
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -288,7 +288,7 @@
   }
 
   .form-group input {
-    padding: 10px 10px 10px 40px;
+    padding: 10px 40px 10px 10px;
   }
 
   .input-icon {

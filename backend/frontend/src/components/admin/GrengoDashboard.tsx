@@ -1373,12 +1373,12 @@ function PerformanceMetrics({
               </div>
               <div className="stat-card-grid">
                 <div className="stat-item">
-                  <span className="stat-label">Read I/O</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB/s</span>
+                  <span className="stat-label">Total Read</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Write I/O</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB/s</span>
+                  <span className="stat-label">Total Write</span>
+                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB</span>
                 </div>
               </div>
               <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>

@@ -14,8 +14,8 @@ import {
   refreshTokenAtom,
 } from "../../atoms/auth";
 import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
-import "./Auth.css";
 import "../ui/FormGroup.css";
+import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
 import Button from "../input/Button";
 

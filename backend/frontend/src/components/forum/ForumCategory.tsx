@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
-import { ChevronDown } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { hasPermissionAtom } from "../../atoms/auth";
-import "./ForumCategory.css";
 
 interface Category {
   id: string;
@@ -45,10 +43,9 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
   return (
     <div className="form-group">
       <label htmlFor="category">Category *</label>
-      <div className="category-select-wrapper">
         <select
           id="category"
-          className="category-select"
+          className="form-input"
           value={value || ""}
           onChange={(e) => onChange?.(e.target.value)}
           disabled={loading}
@@ -61,8 +58,6 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
             </option>
           ))}
         </select>
-        <ChevronDown className="category-select-icon" size={18} />
-      </div>
     </div>
   );
 };
