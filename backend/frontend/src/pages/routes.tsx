@@ -2,44 +2,101 @@ import { lazy } from "react";
 import type { CustomRoute, IndexRoute } from "./routing.tsx";
 
 const Index = lazy(() => import("./index/index.tsx"));
-const StorePage = lazy(() => import("./store/index.tsx").then(m => ({ default: m.StorePage })));
-const ProductPage = lazy(() => import("./store/ProductPage.tsx").then(m => ({ default: m.ProductPage })));
-const WalletPage = lazy(() => import("./store/WalletPage.tsx").then(m => ({ default: m.WalletPage })));
-const OrdersPage = lazy(() => import("./store/OrdersPage.tsx").then(m => ({ default: m.OrdersPage })));
-const NewProductPage = lazy(() => import("./store/NewProductPage.tsx").then(m => ({ default: m.NewProductPage })));
-const NewStoreCategoryPage = lazy(() => import("./store/NewStoreCategoryPage.tsx").then(m => ({ default: m.NewStoreCategoryPage })));
-const ForumPage = lazy(() => import("./forum/index.tsx").then(m => ({ default: m.ForumPage })));
-const NewForumCategoryPage = lazy(() => import("./forum/NewForumCategoryPage.tsx").then(m => ({ default: m.NewForumCategoryPage })));
-const CartPage = lazy(() => import("./cart/index.tsx").then(m => ({ default: m.CartPage })));
-const NotFoundPage = lazy(() => import("./not-found/index.tsx").then(m => ({ default: m.NotFoundPage })));
-const LoginPage = lazy(() => import("./login/index.tsx").then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import("./register/index.tsx").then(m => ({ default: m.RegisterPage })));
-const NewThreadPage = lazy(() => import("./new-thread/index.tsx").then(m => ({ default: m.NewThreadPage })));
+const StorePage = lazy(() =>
+  import("./store/index.tsx").then((m) => ({ default: m.StorePage })),
+);
+const ProductPage = lazy(() =>
+  import("./store/ProductPage.tsx").then((m) => ({ default: m.ProductPage })),
+);
+const WalletPage = lazy(() =>
+  import("./store/WalletPage.tsx").then((m) => ({ default: m.WalletPage })),
+);
+const OrdersPage = lazy(() =>
+  import("./store/OrdersPage.tsx").then((m) => ({ default: m.OrdersPage })),
+);
+const OrderViewPage = lazy(() =>
+  import("./store/OrderViewPage.tsx").then((m) => ({ default: m.default })),
+);
+const NewProductPage = lazy(() =>
+  import("./store/NewProductPage.tsx").then((m) => ({
+    default: m.NewProductPage,
+  })),
+);
+const NewStoreCategoryPage = lazy(() =>
+  import("./store/NewStoreCategoryPage.tsx").then((m) => ({
+    default: m.NewStoreCategoryPage,
+  })),
+);
+const ForumPage = lazy(() =>
+  import("./forum/index.tsx").then((m) => ({ default: m.ForumPage })),
+);
+const NewForumCategoryPage = lazy(() =>
+  import("./forum/NewForumCategoryPage.tsx").then((m) => ({
+    default: m.NewForumCategoryPage,
+  })),
+);
+const CartPage = lazy(() =>
+  import("./cart/index.tsx").then((m) => ({ default: m.CartPage })),
+);
+const NotFoundPage = lazy(() =>
+  import("./not-found/index.tsx").then((m) => ({ default: m.NotFoundPage })),
+);
+const LoginPage = lazy(() =>
+  import("./login/index.tsx").then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import("./register/index.tsx").then((m) => ({ default: m.RegisterPage })),
+);
+const NewThreadPage = lazy(() =>
+  import("./new-thread/index.tsx").then((m) => ({ default: m.NewThreadPage })),
+);
 const EditThreadPage = lazy(() => import("./edit-thread/index.tsx"));
 const ViewThreadPage = lazy(() => import("./view-thread/index.tsx"));
 const UserDiscovery = lazy(() => import("./users/index.tsx"));
-const CategoryThreadsPage = lazy(() => import("./threads/categories/index.tsx"));
+const CategoryThreadsPage = lazy(
+  () => import("./threads/categories/index.tsx"),
+);
 const InboxPage = lazy(() => import("./inbox/InboxPage.tsx"));
-const AdminMetaSettings = lazy(() => import("./admin/meta.tsx").then(m => ({ default: m.AdminMetaSettings })));
+const AdminMetaSettings = lazy(() =>
+  import("./admin/meta.tsx").then((m) => ({ default: m.AdminMetaSettings })),
+);
 const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
-const RolesManagementPage = lazy(() => import("./admin/RolesManagementPage.tsx"));
+const RolesManagementPage = lazy(
+  () => import("./admin/RolesManagementPage.tsx"),
+);
 const PageBuilder = lazy(() => import("./page/PageBuilder.tsx"));
 const CustomPages = lazy(() => import("./page/CustomPages.tsx"));
 const DataSourcesPage = lazy(() => import("./datasources/DataSourcesPage.tsx"));
-const DataSourceEditorPage = lazy(() => import("./datasources/DataSourceEditorPage.tsx"));
+const DataSourceEditorPage = lazy(
+  () => import("./datasources/DataSourceEditorPage.tsx"),
+);
 const ActivityPage = lazy(() => import("./activity/index.tsx"));
 const VerifyEmailPage = lazy(() => import("./verify-email/index.tsx"));
 const ForgotPasswordPage = lazy(() => import("./forgot-password/index.tsx"));
 const ResetPasswordPage = lazy(() => import("./reset-password/index.tsx"));
 const VisualizerPage = lazy(() => import("./visualizer/index.tsx"));
-const UserUploadsDirectory = lazy(() => import("./users/UserUploadsDirectory.tsx"));
+const UserUploadsDirectory = lazy(
+  () => import("./users/UserUploadsDirectory.tsx"),
+);
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
-  { path: "forum/new-category", element: <NewForumCategoryPage />, conditional: "forum" },
-  { path: "store/new-product", element: <NewProductPage />, conditional: "store" },
-  { path: "store/new-category", element: <NewStoreCategoryPage />, conditional: "store" },
+  {
+    path: "forum/new-category",
+    element: <NewForumCategoryPage />,
+    conditional: "forum",
+  },
+  {
+    path: "store/new-product",
+    element: <NewProductPage />,
+    conditional: "store",
+  },
+  {
+    path: "store/new-category",
+    element: <NewStoreCategoryPage />,
+    conditional: "store",
+  },
   {
     path: "edit-thread/:threadId",
     element: <EditThreadPage />,
@@ -65,6 +122,11 @@ export const guestRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage />, conditional: "store" },
   { path: "store/product/:id", element: <ProductPage />, conditional: "store" },
   { path: "store/orders", element: <OrdersPage />, conditional: "store" },
+  {
+    path: "store/orders/:id",
+    element: <OrderViewPage />,
+    conditional: "store",
+  },
   { path: "forum", element: <ForumPage />, conditional: "forum" },
   {
     path: "view-thread/:threadId",

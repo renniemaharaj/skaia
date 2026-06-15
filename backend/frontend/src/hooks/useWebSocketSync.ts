@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { toast } from "sonner";
+import { formatCents } from "../utils/money";
 import {
   forumCategoriesAtom,
   type ForumCategory,
@@ -201,8 +202,10 @@ export const useWebSocketSync = () => {
       ws.onmessage = (event) => {
         try {
           if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-             window.dispatchEvent(new CustomEvent("voice:binary", { detail: event.data }));
-             return;
+            window.dispatchEvent(
+              new CustomEvent("voice:binary", { detail: event.data }),
+            );
+            return;
           }
 
           const message: WebSocketMessage = JSON.parse(event.data);
@@ -224,10 +227,16 @@ export const useWebSocketSync = () => {
           }
 
           if (message.type === "mediascraper:jobs") {
-            const { active_jobs, cache_hits_1h, new_scrapes_1h } = payload as { active_jobs?: number; cache_hits_1h?: number; new_scrapes_1h?: number };
+            const { active_jobs, cache_hits_1h, new_scrapes_1h } = payload as {
+              active_jobs?: number;
+              cache_hits_1h?: number;
+              new_scrapes_1h?: number;
+            };
             if (active_jobs !== undefined) {
               window.dispatchEvent(
-                new CustomEvent("mediascraper:jobs", { detail: { active_jobs, cache_hits_1h, new_scrapes_1h } }),
+                new CustomEvent("mediascraper:jobs", {
+                  detail: { active_jobs, cache_hits_1h, new_scrapes_1h },
+                }),
               );
             }
             return;
@@ -235,45 +244,50 @@ export const useWebSocketSync = () => {
 
           if (message.type === "mediascraper:result") {
             window.dispatchEvent(
-              new CustomEvent("mediascraper:result", { detail: payload })
+              new CustomEvent("mediascraper:result", { detail: payload }),
             );
             return;
           }
           if (message.type === "mediascraper:started") {
             window.dispatchEvent(
-              new CustomEvent("mediascraper:started", { detail: payload })
+              new CustomEvent("mediascraper:started", { detail: payload }),
             );
             return;
           }
           if (message.type === "mediascraper:pending") {
             window.dispatchEvent(
-              new CustomEvent("mediascraper:pending", { detail: payload })
+              new CustomEvent("mediascraper:pending", { detail: payload }),
             );
             return;
           }
 
           if (message.type === "grengo:job_update") {
             window.dispatchEvent(
-              new CustomEvent("grengo:job_update", { detail: payload })
+              new CustomEvent("grengo:job_update", { detail: payload }),
             );
           }
           if (message.type === "grengo:stats_update") {
             window.dispatchEvent(
-              new CustomEvent("grengo:stats_update", { detail: payload })
+              new CustomEvent("grengo:stats_update", { detail: payload }),
             );
           }
           if (message.type === "grengo:storage_update") {
             window.dispatchEvent(
-              new CustomEvent("grengo:storage_update", { detail: payload })
+              new CustomEvent("grengo:storage_update", { detail: payload }),
             );
           }
           if (message.type === "grengo:hardware_update") {
             window.dispatchEvent(
-              new CustomEvent("grengo:hardware_update", { detail: payload })
+              new CustomEvent("grengo:hardware_update", { detail: payload }),
             );
           }
-          if (message.type === "grengo:job_update" || message.type === "grengo:stats_update" || message.type === "grengo:storage_update" || message.type === "grengo:hardware_update") {
-             return;
+          if (
+            message.type === "grengo:job_update" ||
+            message.type === "grengo:stats_update" ||
+            message.type === "grengo:storage_update" ||
+            message.type === "grengo:hardware_update"
+          ) {
+            return;
           }
 
           // Handle user update propagation
@@ -317,7 +331,10 @@ export const useWebSocketSync = () => {
               const newToken = payload.data.new_token as string | undefined;
 
               if (payload?.data?.mfa_challenge_triggered) {
-                if (currentUserIdRef.current && String(updatedUser.id) === String(currentUserIdRef.current)) {
+                if (
+                  currentUserIdRef.current &&
+                  String(updatedUser.id) === String(currentUserIdRef.current)
+                ) {
                   window.dispatchEvent(new CustomEvent("auth:mfa-required"));
                 }
               }
@@ -384,7 +401,8 @@ export const useWebSocketSync = () => {
             const route = payload?.route;
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
-              if ((message as any).user_id) setPendingTpUser((message as any).user_id as number);
+              if ((message as any).user_id)
+                setPendingTpUser((message as any).user_id as number);
             }
           }
 
@@ -394,7 +412,9 @@ export const useWebSocketSync = () => {
           }
 
           if (message.type === "media:sfx") {
-            window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
+            window.dispatchEvent(
+              new CustomEvent("media:sfx", { detail: payload?.sfx_type }),
+            );
           }
 
           // MFA Required
@@ -763,12 +783,15 @@ export const useWebSocketSync = () => {
             const { action: inboxAction, data: inboxData } = payload as any;
             if (inboxAction === "conversation_created" && inboxData) {
               setInboxConversations((prev) => {
-                if (prev.some((c) => String(c.id) === String(inboxData.id))) return prev;
+                if (prev.some((c) => String(c.id) === String(inboxData.id)))
+                  return prev;
                 return [inboxData, ...prev];
               });
             }
             if (inboxAction === "conversation_deleted" && inboxData) {
-              setInboxConversations((prev) => prev.filter(c => String(c.id) !== String(inboxData.id)));
+              setInboxConversations((prev) =>
+                prev.filter((c) => String(c.id) !== String(inboxData.id)),
+              );
               if (String(_activeConversationId) === String(inboxData.id)) {
                 setActiveConversationId(null);
                 toast.error("You are no longer in this conversation");
@@ -778,39 +801,66 @@ export const useWebSocketSync = () => {
               setInboxConversations((prev) =>
                 prev.map((c) =>
                   String(c.id) === String(inboxData.conversation_id)
-                    ? { ...c, participants: c.participants?.filter((p) => String(p.id) !== String(inboxData.user_id)) }
-                    : c
-                )
+                    ? {
+                        ...c,
+                        participants: c.participants?.filter(
+                          (p) => String(p.id) !== String(inboxData.user_id),
+                        ),
+                      }
+                    : c,
+                ),
               );
             }
             if (inboxAction === "participant_added" && inboxData) {
               setInboxConversations((prev) =>
                 prev.map((c) => {
                   if (String(c.id) === String(inboxData.conversation_id)) {
-                    const existing = c.participants?.find((p) => String(p.id) === String(inboxData.participant.id));
+                    const existing = c.participants?.find(
+                      (p) => String(p.id) === String(inboxData.participant.id),
+                    );
                     if (existing) return c;
-                    return { ...c, participants: [...(c.participants || []), inboxData.participant] };
+                    return {
+                      ...c,
+                      participants: [
+                        ...(c.participants || []),
+                        inboxData.participant,
+                      ],
+                    };
                   }
                   return c;
-                })
+                }),
               );
             }
             if (inboxAction === "participant_muted" && inboxData) {
               setInboxConversations((prev) =>
                 prev.map((c) =>
                   String(c.id) === String(inboxData.conversation_id)
-                    ? { ...c, participants: c.participants?.map((p) => String(p.id) === String(inboxData.user_id) ? { ...p, is_muted: inboxData.is_muted } : p) }
-                    : c
-                )
+                    ? {
+                        ...c,
+                        participants: c.participants?.map((p) =>
+                          String(p.id) === String(inboxData.user_id)
+                            ? { ...p, is_muted: inboxData.is_muted }
+                            : p,
+                        ),
+                      }
+                    : c,
+                ),
               );
             }
             if (inboxAction === "participant_role_changed" && inboxData) {
               setInboxConversations((prev) =>
                 prev.map((c) =>
                   String(c.id) === String(inboxData.conversation_id)
-                    ? { ...c, participants: c.participants?.map((p) => String(p.id) === String(inboxData.user_id) ? { ...p, role: inboxData.role } : p) }
-                    : c
-                )
+                    ? {
+                        ...c,
+                        participants: c.participants?.map((p) =>
+                          String(p.id) === String(inboxData.user_id)
+                            ? { ...p, role: inboxData.role }
+                            : p,
+                        ),
+                      }
+                    : c,
+                ),
               );
             }
             if (inboxAction === "conversation_locked" && inboxData) {
@@ -818,8 +868,8 @@ export const useWebSocketSync = () => {
                 prev.map((c) =>
                   String(c.id) === String(inboxData.conversation_id)
                     ? { ...c, is_locked: inboxData.is_locked }
-                    : c
-                )
+                    : c,
+                ),
               );
             }
             if (inboxAction === "message_created" && inboxData) {
@@ -843,9 +893,13 @@ export const useWebSocketSync = () => {
                         ...c,
                         last_message: inboxData,
                         unread_count:
-                          convStr !== activeId && String(inboxData.sender_id) !== String(currentUserIdRef.current)
+                          convStr !== activeId &&
+                          String(inboxData.sender_id) !==
+                            String(currentUserIdRef.current)
                             ? (c.unread_count ?? 0) + 1
-                            : (convStr === activeId ? 0 : c.unread_count),
+                            : convStr === activeId
+                              ? 0
+                              : c.unread_count,
                       }
                     : c,
                 ),
@@ -859,7 +913,8 @@ export const useWebSocketSync = () => {
             // list stays current even when no specific chat is open.
             const msgPayload = payload as any;
             const msgSenderId = String(msgPayload?.sender_id ?? "");
-            const isFromCurrentUser = msgSenderId === String(currentUserIdRef.current);
+            const isFromCurrentUser =
+              msgSenderId === String(currentUserIdRef.current);
             const inboxMsgConvId = String(msgPayload?.conversation_id ?? "");
             const isActiveConv =
               inboxMsgConvId &&
@@ -881,9 +936,12 @@ export const useWebSocketSync = () => {
                     ? {
                         ...c,
                         last_message: msgPayload,
-                        unread_count: isActiveConv || isFromCurrentUser
-                          ? (isActiveConv ? 0 : c.unread_count)
-                          : (c.unread_count ?? 0) + 1,
+                        unread_count:
+                          isActiveConv || isFromCurrentUser
+                            ? isActiveConv
+                              ? 0
+                              : c.unread_count
+                            : (c.unread_count ?? 0) + 1,
                       }
                     : c,
                 ),
@@ -939,7 +997,9 @@ export const useWebSocketSync = () => {
             if (action === "purchase_success") {
               const resp = data as CheckoutResponse;
               toast.success("Payment successful!", {
-                description: `Order #${resp?.order?.id} — $${resp?.order?.total_price?.toFixed(2)}`,
+                description: `Order #${resp?.order?.id} — ${formatCents(
+                  resp?.order?.total_price || 0,
+                )}`,
                 duration: 8000,
               });
               // Clear local cart after backend confirms success
@@ -1047,18 +1107,21 @@ export const useWebSocketSync = () => {
               action: string;
               target_user_id?: number;
             };
-            setVoicePermissions(prev => {
+            setVoicePermissions((prev) => {
               const next = { ...prev };
               if (prev.route !== vp.route) {
-                 next.route = vp.route;
-                 next.mutedUsers = {};
-                 next.kickedUsers = {};
-                 next.voiceEnabled = true;
+                next.route = vp.route;
+                next.mutedUsers = {};
+                next.kickedUsers = {};
+                next.voiceEnabled = true;
               }
               if (vp.action === "enable") next.voiceEnabled = true;
               if (vp.action === "disable") next.voiceEnabled = false;
               if (vp.action === "mute" && vp.target_user_id) {
-                next.mutedUsers = { ...next.mutedUsers, [vp.target_user_id]: true };
+                next.mutedUsers = {
+                  ...next.mutedUsers,
+                  [vp.target_user_id]: true,
+                };
               }
               if (vp.action === "unmute" && vp.target_user_id) {
                 const newMuted = { ...next.mutedUsers };
@@ -1066,8 +1129,14 @@ export const useWebSocketSync = () => {
                 next.mutedUsers = newMuted;
               }
               if (vp.action === "kick" && vp.target_user_id) {
-                next.kickedUsers = { ...next.kickedUsers, [vp.target_user_id]: true };
-                next.mutedUsers = { ...next.mutedUsers, [vp.target_user_id]: true };
+                next.kickedUsers = {
+                  ...next.kickedUsers,
+                  [vp.target_user_id]: true,
+                };
+                next.mutedUsers = {
+                  ...next.mutedUsers,
+                  [vp.target_user_id]: true,
+                };
               }
               return next;
             });
@@ -1252,9 +1321,19 @@ export const useWebSocketSync = () => {
   return { subscribe, unsubscribe };
 };
 
-export const sendGrengoJobAction = (action: string, name?: string, command?: string, args?: string[]) => {
+export const sendGrengoJobAction = (
+  action: string,
+  name?: string,
+  command?: string,
+  args?: string[],
+) => {
   if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
-    _globalWs.send(JSON.stringify({ type: "grengo:action", payload: { action, name, command, args } }));
+    _globalWs.send(
+      JSON.stringify({
+        type: "grengo:action",
+        payload: { action, name, command, args },
+      }),
+    );
   } else {
     console.warn("WebSocket not connected, cannot send grengo action");
   }

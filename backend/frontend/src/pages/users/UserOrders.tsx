@@ -26,8 +26,10 @@ const UserOrders: React.FC<Props> = ({ userId, displayName }) => {
     if (!userId) return;
     try {
       setLoading(true);
-      const url = canManage ? `/store/orders?user_id=${userId}` : "/store/orders";
-      const data = await apiRequest(url) as any;
+      const url = canManage
+        ? `/store/orders?user_id=${userId}`
+        : "/store/orders";
+      const data = (await apiRequest(url)) as any;
       setOrders(data || []);
       setError(null);
     } catch (err: unknown) {
@@ -79,7 +81,15 @@ const UserOrders: React.FC<Props> = ({ userId, displayName }) => {
   if (orders.length === 0) {
     return (
       <div className="up-uploads-section">
-        <h2 className="up-section-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+        <h2
+          className="up-section-heading"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <ShoppingBag size={18} />
             Orders by {displayName}
@@ -92,7 +102,15 @@ const UserOrders: React.FC<Props> = ({ userId, displayName }) => {
 
   return (
     <div className="up-uploads-section">
-      <h2 className="up-section-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+      <h2
+        className="up-section-heading"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <ShoppingBag size={18} />
           Orders by {displayName}
@@ -122,9 +140,39 @@ const UserOrders: React.FC<Props> = ({ userId, displayName }) => {
             header: "Status",
             width: "100px",
             cell: (o) => (
-              <span style={{ textTransform: "capitalize", color: "var(--color-primary)" }}>
-                {o.status}
-              </span>
+              <div
+                style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}
+              >
+                <span
+                  style={{
+                    textTransform: "capitalize",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  {o.status}
+                </span>
+                {(o as any).payment && (
+                  <span
+                    style={{
+                      fontSize: "0.85rem",
+                      padding: "0.25rem 0.5rem",
+                      borderRadius: "6px",
+                      background: "var(--bg-secondary)",
+                      color:
+                        (o as any).payment.status === "succeeded"
+                          ? "var(--color-success)"
+                          : (o as any).payment.status === "failed"
+                            ? "var(--color-danger)"
+                            : "var(--text-secondary)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {(o as any).payment.status === "succeeded"
+                      ? "Paid"
+                      : (o as any).payment.status}
+                  </span>
+                )}
+              </div>
             ),
           },
           {

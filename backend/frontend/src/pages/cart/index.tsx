@@ -7,7 +7,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  CheckCircle2,
 } from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 import { toast } from "sonner";
@@ -22,6 +21,7 @@ import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import { formatCents } from "../../utils/money";
+import OrderSubmittedView from "../../components/store/OrderSubmittedView";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -84,16 +84,29 @@ export const CartPage = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const savedBilling = localStorage.getItem("billingInfo");
-      if (savedBilling) {
-        setBillingInfo(savedBilling);
-        setRememberBilling(true);
-        const savedLocation = localStorage.getItem("deliveryLocation");
-        if (savedLocation) setDeliveryLocation(savedLocation);
-        const savedPhone = localStorage.getItem("guestPhone");
-        if (savedPhone) setGuestPhone(savedPhone);
-        const savedExtraInfo = localStorage.getItem("extraInfo");
-        if (savedExtraInfo) setExtraInfo(savedExtraInfo);
+      // Load combined saved checkout info if present (preferred), fallback to old keys
+      const savedJson = localStorage.getItem("checkoutSaved");
+      if (savedJson) {
+        try {
+          const v = JSON.parse(savedJson);
+          if (v.billingInfo) setBillingInfo(v.billingInfo);
+          if (v.deliveryLocation) setDeliveryLocation(v.deliveryLocation);
+          if (v.guestPhone) setGuestPhone(v.guestPhone);
+          if (v.extraInfo) setExtraInfo(v.extraInfo);
+          setRememberBilling(true);
+        } catch {}
+      } else {
+        const savedBilling = localStorage.getItem("billingInfo");
+        if (savedBilling) {
+          setBillingInfo(savedBilling);
+          setRememberBilling(true);
+          const savedLocation = localStorage.getItem("deliveryLocation");
+          if (savedLocation) setDeliveryLocation(savedLocation);
+          const savedPhone = localStorage.getItem("guestPhone");
+          if (savedPhone) setGuestPhone(savedPhone);
+          const savedExtraInfo = localStorage.getItem("extraInfo");
+          if (savedExtraInfo) setExtraInfo(savedExtraInfo);
+        }
       }
     }
   }, [isAuthenticated]);
@@ -172,16 +185,20 @@ export const CartPage = () => {
         }),
       })) as any;
 
-      if (rememberBilling && isAuthenticated) {
-        localStorage.setItem("billingInfo", billingInfo);
-        localStorage.setItem("deliveryLocation", deliveryLocation);
-        localStorage.setItem("guestPhone", guestPhone);
-        localStorage.setItem("extraInfo", extraInfo);
-      } else if (!rememberBilling && isAuthenticated) {
-        localStorage.removeItem("billingInfo");
-        localStorage.removeItem("deliveryLocation");
-        localStorage.removeItem("guestPhone");
-        localStorage.removeItem("extraInfo");
+      // Persist saved checkout info as a single object, explicit: do NOT save deliveryTime
+      if (isAuthenticated) {
+        if (rememberBilling) {
+          const saved = {
+            billingInfo,
+            deliveryLocation,
+            guestPhone,
+            extraInfo,
+            saved_at: new Date().toISOString(),
+          };
+          localStorage.setItem("checkoutSaved", JSON.stringify(saved));
+        } else {
+          localStorage.removeItem("checkoutSaved");
+        }
       }
 
       toast.success("Order placed successfully!");
@@ -207,95 +224,11 @@ export const CartPage = () => {
   /* ── Success screen ── */
   if (successOrder) {
     return (
-      <div className="cart-page-container">
-        <div
-          className="cart-header"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h1>Order Submitted!</h1>
-          <Link to="/store" className="btn">
-            Back to Store
-          </Link>
-        </div>
-
-        <div className="cart-content">
-          <div className="cart-items">
-            <h3 style={{ marginBottom: "0.5rem" }}>Order Items</h3>
-            {successCartItems.map((item) => {
-              const product = getProduct(item.product_id);
-              return (
-                <div
-                  key={item.product_id}
-                  className="card card--store cart-item"
-                >
-                  {product?.image_url && (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="cart-item-image"
-                    />
-                  )}
-                  <div className="cart-item-info">
-                    <h3>{product?.name}</h3>
-                    <p className="cart-item-price">
-                      {formatCents(product?.price ?? 0)}
-                    </p>
-                  </div>
-                  <div
-                    className="cart-item-controls"
-                    style={{ flexDirection: "column", alignItems: "flex-end" }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.875rem",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      Qty: {item.quantity}
-                    </span>
-                    <strong style={{ color: "var(--text-primary)" }}>
-                      {formatCents((product?.price ?? 0) * item.quantity)}
-                    </strong>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="cart-summary">
-            <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-              <CheckCircle2 size={48} className="cart-success-icon" />
-              <h3 style={{ marginBottom: 0 }}>Order #{successOrder.id}</h3>
-            </div>
-
-            <div className="cart-success-meta">
-              <div className="cart-success-meta-row">
-                <span>Status</span>
-                <span className="cart-success-status">
-                  {successOrder.status}
-                </span>
-              </div>
-              <div className="cart-success-meta-row">
-                <span>Submitted</span>
-                <span>
-                  {new Date(successOrder.created_at).toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <hr className="cart-divider" />
-
-            <div className="cart-total-row">
-              <span>Total Paid</span>
-              <span>{formatCents(successOrder.total_price || 0)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <OrderSubmittedView
+        order={successOrder}
+        cartItems={successCartItems}
+        onBackLink="/store"
+      />
     );
   }
 
@@ -337,7 +270,6 @@ export const CartPage = () => {
           {cartItems.map((item) => {
             const product = getProduct(item.product_id);
             const displayName = product?.name ?? `Product #${item.product_id}`;
-            const displayPrice = (product?.price ?? 0) / 100;
             return (
               <div key={item.product_id} className="card card--store cart-item">
                 {product?.image_url && (
@@ -423,10 +355,60 @@ export const CartPage = () => {
           {/* Delivery */}
           <div className="cart-summary-section">
             <h4>Delivery</h4>
+            {/* Saved checkout info quick card */}
+            {isAuthenticated && rememberBilling && (
+              <div
+                className="saved-checkout-card card card--outlined"
+                style={{ marginBottom: "0.75rem" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <strong>Saved info</strong>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      // autofill from saved data
+                      const savedJson = localStorage.getItem("checkoutSaved");
+                      if (savedJson) {
+                        try {
+                          const v = JSON.parse(savedJson);
+                          if (v.billingInfo) setBillingInfo(v.billingInfo);
+                          if (v.deliveryLocation)
+                            setDeliveryLocation(v.deliveryLocation);
+                          if (v.guestPhone) setGuestPhone(v.guestPhone);
+                          if (v.extraInfo) setExtraInfo(v.extraInfo);
+                        } catch {}
+                      }
+                    }}
+                  >
+                    Use
+                  </button>
+                </div>
+                <div
+                  style={{
+                    marginTop: "0.5rem",
+                    fontSize: "0.9rem",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <div>{billingInfo || "—"}</div>
+                  <div>{guestPhone || "—"}</div>
+                  <div>{deliveryLocation || "—"}</div>
+                </div>
+              </div>
+            )}
             <div className="input-group">
               <Phone size={15} />
               <input
+                // use inputMode numeric for better mobile keyboards; still accept + and -
                 type="tel"
+                inputMode="numeric"
+                pattern="[0-9+\-() ]*"
                 placeholder="Contact phone number"
                 value={guestPhone}
                 onChange={(e) => setGuestPhone(e.target.value)}
@@ -547,7 +529,7 @@ export const CartPage = () => {
 
           <div className="cart-total-row">
             <span>Total</span>
-            <span>${cartTotal.toFixed(2)}</span>
+            <span>{formatCents(Math.round(cartTotal * 100))}</span>
           </div>
 
           <button

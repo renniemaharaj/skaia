@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
@@ -91,6 +92,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 
 		// Payment status
 		r.With(jwt).Get("/payments/{ref}/status", h.getPaymentStatus)
+		r.With(jwt).Get("/orders/{id}/payment", h.getOrderPayment)
 	})
 }
 
@@ -849,7 +851,19 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, orders)
+
+	// Augment each order with its latest payment to reduce frontend round-trips.
+	var out []map[string]any
+	for _, o := range orders {
+		var m map[string]any
+		jb, _ := json.Marshal(o)
+		_ = json.Unmarshal(jb, &m)
+		if p, perr := h.svc.GetPaymentForOrder(o.ID); perr == nil {
+			m["payment"] = p
+		}
+		out = append(out, m)
+	}
+	utils.WriteJSON(w, http.StatusOK, out)
 }
 
 func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
@@ -874,7 +888,14 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, order)
+	// Include latest payment in order response to avoid extra client requests
+	var m map[string]any
+	jb, _ := json.Marshal(order)
+	_ = json.Unmarshal(jb, &m)
+	if p, perr := h.svc.GetPaymentForOrder(order.ID); perr == nil {
+		m["payment"] = p
+	}
+	utils.WriteJSON(w, http.StatusOK, m)
 }
 
 func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
@@ -898,10 +919,48 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "status required")
 		return
 	}
+	// load current order so we can detect transitions (e.g., to completed)
+	beforeOrder, _ := h.svc.GetOrder(id)
+
 	order, err := h.svc.UpdateOrderStatus(id, req.Status)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update order status")
 		return
+	}
+
+	// If transitioning to completed, execute special actions now (only once)
+	if req.Status == "completed" && beforeOrder != nil && beforeOrder.Status != "completed" {
+		// Execute special actions for each order item (if any) and if order has a user
+		if order.UserID != nil {
+			userID := *order.UserID
+			for _, oi := range order.Items {
+				if p, err := h.svc.GetProduct(oi.ProductID); err == nil {
+					if p.SpecialActions != "" && p.SpecialActions != "[]" {
+						var actions []struct {
+							Type  string `json:"type"`
+							Value string `json:"value"`
+						}
+						if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
+							for _, act := range actions {
+								if act.Type == "role" {
+									_ = h.svc.users.AddRoleByName(userID, act.Value)
+								} else if act.Type == "credit" {
+									amt, _ := strconv.ParseInt(act.Value, 10, 64)
+									if amt > 0 {
+										_, _ = h.svc.WalletRepo.CreateTransaction(&models.WalletTransaction{
+											UserID:      userID,
+											Amount:      amt * int64(oi.Quantity),
+											Type:        "credit",
+											Description: fmt.Sprintf("Received from order #%d", order.ID),
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     userID,
@@ -1326,6 +1385,37 @@ func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": status})
+}
+
+// Get latest payment for an order
+func (h *Handler) getOrderPayment(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
+		return
+	}
+	order, err := h.svc.GetOrder(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "order not found")
+		return
+	}
+	// Only allow user to see their own order payments unless admin
+	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	if (order.UserID == nil || *order.UserID != userID) && !canManage {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	p, err := h.svc.GetPaymentForOrder(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "payment not found")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, p)
 }
 func (h *Handler) getCards(w http.ResponseWriter, r *http.Request) {
 	userID, ok := h.resolveWalletUser(w, r)

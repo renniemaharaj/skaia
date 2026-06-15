@@ -152,6 +152,11 @@ func (s *Service) GetOrder(id int64) (*models.Order, error) {
 	return s.orders.GetByID(id)
 }
 
+// GetPaymentForOrder returns the latest payment record for an order.
+func (s *Service) GetPaymentForOrder(orderID int64) (*models.Payment, error) {
+	return s.payments.GetByOrderID(orderID)
+}
+
 func (s *Service) GetUserOrders(userID int64, limit, offset int) ([]*models.Order, error) {
 	return s.orders.GetByUser(userID, limit, offset)
 }
@@ -246,7 +251,9 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 	var failureReason string
 
 	if req.PaymentMethodID == "delivery_cash" {
-		payStatus = "succeeded"
+		// Cash on delivery: payment is not completed at checkout time.
+		// Leave payment as pending so the order is not auto-marked "paid".
+		payStatus = "pending"
 		providerRef = "cash_" + fmt.Sprint(order.ID)
 	} else if req.PaymentMethodID == "wallet" {
 		if req.IsGuest {
@@ -333,8 +340,13 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 	}
 
 	// update order status to match payment outcome
-	orderStatus := "completed"
-	if payStatus != "succeeded" {
+	// We use a `paid` intermediate status when payment succeeded. Orders are
+	// only moved to `completed` when a shopkeeper marks them completed or when
+	// a paid order contains special actions (these should be executed immediately).
+	orderStatus := "pending"
+	if payStatus == "succeeded" {
+		orderStatus = "paid"
+	} else if payStatus == "failed" {
 		orderStatus = "failed"
 	}
 	updatedOrder, _ := s.orders.UpdateStatus(order.ID, orderStatus)
@@ -342,8 +354,12 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		order = updatedOrder
 	}
 
-	// on success: decrement stock, clear cart, fulfill special actions, reward referrer
+	// on successful immediate payment: decrement stock, clear cart. Do NOT
+	// execute special-actions until the order is marked `completed`. However,
+	// if an order contains special actions, we auto-complete it after payment
+	// and then execute those actions.
 	if payStatus == "succeeded" {
+		var hasSpecial bool
 		for _, oi := range orderItems {
 			if p, err := s.products.GetByID(oi.ProductID); err == nil {
 				if !p.StockUnlimited {
@@ -354,36 +370,12 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 					s.products.Update(p) //nolint:errcheck
 					s.cache.Invalidate(oi.ProductID)
 				}
-				
-				// Fulfill special actions
-				if !req.IsGuest && p.SpecialActions != "" && p.SpecialActions != "[]" {
-					var actions []struct {
-						Type  string `json:"type"`
-						Value string `json:"value"`
-					}
-					importJson := true // just conceptually since we use json below
-					_ = importJson
-					if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
-						for _, act := range actions {
-							if act.Type == "role" {
-								_ = s.users.AddRoleByName(userID, act.Value)
-							} else if act.Type == "credit" {
-								amt, _ := strconv.ParseInt(act.Value, 10, 64)
-								if amt > 0 {
-									_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
-										UserID:      userID,
-										Amount:      amt * int64(oi.Quantity),
-										Type:        "credit",
-										Description: fmt.Sprintf("Received from order #%d", order.ID),
-									})
-								}
-							}
-						}
-					}
+				if p.SpecialActions != "" && p.SpecialActions != "[]" {
+					hasSpecial = true
 				}
 			}
 		}
-		
+
 		// Reward referrer
 		if !req.IsGuest && req.ReferralCode != "" {
 			if refUser, err := s.users.GetByUsername(req.ReferralCode); err == nil && refUser.ID != userID {
@@ -395,8 +387,43 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 				})
 			}
 		}
-		
+
 		_ = s.cart.ClearCart(userID)
+
+		// If there are special actions, complete the order and execute them now.
+		if hasSpecial && !req.IsGuest {
+			if co, _ := s.orders.UpdateStatus(order.ID, "completed"); co != nil {
+				order = co
+			}
+			// execute special actions now (mirror previous behavior)
+			for _, oi := range orderItems {
+				if p, err := s.products.GetByID(oi.ProductID); err == nil {
+					if p.SpecialActions != "" && p.SpecialActions != "[]" {
+						var actions []struct {
+							Type  string `json:"type"`
+							Value string `json:"value"`
+						}
+						if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
+							for _, act := range actions {
+								if act.Type == "role" {
+									_ = s.users.AddRoleByName(userID, act.Value)
+								} else if act.Type == "credit" {
+									amt, _ := strconv.ParseInt(act.Value, 10, 64)
+									if amt > 0 {
+										_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+											UserID:      userID,
+											Amount:      amt * int64(oi.Quantity),
+											Type:        "credit",
+											Description: fmt.Sprintf("Received from order #%d", order.ID),
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	resp := &models.CheckoutResponse{
