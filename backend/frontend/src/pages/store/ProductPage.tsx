@@ -5,13 +5,18 @@ import { toast } from "sonner";
 import {
   productsAtom,
   storeCartItemsAtom,
+  productCategoriesAtom,
   type Product,
 } from "../../atoms/store";
 import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import CommentSection from "../../components/comments/CommentSection";
 import StarRating from "../../components/ui/StarRating";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Package, Share2, Edit2 } from "lucide-react";
+import { EditProductDialog } from "../../components/store/EditProductDialog";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { layoutModeAtom } from "../../atoms/layoutMode";
+import { createPortal } from "react-dom";
 import "./ProductPage.css";
 
 interface ProductReview {
@@ -32,12 +37,29 @@ export const ProductPage = () => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const setCartItems = useSetAtom(storeCartItemsAtom);
+  const categories = useAtomValue(productCategoriesAtom);
+  const setLayoutMode = useSetAtom(layoutModeAtom);
+  const [guestSandboxMode] = useGuestSandboxMode();
+
+  const canEditProduct = currentUser?.permissions?.includes("store.product-edit") || guestSandboxMode;
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
+
+  useEffect(() => {
+    setLayoutMode("application");
+    return () => setLayoutMode("web");
+  }, [setLayoutMode]);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
+  };
 
   useEffect(() => {
     // Attempt to load from atom first
@@ -173,12 +195,24 @@ export const ProductPage = () => {
       <div className="product-page-layout">
         <div className="product-page-left">
           <div className="product-page-card">
-            {product.image_url && (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="product-page-image"
-              />
+            {product.image_url ? (
+              <div className="product-page-image-container">
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="product-page-image"
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedImage(product.image_url ?? null);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="product-page-image-container fallback">
+                <Package size={80} style={{ opacity: 0.3 }} />
+              </div>
             )}
             <div className="product-page-details">
               <h1>{product.name}</h1>
@@ -215,9 +249,25 @@ export const ProductPage = () => {
                   : `${product.stock} available`}
               </div>
 
-              <div className="product-page-actions">
+              <div style={{ display: "flex", gap: "6px", marginTop: "1rem" }}>
                 <button
-                  className="btn btn-primary"
+                  className="action-btn edit-btn"
+                  title="Share product"
+                  onClick={handleShare}
+                >
+                  <Share2 size={16} />
+                </button>
+                {canEditProduct && (
+                  <button
+                    className="action-btn edit-btn"
+                    title="Edit product"
+                    onClick={() => setEditingProduct(product)}
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                )}
+                <button
+                  className="btn-add-to-cart"
                   onClick={handleAddToCart}
                   disabled={
                     !product.is_active ||
@@ -225,13 +275,57 @@ export const ProductPage = () => {
                     addingToCart
                   }
                 >
-                  <ShoppingCart size={18} />
-                  {addingToCart ? "Adding..." : "Add to Cart"}
+                  {addingToCart ? "Adding..." : (!product.stock_unlimited && product.stock <= 0 ? "Sold Out" : "Add to Cart")}
                 </button>
               </div>
             </div>
           </div>
         </div>
+
+        {editingProduct && (
+          <EditProductDialog
+            isOpen={!!editingProduct}
+            product={editingProduct}
+            categories={categories}
+            onClose={() => setEditingProduct(null)}
+            onSuccess={() => {
+              setLoadingProduct(true);
+              apiRequest<Product>(`/store/products/${id}`)
+                .then((p) => { if (p) setProduct(p); })
+                .finally(() => setLoadingProduct(false));
+            }}
+          />
+        )}
+
+        {selectedImage && typeof document !== "undefined" && createPortal(
+          <div
+            className="up-upload-lightbox"
+            onClick={() => setSelectedImage(null)}
+            style={{
+              position: "fixed",
+              top: 0, left: 0, right: 0, bottom: 0,
+              zIndex: 9999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.85)"
+            }}
+          >
+            <div
+              className="up-upload-lightbox-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "90vw",
+                maxHeight: "90vh",
+                display: "flex",
+                flexDirection: "column"
+              }}
+            >
+              <img src={selectedImage} alt="Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+            </div>
+          </div>,
+          document.body
+        )}
 
         <div className="product-page-right">
           <CommentSection

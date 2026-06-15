@@ -26,11 +26,13 @@ import SpotlightCard from "../ui/SpotlightCard";
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
 import { Wallet } from "lucide-react";
+import { createPortal } from "react-dom";
 import "./Store.css";
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const currentUser = useAtomValue(currentUserAtom);
@@ -284,6 +286,12 @@ export const Store: React.FC = () => {
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
+                          cursor: "pointer",
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedImage(product.image_url ?? null);
                         }}
                       />
                     </div>
@@ -375,6 +383,36 @@ export const Store: React.FC = () => {
           </div>
         )}
       </div>
+
+      {selectedImage && typeof document !== "undefined" && createPortal(
+        <div
+          className="up-upload-lightbox"
+          onClick={() => setSelectedImage(null)}
+          style={{
+            position: "fixed",
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.85)"
+          }}
+        >
+          <div
+            className="up-upload-lightbox-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <img src={selectedImage} alt="Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Admin dialogs */}
       {editingProduct && (

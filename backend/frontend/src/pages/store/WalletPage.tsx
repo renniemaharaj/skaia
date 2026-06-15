@@ -4,8 +4,9 @@ import { Loader, CreditCard, Trash, Edit, PlusCircle, ArrowDownRight, ArrowUpRig
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUserData } from "../users/useUserData";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom } from "../../atoms/auth";
+import { layoutModeAtom } from "../../atoms/layoutMode";
 import "../../components/store/Store.css";
 
 interface Transaction {
@@ -57,6 +58,13 @@ export const WalletPage = () => {
     expiry_month: new Date().getMonth() + 1,
     expiry_year: new Date().getFullYear() + 1
   });
+
+  const setLayoutMode = useSetAtom(layoutModeAtom);
+
+  useEffect(() => {
+    setLayoutMode("application");
+    return () => setLayoutMode("web");
+  }, [setLayoutMode]);
 
   const hasFetched = React.useRef(false);
 
