@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ShoppingCart, Trash2, Loader, MapPin, Phone, Mail, CheckCircle2 } from "lucide-react";
+import {
+  ShoppingCart,
+  Trash2,
+  Loader,
+  MapPin,
+  Phone,
+  Mail,
+  CheckCircle2,
+} from "lucide-react";
 import { useAtom, useAtomValue } from "jotai";
 import { toast } from "sonner";
 import {
@@ -12,24 +20,30 @@ import {
 } from "../../atoms/store";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import "../../styles/Cart.css";
 
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconAnchor: [12, 41]
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-function LocationPickerEvents({ setDeliveryLocation }: { setDeliveryLocation: (loc: string) => void }) {
+function LocationPickerEvents({
+  setDeliveryLocation,
+}: {
+  setDeliveryLocation: (loc: string) => void;
+}) {
   useMapEvents({
     click(e) {
-      setDeliveryLocation(`${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+      setDeliveryLocation(
+        `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`,
+      );
     },
   });
   return null;
@@ -40,12 +54,11 @@ export const CartPage = () => {
   const products = useAtomValue(productsAtom);
   const cartTotal = useAtomValue(cartTotalAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
-  
+
   const [loading, setLoading] = useState(false);
   const [successOrder, setSuccessOrder] = useState<Order | null>(null);
   const [successCartItems, setSuccessCartItems] = useState<CartItem[]>([]);
 
-  // Checkout form state
   const [paymentMethod, setPaymentMethod] = useState("delivery_cash");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
@@ -55,6 +68,7 @@ export const CartPage = () => {
   const [extraInfo, setExtraInfo] = useState("");
   const [rememberBilling, setRememberBilling] = useState(false);
   const [billingInfo, setBillingInfo] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [userCards, setUserCards] = useState<any[]>([]);
 
   useEffect(() => {
@@ -68,19 +82,15 @@ export const CartPage = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Load remembered checkout info if authenticated
     if (isAuthenticated) {
       const savedBilling = localStorage.getItem("billingInfo");
       if (savedBilling) {
         setBillingInfo(savedBilling);
         setRememberBilling(true);
-        
         const savedLocation = localStorage.getItem("deliveryLocation");
         if (savedLocation) setDeliveryLocation(savedLocation);
-        
         const savedPhone = localStorage.getItem("guestPhone");
         if (savedPhone) setGuestPhone(savedPhone);
-        
         const savedExtraInfo = localStorage.getItem("extraInfo");
         if (savedExtraInfo) setExtraInfo(savedExtraInfo);
       }
@@ -124,7 +134,7 @@ export const CartPage = () => {
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
-    
+
     if (!isAuthenticated && !guestEmail) {
       toast.error("Guest email is required.");
       return;
@@ -140,7 +150,7 @@ export const CartPage = () => {
 
     setLoading(true);
     try {
-      const data = await apiRequest("/store/checkout", {
+      const data = (await apiRequest("/store/checkout", {
         method: "POST",
         body: JSON.stringify({
           items: cartItems.map((i: CartItem) => ({
@@ -157,9 +167,10 @@ export const CartPage = () => {
           delivery_time: deliveryTime,
           extra_info: extraInfo,
           billing_info: billingInfo,
+          referral_code: referralCode,
         }),
-      }) as any;
-      
+      })) as any;
+
       if (rememberBilling && isAuthenticated) {
         localStorage.setItem("billingInfo", billingInfo);
         localStorage.setItem("deliveryLocation", deliveryLocation);
@@ -187,53 +198,101 @@ export const CartPage = () => {
     }
   };
 
+  const deliveryMarkerValid =
+    deliveryLocation.includes(",") &&
+    !isNaN(parseFloat(deliveryLocation.split(",")[0])) &&
+    !isNaN(parseFloat(deliveryLocation.split(",")[1]));
+
+  /* ── Success screen ── */
   if (successOrder) {
     return (
       <div className="cart-page-container">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h2>Order Submitted!</h2>
-          <Link to="/store" className="btn btn-primary">Back to Store</Link>
+        <div
+          className="cart-header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <h1>Order Submitted!</h1>
+          <Link to="/store" className="btn">
+            Back to Store
+          </Link>
         </div>
+
         <div className="cart-content">
           <div className="cart-items">
-            <h4 style={{ marginBottom: "1rem" }}>Order Items</h4>
+            <h3 style={{ marginBottom: "0.5rem" }}>Order Items</h3>
             {successCartItems.map((item) => {
               const product = getProduct(item.product_id);
               return (
-                <div key={item.product_id} className="card card--store cart-item">
+                <div
+                  key={item.product_id}
+                  className="card card--store cart-item"
+                >
                   {product?.image_url && (
-                    <img src={product.image_url} alt={product.name} className="cart-item-image" />
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="cart-item-image"
+                    />
                   )}
                   <div className="cart-item-info">
                     <h3>{product?.name}</h3>
-                    <p className="cart-item-price">${(product?.price || 0).toFixed(2)}</p>
+                    <p className="cart-item-price">
+                      ${((product?.price ?? 0) / 100).toFixed(2)}
+                    </p>
                   </div>
-                  <div className="cart-item-quantity" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
-                    <span>Quantity: {item.quantity}</span>
-                    <strong>${((product?.price || 0) * item.quantity).toFixed(2)}</strong>
+                  <div
+                    className="cart-item-controls"
+                    style={{ flexDirection: "column", alignItems: "flex-end" }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      Qty: {item.quantity}
+                    </span>
+                    <strong style={{ color: "var(--text-primary)" }}>
+                      $
+                      {(((product?.price ?? 0) / 100) * item.quantity).toFixed(
+                        2,
+                      )}
+                    </strong>
                   </div>
                 </div>
               );
             })}
           </div>
-          <div className="card card--outlined cart-summary" style={{ alignSelf: "start", position: "sticky", top: "2rem" }}>
+
+          <div className="cart-summary">
             <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-              <CheckCircle2 size={48} style={{ color: "var(--color-success)", margin: "0 auto 0.5rem" }} />
-              <h3>Your order ID is #{successOrder.id}</h3>
+              <CheckCircle2 size={48} className="cart-success-icon" />
+              <h3 style={{ marginBottom: 0 }}>Order #{successOrder.id}</h3>
             </div>
-            <div style={{ marginBottom: "1.5rem" }}>
-              <p style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                <span>Status:</span>
-                <span style={{ color: "var(--color-primary)", textTransform: "capitalize", fontWeight: "bold" }}>{successOrder.status}</span>
-              </p>
-              <p style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                <span>Submitted:</span>
-                <span>{new Date(successOrder.created_at).toLocaleString()}</span>
-              </p>
+
+            <div className="cart-success-meta">
+              <div className="cart-success-meta-row">
+                <span>Status</span>
+                <span className="cart-success-status">
+                  {successOrder.status}
+                </span>
+              </div>
+              <div className="cart-success-meta-row">
+                <span>Submitted</span>
+                <span>
+                  {new Date(successOrder.created_at).toLocaleString()}
+                </span>
+              </div>
             </div>
-            
-            <div className="cart-total" style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border-color)", paddingTop: "1rem", marginTop: "1rem" }}>
-              <span>Total Paid:</span>
+
+            <hr className="cart-divider" />
+
+            <div className="cart-total-row">
+              <span>Total Paid</span>
               <span>${(successOrder.total_price || 0).toFixed(2)}</span>
             </div>
           </div>
@@ -242,176 +301,271 @@ export const CartPage = () => {
     );
   }
 
+  /* ── Empty cart ── */
+  if (cartItems.length === 0) {
+    return (
+      <div className="cart-page-container">
+        <div className="cart-header">
+          <h1>
+            <ShoppingCart size={28} />
+            Shopping Cart
+          </h1>
+        </div>
+        <div className="card card--outlined empty-cart">
+          <ShoppingCart size={56} className="empty-cart-icon" />
+          <h2>Your cart is empty</h2>
+          <p>Add some items to your cart to get started.</p>
+          <Link to="/store" className="btn btn-primary">
+            Browse Store
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Main cart ── */
   return (
     <div className="cart-page-container">
       <div className="cart-header">
         <h1>
-          <ShoppingCart size={32} />
+          <ShoppingCart size={28} />
           Shopping Cart
         </h1>
       </div>
 
-      {cartItems.length > 0 ? (
-        <div className="cart-content">
-          <div className="cart-items">
-            {cartItems.map((item) => {
-              const product = getProduct(item.product_id);
-              const displayName = product?.name ?? `Product #${item.product_id}`;
-              const displayPrice = product?.price ?? 0;
-              return (
-                <div key={item.product_id} className="card card--store cart-item">
-                  <div className="cart-item-info">
-                    <h3>{displayName}</h3>
-                    <p>${displayPrice.toFixed(2)}</p>
-                  </div>
-                  <div className="cart-item-controls">
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(item.product_id, e.target.value)}
-                    />
-                    <button
-                      className="btn btn-secondary"
-                      title="Remove from cart"
-                      onClick={() => handleRemove(item.product_id)}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-              <button className="btn btn-secondary" onClick={handleClearCart} disabled={loading} style={{ alignSelf: "flex-start" }}>
-                Clear Cart
-              </button>
-              {cartItems.length < 4 && (
-                <Link to="/store" className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
-                  Continue Shopping
-                </Link>
-              )}
-            </div>
-          </div>
-
-          <div className="card card--outlined cart-summary" style={{ alignSelf: "start", position: "sticky", top: "2rem" }}>
-            <h3>Checkout Details</h3>
-            
-            {!isAuthenticated && (
-              <div style={{ marginBottom: "1rem" }}>
-                <h4>Guest Information</h4>
-                <div className="input-group" style={{ marginBottom: "0.5rem" }}>
-                  <Mail size={16} />
-                  <input type="email" placeholder="Email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} />
-                </div>
-                <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
-                  Or <Link to="/login">sign in</Link> to save your details and earn rewards!
-                </p>
-              </div>
-            )}
-
-            <div style={{ marginBottom: "1rem" }}>
-              <h4>Delivery</h4>
-              <div className="input-group" style={{ marginBottom: "0.5rem" }}>
-                <Phone size={16} />
-                <input type="tel" placeholder="Contact Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
-              </div>
-              <div style={{ height: "200px", width: "100%", marginBottom: "0.5rem", borderRadius: "var(--radius-md)", overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: "100%", width: "100%" }}>
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      <div className="cart-content">
+        {/* ── Items ── */}
+        <div className="cart-items">
+          {cartItems.map((item) => {
+            const product = getProduct(item.product_id);
+            const displayName = product?.name ?? `Product #${item.product_id}`;
+            const displayPrice = (product?.price ?? 0) / 100;
+            return (
+              <div key={item.product_id} className="card card--store cart-item">
+                {product?.image_url && (
+                  <img
+                    src={product.image_url}
+                    alt={displayName}
+                    className="cart-item-image"
                   />
-                  <LocationPickerEvents setDeliveryLocation={setDeliveryLocation} />
-                  {deliveryLocation && deliveryLocation.includes(",") && !isNaN(parseFloat(deliveryLocation.split(",")[0])) && !isNaN(parseFloat(deliveryLocation.split(",")[1])) && (
-                    <Marker position={[
-                      parseFloat(deliveryLocation.split(",")[0]),
-                      parseFloat(deliveryLocation.split(",")[1])
-                    ]} />
-                  )}
-                </MapContainer>
+                )}
+                <div className="cart-item-info">
+                  <h3>{displayName}</h3>
+                  <p className="cart-item-price">${displayPrice.toFixed(2)}</p>
+                </div>
+                <div className="cart-item-controls">
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(item.product_id, e.target.value)
+                    }
+                  />
+                  <button
+                    className="btn btn-danger"
+                    title="Remove from cart"
+                    onClick={() => handleRemove(item.product_id)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
-              <div className="input-group" style={{ marginBottom: "0.5rem" }}>
-                <MapPin size={16} />
-                <input type="text" placeholder="Delivery Location (Click map to pin or type address)" value={deliveryLocation} onChange={e => setDeliveryLocation(e.target.value)} />
+            );
+          })}
+
+          <div className="cart-footer-actions">
+            <button
+              className="btn btn-ghost"
+              onClick={handleClearCart}
+              disabled={loading}
+            >
+              Clear Cart
+            </button>
+            {cartItems.length < 4 && (
+              <Link to="/store" className="btn btn-secondary">
+                Continue Shopping
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* ── Checkout panel ── */}
+        <div className="cart-summary">
+          <h3>Checkout</h3>
+
+          {/* Guest info */}
+          {!isAuthenticated && (
+            <div className="cart-summary-section">
+              <h4>Guest Information</h4>
+              <div className="input-group">
+                <Mail size={15} />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                />
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                <input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} style={{ flex: 1 }} title="Delivery Date" />
-                <input type="time" value={deliveryTime} onChange={e => setDeliveryTime(e.target.value)} style={{ flex: 1 }} title="Delivery Time" />
-              </div>
-              <textarea 
-                placeholder="Extra Info (Gate code, instructions, etc.)" 
-                value={extraInfo} 
-                onChange={e => setExtraInfo(e.target.value)}
-                style={{ width: "100%", padding: "0.5rem", minHeight: "60px", resize: "vertical", background: "var(--input-bg)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  color: "var(--text-secondary)",
+                  marginBottom: 0,
+                }}
+              >
+                <Link to="/login">Sign in</Link> to save your details and earn
+                rewards.
+              </p>
+            </div>
+          )}
+
+          {/* Delivery */}
+          <div className="cart-summary-section">
+            <h4>Delivery</h4>
+            <div className="input-group">
+              <Phone size={15} />
+              <input
+                type="tel"
+                placeholder="Contact phone number"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
               />
             </div>
 
-            <div style={{ marginBottom: "1rem" }}>
-              <h4>Payment</h4>
-              <select 
-                value={paymentMethod} 
-                onChange={e => setPaymentMethod(e.target.value)}
-                style={{ width: "100%", padding: "0.5rem", background: "var(--input-bg)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)", marginBottom: "0.5rem" }}
+            <div className="cart-map-container">
+              <MapContainer
+                center={[51.505, -0.09]}
+                zoom={13}
+                style={{ height: "100%", width: "100%" }}
               >
-                <option value="delivery_cash">Payment on Delivery (Cash)</option>
-                {isAuthenticated && <option value="wallet">Store Wallet Balance</option>}
-                {isAuthenticated && userCards.map(card => (
-                  <option key={card.id} value={`card_${card.id}`} disabled>
-                    {card.card_name} (•••• {card.card_number.slice(-4)}) - Disabled
-                  </option>
-                ))}
-              </select>
-              
-              {isAuthenticated && paymentMethod === "delivery_cash" && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer" }}>
-                    <input type="checkbox" checked={rememberBilling} onChange={e => setRememberBilling(e.target.checked)} />
-                    Remember Billing Information
-                  </label>
-                  {rememberBilling && (
-                     <textarea 
-                       placeholder="Billing Details (Name, Note for driver, etc.)" 
-                       value={billingInfo} 
-                       onChange={e => setBillingInfo(e.target.value)}
-                       style={{ width: "100%", padding: "0.5rem", marginTop: "0.5rem", minHeight: "60px", resize: "vertical", background: "var(--input-bg)", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", color: "var(--text-primary)" }}
-                     />
-                  )}
-                </div>
-              )}
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <LocationPickerEvents
+                  setDeliveryLocation={setDeliveryLocation}
+                />
+                {deliveryMarkerValid && (
+                  <Marker
+                    position={[
+                      parseFloat(deliveryLocation.split(",")[0]),
+                      parseFloat(deliveryLocation.split(",")[1]),
+                    ]}
+                  />
+                )}
+              </MapContainer>
             </div>
 
-            <h3 style={{ marginTop: "1.5rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
-              Total: ${cartTotal.toFixed(2)}
-            </h3>
-            
-            <button
-              className="btn btn-primary"
-              onClick={handleCheckout}
-              disabled={loading}
-              style={{ width: "100%", marginTop: "1rem", padding: "0.75rem", fontSize: "1.1rem" }}
-            >
-              {loading ? (
-                <>
-                  <Loader size={16} className="spin" style={{ marginRight: 6 }} />
-                  Submitting Order…
-                </>
-              ) : (
-                "Submit Order"
-              )}
-            </button>
+            <div className="input-group">
+              <MapPin size={15} />
+              <input
+                type="text"
+                placeholder="Delivery location (or click map to pin)"
+                value={deliveryLocation}
+                onChange={(e) => setDeliveryLocation(e.target.value)}
+              />
+            </div>
+
+            <div className="cart-datetime-row">
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={(e) => setDeliveryDate(e.target.value)}
+                title="Delivery Date"
+              />
+              <input
+                type="time"
+                value={deliveryTime}
+                onChange={(e) => setDeliveryTime(e.target.value)}
+                title="Delivery Time"
+              />
+            </div>
+
+            <textarea
+              className="cart-textarea"
+              placeholder="Extra info — gate code, instructions, etc."
+              value={extraInfo}
+              onChange={(e) => setExtraInfo(e.target.value)}
+            />
+
+            <div className="input-group" style={{ marginTop: "0.5rem" }}>
+              <input
+                type="text"
+                placeholder="Referral code (optional)"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+              />
+            </div>
           </div>
+
+          {/* Payment */}
+          <div className="cart-summary-section">
+            <h4>Payment</h4>
+            <select
+              className="cart-select"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="delivery_cash">Payment on Delivery (Cash)</option>
+              {isAuthenticated && (
+                <option value="wallet">Store Wallet Balance</option>
+              )}
+              {isAuthenticated &&
+                userCards.map((card) => (
+                  <option key={card.id} value={`card_${card.id}`} disabled>
+                    {card.card_name} (•••• {card.card_number.slice(-4)}) —
+                    Disabled
+                  </option>
+                ))}
+            </select>
+
+            {isAuthenticated && paymentMethod === "delivery_cash" && (
+              <>
+                <label className="cart-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={rememberBilling}
+                    onChange={(e) => setRememberBilling(e.target.checked)}
+                  />
+                  Remember billing information
+                </label>
+                {rememberBilling && (
+                  <textarea
+                    className="cart-textarea"
+                    placeholder="Billing details — name, note for driver, etc."
+                    value={billingInfo}
+                    onChange={(e) => setBillingInfo(e.target.value)}
+                    style={{ marginTop: "0.5rem" }}
+                  />
+                )}
+              </>
+            )}
+          </div>
+
+          <hr className="cart-divider" />
+
+          <div className="cart-total-row">
+            <span>Total</span>
+            <span>${cartTotal.toFixed(2)}</span>
+          </div>
+
+          <button
+            className="btn btn-primary cart-submit-btn"
+            onClick={handleCheckout}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader size={15} className="spin" />
+                Submitting Order…
+              </>
+            ) : (
+              "Submit Order"
+            )}
+          </button>
         </div>
-      ) : (
-        <div className="card card--outlined empty-cart">
-          <ShoppingCart size={64} className="empty-cart-icon" />
-          <h2>Your cart is empty</h2>
-          <p>Let's add some items to your cart and make your server experience even better!</p>
-          <Link to="/store" className="btn btn-primary">
-            Continue Shopping
-          </Link>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
