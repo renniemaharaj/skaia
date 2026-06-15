@@ -9,6 +9,7 @@ import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
 import SpotlightCard from "../ui/SpotlightCard";
+import StarRating from "../ui/StarRating";
 import { apiRequest } from "../../utils/api";
 import type { Role } from "../../pages/users/types";
 import "./CommentSection.css";
@@ -26,6 +27,7 @@ type CommentSectionComment = {
   is_liked?: boolean;
   can_delete?: boolean;
   is_edited?: boolean;
+  rating?: number;
 };
 
 interface CommentSectionProps {
@@ -33,10 +35,12 @@ interface CommentSectionProps {
   comments: CommentSectionComment[];
   isLoading: boolean;
   canComment: boolean;
-  onSubmit: (text: string) => Promise<void> | void;
+  onSubmit: (text: string, rating?: number) => Promise<void> | void;
   onLike?: (comment: CommentSectionComment) => Promise<void> | void;
   onDelete?: (comment: CommentSectionComment) => Promise<void> | void;
   currentUserId?: string | number | null;
+  enableRatings?: boolean;
+  userHasReviewed?: boolean;
   noCommentsText?: string;
   placeholder?: string;
   rootClassName?: string;
@@ -63,6 +67,8 @@ const CommentSection = ({
   onLike,
   onDelete,
   currentUserId,
+  enableRatings = false,
+  userHasReviewed = false,
   noCommentsText = "No comments yet.",
   placeholder = "Write a comment…",
   rootClassName = "",
@@ -83,6 +89,7 @@ const CommentSection = ({
   const [richTextContent, setRichTextContent] = useState("");
   const [isEditorVisible, setIsEditorVisible] = useState(false);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [selectedRating, setSelectedRating] = useState<number>(0);
 
   useEffect(() => {
     apiRequest<Role[]>("/users/roles").then((r) => setAllRoles(r || []));
@@ -194,6 +201,12 @@ const CommentSection = ({
                     )}
                   </div>
 
+                  {comment.rating && (
+                    <div style={{ marginBottom: "0.5rem" }}>
+                      <StarRating rating={comment.rating} size={14} disabled />
+                    </div>
+                  )}
+
                   {useRichText ? (
                     <div className="comment-content rich-text-comment">
                       <ViewThread content={comment.content} />
@@ -241,11 +254,17 @@ const CommentSection = ({
         <div className="comment-locked-message">{lockedMessage}</div>
       )}
 
-      {canComment && (
+      {canComment && !userHasReviewed && (
         <div className="comment-composer">
+          {enableRatings && (
+            <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Your Rating:</span>
+              <StarRating rating={selectedRating} onChange={setSelectedRating} size={20} disabled={disabled} />
+            </div>
+          )}
           {useRichText ? (
             isEditorVisible ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="comment-editor-wrapper">
                 <Editor
                   value={richTextContent}
                   onChange={setRichTextContent}
@@ -258,6 +277,7 @@ const CommentSection = ({
                     onClick={() => {
                       setIsEditorVisible(false);
                       setRichTextContent("");
+                      setSelectedRating(0);
                     }}
                   >
                     Cancel
@@ -265,11 +285,12 @@ const CommentSection = ({
                   <button
                     className="action-btn btn-submit"
                     style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
-                    disabled={disabled || !richTextContent.trim() || richTextContent === "<p></p>"}
+                    disabled={disabled || (enableRatings && selectedRating === 0) || (!enableRatings && (!richTextContent.trim() || richTextContent === "<p></p>"))}
                     onClick={async () => {
                       if (disabled) return;
-                      await onSubmit(richTextContent);
+                      await onSubmit(richTextContent, enableRatings ? selectedRating : undefined);
                       setRichTextContent("");
+                      setSelectedRating(0);
                       setIsEditorVisible(false);
                     }}
                   >
@@ -286,17 +307,26 @@ const CommentSection = ({
               </div>
             )
           ) : (
-            <ComposerInput
-              handleSend={async (text) => {
-                if (disabled) return;
-                await onSubmit(text);
-              }}
-              disabled={disabled}
-              placeholder={placeholder}
-              minRows={1}
-              maxRows={5}
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <ComposerInput
+                handleSend={async (text) => {
+                  if (disabled) return;
+                  if (enableRatings && selectedRating === 0) return;
+                  await onSubmit(text, enableRatings ? selectedRating : undefined);
+                  setSelectedRating(0);
+                }}
+                disabled={disabled || (enableRatings && selectedRating === 0)}
+                placeholder={enableRatings && selectedRating === 0 ? "Select a rating first..." : placeholder}
+                minRows={1}
+                maxRows={5}
+              />
+            </div>
           )}
+        </div>
+      )}
+      {canComment && userHasReviewed && (
+        <div className="comment-composer" style={{ textAlign: "center", padding: "1rem", color: "var(--text-secondary)" }}>
+          You have already reviewed this product.
         </div>
       )}
     </div>

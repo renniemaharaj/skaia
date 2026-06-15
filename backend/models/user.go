@@ -36,3 +36,10 @@ type UserBlock struct {
 	BlockedID int64     `json:"blocked_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+// UserSummary contains a lightweight representation of a user.
+type UserSummary struct {
+	ID          int64  `json:"id"`
+	DisplayName string `json:"display_name"`
+	AvatarURL   string `json:"avatar_url"`
+}

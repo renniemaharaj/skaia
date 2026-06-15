@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -18,13 +19,14 @@ type Service struct {
 	payments      PaymentRepository
 	plans         SubscriptionPlanRepository
 	subscriptions SubscriptionRepository
+	reviews       ReviewRepository
 	WalletRepo    WalletRepository
 	cache         *ProductCache
 	provider      PaymentProvider
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider) *Service {
 	return &Service{
 		categories:    cats,
 		products:      products,
@@ -33,6 +35,7 @@ func NewService(cats CategoryRepository, products ProductRepository, cart CartRe
 		payments:      payments,
 		plans:         plans,
 		subscriptions: subs,
+		reviews:       reviews,
 		WalletRepo:    wallet,
 		cache:         cache,
 		provider:      provider,
@@ -101,6 +104,16 @@ func (s *Service) DeleteProduct(id int64) error {
 		s.cache.Invalidate(id)
 	}
 	return err
+}
+
+// Review methods
+
+func (s *Service) GetProductReviews(ctx context.Context, productID int64) ([]*models.ProductReviewWithUser, error) {
+	return s.reviews.GetProductReviews(ctx, productID)
+}
+
+func (s *Service) CreateProductReview(ctx context.Context, review *models.ProductReview) error {
+	return s.reviews.CreateProductReview(ctx, review)
 }
 
 // Cart methods

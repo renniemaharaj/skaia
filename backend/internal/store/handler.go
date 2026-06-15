@@ -47,6 +47,8 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Post("/products", h.createProduct)
 		r.With(jwt).Put("/products/{id}", h.updateProduct)
 		r.With(jwt).Delete("/products/{id}", h.deleteProduct)
+		r.With(optJWT).Get("/products/{id}/reviews", h.getProductReviews)
+		r.With(jwt).Post("/products/{id}/reviews", h.createProductReview)
 
 		// Cart routes (all require auth)
 		r.With(jwt).Get("/cart", h.getCart)

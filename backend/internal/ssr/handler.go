@@ -32,7 +32,7 @@ type CachedMeta struct {
 
 var (
 	threadRx     = regexp.MustCompile(`^/view-thread/(\d+)`)
-	itemRx       = regexp.MustCompile(`^/store/item/(\d+)`)
+	itemRx       = regexp.MustCompile(`^/store/product/(\d+)`)
 	pageRx       = regexp.MustCompile(`^/page/([^/]+)`)
 	htmlTagRx    = regexp.MustCompile(`<[^>]*>`)
 	multiSpaceRx = regexp.MustCompile(`\s+`)
@@ -154,7 +154,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 			if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
 				isMiss = true
 			} else {
-				err := db.QueryRow("SELECT name, description, image_url FROM store_products WHERE id = $1", idStr).Scan(&routeTitle, &routeDesc, &routeImg)
+				err := db.QueryRow("SELECT name, description, image_url FROM products WHERE id = $1", idStr).Scan(&routeTitle, &routeDesc, &routeImg)
 				if err != nil {
 					isMiss = true
 				} else if routeDesc != "" {

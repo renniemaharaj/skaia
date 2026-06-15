@@ -38,16 +38,16 @@ type CartItem struct {
 
 // Order represents a completed order. TotalPrice is in cents.
 type Order struct {
-	ID               int64      `json:"id"`
-	UserID           *int64     `json:"user_id,omitempty"`
-	IsGuest          bool       `json:"is_guest"`
-	GuestEmail       string     `json:"guest_email,omitempty"`
-	GuestPhone       string     `json:"guest_phone,omitempty"`
-	DeliveryLocation string     `json:"delivery_location,omitempty"`
-	DeliveryDate     *time.Time `json:"delivery_date,omitempty"`
-	DeliveryTime     string     `json:"delivery_time,omitempty"`
-	ExtraInfo        string     `json:"extra_info,omitempty"`
-	BillingInfo      string     `json:"billing_info,omitempty"`
+	ID               int64        `json:"id"`
+	UserID           *int64       `json:"user_id,omitempty"`
+	IsGuest          bool         `json:"is_guest"`
+	GuestEmail       string       `json:"guest_email,omitempty"`
+	GuestPhone       string       `json:"guest_phone,omitempty"`
+	DeliveryLocation string       `json:"delivery_location,omitempty"`
+	DeliveryDate     *time.Time   `json:"delivery_date,omitempty"`
+	DeliveryTime     string       `json:"delivery_time,omitempty"`
+	ExtraInfo        string       `json:"extra_info,omitempty"`
+	BillingInfo      string       `json:"billing_info,omitempty"`
 	TotalPrice       int64        `json:"total_price"`
 	Status           string       `json:"status"`
 	CreatedAt        time.Time    `json:"created_at"`
@@ -173,4 +173,23 @@ type UserCard struct {
 // WalletBalance represents the aggregate balance of a user.
 type WalletBalance struct {
 	Balance int64 `json:"balance"` // in cents (total credits - total debits)
+}
+
+// ProductReview represents a single review left by a user on a product.
+type ProductReview struct {
+	ID        int64     `json:"id"`
+	ProductID int64     `json:"product_id"`
+	UserID    int64     `json:"user_id"`
+	Rating    int       `json:"rating"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// ProductReviewWithUser includes user details alongside the review.
+type ProductReviewWithUser struct {
+	ProductReview
+	User      *UserSummary `json:"user,omitempty"`
+	CanDelete bool         `json:"can_delete"`
+	CanEdit   bool         `json:"can_edit"`
 }

@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+	
 	"github.com/skaia/backend/models"
 )
 
@@ -90,4 +92,10 @@ type WalletRepository interface {
 	GetCards(userID int64) ([]*models.UserCard, error)
 	UpdateCard(card *models.UserCard) (*models.UserCard, error)
 	DeleteCard(cardID, userID int64) error
+}
+
+// ReviewRepository manages product reviews.
+type ReviewRepository interface {
+	GetProductReviews(ctx context.Context, productID int64) ([]*models.ProductReviewWithUser, error)
+	CreateProductReview(ctx context.Context, review *models.ProductReview) error
 }

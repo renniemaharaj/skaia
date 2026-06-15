@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Package, Plus, Edit2, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { Link } from "react-router-dom";
 
 import {
   currentUserAtom,
@@ -273,25 +274,28 @@ export const Store: React.FC = () => {
                 spotlightColor="rgba(255,255,255,0.15)"
                 style={{ padding: 0 }}
               >
-                {product.image_url ? (
-                  <div className="product-image">
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="product-image">
-                    <Package size={48} />
-                  </div>
-                )}
-                <div className="product-content">
-                  <h3 className="product-title">{product.name}</h3>
+                <Link to={`/store/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  {product.image_url ? (
+                    <div className="product-image">
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="product-image">
+                      <Package size={48} />
+                    </div>
+                  )}
+                  <div className="product-content" style={{ flexGrow: 1 }}>
+                    <h3 className="product-title" style={{ transition: 'color 0.2s ease' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary-color)'} onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}>
+                      {product.name}
+                    </h3>
                   <p className="product-description">{product.description}</p>
                   {!product.stock_unlimited &&
                     product.stock <= 5 &&
@@ -327,7 +331,7 @@ export const Store: React.FC = () => {
                         <button
                           className="action-btn edit-btn"
                           title="Edit product"
-                          onClick={() => setEditingProduct(product)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProduct(product); }}
                         >
                           <Edit2 size={16} />
                         </button>
@@ -336,14 +340,14 @@ export const Store: React.FC = () => {
                         <button
                           className="action-btn danger"
                           title="Delete product"
-                          onClick={() => handleDeleteProduct(product.id)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteProduct(product.id); }}
                         >
                           <Trash2 size={16} />
                         </button>
                       )}
                       <button
                         className="btn-add-to-cart"
-                        onClick={() => handleAddToCart(product)}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product); }}
                         disabled={
                           !product.stock_unlimited && product.stock === 0
                         }
@@ -355,6 +359,7 @@ export const Store: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                </Link>
               </SpotlightCard>
             ))}
           </div>
