@@ -25,6 +25,7 @@ import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { layoutModeAtom } from "../../atoms/layoutMode";
 import { createPortal } from "react-dom";
 import "./ProductPage.css";
+import { formatCents } from "../../utils/money";
 
 interface ProductReview {
   id: string | number;
@@ -242,11 +243,11 @@ export const ProductPage = () => {
 
             <div className="product-page-price">
               <span className="current-price">
-                ${(product.price / 100).toFixed(2)}
+                {formatCents(product.price)}
               </span>
               {product.original_price && (
                 <span className="original-price">
-                  ${(product.original_price / 100).toFixed(2)}
+                  {formatCents(product.original_price)}
                 </span>
               )}
             </div>
@@ -355,7 +356,7 @@ export const ProductPage = () => {
                     <div className="similar-product-info">
                       <span className="similar-product-name">{sp.name}</span>
                       <span className="similar-product-price">
-                        ${(sp.price / 100).toFixed(2)}
+                        {formatCents(sp.price)}
                       </span>
                     </div>
                     <ChevronRight size={14} className="similar-product-arrow" />

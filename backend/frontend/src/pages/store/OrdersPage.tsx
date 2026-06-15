@@ -4,6 +4,7 @@ import { useAtomValue } from "jotai";
 import { isAuthenticatedAtom, hasPermissionAtom } from "../../atoms/auth";
 import { socketAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
+import { formatCents } from "../../utils/money";
 import {
   Loader,
   CheckCircle,
@@ -250,7 +251,7 @@ export const OrdersPage = () => {
                                 ).toLocaleDateString()}
                               </td>
                               <td style={{ padding: "1rem" }}>
-                                ${(order.total_price / 100).toFixed(2)}
+                                {formatCents(order.total_price || 0)}
                               </td>
                               <td style={{ padding: "1rem" }}>
                                 <div

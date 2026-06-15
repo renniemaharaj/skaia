@@ -6,6 +6,7 @@ import { useAtomValue } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import type { Order } from "../../atoms/store";
 import { TableView } from "../../components/ui/TableView/TableView";
+import { formatCents } from "../../utils/money";
 
 interface Props {
   userId: string | undefined;
@@ -178,7 +179,7 @@ const UserOrders: React.FC<Props> = ({ userId, displayName }) => {
           {
             header: "Total",
             width: "100px",
-            cell: (o) => `$${(o.total_price / 100).toFixed(2)}`,
+            cell: (o) => formatCents((o as any).total_price || 0),
           },
           {
             header: "Date",
