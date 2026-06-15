@@ -21,7 +21,7 @@ import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import { formatCents } from "../../utils/money";
-import OrderSubmittedView from "../../components/store/OrderSubmittedView";
+import OrderSubmittedView from "../../components/store/OrderStatusView";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";

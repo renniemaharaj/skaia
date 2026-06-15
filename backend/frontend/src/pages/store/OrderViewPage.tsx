@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
-import OrderSubmittedView from "../../components/store/OrderSubmittedView";
+import OrderSubmittedView from "../../components/store/OrderStatusView";
 import type { Order } from "../../atoms/store";
 
 const OrderViewPage: React.FC = () => {

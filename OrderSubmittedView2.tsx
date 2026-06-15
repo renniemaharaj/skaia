@@ -14,17 +14,12 @@ type Props = {
   onBackLink?: string;
 };
 
-const OrderSubmittedView: React.FC<Props> = ({
-  order,
-  cartItems,
-  onBackLink,
-}) => {
+const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) => {
   const products = useAtomValue(productsAtom);
 
   const getProduct = (productId: string) =>
     products.find((p) => p.id === (productId as any));
 
-  // If order.items exists, prefer them (they include price at time of purchase)
   const itemsToRender =
     order.items?.map((it) => ({
       product_id: String(it.product_id),
@@ -38,43 +33,33 @@ const OrderSubmittedView: React.FC<Props> = ({
     }));
 
   const status = order.status || "pending";
+  const paymentStatus = (order as any).payment?.status;
+  const effectiveStatus = paymentStatus === "succeeded" ? "paid" : status;
+
   let TitleIcon = Clock;
   let titleText = "Order Submitted";
-  if (status === "completed") {
-    TitleIcon = CheckCircle2;
-    titleText = "Order Completed";
-  } else if (status === "paid") {
-    TitleIcon = CheckCircle2;
-    titleText = "Order Paid";
-  } else if (status === "failed") {
-    TitleIcon = AlertTriangle;
-    titleText = "Order Pending";
-  }
+  if (effectiveStatus === "completed") { TitleIcon = CheckCircle2; titleText = "Order Completed"; }
+  else if (effectiveStatus === "paid")  { TitleIcon = CheckCircle2; titleText = "Order Paid"; }
+  else if (effectiveStatus === "failed") { TitleIcon = AlertTriangle; titleText = "Order Failed"; }
+  else if (effectiveStatus === "pending") { TitleIcon = Clock; titleText = "Order Pending"; }
 
   return (
     <div className="cart-page-container">
-      <div
-        className="cart-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h1>
-          <TitleIcon size={28} style={{ verticalAlign: "middle" }} />{" "}
-          {titleText}
-        </h1>
-        <Link to={onBackLink ?? "/store"} className="btn">
+      <div className="cart-header order-submitted-header">
+        <div className="order-submitted-title">
+          <div className="order-status-icon-wrap">
+            <TitleIcon size={26} />
+          </div>
+          <h1>{titleText}</h1>
+        </div>
+        <Link to={onBackLink ?? "/store"} className="btn btn-ghost">
           Back
         </Link>
       </div>
 
       <div className="cart-content">
         <div className="cart-items">
-          <h3 style={{ marginBottom: "0.5rem" }}>
-            Items ({itemsToRender.length})
-          </h3>
+          <h3 className="cart-items-heading">Items ({itemsToRender.length})</h3>
           {itemsToRender.map((item) => {
             const product = getProduct(String(item.product_id));
             return (
@@ -88,23 +73,11 @@ const OrderSubmittedView: React.FC<Props> = ({
                 )}
                 <div className="cart-item-info">
                   <h3>{product?.name ?? `Product #${item.product_id}`}</h3>
-                  <p className="cart-item-price">
-                    {formatCents(item.price ?? 0)}
-                  </p>
+                  <p className="cart-item-price">{formatCents(item.price ?? 0)}</p>
                 </div>
-                <div
-                  className="cart-item-controls"
-                  style={{ flexDirection: "column", alignItems: "flex-end" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Qty: {item.quantity}
-                  </span>
-                  <strong style={{ color: "var(--text-primary)" }}>
+                <div className="cart-item-qty-col">
+                  <span className="cart-item-qty-label">Qty: {item.quantity}</span>
+                  <strong className="cart-item-line-total">
                     {formatCents((item.price ?? 0) * item.quantity)}
                   </strong>
                 </div>
@@ -114,8 +87,11 @@ const OrderSubmittedView: React.FC<Props> = ({
         </div>
 
         <div className="cart-summary">
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            <h3 style={{ marginBottom: 0 }}>Order #{order.id}</h3>
+          <div className="order-submitted-summary-hero">
+            <div className="order-status-icon-wrap order-status-icon-wrap--lg">
+              <TitleIcon size={22} />
+            </div>
+            <h3 className="order-submitted-id">Order #{order.id}</h3>
           </div>
 
           <div className="cart-success-meta">
@@ -136,8 +112,8 @@ const OrderSubmittedView: React.FC<Props> = ({
               <span>
                 {order.delivery_date
                   ? new Date(order.delivery_date).toLocaleDateString()
-                  : ""}{" "}
-                {order.delivery_time || ""}
+                  : ""}
+                {order.delivery_time ? ` ${order.delivery_time}` : ""}
               </span>
             </div>
             <div className="cart-success-meta-row">

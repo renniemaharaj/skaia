@@ -20,7 +20,7 @@ import { DirectoryLayout } from "../page/layout/templates/DirectoryLayout";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import UserAvatar from "../../components/user/UserAvatar";
 import { useNavigate } from "react-router-dom";
-import OrderSubmittedView from "../../components/store/OrderSubmittedView";
+import OrderSubmittedView from "../../components/store/OrderStatusView";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
