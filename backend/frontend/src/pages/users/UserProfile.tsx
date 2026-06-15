@@ -13,7 +13,6 @@ import UserProfileCard from "./UserProfileCard";
 import UserManagePanel from "./UserManagePanel";
 import UserThreadsFeed from "./UserThreadsFeed";
 import UserUploads from "./UserUploads";
-import UserOrders from "./UserOrders";
 import SuspendDialog from "./SuspendDialog";
 
 import { apiRequest } from "../../utils/api";
@@ -73,9 +72,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
   const handleResetPassword = async () => {
     if (!user?.id) return;
     if (
-      !await customConfirm(
+      !(await customConfirm(
         `Reset password for ${user.display_name || user.username}? A new password will be sent to their inbox.`,
-      )
+      ))
     )
       return;
     setResetPasswordLoading(true);
@@ -176,10 +175,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
       {!hideUploads && (
         <>
           <UserUploads
-            userId={effectiveUserId}
-            displayName={user.display_name || user.username}
-          />
-          <UserOrders
             userId={effectiveUserId}
             displayName={user.display_name || user.username}
           />

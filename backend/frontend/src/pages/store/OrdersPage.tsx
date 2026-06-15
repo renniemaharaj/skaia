@@ -23,6 +23,7 @@ import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import UserAvatar from "../../components/user/UserAvatar";
 import { useNavigate } from "react-router-dom";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
+// reuse global table styles from TableView for consistent scrolling
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -176,8 +177,9 @@ export const OrdersPage = () => {
                 </p>
               )}
               {!loading && orders.length > 0 && (
-                <div style={{ overflowX: "auto" }}>
+                <div className="table-view" style={{ maxWidth: "100%" }}>
                   <table
+                    className="orders-table"
                     style={{
                       width: "100%",
                       borderCollapse: "collapse",
@@ -361,6 +363,7 @@ export const OrdersPage = () => {
                               )}
                               {isStoreAdmin && (
                                 <td
+                                  className="order-actions"
                                   style={{
                                     padding: "1rem",
                                     display: "flex",

@@ -32,13 +32,15 @@
   justify-content: center;
   background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
   backdrop-filter: blur(12px);
-  padding: 24px 20px;
+  padding: 2rem;
   margin: -40px calc(-50vw + 50%) 40px calc(-50vw + 50%); /* Bleed to screen edges */
   border-bottom: 1px solid var(--border-color);
   animation: fadeInDown 0.8s ease-out;
   position: sticky;
   top: 0;
   z-index: 40;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .category-list {
