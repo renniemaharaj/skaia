@@ -68,12 +68,21 @@ export const CartPage = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Load remembered billing info if authenticated
+    // Load remembered checkout info if authenticated
     if (isAuthenticated) {
-      const saved = localStorage.getItem("billingInfo");
-      if (saved) {
-        setBillingInfo(saved);
+      const savedBilling = localStorage.getItem("billingInfo");
+      if (savedBilling) {
+        setBillingInfo(savedBilling);
         setRememberBilling(true);
+        
+        const savedLocation = localStorage.getItem("deliveryLocation");
+        if (savedLocation) setDeliveryLocation(savedLocation);
+        
+        const savedPhone = localStorage.getItem("guestPhone");
+        if (savedPhone) setGuestPhone(savedPhone);
+        
+        const savedExtraInfo = localStorage.getItem("extraInfo");
+        if (savedExtraInfo) setExtraInfo(savedExtraInfo);
       }
     }
   }, [isAuthenticated]);
@@ -116,8 +125,12 @@ export const CartPage = () => {
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
     
-    if (!isAuthenticated && (!guestEmail || !guestPhone)) {
-      toast.error("Guest email and phone are required.");
+    if (!isAuthenticated && !guestEmail) {
+      toast.error("Guest email is required.");
+      return;
+    }
+    if (!guestPhone) {
+      toast.error("Contact phone number is required.");
       return;
     }
     if (!deliveryLocation) {
@@ -149,8 +162,14 @@ export const CartPage = () => {
       
       if (rememberBilling && isAuthenticated) {
         localStorage.setItem("billingInfo", billingInfo);
+        localStorage.setItem("deliveryLocation", deliveryLocation);
+        localStorage.setItem("guestPhone", guestPhone);
+        localStorage.setItem("extraInfo", extraInfo);
       } else if (!rememberBilling && isAuthenticated) {
         localStorage.removeItem("billingInfo");
+        localStorage.removeItem("deliveryLocation");
+        localStorage.removeItem("guestPhone");
+        localStorage.removeItem("extraInfo");
       }
 
       toast.success("Order placed successfully!");
@@ -285,10 +304,6 @@ export const CartPage = () => {
                   <Mail size={16} />
                   <input type="email" placeholder="Email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} />
                 </div>
-                <div className="input-group">
-                  <Phone size={16} />
-                  <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
-                </div>
                 <p style={{ fontSize: "0.85rem", marginTop: "0.5rem" }}>
                   Or <Link to="/login">sign in</Link> to save your details and earn rewards!
                 </p>
@@ -297,6 +312,10 @@ export const CartPage = () => {
 
             <div style={{ marginBottom: "1rem" }}>
               <h4>Delivery</h4>
+              <div className="input-group" style={{ marginBottom: "0.5rem" }}>
+                <Phone size={16} />
+                <input type="tel" placeholder="Contact Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} />
+              </div>
               <div style={{ height: "200px", width: "100%", marginBottom: "0.5rem", borderRadius: "var(--radius-md)", overflow: "hidden", border: "1px solid var(--border-color)" }}>
                 <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: "100%", width: "100%" }}>
                   <TileLayer
