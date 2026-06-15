@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Order } from "../../atoms/store";
@@ -368,7 +369,7 @@ export const OrdersPage = () => {
                                 >
                                   {order.status === "pending" && (
                                     <button
-                                      className="btn-admin-icon"
+                                      className="action-btn edit-btn"
                                       onClick={() =>
                                         updateOrderStatus(order.id, "accepted")
                                       }
@@ -378,7 +379,11 @@ export const OrdersPage = () => {
                                     </button>
                                   )}
                                   <button
-                                    className="btn-admin-icon"
+                                    className={`action-btn ${
+                                      order.status === "completed"
+                                        ? "active"
+                                        : ""
+                                    }`}
                                     onClick={() =>
                                       updateOrderStatus(
                                         order.id,
@@ -393,10 +398,14 @@ export const OrdersPage = () => {
                                         : "Mark Completed"
                                     }
                                   >
-                                    <CheckCircle size={16} />
+                                    {order.status === "completed" ? (
+                                      <RotateCcw size={16} />
+                                    ) : (
+                                      <CheckCircle size={16} />
+                                    )}
                                   </button>
                                   <button
-                                    className="btn-admin-icon btn-danger"
+                                    className="action-btn danger"
                                     onClick={() => deleteOrder(order.id)}
                                     title="Delete Order"
                                   >
