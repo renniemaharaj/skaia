@@ -12,6 +12,7 @@ export interface Product {
   category_id: string;
   image_url?: string;
   is_active: boolean;
+  special_actions?: string;
   created_at: string;
   updated_at: string;
 }

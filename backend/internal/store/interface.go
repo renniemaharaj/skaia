@@ -99,3 +99,9 @@ type ReviewRepository interface {
 	GetProductReviews(ctx context.Context, productID int64) ([]*models.ProductReviewWithUser, error)
 	CreateProductReview(ctx context.Context, review *models.ProductReview) error
 }
+
+// UserStore provides access to user domain features needed by the store
+type UserStore interface {
+	GetByUsername(username string) (*models.User, error)
+	AddRoleByName(userID int64, roleName string) error
+}

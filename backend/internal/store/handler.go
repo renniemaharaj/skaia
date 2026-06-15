@@ -336,6 +336,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		Stock          int     `json:"stock"`
 		StockUnlimited bool    `json:"stock_unlimited"`
 		IsActive       bool    `json:"is_active"`
+		SpecialActions string  `json:"special_actions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -346,6 +347,10 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "price must be >= 0")
 		return
 	}
+	sa := req.SpecialActions
+	if sa == "" {
+		sa = "[]"
+	}
 	p, err := h.svc.CreateProduct(&models.Product{
 		CategoryID:     req.CategoryID,
 		Name:           req.Name,
@@ -355,6 +360,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		Stock:          req.Stock,
 		StockUnlimited: req.StockUnlimited,
 		IsActive:       req.IsActive,
+		SpecialActions: sa,
 	})
 	if err != nil {
 		log.Printf("store.createProduct: %v", err)
@@ -405,6 +411,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		Stock          *int     `json:"stock"`
 		StockUnlimited *bool    `json:"stock_unlimited"`
 		IsActive       *bool    `json:"is_active"`
+		SpecialActions *string  `json:"special_actions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -442,6 +449,13 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.IsActive != nil {
 		existing.IsActive = *req.IsActive
+	}
+	if req.SpecialActions != nil {
+		sa := *req.SpecialActions
+		if sa == "" {
+			sa = "[]"
+		}
+		existing.SpecialActions = sa
 	}
 	updated, err := h.svc.UpdateProduct(existing)
 	if err != nil {

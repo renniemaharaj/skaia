@@ -23,6 +23,7 @@ type Product struct {
 	OriginalPrice  *int64    `json:"original_price,omitempty"`
 	StockUnlimited bool      `json:"stock_unlimited"`
 	IsActive       bool      `json:"is_active"`
+	SpecialActions string    `json:"special_actions,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
@@ -50,6 +51,7 @@ type Order struct {
 	BillingInfo      string       `json:"billing_info,omitempty"`
 	TotalPrice       int64        `json:"total_price"`
 	Status           string       `json:"status"`
+	ReferralCode     string       `json:"referral_code,omitempty"`
 	CreatedAt        time.Time    `json:"created_at"`
 	UpdatedAt        time.Time    `json:"updated_at"`
 	Items            []*OrderItem `json:"items,omitempty"`
@@ -94,6 +96,7 @@ type CheckoutRequest struct {
 	ExtraInfo        string         `json:"extra_info,omitempty"`
 	RememberBilling  bool           `json:"remember_billing,omitempty"`
 	BillingInfo      string         `json:"billing_info,omitempty"`
+	ReferralCode     string         `json:"referral_code,omitempty"`
 }
 
 // CheckoutItem is a single line in a checkout request.

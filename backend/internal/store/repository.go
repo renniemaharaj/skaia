@@ -101,9 +101,9 @@ func NewProductRepository(db *sql.DB) ProductRepository {
 func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
 	p := &models.Product{}
 	err := r.db.QueryRow(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
 		 FROM products WHERE id = $1`, id,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("product not found")
 	}
@@ -112,7 +112,7 @@ func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
 
 func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
 		 FROM products WHERE category_id = $1 AND is_active = true
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		categoryID, limit, offset,
@@ -126,21 +126,21 @@ func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int
 
 func (r *sqlProductRepository) Create(p *models.Product) (*models.Product, error) {
 	err := r.db.QueryRow(
-		`INSERT INTO products (category_id, name, description, price, image_url, stock, stock_unlimited, is_active)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.StockUnlimited, p.IsActive,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+		`INSERT INTO products (category_id, name, description, price, image_url, stock, stock_unlimited, is_active, special_actions)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at`,
+		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.StockUnlimited, p.IsActive, p.SpecialActions,
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
 	return p, err
 }
 
 func (r *sqlProductRepository) Update(p *models.Product) (*models.Product, error) {
 	err := r.db.QueryRow(
-		`UPDATE products SET category_id=$1, name=$2, description=$3, price=$4, image_url=$5, stock=$6, original_price=$7, stock_unlimited=$8, is_active=$9, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$10
-		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.ID,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt)
+		`UPDATE products SET category_id=$1, name=$2, description=$3, price=$4, image_url=$5, stock=$6, original_price=$7, stock_unlimited=$8, is_active=$9, special_actions=$10, updated_at=CURRENT_TIMESTAMP
+		 WHERE id=$11
+		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at`,
+		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.SpecialActions, p.ID,
+	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
 	return p, err
 }
 
@@ -155,7 +155,7 @@ func (r *sqlProductRepository) Delete(id int64) error {
 
 func (r *sqlProductRepository) List(limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, created_at, updated_at
+		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
 		 FROM products ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -170,7 +170,7 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 	var products []*models.Product
 	for rows.Next() {
 		p := &models.Product{}
-		if err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		products = append(products, p)
@@ -320,11 +320,11 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 	defer tx.Rollback() //nolint:errcheck
 
 	err = tx.QueryRow(
-		`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at`,
-		order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status,
-	).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.CreatedAt, &order.UpdatedAt)
+		`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, referral_code)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
+		order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status, order.ReferralCode,
+	).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.ReferralCode, &order.CreatedAt, &order.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -349,8 +349,8 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
 	o := &models.Order{}
 	err := r.db.QueryRow(
-		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at FROM orders WHERE id = $1`, id,
-	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at FROM orders WHERE id = $1`, id,
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("order not found")
 	}
@@ -362,7 +362,7 @@ func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
 
 func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*models.Order, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
 		 FROM orders WHERE user_id = $1
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset,
@@ -375,7 +375,7 @@ func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*mode
 	var orders []*models.Order
 	for rows.Next() {
 		o := &models.Order{}
-		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, o)
@@ -390,19 +390,19 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 	o := &models.Order{}
 	err := r.db.QueryRow(
 		`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2
-		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at`,
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
 		status, id,
-	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
 	return o, err
 }
 
 func (r *sqlOrderRepository) GetGuestOrder(id int64, email, phone string) (*models.Order, error) {
 	o := &models.Order{}
 	err := r.db.QueryRow(
-		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
 		 FROM orders
 		 WHERE id = $1 AND is_guest = true AND guest_email = $2 AND guest_phone = $3`, id, email, phone,
-	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt)
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("guest order not found")
 	}
@@ -414,7 +414,7 @@ func (r *sqlOrderRepository) GetGuestOrder(id int64, email, phone string) (*mode
 
 func (r *sqlOrderRepository) ListAll(limit, offset int) ([]*models.Order, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, created_at, updated_at
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
 		 FROM orders
 		 ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
@@ -427,7 +427,7 @@ func (r *sqlOrderRepository) ListAll(limit, offset int) ([]*models.Order, error)
 	var orders []*models.Order
 	for rows.Next() {
 		o := &models.Order{}
-		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, o)

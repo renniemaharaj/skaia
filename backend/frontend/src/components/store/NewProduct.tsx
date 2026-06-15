@@ -24,6 +24,9 @@ export const NewProduct = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [specialActions, setSpecialActions] = useState<{type: string, value: string}[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+
   useEffect(() => {
     // Fetch fresh categories from API
     apiRequest("/store/categories")
@@ -37,6 +40,10 @@ export const NewProduct = () => {
         }
       })
       .catch((err) => console.error("Failed to load categories:", err));
+
+    apiRequest("/users/roles")
+      .then((res) => setAvailableRoles(Array.isArray(res) ? res : []))
+      .catch((err) => console.error("Failed to load roles:", err));
   }, []);
 
   useEffect(() => {
@@ -71,6 +78,7 @@ export const NewProduct = () => {
           stock_unlimited: formData.stock_unlimited,
           image_url: formData.image_url,
           is_active: formData.is_active,
+          special_actions: JSON.stringify(specialActions.filter(a => a.value !== "")),
         }),
       });
 
@@ -272,6 +280,78 @@ export const NewProduct = () => {
           >
             Active (visible to players)
           </label>
+        </div>
+
+        <div className="form-group" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
+          <label className="form-label">Special Actions on Purchase</label>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem", marginTop: "-0.25rem" }}>
+            Add digital assets or perks to give users when they buy this product.
+          </p>
+          {specialActions.map((action, idx) => (
+            <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+              <select 
+                className="form-input" 
+                style={{ flex: 1 }}
+                value={action.type} 
+                onChange={e => {
+                    const newActions = [...specialActions];
+                    newActions[idx].type = e.target.value;
+                    newActions[idx].value = "";
+                    setSpecialActions(newActions);
+                }}
+              >
+                <option value="role">Assign Role</option>
+                <option value="credit">Give Store Credit (cents)</option>
+              </select>
+              
+              {action.type === "role" ? (
+                  <select 
+                    className="form-input" 
+                    style={{ flex: 2 }}
+                    value={action.value} 
+                    onChange={e => {
+                        const newActions = [...specialActions];
+                        newActions[idx].value = e.target.value;
+                        setSpecialActions(newActions);
+                    }}
+                  >
+                    <option value="">Select Role...</option>
+                    {availableRoles.map(r => (
+                        <option key={r.id} value={r.name}>{r.name}</option>
+                    ))}
+                  </select>
+              ) : (
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ flex: 2 }}
+                    placeholder="Amount in cents"
+                    value={action.value} 
+                    onChange={e => {
+                        const newActions = [...specialActions];
+                        newActions[idx].value = e.target.value;
+                        setSpecialActions(newActions);
+                    }}
+                  />
+              )}
+              <button 
+                type="button" 
+                className="btn-admin-icon" 
+                style={{ color: "var(--color-danger)" }}
+                onClick={() => setSpecialActions(specialActions.filter((_, i) => i !== idx))}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          ))}
+          <button 
+            type="button" 
+            className="btn btn-secondary" 
+            style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
+            onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
+          >
+            + Add Action
+          </button>
         </div>
       </div>
     </div>

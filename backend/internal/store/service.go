@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,10 +25,11 @@ type Service struct {
 	WalletRepo    WalletRepository
 	cache         *ProductCache
 	provider      PaymentProvider
+	users         UserStore
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider, users UserStore) *Service {
 	return &Service{
 		categories:    cats,
 		products:      products,
@@ -39,6 +42,7 @@ func NewService(cats CategoryRepository, products ProductRepository, cart CartRe
 		WalletRepo:    wallet,
 		cache:         cache,
 		provider:      provider,
+		users:         users,
 	}
 }
 
@@ -231,6 +235,7 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		BillingInfo:      req.BillingInfo,
 		TotalPrice:       total,
 		Status:           "pending",
+		ReferralCode:     req.ReferralCode,
 	}, orderItems)
 	if err != nil {
 		return nil, fmt.Errorf("create order: %w", err)
@@ -337,18 +342,60 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		order = updatedOrder
 	}
 
-	// on success: decrement stock and clear cart
+	// on success: decrement stock, clear cart, fulfill special actions, reward referrer
 	if payStatus == "succeeded" {
 		for _, oi := range orderItems {
-			if p, err := s.products.GetByID(oi.ProductID); err == nil && !p.StockUnlimited {
-				p.Stock -= oi.Quantity
-				if p.Stock < 0 {
-					p.Stock = 0
+			if p, err := s.products.GetByID(oi.ProductID); err == nil {
+				if !p.StockUnlimited {
+					p.Stock -= oi.Quantity
+					if p.Stock < 0 {
+						p.Stock = 0
+					}
+					s.products.Update(p) //nolint:errcheck
+					s.cache.Invalidate(oi.ProductID)
 				}
-				s.products.Update(p) //nolint:errcheck
-				s.cache.Invalidate(oi.ProductID)
+				
+				// Fulfill special actions
+				if !req.IsGuest && p.SpecialActions != "" && p.SpecialActions != "[]" {
+					var actions []struct {
+						Type  string `json:"type"`
+						Value string `json:"value"`
+					}
+					importJson := true // just conceptually since we use json below
+					_ = importJson
+					if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
+						for _, act := range actions {
+							if act.Type == "role" {
+								_ = s.users.AddRoleByName(userID, act.Value)
+							} else if act.Type == "credit" {
+								amt, _ := strconv.ParseInt(act.Value, 10, 64)
+								if amt > 0 {
+									_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+										UserID:      userID,
+										Amount:      amt * int64(oi.Quantity),
+										Type:        "credit",
+										Description: fmt.Sprintf("Received from order #%d", order.ID),
+									})
+								}
+							}
+						}
+					}
+				}
 			}
 		}
+		
+		// Reward referrer
+		if !req.IsGuest && req.ReferralCode != "" {
+			if refUser, err := s.users.GetByUsername(req.ReferralCode); err == nil && refUser.ID != userID {
+				_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+					UserID:      refUser.ID,
+					Amount:      50, // 50 cents
+					Type:        "credit",
+					Description: fmt.Sprintf("Referral reward for order #%d", order.ID),
+				})
+			}
+		}
+		
 		_ = s.cart.ClearCart(userID)
 	}
 
