@@ -368,7 +368,7 @@ export const OrdersPage = () => {
                                 >
                                   {order.status === "pending" && (
                                     <button
-                                      className="btn btn-secondary btn-sm"
+                                      className="btn-admin-icon"
                                       onClick={() =>
                                         updateOrderStatus(order.id, "accepted")
                                       }
@@ -378,7 +378,7 @@ export const OrdersPage = () => {
                                     </button>
                                   )}
                                   <button
-                                    className="btn btn-primary btn-sm"
+                                    className="btn-admin-icon"
                                     onClick={() =>
                                       updateOrderStatus(
                                         order.id,
@@ -396,11 +396,7 @@ export const OrdersPage = () => {
                                     <CheckCircle size={16} />
                                   </button>
                                   <button
-                                    className="btn btn-secondary btn-sm"
-                                    style={{
-                                      color: "var(--color-danger)",
-                                      borderColor: "var(--color-danger)",
-                                    }}
+                                    className="btn-admin-icon btn-danger"
                                     onClick={() => deleteOrder(order.id)}
                                     title="Delete Order"
                                   >
