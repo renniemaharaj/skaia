@@ -171,34 +171,51 @@ export const CartPage = () => {
   if (successOrder) {
     return (
       <div className="cart-page-container">
-        <div className="card card--store" style={{ padding: "2rem", textAlign: "center" }}>
-          <CheckCircle2 size={64} style={{ color: "var(--color-success)", margin: "0 auto 1rem" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h2>Order Submitted!</h2>
-          <p>Your order ID is <strong>#{successOrder.id}</strong>.</p>
-          <div style={{ marginTop: "2rem", textAlign: "left" }}>
-            <h3>Order Status: <span style={{ color: "var(--color-primary)", textTransform: "capitalize" }}>{successOrder.status}</span></h3>
-            <p>Submitted on: {new Date(successOrder.created_at).toLocaleString()}</p>
-            {successOrder.status === "pending" && <p>Estimated time until ready: <strong>Processing...</strong></p>}
-            {successOrder.status === "accepted" && <p>Your order is being prepared and will be dispatched soon.</p>}
-            
-            <h4 style={{ marginTop: "1.5rem" }}>Order Items</h4>
-            <div className="cart-items" style={{ marginTop: "1rem" }}>
-              {successCartItems.map((item) => {
-                const product = getProduct(item.product_id);
-                return (
-                  <div key={item.product_id} className="card card--outlined" style={{ padding: "1rem", display: "flex", justifyContent: "space-between" }}>
-                    <span>{product?.name} x {item.quantity}</span>
-                    <span>${((product?.price || 0) * item.quantity).toFixed(2)}</span>
+          <Link to="/store" className="btn btn-primary">Back to Store</Link>
+        </div>
+        <div className="cart-content">
+          <div className="cart-items">
+            <h4 style={{ marginBottom: "1rem" }}>Order Items</h4>
+            {successCartItems.map((item) => {
+              const product = getProduct(item.product_id);
+              return (
+                <div key={item.product_id} className="card card--store cart-item">
+                  {product?.image_url && (
+                    <img src={product.image_url} alt={product.name} className="cart-item-image" />
+                  )}
+                  <div className="cart-item-info">
+                    <h3>{product?.name}</h3>
+                    <p className="cart-item-price">${(product?.price || 0).toFixed(2)}</p>
                   </div>
-                );
-              })}
-              <div style={{ marginTop: "1rem", textAlign: "right" }}>
-                <strong>Total: ${(successOrder.total_price || 0).toFixed(2)}</strong>
-              </div>
+                  <div className="cart-item-quantity" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+                    <span>Quantity: {item.quantity}</span>
+                    <strong>${((product?.price || 0) * item.quantity).toFixed(2)}</strong>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="card card--outlined cart-summary" style={{ alignSelf: "start", position: "sticky", top: "2rem" }}>
+            <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+              <CheckCircle2 size={48} style={{ color: "var(--color-success)", margin: "0 auto 0.5rem" }} />
+              <h3>Your order ID is #{successOrder.id}</h3>
+            </div>
+            <div style={{ marginBottom: "1.5rem" }}>
+              <p style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <span>Status:</span>
+                <span style={{ color: "var(--color-primary)", textTransform: "capitalize", fontWeight: "bold" }}>{successOrder.status}</span>
+              </p>
+              <p style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                <span>Submitted:</span>
+                <span>{new Date(successOrder.created_at).toLocaleString()}</span>
+              </p>
             </div>
             
-            <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
-              <Link to="/store" className="btn btn-primary">Back to Store</Link>
+            <div className="cart-total" style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border-color)", paddingTop: "1rem", marginTop: "1rem" }}>
+              <span>Total Paid:</span>
+              <span>${(successOrder.total_price || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>

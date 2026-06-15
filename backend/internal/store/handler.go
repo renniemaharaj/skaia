@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	ievents "github.com/skaia/backend/internal/events"
@@ -967,6 +968,10 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.svc.Checkout(userID, &req)
 	if err != nil {
 		log.Printf("store.checkout: %v", err)
+		if strings.Contains(err.Error(), "insufficient stock") {
+			utils.WriteError(w, http.StatusConflict, "The order failed because someone else had already checked out and the product is no longer in stock.")
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, "checkout failed")
 		return
 	}

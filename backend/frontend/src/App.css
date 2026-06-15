@@ -119,9 +119,7 @@
   border: 2px solid var(--primary-color);
   border-radius: var(--card-radius);
   padding: var(--card-padding);
-  text-align: right;
   max-width: 400px;
-  margin-left: auto;
 }
 
 .cart-summary h3 {

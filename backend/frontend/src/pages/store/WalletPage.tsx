@@ -176,7 +176,7 @@ export const WalletPage = () => {
             )}
             <div>
               <h2 style={{ margin: 0, fontSize: "1.6rem", display: "flex", alignItems: "center", gap: "8px" }}>
-                <LayoutDashboard size={26} /> {walletOwner ? `${walletOwner.display_name}'s Dashboard` : "Dashboard"}
+                <LayoutDashboard size={26} /> {walletOwner ? `${walletOwner.display_name}'s Wallet` : "Wallet"}
               </h2>
               <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
                 <Clock size={14} /> Server Time: {serverTime.toLocaleTimeString()}

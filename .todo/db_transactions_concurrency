@@ -1,0 +1,23 @@
+# Database Transactions & Concurrency Control Plan
+
+## 1. Enforcing Database Transactions for Repositories
+Currently, many repositories in the backend (`WalletRepository`, `OrderRepository`, `ProductRepository`) execute multi-step database mutations sequentially. If one step fails (e.g., creating an order succeeds but clearing the cart fails), it creates an inconsistent database state.
+
+### Action Plan
+- **Implement a Transaction Wrapper:** Create a generic `WithTransaction(ctx, func(tx *sql.Tx) error)` helper in the `database` package.
+- **Refactor Repositories:** Ensure all repository interfaces (e.g., `CreateOrder`, `ClearCart`, `DeductBalance`) can operate within an ongoing `*sql.Tx`.
+- **Wrap Service Methods:** Ensure critical services like `Checkout()` are fully wrapped in a single SQL transaction. It must be an "all-or-nothing" execution.
+
+## 2. Preventing Race Conditions & Blocking Financial Transactions
+When multiple requests hit the `/checkout` or wallet routes simultaneously, race conditions can occur, leading to double-spending or over-selling stock.
+
+### Action Plan
+- **Atomic Operations:** Instead of `SELECT stock` followed by `UPDATE stock`, we must strictly use atomic updates: 
+  `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1`. If `RowsAffected == 0`, we abort the transaction due to insufficient stock.
+- **Row-Level Locking:** Use `SELECT ... FOR UPDATE` when querying user balances during a transaction to block other concurrent deductions from executing until the current transaction commits.
+- **Strict Database Constraints:** Add `CHECK (amount >= 0)` constraints where applicable to rely on the database engine to reject negative balances.
+- **Idempotency Keys:** Ensure that payment and order requests use an idempotency key to prevent double-charging users during network retries.
+
+### Priority Targets
+1. `service.Checkout()`: Needs to deduct stock, charge the wallet/card, create the order, create order items, and clear the cart in **one synchronized atomic lock/transaction**.
+2. `service.TopUpWallet()` & `WalletRepo.GetBalance()`: Must be fortified to completely eliminate concurrent double-spending logic.
