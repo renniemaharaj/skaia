@@ -22,6 +22,7 @@ import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { SkeletonCard } from "../ui/SkeletonCard";
 import SpotlightCard from "../ui/SpotlightCard";
+import { formatCents } from "../../utils/money";
 
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
@@ -238,7 +239,12 @@ export const Store: React.FC = () => {
             <>
               <button
                 className="btn-admin-action"
-                style={{ marginLeft: "auto", background: "var(--bg-secondary)", border: "1px solid var(--border-color)", color: "var(--text-primary)" }}
+                style={{
+                  marginLeft: "auto",
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--border-color)",
+                  color: "var(--text-primary)",
+                }}
                 onClick={() => navigate(`/wallet/${crypto.randomUUID()}`)}
                 title="My Wallet"
               >
@@ -259,8 +265,6 @@ export const Store: React.FC = () => {
 
       {/* Products */}
       <div className="products-section">
-
-
         {loading ? (
           <div className="products-grid">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -276,7 +280,16 @@ export const Store: React.FC = () => {
                 spotlightColor="rgba(255,255,255,0.15)"
                 style={{ padding: 0 }}
               >
-                <Link to={`/store/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <Link
+                  to={`/store/product/${product.id}`}
+                  style={{
+                    textDecoration: "none",
+                    color: "inherit",
+                    display: "flex",
+                    flexDirection: "column",
+                    flexGrow: 1,
+                  }}
+                >
                   {product.image_url ? (
                     <div className="product-image">
                       <img
@@ -301,72 +314,93 @@ export const Store: React.FC = () => {
                     </div>
                   )}
                   <div className="product-content" style={{ flexGrow: 1 }}>
-                    <h3 className="product-title" style={{ transition: 'color 0.2s ease' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary-color)'} onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}>
+                    <h3
+                      className="product-title"
+                      style={{ transition: "color 0.2s ease" }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.color = "var(--primary-color)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "inherit")
+                      }
+                    >
                       {product.name}
                     </h3>
-                  <p className="product-description">{product.description}</p>
-                  {!product.stock_unlimited &&
-                    product.stock <= 5 &&
-                    product.stock > 0 && (
-                      <p className="product-stock-warning">
-                        Only {product.stock} left!
-                      </p>
+                    <p className="product-description">{product.description}</p>
+                    {!product.stock_unlimited &&
+                      product.stock <= 5 &&
+                      product.stock > 0 && (
+                        <p className="product-stock-warning">
+                          Only {product.stock} left!
+                        </p>
+                      )}
+                    {!product.stock_unlimited && product.stock === 0 && (
+                      <p className="product-out-of-stock">Out of stock</p>
                     )}
-                  {!product.stock_unlimited && product.stock === 0 && (
-                    <p className="product-out-of-stock">Out of stock</p>
-                  )}
-                  <div className="product-footer">
-                    <div>
-                      {product.original_price != null &&
-                        product.original_price > product.price && (
-                          <span
-                            style={{
-                              display: "block",
-                              fontSize: "0.85rem",
-                              color: "var(--text-secondary)",
-                              textDecoration: "line-through",
+                    <div className="product-footer">
+                      <div>
+                        {product.original_price != null &&
+                          product.original_price > product.price && (
+                            <span
+                              style={{
+                                display: "block",
+                                fontSize: "0.85rem",
+                                color: "var(--text-secondary)",
+                                textDecoration: "line-through",
+                              }}
+                            >
+                              {formatCents(product.original_price ?? 0)}
+                            </span>
+                          )}
+                        <span className="product-price">
+                          {formatCents(product.price ?? 0)}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        {canEditProduct && (
+                          <button
+                            className="action-btn edit-btn"
+                            title="Edit product"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setEditingProduct(product);
                             }}
                           >
-                            ${product.original_price.toFixed(2)}
-                          </span>
+                            <Edit2 size={16} />
+                          </button>
                         )}
-                      <span className="product-price">
-                        ${product.price.toFixed(2)}
-                      </span>
-                    </div>
-                    <div style={{ display: "flex", gap: "6px" }}>
-                      {canEditProduct && (
+                        {canDeleteProduct && (
+                          <button
+                            className="action-btn danger"
+                            title="Delete product"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteProduct(product.id);
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                         <button
-                          className="action-btn edit-btn"
-                          title="Edit product"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProduct(product); }}
+                          className="btn-add-to-cart"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleAddToCart(product);
+                          }}
+                          disabled={
+                            !product.stock_unlimited && product.stock === 0
+                          }
                         >
-                          <Edit2 size={16} />
+                          {!product.stock_unlimited && product.stock === 0
+                            ? "Sold Out"
+                            : "Add"}
                         </button>
-                      )}
-                      {canDeleteProduct && (
-                        <button
-                          className="action-btn danger"
-                          title="Delete product"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteProduct(product.id); }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                      <button
-                        className="btn-add-to-cart"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product); }}
-                        disabled={
-                          !product.stock_unlimited && product.stock === 0
-                        }
-                      >
-                        {!product.stock_unlimited && product.stock === 0
-                          ? "Sold Out"
-                          : "Add"}
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
                 </Link>
               </SpotlightCard>
             ))}
@@ -384,35 +418,48 @@ export const Store: React.FC = () => {
         )}
       </div>
 
-      {selectedImage && typeof document !== "undefined" && createPortal(
-        <div
-          className="up-upload-lightbox"
-          onClick={() => setSelectedImage(null)}
-          style={{
-            position: "fixed",
-            top: 0, left: 0, right: 0, bottom: 0,
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.85)"
-          }}
-        >
+      {selectedImage &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            className="up-upload-lightbox-content"
-            onClick={(e) => e.stopPropagation()}
+            className="up-upload-lightbox"
+            onClick={() => setSelectedImage(null)}
             style={{
-              maxWidth: "90vw",
-              maxHeight: "90vh",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 9999,
               display: "flex",
-              flexDirection: "column"
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.85)",
             }}
           >
-            <img src={selectedImage} alt="Preview" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-          </div>
-        </div>,
-        document.body
-      )}
+            <div
+              className="up-upload-lightbox-content"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: "90vw",
+                maxHeight: "90vh",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <img
+                src={selectedImage}
+                alt="Preview"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {/* Admin dialogs */}
       {editingProduct && (

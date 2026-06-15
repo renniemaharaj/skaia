@@ -21,6 +21,7 @@ import {
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { formatCents } from "../../utils/money";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -241,7 +242,7 @@ export const CartPage = () => {
                   <div className="cart-item-info">
                     <h3>{product?.name}</h3>
                     <p className="cart-item-price">
-                      ${((product?.price ?? 0) / 100).toFixed(2)}
+                      {formatCents(product?.price ?? 0)}
                     </p>
                   </div>
                   <div
@@ -257,10 +258,7 @@ export const CartPage = () => {
                       Qty: {item.quantity}
                     </span>
                     <strong style={{ color: "var(--text-primary)" }}>
-                      $
-                      {(((product?.price ?? 0) / 100) * item.quantity).toFixed(
-                        2,
-                      )}
+                      {formatCents((product?.price ?? 0) * item.quantity)}
                     </strong>
                   </div>
                 </div>
@@ -293,7 +291,7 @@ export const CartPage = () => {
 
             <div className="cart-total-row">
               <span>Total Paid</span>
-              <span>${(successOrder.total_price || 0).toFixed(2)}</span>
+              <span>{formatCents(successOrder.total_price || 0)}</span>
             </div>
           </div>
         </div>
@@ -351,7 +349,9 @@ export const CartPage = () => {
                 )}
                 <div className="cart-item-info">
                   <h3>{displayName}</h3>
-                  <p className="cart-item-price">${displayPrice.toFixed(2)}</p>
+                  <p className="cart-item-price">
+                    {formatCents(product?.price ?? 0)}
+                  </p>
                 </div>
                 <div className="cart-item-controls">
                   <input

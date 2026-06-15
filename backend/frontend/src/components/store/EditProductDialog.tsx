@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
+import { centsToDollars } from "../../utils/money";
 import type { Product, StoreCategory } from "../../atoms/store";
-
 
 interface EditProductDialogProps {
   isOpen: boolean;
@@ -24,7 +24,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
     category_id: String(product.category_id),
     name: product.name,
     description: product.description,
-    price: String(product.price),
+    // display price in dollars for editing (product.price is stored in cents)
+    price: centsToDollars(product.price ?? 0).toFixed(2),
     stock: String(product.stock),
     stock_unlimited: product.stock_unlimited ?? false,
     image_url: product.image_url ?? "",
@@ -32,7 +33,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [specialActions, setSpecialActions] = useState<{type: string, value: string}[]>([]);
+  const [specialActions, setSpecialActions] = useState<
+    { type: string; value: string }[]
+  >([]);
   const [availableRoles, setAvailableRoles] = useState<any[]>([]);
 
   useEffect(() => {
@@ -47,18 +50,22 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
       category_id: String(product.category_id),
       name: product.name,
       description: product.description,
-      price: String(product.price),
+      price: centsToDollars(product.price ?? 0).toFixed(2),
       stock: String(product.stock),
       stock_unlimited: product.stock_unlimited ?? false,
       image_url: product.image_url ?? "",
       is_active: product.is_active,
     });
-    
+
     let initialActions: any[] = [];
-    if (product.special_actions && product.special_actions !== "[]" && product.special_actions !== "") {
-        try {
-            initialActions = JSON.parse(product.special_actions);
-        } catch(e) {}
+    if (
+      product.special_actions &&
+      product.special_actions !== "[]" &&
+      product.special_actions !== ""
+    ) {
+      try {
+        initialActions = JSON.parse(product.special_actions);
+      } catch (e) {}
     }
     setSpecialActions(initialActions);
   }, [product]);
@@ -83,7 +90,9 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           stock_unlimited: formData.stock_unlimited,
           image_url: formData.image_url,
           is_active: formData.is_active,
-          special_actions: JSON.stringify(specialActions.filter(a => a.value !== "")),
+          special_actions: JSON.stringify(
+            specialActions.filter((a) => a.value !== ""),
+          ),
         }),
       });
 
@@ -339,73 +348,102 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
             </label>
           </div>
 
-          <div className="form-group" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
+          <div
+            className="form-group"
+            style={{
+              marginTop: "1rem",
+              borderTop: "1px solid var(--border-color)",
+              paddingTop: "1rem",
+            }}
+          >
             <label className="form-label">Special Actions on Purchase</label>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem", marginTop: "-0.25rem" }}>
-              Add digital assets or perks to give users when they buy this product.
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: "var(--text-secondary)",
+                marginBottom: "0.5rem",
+                marginTop: "-0.25rem",
+              }}
+            >
+              Add digital assets or perks to give users when they buy this
+              product.
             </p>
             {specialActions.map((action, idx) => (
-              <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-                <select 
-                  className="form-input" 
+              <div
+                key={idx}
+                style={{ display: "flex", gap: "10px", marginBottom: "10px" }}
+              >
+                <select
+                  className="form-input"
                   style={{ flex: 1 }}
-                  value={action.type} 
-                  onChange={e => {
-                      const newActions = [...specialActions];
-                      newActions[idx].type = e.target.value;
-                      newActions[idx].value = "";
-                      setSpecialActions(newActions);
+                  value={action.type}
+                  onChange={(e) => {
+                    const newActions = [...specialActions];
+                    newActions[idx].type = e.target.value;
+                    newActions[idx].value = "";
+                    setSpecialActions(newActions);
                   }}
                 >
                   <option value="role">Assign Role</option>
                   <option value="credit">Give Store Credit (cents)</option>
                 </select>
-                
+
                 {action.type === "role" ? (
-                    <select 
-                      className="form-input" 
-                      style={{ flex: 2 }}
-                      value={action.value} 
-                      onChange={e => {
-                          const newActions = [...specialActions];
-                          newActions[idx].value = e.target.value;
-                          setSpecialActions(newActions);
-                      }}
-                    >
-                      <option value="">Select Role...</option>
-                      {availableRoles.map(r => (
-                          <option key={r.id} value={r.name}>{r.name}</option>
-                      ))}
-                    </select>
+                  <select
+                    className="form-input"
+                    style={{ flex: 2 }}
+                    value={action.value}
+                    onChange={(e) => {
+                      const newActions = [...specialActions];
+                      newActions[idx].value = e.target.value;
+                      setSpecialActions(newActions);
+                    }}
+                  >
+                    <option value="">Select Role...</option>
+                    {availableRoles.map((r) => (
+                      <option key={r.id} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
-                    <input 
-                      type="number" 
-                      className="form-input" 
-                      style={{ flex: 2 }}
-                      placeholder="Amount in cents"
-                      value={action.value} 
-                      onChange={e => {
-                          const newActions = [...specialActions];
-                          newActions[idx].value = e.target.value;
-                          setSpecialActions(newActions);
-                      }}
-                    />
+                  <input
+                    type="number"
+                    className="form-input"
+                    style={{ flex: 2 }}
+                    placeholder="Amount in cents"
+                    value={action.value}
+                    onChange={(e) => {
+                      const newActions = [...specialActions];
+                      newActions[idx].value = e.target.value;
+                      setSpecialActions(newActions);
+                    }}
+                  />
                 )}
-                <button 
-                  type="button" 
-                  className="btn-admin-icon" 
+                <button
+                  type="button"
+                  className="btn-admin-icon"
                   style={{ color: "var(--color-danger)" }}
-                  onClick={() => setSpecialActions(specialActions.filter((_, i) => i !== idx))}
+                  onClick={() =>
+                    setSpecialActions(
+                      specialActions.filter((_, i) => i !== idx),
+                    )
+                  }
                 >
                   <X size={18} />
                 </button>
               </div>
             ))}
-            <button 
-              type="button" 
-              className="btn btn-secondary" 
+            <button
+              type="button"
+              className="btn btn-secondary"
               style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
-              onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
+              onClick={() =>
+                setSpecialActions([
+                  ...specialActions,
+                  { type: "role", value: "" },
+                ])
+              }
             >
               + Add Action
             </button>
@@ -413,6 +451,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };

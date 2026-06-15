@@ -342,7 +342,8 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	price := int64(math.Round(req.Price))
+	// req.Price is provided in dollars (float). Convert to cents for storage.
+	price := int64(math.Round(req.Price * 100))
 	if price < 0 {
 		utils.WriteError(w, http.StatusBadRequest, "price must be >= 0")
 		return
@@ -427,7 +428,8 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		existing.Description = *req.Description
 	}
 	if req.Price != nil {
-		newPrice := int64(math.Round(*req.Price))
+		// req.Price is dollars; convert to cents before comparing/storing
+		newPrice := int64(math.Round(*req.Price * 100))
 		if newPrice < existing.Price {
 			// Price dropped - record old price as original_price for strike-through display
 			old := existing.Price

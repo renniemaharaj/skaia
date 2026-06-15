@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { centsToDollars } from "../utils/money";
 
 export interface Product {
   id: string;
@@ -106,10 +107,11 @@ export const filteredProductsAtom = atom((get) => {
 export const cartTotalAtom = atom((get) => {
   const items = get(storeCartItemsAtom);
   const products = get(productsAtom);
-  return items.reduce((total, item) => {
+  const cents = items.reduce((total, item) => {
     const product = products.find((p) => p.id === item.product_id);
     return total + (product?.price ?? 0) * item.quantity;
   }, 0);
+  return centsToDollars(cents);
 });
 
 export const cartItemCountAtom = atom((get) => {
