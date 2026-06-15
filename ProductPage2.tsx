@@ -12,14 +12,7 @@ import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import CommentSection from "../../components/comments/CommentSection";
 import StarRating from "../../components/ui/StarRating";
-import {
-  ShoppingCart,
-  ArrowLeft,
-  Package,
-  Share2,
-  Edit2,
-  ChevronRight,
-} from "lucide-react";
+import { ShoppingCart, ArrowLeft, Package, Share2, Edit2, ChevronRight } from "lucide-react";
 import { EditProductDialog } from "../../components/store/EditProductDialog";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { layoutModeAtom } from "../../atoms/layoutMode";
@@ -49,8 +42,7 @@ export const ProductPage = () => {
   const [guestSandboxMode] = useGuestSandboxMode();
 
   const canEditProduct =
-    currentUser?.permissions?.includes("store.product-edit") ||
-    guestSandboxMode;
+    currentUser?.permissions?.includes("store.product-edit") || guestSandboxMode;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -252,11 +244,7 @@ export const ProductPage = () => {
             </div>
 
             <div className="product-page-rating-summary">
-              <StarRating
-                rating={Math.round(averageRating)}
-                disabled
-                size={15}
-              />
+              <StarRating rating={Math.round(averageRating)} disabled size={15} />
               <span>
                 {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
               </span>
@@ -265,9 +253,7 @@ export const ProductPage = () => {
             <p className="product-page-description">{product.description}</p>
 
             <div className="product-page-stock">
-              {product.stock_unlimited
-                ? "In Stock"
-                : `${product.stock} available`}
+              {product.stock_unlimited ? "In Stock" : `${product.stock} available`}
             </div>
 
             <div className="product-page-actions-row">
@@ -295,11 +281,7 @@ export const ProductPage = () => {
                 disabled={!product.is_active || isSoldOut || addingToCart}
               >
                 <ShoppingCart size={14} />
-                {addingToCart
-                  ? "Adding…"
-                  : isSoldOut
-                    ? "Sold Out"
-                    : "Add to Cart"}
+                {addingToCart ? "Adding…" : isSoldOut ? "Sold Out" : "Add to Cart"}
               </button>
             </div>
           </div>
@@ -325,16 +307,8 @@ export const ProductPage = () => {
                   </div>
                 ))
               ) : similarProducts.length === 0 ? (
-                <div
-                  className="similar-skeleton-item"
-                  style={{ borderBottom: "none", paddingTop: "0.5rem" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
+                <div className="similar-skeleton-item" style={{ borderBottom: "none", paddingTop: "0.5rem" }}>
+                  <span style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
                     No similar products found.
                   </span>
                 </div>
@@ -396,9 +370,7 @@ export const ProductPage = () => {
           onSuccess={() => {
             setLoadingProduct(true);
             apiRequest<Product>(`/store/products/${id}`)
-              .then((p) => {
-                if (p) setProduct(p);
-              })
+              .then((p) => { if (p) setProduct(p); })
               .finally(() => setLoadingProduct(false));
           }}
         />
@@ -437,11 +409,7 @@ export const ProductPage = () => {
               <img
                 src={selectedImage}
                 alt="Preview"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
+                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
               />
             </div>
           </div>,
