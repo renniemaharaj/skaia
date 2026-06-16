@@ -33,6 +33,7 @@ import (
 	igrengo "github.com/skaia/backend/internal/grengo"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	ijwt "github.com/skaia/backend/internal/jwt"
+	immediascraper "github.com/skaia/backend/internal/mediascraper"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
@@ -42,7 +43,6 @@ import (
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
-	immediascraper "github.com/skaia/backend/internal/mediascraper"
 	defconmw "github.com/skaia/backend/middleware"
 	"github.com/skaia/backend/ratelimit"
 )
@@ -294,6 +294,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	forumCache := iforum.NewThreadCacheWithClient(rdb)
 	forumSvc := iforum.NewService(forumCatRepo, forumThreadRepo, forumCommentRepo, forumCache)
 
+	emailSender := iemail.NewSenderFromEnv()
+
+	inboxRepo := iinbox.NewRepository(db)
+	inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
+
+	inboxSender := iinbox.NewInboxSender(inboxSvc)
+
 	storeCatRepo := istore.NewCategoryRepository(db)
 	storeProdRepo := istore.NewProductRepository(db)
 	storeCartRepo := istore.NewCartRepository(db)
@@ -305,7 +312,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	storeWalletRepo := istore.NewWalletRepository(db)
 	storeCache := istore.NewProductCacheWithClient(rdb)
 	storeProv := istore.NewPaymentProvider()
-	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storePlanRepo, storeSubRepo, storeReviewRepo, storeWalletRepo, storeCache, storeProv, userSvc)
+	storeSvc := istore.NewService(storeCatRepo, storeProdRepo, storeCartRepo, storeOrdRepo, storePayRepo, storePlanRepo, storeSubRepo, storeReviewRepo, storeWalletRepo, storeCache, storeProv, userSvc, inboxSender)
 
 	origins := []string{}
 	if raw := os.Getenv("CORS_ORIGINS"); raw != "" {
@@ -637,16 +644,12 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return true, time.Duration(payload.Interval) * time.Second
 		})
 
-		emailSender := iemail.NewSenderFromEnv()
-
-		inboxRepo := iinbox.NewRepository(db)
-		inboxSvc := iinbox.NewService(inboxRepo, hub, userRepo)
 		analyticsRepo := ianalytics.NewRepository(db)
 		analyticsSvc := ianalytics.NewService(analyticsRepo)
 
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
-		iuser.NewHandler(userSvc, hub, dispatcher, inboxSvc, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 

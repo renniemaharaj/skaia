@@ -22,8 +22,8 @@ import (
 
 // Upload config.
 const (
-	uploadsDir  = "./uploads"
-	usersDir    = uploadsDir + "/users"
+	uploadsDir = "./uploads"
+	usersDir   = uploadsDir + "/users"
 )
 
 // userContentDir returns (and creates) ./uploads/users/{userID}/{subdir}.
@@ -32,9 +32,9 @@ func userContentDir(userID int64, subdir string) (string, error) {
 	return dir, os.MkdirAll(dir, 0755)
 }
 
-// NoreplyMessenger delivers automated inbox messages to users from the system account.
-type NoreplyMessenger interface {
-	SendNoreplyToUser(recipientID int64, content string) error
+// InboxSender is the shared interface for sending noreply inbox messages.
+type InboxSender interface {
+	SendSystemMessage(recipientID int64, content, messageType string) error
 }
 
 // Handler owns the HTTP layer for the user domain.
@@ -42,14 +42,14 @@ type Handler struct {
 	svc        *Service
 	hub        *ws.Hub
 	dispatcher *ievents.Dispatcher
-	noreply    NoreplyMessenger
+	inbox      InboxSender
 	email      *iemail.Sender
 }
 
 // NewHandler returns a Handler backed by the given Service and WebSocket Hub.
-func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, noreply NoreplyMessenger, emailSender *iemail.Sender) *Handler {
+func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, inboxSender InboxSender, emailSender *iemail.Sender) *Handler {
 	os.MkdirAll(usersDir, 0755) //nolint:errcheck
-	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, noreply: noreply, email: emailSender}
+	return &Handler{svc: svc, hub: hub, dispatcher: dispatcher, inbox: inboxSender, email: emailSender}
 }
 
 // Mount registers all user-domain routes onto r.
@@ -323,16 +323,16 @@ func (h *Handler) searchUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) searchMentions(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	
+
 	type MentionItem struct {
 		ID     string `json:"id"`
 		Type   string `json:"type"` // "user", "role", "special"
 		Name   string `json:"name"`
 		Avatar string `json:"avatar,omitempty"`
 	}
-	
+
 	var items []MentionItem
-	
+
 	// Add special tags
 	qLower := strings.ToLower(q)
 	if q == "" || strings.HasPrefix("here", qLower) {
@@ -341,7 +341,7 @@ func (h *Handler) searchMentions(w http.ResponseWriter, r *http.Request) {
 	if q == "" || strings.HasPrefix("everyone", qLower) {
 		items = append(items, MentionItem{ID: "special-everyone", Type: "special", Name: "everyone"})
 	}
-	
+
 	// Add roles
 	roles, err := h.svc.GetAllRoles()
 	if err == nil {
@@ -351,7 +351,7 @@ func (h *Handler) searchMentions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	
+
 	// Add users
 	var users []*models.User
 	if q == "" {
@@ -359,11 +359,11 @@ func (h *Handler) searchMentions(w http.ResponseWriter, r *http.Request) {
 	} else {
 		users, _ = h.svc.Search(q, 5, 0)
 	}
-	
+
 	for _, u := range users {
 		items = append(items, MentionItem{ID: "user-" + strconv.FormatInt(u.ID, 10), Type: "user", Name: u.Username, Avatar: u.AvatarURL})
 	}
-	
+
 	utils.WriteJSON(w, http.StatusOK, items)
 }
 

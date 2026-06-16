@@ -70,7 +70,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(optJWT).Post("/checkout", h.checkout)
 
 		// Order routes
-		r.With(optJWT).Post("/orders", h.createOrder)
+		r.With(jwt).Post("/orders", h.createOrder)
 		r.With(jwt).Get("/orders", h.listOrders)
 		r.With(jwt).Get("/orders/{id}", h.getOrder)
 		r.With(jwt).Put("/orders/{id}/status", h.updateOrderStatus)
@@ -818,42 +818,8 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		Meta:       map[string]interface{}{"total": total, "items": len(items)},
 	})
 
-	// Send an invoice/update message to the purchasing user (if signed-in)
 	if order.UserID != nil {
-		uid := *order.UserID
-		// dispatch so it's recorded and executed async (Fn runs after job handling)
-		h.dispatcher.Dispatch(ievents.Job{
-			UserID:   uid,
-			Activity: ievents.ActOrderCreated,
-			Resource: ievents.ResOrder,
-			IP:       ievents.ClientIP(r),
-			Fn: func() {
-				if h.hub == nil {
-					return
-				}
-				// Build invoice payload with product names
-				var itemsOut []map[string]interface{}
-				for _, oi := range order.Items {
-					name := ""
-					if p, err := h.svc.GetProduct(oi.ProductID); err == nil {
-						name = p.Name
-					}
-					itemsOut = append(itemsOut, map[string]interface{}{
-						"product_id": oi.ProductID,
-						"name":       name,
-						"quantity":   oi.Quantity,
-						"price":      oi.Price,
-					})
-				}
-				payload := map[string]interface{}{
-					"order_id":    order.ID,
-					"status":      order.Status,
-					"total_price": order.TotalPrice,
-					"items":       itemsOut,
-				}
-				h.hub.SendToUser(uid, buildStoreMsg("invoice", payload))
-			},
-		})
+		go h.svc.SendOrderInboxMessage(*order.UserID, order, "order_created")
 	}
 	utils.WriteJSON(w, http.StatusCreated, order)
 }
@@ -1009,42 +975,8 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		Meta:       map[string]interface{}{"status": req.Status},
 	})
 
-	// Notify purchaser with invoice-like message when order status changes
 	if order.UserID != nil {
-		uid := *order.UserID
-		h.dispatcher.Dispatch(ievents.Job{
-			UserID:   uid,
-			Activity: ievents.ActOrderStatusUpdated,
-			Resource: ievents.ResOrder,
-			IP:       ievents.ClientIP(r),
-			Meta:     map[string]interface{}{"status": req.Status},
-			Fn: func() {
-				if h.hub == nil {
-					return
-				}
-				// Build minimal invoice summary
-				var itemsOut []map[string]interface{}
-				for _, oi := range order.Items {
-					name := ""
-					if p, err := h.svc.GetProduct(oi.ProductID); err == nil {
-						name = p.Name
-					}
-					itemsOut = append(itemsOut, map[string]interface{}{
-						"product_id": oi.ProductID,
-						"name":       name,
-						"quantity":   oi.Quantity,
-						"price":      oi.Price,
-					})
-				}
-				payload := map[string]interface{}{
-					"order_id":    order.ID,
-					"status":      order.Status,
-					"total_price": order.TotalPrice,
-					"items":       itemsOut,
-				}
-				h.hub.SendToUser(uid, buildStoreMsg("invoice:update", payload))
-			},
-		})
+		go h.svc.SendOrderInboxMessage(*order.UserID, order, "order_status")
 	}
 	utils.WriteJSON(w, http.StatusOK, order)
 }

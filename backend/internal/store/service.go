@@ -25,11 +25,12 @@ type Service struct {
 	WalletRepo    WalletRepository
 	cache         *ProductCache
 	provider      PaymentProvider
+	inboxSender   models.InboxSender
 	users         UserStore
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider, users UserStore) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider, users UserStore, inboxSender models.InboxSender) *Service {
 	return &Service{
 		categories:    cats,
 		products:      products,
@@ -42,6 +43,7 @@ func NewService(cats CategoryRepository, products ProductRepository, cart CartRe
 		WalletRepo:    wallet,
 		cache:         cache,
 		provider:      provider,
+		inboxSender:   inboxSender,
 		users:         users,
 	}
 }
@@ -66,6 +68,19 @@ func (s *Service) UpdateCategory(cat *models.StoreCategory) (*models.StoreCatego
 
 func (s *Service) DeleteCategory(id int64) error {
 	return s.categories.Delete(id)
+}
+
+// SendOrderInboxMessage sends a system message to the user about their order status update.
+func (s *Service) SendOrderInboxMessage(ownerID int64, order *models.Order, msgType string) {
+	if s.inboxSender == nil {
+		return
+	}
+	cardJSON, _ := json.Marshal(map[string]interface{}{
+		"order_id":    order.ID,
+		"status":      order.Status,
+		"total_price": order.TotalPrice,
+	})
+	_ = s.inboxSender.SendSystemMessage(ownerID, string(cardJSON), msgType)
 }
 
 // Product methods

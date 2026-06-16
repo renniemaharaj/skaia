@@ -21,7 +21,7 @@ import {
   UserPlus,
   VolumeX,
   Volume2,
-  Check
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import UserAvatar from "../../components/user/UserAvatar";
@@ -263,7 +263,7 @@ const InboxPage = () => {
   const startConversation = async () => {
     try {
       if (selectedUsers.length === 0) return;
-      
+
       let body: any = {};
       if (selectedUsers.length === 1 && !groupTitle.trim()) {
         body = { target_user_id: Number(selectedUsers[0].id) };
@@ -313,21 +313,21 @@ const InboxPage = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeId) return;
-    
+
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
       setShowManager(true);
-      
+
       // Determine message type from mime
       let messageType = "file";
       if (file.type.startsWith("image/")) messageType = "image";
       else if (file.type.startsWith("video/")) messageType = "video";
       else if (file.type.startsWith("audio/")) messageType = "audio";
 
-      await uploader.upload(file, { 
+      await uploader.upload(file, {
         uploadType: messageType,
-        inboxConversationId: activeId
+        inboxConversationId: activeId,
       });
     } catch (err: any) {
       toast.error(err.message || "Failed to upload file");
@@ -336,7 +336,8 @@ const InboxPage = () => {
 
   const handleDeleteConversation = async () => {
     if (!activeId) return;
-    if (!await customConfirm("Delete this conversation and all messages?")) return;
+    if (!(await customConfirm("Delete this conversation and all messages?")))
+      return;
     try {
       await apiRequest(`/inbox/conversations/${activeId}`, {
         method: "DELETE",
@@ -355,9 +356,9 @@ const InboxPage = () => {
     const otherUserId = activeConv?.other_user?.id;
     if (!otherUserId) return;
     if (
-      !await customConfirm(
+      !(await customConfirm(
         `Block ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
-      )
+      ))
     )
       return;
     try {
@@ -384,9 +385,9 @@ const InboxPage = () => {
     const otherUserId = activeConv?.other_user?.id;
     if (!otherUserId) return;
     if (
-      !await customConfirm(
+      !(await customConfirm(
         `Unblock ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
-      )
+      ))
     )
       return;
     try {
@@ -410,7 +411,11 @@ const InboxPage = () => {
         method: "PUT",
         body: JSON.stringify({ locked }),
       });
-      setConversations((prev) => prev.map((c) => c.id.toString() === activeId ? { ...c, is_locked: locked } : c));
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id.toString() === activeId ? { ...c, is_locked: locked } : c,
+        ),
+      );
       toast.success(locked ? "Conversation locked" : "Conversation unlocked");
     } catch (e: any) {
       toast.error(e.message || "Failed to update lock state");
@@ -420,16 +425,39 @@ const InboxPage = () => {
   const handleKick = async (userId: string) => {
     if (!activeId) return;
     const isMe = userId === currentUser?.id?.toString();
-    if (!await customConfirm(isMe ? "Are you sure you want to leave this group?" : "Remove this participant?")) return;
+    if (
+      !(await customConfirm(
+        isMe
+          ? "Are you sure you want to leave this group?"
+          : "Remove this participant?",
+      ))
+    )
+      return;
     try {
-      await apiRequest(`/inbox/conversations/${activeId}/participants/${isMe ? "me" : userId}`, {
-        method: "DELETE",
-      });
+      await apiRequest(
+        `/inbox/conversations/${activeId}/participants/${isMe ? "me" : userId}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (isMe) {
-        setConversations((prev) => prev.filter((c) => c.id.toString() !== activeId));
+        setConversations((prev) =>
+          prev.filter((c) => c.id.toString() !== activeId),
+        );
         setActiveId(null);
       } else {
-        setConversations((prev) => prev.map((c) => c.id.toString() === activeId ? { ...c, participants: c.participants?.filter((p) => p.id.toString() !== userId) } : c));
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id.toString() === activeId
+              ? {
+                  ...c,
+                  participants: c.participants?.filter(
+                    (p) => p.id.toString() !== userId,
+                  ),
+                }
+              : c,
+          ),
+        );
       }
       toast.success(isMe ? "You left the group" : "Participant removed");
     } catch (e: any) {
@@ -440,10 +468,13 @@ const InboxPage = () => {
   const handleMute = async (userId: string, muted: boolean) => {
     if (!activeId) return;
     try {
-      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/mute`, {
-        method: "PUT",
-        body: JSON.stringify({ muted }),
-      });
+      await apiRequest(
+        `/inbox/conversations/${activeId}/participants/${userId}/mute`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ muted }),
+        },
+      );
       toast.success(muted ? "Participant muted" : "Participant unmuted");
     } catch (e: any) {
       toast.error(e.message || "Failed to mute participant");
@@ -453,10 +484,13 @@ const InboxPage = () => {
   const handleChangeRole = async (userId: string, role: string) => {
     if (!activeId) return;
     try {
-      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/role`, {
-        method: "PUT",
-        body: JSON.stringify({ role }),
-      });
+      await apiRequest(
+        `/inbox/conversations/${activeId}/participants/${userId}/role`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ role }),
+        },
+      );
       toast.success("Role updated");
     } catch (e: any) {
       toast.error(e.message || "Failed to update role");
@@ -528,20 +562,23 @@ const InboxPage = () => {
           </div>
 
           {showNewDm && (
-            <div className="inbox-new-dm" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div
+              className="inbox-new-dm"
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
               {selectedUsers.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                   {selectedUsers.map((u) => (
                     <span
                       key={u.id}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        background: 'var(--color-bg-secondary)',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        background: "var(--color-bg-secondary)",
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
                       }}
                     >
                       {u.display_name || u.username}
@@ -551,7 +588,13 @@ const InboxPage = () => {
                             prev.filter((x) => x.id !== u.id),
                           )
                         }
-                        style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0, color: 'var(--color-text-secondary)' }}
+                        style={{
+                          cursor: "pointer",
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          color: "var(--color-text-secondary)",
+                        }}
                       >
                         <X size={12} />
                       </button>
@@ -564,12 +607,12 @@ const InboxPage = () => {
                   type="text"
                   className="inbox-new-dm-input"
                   style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '8px',
-                    background: 'var(--color-bg-secondary)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-text)',
+                    width: "100%",
+                    padding: "8px",
+                    borderRadius: "8px",
+                    background: "var(--color-bg-secondary)",
+                    border: "1px solid var(--color-border)",
+                    color: "var(--color-text)",
                   }}
                   placeholder="Group Name (Optional)"
                   value={groupTitle}
@@ -582,8 +625,10 @@ const InboxPage = () => {
                     setSelectedUsers((prev) => [...prev, user]);
                   }
                 }}
-                excludeIds={selectedUsers.map(u => u.id)}
-                placeholder={selectedUsers.length > 0 ? "Add more users…" : "Search users…"}
+                excludeIds={selectedUsers.map((u) => u.id)}
+                placeholder={
+                  selectedUsers.length > 0 ? "Add more users…" : "Search users…"
+                }
                 onClose={() => {
                   setShowNewDm(false);
                   setSelectedUsers([]);
@@ -652,13 +697,58 @@ const InboxPage = () => {
                   <p className="inbox-loading">Loading messages…</p>
                 )}
                 {activeConv?.is_group && !loadingMsgs && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', margin: '24px 0 16px' }}>
-                    <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--color-text-secondary)', background: 'var(--bg-tertiary)', padding: '6px 12px', borderRadius: '8px', maxWidth: '85%' }}>
-                      <Lock size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4, marginBottom: 2 }} />
-                      This is the start of the group chat. No one outside of this chat can read or listen to them.
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "8px",
+                      margin: "24px 0 16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        textAlign: "center",
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                        background: "var(--bg-tertiary)",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        maxWidth: "85%",
+                      }}
+                    >
+                      <Lock
+                        size={10}
+                        style={{
+                          display: "inline",
+                          verticalAlign: "middle",
+                          marginRight: 4,
+                          marginBottom: 2,
+                        }}
+                      />
+                      This is the start of the group chat. No one outside of
+                      this chat can read or listen to them.
                     </div>
-                    <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--color-text-secondary)', background: 'var(--bg-tertiary)', padding: '6px 12px', borderRadius: '8px', maxWidth: '85%' }}>
-                      {activeConv?.participants?.find(p => p.role === 'owner')?.display_name || activeConv?.participants?.find(p => p.role === 'owner')?.username || 'Someone'} created this group "{activeConv?.title}". You and {Math.max(0, (activeConv?.participants?.length || 0) - 2)} others were added.
+                    <div
+                      style={{
+                        textAlign: "center",
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                        background: "var(--bg-tertiary)",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        maxWidth: "85%",
+                      }}
+                    >
+                      {activeConv?.participants?.find((p) => p.role === "owner")
+                        ?.display_name ||
+                        activeConv?.participants?.find(
+                          (p) => p.role === "owner",
+                        )?.username ||
+                        "Someone"}{" "}
+                      created this group "{activeConv?.title}". You and{" "}
+                      {Math.max(0, (activeConv?.participants?.length || 0) - 2)}{" "}
+                      others were added.
                     </div>
                   </div>
                 )}
@@ -682,7 +772,16 @@ const InboxPage = () => {
                     onClick={() => setShowEmojiPicker((v) => !v)}
                     title="Emoji"
                     type="button"
-                    disabled={isBlocked || activeConv?.is_locked || (activeConv?.is_group && !!activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
+                    disabled={
+                      isBlocked ||
+                      activeConv?.is_locked ||
+                      (activeConv?.is_group &&
+                        !!activeConv.participants?.find(
+                          (p) =>
+                            p.id.toString() === currentUser?.id?.toString() &&
+                            p.is_muted,
+                        ))
+                    }
                   >
                     <Smile size={18} />
                   </button>
@@ -691,7 +790,16 @@ const InboxPage = () => {
                     onClick={() => fileInputRef.current?.click()}
                     title="Attach file"
                     type="button"
-                    disabled={isBlocked || activeConv?.is_locked || (activeConv?.is_group && !!activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
+                    disabled={
+                      isBlocked ||
+                      activeConv?.is_locked ||
+                      (activeConv?.is_group &&
+                        !!activeConv.participants?.find(
+                          (p) =>
+                            p.id.toString() === currentUser?.id?.toString() &&
+                            p.is_muted,
+                        ))
+                    }
                   >
                     <Paperclip size={18} />
                   </button>
@@ -731,8 +839,30 @@ const InboxPage = () => {
                         console.error("Failed to send message:", err);
                       }
                     }}
-                    disabled={isBlocked || activeConv?.is_locked || !!(activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted))}
-                    placeholder={activeConv?.is_locked ? "Conversation is locked" : (activeConv?.is_group && activeConv.participants?.find(p => p.id.toString() === currentUser?.id?.toString() && p.is_muted) ? "You are muted" : "Write a message…")}
+                    disabled={
+                      isBlocked ||
+                      activeConv?.is_locked ||
+                      !!(
+                        activeConv?.is_group &&
+                        activeConv.participants?.find(
+                          (p) =>
+                            p.id.toString() === currentUser?.id?.toString() &&
+                            p.is_muted,
+                        )
+                      )
+                    }
+                    placeholder={
+                      activeConv?.is_locked
+                        ? "Conversation is locked"
+                        : activeConv?.is_group &&
+                            activeConv.participants?.find(
+                              (p) =>
+                                p.id.toString() ===
+                                  currentUser?.id?.toString() && p.is_muted,
+                            )
+                          ? "You are muted"
+                          : "Write a message…"
+                    }
                     maxRows={4}
                     maxLength={2000}
                     compact
@@ -767,7 +897,9 @@ function ConversationRow({
   const other = c.other_user;
   const isGroup = c.is_group;
   const isActive = c.id === activeId;
-  const displayName = isGroup ? (c.title || `Group Chat (${c.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
+  const displayName = isGroup
+    ? c.title || `Group Chat (${c.participants?.length || 0})`
+    : other?.display_name || other?.username || "Unknown";
 
   return (
     <button
@@ -778,12 +910,28 @@ function ConversationRow({
     >
       <span className="inbox-conv-avatar">
         {isGroup ? (
-          <div className="inbox-group-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', backgroundColor: '#333' }}>
+          <div
+            className="inbox-group-avatar"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              backgroundColor: "#333",
+            }}
+          >
             <UserAvatar src={undefined} alt="Group" size={36} initials="G" />
           </div>
         ) : other ? (
-          <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
-            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+          <UserProfileOverlay
+            userId={other.id}
+            fallbackName={other.display_name || other.username}
+            fallbackAvatar={other.avatar_url || undefined}
+            disableClick={true}
+          >
+            <div style={{ display: "flex", width: "100%", height: "100%" }}>
               <UserAvatar
                 src={other.avatar_url || undefined}
                 alt={other.display_name || other.username}
@@ -794,12 +942,7 @@ function ConversationRow({
             </div>
           </UserProfileOverlay>
         ) : (
-          <UserAvatar
-            src={undefined}
-            alt="Unknown"
-            size={36}
-            initials="?"
-          />
+          <UserAvatar src={undefined} alt="Unknown" size={36} initials="?" />
         )}
       </span>
       <span className="inbox-conv-info">
@@ -866,15 +1009,19 @@ function InboxChatHeader({
 
   const isGroup = activeConv?.is_group;
   const other = activeConv?.other_user;
-  const displayName = isGroup ? (activeConv.title || `Group Chat (${activeConv.participants?.length || 0})`) : (other?.display_name || other?.username || "Unknown");
+  const displayName = isGroup
+    ? activeConv.title || `Group Chat (${activeConv.participants?.length || 0})`
+    : other?.display_name || other?.username || "Unknown";
 
-  const myParticipant = isGroup ? activeConv.participants?.find(p => p.id.toString() === currentUserId) : null;
+  const myParticipant = isGroup
+    ? activeConv.participants?.find((p) => p.id.toString() === currentUserId)
+    : null;
   const isOwner = myParticipant?.role === "owner";
   const isManager = myParticipant?.role === "manager" || isOwner;
 
   const buildParticipantOptions = () => {
     if (!activeConv?.participants) return [];
-    return activeConv.participants.map(p => {
+    return activeConv.participants.map((p) => {
       const isTargetOwner = p.role === "owner";
       const isTargetManager = p.role === "manager";
       const isSelf = p.id.toString() === currentUserId;
@@ -885,7 +1032,11 @@ function InboxChatHeader({
           subOptions.push({
             title: isTargetManager ? "Demote to Member" : "Promote to Manager",
             icon: <Shield size={14} />,
-            onClick: () => onChangeRole(p.id.toString(), isTargetManager ? "member" : "manager"),
+            onClick: () =>
+              onChangeRole(
+                p.id.toString(),
+                isTargetManager ? "member" : "manager",
+              ),
           });
         }
         if (!isTargetOwner && (!isTargetManager || isOwner)) {
@@ -906,9 +1057,18 @@ function InboxChatHeader({
         title: p.display_name || p.username,
         info: p.role,
         icon: (
-          <UserProfileOverlay userId={p.id} fallbackName={p.display_name || p.username} fallbackAvatar={p.avatar_url || undefined}>
-            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-              <UserAvatar src={p.avatar_url || undefined} alt={p.username} size={24} initials={p.username[0]?.toUpperCase()} />
+          <UserProfileOverlay
+            userId={p.id}
+            fallbackName={p.display_name || p.username}
+            fallbackAvatar={p.avatar_url || undefined}
+          >
+            <div style={{ display: "flex", width: "100%", height: "100%" }}>
+              <UserAvatar
+                src={p.avatar_url || undefined}
+                alt={p.username}
+                size={24}
+                initials={p.username[0]?.toUpperCase()}
+              />
             </div>
           </UserProfileOverlay>
         ),
@@ -935,28 +1095,47 @@ function InboxChatHeader({
             <span className="inbox-chat-avatar" style={{ marginRight: 12 }}>
               <UserAvatar src={undefined} alt="Group" size={32} initials="G" />
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span className="inbox-chat-username">{displayName} {activeConv.is_locked && <Lock size={12} style={{ display: 'inline', marginLeft: 4 }} />}</span>
-              <span 
-                style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px', cursor: 'pointer' }}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span className="inbox-chat-username">
+                {displayName}{" "}
+                {activeConv.is_locked && (
+                  <Lock
+                    size={12}
+                    style={{ display: "inline", marginLeft: 4 }}
+                  />
+                )}
+              </span>
+              <span
+                style={{
+                  fontSize: "11px",
+                  color: "var(--color-text-secondary)",
+                  marginTop: "2px",
+                  cursor: "pointer",
+                }}
                 onClick={(e) => {
                   e.preventDefault();
                   setMenuPos({ x: e.clientX, y: e.clientY });
                 }}
               >
-                {activeConv.participants?.map(p => p.display_name || p.username).join(', ')}
+                {activeConv.participants
+                  ?.map((p) => p.display_name || p.username)
+                  .join(", ")}
               </span>
             </div>
           </>
         ) : other ? (
           <>
-            <Link
-              to={`/users/${other.id}`}
-              className="inbox-chat-user-link"
-            >
+            <Link to={`/users/${other.id}`} className="inbox-chat-user-link">
               <span className="inbox-chat-avatar">
-                <UserProfileOverlay userId={other.id} fallbackName={other.display_name || other.username} fallbackAvatar={other.avatar_url || undefined} disableClick={true}>
-                  <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+                <UserProfileOverlay
+                  userId={other.id}
+                  fallbackName={other.display_name || other.username}
+                  fallbackAvatar={other.avatar_url || undefined}
+                  disableClick={true}
+                >
+                  <div
+                    style={{ display: "flex", width: "100%", height: "100%" }}
+                  >
                     <UserAvatar
                       src={other.avatar_url || undefined}
                       alt={displayName}
@@ -980,7 +1159,7 @@ function InboxChatHeader({
           <span className="inbox-chat-username">Conversation</span>
         )}
       </div>
-      <div className="inbox-chat-actions" style={{ position: 'relative' }}>
+      <div className="inbox-chat-actions" style={{ position: "relative" }}>
         {isGroup && isManager && (
           <button
             className="action-btn"
@@ -1005,13 +1184,26 @@ function InboxChatHeader({
         </button>
 
         {showAddUser && isGroup && isManager && (
-          <div className="inbox-chat-menu" style={{ width: 300, right: 30, padding: '12px' }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '13px', color: 'var(--color-text)' }}>Add to Group</h4>
+          <div
+            className="inbox-chat-menu"
+            style={{ width: 300, right: 30, padding: "12px" }}
+          >
+            <h4
+              style={{
+                margin: "0 0 12px 0",
+                fontSize: "13px",
+                color: "var(--color-text)",
+              }}
+            >
+              Add to Group
+            </h4>
             <PersonPicker
               onSelect={(user) => {
-                onAddUser(user).then(() => setShowAddUser(false)).catch(() => {});
+                onAddUser(user)
+                  .then(() => setShowAddUser(false))
+                  .catch(() => {});
               }}
-              excludeIds={activeConv.participants?.map(p => p.id) || []}
+              excludeIds={activeConv.participants?.map((p) => p.id) || []}
               placeholder="Search users..."
               onClose={() => setShowAddUser(false)}
             />
@@ -1027,52 +1219,191 @@ function InboxChatHeader({
             )}
             {isGroup && isManager && (
               <button onClick={() => onLock(!activeConv.is_locked)}>
-                {activeConv.is_locked ? <Unlock size={14} /> : <Lock size={14} />} 
+                {activeConv.is_locked ? (
+                  <Unlock size={14} />
+                ) : (
+                  <Lock size={14} />
+                )}
                 {activeConv.is_locked ? "Unlock Group" : "Lock Group"}
               </button>
             )}
             {isGroup && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-color)' }}>
-                <button onClick={() => onKick(currentUserId || "")} style={{ color: 'var(--color-danger)' }}>
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTop: "1px solid var(--border-color)",
+                }}
+              >
+                <button
+                  onClick={() => onKick(currentUserId || "")}
+                  style={{ color: "var(--color-danger)" }}
+                >
                   <UserMinus size={14} /> Leave group
                 </button>
               </div>
             )}
             {isGroup && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', padding: '0 12px 4px', color: 'var(--color-text-secondary)' }}>Participants</div>
-                {activeConv.participants?.map(p => {
+              <div
+                style={{
+                  marginTop: 8,
+                  paddingTop: 8,
+                  borderTop: "1px solid var(--border-color)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "11px",
+                    textTransform: "uppercase",
+                    padding: "0 12px 4px",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Participants
+                </div>
+                {activeConv.participants?.map((p) => {
                   const pIsMe = p.id.toString() === currentUserId;
                   return (
-                    <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, paddingRight: '1rem' }}>
-                        <UserProfileOverlay userId={p.id} fallbackName={p.display_name || p.username} fallbackAvatar={p.avatar_url || undefined}>
-                          <div style={{ display: 'flex', flexShrink: 0 }}>
-                            <UserAvatar src={p.avatar_url || undefined} alt={p.display_name || p.username} size={20} initials={(p.display_name || p.username)?.[0]?.toUpperCase()} />
+                    <div
+                      key={p.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "6px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          minWidth: 0,
+                          paddingRight: "1rem",
+                        }}
+                      >
+                        <UserProfileOverlay
+                          userId={p.id}
+                          fallbackName={p.display_name || p.username}
+                          fallbackAvatar={p.avatar_url || undefined}
+                        >
+                          <div style={{ display: "flex", flexShrink: 0 }}>
+                            <UserAvatar
+                              src={p.avatar_url || undefined}
+                              alt={p.display_name || p.username}
+                              size={20}
+                              initials={(p.display_name ||
+                                p.username)?.[0]?.toUpperCase()}
+                            />
                           </div>
                         </UserProfileOverlay>
-                        <span style={{ fontSize: '13px', color: pIsMe ? 'var(--color-primary)' : 'inherit', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            color: pIsMe ? "var(--color-primary)" : "inherit",
+                            textOverflow: "ellipsis",
+                            overflow: "hidden",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
                           {p.display_name || p.username} {pIsMe && "(You)"}
                         </span>
                       </div>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                        {p.role === "owner" && <span title="Owner" style={{ display: 'flex' }}><Shield size={14} style={{ color: 'gold' }} /></span>}
-                        {p.role === "manager" && <span title="Manager" style={{ display: 'flex' }}><Shield size={14} style={{ color: 'silver' }} /></span>}
-                        {p.is_muted && <span title="Muted" style={{ display: 'flex' }}><VolumeX size={14} style={{ color: 'var(--color-danger)' }} /></span>}
-                        
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {p.role === "owner" && (
+                          <span title="Owner" style={{ display: "flex" }}>
+                            <Shield size={14} style={{ color: "gold" }} />
+                          </span>
+                        )}
+                        {p.role === "manager" && (
+                          <span title="Manager" style={{ display: "flex" }}>
+                            <Shield size={14} style={{ color: "silver" }} />
+                          </span>
+                        )}
+                        {p.is_muted && (
+                          <span title="Muted" style={{ display: "flex" }}>
+                            <VolumeX
+                              size={14}
+                              style={{ color: "var(--color-danger)" }}
+                            />
+                          </span>
+                        )}
+
                         {isManager && !pIsMe && p.role !== "owner" && (
-                          <div style={{ display: 'flex', gap: '6px', marginLeft: '4px' }}>
-                            <button className="action-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onMute(p.id.toString(), !p.is_muted)} title={p.is_muted ? "Unmute" : "Mute"}>
-                              {p.is_muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "6px",
+                              marginLeft: "4px",
+                            }}
+                          >
+                            <button
+                              className="action-btn"
+                              style={{
+                                padding: "4px",
+                                width: "auto",
+                                height: "auto",
+                                display: "flex",
+                                background: "transparent",
+                              }}
+                              onClick={() =>
+                                onMute(p.id.toString(), !p.is_muted)
+                              }
+                              title={p.is_muted ? "Unmute" : "Mute"}
+                            >
+                              {p.is_muted ? (
+                                <Volume2 size={14} />
+                              ) : (
+                                <VolumeX size={14} />
+                              )}
                             </button>
                             {isOwner && p.role !== "owner" && (
-                              <button className="action-btn" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onChangeRole(p.id.toString(), p.role === "manager" ? "member" : "manager")} title={p.role === "manager" ? "Demote" : "Promote"}>
+                              <button
+                                className="action-btn"
+                                style={{
+                                  padding: "4px",
+                                  width: "auto",
+                                  height: "auto",
+                                  display: "flex",
+                                  background: "transparent",
+                                }}
+                                onClick={() =>
+                                  onChangeRole(
+                                    p.id.toString(),
+                                    p.role === "manager" ? "member" : "manager",
+                                  )
+                                }
+                                title={
+                                  p.role === "manager" ? "Demote" : "Promote"
+                                }
+                              >
                                 <Shield size={14} />
                               </button>
                             )}
-                            <button className="action-btn danger" style={{ padding: '4px', width: 'auto', height: 'auto', display: 'flex', background: 'transparent' }} onClick={() => onKick(p.id.toString())} title="Remove">
-                              <UserMinus size={14} style={{ color: 'var(--color-danger)' }} />
+                            <button
+                              className="action-btn danger"
+                              style={{
+                                padding: "4px",
+                                width: "auto",
+                                height: "auto",
+                                display: "flex",
+                                background: "transparent",
+                              }}
+                              onClick={() => onKick(p.id.toString())}
+                              title="Remove"
+                            >
+                              <UserMinus
+                                size={14}
+                                style={{ color: "var(--color-danger)" }}
+                              />
                             </button>
                           </div>
                         )}
@@ -1082,19 +1413,20 @@ function InboxChatHeader({
                 })}
               </div>
             )}
-            {!isGroup && (blockedByCurrentUser ? (
-              <button onClick={onUnblock}>
-                <Ban size={14} /> Unblock user
-              </button>
-            ) : blockedByOtherUser ? (
-              <button disabled>
-                <Ban size={14} /> Blocked by user
-              </button>
-            ) : (
-              <button onClick={onBlock}>
-                <Ban size={14} /> Block user
-              </button>
-            ))}
+            {!isGroup &&
+              (blockedByCurrentUser ? (
+                <button onClick={onUnblock}>
+                  <Ban size={14} /> Unblock user
+                </button>
+              ) : blockedByOtherUser ? (
+                <button disabled>
+                  <Ban size={14} /> Blocked by user
+                </button>
+              ) : (
+                <button onClick={onBlock}>
+                  <Ban size={14} /> Block user
+                </button>
+              ))}
           </div>
         )}
       </div>
@@ -1125,15 +1457,40 @@ function MessageBubble({
   };
 
   const getGlassOptions = () => [
-    { title: "Copy Text", icon: <FileText size={14} />, onClick: () => { if (m.content) navigator.clipboard.writeText(m.content); toast.success("Copied to clipboard"); } },
-    { title: "Report", icon: <Ban size={14} />, onClick: () => toast.error("Reported message") },
+    {
+      title: "Copy Text",
+      icon: <FileText size={14} />,
+      onClick: () => {
+        if (m.content) navigator.clipboard.writeText(m.content);
+        toast.success("Copied to clipboard");
+      },
+    },
+    {
+      title: "Report",
+      icon: <Ban size={14} />,
+      onClick: () => toast.error("Reported message"),
+    },
   ];
-  if (m.message_type === "system_group_created" || m.message_type === "system_group_update") {
+  if (
+    m.message_type === "system_group_created" ||
+    m.message_type === "system_group_update"
+  ) {
     return (
-      <div className="inbox-msg-system" style={{ textAlign: "center", margin: "1rem 0", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+      <div
+        className="inbox-msg-system"
+        style={{
+          textAlign: "center",
+          margin: "1rem 0",
+          color: "var(--color-text-secondary)",
+          fontSize: "0.85rem",
+        }}
+      >
         <span>
           {m.message_type === "system_group_created" ? (
-            <><strong>{m.sender_name}</strong> {m.content} on {formatLocalTime(m.created_at)}</>
+            <>
+              <strong>{m.sender_name}</strong> {m.content} on{" "}
+              {formatLocalTime(m.created_at)}
+            </>
           ) : (
             <>{m.content}</>
           )}
@@ -1147,8 +1504,12 @@ function MessageBubble({
     <div className={`inbox-msg${isMe ? " inbox-msg--me" : ""}`}>
       {!isMe && (
         <span className="inbox-msg-avatar">
-          <UserProfileOverlay userId={m.sender_id} fallbackName={m.sender_name} fallbackAvatar={m.sender_avatar || undefined}>
-            <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+          <UserProfileOverlay
+            userId={m.sender_id}
+            fallbackName={m.sender_name}
+            fallbackAvatar={m.sender_avatar || undefined}
+          >
+            <div style={{ display: "flex", width: "100%", height: "100%" }}>
               <UserAvatar
                 src={m.sender_avatar || undefined}
                 alt={m.sender_name}
@@ -1227,8 +1588,81 @@ function MessageBubble({
               return <p className="inbox-msg-content">{m.content}</p>;
             }
           })()}
+        {m.message_type === "order_created" &&
+          (() => {
+            try {
+              const card = JSON.parse(m.content);
+              return (
+                <Link
+                  to={`/orders/${card.order_id}`}
+                  className="inbox-page-card"
+                >
+                  <div className="inbox-page-card__icon">
+                    <FileText size={20} />
+                  </div>
+                  <div className="inbox-page-card__body">
+                    <span className="inbox-page-card__label">
+                      Order Confirmed
+                    </span>
+                    <span className="inbox-page-card__title">
+                      Order #{card.order_id}
+                    </span>
+                    <span className="inbox-page-card__desc">
+                      {card.item_count} item{card.item_count !== 1 ? "s" : ""} ·
+                      ${(card.total_price / 100).toFixed(2)}
+                    </span>
+                    <span className="inbox-page-card__link">View order</span>
+                  </div>
+                </Link>
+              );
+            } catch {
+              return <p className="inbox-msg-content">{m.content}</p>;
+            }
+          })()}
+
+        {m.message_type === "order_status" &&
+          (() => {
+            try {
+              const card = JSON.parse(m.content);
+              const statusLabel: Record<string, string> = {
+                pending: "Order Pending",
+                processing: "Order Processing",
+                completed: "Order Completed",
+                cancelled: "Order Cancelled",
+              };
+              return (
+                <Link
+                  to={`/orders/${card.order_id}`}
+                  className="inbox-page-card"
+                >
+                  <div className="inbox-page-card__icon">
+                    <FileText size={20} />
+                  </div>
+                  <div className="inbox-page-card__body">
+                    <span className="inbox-page-card__label">Order Update</span>
+                    <span className="inbox-page-card__title">
+                      {statusLabel[card.status] ?? `Status: ${card.status}`}
+                    </span>
+                    <span className="inbox-page-card__desc">
+                      Order #{card.order_id} · $
+                      {(card.total_price / 100).toFixed(2)}
+                    </span>
+                    <span className="inbox-page-card__link">View order</span>
+                  </div>
+                </Link>
+              );
+            } catch {
+              return <p className="inbox-msg-content">{m.content}</p>;
+            }
+          })()}
         {m.content && (!m.message_type || m.message_type === "text") && (
-          <p className="inbox-msg-content" onClick={handleTextClick} style={{ cursor: 'pointer' }}>{m.content}</p>
+          <p
+            className="inbox-msg-content"
+            onClick={handleTextClick}
+            style={{ cursor: "pointer" }}
+          >
+            {m.content}
+          </p>
         )}
         {m.content &&
           m.message_type &&

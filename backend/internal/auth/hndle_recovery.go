@@ -92,7 +92,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
 		displayName, newPw,
 	)
-	if err2 := h.inboxSvc.SendNoreplyToUser(targetID, content); err2 != nil {
+	if err2 := h.inboxSvc.SendSystemMessage(targetID, content, "text"); err2 != nil {
 		log.Printf("user.Handler.resetPassword: noreply send failed: %v", err2)
 	}
 	if actorID != targetID {
@@ -100,7 +100,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 			"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n— System",
 			displayName, newPw,
 		)
-		if err2 := h.inboxSvc.SendNoreplyToUser(actorID, adminContent); err2 != nil {
+		if err2 := h.inboxSvc.SendSystemMessage(actorID, adminContent, "text"); err2 != nil {
 			log.Printf("user.Handler.resetPassword: noreply copy to actor failed: %v", err2)
 		}
 	}
@@ -192,7 +192,7 @@ func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
 		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
 		displayName, newPw,
 	)
-	if err2 := h.inboxSvc.SendNoreplyToUser(targetID, content); err2 != nil {
+	if err2 := h.inboxSvc.SendSystemMessage(targetID, content, "text"); err2 != nil {
 		log.Printf("user.Handler.adminResetPassword: noreply send failed: %v", err2)
 	}
 
@@ -202,7 +202,7 @@ func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Notify all other admins (best-effort).
-	if err2 := h.inboxSvc.SendNoreplyToUser(actorID, content2); err2 != nil {
+	if err2 := h.inboxSvc.SendSystemMessage(actorID, content2, "text"); err2 != nil {
 		log.Printf("user.Handler.adminResetPassword: noreply copy to actor failed: %v", err2)
 	}
 

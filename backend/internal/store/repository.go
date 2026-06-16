@@ -263,16 +263,16 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 	if len(orders) == 0 {
 		return nil
 	}
-	
+
 	// Create a map for quick lookup
 	orderMap := make(map[int64]*models.Order)
 	var ids []any
-	
+
 	query := "SELECT id, order_id, product_id, quantity, price, created_at FROM order_items WHERE order_id IN ("
 	for i, o := range orders {
 		orderMap[o.ID] = o
 		o.Items = []*models.OrderItem{} // initialize
-		
+
 		if i > 0 {
 			query += ", "
 		}
@@ -280,9 +280,9 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 		ids = append(ids, o.ID)
 	}
 	query += ")"
-	
+
 	// Replace ? with $1, $2, etc for postgres/sqlite parameter binding
-	// actually since this uses standard sql driver ? might work for sqlite, 
+	// actually since this uses standard sql driver ? might work for sqlite,
 	// but $N is safer if they are using pg. The rest of the file uses $N.
 	// Let's rewrite the query building for $N
 	queryN := "SELECT id, order_id, product_id, quantity, price, created_at FROM order_items WHERE order_id IN ("
@@ -293,13 +293,13 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 		queryN += "$" + strconv.Itoa(i+1)
 	}
 	queryN += ")"
-	
+
 	rows, err := r.db.Query(queryN, ids...)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
-	
+
 	for rows.Next() {
 		item := &models.OrderItem{}
 		if err := rows.Scan(&item.ID, &item.OrderID, &item.ProductID, &item.Quantity, &item.Price, &item.CreatedAt); err != nil {

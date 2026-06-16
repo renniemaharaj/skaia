@@ -401,3 +401,9 @@ func (r *sqlRepository) ListBlockedUsers(blockerID int64) ([]int64, error) {
 	}
 	return ids, rows.Err()
 }
+
+func (r *sqlRepository) GetNoreplyUserID() (int64, error) {
+	var id int64
+	err := r.db.QueryRow(`SELECT id FROM users WHERE username = 'noreply' LIMIT 1`).Scan(&id)
+	return id, err
+}

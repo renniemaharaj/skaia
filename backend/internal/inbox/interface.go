@@ -25,6 +25,7 @@ type Repository interface {
 	RemoveParticipant(conversationID, userID int64) error
 	AddParticipant(conversationID, userID int64, role string) error
 	DeleteConversation(id int64) error
+	GetNoreplyUserID() (int64, error)
 
 	// Messages
 	GetMessage(id int64) (*models.InboxMessage, error)

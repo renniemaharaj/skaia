@@ -2,6 +2,10 @@ package models
 
 import "time"
 
+type InboxSender interface {
+	SendSystemMessage(recipientID int64, content, messageType string) error
+}
+
 // InboxConversation represents a conversation between multiple users.
 type InboxConversation struct {
 	ID        int64     `json:"id"`
@@ -12,11 +16,11 @@ type InboxConversation struct {
 	IsLocked  bool      `json:"is_locked"`
 	// Enriched fields resolved at the service layer
 	Participants         []*InboxParticipant `json:"participants,omitempty"`
-	OtherUser            *User         `json:"other_user,omitempty"` // Kept for backwards compatibility on 1-on-1s
-	LastMessage          *InboxMessage `json:"last_message,omitempty"`
-	UnreadCount          int           `json:"unread_count,omitempty"`
-	BlockedByCurrentUser bool          `json:"blocked_by_current_user,omitempty"`
-	BlockedByOtherUser   bool          `json:"blocked_by_other_user,omitempty"`
+	OtherUser            *User               `json:"other_user,omitempty"` // Kept for backwards compatibility on 1-on-1s
+	LastMessage          *InboxMessage       `json:"last_message,omitempty"`
+	UnreadCount          int                 `json:"unread_count,omitempty"`
+	BlockedByCurrentUser bool                `json:"blocked_by_current_user,omitempty"`
+	BlockedByOtherUser   bool                `json:"blocked_by_other_user,omitempty"`
 }
 
 // InboxMessage is a single message in a private conversation.
@@ -40,6 +44,6 @@ type InboxMessage struct {
 // InboxParticipant extends User with conversation-specific fields
 type InboxParticipant struct {
 	User
-	Role    string `json:"role"`     // 'owner', 'manager', 'member'
+	Role    string `json:"role"` // 'owner', 'manager', 'member'
 	IsMuted bool   `json:"is_muted"`
 }

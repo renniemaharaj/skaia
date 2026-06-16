@@ -22,6 +22,18 @@ func NewHandler(svc *Service, dispatcher *ievents.Dispatcher) *Handler {
 	return &Handler{svc: svc, dispatcher: dispatcher}
 }
 
+type inboxSenderImpl struct {
+	svc *Service
+}
+
+func (i *inboxSenderImpl) SendSystemMessage(recipientID int64, content, messageType string) error {
+	return i.svc.SendSystemMessage(recipientID, content, messageType)
+}
+
+func NewInboxSender(svc *Service) models.InboxSender {
+	return &inboxSenderImpl{svc: svc}
+}
+
 // Mount registers inbox routes on r.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.Route("/inbox", func(r chi.Router) {

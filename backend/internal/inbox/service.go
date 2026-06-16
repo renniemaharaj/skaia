@@ -84,7 +84,7 @@ func (s *Service) CreateGroupConversation(creatorID int64, participantIDs []int6
 	if err != nil {
 		return nil, err
 	}
-	
+
 	participantRows, _ := s.repo.GetParticipants(conv.ID)
 	for _, row := range participantRows {
 		if u, err := s.userSvc.GetByID(row.UserID); err == nil {
@@ -563,7 +563,6 @@ func (s *Service) ChangeParticipantRole(conversationID, callerID, targetID int64
 	return err
 }
 
-
 func (s *Service) populateBlockState(c *models.InboxConversation, callerID int64) error {
 	if c.IsGroup || c.OtherUser == nil {
 		return nil
@@ -615,13 +614,23 @@ func (s *Service) ListBlockedUsers(blockerID int64) ([]*models.User, error) {
 	return users, nil
 }
 
+func (s *Service) GetNoreplyUserID() (int64, error) {
+	return s.repo.GetNoreplyUserID()
+}
+
 // SendSystemMessage creates a conversation between senderID (system/noreply) and
 // recipientID, then inserts a message. It skips block checks since the sender is
 // a system account. The message is propagated in real-time.
-func (s *Service) SendSystemMessage(senderID, recipientID int64, content, messageType string) error {
+func (s *Service) SendSystemMessage(recipientID int64, content, messageType string) error {
 	if messageType == "" {
 		messageType = "text"
 	}
+	noReplyID, err := s.GetNoreplyUserID()
+	if err != nil {
+		return fmt.Errorf("noreply user not found: %w", err)
+	}
+
+	senderID := noReplyID
 	conv, err := s.repo.GetOrCreateConversation(senderID, recipientID)
 	if err != nil {
 		return err
@@ -651,12 +660,8 @@ func (s *Service) SendSystemMessage(senderID, recipientID int64, content, messag
 	return nil
 }
 
-// SendNoreplyToUser delivers an automated message to a user's inbox from the
-// system "noreply" account. The noreply user must exist (seeded in 002_seed.sql).
-func (s *Service) SendNoreplyToUser(recipientID int64, content string) error {
-	noreply, err := s.userSvc.GetByUsername("noreply")
-	if err != nil {
-		return fmt.Errorf("noreply user not found: %w", err)
-	}
-	return s.SendSystemMessage(noreply.ID, recipientID, content, "text")
-}
+// // SendNoreplyToUser delivers an automated message to a user's inbox from the
+// // system "noreply" account. The noreply user must exist (seeded in 002_seed.sql).
+// func (s *Service) SendNoreplyToUser(recipientID int64, content string) error {
+// 	return s.SendSystemMessage(recipientID, content, "text")
+// }

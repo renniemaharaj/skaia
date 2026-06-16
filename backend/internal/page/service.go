@@ -15,11 +15,6 @@ import (
 
 var ErrInvalidContent = errors.New("invalid page content")
 
-// InboxSender is the minimal interface the page service needs to send an inbox message.
-type InboxSender interface {
-	SendSystemMessage(senderID, recipientID int64, content, messageType string) error
-}
-
 type DataSourceGetter interface {
 	GetByID(id int64) (*models.DataSource, error)
 }
@@ -81,14 +76,14 @@ func WithRedisClient(rdb *redis.Client) Option {
 // Service wraps the page repository with business logic.
 type Service struct {
 	repo            Repository
-	inboxSvc        InboxSender
+	inboxSender     models.InboxSender
 	contentResolver s_registry.Resolver
 	rdb             *redis.Client
 }
 
 // NewService creates a new page Service.
-func NewService(repo Repository, inboxSvc InboxSender, opts ...Option) *Service {
-	s := &Service{repo: repo, inboxSvc: inboxSvc}
+func NewService(repo Repository, inboxSender models.InboxSender, opts ...Option) *Service {
+	s := &Service{repo: repo, inboxSender: inboxSender}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -405,13 +400,10 @@ func (s *Service) ClaimPage(userID int64, slug string, isAdmin bool) (*models.Pa
 // SendPageCreatedInbox sends an inbox DM from the noreply system user
 // to the page owner with a rich-text card about their new page.
 func (s *Service) SendPageCreatedInbox(ownerID int64, page *models.Page) {
-	if s.inboxSvc == nil {
+	if s.inboxSender == nil {
 		return
 	}
-	noreplyID, err := s.repo.GetNoreplyUserID()
-	if err != nil {
-		return
-	}
+
 	title := page.Title
 	if title == "" {
 		title = page.Slug
@@ -423,7 +415,7 @@ func (s *Service) SendPageCreatedInbox(ownerID int64, page *models.Page) {
 		"slug":        page.Slug,
 		"route":       route,
 	})
-	_ = s.inboxSvc.SendSystemMessage(noreplyID, ownerID, string(cardJSON), "page_card")
+	_ = s.inboxSender.SendSystemMessage(ownerID, string(cardJSON), "page_card")
 }
 
 // ReconcileUsedCount re-syncs used_pages with the actual COUNT of owned pages.
