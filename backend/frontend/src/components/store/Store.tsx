@@ -1,20 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  ClipboardList,
-  Package,
-  Plus,
-  StoreIcon,
-  Trash2,
-  Wallet,
-} from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "../../pages/store/ProductPage.css";
-import {
-  currentUserAtom,
-  isAuthenticatedAtom,
-  socketAtom,
-} from "../../atoms/auth";
+import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
 import {
   productsAtom,
   productCategoriesAtom,
@@ -27,22 +15,13 @@ import {
 } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
-import { SkeletonCard } from "../ui/SkeletonCard";
 
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
-import { createPortal } from "react-dom";
 import "./Store.css";
-import { InlineProduct } from "./InlineProduct";
-
-const PRODUCT_SKELETON_KEYS = [
-  "product-skeleton-1",
-  "product-skeleton-2",
-  "product-skeleton-3",
-  "product-skeleton-4",
-  "product-skeleton-5",
-  "product-skeleton-6",
-];
+import { ImageLightbox } from "./ImageLightbox";
+import { StoreCategoryBar } from "./StoreCategoryBar";
+import { StoreProductGrid } from "./StoreProductGrid";
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -69,14 +48,11 @@ export const Store: React.FC = () => {
   const canCreateProduct =
     currentUser?.permissions?.includes("store.product-new") || guestSandboxMode;
   const canEditProduct =
-    currentUser?.permissions?.includes("store.product-edit") ||
-    guestSandboxMode;
+    currentUser?.permissions?.includes("store.product-edit") || guestSandboxMode;
   const canDeleteProduct =
-    currentUser?.permissions?.includes("store.product-delete") ||
-    guestSandboxMode;
+    currentUser?.permissions?.includes("store.product-delete") || guestSandboxMode;
   const canManageCategories =
-    currentUser?.permissions?.includes("store.manageCategories") ||
-    guestSandboxMode;
+    currentUser?.permissions?.includes("store.manageCategories") || guestSandboxMode;
   const canCreateCategory = canManageCategories || guestSandboxMode;
   const canDeleteCategory = canManageCategories || guestSandboxMode;
 
@@ -144,13 +120,11 @@ export const Store: React.FC = () => {
   const handleAddToCart = async (product: Product) => {
     if (!isAuthenticated) {
       // Optimistic local-only cart for guests
-      setCartItems((prev) => {
-        const existing = prev.find((i) => i.product_id === product.id);
+      setCartItems(prev => {
+        const existing = prev.find(i => i.product_id === product.id);
         if (existing) {
-          return prev.map((i) =>
-            i.product_id === product.id
-              ? { ...i, quantity: i.quantity + 1 }
-              : i,
+          return prev.map(i =>
+            i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i
           );
         }
         return [
@@ -182,7 +156,7 @@ export const Store: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     try {
       await apiRequest(`/store/products/${productId}`, { method: "DELETE" });
-      setProducts((prev) => prev.filter((p) => p.id !== productId));
+      setProducts(prev => prev.filter(p => p.id !== productId));
     } catch (err) {
       console.error("Error deleting product:", err);
     }
@@ -191,7 +165,7 @@ export const Store: React.FC = () => {
   const handleDeleteCategory = async (categoryId: string) => {
     try {
       await apiRequest(`/store/categories/${categoryId}`, { method: "DELETE" });
-      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
+      setCategories(prev => prev.filter(c => c.id !== categoryId));
       setSelectedCategory(null);
     } catch (err) {
       console.error("Error deleting category:", err);
@@ -200,152 +174,32 @@ export const Store: React.FC = () => {
 
   return (
     <div className="store-container">
-      {/* Categories Bar */}
-      <div className="categories-bar">
-        <div className="category-list">
-          <StoreIcon className="category-icon" size={24} />
-          <button
-            type="button"
-            className={`category-button ${!selectedCategoryId ? "category-active" : ""}`}
-            onClick={() => setSelectedCategory(null)}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <div key={cat.id} className="category-item">
-              <button
-                type="button"
-                className={`category-button ${
-                  selectedCategoryId === cat.id ? "category-active" : ""
-                }`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {cat.name}
-              </button>
-              {canDeleteCategory && (
-                <button
-                  type="button"
-                  className="btn-admin-icon btn-danger"
-                  title="Delete category"
-                  onClick={() => handleDeleteCategory(cat.id)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              )}
-            </div>
-          ))}
-          {canCreateCategory && (
-            <button
-              type="button"
-              className="btn-admin-action"
-              onClick={() => navigate("/store/new-category")}
-              title="New category"
-              aria-label="New category"
-            >
-              <Plus size={16} />
-              <span className="store-action-label">New Category</span>
-            </button>
-          )}
-          {canCreateProduct && categories.length > 0 && (
-            <button
-              type="button"
-              className="btn-admin-action"
-              onClick={() => navigate("/store/new-product")}
-              title="New product"
-              aria-label="New product"
-            >
-              <Plus size={16} />
-              <span className="store-action-label">New Product</span>
-            </button>
-          )}
-          {isAuthenticated && (
-            <>
-              <button
-                type="button"
-                className="btn-admin-action store-wallet-button"
-                onClick={() => navigate(`/wallet/${crypto.randomUUID()}`)}
-                title="My Wallet"
-                aria-label="My Wallet"
-              >
-                <Wallet size={16} />
-                <span className="store-action-label">Wallet</span>
-              </button>
-              <button
-                type="button"
-                className="btn-admin-action store-orders-button"
-                onClick={() => navigate("/store/orders")}
-                title="My Orders"
-                aria-label="My Orders"
-              >
-                <ClipboardList size={16} />
-                <span className="store-action-label">My Orders</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <StoreCategoryBar
+        categories={categories}
+        selectedCategoryId={selectedCategoryId}
+        canCreateCategory={canCreateCategory}
+        canCreateProduct={canCreateProduct}
+        canDeleteCategory={canDeleteCategory}
+        isAuthenticated={isAuthenticated}
+        onSelectCategory={setSelectedCategory}
+        onDeleteCategory={handleDeleteCategory}
+        onNavigate={navigate}
+      />
 
-      {/* Products */}
-      <div className="products-section">
-        {loading ? (
-          <div className="products-grid">
-            {PRODUCT_SKELETON_KEYS.map((key) => (
-              <SkeletonCard key={key} />
-            ))}
-          </div>
-        ) : products.length > 0 ? (
-          <div className="products-grid">
-            {products.map((product) => (
-              <InlineProduct
-                key={product.id}
-                product={product}
-                canEdit={canEditProduct}
-                canDelete={canDeleteProduct}
-                onEdit={setEditingProduct}
-                onDelete={handleDeleteProduct}
-                onAddToCart={handleAddToCart}
-                onImagePreview={setSelectedImage}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="ui-empty empty-state">
-            <Package size={48} />
-            <h3>No items available</h3>
-            <p>
-              {canCreateProduct
-                ? "Create your first product with the button above."
-                : "Check back later for new products!"}
-            </p>
-          </div>
-        )}
-      </div>
+      <StoreProductGrid
+        loading={loading}
+        products={products}
+        canCreateProduct={canCreateProduct}
+        canEditProduct={canEditProduct}
+        canDeleteProduct={canDeleteProduct}
+        onEditProduct={setEditingProduct}
+        onDeleteProduct={handleDeleteProduct}
+        onAddToCart={handleAddToCart}
+        onImagePreview={setSelectedImage}
+      />
 
-      {selectedImage &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <button
-            type="button"
-            className="up-upload-lightbox"
-            aria-label="Close image preview"
-            onClick={() => setSelectedImage(null)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setSelectedImage(null);
-              }
-            }}
-          >
-            <span className="up-upload-lightbox-content">
-              <img
-                src={selectedImage}
-                alt="Preview"
-              />
-            </span>
-          </button>,
-          document.body,
-        )}
+      <ImageLightbox imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
 
-      {/* Admin dialogs */}
       {editingProduct && (
         <EditProductDialog
           isOpen={!!editingProduct}
