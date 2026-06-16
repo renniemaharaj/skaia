@@ -1,13 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
-import {
-  Mail,
-  Lock,
-  User,
-  AlertCircle,
-  CheckCircle,
-} from "lucide-react";
+import { Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
 import {
   currentUserAtom,
   accessTokenAtom,
@@ -210,7 +204,7 @@ export const Auth: React.FC<AuthPageProps> = ({
                   id="email"
                   type="email"
                   name="email"
-                  placeholder="your@email.com"
+                  placeholder="Enter your email address"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -261,7 +255,13 @@ export const Auth: React.FC<AuthPageProps> = ({
               </div>
             )}
 
-            <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
+            <Button
+              type="submit"
+              className="auth-button"
+              variant="primary"
+              loading={loading}
+              block
+            >
               {isLogin ? "Log In" : "Create Account"}
             </Button>
           </form>

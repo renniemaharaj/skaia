@@ -30,7 +30,9 @@ describe("Auth Component", () => {
       expect(
         screen.getByText("Log in to your account to continue"),
       ).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("your@email.com")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Enter your email address"),
+      ).toBeInTheDocument();
       expect(
         screen.getByPlaceholderText("Enter your password"),
       ).toBeInTheDocument();
@@ -90,7 +92,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -123,7 +125,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -133,7 +135,11 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(screen.getByText((content) => content.includes("Invalid credentials"))).toBeInTheDocument();
+        expect(
+          screen.getByText((content) =>
+            content.includes("Invalid credentials"),
+          ),
+        ).toBeInTheDocument();
       });
     });
 
@@ -163,7 +169,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -211,7 +217,9 @@ describe("Auth Component", () => {
       expect(
         screen.getByPlaceholderText("Choose a username"),
       ).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("your@email.com")).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText("Enter your email address"),
+      ).toBeInTheDocument();
       expect(
         screen.getByPlaceholderText("Enter your password"),
       ).toBeInTheDocument();
@@ -242,7 +250,7 @@ describe("Auth Component", () => {
         "newuser",
       );
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "new@example.com",
       );
       await user.type(
@@ -298,7 +306,7 @@ describe("Auth Component", () => {
         "existinguser",
       );
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "existing@example.com",
       );
       await user.type(
@@ -312,7 +320,11 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /create account/i }));
 
       await waitFor(() => {
-        expect(screen.getByText((content) => content.includes("User already exists"))).toBeInTheDocument();
+        expect(
+          screen.getByText((content) =>
+            content.includes("User already exists"),
+          ),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -327,7 +339,7 @@ describe("Auth Component", () => {
       );
 
       const emailInput = screen.getByPlaceholderText(
-        "your@email.com",
+        "Enter your email address",
       ) as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText(
         "Enter your password",
@@ -344,7 +356,7 @@ describe("Auth Component", () => {
 
       // Form should be reset
       const newEmailInput = screen.getByPlaceholderText(
-        "your@email.com",
+        "Enter your email address",
       ) as HTMLInputElement;
       expect(newEmailInput.value).toBe("");
     });
@@ -363,7 +375,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -373,7 +385,11 @@ describe("Auth Component", () => {
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(screen.getByText((content) => content.includes("Invalid credentials"))).toBeInTheDocument();
+        expect(
+          screen.getByText((content) =>
+            content.includes("Invalid credentials"),
+          ),
+        ).toBeInTheDocument();
       });
 
       // Error should still be visible (not cleared on first character)
@@ -406,7 +422,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -415,7 +431,7 @@ describe("Auth Component", () => {
       );
 
       const emailInput = screen.getByPlaceholderText(
-        "your@email.com",
+        "Enter your email address",
       ) as HTMLInputElement;
       const submitButton = screen.getByRole("button", {
         name: /log in/i,
@@ -452,7 +468,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -485,7 +501,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -518,7 +534,7 @@ describe("Auth Component", () => {
       );
 
       await user.type(
-        screen.getByPlaceholderText("your@email.com"),
+        screen.getByPlaceholderText("Enter your email address"),
         "test@example.com",
       );
       await user.type(
@@ -542,7 +558,7 @@ describe("Auth Component", () => {
       );
 
       const emailInput = screen.getByPlaceholderText(
-        "your@email.com",
+        "Enter your email address",
       ) as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText(
         "Enter your password",
@@ -563,7 +579,7 @@ describe("Auth Component", () => {
         "Choose a username",
       ) as HTMLInputElement;
       const emailInput = screen.getByPlaceholderText(
-        "your@email.com",
+        "Enter your email address",
       ) as HTMLInputElement;
       const passwordInput = screen.getByPlaceholderText(
         "Enter your password",

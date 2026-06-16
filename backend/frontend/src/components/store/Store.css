@@ -43,6 +43,10 @@
   width: 100%;
 }
 
+.category-icon {
+  margin-top: 0.77rem;
+}
+
 .category-button {
   background: transparent;
   border: none;
