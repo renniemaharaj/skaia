@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, StoreIcon, Tag, Trash2 } from "lucide-react";
+import { Package, Plus, Tag, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "../../pages/store/ProductPage.css";
