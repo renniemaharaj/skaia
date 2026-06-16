@@ -21,14 +21,13 @@ import {
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { SkeletonCard } from "../ui/SkeletonCard";
-import SpotlightCard from "../ui/SpotlightCard";
-import { formatCents } from "../../utils/money";
 
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
 import { Wallet } from "lucide-react";
 import { createPortal } from "react-dom";
 import "./Store.css";
+import { InlineProduct } from "./InlineProduct";
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -274,139 +273,16 @@ export const Store: React.FC = () => {
         ) : products.length > 0 ? (
           <div className="products-grid">
             {products.map((product) => (
-              <SpotlightCard
+              <InlineProduct
                 key={product.id}
-                className="card--interactive product-card" // Looks way better without the base card style don't touch me
-                spotlightColor="rgba(255,255,255,0.15)"
-                style={{ padding: 0 }}
-              >
-                <Link
-                  to={`/store/product/${product.id}`}
-                  style={{
-                    textDecoration: "none",
-                    color: "inherit",
-                    display: "flex",
-                    flexDirection: "column",
-                    flexGrow: 1,
-                  }}
-                >
-                  {product.image_url ? (
-                    <div className="product-image">
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          cursor: "pointer",
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedImage(product.image_url ?? null);
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="product-image">
-                      <Package size={48} />
-                    </div>
-                  )}
-                  <div className="product-content" style={{ flexGrow: 1 }}>
-                    <h3
-                      className="product-title"
-                      style={{ transition: "color 0.2s ease" }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.color = "var(--primary-color)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "inherit")
-                      }
-                    >
-                      {product.name}
-                    </h3>
-                    <p className="product-description">
-                      {product.description.length < 100
-                        ? product.description
-                        : product.description.slice(0, 100) + " ..."}
-                    </p>
-                    {!product.stock_unlimited &&
-                      product.stock <= 5 &&
-                      product.stock > 0 && (
-                        <p className="product-stock-warning">
-                          Only {product.stock} left!
-                        </p>
-                      )}
-                    {!product.stock_unlimited && product.stock === 0 && (
-                      <p className="product-out-of-stock">Out of stock</p>
-                    )}
-                    <div className="product-footer">
-                      <div>
-                        {product.original_price != null &&
-                          product.original_price > product.price && (
-                            <span
-                              style={{
-                                display: "block",
-                                fontSize: "0.85rem",
-                                color: "var(--text-secondary)",
-                                textDecoration: "line-through",
-                              }}
-                            >
-                              {formatCents(product.original_price ?? 0)}
-                            </span>
-                          )}
-                        <span className="product-price">
-                          {formatCents(product.price ?? 0)}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        {canEditProduct && (
-                          <button
-                            className="action-btn edit-btn"
-                            title="Edit product"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setEditingProduct(product);
-                            }}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                        )}
-                        {canDeleteProduct && (
-                          <button
-                            className="action-btn danger"
-                            title="Delete product"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDeleteProduct(product.id);
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                        <button
-                          className="btn-add-to-cart"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleAddToCart(product);
-                          }}
-                          disabled={
-                            !product.stock_unlimited && product.stock === 0
-                          }
-                        >
-                          {!product.stock_unlimited && product.stock === 0
-                            ? "Sold Out"
-                            : "Add"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </SpotlightCard>
+                product={product}
+                canEdit={canEditProduct}
+                canDelete={canDeleteProduct}
+                onEdit={setEditingProduct}
+                onDelete={handleDeleteProduct}
+                onAddToCart={handleAddToCart}
+                onImagePreview={setSelectedImage}
+              />
             ))}
           </div>
         ) : (
