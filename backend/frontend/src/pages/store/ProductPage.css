@@ -79,6 +79,7 @@
   flex-direction: column;
   gap: 0.875rem;
   padding-top: 0.25rem;
+  max-width: 750px;
 }
 
 .product-page-details h1 {
