@@ -1,6 +1,3 @@
-// components/store/StoreInlineProduct.tsx
-
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Package, Edit2, Trash2 } from "lucide-react";
 import SpotlightCard from "../ui/SpotlightCard";
@@ -28,8 +25,6 @@ export const InlineProduct = ({
   onAddToCart,
   onImagePreview,
 }: StoreInlineProductProps) => {
-  const [titleHover, setTitleHover] = useState(false);
-
   const { averageRating, reviewCount } = useProductRatings(product.id);
 
   return (

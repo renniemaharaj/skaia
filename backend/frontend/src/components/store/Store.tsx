@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, Edit2, Trash2 } from "lucide-react";
+import { Package, Plus, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
-import { Link } from "react-router-dom";
 
 import {
   currentUserAtom,
