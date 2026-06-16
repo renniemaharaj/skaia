@@ -1,5 +1,6 @@
 .product-page-container {
   margin: 0 auto;
+  min-width: 520px;
   padding: 2rem 1.5rem;
 }
 
@@ -322,6 +323,7 @@
 
 /* ── Reviews column ── */
 .product-page-reviews {
+  min-width: 350px;
   display: flex;
   flex-direction: column;
 }
@@ -333,4 +335,37 @@
   padding: 4rem 1rem;
   font-size: 1rem;
   color: var(--text-secondary);
+}
+
+/* Mobile responsiveness fixes: allow layout to shrink below previous min-width */
+@media (max-width: 640px) {
+  .product-page-container {
+    min-width: 0;
+    padding: 1rem;
+  }
+
+  .product-page-hero {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .product-page-image-container {
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: 1 / 1;
+  }
+
+  .product-page-details {
+    padding-top: 0;
+  }
+
+  .product-page-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .similar-product-list,
+  .similar-skeleton-item {
+    min-width: 0;
+    box-sizing: border-box;
+  }
 }

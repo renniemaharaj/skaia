@@ -133,7 +133,38 @@ const CommentSection = ({
       >
         <div ref={topSentinelRef} className="comments-feed-sentinel" />
         {isLoading ? (
-          <div className="comments-feed-empty">Loading comments…</div>
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`skeleton-${i}`} className="comment-card">
+              <div className="comment-avatar">
+                <div
+                  className="skeleton skeleton-circle"
+                  style={{ width: 30, height: 30 }}
+                />
+              </div>
+
+              <div className="comment-body">
+                <div className="comment-meta">
+                  <div
+                    className="skeleton skeleton-text"
+                    style={{ width: 120, height: 14 }}
+                  />
+                  <div
+                    className="skeleton skeleton-text"
+                    style={{ width: 60, height: 12, marginLeft: 8 }}
+                  />
+                </div>
+
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: "70%", height: 12, marginTop: 8 }}
+                />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: "90%", height: 12 }}
+                />
+              </div>
+            </div>
+          ))
         ) : !hasComments ? (
           <div className="comments-feed-empty">{noCommentsText}</div>
         ) : (
@@ -152,7 +183,11 @@ const CommentSection = ({
               >
                 <div className="comment-avatar">
                   {comment.author_id ? (
-                    <UserProfileOverlay userId={comment.author_id} fallbackName={authorDisplay} fallbackAvatar={comment.author_avatar || undefined}>
+                    <UserProfileOverlay
+                      userId={comment.author_id}
+                      fallbackName={authorDisplay}
+                      fallbackAvatar={comment.author_avatar || undefined}
+                    >
                       <UserAvatar
                         src={comment.author_avatar || undefined}
                         alt={authorDisplay}
@@ -184,14 +219,32 @@ const CommentSection = ({
                         {authorDisplay}
                       </span>
                     )}
-                    <div className="comment-roles" style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginLeft: '0.2rem' }}>
+                    <div
+                      className="comment-roles"
+                      style={{
+                        display: "flex",
+                        gap: "0.3rem",
+                        flexWrap: "wrap",
+                        marginLeft: "0.2rem",
+                      }}
+                    >
                       {comment.author_roles &&
                         comment.author_roles.length > 0 &&
-                        comment.author_roles.map(r => {
-                          const roleDetails = allRoles.find(ar => ar.name === r);
-                          return <RoleBadge key={r} role={roleDetails || r} style={{ fontSize: '0.65rem', padding: '1px 6px' }} />;
-                        })
-                      }
+                        comment.author_roles.map((r) => {
+                          const roleDetails = allRoles.find(
+                            (ar) => ar.name === r,
+                          );
+                          return (
+                            <RoleBadge
+                              key={r}
+                              role={roleDetails || r}
+                              style={{
+                                fontSize: "0.65rem",
+                                padding: "1px 6px",
+                              }}
+                            />
+                          );
+                        })}
                     </div>
                     <span className="comment-date">
                       {formatDate(comment.created_at)}
@@ -257,9 +310,25 @@ const CommentSection = ({
       {canComment && !userHasReviewed && (
         <div className="comment-composer">
           {enableRatings && (
-            <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>Your Rating:</span>
-              <StarRating rating={selectedRating} onChange={setSelectedRating} size={20} disabled={disabled} />
+            <div
+              style={{
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <span
+                style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}
+              >
+                Your Rating:
+              </span>
+              <StarRating
+                rating={selectedRating}
+                onChange={setSelectedRating}
+                size={20}
+                disabled={disabled}
+              />
             </div>
           )}
           {useRichText ? (
@@ -270,10 +339,22 @@ const CommentSection = ({
                   onChange={setRichTextContent}
                   minHeight="80px"
                 />
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "8px",
+                  }}
+                >
                   <button
                     className="action-btn btn-cancel"
-                    style={{ padding: '6px 12px', background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
+                    style={{
+                      padding: "6px 12px",
+                      background: "transparent",
+                      color: "var(--text-secondary)",
+                      border: "1px solid var(--border-color)",
+                      borderRadius: "4px",
+                    }}
                     onClick={() => {
                       setIsEditorVisible(false);
                       setRichTextContent("");
@@ -284,11 +365,26 @@ const CommentSection = ({
                   </button>
                   <button
                     className="action-btn btn-submit"
-                    style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px' }}
-                    disabled={disabled || (enableRatings && selectedRating === 0) || (!enableRatings && (!richTextContent.trim() || richTextContent === "<p></p>"))}
+                    style={{
+                      alignSelf: "flex-end",
+                      padding: "6px 12px",
+                      background: "var(--primary-color)",
+                      color: "white",
+                      borderRadius: "4px",
+                    }}
+                    disabled={
+                      disabled ||
+                      (enableRatings && selectedRating === 0) ||
+                      (!enableRatings &&
+                        (!richTextContent.trim() ||
+                          richTextContent === "<p></p>"))
+                    }
                     onClick={async () => {
                       if (disabled) return;
-                      await onSubmit(richTextContent, enableRatings ? selectedRating : undefined);
+                      await onSubmit(
+                        richTextContent,
+                        enableRatings ? selectedRating : undefined,
+                      );
                       setRichTextContent("");
                       setSelectedRating(0);
                       setIsEditorVisible(false);
@@ -299,24 +395,38 @@ const CommentSection = ({
                 </div>
               </div>
             ) : (
-              <div 
+              <div
                 className="comment-composer-placeholder"
                 onClick={() => setIsEditorVisible(true)}
               >
-                <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span> Make a reply
+                <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>+</span>{" "}
+                Make a reply
               </div>
             )
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
+            >
               <ComposerInput
                 handleSend={async (text) => {
                   if (disabled) return;
                   if (enableRatings && selectedRating === 0) return;
-                  await onSubmit(text, enableRatings ? selectedRating : undefined);
+                  await onSubmit(
+                    text,
+                    enableRatings ? selectedRating : undefined,
+                  );
                   setSelectedRating(0);
                 }}
                 disabled={disabled || (enableRatings && selectedRating === 0)}
-                placeholder={enableRatings && selectedRating === 0 ? "Select a rating first..." : placeholder}
+                placeholder={
+                  enableRatings && selectedRating === 0
+                    ? "Select a rating first..."
+                    : placeholder
+                }
                 minRows={1}
                 maxRows={5}
               />
@@ -325,7 +435,14 @@ const CommentSection = ({
         </div>
       )}
       {canComment && userHasReviewed && (
-        <div className="comment-composer" style={{ textAlign: "center", padding: "1rem", color: "var(--text-secondary)" }}>
+        <div
+          className="comment-composer"
+          style={{
+            textAlign: "center",
+            padding: "1rem",
+            color: "var(--text-secondary)",
+          }}
+        >
           You have already reviewed this product.
         </div>
       )}

@@ -199,7 +199,140 @@ export const ProductPage = () => {
   }, [reviews]);
 
   if (loadingProduct) {
-    return <div className="product-page-loading">Loading...</div>;
+    return (
+      <div className="product-page-container">
+        <div className="product-page-back">
+          <div
+            className="skeleton skeleton-heading"
+            style={{ width: 120, height: 20 }}
+          />
+        </div>
+
+        <div className="product-page-layout">
+          <div className="product-page-hero">
+            <div className="product-page-image-container">
+              <div
+                className="skeleton"
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
+
+            <div className="product-page-details">
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: "60%", height: 28 }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.75rem",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: 120, height: 20 }}
+                />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: 80, height: 16 }}
+                />
+              </div>
+
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "40%", height: 12 }}
+              />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "80%", height: 12 }}
+              />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "70%", height: 12 }}
+              />
+
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: 12 }}>
+                <div
+                  className="skeleton"
+                  style={{ height: 36, width: 100, borderRadius: 8 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 36, width: 80, borderRadius: 8 }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="product-page-bottom">
+            <div>
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: 140, height: 18 }}
+              />
+              <div style={{ marginTop: 12 }}>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{ display: "flex", gap: 12, marginBottom: 10 }}
+                  >
+                    <div
+                      className="skeleton skeleton-circle"
+                      style={{ width: 44, height: 44 }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        className="skeleton skeleton-text"
+                        style={{ width: `${55 + (i % 3) * 15}%`, height: 12 }}
+                      />
+                      <div
+                        className="skeleton skeleton-text"
+                        style={{ width: "30%", height: 10 }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: 140, height: 18 }}
+              />
+              <div style={{ marginTop: 12 }}>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="skeleton-card"
+                    style={{ padding: 12, marginBottom: 12 }}
+                  >
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <div
+                        className="skeleton skeleton-circle"
+                        style={{ width: 36, height: 36 }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          className="skeleton skeleton-text"
+                          style={{ width: "40%", height: 12 }}
+                        />
+                        <div
+                          className="skeleton skeleton-text"
+                          style={{ width: "80%", height: 12 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!product) {
@@ -312,65 +445,65 @@ export const ProductPage = () => {
           <div className="product-page-similar">
             <div className="product-page-section-label">Similar Products</div>
             <div className="similar-product-list">
-              {similarLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div className="similar-skeleton-item" key={i}>
-                    <div className="similar-skeleton-thumb skeleton" />
-                    <div className="similar-skeleton-lines">
-                      <div
-                        className="similar-skeleton-name skeleton"
-                        style={{ width: `${55 + (i % 3) * 15}%` }}
-                      />
-                      <div className="similar-skeleton-price skeleton" />
+              {similarLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div className="similar-skeleton-item" key={i}>
+                      <div className="similar-skeleton-thumb skeleton" />
+                      <div className="similar-skeleton-lines">
+                        <div
+                          className="similar-skeleton-name skeleton"
+                          style={{ width: `${55 + (i % 3) * 15}%` }}
+                        />
+                        <div className="similar-skeleton-price skeleton" />
+                      </div>
                     </div>
-                  </div>
-                ))
-              ) : similarProducts.length === 0 ? (
-                <div
-                  className="similar-skeleton-item"
-                  style={{ borderBottom: "none", paddingTop: "0.5rem" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    No similar products found.
-                  </span>
-                </div>
-              ) : (
-                similarProducts.map((sp) => (
-                  <Link
-                    key={sp.id}
-                    to={`/store/products/${sp.id}`}
-                    className="similar-product-item"
-                  >
-                    <div className="similar-product-thumb">
-                      {sp.image_url ? (
-                        <img src={sp.image_url} alt={sp.name} />
-                      ) : (
-                        <Package size={18} />
-                      )}
-                    </div>
-                    <div className="similar-product-info">
-                      <span className="similar-product-name">{sp.name}</span>
-                      <span className="similar-product-price">
-                        {formatCents(sp.price)}
-                      </span>
-                    </div>
-                    <ChevronRight size={14} className="similar-product-arrow" />
-                  </Link>
-                ))
-              )}
+                  ))
+                : similarProducts.length === 0
+                  ? Array.from({ length: 2 }).map((_, i) => (
+                      <div className="similar-skeleton-item" key={`empty-${i}`}>
+                        <div className="similar-skeleton-thumb skeleton" />
+                        <div className="similar-skeleton-lines">
+                          <div
+                            className="similar-skeleton-name skeleton"
+                            style={{ width: `${55 + (i % 2) * 20}%` }}
+                          />
+                          <div className="similar-skeleton-price skeleton" />
+                        </div>
+                      </div>
+                    ))
+                  : similarProducts.map((sp) => (
+                      <Link
+                        key={sp.id}
+                        to={`/store/products/${sp.id}`}
+                        className="similar-product-item"
+                      >
+                        <div className="similar-product-thumb">
+                          {sp.image_url ? (
+                            <img src={sp.image_url} alt={sp.name} />
+                          ) : (
+                            <Package size={18} />
+                          )}
+                        </div>
+                        <div className="similar-product-info">
+                          <span className="similar-product-name">
+                            {sp.name}
+                          </span>
+                          <span className="similar-product-price">
+                            {formatCents(sp.price)}
+                          </span>
+                        </div>
+                        <ChevronRight
+                          size={14}
+                          className="similar-product-arrow"
+                        />
+                      </Link>
+                    ))}
             </div>
           </div>
 
           {/* Reviews */}
           <div className="product-page-reviews">
-            <div className="product-page-section-label">
-              Product Reviews ({reviews.length})
-            </div>
+            <div className="product-page-section-label">Product Reviews</div>
             <CommentSection
               title=""
               comments={reviews}
