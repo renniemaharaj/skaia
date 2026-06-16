@@ -48,7 +48,7 @@
 /* ── Image ── */
 .product-page-image-container {
   aspect-ratio: 1 / 1;
-  border-radius: var(--radius-xl);
+  /* border-radius: var(--radius-xl); */
   overflow: hidden;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
