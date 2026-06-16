@@ -324,7 +324,7 @@
 
 /* ── Reviews column ── */
 .product-page-reviews {
-  min-width: 350px;
+  /* min-width: 350px; */
   display: flex;
   flex-direction: column;
 }

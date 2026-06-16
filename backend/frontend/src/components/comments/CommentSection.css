@@ -3,6 +3,8 @@
   flex-direction: column;
   gap: 0.875rem;
   padding: 1rem;
+  max-width: 100%;
+  overflow: hidden;
   width: 100%;
 }
 
@@ -258,7 +260,10 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease,
+    opacity 0.2s ease;
   justify-content: center;
 }
 
