@@ -63,6 +63,16 @@ export interface Order {
   items?: OrderItem[];
 }
 
+export interface ReferenceCode {
+  id: string;
+  code: string;
+  user_id: string;
+  incentive_amount: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Payment {
   id: string;
   order_id: string;

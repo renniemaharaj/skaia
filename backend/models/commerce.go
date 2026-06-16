@@ -57,6 +57,27 @@ type Order struct {
 	Items            []*OrderItem `json:"items,omitempty"`
 }
 
+// ReferenceCode maps a checkout code to the user who should receive the reward.
+type ReferenceCode struct {
+	ID              int64     `json:"id"`
+	Code            string    `json:"code"`
+	UserID          int64     `json:"user_id"`
+	IncentiveAmount int64     `json:"incentive_amount"` // in cents
+	IsActive        bool      `json:"is_active"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// ReferenceCodePayout tracks a completed order reward so payouts are idempotent.
+type ReferenceCodePayout struct {
+	ID              int64     `json:"id"`
+	ReferenceCodeID int64     `json:"reference_code_id"`
+	OrderID         int64     `json:"order_id"`
+	UserID          int64     `json:"user_id"`
+	Amount          int64     `json:"amount"` // in cents
+	CreatedAt       time.Time `json:"created_at"`
+}
+
 // OrderItem represents an item in an order. Price is in cents.
 type OrderItem struct {
 	ID        int64     `json:"id"`

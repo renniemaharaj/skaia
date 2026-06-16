@@ -69,6 +69,11 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		// Checkout - all payment logic is backend-only
 		r.With(optJWT).Post("/checkout", h.checkout)
 
+		// Reference code routes
+		r.With(jwt).Get("/reference-codes", h.listReferenceCodes)
+		r.With(jwt).Post("/reference-codes", h.createReferenceCode)
+		r.With(jwt).Put("/reference-codes/{id}", h.updateReferenceCode)
+
 		// Order routes
 		r.With(jwt).Post("/orders", h.createOrder)
 		r.With(jwt).Get("/orders", h.listOrders)
@@ -617,6 +622,104 @@ func (h *Handler) topUpWallet(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *Handler) listReferenceCodes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
+		return
+	}
+	limit, offset := 50, 0
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 {
+		limit = l
+	}
+	if o, err := strconv.Atoi(r.URL.Query().Get("offset")); err == nil && o >= 0 {
+		offset = o
+	}
+	codes, err := h.svc.ListReferenceCodes(limit, offset)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to list reference codes")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, codes)
+}
+
+func (h *Handler) createReferenceCode(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
+		return
+	}
+	var req struct {
+		Code            string `json:"code"`
+		UserID          int64  `json:"user_id"`
+		IncentiveAmount int64  `json:"incentive_amount"`
+		IsActive        *bool  `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	active := true
+	if req.IsActive != nil {
+		active = *req.IsActive
+	}
+	code, err := h.svc.CreateReferenceCode(&models.ReferenceCode{
+		Code:            req.Code,
+		UserID:          req.UserID,
+		IncentiveAmount: req.IncentiveAmount,
+		IsActive:        active,
+	})
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, code)
+}
+
+func (h *Handler) updateReferenceCode(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid reference code ID")
+		return
+	}
+	var req struct {
+		Code            string `json:"code"`
+		UserID          int64  `json:"user_id"`
+		IncentiveAmount int64  `json:"incentive_amount"`
+		IsActive        bool   `json:"is_active"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	code, err := h.svc.UpdateReferenceCode(&models.ReferenceCode{
+		ID:              id,
+		Code:            req.Code,
+		UserID:          req.UserID,
+		IncentiveAmount: req.IncentiveAmount,
+		IsActive:        req.IsActive,
+	})
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, code)
+}
+
 func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -1055,6 +1158,10 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 		log.Printf("store.checkout: %v", err)
 		if strings.Contains(err.Error(), "insufficient stock") {
 			utils.WriteError(w, http.StatusConflict, "The order failed because someone else had already checked out and the product is no longer in stock.")
+			return
+		}
+		if strings.Contains(err.Error(), "reference code") {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 		utils.WriteError(w, http.StatusInternalServerError, "checkout failed")

@@ -14,37 +14,39 @@ import (
 
 // Service coordinates repository access with caching for the store domain.
 type Service struct {
-	categories    CategoryRepository
-	products      ProductRepository
-	cart          CartRepository
-	orders        OrderRepository
-	payments      PaymentRepository
-	plans         SubscriptionPlanRepository
-	subscriptions SubscriptionRepository
-	reviews       ReviewRepository
-	WalletRepo    WalletRepository
-	cache         *ProductCache
-	provider      PaymentProvider
-	inboxSender   models.InboxSender
-	users         UserStore
+	categories     CategoryRepository
+	products       ProductRepository
+	cart           CartRepository
+	orders         OrderRepository
+	referenceCodes ReferenceCodeRepository
+	payments       PaymentRepository
+	plans          SubscriptionPlanRepository
+	subscriptions  SubscriptionRepository
+	reviews        ReviewRepository
+	WalletRepo     WalletRepository
+	cache          *ProductCache
+	provider       PaymentProvider
+	inboxSender    models.InboxSender
+	users          UserStore
 }
 
 // NewService creates a Service.
-func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider, users UserStore, inboxSender models.InboxSender) *Service {
+func NewService(cats CategoryRepository, products ProductRepository, cart CartRepository, orders OrderRepository, referenceCodes ReferenceCodeRepository, payments PaymentRepository, plans SubscriptionPlanRepository, subs SubscriptionRepository, reviews ReviewRepository, wallet WalletRepository, cache *ProductCache, provider PaymentProvider, users UserStore, inboxSender models.InboxSender) *Service {
 	return &Service{
-		categories:    cats,
-		products:      products,
-		cart:          cart,
-		orders:        orders,
-		payments:      payments,
-		plans:         plans,
-		subscriptions: subs,
-		reviews:       reviews,
-		WalletRepo:    wallet,
-		cache:         cache,
-		provider:      provider,
-		inboxSender:   inboxSender,
-		users:         users,
+		categories:     cats,
+		products:       products,
+		cart:           cart,
+		orders:         orders,
+		referenceCodes: referenceCodes,
+		payments:       payments,
+		plans:          plans,
+		subscriptions:  subs,
+		reviews:        reviews,
+		WalletRepo:     wallet,
+		cache:          cache,
+		provider:       provider,
+		inboxSender:    inboxSender,
+		users:          users,
 	}
 }
 
@@ -189,7 +191,81 @@ func (s *Service) DeleteOrder(id int64) error {
 }
 
 func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
-	return s.orders.UpdateStatus(id, status)
+	before, _ := s.orders.GetByID(id)
+	order, err := s.orders.UpdateStatus(id, status)
+	if err != nil {
+		return nil, err
+	}
+	if status == "completed" && before != nil && before.Status != "completed" {
+		_ = s.AwardReferenceCodePayout(order)
+	}
+	return order, nil
+}
+
+func (s *Service) CreateReferenceCode(code *models.ReferenceCode) (*models.ReferenceCode, error) {
+	if code.Code == "" {
+		return nil, fmt.Errorf("reference code required")
+	}
+	if code.UserID <= 0 {
+		return nil, fmt.Errorf("user_id required")
+	}
+	if code.IncentiveAmount <= 0 {
+		return nil, fmt.Errorf("incentive amount must be positive")
+	}
+	return s.referenceCodes.Create(code)
+}
+
+func (s *Service) UpdateReferenceCode(code *models.ReferenceCode) (*models.ReferenceCode, error) {
+	if code.ID <= 0 {
+		return nil, fmt.Errorf("reference code id required")
+	}
+	if code.Code == "" {
+		return nil, fmt.Errorf("reference code required")
+	}
+	if code.UserID <= 0 {
+		return nil, fmt.Errorf("user_id required")
+	}
+	if code.IncentiveAmount <= 0 {
+		return nil, fmt.Errorf("incentive amount must be positive")
+	}
+	return s.referenceCodes.Update(code)
+}
+
+func (s *Service) ListReferenceCodes(limit, offset int) ([]*models.ReferenceCode, error) {
+	return s.referenceCodes.List(limit, offset)
+}
+
+func (s *Service) AwardReferenceCodePayout(order *models.Order) error {
+	if order == nil || order.ReferralCode == "" {
+		return nil
+	}
+	if _, err := s.referenceCodes.GetPayoutByOrderID(order.ID); err == nil {
+		return nil
+	}
+
+	code, err := s.referenceCodes.GetByCode(order.ReferralCode)
+	if err != nil {
+		return nil
+	}
+	if !code.IsActive || code.IncentiveAmount <= 0 {
+		return nil
+	}
+	if order.UserID != nil && *order.UserID == code.UserID {
+		return nil
+	}
+
+	if _, err := s.referenceCodes.CreatePayoutWithWalletCredit(&models.ReferenceCodePayout{
+		ReferenceCodeID: code.ID,
+		OrderID:         order.ID,
+		UserID:          code.UserID,
+		Amount:          code.IncentiveAmount,
+	}, fmt.Sprintf("Reference code %s reward for order #%d", code.Code, order.ID)); err != nil {
+		if strings.Contains(err.Error(), "duplicate key") {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 // Checkout processes a purchase end-to-end:
@@ -241,6 +317,17 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 	var parsedUserID *int64
 	if !req.IsGuest {
 		parsedUserID = &userID
+	}
+
+	if req.ReferralCode != "" {
+		refCode, err := s.referenceCodes.GetByCode(req.ReferralCode)
+		if err != nil || !refCode.IsActive {
+			return nil, fmt.Errorf("invalid reference code")
+		}
+		if !req.IsGuest && refCode.UserID == userID {
+			return nil, fmt.Errorf("cannot use your own reference code")
+		}
+		req.ReferralCode = refCode.Code
 	}
 
 	order, err := s.orders.Create(&models.Order{
@@ -391,23 +478,11 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 			}
 		}
 
-		// Reward referrer
-		if !req.IsGuest && req.ReferralCode != "" {
-			if refUser, err := s.users.GetByUsername(req.ReferralCode); err == nil && refUser.ID != userID {
-				_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
-					UserID:      refUser.ID,
-					Amount:      50, // 50 cents
-					Type:        "credit",
-					Description: fmt.Sprintf("Referral reward for order #%d", order.ID),
-				})
-			}
-		}
-
 		_ = s.cart.ClearCart(userID)
 
 		// If there are special actions, complete the order and execute them now.
 		if hasSpecial && !req.IsGuest {
-			if co, _ := s.orders.UpdateStatus(order.ID, "completed"); co != nil {
+			if co, _ := s.UpdateOrderStatus(order.ID, "completed"); co != nil {
 				order = co
 			}
 			// execute special actions now (mirror previous behavior)

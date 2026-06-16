@@ -15,7 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { Order } from "../../atoms/store";
+import type { Order, ReferenceCode } from "../../atoms/store";
 import "../../styles/Cart.css";
 
 import { DirectoryLayout } from "../page/layout/templates/DirectoryLayout";
@@ -44,6 +44,13 @@ export const OrdersPage = () => {
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [referenceCodes, setReferenceCodes] = useState<ReferenceCode[]>([]);
+  const [referenceForm, setReferenceForm] = useState({
+    code: "",
+    user_id: "",
+    incentive_amount: "",
+    is_active: true,
+  });
   const [paymentsByOrder, setPaymentsByOrder] = useState<Record<string, any>>(
     {},
   );
@@ -64,6 +71,7 @@ export const OrdersPage = () => {
     }
     if (isAuthenticated) {
       fetchOrders();
+      if (isStoreAdmin) fetchReferenceCodes();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isStoreAdmin, navigate]);
@@ -118,6 +126,56 @@ export const OrdersPage = () => {
     }
   };
 
+  const fetchReferenceCodes = async () => {
+    try {
+      const data = (await apiRequest(
+        "/store/reference-codes",
+      )) as ReferenceCode[];
+      setReferenceCodes(data || []);
+    } catch {
+      toast.error("Failed to load reference codes");
+    }
+  };
+
+  const createReferenceCode = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    const userID = Number.parseInt(referenceForm.user_id, 10);
+    const incentiveAmount = Number.parseInt(referenceForm.incentive_amount, 10);
+    if (
+      !referenceForm.code.trim() ||
+      !Number.isFinite(userID) ||
+      !Number.isFinite(incentiveAmount)
+    ) {
+      toast.error("Code, user ID, and incentive amount are required.");
+      return;
+    }
+    try {
+      await apiRequest("/store/reference-codes", {
+        method: "POST",
+        body: JSON.stringify({
+          code: referenceForm.code,
+          user_id: userID,
+          incentive_amount: incentiveAmount,
+          is_active: referenceForm.is_active,
+        }),
+      });
+      toast.success("Reference code created");
+      setReferenceForm({
+        code: "",
+        user_id: "",
+        incentive_amount: "",
+        is_active: true,
+      });
+      fetchReferenceCodes();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create reference code",
+      );
+    }
+  };
+
   const updateOrderStatus = async (id: string, status: string) => {
     try {
       await apiRequest(`/store/orders/${id}/status`, {
@@ -163,6 +221,102 @@ export const OrdersPage = () => {
         renderGridCard={() => null}
         customListContent={
           <div className="directory-layout__list">
+            {isStoreAdmin && (
+              <section
+                // className="card--outlined"
+                style={{ marginBottom: "1rem", padding: "1rem" }}
+              >
+                <h3 style={{ marginTop: 0 }}>Reference Codes</h3>
+                <form
+                  onSubmit={createReferenceCode}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: "0.75rem",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    className="form-input"
+                    placeholder="Code"
+                    value={referenceForm.code}
+                    onChange={(event) =>
+                      setReferenceForm((prev) => ({
+                        ...prev,
+                        code: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="form-input"
+                    inputMode="numeric"
+                    placeholder="User ID"
+                    value={referenceForm.user_id}
+                    onChange={(event) =>
+                      setReferenceForm((prev) => ({
+                        ...prev,
+                        user_id: event.target.value,
+                      }))
+                    }
+                  />
+                  <input
+                    className="form-input"
+                    inputMode="numeric"
+                    placeholder="Incentive cents"
+                    value={referenceForm.incentive_amount}
+                    onChange={(event) =>
+                      setReferenceForm((prev) => ({
+                        ...prev,
+                        incentive_amount: event.target.value,
+                      }))
+                    }
+                  />
+                  <label className="cart-checkbox-label" style={{ margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={referenceForm.is_active}
+                      onChange={(event) =>
+                        setReferenceForm((prev) => ({
+                          ...prev,
+                          is_active: event.target.checked,
+                        }))
+                      }
+                    />
+                    Active
+                  </label>
+                  <button type="submit" className="btn btn-primary">
+                    Create
+                  </button>
+                </form>
+                {referenceCodes.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
+                      marginTop: "0.75rem",
+                    }}
+                  >
+                    {referenceCodes.map((code) => (
+                      <span
+                        key={code.id}
+                        style={{
+                          border: "1px solid var(--border-color)",
+                          borderRadius: 6,
+                          padding: "0.35rem 0.5rem",
+                          color: code.is_active
+                            ? "var(--text-primary)"
+                            : "var(--text-secondary)",
+                        }}
+                      >
+                        {code.code} to User #{code.user_id},{" "}
+                        {formatCents(code.incentive_amount)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
             <div>
               {loading && <Loader className="spin" />}
               {!loading && orders.length === 0 && (

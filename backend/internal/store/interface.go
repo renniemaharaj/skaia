@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	
+
 	"github.com/skaia/backend/models"
 )
 
@@ -45,6 +45,18 @@ type OrderRepository interface {
 	ListAll(limit, offset int) ([]*models.Order, error)
 	UpdateStatus(id int64, status string) (*models.Order, error)
 	Delete(id int64) error
+}
+
+// ReferenceCodeRepository manages checkout reference codes and their payouts.
+type ReferenceCodeRepository interface {
+	Create(code *models.ReferenceCode) (*models.ReferenceCode, error)
+	Update(code *models.ReferenceCode) (*models.ReferenceCode, error)
+	GetByID(id int64) (*models.ReferenceCode, error)
+	GetByCode(code string) (*models.ReferenceCode, error)
+	List(limit, offset int) ([]*models.ReferenceCode, error)
+	CreatePayout(payout *models.ReferenceCodePayout) (*models.ReferenceCodePayout, error)
+	CreatePayoutWithWalletCredit(payout *models.ReferenceCodePayout, description string) (*models.ReferenceCodePayout, error)
+	GetPayoutByOrderID(orderID int64) (*models.ReferenceCodePayout, error)
 }
 
 // PaymentRepository persists payment records.
