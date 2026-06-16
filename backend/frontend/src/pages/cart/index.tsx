@@ -323,7 +323,10 @@ export const CartPage = () => {
         </div>
 
         {/* ── Checkout panel ── */}
-        <div className="cart-summary">
+        <div
+          style={{ width: "660px", maxWidth: "100%" }}
+          className="card card--outlined cart-summary"
+        >
           <h3>Checkout</h3>
 
           {/* Guest info */}

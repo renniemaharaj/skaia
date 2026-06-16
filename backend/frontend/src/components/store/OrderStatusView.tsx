@@ -98,7 +98,7 @@ const OrderSubmittedView: React.FC<Props> = ({
               marginBottom: 0,
             }}
           >
-            <TitleIcon size={28} />
+            <TitleIcon size={24} />
           </div>
           <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>
             {titleText}
@@ -167,7 +167,7 @@ const OrderSubmittedView: React.FC<Props> = ({
                 justifyContent: "center",
               }}
             >
-              <TitleIcon size={24} />
+              <TitleIcon size={32} />
             </div>
             <h3
               style={{ marginBottom: 0, fontSize: "1.15rem", fontWeight: 700 }}

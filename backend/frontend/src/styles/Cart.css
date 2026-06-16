@@ -21,7 +21,7 @@
 /* ── Two-column layout ── */
 .cart-content {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 37rem;
   gap: 2rem;
   align-items: start;
 }
