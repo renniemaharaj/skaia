@@ -92,6 +92,11 @@ func (r *sqlReferenceCodeRepository) List(limit, offset int) ([]*models.Referenc
 	return codes, rows.Err()
 }
 
+func (r *sqlReferenceCodeRepository) Delete(id int64) error {
+	_, err := r.db.Exec(`DELETE FROM store_reference_codes WHERE id=$1`, id)
+	return err
+}
+
 func (r *sqlReferenceCodeRepository) CreatePayout(payout *models.ReferenceCodePayout) (*models.ReferenceCodePayout, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO store_reference_code_payouts (reference_code_id, order_id, user_id, amount)

@@ -235,6 +235,13 @@ func (s *Service) ListReferenceCodes(limit, offset int) ([]*models.ReferenceCode
 	return s.referenceCodes.List(limit, offset)
 }
 
+func (s *Service) DeleteReferenceCode(id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("reference code id required")
+	}
+	return s.referenceCodes.Delete(id)
+}
+
 func (s *Service) AwardReferenceCodePayout(order *models.Order) error {
 	if order == nil || order.ReferralCode == "" {
 		return nil

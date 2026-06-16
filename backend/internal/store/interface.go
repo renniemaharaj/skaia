@@ -54,6 +54,7 @@ type ReferenceCodeRepository interface {
 	GetByID(id int64) (*models.ReferenceCode, error)
 	GetByCode(code string) (*models.ReferenceCode, error)
 	List(limit, offset int) ([]*models.ReferenceCode, error)
+	Delete(id int64) error
 	CreatePayout(payout *models.ReferenceCodePayout) (*models.ReferenceCodePayout, error)
 	CreatePayoutWithWalletCredit(payout *models.ReferenceCodePayout, description string) (*models.ReferenceCodePayout, error)
 	GetPayoutByOrderID(orderID int64) (*models.ReferenceCodePayout, error)

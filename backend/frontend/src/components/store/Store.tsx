@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
-import "../../pages/store/ProductPage.css";
-import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
+import "./ProductPage.css";
+import {
+  currentUserAtom,
+  isAuthenticatedAtom,
+  socketAtom,
+} from "../../atoms/auth";
 import {
   productsAtom,
   productCategoriesAtom,
@@ -48,11 +52,14 @@ export const Store: React.FC = () => {
   const canCreateProduct =
     currentUser?.permissions?.includes("store.product-new") || guestSandboxMode;
   const canEditProduct =
-    currentUser?.permissions?.includes("store.product-edit") || guestSandboxMode;
+    currentUser?.permissions?.includes("store.product-edit") ||
+    guestSandboxMode;
   const canDeleteProduct =
-    currentUser?.permissions?.includes("store.product-delete") || guestSandboxMode;
+    currentUser?.permissions?.includes("store.product-delete") ||
+    guestSandboxMode;
   const canManageCategories =
-    currentUser?.permissions?.includes("store.manageCategories") || guestSandboxMode;
+    currentUser?.permissions?.includes("store.manageCategories") ||
+    guestSandboxMode;
   const canCreateCategory = canManageCategories || guestSandboxMode;
   const canDeleteCategory = canManageCategories || guestSandboxMode;
 
@@ -120,11 +127,13 @@ export const Store: React.FC = () => {
   const handleAddToCart = async (product: Product) => {
     if (!isAuthenticated) {
       // Optimistic local-only cart for guests
-      setCartItems(prev => {
-        const existing = prev.find(i => i.product_id === product.id);
+      setCartItems((prev) => {
+        const existing = prev.find((i) => i.product_id === product.id);
         if (existing) {
-          return prev.map(i =>
-            i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+          return prev.map((i) =>
+            i.product_id === product.id
+              ? { ...i, quantity: i.quantity + 1 }
+              : i,
           );
         }
         return [
@@ -156,7 +165,7 @@ export const Store: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     try {
       await apiRequest(`/store/products/${productId}`, { method: "DELETE" });
-      setProducts(prev => prev.filter(p => p.id !== productId));
+      setProducts((prev) => prev.filter((p) => p.id !== productId));
     } catch (err) {
       console.error("Error deleting product:", err);
     }
@@ -165,7 +174,7 @@ export const Store: React.FC = () => {
   const handleDeleteCategory = async (categoryId: string) => {
     try {
       await apiRequest(`/store/categories/${categoryId}`, { method: "DELETE" });
-      setCategories(prev => prev.filter(c => c.id !== categoryId));
+      setCategories((prev) => prev.filter((c) => c.id !== categoryId));
       setSelectedCategory(null);
     } catch (err) {
       console.error("Error deleting category:", err);
@@ -198,7 +207,10 @@ export const Store: React.FC = () => {
         onImagePreview={setSelectedImage}
       />
 
-      <ImageLightbox imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
+      <ImageLightbox
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
 
       {editingProduct && (
         <EditProductDialog

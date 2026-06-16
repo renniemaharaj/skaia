@@ -73,6 +73,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Get("/reference-codes", h.listReferenceCodes)
 		r.With(jwt).Post("/reference-codes", h.createReferenceCode)
 		r.With(jwt).Put("/reference-codes/{id}", h.updateReferenceCode)
+		r.With(jwt).Delete("/reference-codes/{id}", h.deleteReferenceCode)
 
 		// Order routes
 		r.With(jwt).Post("/orders", h.createOrder)
@@ -718,6 +719,27 @@ func (h *Handler) updateReferenceCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, code)
+}
+
+func (h *Handler) deleteReferenceCode(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid reference code ID")
+		return
+	}
+	if err := h.svc.DeleteReferenceCode(id); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to delete reference code")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
 func (h *Handler) addToCart(w http.ResponseWriter, r *http.Request) {

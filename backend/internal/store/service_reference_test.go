@@ -86,6 +86,10 @@ func (r *fakeReferenceCodeRepo) List(limit, offset int) ([]*models.ReferenceCode
 	return codes, nil
 }
 
+func (r *fakeReferenceCodeRepo) Delete(id int64) error {
+	return nil
+}
+
 func (r *fakeReferenceCodeRepo) CreatePayout(payout *models.ReferenceCodePayout) (*models.ReferenceCodePayout, error) {
 	if _, exists := r.payouts[payout.OrderID]; exists {
 		return nil, errors.New("duplicate key")

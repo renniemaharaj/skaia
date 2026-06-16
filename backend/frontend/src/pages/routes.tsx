@@ -6,24 +6,32 @@ const StorePage = lazy(() =>
   import("./store/index.tsx").then((m) => ({ default: m.StorePage })),
 );
 const ProductPage = lazy(() =>
-  import("./store/ProductPage.tsx").then((m) => ({ default: m.ProductPage })),
+  import("../components/store/ProductPage.tsx").then((m) => ({
+    default: m.ProductPage,
+  })),
 );
 const WalletPage = lazy(() =>
-  import("./store/WalletPage.tsx").then((m) => ({ default: m.WalletPage })),
+  import("../components/store/WalletPage.tsx").then((m) => ({
+    default: m.WalletPage,
+  })),
 );
 const OrdersPage = lazy(() =>
-  import("./store/OrdersPage.tsx").then((m) => ({ default: m.OrdersPage })),
+  import("../components/store/OrdersPage.tsx").then((m) => ({
+    default: m.OrdersPage,
+  })),
 );
 const OrderViewPage = lazy(() =>
-  import("./store/OrderViewPage.tsx").then((m) => ({ default: m.default })),
+  import("../components/store/OrderViewPage.tsx").then((m) => ({
+    default: m.default,
+  })),
 );
 const NewProductPage = lazy(() =>
-  import("./store/NewProductPage.tsx").then((m) => ({
+  import("../components/store/NewProductPage.tsx").then((m) => ({
     default: m.NewProductPage,
   })),
 );
 const NewStoreCategoryPage = lazy(() =>
-  import("./store/NewStoreCategoryPage.tsx").then((m) => ({
+  import("../components/store/NewStoreCategoryPage.tsx").then((m) => ({
     default: m.NewStoreCategoryPage,
   })),
 );

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useUserData } from "../users/useUserData";
+import { useUserData } from "../../pages/users/useUserData";
 import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
