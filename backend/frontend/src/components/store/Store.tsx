@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, StoreIcon, Trash2, Wallet } from "lucide-react";
+import {
+  ClipboardList,
+  Package,
+  Plus,
+  StoreIcon,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "../../pages/store/ProductPage.css";
@@ -233,8 +240,10 @@ export const Store: React.FC = () => {
               className="btn-admin-action"
               onClick={() => navigate("/store/new-category")}
               title="New category"
+              aria-label="New category"
             >
-              <Plus size={16} /> New Category
+              <Plus size={16} />
+              <span className="store-action-label">New Category</span>
             </button>
           )}
           {canCreateProduct && categories.length > 0 && (
@@ -243,8 +252,10 @@ export const Store: React.FC = () => {
               className="btn-admin-action"
               onClick={() => navigate("/store/new-product")}
               title="New product"
+              aria-label="New product"
             >
-              <Plus size={16} /> New Product
+              <Plus size={16} />
+              <span className="store-action-label">New Product</span>
             </button>
           )}
           {isAuthenticated && (
@@ -254,16 +265,20 @@ export const Store: React.FC = () => {
                 className="btn-admin-action store-wallet-button"
                 onClick={() => navigate(`/wallet/${crypto.randomUUID()}`)}
                 title="My Wallet"
+                aria-label="My Wallet"
               >
-                <Wallet size={16} /> Wallet
+                <Wallet size={16} />
+                <span className="store-action-label">Wallet</span>
               </button>
               <button
                 type="button"
                 className="btn-admin-action store-orders-button"
                 onClick={() => navigate("/store/orders")}
                 title="My Orders"
+                aria-label="My Orders"
               >
-                My Orders
+                <ClipboardList size={16} />
+                <span className="store-action-label">My Orders</span>
               </button>
             </>
           )}
