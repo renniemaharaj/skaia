@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ShoppingCart,
@@ -15,6 +15,7 @@ import {
   productsAtom,
   cartTotalAtom,
   type CartItem,
+  type CheckoutResponse,
   type Order,
 } from "../../atoms/store";
 import { isAuthenticatedAtom } from "../../atoms/auth";
@@ -28,7 +29,7 @@ import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import "../../styles/Cart.css";
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
   iconAnchor: [12, 41],
@@ -70,12 +71,13 @@ export const CartPage = () => {
   const [rememberBilling, setRememberBilling] = useState(false);
   const [billingInfo, setBillingInfo] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const [userCards, setUserCards] = useState<any[]>([]);
+  type WalletCard = { id: string; card_name: string; card_number: string };
+  const [userCards, setUserCards] = useState<WalletCard[]>([]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      apiRequest("/store/wallet/cards")
-        .then((data: any) => {
+      apiRequest<{ cards?: WalletCard[] }>("/store/wallet/cards")
+        .then((data) => {
           setUserCards(data.cards || []);
         })
         .catch(() => {});
@@ -135,14 +137,31 @@ export const CartPage = () => {
     }
   };
 
-  const handleQuantityChange = (productId: string, raw: string) => {
-    const qty = parseInt(raw);
-    if (!isNaN(qty) && qty > 0) {
+  const handleQuantityChange = async (productId: string, raw: string) => {
+    const qty = Number.parseInt(raw, 10);
+    if (!Number.isNaN(qty) && qty > 0) {
       setCartItems((prev) =>
         prev.map((i) =>
           i.product_id === productId ? { ...i, quantity: qty } : i,
         ),
       );
+      if (isAuthenticated) {
+        try {
+          await apiRequest("/store/cart/update", {
+            method: "PUT",
+            body: JSON.stringify({
+              product_id: Number(productId),
+              quantity: qty,
+            }),
+          });
+        } catch (err) {
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Could not update cart quantity.",
+          );
+        }
+      }
     }
   };
 
@@ -164,7 +183,7 @@ export const CartPage = () => {
 
     setLoading(true);
     try {
-      const data = (await apiRequest("/store/checkout", {
+      const data = await apiRequest<CheckoutResponse>("/store/checkout", {
         method: "POST",
         body: JSON.stringify({
           items: cartItems.map((i: CartItem) => ({
@@ -183,7 +202,7 @@ export const CartPage = () => {
           billing_info: billingInfo,
           referral_code: referralCode,
         }),
-      })) as any;
+      });
 
       // Persist saved checkout info as a single object, explicit: do NOT save deliveryTime
       if (isAuthenticated) {
@@ -216,10 +235,21 @@ export const CartPage = () => {
     }
   };
 
-  const deliveryMarkerValid =
-    deliveryLocation.includes(",") &&
-    !isNaN(parseFloat(deliveryLocation.split(",")[0])) &&
-    !isNaN(parseFloat(deliveryLocation.split(",")[1]));
+  const savedCheckoutInfo = useMemo(() => {
+    if (!billingInfo && !guestPhone && !deliveryLocation) return null;
+    return [
+      billingInfo || "No billing note saved",
+      guestPhone || "No phone saved",
+      deliveryLocation || "No location saved",
+    ];
+  }, [billingInfo, deliveryLocation, guestPhone]);
+
+  const deliveryMarkerPosition = useMemo<[number, number] | null>(() => {
+    const [latRaw, lngRaw] = deliveryLocation.split(",");
+    const lat = Number.parseFloat(latRaw);
+    const lng = Number.parseFloat(lngRaw);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+  }, [deliveryLocation]);
 
   /* ── Success screen ── */
   if (successOrder) {
@@ -295,9 +325,9 @@ export const CartPage = () => {
                     }
                   />
                   <button
+                    type="button"
                     className="btn btn-danger"
                     title="Remove from cart"
-                    style={{ maxWidth: "40px" }}
                     onClick={() => handleRemove(item.product_id)}
                   >
                     <Trash2 size={16} />
@@ -309,6 +339,7 @@ export const CartPage = () => {
 
           <div className="cart-footer-actions">
             <button
+              type="button"
               className="btn btn-ghost"
               onClick={handleClearCart}
               disabled={loading}
@@ -324,10 +355,7 @@ export const CartPage = () => {
         </div>
 
         {/* ── Checkout panel ── */}
-        <div
-          style={{ width: "660px", maxWidth: "100%" }}
-          className="card card--outlined cart-summary"
-        >
+        <div className="card card--outlined cart-summary">
           <h3>Checkout</h3>
 
           {/* Guest info */}
@@ -343,13 +371,7 @@ export const CartPage = () => {
                   onChange={(e) => setGuestEmail(e.target.value)}
                 />
               </div>
-              <p
-                style={{
-                  fontSize: "0.8rem",
-                  color: "var(--text-secondary)",
-                  marginBottom: 0,
-                }}
-              >
+              <p className="cart-help-text">
                 <Link to="/login">Sign in</Link> to save your details and earn
                 rewards.
               </p>
@@ -357,22 +379,13 @@ export const CartPage = () => {
           )}
           {/* Saved checkout info quick card */}
           {isAuthenticated && rememberBilling && (
-            <div
-              className="saved-checkout-card card card--outlined"
-              style={{ marginBottom: "0.75rem" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+            <div className="saved-checkout-card card card--outlined">
+              <div className="saved-checkout-header">
                 <strong>Saved billing information</strong>
                 <button
-                  // className="btn btn-ghost"
+                  className="btn btn-ghost"
+                  type="button"
                   onClick={() => {
-                    // autofill from saved data
                     const savedJson = localStorage.getItem("checkoutSaved");
                     if (savedJson) {
                       try {
@@ -389,17 +402,13 @@ export const CartPage = () => {
                   Use
                 </button>
               </div>
-              <div
-                style={{
-                  marginTop: "0.5rem",
-                  fontSize: "0.9rem",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <div>{billingInfo || "—"}</div>
-                <div>{guestPhone || "—"}</div>
-                <div>{deliveryLocation || "—"}</div>
-              </div>
+              {savedCheckoutInfo && (
+                <div className="saved-checkout-details">
+                  {savedCheckoutInfo.map((line, index) => (
+                    <div key={`${index}-${line}`}>{line}</div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -432,13 +441,8 @@ export const CartPage = () => {
                 <LocationPickerEvents
                   setDeliveryLocation={setDeliveryLocation}
                 />
-                {deliveryMarkerValid && (
-                  <Marker
-                    position={[
-                      parseFloat(deliveryLocation.split(",")[0]),
-                      parseFloat(deliveryLocation.split(",")[1]),
-                    ]}
-                  />
+                {deliveryMarkerPosition && (
+                  <Marker position={deliveryMarkerPosition} />
                 )}
               </MapContainer>
             </div>
@@ -475,7 +479,7 @@ export const CartPage = () => {
               onChange={(e) => setExtraInfo(e.target.value)}
             />
 
-            <div className="input-group" style={{ marginTop: "0.5rem" }}>
+            <div className="input-group cart-referral-field">
               <input
                 type="text"
                 placeholder="Referral code (optional)"
@@ -522,7 +526,6 @@ export const CartPage = () => {
                     placeholder="Billing details — name, note for driver, etc."
                     value={billingInfo}
                     onChange={(e) => setBillingInfo(e.target.value)}
-                    style={{ marginTop: "0.5rem" }}
                   />
                 )}
               </>
@@ -537,6 +540,7 @@ export const CartPage = () => {
           </div>
 
           <button
+            type="button"
             className="btn btn-primary cart-submit-btn"
             onClick={handleCheckout}
             disabled={loading}

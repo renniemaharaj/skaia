@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, StoreIcon, Trash2 } from "lucide-react";
+import { Package, Plus, StoreIcon, Trash2, Wallet } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "../../pages/store/ProductPage.css";
@@ -14,6 +14,7 @@ import {
   selectedCategoryIdAtom,
   filteredProductsAtom,
   storeCartItemsAtom,
+  type CartItem,
   type Product,
   type StoreCategory,
 } from "../../atoms/store";
@@ -23,10 +24,18 @@ import { SkeletonCard } from "../ui/SkeletonCard";
 
 import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
-import { Wallet } from "lucide-react";
 import { createPortal } from "react-dom";
 import "./Store.css";
 import { InlineProduct } from "./InlineProduct";
+
+const PRODUCT_SKELETON_KEYS = [
+  "product-skeleton-1",
+  "product-skeleton-2",
+  "product-skeleton-3",
+  "product-skeleton-4",
+  "product-skeleton-5",
+  "product-skeleton-6",
+];
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -77,7 +86,9 @@ export const Store: React.FC = () => {
 
       // Subscribe to per-category updates so admin mutations propagate
       if (Array.isArray(catsRes)) {
-        catsRes.forEach((c) => subscribe("store_category", c.id));
+        for (const category of catsRes) {
+          subscribe("store_category", category.id);
+        }
       }
     } catch (err) {
       console.error("Error loading store catalog:", err);
@@ -90,7 +101,7 @@ export const Store: React.FC = () => {
   const loadCart = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const resp = await apiRequest<{ items: any[] }>("/store/cart");
+      const resp = await apiRequest<{ items: CartItem[] }>("/store/cart");
       if (resp && Array.isArray(resp.items)) {
         setCartItems(resp.items);
       }
@@ -187,17 +198,16 @@ export const Store: React.FC = () => {
         <div className="category-list">
           <StoreIcon className="category-icon" size={24} />
           <button
+            type="button"
             className={`category-button ${!selectedCategoryId ? "category-active" : ""}`}
             onClick={() => setSelectedCategory(null)}
           >
             All
           </button>
           {categories.map((cat) => (
-            <div
-              key={cat.id}
-              style={{ display: "flex", alignItems: "center", gap: "4px" }}
-            >
+            <div key={cat.id} className="category-item">
               <button
+                type="button"
                 className={`category-button ${
                   selectedCategoryId === cat.id ? "category-active" : ""
                 }`}
@@ -207,6 +217,7 @@ export const Store: React.FC = () => {
               </button>
               {canDeleteCategory && (
                 <button
+                  type="button"
                   className="btn-admin-icon btn-danger"
                   title="Delete category"
                   onClick={() => handleDeleteCategory(cat.id)}
@@ -218,6 +229,7 @@ export const Store: React.FC = () => {
           ))}
           {canCreateCategory && (
             <button
+              type="button"
               className="btn-admin-action"
               onClick={() => navigate("/store/new-category")}
               title="New category"
@@ -227,6 +239,7 @@ export const Store: React.FC = () => {
           )}
           {canCreateProduct && categories.length > 0 && (
             <button
+              type="button"
               className="btn-admin-action"
               onClick={() => navigate("/store/new-product")}
               title="New product"
@@ -237,21 +250,16 @@ export const Store: React.FC = () => {
           {isAuthenticated && (
             <>
               <button
-                className="btn-admin-action"
-                style={{
-                  marginLeft: "auto",
-                  background: "var(--bg-secondary)",
-                  border: "1px solid var(--border-color)",
-                  color: "var(--text-primary)",
-                }}
+                type="button"
+                className="btn-admin-action store-wallet-button"
                 onClick={() => navigate(`/wallet/${crypto.randomUUID()}`)}
                 title="My Wallet"
               >
                 <Wallet size={16} /> Wallet
               </button>
               <button
-                className="btn-admin-action"
-                style={{ marginLeft: "8px" }}
+                type="button"
+                className="btn-admin-action store-orders-button"
                 onClick={() => navigate("/store/orders")}
                 title="My Orders"
               >
@@ -266,8 +274,8 @@ export const Store: React.FC = () => {
       <div className="products-section">
         {loading ? (
           <div className="products-grid">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonCard key={i} />
+            {PRODUCT_SKELETON_KEYS.map((key) => (
+              <SkeletonCard key={key} />
             ))}
           </div>
         ) : products.length > 0 ? (
@@ -301,43 +309,24 @@ export const Store: React.FC = () => {
       {selectedImage &&
         typeof document !== "undefined" &&
         createPortal(
-          <div
+          <button
+            type="button"
             className="up-upload-lightbox"
+            aria-label="Close image preview"
             onClick={() => setSelectedImage(null)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(0,0,0,0.85)",
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setSelectedImage(null);
+              }
             }}
           >
-            <div
-              className="up-upload-lightbox-content"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: "90vw",
-                maxHeight: "90vh",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
+            <span className="up-upload-lightbox-content">
               <img
                 src={selectedImage}
                 alt="Preview"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
               />
-            </div>
-          </div>,
+            </span>
+          </button>,
           document.body,
         )}
 

@@ -43,6 +43,12 @@
   width: 100%;
 }
 
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .category-icon {
   margin-top: 0.77rem;
 }
@@ -62,7 +68,12 @@
 
 @media (max-width: 768px) {
   .categories-bar {
-    padding: 3rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .category-list {
+    gap: 0.5rem;
   }
 }
 
@@ -326,6 +337,43 @@
   background: var(--error-color);
   color: white;
   border-color: var(--error-color);
+}
+
+.store-wallet-button {
+  margin-left: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.store-orders-button {
+  margin-left: 8px;
+}
+
+.up-upload-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: rgb(0 0 0 / 85%);
+  cursor: zoom-out;
+}
+
+.up-upload-lightbox-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.up-upload-lightbox-content img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .skeleton-card {

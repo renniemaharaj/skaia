@@ -10,7 +10,10 @@
 - **Phase 5: Frontend Lookup & Admin UI** — ✅ Complete
 
 ### Next Steps
-- Review frontend changes and ensure no lingering TypeScript errors.
-- Hand back to user for testing.
+- [x] 2026-06-16 regression hotfix: authenticated cart quantity edits now persist via `/store/cart/update`.
+- [x] 2026-06-16 UI stabilization: cart summary sizing, saved checkout card styles, store mobile category bar padding, and image lightbox styles moved/tightened in CSS.
+- [x] 2026-06-16 refactor cleanup: removed dead/commented cart button code, reduced inline style fragments, typed saved card data, and simplified delivery marker parsing.
+- [x] Verified with `mise exec node@24.16.0 -- npx biome lint src/pages/cart/index.tsx src/styles/Cart.css src/components/store/Store.tsx src/components/store/Store.css` from `backend/frontend`.
+- [x] Verified with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
 
 <--/------->
