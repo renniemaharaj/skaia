@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Package, Plus, Trash2 } from "lucide-react";
+import { Package, Plus, StoreIcon, Tag, Trash2 } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "../../pages/store/ProductPage.css";
@@ -185,6 +185,7 @@ export const Store: React.FC = () => {
       {/* Categories Bar */}
       <div className="categories-bar">
         <div className="category-list">
+          <Tag className="category-icon" size={24} />
           <button
             className={`category-button ${!selectedCategoryId ? "category-active" : ""}`}
             onClick={() => setSelectedCategory(null)}
