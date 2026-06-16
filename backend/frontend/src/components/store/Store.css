@@ -217,7 +217,7 @@
   margin-bottom: 16px;
   flex: 1;
   max-height: 6rem;
-  overflow: auto;
+  overflow: ellipsis;
 }
 
 .product-footer {

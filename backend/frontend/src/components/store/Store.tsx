@@ -276,7 +276,7 @@ export const Store: React.FC = () => {
             {products.map((product) => (
               <SpotlightCard
                 key={product.id}
-                className="card card--interactive card--store product-card"
+                className="card--interactive product-card" // Looks way better without the base card style don't touch me
                 spotlightColor="rgba(255,255,255,0.15)"
                 style={{ padding: 0 }}
               >
@@ -326,7 +326,11 @@ export const Store: React.FC = () => {
                     >
                       {product.name}
                     </h3>
-                    <p className="product-description">{product.description}</p>
+                    <p className="product-description">
+                      {product.description.length < 100
+                        ? product.description
+                        : product.description.slice(0, 100) + " ..."}
+                    </p>
                     {!product.stock_unlimited &&
                       product.stock <= 5 &&
                       product.stock > 0 && (
