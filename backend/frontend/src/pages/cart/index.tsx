@@ -297,6 +297,7 @@ export const CartPage = () => {
                   <button
                     className="btn btn-danger"
                     title="Remove from cart"
+                    style={{ maxWidth: "40px" }}
                     onClick={() => handleRemove(item.product_id)}
                   >
                     <Trash2 size={16} />
@@ -354,57 +355,57 @@ export const CartPage = () => {
               </p>
             </div>
           )}
+          {/* Saved checkout info quick card */}
+          {isAuthenticated && rememberBilling && (
+            <div
+              className="saved-checkout-card card card--outlined"
+              style={{ marginBottom: "0.75rem" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <strong>Saved billing information</strong>
+                <button
+                  // className="btn btn-ghost"
+                  onClick={() => {
+                    // autofill from saved data
+                    const savedJson = localStorage.getItem("checkoutSaved");
+                    if (savedJson) {
+                      try {
+                        const v = JSON.parse(savedJson);
+                        if (v.billingInfo) setBillingInfo(v.billingInfo);
+                        if (v.deliveryLocation)
+                          setDeliveryLocation(v.deliveryLocation);
+                        if (v.guestPhone) setGuestPhone(v.guestPhone);
+                        if (v.extraInfo) setExtraInfo(v.extraInfo);
+                      } catch {}
+                    }
+                  }}
+                >
+                  Use
+                </button>
+              </div>
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <div>{billingInfo || "—"}</div>
+                <div>{guestPhone || "—"}</div>
+                <div>{deliveryLocation || "—"}</div>
+              </div>
+            </div>
+          )}
 
           {/* Delivery */}
           <div className="cart-summary-section">
             <h4>Delivery</h4>
-            {/* Saved checkout info quick card */}
-            {isAuthenticated && rememberBilling && (
-              <div
-                className="saved-checkout-card card card--outlined"
-                style={{ marginBottom: "0.75rem" }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <strong>Saved info</strong>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      // autofill from saved data
-                      const savedJson = localStorage.getItem("checkoutSaved");
-                      if (savedJson) {
-                        try {
-                          const v = JSON.parse(savedJson);
-                          if (v.billingInfo) setBillingInfo(v.billingInfo);
-                          if (v.deliveryLocation)
-                            setDeliveryLocation(v.deliveryLocation);
-                          if (v.guestPhone) setGuestPhone(v.guestPhone);
-                          if (v.extraInfo) setExtraInfo(v.extraInfo);
-                        } catch {}
-                      }
-                    }}
-                  >
-                    Use
-                  </button>
-                </div>
-                <div
-                  style={{
-                    marginTop: "0.5rem",
-                    fontSize: "0.9rem",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  <div>{billingInfo || "—"}</div>
-                  <div>{guestPhone || "—"}</div>
-                  <div>{deliveryLocation || "—"}</div>
-                </div>
-              </div>
-            )}
             <div className="input-group">
               <Phone size={15} />
               <input
