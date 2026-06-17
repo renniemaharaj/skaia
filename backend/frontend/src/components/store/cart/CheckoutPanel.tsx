@@ -1,14 +1,15 @@
 import { Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
-import Select, { type SelectOption } from "../../input/Select";
 import { formatCents } from "../../../utils/money";
+import Select, { type SelectOption } from "../../input/Select";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
 
 export type WalletCard = {
   id: string;
   card_name: string;
-  card_number: string;
+  card_number?: string;
+  last4?: string;
 };
 
 interface CheckoutPanelProps {
@@ -78,7 +79,7 @@ export function CheckoutPanel({
     ...(isAuthenticated
       ? userCards.map(card => ({
           value: `card_${card.id}`,
-          label: `${card.card_name} (ending in ${card.card_number.slice(-4)}) - Disabled`,
+          label: `${card.card_name} (ending in ${card.last4 || card.card_number?.slice(-4) || "XXXX"}) - Disabled`,
           disabled: true,
         }))
       : []),

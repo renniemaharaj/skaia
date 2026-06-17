@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { apiRequest } from "../../utils/api";
-import { uploader } from "../../atoms/uploadAtom";
 import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { uploader } from "../../atoms/uploadAtom";
+import { apiRequest } from "../../utils/api";
 import Button from "../input/Button";
 import Select from "../input/Select";
 

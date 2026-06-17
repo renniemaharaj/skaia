@@ -395,27 +395,12 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 			payStatus = "failed"
 			failureReason = "Wallet cannot be used by guests"
 		} else {
-			balance, err := s.WalletRepo.GetBalance(userID)
-			if err != nil {
+			if _, err := s.WalletRepo.DebitIfSufficient(userID, total, fmt.Sprintf("Order #%d", order.ID)); err != nil {
 				payStatus = "failed"
-				failureReason = "Failed to retrieve wallet balance"
-			} else if balance < total {
-				payStatus = "failed"
-				failureReason = "Insufficient wallet balance"
+				failureReason = err.Error()
 			} else {
-				_, err = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
-					UserID:      userID,
-					Amount:      total,
-					Type:        "debit",
-					Description: fmt.Sprintf("Order #%d", order.ID),
-				})
-				if err != nil {
-					payStatus = "failed"
-					failureReason = "Failed to deduct from wallet"
-				} else {
-					payStatus = "succeeded"
-					providerRef = "wallet_" + fmt.Sprint(order.ID)
-				}
+				payStatus = "succeeded"
+				providerRef = "wallet_" + fmt.Sprint(order.ID)
 			}
 		}
 	} else if strings.HasPrefix(req.PaymentMethodID, "card_") {
@@ -479,14 +464,14 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 	// only moved to `completed` when a shopkeeper marks them completed or when
 	// a paid order contains special actions (these should be executed immediately).
 	orderStatus := "pending"
-	if payStatus == "succeeded" {
-		orderStatus = "paid"
-	} else if payStatus == "failed" {
+	if payStatus == "failed" {
 		orderStatus = "failed"
 	}
-	updatedOrder, _ := s.orders.UpdateStatus(order.ID, orderStatus)
-	if updatedOrder != nil {
-		order = updatedOrder
+	if payStatus != "succeeded" {
+		updatedOrder, _ := s.orders.UpdateStatus(order.ID, orderStatus)
+		if updatedOrder != nil {
+			order = updatedOrder
+		}
 	}
 
 	// Once checkout has produced an order response, the cart no longer owns
@@ -495,27 +480,40 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		_ = s.cart.ClearCart(userID)
 	}
 
-	// on successful immediate payment: decrement stock. Do NOT
-	// execute special-actions until the order is marked `completed`. However,
-	// if an order contains special actions, we auto-complete it after payment
-	// and then execute those actions.
+	// On successful immediate payment: reserve stock using the same transactional
+	// path as manual acceptance. Special actions still execute only on completion.
 	if payStatus == "succeeded" {
 		var hasSpecial bool
-		for _, oi := range orderItems {
+		if accepted, err := s.orders.AcceptWithStockCheck(order.ID); err != nil {
+			if req.PaymentMethodID == "wallet" {
+				_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+					UserID:      userID,
+					Amount:      total,
+					Type:        "credit",
+					Description: fmt.Sprintf("Refund for order #%d: %v", order.ID, err),
+				})
+			}
+			_, _ = s.payments.UpdateStatus(payment.ID, "failed", err.Error())
+			_, _ = s.orders.UpdateStatus(order.ID, "failed")
+			return nil, err
+		} else if accepted != nil {
+			order = accepted
+		}
+
+		for _, oi := range order.Items {
 			if p, err := s.products.GetByID(oi.ProductID); err == nil {
-				if !p.StockUnlimited {
-					p.Stock -= oi.Quantity
-					if p.Stock < 0 {
-						p.Stock = 0
-					}
-					s.products.Update(p) //nolint:errcheck
-					if s.cache != nil {
-						s.cache.Invalidate(oi.ProductID)
-					}
-				}
 				if p.SpecialActions != "" && p.SpecialActions != "[]" {
 					hasSpecial = true
 				}
+				if s.cache != nil {
+					s.cache.Invalidate(oi.ProductID)
+				}
+			}
+		}
+
+		if !hasSpecial {
+			if paid, err := s.orders.UpdateStatus(order.ID, "paid"); err == nil && paid != nil {
+				order = paid
 			}
 		}
 

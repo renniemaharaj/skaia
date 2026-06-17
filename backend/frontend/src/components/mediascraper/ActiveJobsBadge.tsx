@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { apiRequest } from "../../utils/api";
 import { RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { apiRequest } from "../../utils/api";
 
 export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
   const [metrics, setMetrics] = useState<{

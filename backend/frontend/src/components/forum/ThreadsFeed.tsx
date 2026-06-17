@@ -1,12 +1,12 @@
 import "./ThreadsFeed.css";
-import { Link } from "react-router-dom";
 import { ChevronUp, Eye, Heart, MessageSquare, Share2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
+import { formatDate } from "../../utils/serverTime";
+import { TableView } from "../ui/TableView/TableView";
+import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import UserAvatar from "../user/UserAvatar";
-import { TableView } from "../ui/TableView/TableView";
-import { formatDate } from "../../utils/serverTime";
 
 interface Props {
   threads: FeedThread[];

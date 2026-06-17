@@ -1,3 +1,4 @@
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 /**
  * ComponentGroupEditor — manages a group of components rendered together per row.
  *
@@ -7,15 +8,14 @@
  * percentage of the total.
  */
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
-import type { ComponentDefinition, ComponentGroup, ComponentGroupItem } from "./types";
-import { ComponentBindMapper } from "./ComponentBindMapper";
-import { ComponentRenderer } from "./ComponentRenderer";
-import { CardDesigner } from "./CardDesigner";
-import { DEFAULT_CARD_TEMPLATE } from "./types";
-import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import { CardDesigner } from "./CardDesigner";
+import { ComponentBindMapper } from "./ComponentBindMapper";
+import { ComponentRenderer } from "./ComponentRenderer";
+import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
+import type { ComponentDefinition, ComponentGroup, ComponentGroupItem } from "./types";
+import { DEFAULT_CARD_TEMPLATE } from "./types";
 import "./ComponentGroupEditor.css";
 
 interface ComponentGroupEditorProps {

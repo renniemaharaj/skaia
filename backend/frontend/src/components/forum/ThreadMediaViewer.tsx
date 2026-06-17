@@ -1,7 +1,7 @@
-import { useMemo, useState, useEffect } from "react";
 import { useAtomValue } from "jotai";
-import { currentThreadAtom } from "../../atoms/forum";
 import { ImageIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { currentThreadAtom } from "../../atoms/forum";
 import "../user/UserProfile.css";
 import "./ThreadMediaViewer.css";
 import UserUploads from "../user/UserUploads";
@@ -73,7 +73,7 @@ const ThreadMediaViewer = () => {
         fetch(m.url, { method: "HEAD" })
           .then(res => {
             if (res.ok) {
-              const size = parseInt(res.headers.get("content-length") || "0", 10);
+              const size = Number.parseInt(res.headers.get("content-length") || "0", 10);
               const date = res.headers.get("last-modified") || new Date().toISOString();
               setMetadata(prev => ({ ...prev, [m.url]: { size, date } }));
             }

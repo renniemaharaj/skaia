@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import "./LoadingPage.css";
 
 interface LoadingPageProps {
@@ -18,7 +18,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({
     <div className="loading-page">
       <div className="loading-page-content">
         <div className="loading-spinner">
-          <div className="spinner-circle"></div>
+          <div className="spinner-circle" />
         </div>
 
         <h2 className="loading-title">{message}</h2>

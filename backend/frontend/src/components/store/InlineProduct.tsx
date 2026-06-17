@@ -1,9 +1,9 @@
+import { Clock, Edit2, Package, ShoppingBag, Trash2, TrendingUp, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Clock, Package, Edit2, Trash2, ShoppingBag, TrendingUp, User } from "lucide-react";
+import type { Product } from "../../atoms/store";
+import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import StarRating from "../ui/StarRating";
-import { formatCents } from "../../utils/money";
-import { type Product } from "../../atoms/store";
 import { useProductRatings } from "./ratings";
 
 interface StoreInlineProductProps {

@@ -202,8 +202,9 @@ type UserCard struct {
 	CardDescription string    `json:"card_description"`
 	CardType        string    `json:"card_type"` // visa, mastercard, etc.
 	IsCredit        bool      `json:"is_credit"` // false for debit, true for credit
-	CardNumber      string    `json:"card_number"`
-	CVV             string    `json:"cvv"`
+	CardNumber      string    `json:"card_number,omitempty"`
+	CVV             string    `json:"cvv,omitempty"`
+	Last4           string    `json:"last4,omitempty"`
 	ExpiryMonth     int       `json:"expiry_month"`
 	ExpiryYear      int       `json:"expiry_year"`
 	CreatedAt       time.Time `json:"created_at"`

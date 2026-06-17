@@ -1,4 +1,4 @@
-import { Circle, Loader2, Check, AlertCircle, PauseCircle } from "lucide-react";
+import { AlertCircle, Check, Circle, Loader2, PauseCircle } from "lucide-react";
 import { usePageBuilderContext } from "./PageBuilderContext";
 
 /** Floating pill at the bottom that shows the current save pipeline state. */

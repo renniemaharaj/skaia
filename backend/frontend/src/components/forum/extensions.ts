@@ -35,9 +35,9 @@ import { TextDirection } from "reactjs-tiptap-editor/textdirection";
 import { TextUnderline } from "reactjs-tiptap-editor/textunderline";
 import { Video } from "reactjs-tiptap-editor/video";
 
-import { uploadEditorFile } from "../../utils/upload";
 import { ReactRenderer } from "@tiptap/react";
 import tippy from "tippy.js";
+import { uploadEditorFile } from "../../utils/upload";
 import { MentionList } from "../ui/MentionList";
 
 const extensions = [
@@ -153,7 +153,7 @@ const extensions = [
           },
 
           onExit() {
-            if (popup && popup[0]) {
+            if (popup?.[0]) {
               popup[0].destroy();
             }
             if (component) {

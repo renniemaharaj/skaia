@@ -1,6 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
 import { Copy } from "lucide-react";
+import type React from "react";
+import { Link } from "react-router-dom";
 import "./IDLink.css";
 
 interface IDLinkProps {

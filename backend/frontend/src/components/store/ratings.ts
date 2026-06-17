@@ -1,6 +1,6 @@
 // hooks/ratings.ts
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../../utils/api";
 
 export interface ProductReview {

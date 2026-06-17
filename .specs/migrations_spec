@@ -58,6 +58,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `023_store_special_actions.sql` | Product special actions JSONB |
 | `024_store_reference_codes.sql` | Checkout reference codes and payouts |
 | `025_product_owner_media_seller.sql` | Product ownership, product media JSON, seller role/permission |
+| `026_scrub_user_card_secrets.sql` | Reduce stored card numbers to last-four and clear CVV |
 
 ## Invariants
 

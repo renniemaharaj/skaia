@@ -1,16 +1,16 @@
 import { ThumbsUp, Trash2 } from "lucide-react";
-import { useMemo, useEffect, type RefObject, useState } from "react";
-import ComposerInput from "../input/Input";
-import UserAvatar from "../user/UserAvatar";
-import UserLink from "../user/UserLink";
-import UserProfileOverlay from "../user/UserProfileOverlay";
-import RoleBadge from "../user/RoleBadge";
+import { type RefObject, useEffect, useMemo, useState } from "react";
+import { apiRequest } from "../../utils/api";
 import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
+import ComposerInput from "../input/Input";
 import SpotlightCard from "../ui/SpotlightCard";
 import StarRating from "../ui/StarRating";
-import { apiRequest } from "../../utils/api";
+import RoleBadge from "../user/RoleBadge";
+import UserAvatar from "../user/UserAvatar";
+import UserLink from "../user/UserLink";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import type { Role } from "../user/types";
 import "./CommentSection.css";
 

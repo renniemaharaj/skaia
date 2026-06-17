@@ -38,23 +38,25 @@ export interface AuthState {
 // Helper: Create an atom with custom localStorage storage (no JSON serialization)
 // In-memory fallback for test environments
 const memoryStore: Record<string, string> = {};
+const authCookieAttributes = () =>
+  `path=/; max-age=2592000; SameSite=Lax${window.location.protocol === "https:" ? "; Secure" : ""}`;
+
 function customStorageAtom<T extends string | null>(key: string, initialValue: T) {
   const hasLocalStorage =
     typeof localStorage !== "undefined" && typeof localStorage.getItem === "function";
   const getValue = () => {
     if (hasLocalStorage) {
       let val = localStorage.getItem(key);
-      if (val && val.startsWith('"') && val.endsWith('"')) {
+      if (val?.startsWith('"') && val.endsWith('"')) {
         val = val.slice(1, -1);
         localStorage.setItem(key, val);
       }
       if (key === "auth.accessToken" && val) {
-        document.cookie = `auth_token=${val}; path=/; max-age=2592000`;
+        document.cookie = `auth_token=${encodeURIComponent(val)}; ${authCookieAttributes()}`;
       }
       return (val as T) || initialValue;
-    } else {
-      return (memoryStore[key] as T) || initialValue;
     }
+    return (memoryStore[key] as T) || initialValue;
   };
   const baseAtom = atom<T>(getValue());
 
@@ -71,7 +73,7 @@ function customStorageAtom<T extends string | null>(key: string, initialValue: T
           localStorage.setItem(key, newValue as string);
           if (key === "auth.accessToken") {
             // Store cookie for 30 days so SSR can see it
-            document.cookie = `auth_token=${newValue}; path=/; max-age=2592000`;
+            document.cookie = `auth_token=${encodeURIComponent(newValue)}; ${authCookieAttributes()}`;
           }
         }
       } else {

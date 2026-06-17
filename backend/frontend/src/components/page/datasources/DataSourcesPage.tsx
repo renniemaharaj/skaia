@@ -1,15 +1,15 @@
-import { customConfirm } from "../../ui/Prompt";
+import { Clock, Code2, Database, Plus, Trash2, UserCircle2, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Database, Plus, Code2, Clock, UserCircle2, Trash2, Zap } from "lucide-react";
 import { apiRequest } from "../../../utils/api";
+import { customConfirm } from "../../ui/Prompt";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 
-import { relativeTimeAgo } from "../../../utils/serverTime";
-import type { DataSource, DataSourceCreator } from "../types";
 import { toast } from "sonner";
+import { relativeTimeAgo } from "../../../utils/serverTime";
 import { DirectoryLayout } from "../layout/templates/DirectoryLayout";
+import type { DataSource, DataSourceCreator } from "../types";
 import "./DataSources.css";
 
 type ViewMode = "grid" | "list";

@@ -1,13 +1,13 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Check, Plus, Trash2 } from "lucide-react";
-import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
+import { toast } from "sonner";
 import { hasPermissionAtom } from "../../../atoms/auth";
 import { footerConfigAtom } from "../../../atoms/config";
 import { brandingAtom } from "../../../atoms/config";
+import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import { apiRequest } from "../../../utils/api";
 import { EditableText, VariantCycler } from "../EditControls";
 import type { FooterConfig, FooterLink, FooterSocialLink } from "../types";
-import { toast } from "sonner";
 import "./Footer.css";
 import SocialLinks from "./SocialLinks";
 

@@ -1,22 +1,22 @@
-import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from "react";
-import type { PageSection } from "../types";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import type { PageSection } from "../types";
 import "./CodeEditorBlock.css";
-import {
-  SectionToolbar,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-} from "../EditControls";
-import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import { Copy, Download, FileCode } from "lucide-react";
 import { toast } from "sonner";
+import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import Select from "../../input/Select";
+import {
+  SectionToolbar,
+  getSectionAnimation,
+  getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
+  setSectionAnimation,
+  setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
+} from "../EditControls";
 
 /** Lazy-load the project's Monaco wrapper (inherits theme) and ViewThread for md/html. */
 const MonacoEditor = lazy(() => import("../../monaco/Editor"));

@@ -65,7 +65,7 @@ export type AttractorParticle = {
   color: string;
 };
 
-import { buildClusterMap, applySystemGravity } from "./particleSystems";
+import { applySystemGravity, buildClusterMap } from "./particleSystems";
 import type { CourtshipFields } from "./particleSystems";
 
 export type PhysicsSettings = {
@@ -165,7 +165,7 @@ export const hexToRgbStr = (hex: string): string => {
       .split("")
       .map(c => c + c)
       .join("");
-  const int = parseInt(hex, 16);
+  const int = Number.parseInt(hex, 16);
   return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
 };
 
@@ -176,7 +176,7 @@ const hex2rgb = (hex: string): [number, number, number] => {
       .split("")
       .map(c => c + c)
       .join("");
-  const int = parseInt(hex, 16);
+  const int = Number.parseInt(hex, 16);
   return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
 };
 
@@ -360,7 +360,7 @@ const pickDestination = (
 
   if (al > 0.6) {
     // Antisocial => minimum pressure direction
-    let minV = Infinity;
+    let minV = Number.POSITIVE_INFINITY;
     for (let i = 0; i < numRays; i++) {
       if (biased[i] < minV) {
         minV = biased[i];
@@ -369,7 +369,7 @@ const pickDestination = (
     }
   } else if (al < 0.4) {
     // Social => maximum pressure direction
-    let maxV = -Infinity;
+    let maxV = Number.NEGATIVE_INFINITY;
     for (let i = 0; i < numRays; i++) {
       if (biased[i] > maxV) {
         maxV = biased[i];
@@ -564,7 +564,7 @@ const computeAvoidanceForce = (
   const sinH = Math.sin(heading);
   const urgencyScale = 0.4 + antisocialLevel * 0.6;
 
-  let closestDist = Infinity;
+  let closestDist = Number.POSITIVE_INFINITY;
   let threatDx = 0;
   let threatDy = 0;
 
@@ -589,7 +589,7 @@ const computeAvoidanceForce = (
     }
   }
 
-  if (closestDist === Infinity) return { bfx: 0, bfy: 0, lfx: 0, lfy: 0 };
+  if (closestDist === Number.POSITIVE_INFINITY) return { bfx: 0, bfy: 0, lfx: 0, lfy: 0 };
 
   const closingFraction = 1 - closestDist / horizon;
   const brakeMag = speed * closingFraction * urgencyScale * p.mass * 0.6;

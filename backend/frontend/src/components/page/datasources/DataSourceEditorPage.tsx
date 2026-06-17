@@ -1,43 +1,43 @@
-import { customConfirm } from "../../ui/Prompt";
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
-  Save,
-  Play,
-  Trash2,
   AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  Code2,
-  FileJson,
-  Eye,
-  LayoutGrid,
+  AlignCenterHorizontal,
+  ArrowLeft,
   Bookmark,
-  X,
-  Clock,
-  Globe,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Clock,
+  Code2,
+  Eye,
+  FileJson,
   Filter,
+  Globe,
+  LayoutGrid,
+  Loader2,
   Maximize2,
-  AlignCenterHorizontal,
   MoveVertical,
+  Play,
+  Save,
+  Trash2,
+  X,
 } from "lucide-react";
-import { apiRequest } from "../../../utils/api";
-import type {
-  DataSource,
-  CustomSection,
-  ComponentDefinition,
-  ComponentGroup,
-  EventHook,
-} from "../types";
-import { ComponentGroupEditor, ComponentGroupRenderer } from "../ComponentGroupEditor";
-import { EventHookEditor } from "../EventHookEditor";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import TabbedEditor from "../TabbedEditor";
+import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
 import Select from "../../input/Select";
+import { customConfirm } from "../../ui/Prompt";
+import { ComponentGroupEditor, ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { EventHookEditor } from "../EventHookEditor";
+import TabbedEditor from "../TabbedEditor";
+import type {
+  ComponentDefinition,
+  ComponentGroup,
+  CustomSection,
+  DataSource,
+  EventHook,
+} from "../types";
 import "./DataSources.css";
 
 interface CompileResult {
@@ -98,7 +98,7 @@ return [
 ];
 `;
 
-import { CACHE_TTL_OPTIONS, formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
+import { CACHE_TTL_OPTIONS, cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
 
 const DATASOURCE_PREVIEW_TYPES = ["component"] as const;
 
@@ -330,7 +330,7 @@ export default function DataSourceEditorPage() {
           fetchLog,
         });
         setEvalError(
-          errors.map(d => `${d.file ? d.file + " " : ""}Line ${d.line}: ${d.message}`).join("\n")
+          errors.map(d => `${d.file ? `${d.file} ` : ""}Line ${d.line}: ${d.message}`).join("\n")
         );
         setActivePanel("diagnostics");
         return;

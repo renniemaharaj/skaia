@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ShieldCheck, UserRound } from "lucide-react";
-import SecuritySettings from "../../auth/SecuritySettings";
-import ProfileSettings from "./ProfileSettings";
+import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { currentUserAtom, hasPermissionAtom } from "../../../atoms/auth";
 import { layoutModeAtom } from "../../../atoms/layoutMode";
-import { useUserData } from "../useUserData";
 import { totpStatus } from "../../../utils/api";
+import SecuritySettings from "../../auth/SecuritySettings";
 import { SideRouteShell } from "../../layout/SideRouteShell";
+import { useUserData } from "../useUserData";
+import ProfileSettings from "./ProfileSettings";
 
 export default function SettingsPage() {
   const { userId } = useParams();

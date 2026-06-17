@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { hasPermissionAtom, currentUserAtom } from "../atoms/auth";
+import { currentUserAtom, hasPermissionAtom } from "../atoms/auth";
 import { apiRequest } from "../utils/api";
 
 export interface PageUser {

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
-import { MediaViewer, type MediaScrapeJob } from "./MediaViewer";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { apiRequest } from "../../utils/api";
+import { type MediaScrapeJob, MediaViewer } from "./MediaViewer";
 import "./MediaScraper.css";
 
 export function MediaScraper() {
@@ -20,7 +20,7 @@ export function MediaScraper() {
         if (data.error) {
           setJob({ url, status: "error", error: data.error });
           toast.error(`Scrape failed: ${data.error}`);
-        } else if (data.result && data.result.images && data.result.images.length > 0) {
+        } else if (data.result?.images && data.result.images.length > 0) {
           setJob({
             url,
             status: "done",
@@ -78,7 +78,7 @@ export function MediaScraper() {
         }
       );
       // If it returned instantly from cache
-      if (res && res.images) {
+      if (res?.images) {
         if (res.images.length > 0) {
           setJob({ url, status: "done", images: res.images, lastScanned: res.last_scanned });
           toast.success(`Scraped ${res.images.length} images`);

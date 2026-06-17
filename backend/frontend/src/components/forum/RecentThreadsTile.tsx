@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { apiRequest } from "../../utils/api";
-import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { ForumThread } from "../../atoms/forum";
-import UserProfileOverlay from "../user/UserProfileOverlay";
-import UserAvatar from "../user/UserAvatar";
+import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 
 import "./RecentThreadsTile.css";
 
@@ -29,7 +30,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
         // If category is provided, maybe we fetch by category? But there's no endpoint for just "recent everywhere" except /forum/threads
         const url = currentCategoryId
           ? `/forum/categories/${currentCategoryId}/threads?limit=6`
-          : `/forum/threads?limit=6`;
+          : "/forum/threads?limit=6";
 
         const data = await apiRequest<ForumThread[]>(url);
         if (data) {
@@ -62,7 +63,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
             to={`/view-thread/${thread.id}`}
             className="toc-item recent-threads-item"
           >
-            <span className="toc-dot recent-threads-dot"></span>
+            <span className="toc-dot recent-threads-dot" />
             <div className="recent-threads-content">
               <span className="recent-threads-title">{thread.title}</span>
               <div className="recent-threads-meta">

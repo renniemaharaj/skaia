@@ -1,19 +1,19 @@
-import { useRef, useEffect } from "react";
-import { Check, Plus, Trash2, ExternalLink } from "lucide-react";
-import type { PageSection, PageItem } from "../types";
+import { Check, ExternalLink, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import type { PageItem, PageSection } from "../types";
 import "./ProfileCardBlock.css";
 import {
   EditableText,
-  SectionToolbar,
   ImagePickerButton,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
+  SectionToolbar,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
 
 /** Parse section config for checklist items and links. */

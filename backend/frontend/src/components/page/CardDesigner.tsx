@@ -1,3 +1,18 @@
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  FileText,
+  GripVertical,
+  Image,
+  Smile,
+  Type,
+} from "lucide-react";
 /**
  * CardDesigner - visual card template builder.
  *
@@ -5,39 +20,24 @@
  * reorder zones via drag-and-drop, and set alignment + size per zone.
  * Produces a CardTemplate stored in the section config JSON.
  */
-import { lazy, Suspense, useCallback, useState } from "react";
-import {
-  GripVertical,
-  Eye,
-  EyeOff,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  ChevronUp,
-  ChevronDown,
-  Image,
-  Type,
-  FileText,
-  Smile,
-  ExternalLink,
-} from "lucide-react";
-import { BoxSpacingControls } from "./EditControls";
-import type {
-  CardTemplate,
-  CardZone,
-  CardWidth,
-  ZoneAlign,
-  ZoneSize,
-  ImagePosition,
-  MappableField,
-  CardStyle,
-  CardOverflow,
-  CardContentAlign,
-} from "./types";
-import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
+import { Suspense, lazy, useCallback, useState } from "react";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import Tile from "../input/Tile";
+import { BoxSpacingControls } from "./EditControls";
+import type {
+  CardContentAlign,
+  CardOverflow,
+  CardStyle,
+  CardTemplate,
+  CardWidth,
+  CardZone,
+  ImagePosition,
+  MappableField,
+  ZoneAlign,
+  ZoneSize,
+} from "./types";
+import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
 import "./CardDesigner.css";
 
 interface CardDesignerProps {

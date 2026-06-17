@@ -1,14 +1,14 @@
-import { CheckIcon, X } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { useAtom } from "jotai";
-import ForumCategory from "./ForumCategory";
+import { CheckIcon, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Editor from "./Editor";
+import ForumCategory from "./ForumCategory";
 import "./IconButton.css";
 
-import { apiRequest } from "../../utils/api";
 import { currentThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
 
 interface ThreadData {
   id: string;

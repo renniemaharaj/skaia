@@ -1,5 +1,5 @@
-import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import "../store/Store.css";
 
 export interface PreviewMediaItem {

@@ -1,44 +1,44 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
-import type {
-  PageSection,
-  PageItem,
-  CustomSection,
-  ColumnMap,
-  FactTableConfig,
-  CardTemplate,
-  CardZone,
-  ComponentDefinition,
-} from "../types";
-import { DEFAULT_CARD_TEMPLATE } from "../types";
-import {
-  SectionToolbar,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-} from "../EditControls";
-import { ColumnMapper } from "../ColumnMapper";
-import { mapRowsToItems, detectColumns, rowKey } from "../mapRows";
-import type { RawRow } from "../mapRows";
-import { apiRequest } from "../../../utils/api";
-import { AlertTriangle, Loader2, RefreshCw, Zap, ExternalLink } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, RefreshCw, Zap } from "lucide-react";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
+import { apiRequest } from "../../../utils/api";
+import { ColumnMapper } from "../ColumnMapper";
+import {
+  SectionToolbar,
+  getSectionAnimation,
+  getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
+  setSectionAnimation,
+  setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
+} from "../EditControls";
+import { detectColumns, mapRowsToItems, rowKey } from "../mapRows";
+import type { RawRow } from "../mapRows";
+import type {
+  CardTemplate,
+  CardZone,
+  ColumnMap,
+  ComponentDefinition,
+  CustomSection,
+  FactTableConfig,
+  PageItem,
+  PageSection,
+} from "../types";
+import { DEFAULT_CARD_TEMPLATE } from "../types";
 
-import { DesignedCardGrid } from "./DesignedCardGrid";
-import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
-import { ComponentBindMapper } from "../ComponentBindMapper";
-import { ComponentGrid } from "../ComponentRenderer";
-import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
-import { ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
 import Button from "../../input/Button";
 import Select from "../../input/Select";
+import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
+import { ComponentBindMapper } from "../ComponentBindMapper";
+import { ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { ComponentGrid } from "../ComponentRenderer";
+import { DesignedCardGrid } from "./DesignedCardGrid";
 
 interface Props {
   section: PageSection;

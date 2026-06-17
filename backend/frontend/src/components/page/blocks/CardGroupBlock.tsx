@@ -1,18 +1,18 @@
-import type { PageSection, PageItem } from "../types";
+import type { PageItem, PageSection } from "../types";
 import "./CardGroupBlock.css";
 import {
-  EditableText,
-  SectionToolbar,
   AddItemButton,
   DeleteItemButton,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
+  EditableText,
+  SectionToolbar,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
 
 interface Props {

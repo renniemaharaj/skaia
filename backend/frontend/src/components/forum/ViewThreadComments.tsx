@@ -1,16 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  threadCommentsAtom,
-  enrichedThreadCommentsAtom,
-  currentThreadAtom,
-} from "../../atoms/forum";
-import { type ThreadComment } from "../../atoms/forum";
-import { apiRequest } from "../../utils/api";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { useCallback, useEffect, useState } from "react";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
-import CommentSection from "../comments/CommentSection";
+import {
+  currentThreadAtom,
+  enrichedThreadCommentsAtom,
+  threadCommentsAtom,
+} from "../../atoms/forum";
+import type { ThreadComment } from "../../atoms/forum";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
+import CommentSection from "../comments/CommentSection";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);

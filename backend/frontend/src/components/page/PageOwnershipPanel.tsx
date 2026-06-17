@@ -1,14 +1,14 @@
-import { useState } from "react";
 import { useAtomValue } from "jotai";
-import { Crown, UserPlus, X, ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Crown, UserPlus, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { hasPermissionAtom, currentUserAtom } from "../../atoms/auth";
+import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
+import type { User } from "../../atoms/auth";
+import type { PageUser } from "../../hooks/usePageData";
 import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import type { User } from "../../atoms/auth";
-import type { PageUser } from "../../hooks/usePageData";
 import "./PageOwnershipPanel.css";
 
 interface PageOwnershipPanelProps {

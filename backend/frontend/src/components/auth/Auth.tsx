@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
-import { Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
-import { currentUserAtom, accessTokenAtom, refreshTokenAtom } from "../../atoms/auth";
-import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
+import { AlertCircle, CheckCircle, Lock, Mail, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../../atoms/auth";
+import { type AuthResponse, loginUser, registerUser } from "../../utils/api";
 import "../ui/FormGroup.css";
 import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
@@ -278,9 +278,9 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
         </div>
 
         <div className="auth-bg-decoration">
-          <div className="decoration-circle decoration-circle-1"></div>
-          <div className="decoration-circle decoration-circle-2"></div>
-          <div className="decoration-circle decoration-circle-3"></div>
+          <div className="decoration-circle decoration-circle-1" />
+          <div className="decoration-circle decoration-circle-2" />
+          <div className="decoration-circle decoration-circle-3" />
         </div>
       </div>
     </div>

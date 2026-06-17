@@ -72,7 +72,7 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
           );
         }
         if (item.status === "Scraping...") {
-          return <div className="media-spinner"></div>;
+          return <div className="media-spinner" />;
         }
         return <div className="media-placeholder">-</div>;
       },

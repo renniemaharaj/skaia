@@ -1,28 +1,28 @@
-import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { useNavigate } from "react-router-dom";
 import {
+  AtSign,
   Bell,
-  MessageSquare,
-  Heart,
-  Trash2,
+  CheckCheck,
   Edit,
   Eye,
-  UserX,
-  UserCheck,
+  Heart,
   Mail,
-  X,
-  CheckCheck,
+  MessageSquare,
   Trash,
-  AtSign,
+  Trash2,
+  UserCheck,
+  UserX,
+  X,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { isAuthenticatedAtom } from "../../atoms/auth";
 import {
-  notificationsAtom,
-  unreadNotifCountAtom,
   type AppNotification,
   type NotificationType,
+  notificationsAtom,
+  unreadNotifCountAtom,
 } from "../../atoms/notifications";
-import { isAuthenticatedAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import "./NotificationBell.css";

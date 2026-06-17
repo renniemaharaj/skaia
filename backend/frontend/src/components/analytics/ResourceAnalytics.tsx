@@ -1,19 +1,19 @@
+import { BarChart3, Eye, Users, X } from "lucide-react";
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { X, BarChart3, Users, Eye } from "lucide-react";
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 import { apiRequest } from "../../utils/api";
 import Select from "../input/Select";
+import CountUp from "../ui/CountUp/CountUp";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import CountUp from "../ui/CountUp/CountUp";
 import "./ResourceAnalytics.css";
 
 /* types */
@@ -324,92 +324,89 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
           )}
 
           {/* overview tab */}
-          {tab === "overview" && (
-            <>
-              {loading ? (
-                <div className="ra-loading">Loading analytics…</div>
-              ) : error ? (
-                <div className="ra-error">
-                  Failed to load analytics: {error}
-                  <button type="button" className="ra-retry" onClick={loadStats}>
-                    Retry
-                  </button>
+          {tab === "overview" &&
+            (loading ? (
+              <div className="ra-loading">Loading analytics…</div>
+            ) : error ? (
+              <div className="ra-error">
+                Failed to load analytics: {error}
+                <button type="button" className="ra-retry" onClick={loadStats}>
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="ra-chart-header">
+                  <span>Views Over Time</span>
+                  <Select
+                    className="ra-range-select"
+                    value={String(days)}
+                    options={RANGE_OPTIONS.map(opt => ({
+                      value: String(opt.value),
+                      label: opt.label,
+                    }))}
+                    onChange={e => setDays(Number(e.target.value))}
+                  />
                 </div>
-              ) : (
-                <>
-                  <div className="ra-chart-header">
-                    <span>Views Over Time</span>
-                    <Select
-                      className="ra-range-select"
-                      value={String(days)}
-                      options={RANGE_OPTIONS.map(opt => ({
-                        value: String(opt.value),
-                        label: opt.label,
-                      }))}
-                      onChange={e => setDays(Number(e.target.value))}
-                    />
-                  </div>
 
-                  <div className="ra-chart-wrap">
-                    {daily.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={daily}>
-                          <defs>
-                            <linearGradient id="viewGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
-                              <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis
-                            dataKey="date"
-                            tickFormatter={formatDate}
-                            tick={{ fontSize: 11 }}
-                            stroke="var(--text-secondary)"
-                            interval="preserveStartEnd"
-                          />
-                          <YAxis
-                            allowDecimals={false}
-                            tick={{ fontSize: 11 }}
-                            stroke="var(--text-secondary)"
-                            width={36}
-                          />
-                          <Tooltip
-                            labelFormatter={label => new Date(label as string).toLocaleDateString()}
-                            contentStyle={{
-                              background: "var(--bg-secondary)",
-                              border: "1px solid var(--border-color)",
-                              borderRadius: 6,
-                              fontSize: 12,
-                            }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="views"
-                            name="Views"
-                            stroke={chartColor}
-                            fill="url(#viewGradient)"
-                            strokeWidth={2}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="unique_users"
-                            name="Unique Users"
-                            stroke="var(--info-color)"
-                            fill="none"
-                            strokeWidth={1.5}
-                            strokeDasharray="4 2"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="ra-loading">No view data yet</div>
-                    )}
-                  </div>
-                </>
-              )}
-            </>
-          )}
+                <div className="ra-chart-wrap">
+                  {daily.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <AreaChart data={daily}>
+                        <defs>
+                          <linearGradient id="viewGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={formatDate}
+                          tick={{ fontSize: 11 }}
+                          stroke="var(--text-secondary)"
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fontSize: 11 }}
+                          stroke="var(--text-secondary)"
+                          width={36}
+                        />
+                        <Tooltip
+                          labelFormatter={label => new Date(label as string).toLocaleDateString()}
+                          contentStyle={{
+                            background: "var(--bg-secondary)",
+                            border: "1px solid var(--border-color)",
+                            borderRadius: 6,
+                            fontSize: 12,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="views"
+                          name="Views"
+                          stroke={chartColor}
+                          fill="url(#viewGradient)"
+                          strokeWidth={2}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="unique_users"
+                          name="Unique Users"
+                          stroke="var(--info-color)"
+                          fill="none"
+                          strokeWidth={1.5}
+                          strokeDasharray="4 2"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="ra-loading">No view data yet</div>
+                  )}
+                </div>
+              </>
+            ))}
 
           {/* visitors tab */}
           {tab === "visitors" && (

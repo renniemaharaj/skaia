@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PageSection } from "../types";
 import "./HeroBlock.css";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import BlurText from "../../ui/BlurText/BlurText";
 import {
-  EditableText,
-  SectionToolbar,
-  ImagePickerButton,
-  VideoPickerButton,
   ColorPickerButton,
+  EditableText,
+  ImagePickerButton,
+  SectionToolbar,
   VariantCycler,
+  VideoPickerButton,
   getSectionLayout,
   setSectionLayout,
 } from "../EditControls";
-import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import BlurText from "../../ui/BlurText/BlurText";
 
 const HERO_VARIANTS = 2;
 

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type PromptConfig = {
   message: string;

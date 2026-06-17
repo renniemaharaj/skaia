@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAtomValue } from "jotai";
 import { X } from "lucide-react";
-import { currentUserAtom, type User } from "../../atoms/auth";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type User, currentUserAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";

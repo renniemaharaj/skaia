@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Eye, MessageSquare, Plus, Edit2, Trash2, Lock, Unlock, Clock } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { Clock, Edit2, Eye, Lock, MessageSquare, Plus, Trash2, Unlock } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
 import { forumCategoriesAtom } from "../../atoms/forum";
-import { apiRequest } from "../../utils/api";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
@@ -13,14 +13,14 @@ import "./NewThread.css";
 import "../ui/FormGroup.css";
 
 import { useNavigate } from "react-router-dom";
-import UserLink from "../user/UserLink";
-import UserAvatar from "../user/UserAvatar";
-import UserProfileOverlay from "../user/UserProfileOverlay";
+import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
+import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
-import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
+import UserAvatar from "../user/UserAvatar";
+import UserLink from "../user/UserLink";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
-import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 
 const CategoryThreadsPreview = ({
   forum,

@@ -1,26 +1,26 @@
 import { useAtom, useAtomValue } from "jotai";
-import { Mic, MicOff, Play, Pause, Settings, Volume2, VolumeX } from "lucide-react";
-import { useCallback, useState, useRef, useEffect } from "react";
-import { voicePermissionsAtom } from "../../../atoms/voice";
-import { getSoundVolume } from "../../../utils/sound";
-import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
-import { onlineUsersAtom } from "../../../atoms/presence";
-import UserProfileOverlay from "../../user/UserProfileOverlay";
-import UserAvatar from "../../user/UserAvatar";
-import YouTubePlayer from "./YouTubePlayer";
-import type { YouTubePlayerRef } from "./YouTubePlayer";
+import { Mic, MicOff, Pause, Play, Settings, Volume2, VolumeX } from "lucide-react";
 import {
-  Youtube,
-  X,
-  Trash2,
-  ListVideo,
+  Calendar,
   History as HistoryIcon,
   LayoutGrid,
   List,
-  Calendar,
+  ListVideo,
+  Trash2,
+  X,
+  Youtube,
 } from "lucide-react";
-import { socketAtom, currentUserAtom, hasPermissionAtom } from "../../../atoms/auth";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
+import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
+import { onlineUsersAtom } from "../../../atoms/presence";
+import { voicePermissionsAtom } from "../../../atoms/voice";
+import { getSoundVolume } from "../../../utils/sound";
+import UserAvatar from "../../user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
+import YouTubePlayer from "./YouTubePlayer";
+import type { YouTubePlayerRef } from "./YouTubePlayer";
 import "./VoicePanel.css";
 import { useLocation } from "react-router-dom";
 
@@ -375,7 +375,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   }, [mediaState?.queue?.length, mediaState?.is_paused]);
 
   const formatTime = (secs: number) => {
-    if (!secs || isNaN(secs)) return "0:00";
+    if (!secs || Number.isNaN(secs)) return "0:00";
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
@@ -967,7 +967,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         <YouTubePlayer
                           ref={isPrimary ? playerRef : !isRetired ? transitionPlayerRef : null}
                           videoId={item.video_id}
-                          isPaused={isPrimary ? mediaState.is_paused : isRetired ? true : false}
+                          isPaused={isPrimary ? mediaState.is_paused : !!isRetired}
                           isMuted={isPlayerMuted}
                           currentPosition={isPrimary ? mediaState.current_position || 0 : 0}
                           updatedAt={
@@ -1080,11 +1080,11 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 >
-                                  <path d="M16 3h5v5"></path>
-                                  <path d="M4 20L21 3"></path>
-                                  <path d="M21 16v5h-5"></path>
-                                  <path d="M15 15l6 6"></path>
-                                  <path d="M4 4l5 5"></path>
+                                  <path d="M16 3h5v5" />
+                                  <path d="M4 20L21 3" />
+                                  <path d="M21 16v5h-5" />
+                                  <path d="M15 15l6 6" />
+                                  <path d="M4 4l5 5" />
                                 </svg>
                               </button>
                             ))}

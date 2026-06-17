@@ -1,6 +1,6 @@
 import { atom } from "jotai";
-import { apiRequest } from "../utils/api";
 import { customAlert } from "../components/ui/Prompt";
+import { apiRequest } from "../utils/api";
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -153,16 +153,16 @@ class UploadManager {
           )
             break;
 
-          let idx = currentIndex++;
+          const idx = currentIndex++;
           if (idx >= nextJob.totalChunks) break;
 
           if (nextJob._completedSet?.has(idx)) continue;
 
-          let activeChunk: { index: number; status: "uploading" | "error" } = {
+          const activeChunk: { index: number; status: "uploading" | "error" } = {
             index: idx,
             status: "uploading",
           };
-          nextJob.activeChunks!.push(activeChunk);
+          nextJob.activeChunks?.push(activeChunk);
           this.dispatchStoreUpdate();
 
           const start = idx * CHUNK_SIZE;
@@ -179,11 +179,11 @@ class UploadManager {
               body: chunk,
             });
             if ((nextJob.status as UploadStatus) === "paused") {
-              nextJob.activeChunks = nextJob.activeChunks!.filter(c => c.index !== idx);
+              nextJob.activeChunks = nextJob.activeChunks?.filter(c => c.index !== idx);
               continue;
             }
-            nextJob._completedSet!.add(idx);
-            nextJob.activeChunks = nextJob.activeChunks!.filter(c => c.index !== idx);
+            nextJob._completedSet?.add(idx);
+            nextJob.activeChunks = nextJob.activeChunks?.filter(c => c.index !== idx);
           } catch (e) {
             activeChunk.status = "error";
             nextJob.status = "error";

@@ -1,38 +1,38 @@
-import { useEffect, useState, useMemo } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
-import { toast } from "sonner";
 import {
-  productsAtom,
-  storeCartItemsAtom,
-  productCategoriesAtom,
-  type Product,
-} from "../../atoms/store";
-import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
-import { apiRequest } from "../../utils/api";
-import CommentSection from "../../components/comments/CommentSection";
-import StarRating from "../../components/ui/StarRating";
-import {
-  ShoppingCart,
-  Package,
-  Share2,
-  Edit2,
   ChevronRight,
   Clock,
-  User,
-  TrendingUp,
-  ShoppingBag,
+  Edit2,
   LayoutGrid,
+  Package,
+  Share2,
+  ShoppingBag,
+  ShoppingCart,
+  TrendingUp,
+  User,
 } from "lucide-react";
-import { EditProductDialog } from "../../components/store/EditProductDialog";
-import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
+import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
+import {
+  type Product,
+  productCategoriesAtom,
+  productsAtom,
+  storeCartItemsAtom,
+} from "../../atoms/store";
+import CommentSection from "../../components/comments/CommentSection";
+import { EditProductDialog } from "../../components/store/EditProductDialog";
+import StarRating from "../../components/ui/StarRating";
+import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { apiRequest } from "../../utils/api";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
-import { StorePageShell } from "./StorePageShell";
-import { ProductMediaTable } from "./ProductMediaTable";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
+import { ProductMediaTable } from "./ProductMediaTable";
+import { StorePageShell } from "./StorePageShell";
 
 interface ProductReview {
   id: string | number;

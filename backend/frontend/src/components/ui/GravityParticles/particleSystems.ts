@@ -1,4 +1,4 @@
-import { getRadius, blendColors } from "./engine";
+import { blendColors, getRadius } from "./engine";
 import type { Particle } from "./engine";
 
 export const SYSTEM_PROXIMITY_FACTOR = 4.5;
@@ -64,9 +64,9 @@ export const buildClusterMap = (parts: ParticleWithSystems[]): ClusterMap => {
       }
     }
 
-    let cx = 0,
-      cy = 0,
-      cmass = 0;
+    let cx = 0;
+    let cy = 0;
+    let cmass = 0;
     for (const p of clusterParts) {
       cx += p.x * p.mass;
       cy += p.y * p.mass;

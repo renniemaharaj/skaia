@@ -1,6 +1,6 @@
-import { Save, Loader, Trash2 } from "lucide-react";
-import { useProfileEdit } from "../useProfileEdit";
+import { Loader, Save, Trash2 } from "lucide-react";
 import type { ProfileUser } from "../types";
+import { useProfileEdit } from "../useProfileEdit";
 import "../UserProfile.css";
 import Button from "../../input/Button";
 import Select from "../../input/Select";

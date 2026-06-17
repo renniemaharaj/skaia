@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
 import { useAtomValue } from "jotai";
+import { useEffect, useState } from "react";
 import { hasPermissionAtom } from "../../atoms/auth";
+import { apiRequest } from "../../utils/api";
 import Select from "../input/Select";
 
 interface Category {

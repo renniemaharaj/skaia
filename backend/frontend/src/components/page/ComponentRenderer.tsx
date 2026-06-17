@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../utils/api";
+import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
 /**
  * ComponentRenderer — renders a single registered component using bound row data.
  *
@@ -5,9 +8,6 @@
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
-import { MediaViewer, type MediaScrapeJob } from "../mediascraper/MediaViewer";
-import { apiRequest } from "../../utils/api";
-import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";
 
 /*  helpers  */
@@ -283,7 +283,7 @@ function CompoundMediaScraper({
       if (active && data.url === url) {
         if (data.error) {
           setJob({ url, status: "error", error: data.error });
-        } else if (data.result && data.result.images) {
+        } else if (data.result?.images) {
           setJob({
             url,
             status: "done",

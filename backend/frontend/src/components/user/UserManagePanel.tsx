@@ -1,8 +1,8 @@
-import { customConfirm } from "../ui/Prompt";
-import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { apiRequest } from "../../utils/api";
+import { useState } from "react";
 import { toast } from "sonner";
+import { apiRequest } from "../../utils/api";
+import { customConfirm } from "../ui/Prompt";
 import type { Permission, ProfileUser, Role } from "./types";
 
 function SuperUsersDemotionVoteButton({

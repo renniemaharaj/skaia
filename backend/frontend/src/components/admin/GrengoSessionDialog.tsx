@@ -1,8 +1,9 @@
-import { createPortal } from "react-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
 import { useAtomValue } from "jotai";
-import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
+import type { KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
+import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
 import "./GrengoSessionDialog.css";
 
 /**
@@ -44,6 +45,18 @@ export default function GrengoSessionDialog() {
     closeDialog();
   };
 
+  const handleOverlayKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      handleClose();
+    }
+  };
+
+  useEffect(() => {
+    if (showDialog) {
+      p1InputRef.current?.focus();
+    }
+  }, [showDialog]);
+
   if (showMaintenance) {
     return createPortal(
       <div className="grengo-maintenance-overlay">
@@ -59,9 +72,20 @@ export default function GrengoSessionDialog() {
   if (!showDialog) return null;
 
   return createPortal(
-    <div className="grengo-session-overlay" onClick={handleClose}>
-      <div className="grengo-session-dialog" onClick={e => e.stopPropagation()}>
-        <h3>Grengo Access</h3>
+    <div
+      className="grengo-session-overlay"
+      onClick={handleClose}
+      onKeyDown={handleOverlayKeyDown}
+      role="presentation"
+    >
+      <dialog
+        open
+        className="grengo-session-dialog"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+        aria-labelledby="grengo-session-title"
+      >
+        <h3 id="grengo-session-title">Grengo Access</h3>
         <p>Enter your server passcode to open a temporary management session.</p>
 
         {error && <div className="grengo-session-error">{error}</div>}
@@ -73,7 +97,6 @@ export default function GrengoSessionDialog() {
             type="password"
             value={p1}
             onChange={e => setP1(e.target.value)}
-            autoFocus
             disabled={loading}
           />
         </label>
@@ -91,17 +114,18 @@ export default function GrengoSessionDialog() {
 
         <div className="grengo-session-actions">
           <button
+            type="button"
             className="btn btn-primary"
             onClick={handleSubmit}
             disabled={loading || !p1 || !p2}
           >
             {loading ? "Verifying…" : "Open Session"}
           </button>
-          <button className="btn" onClick={handleClose} disabled={loading}>
+          <button type="button" className="btn" onClick={handleClose} disabled={loading}>
             Cancel
           </button>
         </div>
-      </div>
+      </dialog>
     </div>,
     document.body
   );

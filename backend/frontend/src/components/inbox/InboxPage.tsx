@@ -1,50 +1,50 @@
-import { customConfirm } from "../ui/Prompt";
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useAtom, useSetAtom, useAtomValue } from "jotai";
-import { Link, useSearchParams } from "react-router-dom";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  Plus,
-  InboxIcon,
-  X,
-  Smile,
-  Paperclip,
-  Trash2,
   Ban,
-  MoreVertical,
+  Check,
   FileIcon,
-  Info,
   FileText,
+  InboxIcon,
+  Info,
   Lock,
-  Unlock,
+  MoreVertical,
+  Paperclip,
+  Plus,
   Shield,
+  Smile,
+  Trash2,
+  Unlock,
   UserMinus,
   UserPlus,
-  VolumeX,
   Volume2,
-  Check,
+  VolumeX,
+  X,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import UserAvatar from "../user/UserAvatar";
-import UserProfileOverlay from "../user/UserProfileOverlay";
-import PersonPicker from "../ui/PersonPicker";
-import Picker from "@emoji-mart/react";
-import data from "@emoji-mart/data";
+import { currentUserAtom } from "../../atoms/auth";
+import type { User } from "../../atoms/auth";
 import {
-  inboxConversationsAtom,
-  inboxMessagesAtom,
-  activeConversationIdAtom,
-  inboxUnreadCountAtom,
   type InboxConversation,
   type InboxMessage,
+  activeConversationIdAtom,
+  inboxConversationsAtom,
+  inboxMessagesAtom,
+  inboxUnreadCountAtom,
 } from "../../atoms/inbox";
-import { currentUserAtom } from "../../atoms/auth";
-import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
-import type { User } from "../../atoms/auth";
-import { apiRequest } from "../../utils/api";
+import { showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
-import { relativeTime, formatLocalTime, formatFullDateTime } from "../../utils/serverTime";
+import { apiRequest } from "../../utils/api";
+import { formatFullDateTime, formatLocalTime, relativeTime } from "../../utils/serverTime";
 import Input from "../input/Input";
 import { GlassMenu } from "../ui/GlassMenu";
+import PersonPicker from "../ui/PersonPicker";
+import { customConfirm } from "../ui/Prompt";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import "./InboxPage.css";
 import { parseInt } from "lodash";
 

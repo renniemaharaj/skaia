@@ -5,7 +5,7 @@ import { atomWithStorage } from "jotai/utils";
 function getDefaultLayoutMode(): "application" | "web" {
   if (typeof window !== "undefined") {
     // Basic mobile detection
-    if (window.matchMedia && window.matchMedia("(max-width: 768px)").matches) {
+    if (window.matchMedia?.("(max-width: 768px)").matches) {
       return "application";
     }
   }

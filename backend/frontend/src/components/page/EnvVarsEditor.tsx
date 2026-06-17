@@ -1,8 +1,8 @@
-import { customConfirm } from "../ui/Prompt";
-import { lazy, Suspense, useCallback, useState } from "react";
-import { Lock, Unlock, Save, Trash2 } from "lucide-react";
-import { apiRequest } from "../../utils/api";
+import { Lock, Save, Trash2, Unlock } from "lucide-react";
+import { Suspense, lazy, useCallback, useState } from "react";
 import { toast } from "sonner";
+import { apiRequest } from "../../utils/api";
+import { customConfirm } from "../ui/Prompt";
 import "./EnvVarsEditor.css";
 
 const MonacoEditor = lazy(() => import("../monaco/Editor"));

@@ -1,46 +1,46 @@
+import { useAtomValue, useSetAtom } from "jotai";
 import {
-  ShoppingCart,
-  Moon,
-  Sun,
-  Menu,
-  X,
+  AppWindow,
+  Globe2,
   LogOut,
+  Menu,
+  Moon,
+  MoreHorizontal,
+  Settings,
+  ShoppingCart,
+  Sun,
   Volume,
   Volume1,
   Volume2,
   VolumeX,
-  MoreHorizontal,
-  AppWindow,
-  Globe2,
-  Settings,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useAtomValue, useSetAtom } from "jotai";
-import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  isAuthenticatedAtom,
-  currentUserAtom,
   accessTokenAtom,
-  refreshTokenAtom,
+  currentUserAtom,
   hasPermissionAtom,
+  isAuthenticatedAtom,
+  refreshTokenAtom,
 } from "../../../atoms/auth";
 import { brandingAtom, featuresAtom } from "../../../atoms/config";
+import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import { apiRequest } from "../../../utils/api";
-import { EditableText, ImagePickerButton } from "../EditControls";
-import UserLink from "../../user/UserLink";
 import NotificationBell from "../../notifications/NotificationBell";
+import UserLink from "../../user/UserLink";
+import { EditableText, ImagePickerButton } from "../EditControls";
 import "./Header.css";
-import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
+import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import {
+  getSoundVolume,
   isSoundEnabled,
   setSoundEnabled,
-  getSoundVolume,
   setSoundVolume,
 } from "../../../utils/sound";
-import type { Branding } from "../types";
 import InboxMail from "../../inbox/InboxMail";
+import type { Branding } from "../types";
 
 interface HeaderProps {
   cartCount: number;
@@ -418,7 +418,7 @@ function SoundControl() {
             value={volume}
             className="header-volume-slider"
             onChange={e => {
-              const v = parseFloat(e.target.value);
+              const v = Number.parseFloat(e.target.value);
               setVolume(v);
               setSoundVolume(v);
               setSoundOn(v > 0);

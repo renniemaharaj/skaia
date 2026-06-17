@@ -1,7 +1,7 @@
+import { ChevronLeft } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft } from "lucide-react";
 import "./GlassMenu.css";
 
 export interface GlassMenuOption {

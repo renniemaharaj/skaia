@@ -1,8 +1,8 @@
 import { useAtom } from "jotai";
 import { Link } from "react-router-dom";
 import { physicsSettingsAtom } from "../../../atoms/physics";
-import { defaultSettings, type PhysicsSettings } from "../../ui/GravityParticles/engine";
 import Select from "../../input/Select";
+import { type PhysicsSettings, defaultSettings } from "../../ui/GravityParticles/engine";
 
 const Section = ({
   title,
@@ -93,7 +93,7 @@ const PhysicsControls = () => {
             max="2.0"
             step="0.01"
             value={settings.gravityConstant}
-            onChange={e => updateSetting("gravityConstant", parseFloat(e.target.value))}
+            onChange={e => updateSetting("gravityConstant", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -108,7 +108,7 @@ const PhysicsControls = () => {
             max="50"
             step="1"
             value={settings.maxVelocity}
-            onChange={e => updateSetting("maxVelocity", parseFloat(e.target.value))}
+            onChange={e => updateSetting("maxVelocity", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -123,7 +123,7 @@ const PhysicsControls = () => {
             max="4"
             step="1"
             value={settings.subSteps}
-            onChange={e => updateSetting("subSteps", parseInt(e.target.value, 10))}
+            onChange={e => updateSetting("subSteps", Number.parseInt(e.target.value, 10))}
           />
         </div>
       </Section>
@@ -140,7 +140,7 @@ const PhysicsControls = () => {
             max="1.5"
             step="0.05"
             value={settings.bounceRestitution}
-            onChange={e => updateSetting("bounceRestitution", parseFloat(e.target.value))}
+            onChange={e => updateSetting("bounceRestitution", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -155,7 +155,7 @@ const PhysicsControls = () => {
             max="0.1"
             step="0.001"
             value={settings.orbitalDecayChance}
-            onChange={e => updateSetting("orbitalDecayChance", parseFloat(e.target.value))}
+            onChange={e => updateSetting("orbitalDecayChance", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -170,7 +170,7 @@ const PhysicsControls = () => {
             max="10"
             step="0.1"
             value={settings.mergeThreshold}
-            onChange={e => updateSetting("mergeThreshold", parseFloat(e.target.value))}
+            onChange={e => updateSetting("mergeThreshold", Number.parseFloat(e.target.value))}
           />
         </div>
       </Section>
@@ -187,7 +187,7 @@ const PhysicsControls = () => {
             max="500"
             step="5"
             value={settings.explosionThreshold}
-            onChange={e => updateSetting("explosionThreshold", parseFloat(e.target.value))}
+            onChange={e => updateSetting("explosionThreshold", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -202,7 +202,7 @@ const PhysicsControls = () => {
             max="20"
             step="0.5"
             value={settings.shockwaveForce}
-            onChange={e => updateSetting("shockwaveForce", parseFloat(e.target.value))}
+            onChange={e => updateSetting("shockwaveForce", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -217,7 +217,7 @@ const PhysicsControls = () => {
             max="10"
             step="0.5"
             value={settings.fragmentMass}
-            onChange={e => updateSetting("fragmentMass", parseFloat(e.target.value))}
+            onChange={e => updateSetting("fragmentMass", Number.parseFloat(e.target.value))}
           />
         </div>
       </Section>
@@ -234,7 +234,7 @@ const PhysicsControls = () => {
             max="1000"
             step="10"
             value={settings.cursorMass}
-            onChange={e => updateSetting("cursorMass", parseFloat(e.target.value))}
+            onChange={e => updateSetting("cursorMass", Number.parseFloat(e.target.value))}
           />
         </div>
 
@@ -332,7 +332,7 @@ const PhysicsControls = () => {
             max="30"
             step="1"
             value={settings.trailLength}
-            onChange={e => updateSetting("trailLength", parseInt(e.target.value, 10))}
+            onChange={e => updateSetting("trailLength", Number.parseInt(e.target.value, 10))}
           />
         </div>
       </Section>

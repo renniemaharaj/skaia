@@ -1,31 +1,31 @@
-import { customConfirm, customAlert } from "../ui/Prompt";
 import {
-  Download,
-  Trash2,
-  Play,
-  Square,
-  Settings,
-  UploadCloud,
-  DownloadCloud,
-  Server,
-  ShieldOff,
-  ShieldAlert,
-  RefreshCw,
-  FileEdit,
-  Plus,
+  Activity,
   Archive,
   Database,
-  Activity,
+  Download,
+  DownloadCloud,
+  FileEdit,
+  Play,
+  Plus,
+  RefreshCw,
+  Server,
+  Settings,
+  ShieldAlert,
+  ShieldOff,
+  Square,
+  Trash2,
+  UploadCloud,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
+import { customAlert, customConfirm } from "../ui/Prompt";
 import "./GrengoDashboard.css";
-import Select from "../input/Select";
-import { useWebSocketSync, sendGrengoJobAction } from "../../hooks/useWebSocketSync";
 import { uploader } from "../../atoms/uploadAtom";
+import { sendGrengoJobAction, useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { GlassCard, PrimaryCard, SecondaryCard } from "../cards/GlassCard";
+import Select from "../input/Select";
 
 // Types
 
@@ -568,7 +568,7 @@ export default function GrengoDashboard() {
 
   // Site actions
 
-  const siteAction = async (name: string, action: string, _method: string = "POST") => {
+  const siteAction = async (name: string, action: string, _method = "POST") => {
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
@@ -879,11 +879,9 @@ export default function GrengoDashboard() {
                             onClick={e => {
                               e.preventDefault();
                               let token = localStorage.getItem("auth.accessToken");
-                              if (token && token.startsWith('"') && token.endsWith('"'))
+                              if (token?.startsWith('"') && token.endsWith('"'))
                                 token = token.slice(1, -1);
-                              const url =
-                                `/api${apiBase}/exports/${exp.name}/download` +
-                                (token ? `?token=${token}` : "");
+                              const url = `/api${apiBase}/exports/${exp.name}/download${token ? `?token=${token}` : ""}`;
                               const a = document.createElement("a");
                               a.href = url;
                               a.download = exp.name; // Force download behavior
@@ -1615,7 +1613,7 @@ function barClass(pct: number): string {
 function parseMemMB(s: string): number {
   const m = s.match(/([\d.]+)\s*(GiB|MiB|KiB|GB|MB|KB)/i);
   if (!m) return 0;
-  const val = parseFloat(m[1]);
+  const val = Number.parseFloat(m[1]);
   const unit = m[2].toLowerCase();
   if (unit === "gib" || unit === "gb") return val * 1024;
   if (unit === "kib" || unit === "kb") return val / 1024;
@@ -1723,7 +1721,6 @@ function CreateSiteForm({
             value={form.name}
             onChange={e => set("name", e.target.value.toLowerCase())}
             placeholder="my-site"
-            autoFocus
           />
         </label>
         <label>
@@ -1821,7 +1818,7 @@ function ImportSiteForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+      if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import`, {
         method: "POST",
         headers: {
@@ -1914,7 +1911,7 @@ function ImportNodeForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+      if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import-node`, {
         method: "POST",
         headers: {

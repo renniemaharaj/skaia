@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import RichTextEditor from "reactjs-tiptap-editor";
 
@@ -12,9 +12,9 @@ import "react-image-crop/dist/ReactCrop.css";
 import "./Editor.css";
 // import { useSetAtom } from "jotai";
 import { debounce } from "lodash";
+import { useThemeContext } from "../../hooks/theme/useThemeContext";
 // import { useThemeContext } from "../context/theme/useThemeContext";
 import extensions from "./extensions";
-import { useThemeContext } from "../../hooks/theme/useThemeContext";
 
 interface EditorProps {
   value: string;

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { apiRequest } from "../../../utils/api";
 import { toast } from "sonner";
+import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
 
 export default function SecuritySettings() {

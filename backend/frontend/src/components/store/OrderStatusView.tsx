@@ -1,16 +1,17 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import type React from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { Link } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
+import { useAtomValue } from "jotai";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
-import { useAtomValue } from "jotai";
+import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { productsAtom } from "../../atoms/store";
+import type { CartItem, Order } from "../../atoms/store";
 import { formatCents } from "../../utils/money";
-import type { Order, CartItem } from "../../atoms/store";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 import "../../styles/Cart.css";
@@ -202,8 +203,8 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
     if (!s) return null;
     const parts = s.split(",").map(p => p.trim());
     if (parts.length < 2) return null;
-    const lat = parseFloat(parts[0]);
-    const lng = parseFloat(parts[1]);
+    const lat = Number.parseFloat(parts[0]);
+    const lng = Number.parseFloat(parts[1]);
     if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
     return [lat, lng] as [number, number];
   };

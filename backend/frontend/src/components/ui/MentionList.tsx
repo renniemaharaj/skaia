@@ -1,6 +1,6 @@
+import { Loader2 } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { apiRequest } from "../../utils/api";
-import { Loader2 } from "lucide-react";
 import "./Mentions.css";
 
 export const MentionList = forwardRef((props: any, ref) => {

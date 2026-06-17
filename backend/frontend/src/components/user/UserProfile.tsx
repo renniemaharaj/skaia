@@ -1,19 +1,19 @@
-import { customConfirm } from "../ui/Prompt";
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { contextUserAtom } from "../../atoms/contextUser";
-import { toast } from "sonner";
+import { customConfirm } from "../ui/Prompt";
 
-import { useUserData } from "./useUserData";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
+import { useUserData } from "./useUserData";
 
-import UserProfileCard from "./UserProfileCard";
+import SuspendDialog from "./SuspendDialog";
 import UserManagePanel from "./UserManagePanel";
+import UserProfileCard from "./UserProfileCard";
 import UserThreadsFeed from "./UserThreadsFeed";
 import UserUploads from "./UserUploads";
-import SuspendDialog from "./SuspendDialog";
 
 import { apiRequest } from "../../utils/api";
 import "./UserProfile.css";
@@ -162,9 +162,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       {handlePermissions ? handlePermissions(permissionPanel) : canManage ? permissionPanel : null}
 
       {!hideUploads && (
-        <>
-          <UserUploads userId={effectiveUserId} displayName={user.display_name || user.username} />
-        </>
+        <UserUploads userId={effectiveUserId} displayName={user.display_name || user.username} />
       )}
 
       {handleThreads ? handleThreads(threadsPanel) : threadsPanel}

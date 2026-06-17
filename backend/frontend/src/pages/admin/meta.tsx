@@ -1,11 +1,11 @@
-import { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { FileText, Paintbrush } from "lucide-react";
-import { useSiteConfig } from "../../hooks/useSiteConfig";
-import MetaControlPanel from "../../components/admin/MetaControlPanel";
+import { useEffect } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { layoutModeAtom } from "../../atoms/layoutMode";
+import MetaControlPanel from "../../components/admin/MetaControlPanel";
 import { SideRouteShell } from "../../components/layout/SideRouteShell";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 
 export function AdminMetaSettings() {
   const { branding, seo } = useSiteConfig();

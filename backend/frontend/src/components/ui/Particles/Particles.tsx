@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from "react";
-import { Renderer, Camera, Geometry, Program, Mesh } from "ogl";
+import { Camera, Geometry, Mesh, Program, Renderer } from "ogl";
+import type React from "react";
+import { useEffect, useRef } from "react";
 
 import "./Particles.css";
 
@@ -29,7 +30,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
       .map(c => c + c)
       .join("");
   }
-  const int = parseInt(hex, 16);
+  const int = Number.parseInt(hex, 16);
   const r = ((int >> 16) & 255) / 255;
   const g = ((int >> 8) & 255) / 255;
   const b = (int & 255) / 255;
@@ -161,7 +162,10 @@ const Particles: React.FC<ParticlesProps> = ({
     const palette = particleColors && particleColors.length > 0 ? particleColors : defaultColors;
 
     for (let i = 0; i < count; i++) {
-      let x: number, y: number, z: number, len: number;
+      let x: number;
+      let y: number;
+      let z: number;
+      let len: number;
       do {
         x = Math.random() * 2 - 1;
         y = Math.random() * 2 - 1;

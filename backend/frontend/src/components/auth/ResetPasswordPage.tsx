@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle, Loader, Lock } from "lucide-react";
 import { useState } from "react";
-import { useSearchParams, Link, useNavigate } from "react-router-dom";
-import { Lock, AlertCircle, Loader, CheckCircle } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
@@ -96,7 +96,6 @@ export default function ResetPasswordPage() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  autoFocus
                 />
               </div>
             </div>
@@ -143,9 +142,9 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="auth-bg-decoration">
-          <div className="decoration-circle decoration-circle-1"></div>
-          <div className="decoration-circle decoration-circle-2"></div>
-          <div className="decoration-circle decoration-circle-3"></div>
+          <div className="decoration-circle decoration-circle-1" />
+          <div className="decoration-circle decoration-circle-2" />
+          <div className="decoration-circle decoration-circle-3" />
         </div>
       </div>
     </div>

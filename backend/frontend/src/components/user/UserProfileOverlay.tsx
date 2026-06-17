@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import SpotlightCard from "../ui/SpotlightCard";
 import { apiRequest } from "../../utils/api";
-import type { ProfileUser, Role } from "./types";
-import UserAvatar from "./UserAvatar";
+import SpotlightCard from "../ui/SpotlightCard";
 import RoleBadge from "./RoleBadge";
+import UserAvatar from "./UserAvatar";
+import type { ProfileUser, Role } from "./types";
 import "./UserProfileOverlay.css";
 
 interface UserProfileOverlayProps {

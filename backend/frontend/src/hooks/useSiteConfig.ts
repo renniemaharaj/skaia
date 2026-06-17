@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import { useSetAtom } from "jotai";
-import type { Branding, SEOConfig, FooterConfig } from "../components/page/types";
-import { apiRequest } from "../utils/api";
+import { useEffect, useState } from "react";
 import { brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
+import type { Branding, FooterConfig, SEOConfig } from "../components/page/types";
+import { apiRequest } from "../utils/api";
 
 /**
  * Fetches branding, SEO, and footer config from the API and dynamically updates

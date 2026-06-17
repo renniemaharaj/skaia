@@ -1,6 +1,6 @@
+import { AlertCircle, ArrowLeft, Home } from "lucide-react";
 import type React from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import "./ErrorPage.css";
 
 interface ErrorPageProps {

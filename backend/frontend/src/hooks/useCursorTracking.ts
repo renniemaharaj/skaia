@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
-import { socketAtom, currentUserAtom } from "../atoms/auth";
+import { useEffect, useRef } from "react";
+import { currentUserAtom, socketAtom } from "../atoms/auth";
 
 const THROTTLE_MS = 50; // ~20 fps
 

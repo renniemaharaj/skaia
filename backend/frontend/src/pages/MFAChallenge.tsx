@@ -1,7 +1,7 @@
+import { AlertCircle, Loader, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import { ShieldCheck, AlertCircle, Loader } from "lucide-react";
 
-import { loginTOTP, verifyMFAChallenge, type AuthResponse } from "../utils/api";
+import { type AuthResponse, loginTOTP, verifyMFAChallenge } from "../utils/api";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
 
@@ -86,7 +86,6 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
                   onChange={e => setTotpCode(e.target.value)}
                   required
                   disabled={loading}
-                  autoFocus
                 />
               </div>
             </div>
@@ -131,9 +130,9 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
         </div>
 
         <div className="auth-bg-decoration">
-          <div className="decoration-circle decoration-circle-1"></div>
-          <div className="decoration-circle decoration-circle-2"></div>
-          <div className="decoration-circle decoration-circle-3"></div>
+          <div className="decoration-circle decoration-circle-1" />
+          <div className="decoration-circle decoration-circle-2" />
+          <div className="decoration-circle decoration-circle-3" />
         </div>
       </div>
     </div>

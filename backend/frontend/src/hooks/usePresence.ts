@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { socketAtom, currentUserAtom } from "../atoms/auth";
+import { currentUserAtom, socketAtom } from "../atoms/auth";
 import { playerMutedAtom } from "../atoms/media";
 
 /**

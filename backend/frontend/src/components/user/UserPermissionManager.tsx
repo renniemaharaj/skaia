@@ -1,13 +1,14 @@
-import React, { useState } from "react";
+import { useAtomValue } from "jotai";
 import { Search } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
+import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import SearchField from "../ui/SearchField";
 import UserAvatar from "./UserAvatar";
+import UserManagePanel from "./UserManagePanel";
 import UserProfileOverlay from "./UserProfileOverlay";
 import { useUserData } from "./useUserData";
-import UserManagePanel from "./UserManagePanel";
-import { useAtomValue } from "jotai";
-import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import "./UserProfile.css";
 import "./UserPermissionManager.css";
 

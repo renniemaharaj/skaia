@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import type React from "react";
+import { useMemo } from "react";
 import "./TableOfContentsTile.css";
 import { List } from "lucide-react";
 
@@ -34,7 +35,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
         heading.id = id;
       }
 
-      const level = parseInt(heading.tagName.replace("H", ""), 10);
+      const level = Number.parseInt(heading.tagName.replace("H", ""), 10);
       items.push({
         id,
         text: heading.textContent || "Untitled section",
@@ -112,7 +113,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
             role="button"
             tabIndex={0}
           >
-            <span className="toc-dot"></span>
+            <span className="toc-dot" />
             {item.text}
           </div>
         ))}

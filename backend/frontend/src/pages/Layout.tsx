@@ -1,40 +1,40 @@
-import { type ReactNode } from "react";
-import { Header } from "../components/page/layout/Header";
-import { Footer } from "../components/page/layout/Footer";
-import { Info } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
-import { useSetAtom, useAtomValue } from "jotai";
-import { layoutModeAtom } from "../atoms/layoutMode";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useAtom } from "jotai";
-import { useNavigate, useLocation } from "react-router-dom";
-import { accessTokenAtom, refreshTokenAtom, currentUserAtom, type User } from "../atoms/auth";
+import { Info } from "lucide-react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
-import { pendingTpRouteAtom, cursorPositionsAtom, pendingTpUserAtom } from "../atoms/presence";
-import { cartItemCountAtom } from "../atoms/store";
 import { contextUserAtom } from "../atoms/contextUser";
+import { layoutModeAtom } from "../atoms/layoutMode";
+import { cursorPositionsAtom, pendingTpRouteAtom, pendingTpUserAtom } from "../atoms/presence";
+import { cartItemCountAtom } from "../atoms/store";
+import { Footer } from "../components/page/layout/Footer";
+import { Header } from "../components/page/layout/Header";
 import { apiRequest } from "../utils/api";
 import "./Layout.css";
-import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
-import { usePresence } from "../hooks/usePresence";
-import { useCursorTracking } from "../hooks/useCursorTracking";
-import { useWebSocketSync } from "../hooks/useWebSocketSync";
-import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
-import GlobalUploader from "../components/ui/GlobalUploader";
-import PresencePanel from "../components/page/layout/PresencePanel";
-import CursorOverlay from "../components/page/layout/CursorOverlay";
 import { Toaster, toast } from "sonner";
-import { PromptContainer } from "../components/ui/Prompt";
-import { syncServerTime } from "../utils/serverTime";
+import { physicsSettingsAtom } from "../atoms/physics";
+import CursorOverlay from "../components/page/layout/CursorOverlay";
+import PresencePanel from "../components/page/layout/PresencePanel";
+import GlobalUploader from "../components/ui/GlobalUploader";
 import GravityParticles from "../components/ui/GravityParticles";
 import {
   CenterAnchoredSystem,
   TextGravityRenderer,
 } from "../components/ui/GravityParticles/GravityRenderers";
-import { physicsSettingsAtom } from "../atoms/physics";
 import Particles from "../components/ui/Particles/Particles";
-import RateLimitedPage from "./RateLimitedPage";
-import MFAChallenge from "./MFAChallenge";
+import { PromptContainer } from "../components/ui/Prompt";
 import type { Role } from "../components/user/types";
+import { useCursorTracking } from "../hooks/useCursorTracking";
+import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
+import { usePresence } from "../hooks/usePresence";
+import { useTransitionNavigation } from "../hooks/useTransitionNavigation";
+import { useWebSocketSync } from "../hooks/useWebSocketSync";
+import { syncServerTime } from "../utils/serverTime";
+import MFAChallenge from "./MFAChallenge";
+import RateLimitedPage from "./RateLimitedPage";
 
 interface LayoutProps {
   children: ReactNode;
@@ -46,7 +46,7 @@ function getStoredRateLimitUntil(): number | undefined {
   try {
     const stored = sessionStorage.getItem(RATE_LIMIT_KEY);
     if (!stored) return undefined;
-    const until = parseInt(stored, 10);
+    const until = Number.parseInt(stored, 10);
     if (Number.isNaN(until) || until <= Date.now()) {
       sessionStorage.removeItem(RATE_LIMIT_KEY);
       return undefined;
@@ -207,7 +207,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     // Read directly from localStorage to avoid stale Jotai atom hydration
     let token = localStorage.getItem("auth.accessToken");
-    if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+    if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
     if (!token) return; // No token, nothing to validate
 
     const validateSession = async () => {

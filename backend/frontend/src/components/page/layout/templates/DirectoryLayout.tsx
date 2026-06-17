@@ -1,7 +1,7 @@
+import { LayoutGrid, List } from "lucide-react";
 import type { ReactNode } from "react";
 import SearchField from "../../../ui/SearchField";
-import { LayoutGrid, List } from "lucide-react";
-import { TableView, type TableColumn } from "../../../ui/TableView/TableView";
+import { type TableColumn, TableView } from "../../../ui/TableView/TableView";
 import "./DirectoryLayout.css";
 
 export type ViewMode = "grid" | "list";
@@ -152,7 +152,7 @@ export function DirectoryLayout<T>({
             ) : (
               <>
                 {listHeader && <div className="directory-layout__list-header">{listHeader}</div>}
-                {items?.map((item, index) => renderListRow!(item, index))}
+                {items?.map((item, index) => renderListRow?.(item, index))}
               </>
             )}
           </div>
@@ -162,7 +162,7 @@ export function DirectoryLayout<T>({
       ) : canRenderGrid ? (
         <div className="directory-layout__grid">
           {prependGridCard}
-          {items?.map((item, index) => renderGridCard!(item, index))}
+          {items?.map((item, index) => renderGridCard?.(item, index))}
         </div>
       ) : (
         <div className="directory-layout__empty-container">{emptyState ?? null}</div>

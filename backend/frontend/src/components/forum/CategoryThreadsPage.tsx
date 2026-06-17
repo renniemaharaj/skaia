@@ -1,17 +1,17 @@
-import { useNavigate, useParams } from "react-router-dom";
 import { useAtomValue } from "jotai";
-import { X, MessageSquare, ChevronUp, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ChevronDown, ChevronUp, MessageSquare, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-import { forumCategoriesAtom } from "../../atoms/forum";
+import { Lock, Trash2, Unlock } from "lucide-react";
 import { currentUserAtom } from "../../atoms/auth";
+import { forumCategoriesAtom } from "../../atoms/forum";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
-import { apiRequest } from "../../utils/api";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
+import { apiRequest } from "../../utils/api";
+import SearchField from "../ui/SearchField";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "./Forum";
-import SearchField from "../ui/SearchField";
-import { Trash2, Lock, Unlock } from "lucide-react";
 
 import "./NewThread.css";
 

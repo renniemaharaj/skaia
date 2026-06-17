@@ -1,6 +1,6 @@
-import React from "react";
-import parse, { type DOMNode, Element } from "html-react-parser";
 import DOMPurify from "dompurify";
+import parse, { type DOMNode, Element } from "html-react-parser";
+import type React from "react";
 import UserLink from "../user/UserLink";
 
 interface RichTextRendererProps {
@@ -20,7 +20,7 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   const options = {
     replace: (domNode: DOMNode) => {
       if (previewMode && domNode instanceof Element && /^h[1-6]$/i.test(domNode.name)) {
-        if (domNode.attribs && domNode.attribs.id) {
+        if (domNode.attribs?.id) {
           delete domNode.attribs.id;
         }
       }
@@ -30,11 +30,11 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
         domNode.name === "span" &&
         domNode.attribs["data-type"] === "mention"
       ) {
-        const id = domNode.attribs["data-id"] || domNode.attribs["id"];
+        const id = domNode.attribs["data-id"] || domNode.attribs.id;
         const label =
           domNode.attribs["data-label"] ||
-          domNode.attribs["label"] ||
-          (domNode.children && domNode.children[0] ? (domNode.children[0] as any).data : "");
+          domNode.attribs.label ||
+          (domNode.children?.[0] ? (domNode.children[0] as any).data : "");
         // const type = domNode.attribs["data-mention-type"] || "user"; // Assume user by default, or maybe id has 'role-' prefix
 
         let badgeClass = "mention-badge";

@@ -10,11 +10,11 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { ProfileUser, Role } from "./types";
-import { formatDate } from "./useUserData";
-import UserAvatar from "./UserAvatar";
 import SpotlightCard from "../ui/SpotlightCard";
 import RoleBadge from "./RoleBadge";
+import UserAvatar from "./UserAvatar";
+import type { ProfileUser, Role } from "./types";
+import { formatDate } from "./useUserData";
 
 interface Props {
   user: ProfileUser;

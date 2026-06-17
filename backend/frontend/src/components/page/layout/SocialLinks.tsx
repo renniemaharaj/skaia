@@ -1,8 +1,8 @@
-import { Pencil, Plus, Trash2, Check } from "lucide-react";
+import { Check, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { FooterSocialLink } from "../types";
-import { ICON_MAP } from "../iconMap";
 import { IconPicker } from "../EditControls";
+import { ICON_MAP } from "../iconMap";
+import type { FooterSocialLink } from "../types";
 
 interface Props {
   links: FooterSocialLink[];
@@ -37,7 +37,6 @@ const SocialLinkEditor = ({
           value={url}
           onChange={e => setUrl(e.target.value)}
           placeholder="https://..."
-          autoFocus
           onKeyDown={e => {
             if (e.key === "Enter") {
               setEditing(false);

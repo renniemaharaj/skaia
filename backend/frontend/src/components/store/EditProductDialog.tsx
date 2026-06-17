@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { Check, Loader, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Check, Loader } from "lucide-react";
+import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { centsToDollars } from "../../utils/money";
-import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import Select from "../input/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
 
@@ -92,8 +92,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
     setLoading(true);
     try {
       if (!formData.name.trim()) throw new Error("Product name is required");
-      const price = parseFloat(formData.price);
-      if (isNaN(price) || price < 0) throw new Error("Valid price is required");
+      const price = Number.parseFloat(formData.price);
+      if (Number.isNaN(price) || price < 0) throw new Error("Valid price is required");
 
       await apiRequest(`/store/products/${product.id}`, {
         method: "PUT",
@@ -244,7 +244,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               value={formData.name}
               onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
               required
-              autoFocus
             />
           </div>
 

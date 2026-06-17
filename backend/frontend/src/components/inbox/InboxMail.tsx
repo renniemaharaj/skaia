@@ -1,12 +1,12 @@
 import { useAtom, useSetAtom } from "jotai";
-import {
-  inboxConversationsAtom,
-  inboxUnreadCountAtom,
-  type InboxConversation,
-} from "../../atoms/inbox";
-import { Link } from "react-router-dom";
 import { Mail } from "lucide-react";
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  type InboxConversation,
+  inboxConversationsAtom,
+  inboxUnreadCountAtom,
+} from "../../atoms/inbox";
 import { apiRequest } from "../../utils/api";
 
 const InboxMail = ({ setMenuOpen }: { setMenuOpen: (v: boolean) => void }) => {

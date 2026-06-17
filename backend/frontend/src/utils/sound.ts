@@ -48,7 +48,7 @@ export function getSoundVolume(): number {
   try {
     const val = localStorage.getItem(VOLUME_KEY);
     if (val === null) return DEFAULT_VOLUME;
-    const n = parseFloat(val);
+    const n = Number.parseFloat(val);
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : DEFAULT_VOLUME;
   } catch {
     return DEFAULT_VOLUME;

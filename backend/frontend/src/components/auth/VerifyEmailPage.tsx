@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { CheckCircle, AlertCircle, Loader } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { verifyEmail } from "../../utils/api";
 import "./Auth.css";
 

@@ -1,22 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { isAuthenticatedAtom } from "../../../atoms/auth";
 import {
-  storeCartItemsAtom,
-  productsAtom,
-  cartTotalAtom,
   type CartItem,
   type CheckoutResponse,
   type Order,
+  cartTotalAtom,
+  productsAtom,
+  storeCartItemsAtom,
 } from "../../../atoms/store";
-import { isAuthenticatedAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
+import OrderSubmittedView from "../OrderStatusView";
+import { StorePageShell } from "../StorePageShell";
 import { CartHeader } from "./CartHeader";
 import { CartItemsList } from "./CartItemsList";
 import { CheckoutPanel, type WalletCard } from "./CheckoutPanel";
 import { EmptyCart } from "./EmptyCart";
-import OrderSubmittedView from "../OrderStatusView";
-import { StorePageShell } from "../StorePageShell";
 import "../../../styles/Cart.css";
 
 type SavedCheckoutInfo = {

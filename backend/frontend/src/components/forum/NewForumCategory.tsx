@@ -1,7 +1,7 @@
+import { Check, Loader, X } from "lucide-react";
 import { useState } from "react";
-import { X, Check, Loader } from "lucide-react";
-import { apiRequest } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../utils/api";
 import "./NewThread.css";
 import "./IconButton.css";
 

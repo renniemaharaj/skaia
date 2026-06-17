@@ -5,7 +5,7 @@
  * The column_map tells us which row field populates which PageItem field.
  * Row overrides (per-row edits the user made to generated cards) are merged on top.
  */
-import type { PageItem, ColumnMap, RowOverrides, MappableField } from "./types";
+import type { ColumnMap, MappableField, PageItem, RowOverrides } from "./types";
 
 export interface RawRow {
   [key: string]: unknown;

@@ -1,33 +1,33 @@
-import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  Pencil,
-  Trash2,
-  X,
-  ThumbsUp,
-  Unlock,
-  Share2,
   BarChart3,
   BookOpen,
   Lock,
+  Pencil,
+  Share2,
+  ThumbsUp,
+  Trash2,
+  Unlock,
+  X,
 } from "lucide-react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-import ViewThread from "../ViewThread";
-import ViewThreadMeta from "../ViewThreadMeta";
-import ViewThreadComments from "../ViewThreadComments";
-import { currentThreadAtom, threadPermissionsAtom } from "../../../atoms/forum";
 import { currentUserAtom } from "../../../atoms/auth";
 import { contextUserAtom } from "../../../atoms/contextUser";
+import { currentThreadAtom, threadPermissionsAtom } from "../../../atoms/forum";
 import { useWebSocketSync } from "../../../hooks/useWebSocketSync";
 import { apiRequest } from "../../../utils/api";
 import ResourceAnalytics from "../../analytics/ResourceAnalytics";
-import TableOfContentsTile from "../TableOfContentsTile";
-import RecentThreadsTile from "../RecentThreadsTile";
-import { ThreadUserTiles } from "../ThreadUserTiles";
-import ThreadMediaViewer from "../ThreadMediaViewer";
 import VoicePanel from "../../page/layout/VoicePanel";
 import type { Role } from "../../user/types";
+import RecentThreadsTile from "../RecentThreadsTile";
+import TableOfContentsTile from "../TableOfContentsTile";
+import ThreadMediaViewer from "../ThreadMediaViewer";
+import { ThreadUserTiles } from "../ThreadUserTiles";
+import ViewThread from "../ViewThread";
+import ViewThreadComments from "../ViewThreadComments";
+import ViewThreadMeta from "../ViewThreadMeta";
 
 import "./ViewThreadPage.css";
 import "../IconButton.css";

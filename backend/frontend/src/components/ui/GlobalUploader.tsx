@@ -1,24 +1,24 @@
-import { useEffect, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
-import { activeUploadsAtom, showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
-import { isAuthenticatedAtom } from "../../atoms/auth";
 import {
-  UploadCloud,
-  CheckCircle2,
   AlertCircle,
-  Loader2,
+  CheckCircle2,
   ChevronDown,
-  ChevronUp,
   ChevronRight,
-  RefreshCw,
-  X,
+  ChevronUp,
+  Loader2,
   Pause,
   Play,
+  RefreshCw,
+  UploadCloud,
+  X,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { isAuthenticatedAtom } from "../../atoms/auth";
+import { activeUploadsAtom, showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
 import "./GlobalUploader.css";
 
 function formatETA(seconds: number) {
-  if (!isFinite(seconds) || seconds < 0) return "";
+  if (!Number.isFinite(seconds) || seconds < 0) return "";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
@@ -183,10 +183,12 @@ function JobItem({ job, defaultExpanded }: { job: any; defaultExpanded?: boolean
   if (job.status === "error")
     statusIcon = <AlertCircle size={16} style={{ color: "var(--error-color)" }} />;
 
-  const etaStr = job.etaSeconds && isFinite(job.etaSeconds) ? formatETA(job.etaSeconds) : "";
+  const etaStr = job.etaSeconds && Number.isFinite(job.etaSeconds) ? formatETA(job.etaSeconds) : "";
 
   const speedStr =
-    job.speedBps && isFinite(job.speedBps) ? `${(job.speedBps / 1024 / 1024).toFixed(1)} MB/s` : "";
+    job.speedBps && Number.isFinite(job.speedBps)
+      ? `${(job.speedBps / 1024 / 1024).toFixed(1)} MB/s`
+      : "";
 
   const completedCount = job.uploadedChunks || 0;
   const uploadingChunks = job.activeChunks || [];

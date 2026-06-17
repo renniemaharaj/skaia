@@ -243,6 +243,31 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_status  ON subscriptions(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_provider_ref
     ON subscriptions(provider_subscription_id) WHERE provider_subscription_id IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS user_wallet_transactions (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount      BIGINT NOT NULL,
+    type        TEXT NOT NULL,
+    description TEXT NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_wallet_user_id ON user_wallet_transactions(user_id);
+
+CREATE TABLE IF NOT EXISTS user_cards (
+    id               BIGSERIAL PRIMARY KEY,
+    user_id          BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    card_name        VARCHAR(255) NOT NULL,
+    card_description VARCHAR(255),
+    card_type        VARCHAR(50) NOT NULL,
+    is_credit        BOOLEAN NOT NULL DEFAULT FALSE,
+    card_number      VARCHAR(20) NOT NULL,
+    cvv              VARCHAR(10),
+    expiry_month     INT,
+    expiry_year      INT,
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_cards_user_id ON user_cards(user_id);
+
 -- Forum
 CREATE TABLE IF NOT EXISTS forum_categories (
     id            BIGSERIAL PRIMARY KEY,

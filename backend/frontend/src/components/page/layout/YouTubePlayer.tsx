@@ -32,13 +32,11 @@ const YouTubePlayer = React.memo(
 
       React.useImperativeHandle(ref, () => ({
         getCurrentTime: async () => {
-          if (playerRef.current && playerRef.current.getCurrentTime)
-            return await playerRef.current.getCurrentTime();
+          if (playerRef.current?.getCurrentTime) return await playerRef.current.getCurrentTime();
           return 0;
         },
         getDuration: async () => {
-          if (playerRef.current && playerRef.current.getDuration)
-            return await playerRef.current.getDuration();
+          if (playerRef.current?.getDuration) return await playerRef.current.getDuration();
           return 0;
         },
       }));

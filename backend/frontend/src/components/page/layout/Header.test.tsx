@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { Provider, createStore } from "jotai";
-import { Header } from "./Header";
-import { ThemeProvider } from "../../../hooks/theme/ThemeProvider";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  accessTokenAtom,
   currentUserAtom,
   isAuthenticatedAtom,
-  accessTokenAtom,
   refreshTokenAtom,
 } from "../../../atoms/auth";
-import { brandingAtom } from "../../../atoms/config";
 import type { User } from "../../../atoms/auth";
+import { brandingAtom } from "../../../atoms/config";
+import { ThemeProvider } from "../../../hooks/theme/ThemeProvider";
+import { Header } from "./Header";
 
 // Helpers
 

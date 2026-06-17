@@ -1,27 +1,27 @@
-import { useEffect, useState } from "react";
 import {
-  ShieldCheck,
-  ShieldOff,
-  Mail,
   AlertCircle,
   CheckCircle,
   Copy,
   Download,
   Key,
+  Mail,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
-  totpSetup,
-  totpEnable,
-  totpDisable,
-  resendVerificationEmail,
-  adminEnableTOTP,
+  type TOTPSetupResponse,
   adminDisableTOTP,
+  adminEnableTOTP,
   adminGenerateBackupCodes,
   apiRequest,
-  type TOTPSetupResponse,
+  resendVerificationEmail,
+  totpDisable,
+  totpEnable,
+  totpSetup,
 } from "../../utils/api";
 import { customPrompt } from "../ui/Prompt";
-import { toast } from "sonner";
 import "./SecuritySettings.css";
 import Button from "../input/Button";
 
@@ -247,7 +247,6 @@ export default function SecuritySettings({
                 placeholder="000000"
                 value={adminSetupCode}
                 onChange={e => setAdminSetupCode(e.target.value.replace(/\D/g, ""))}
-                autoFocus
               />
               <div className="sec-panel__actions">
                 <Button
@@ -561,7 +560,6 @@ export default function SecuritySettings({
               placeholder="000000"
               value={setupCode}
               onChange={e => setSetupCode(e.target.value.replace(/\D/g, ""))}
-              autoFocus
             />
 
             <div className="sec-panel__actions">

@@ -1,7 +1,7 @@
-import { type ReactNode } from "react";
 import { useAtomValue } from "jotai";
+import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
+import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 
 interface GuestRouteProps {
   children: ReactNode;

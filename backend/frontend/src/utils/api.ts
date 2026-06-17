@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { toast } from "sonner";
-import { type User } from "../atoms/auth";
+import type { User } from "../atoms/auth";
 import { apiBaseUrlAtom } from "../atoms/config";
 
 const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
@@ -85,16 +85,8 @@ export async function adminGenerateBackupCodes(
  */
 function getAuthHeaders(includeContentType = true): Record<string, string> {
   let token = localStorage.getItem("auth.accessToken");
-  if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+  if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
 
-  if (token) {
-    console.debug(
-      "Auth token found in localStorage (first 20 chars):",
-      token.substring(0, 20) + "..."
-    );
-  } else {
-    console.warn("No auth token found in localStorage");
-  }
   return {
     ...(includeContentType && { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -139,7 +131,7 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
 
     const retryHeader = response.headers?.get("Retry-After");
     if (retryHeader) {
-      const retry = parseInt(retryHeader, 10);
+      const retry = Number.parseInt(retryHeader, 10);
       if (!Number.isNaN(retry)) {
         retryAfter = retry;
       }
@@ -311,7 +303,7 @@ export async function uploadFile(file: File, endpoint: string): Promise<{ url: s
   formData.append("file", file);
 
   let token = localStorage.getItem("auth.accessToken");
-  if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+  if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     body: formData,

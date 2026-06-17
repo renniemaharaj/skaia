@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
+import { useEffect, useState } from "react";
 import { uploader } from "../../atoms/uploadAtom";
+import { apiRequest } from "../../utils/api";
 import type { ProfileUser } from "./types";
 
 interface UseProfileEditOptions {

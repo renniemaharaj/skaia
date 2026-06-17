@@ -1020,13 +1020,15 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Augment each order with its latest payment to reduce frontend round-trips.
 	var out []map[string]any
 	for _, o := range orders {
+		if canSell && !canManage {
+			o = h.sellerOrderView(o, userID)
+		}
 		var m map[string]any
 		jb, _ := json.Marshal(o)
 		_ = json.Unmarshal(jb, &m)
-		if p, perr := h.svc.GetPaymentForOrder(o.ID); perr == nil {
+		if p, perr := h.svc.GetPaymentForOrder(o.ID); perr == nil && (canManage || (o.UserID != nil && *o.UserID == userID)) {
 			m["payment"] = p
 		}
 		out = append(out, m)
@@ -1057,14 +1059,39 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
+	isCustomer := order.UserID != nil && *order.UserID == userID
+	if ownsProduct && !canManage && !isCustomer {
+		order = h.sellerOrderView(order, userID)
+	}
 	// Include latest payment in order response to avoid extra client requests
 	var m map[string]any
 	jb, _ := json.Marshal(order)
 	_ = json.Unmarshal(jb, &m)
-	if p, perr := h.svc.GetPaymentForOrder(order.ID); perr == nil {
+	if p, perr := h.svc.GetPaymentForOrder(order.ID); perr == nil && (canManage || isCustomer) {
 		m["payment"] = p
 	}
 	utils.WriteJSON(w, http.StatusOK, m)
+}
+
+func (h *Handler) sellerOrderView(order *models.Order, sellerID int64) *models.Order {
+	if order == nil {
+		return order
+	}
+	view := *order
+	view.UserID = nil
+	view.BillingInfo = ""
+	view.ReferralCode = ""
+	view.TotalPrice = 0
+	view.Items = []*models.OrderItem{}
+	for _, item := range order.Items {
+		product, err := h.svc.GetProduct(item.ProductID)
+		if err != nil || product.OwnerID == nil || *product.OwnerID != sellerID {
+			continue
+		}
+		view.Items = append(view.Items, item)
+		view.TotalPrice += item.Price * int64(item.Quantity)
+	}
+	return &view
 }
 
 func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {

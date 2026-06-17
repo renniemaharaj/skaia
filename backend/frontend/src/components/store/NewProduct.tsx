@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { X, Check, Loader } from "lucide-react";
-import { apiRequest } from "../../utils/api";
-import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
-import { productCategoriesAtom, type ProductMedia } from "../../atoms/store";
+import { Check, Loader, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { type ProductMedia, productCategoriesAtom } from "../../atoms/store";
+import { apiRequest } from "../../utils/api";
 import Select from "../input/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
 import "../forum/NewThread.css";
@@ -64,10 +64,10 @@ export const NewProduct = () => {
       if (!formData.name.trim()) throw new Error("Product name is required");
       if (!formData.category_id) throw new Error("Category is required");
       const catId = Number(formData.category_id);
-      if (isNaN(catId) || catId <= 0) throw new Error("Valid category is required");
+      if (Number.isNaN(catId) || catId <= 0) throw new Error("Valid category is required");
 
-      const price = parseFloat(formData.price);
-      if (isNaN(price) || price < 0) throw new Error("Valid price is required");
+      const price = Number.parseFloat(formData.price);
+      if (Number.isNaN(price) || price < 0) throw new Error("Valid price is required");
 
       await apiRequest("/store/products", {
         method: "POST",
@@ -161,7 +161,6 @@ export const NewProduct = () => {
             value={formData.name}
             onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
             required
-            autoFocus
           />
         </div>
 

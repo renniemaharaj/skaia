@@ -1,5 +1,5 @@
-import React from "react";
 import { UserCog2Icon } from "lucide-react";
+import type React from "react";
 import "./UserAvatar.css";
 
 interface UserAvatarProps {

@@ -1,19 +1,19 @@
 import type { PageSection } from "../types";
 import "./CTABlock.css";
 import {
+  ColorPickerButton,
   EditableText,
   SectionToolbar,
-  ColorPickerButton,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionBgColor,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
-  getSectionBgColor,
   setSectionBgColor,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
 
 interface Props {

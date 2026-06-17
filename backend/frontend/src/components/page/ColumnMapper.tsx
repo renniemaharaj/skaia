@@ -1,3 +1,4 @@
+import { GripHorizontal, X } from "lucide-react";
 /**
  * ColumnMapper - drag-and-drop / select UI for mapping datasource columns
  * to PageItem fields.
@@ -7,7 +8,6 @@
  * Users drag a chip onto a slot, or use the select dropdown.
  */
 import { useCallback, useState } from "react";
-import { X, GripHorizontal } from "lucide-react";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import type { ColumnMap, MappableField } from "./types";

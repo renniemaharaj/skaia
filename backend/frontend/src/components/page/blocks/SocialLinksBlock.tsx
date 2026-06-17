@@ -1,20 +1,20 @@
 import type { PageSection } from "../types";
 import "./SocialLinksBlock.css";
+import { Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import {
-  SectionToolbar,
   IconPicker,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
+  SectionToolbar,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
 import { ICON_MAP } from "../iconMap";
-import { Pencil, Plus, Trash2, Check } from "lucide-react";
-import { useState } from "react";
 
 interface Props {
   section: PageSection;
@@ -53,7 +53,6 @@ const BlockSocialLinkEditor = ({
           value={url}
           onChange={e => setUrl(e.target.value)}
           placeholder="https://..."
-          autoFocus
           onKeyDown={e => {
             if (e.key === "Enter") {
               setEditing(false);

@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
-import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
-import { apiRequest } from "../../utils/api";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import CommentSection from "../comments/CommentSection";
+import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
+import { apiRequest } from "../../utils/api";
+import CommentSection from "../comments/CommentSection";
 
 interface PageComment {
   id: number;

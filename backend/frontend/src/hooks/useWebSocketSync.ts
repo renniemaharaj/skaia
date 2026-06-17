@@ -1,57 +1,57 @@
-import { useEffect, useRef, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { formatCents } from "../utils/money";
 import {
-  forumCategoriesAtom,
+  type User,
+  accessTokenAtom,
+  currentUserAtom,
+  isAuthenticatedAtom,
+  refreshTokenAtom,
+  socketAtom,
+} from "../atoms/auth";
+import { type GlobalChatMessage, globalChatMessagesAtom } from "../atoms/chat";
+import { brandingAtom, footerConfigAtom, seoAtom, wsBaseUrlAtom } from "../atoms/config";
+import { type ActivityEvent, activityEventsAtom } from "../atoms/events";
+import {
   type ForumCategory,
   type ForumThread,
-  currentThreadAtom,
-  threadCommentsAtom,
-  categoryFeedThreadsAtom,
+  activeAllFeedIdAtom,
   activeCategoryFeedIdAtom,
-  userFeedThreadsAtom,
   activeUserFeedIdAtom,
   allFeedThreadsAtom,
-  activeAllFeedIdAtom,
+  categoryFeedThreadsAtom,
+  currentThreadAtom,
+  forumCategoriesAtom,
+  threadCommentsAtom,
+  userFeedThreadsAtom,
 } from "../atoms/forum";
 import {
-  socketAtom,
-  currentUserAtom,
-  accessTokenAtom,
-  refreshTokenAtom,
-  isAuthenticatedAtom,
-  type User,
-} from "../atoms/auth";
-import { wsBaseUrlAtom, brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
+  activeConversationIdAtom,
+  inboxConversationsAtom,
+  inboxMessagesAtom,
+  inboxUnreadCountAtom,
+} from "../atoms/inbox";
+import { mediaStateAtom } from "../atoms/media";
+import { type AppNotification, notificationsAtom } from "../atoms/notifications";
 import {
+  type CursorPosition,
+  cursorPositionsAtom,
   onlineUsersAtom,
   pendingTpRouteAtom,
   pendingTpUserAtom,
-  cursorPositionsAtom,
-  type CursorPosition,
 } from "../atoms/presence";
-import { globalChatMessagesAtom, type GlobalChatMessage } from "../atoms/chat";
-import {
-  inboxMessagesAtom,
-  inboxConversationsAtom,
-  inboxUnreadCountAtom,
-  activeConversationIdAtom,
-} from "../atoms/inbox";
-import { notificationsAtom, type AppNotification } from "../atoms/notifications";
-import { activityEventsAtom, type ActivityEvent } from "../atoms/events";
-import { playNotificationSound, playMessageSound, playChatSound } from "../utils/sound";
 import { voicePermissionsAtom } from "../atoms/voice";
-import { mediaStateAtom } from "../atoms/media";
+import { formatCents } from "../utils/money";
+import { playChatSound, playMessageSound, playNotificationSound } from "../utils/sound";
 
 import {
-  productsAtom,
-  productCategoriesAtom,
-  storeCartItemsAtom,
-  type Product,
-  type StoreCategory,
   type CartItem,
   type CheckoutResponse,
+  type Product,
+  type StoreCategory,
+  productCategoriesAtom,
+  productsAtom,
+  storeCartItemsAtom,
 } from "../atoms/store";
 
 interface WebSocketMessage {

@@ -1,7 +1,7 @@
+import { useAtomValue } from "jotai";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAtomValue } from "jotai";
-import { isAuthenticatedAtom, currentUserAtom } from "../atoms/auth";
+import { currentUserAtom, isAuthenticatedAtom } from "../atoms/auth";
 import { apiRequest } from "../utils/api";
 
 /**

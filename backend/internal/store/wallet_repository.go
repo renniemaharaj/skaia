@@ -1,6 +1,11 @@
 package store
 
 import (
+	"context"
+	"errors"
+	"strings"
+	"unicode"
+
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
@@ -27,6 +32,50 @@ func (r *sqlWalletRepository) CreateTransaction(tx *models.WalletTransaction) (*
 		&tx.Description,
 		&tx.CreatedAt,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
+func (r *sqlWalletRepository) DebitIfSufficient(userID, amount int64, description string) (*models.WalletTransaction, error) {
+	if amount <= 0 {
+		return nil, errors.New("debit amount must be positive")
+	}
+
+	tx := &models.WalletTransaction{}
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if _, err := exec.Exec(`SELECT pg_advisory_xact_lock($1)`, userID); err != nil {
+			return err
+		}
+
+		var balance int64
+		if err := exec.QueryRow(`
+			SELECT
+				COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0) -
+				COALESCE(SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END), 0)
+			FROM user_wallet_transactions
+			WHERE user_id = $1
+		`, userID).Scan(&balance); err != nil {
+			return err
+		}
+		if balance < amount {
+			return errors.New("insufficient wallet balance")
+		}
+
+		return exec.QueryRow(`
+			INSERT INTO user_wallet_transactions (user_id, amount, type, description)
+			VALUES ($1, $2, 'debit', $3)
+			RETURNING id, user_id, amount, type, description, created_at
+		`, userID, amount, description).Scan(
+			&tx.ID,
+			&tx.UserID,
+			&tx.Amount,
+			&tx.Type,
+			&tx.Description,
+			&tx.CreatedAt,
+		)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +132,9 @@ func (r *sqlWalletRepository) GetBalance(userID int64) (int64, error) {
 }
 
 func (r *sqlWalletRepository) AddCard(card *models.UserCard) (*models.UserCard, error) {
+	card.Last4 = cardLast4(card.CardNumber)
+	card.CardNumber = card.Last4
+	card.CVV = ""
 	query := `
 		INSERT INTO user_cards (user_id, card_name, card_description, card_type, is_credit, card_number, cvv, expiry_month, expiry_year)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -119,12 +171,25 @@ func (r *sqlWalletRepository) GetCards(userID int64) ([]*models.UserCard, error)
 		); err != nil {
 			return nil, err
 		}
+		c.Last4 = cardLast4(c.CardNumber)
+		c.CardNumber = ""
+		c.CVV = ""
 		cards = append(cards, &c)
 	}
 	return cards, nil
 }
 
 func (r *sqlWalletRepository) UpdateCard(card *models.UserCard) (*models.UserCard, error) {
+	card.Last4 = cardLast4(card.CardNumber)
+	if card.Last4 == "" {
+		_ = r.db.QueryRow(
+			`SELECT card_number FROM user_cards WHERE id = $1 AND user_id = $2`,
+			card.ID, card.UserID,
+		).Scan(&card.Last4)
+		card.Last4 = cardLast4(card.Last4)
+	}
+	card.CardNumber = card.Last4
+	card.CVV = ""
 	query := `
 		UPDATE user_cards
 		SET card_name = $1, card_description = $2, card_type = $3, is_credit = $4, card_number = $5, cvv = $6, expiry_month = $7, expiry_year = $8
@@ -137,4 +202,18 @@ func (r *sqlWalletRepository) UpdateCard(card *models.UserCard) (*models.UserCar
 func (r *sqlWalletRepository) DeleteCard(cardID, userID int64) error {
 	_, err := r.db.Exec(`DELETE FROM user_cards WHERE id = $1 AND user_id = $2`, cardID, userID)
 	return err
+}
+
+func cardLast4(raw string) string {
+	var b strings.Builder
+	for _, r := range raw {
+		if unicode.IsDigit(r) {
+			b.WriteRune(r)
+		}
+	}
+	digits := b.String()
+	if len(digits) <= 4 {
+		return digits
+	}
+	return digits[len(digits)-4:]
 }

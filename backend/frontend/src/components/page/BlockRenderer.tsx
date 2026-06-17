@@ -1,30 +1,30 @@
-import type { PageSection, PageItem, SectionType } from "./types";
+import type { PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
 import "./page-builder-core.css";
-import { HeroBlock } from "./blocks/HeroBlock";
-import { CardGroupBlock } from "./blocks/CardGroupBlock";
-import { StatCardsBlock } from "./blocks/StatCardsBlock";
-import { SocialLinksBlock } from "./blocks/SocialLinksBlock";
-import { ImageGalleryBlock } from "./blocks/ImageGalleryBlock";
-import { FeatureGridBlock } from "./blocks/FeatureGridBlock";
-import { CTABlock } from "./blocks/CTABlock";
-import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
-import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
-import { RichTextBlock } from "./blocks/RichTextBlock";
-import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
-import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
-import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
-import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  getSectionLayout,
-  getSectionMargins,
+  SectionMoveContext,
   getSectionAnimation,
   getSectionAnimationIntensity,
   getSectionBgColor,
-  SectionMoveContext,
+  getSectionLayout,
+  getSectionMargins,
 } from "./EditControls";
+import { CTABlock } from "./blocks/CTABlock";
+import { CardGroupBlock } from "./blocks/CardGroupBlock";
+import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
+import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
+import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
+import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
+import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
+import { FeatureGridBlock } from "./blocks/FeatureGridBlock";
+import { HeroBlock } from "./blocks/HeroBlock";
+import { ImageGalleryBlock } from "./blocks/ImageGalleryBlock";
+import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
+import { RichTextBlock } from "./blocks/RichTextBlock";
+import { SocialLinksBlock } from "./blocks/SocialLinksBlock";
+import { StatCardsBlock } from "./blocks/StatCardsBlock";
 
 interface BlockRendererProps {
   sections: PageSection[];

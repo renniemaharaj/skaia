@@ -1,10 +1,10 @@
-import { customConfirm } from "../ui/Prompt";
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
-import { Plus, X, Lock, Unlock, Save, Trash2, AlertTriangle, FileCode } from "lucide-react";
+import { AlertTriangle, FileCode, Lock, Plus, Save, Trash2, Unlock, X } from "lucide-react";
+import type { IDisposable, editor as MonacoEditor } from "monaco-editor";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { apiRequest } from "../../utils/api";
-import { toast } from "sonner";
-import type { editor as MonacoEditor, IDisposable } from "monaco-editor";
+import { customConfirm } from "../ui/Prompt";
 import "./TabbedEditor.css";
 
 const Editor = lazy(() => import("@monaco-editor/react"));
@@ -417,7 +417,6 @@ export default function TabbedEditor({
                       if (e.key === "Escape") setRenamingTab(null);
                     }}
                     onBlur={commitRename}
-                    autoFocus
                     onClick={e => e.stopPropagation()}
                   />
                 ) : (

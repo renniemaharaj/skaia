@@ -1,7 +1,7 @@
+import { Check, Loader, X } from "lucide-react";
 import { useState } from "react";
-import { X, Check, Loader } from "lucide-react";
-import { apiRequest } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../utils/api";
 import "../forum/NewThread.css";
 import "../forum/IconButton.css";
 
@@ -88,7 +88,6 @@ export const NewStoreCategory = () => {
             value={formData.name}
             onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
             required
-            autoFocus
           />
         </div>
 

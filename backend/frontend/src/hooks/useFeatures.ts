@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { useAtom } from "jotai";
+import { useEffect } from "react";
 import { featuresAtom } from "../atoms/config";
 import { apiRequest } from "../utils/api";
 

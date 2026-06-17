@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
 import { Check, Copy, Film, ImageIcon, Plus, Trash2, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import type { ProductMedia } from "../../atoms/store";
 import { uploader } from "../../atoms/uploadAtom";
-import { TableView } from "../ui/TableView/TableView";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
+import { TableView } from "../ui/TableView/TableView";
 import "./Store.css";
 
 interface ProductMediaTableProps {

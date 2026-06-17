@@ -1,9 +1,9 @@
-import { Route } from "react-router-dom";
-import Suspended from "./suspended";
-import { protectedRoutes, publicRoutes, guestRoutes } from "./routes";
-import { ProtectedRoute } from "../components/auth/ProtectedRoute";
-import { GuestRoute } from "../components/auth/GuestRoute";
 import type { JSX } from "react";
+import { Route } from "react-router-dom";
+import { GuestRoute } from "../components/auth/GuestRoute";
+import { ProtectedRoute } from "../components/auth/ProtectedRoute";
+import { guestRoutes, protectedRoutes, publicRoutes } from "./routes";
+import Suspended from "./suspended";
 
 export interface Primitve {
   element: JSX.Element;
@@ -44,9 +44,9 @@ export const publicRoutesFunc = (
     .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) =>
       "index" in route ? (
-        <Route key={`public-index` + i} index element={route.element} />
+        <Route key={`public-index${i}`} index element={route.element} />
       ) : (
-        <Route key={`public-${route.path}` + i} path={route.path} element={passThrough(route)} />
+        <Route key={`public-${route.path}${i}`} path={route.path} element={passThrough(route)} />
       )
     );
 };
@@ -59,7 +59,7 @@ export const protectedRoutesFunc = (
     .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) => (
       <Route
-        key={`private-${(route as CustomRoute).path || i}` + i}
+        key={`private-${(route as CustomRoute).path || i}${i}`}
         path={(route as CustomRoute).path}
         element={<ProtectedRoute>{passThrough(route as CustomRoute)}</ProtectedRoute>}
       />
@@ -74,7 +74,7 @@ export const guestRoutesFunc = (
     .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) => (
       <Route
-        key={`guest-${(route as CustomRoute).path || i}` + i}
+        key={`guest-${(route as CustomRoute).path || i}${i}`}
         path={(route as CustomRoute).path}
         element={<GuestRoute>{passThrough(route as CustomRoute)}</GuestRoute>}
       />

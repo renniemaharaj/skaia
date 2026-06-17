@@ -1,16 +1,16 @@
-import React, { useCallback, useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
-import { formatCents } from "../../utils/money";
-import { CreditCard, Trash, Edit, PlusCircle, LayoutDashboard, DollarSign } from "lucide-react";
-import { toast } from "sonner";
-import { useSearchParams } from "react-router-dom";
-import { useUserData } from "../user/useUserData";
 import { useAtomValue, useSetAtom } from "jotai";
+import { CreditCard, DollarSign, Edit, LayoutDashboard, PlusCircle, Trash } from "lucide-react";
+import React, { useCallback, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
+import { apiRequest } from "../../utils/api";
+import { formatCents } from "../../utils/money";
+import { getServerNow } from "../../utils/serverTime";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
-import { getServerNow } from "../../utils/serverTime";
+import { useUserData } from "../user/useUserData";
 import "./Store.css";
 import { SecondaryCard } from "../cards/GlassCard";
 import Select from "../input/Select";
@@ -31,10 +31,15 @@ interface UserCard {
   card_description: string;
   card_type: string;
   is_credit: boolean;
-  card_number: string;
-  cvv: string;
+  card_number?: string;
+  cvv?: string;
+  last4?: string;
   expiry_month: number;
   expiry_year: number;
+}
+
+function cardLast4(card: UserCard) {
+  return card.last4 || card.card_number?.slice(-4) || "XXXX";
 }
 
 export const WalletPage = () => {
@@ -170,8 +175,8 @@ export const WalletPage = () => {
       card_description: card.card_description,
       card_type: card.card_type,
       is_credit: card.is_credit,
-      card_number: card.card_number,
-      cvv: card.cvv,
+      card_number: "",
+      cvv: "",
       expiry_month: card.expiry_month,
       expiry_year: card.expiry_year,
     });
@@ -400,7 +405,7 @@ export const WalletPage = () => {
                   <input
                     className="input-group input"
                     type="text"
-                    placeholder="Card Number"
+                    placeholder={editingCard ? "New card number (optional)" : "Card Number"}
                     value={cardForm.card_number}
                     onChange={e =>
                       setCardForm({
@@ -408,7 +413,7 @@ export const WalletPage = () => {
                         card_number: e.target.value,
                       })
                     }
-                    required
+                    required={!editingCard}
                   />
                   <div style={{ display: "flex", gap: "1rem" }}>
                     <input
@@ -421,7 +426,7 @@ export const WalletPage = () => {
                       onChange={e =>
                         setCardForm({
                           ...cardForm,
-                          expiry_month: parseInt(e.target.value) || 1,
+                          expiry_month: Number.parseInt(e.target.value) || 1,
                         })
                       }
                       required
@@ -437,7 +442,7 @@ export const WalletPage = () => {
                       onChange={e =>
                         setCardForm({
                           ...cardForm,
-                          expiry_year: parseInt(e.target.value) || 2024,
+                          expiry_year: Number.parseInt(e.target.value) || 2024,
                         })
                       }
                       required
@@ -446,10 +451,10 @@ export const WalletPage = () => {
                     <input
                       className="input-group input"
                       type="text"
-                      placeholder="CVV"
+                      placeholder={editingCard ? "New CVV (optional)" : "CVV"}
                       value={cardForm.cvv}
                       onChange={e => setCardForm({ ...cardForm, cvv: e.target.value })}
-                      required
+                      required={!editingCard}
                       style={{ flex: 1 }}
                     />
                   </div>
@@ -605,7 +610,7 @@ export const WalletPage = () => {
                             fontSize: "1rem",
                           }}
                         >
-                          •••• •••• •••• {card.card_number.slice(-4) || "XXXX"}{" "}
+                          •••• •••• •••• {cardLast4(card)}{" "}
                           <span
                             style={{
                               fontSize: "0.8rem",

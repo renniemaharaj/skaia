@@ -1,9 +1,9 @@
-import { useState, useCallback } from "react";
-import { useSetAtom, useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Activity as ActivityIcon, Loader } from "lucide-react";
-import { activityEventsAtom, type ActivityEvent } from "../../atoms/events";
-import { apiRequest } from "../../utils/api";
+import { useCallback, useState } from "react";
+import { type ActivityEvent, activityEventsAtom } from "../../atoms/events";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
+import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";

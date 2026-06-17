@@ -1,5 +1,5 @@
 import { getRadius, hexToRgbStr } from "./engine";
-import type { Explosion, AttractorParticle } from "./engine";
+import type { AttractorParticle, Explosion } from "./engine";
 import type { ParticleWithSystems } from "./particleSystems";
 
 export const renderParticle = (

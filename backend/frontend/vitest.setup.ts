@@ -1,22 +1,24 @@
 import "./localStorage.mock";
 import "@testing-library/jest-dom";
-import { expect, afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
-const localStorageMock: Storage = {
+import { afterEach, beforeEach, expect, vi } from "vitest";
+type StorageMock = Storage & { _store: Record<string, string> };
+
+const localStorageMock: StorageMock = {
   getItem: vi.fn(key => {
-    return (localStorageMock as any)._store[key] || null;
+    return localStorageMock._store[key] || null;
   }),
   setItem: vi.fn((key, value) => {
-    (localStorageMock as any)._store[key] = value.toString();
+    localStorageMock._store[key] = value.toString();
   }),
   removeItem: vi.fn(key => {
-    delete (localStorageMock as any)._store[key];
+    delete localStorageMock._store[key];
   }),
   clear: vi.fn(() => {
-    (localStorageMock as any)._store = {};
+    localStorageMock._store = {};
   }),
   key: vi.fn(index => {
-    const keys = Object.keys((localStorageMock as any)._store);
+    const keys = Object.keys(localStorageMock._store);
     return keys[index] || null;
   }),
   length: 0,

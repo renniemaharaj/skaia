@@ -1,34 +1,34 @@
+import { uploader } from "../../atoms/uploadAtom";
 import { ICON_MAP, ICON_NAMES } from "./iconMap";
 import type { PageItem } from "./types";
-import { uploader } from "../../atoms/uploadAtom";
 import "./page-builder-core.css";
+import { debounce } from "lodash";
 import {
-  Pencil,
-  Trash2,
-  Plus,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Check,
   ChevronDown,
   ChevronUp,
   ImageIcon,
   Loader2,
-  RefreshCw,
-  Video,
-  Palette,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
   Maximize2,
-  Check,
+  Palette,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Video,
 } from "lucide-react";
-import type { SectionEditor } from "./types";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import UserAvatar from "../user/UserAvatar";
-import UserProfileOverlay from "../user/UserProfileOverlay";
-import { useRef, useContext, useEffect, useState, createContext } from "react";
-import { debounce } from "lodash";
-import { usePageBuilderContext } from "./PageBuilderContext";
 import { toast } from "sonner";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import { usePageBuilderContext } from "./PageBuilderContext";
+import type { SectionEditor } from "./types";
 
 export type SectionLayout = "center" | "left" | "right" | "wide";
 
@@ -95,7 +95,7 @@ export function getSectionLayout(config: string): SectionLayout {
 export function setSectionLayout(config: string, nextLayout: SectionLayout): string {
   const parsed = safeParseConfig(config);
   const updated = { ...parsed, layout: nextLayout };
-  if ("wide" in updated) delete updated.wide;
+  if ("wide" in updated) updated.wide = undefined;
   return JSON.stringify(updated);
 }
 
@@ -594,7 +594,6 @@ export const EditableText = ({
     return (
       <input
         className="pb-inline-input"
-        autoFocus
         value={draft}
         onChange={e => setDraft(e.target.value)}
         onBlur={() => {

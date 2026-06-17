@@ -1,17 +1,17 @@
-import { lazy, Suspense, useState, useEffect } from "react";
-import type { PageSection } from "../types";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import type { PageSection } from "../types";
 import "./RichTextBlock.css";
 import {
   SectionToolbar,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the page bundle small. */
@@ -98,17 +98,13 @@ export const RichTextBlock = ({ section, canEdit, onUpdate, onDelete }: Props) =
               config: setSectionAnimationIntensity(section.config, i),
             })
           }
-          extra={
-            <>
-              <button
-                className="pb-section-toolbar-btn"
-                onClick={() => setEditing(!editing)}
-                title={editing ? "Preview" : "Edit content"}
-              >
-                {editing ? "Preview" : "Edit"}
-              </button>
-            </>
-          }
+          extra=<button
+            className="pb-section-toolbar-btn"
+            onClick={() => setEditing(!editing)}
+            title={editing ? "Preview" : "Edit content"}
+          >
+            {editing ? "Preview" : "Edit"}
+          </button>
         />
       )}
 

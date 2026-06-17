@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Eye, Heart, Loader2, Users } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "../../utils/api";
-import type { ProfileUser } from "../user/types";
-import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
-import { Heart, Eye, Loader2, Users } from "lucide-react";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import type { ProfileUser } from "../user/types";
 import "./ThreadUserTiles.css";
 
 interface UserTileProps {

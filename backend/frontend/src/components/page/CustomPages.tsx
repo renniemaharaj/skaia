@@ -1,34 +1,34 @@
-import { customConfirm } from "../ui/Prompt";
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  FileText,
-  Crown,
-  Users,
-  ExternalLink,
-  Trash2,
-  Plus,
-  EyeOff,
-  Copy,
-  Pencil,
-  BarChart3,
-  Home,
-} from "lucide-react";
 import { useAtomValue } from "jotai";
+import {
+  BarChart3,
+  Copy,
+  Crown,
+  ExternalLink,
+  EyeOff,
+  FileText,
+  Home,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
-import { apiRequest } from "../../utils/api";
-import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { usePageData } from "../../hooks/usePageData";
-import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
-import type { PageSection } from "./types";
-import { BlockRenderer } from "./BlockRenderer";
-import UserAvatar from "../user/UserAvatar";
-import SpotlightCard from "../ui/SpotlightCard";
-import UserProfileOverlay from "../user/UserProfileOverlay";
+import { useSetHomepage } from "../../hooks/useSetHomepage";
+import { apiRequest } from "../../utils/api";
+import { relativeTimeAgo } from "../../utils/serverTime";
 import ResourceAnalytics from "../analytics/ResourceAnalytics";
+import { customConfirm } from "../ui/Prompt";
+import SpotlightCard from "../ui/SpotlightCard";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import { BlockRenderer } from "./BlockRenderer";
 import { DirectoryLayout } from "./layout/templates/DirectoryLayout";
+import type { PageSection } from "./types";
 import "./CustomPages.css";
 
 const parsePageSections = (content: string) => {
@@ -612,7 +612,6 @@ export default function CustomPages() {
                 value={renameTitle}
                 onChange={e => setRenameTitle(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleRename()}
-                autoFocus
               />
             </label>
             <label className="cp-modal__label">
@@ -657,7 +656,6 @@ export default function CustomPages() {
                 value={dupSlug}
                 onChange={e => setDupSlug(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleDuplicate()}
-                autoFocus
               />
             </label>
             <label className="cp-modal__label">

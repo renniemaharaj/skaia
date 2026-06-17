@@ -1,11 +1,12 @@
-import React, { useEffect, useRef } from "react";
 import { useAtomValue } from "jotai";
+import type React from "react";
+import { useEffect, useRef } from "react";
 import { physicsSettingsAtom } from "../../../atoms/physics";
-import type { Particle, Explosion, AttractorParticle } from "./engine";
-import { spawnParticle, stepPhysics, getRadius } from "./engine";
+import type { AttractorParticle, Explosion, Particle } from "./engine";
+import { getRadius, spawnParticle, stepPhysics } from "./engine";
+import { renderExplosion, renderParticle } from "./particleRenderer";
 import { computeCourtship } from "./particleSystems";
 import type { ParticleWithSystems } from "./particleSystems";
-import { renderParticle, renderExplosion } from "./particleRenderer";
 import "./GravityParticles.css";
 
 interface GravityParticlesProps {

@@ -7,7 +7,7 @@ export const formatCents = (cents: number): string => {
 };
 
 export const parseDollarsToCents = (value: string | number): number => {
-  const n = typeof value === "number" ? value : parseFloat(String(value));
+  const n = typeof value === "number" ? value : Number.parseFloat(String(value));
   if (Number.isNaN(n)) return 0;
   return Math.round(n * 100);
 };

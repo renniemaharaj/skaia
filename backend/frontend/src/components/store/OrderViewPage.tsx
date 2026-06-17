@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { apiRequest } from "../../utils/api";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import OrderSubmittedView from "../../components/store/OrderStatusView";
 import type { Order } from "../../atoms/store";
+import OrderSubmittedView from "../../components/store/OrderStatusView";
+import { apiRequest } from "../../utils/api";
 
 const OrderViewPage: React.FC = () => {
   const { id } = useParams();

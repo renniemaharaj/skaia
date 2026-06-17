@@ -1,25 +1,25 @@
-import { customConfirm } from "../../ui/Prompt";
-import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { PageSection, DataSource } from "../types";
+import { customConfirm } from "../../ui/Prompt";
 import { usePageBuilderContext } from "../PageBuilderContext";
+import type { DataSource, PageSection } from "../types";
 import { ImageCardGrid } from "./ImageCardGrid";
 import "./DataSourcesBlock.css";
+import { AlertTriangle, Database, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { apiRequest } from "../../../utils/api";
+import Button from "../../input/Button";
 import {
   SectionToolbar,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
-import { apiRequest } from "../../../utils/api";
-import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
-import Button from "../../input/Button";
 
 const TabbedEditor = lazy(() => import("../TabbedEditor"));
 

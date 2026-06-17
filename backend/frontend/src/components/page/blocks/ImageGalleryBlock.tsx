@@ -1,30 +1,30 @@
-import { useState, useMemo, type ReactNode } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import "./ImageGalleryBlock.css";
 import {
-  Plus,
-  Trash2,
+  AlignCenterHorizontal,
   LayoutGrid,
-  RectangleHorizontal,
-  Pencil,
   Maximize2,
   Minimize2,
-  AlignCenterHorizontal,
+  Pencil,
+  Plus,
+  RectangleHorizontal,
+  Trash2,
 } from "lucide-react";
-import type { PageSection, PageItem } from "../types";
 import {
-  EditableText,
-  SectionToolbar,
   DeleteItemButton,
+  EditableText,
   ImagePickerButton,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
+  SectionToolbar,
   getSectionAnimation,
   getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
   setSectionAnimation,
   setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
 } from "../EditControls";
+import type { PageItem, PageSection } from "../types";
 
 interface Album {
   key: string;
@@ -98,7 +98,7 @@ function setItemMeta(
   }
   const updated = { ...c, ...updates };
   if ("width" in updates && "wide" in updated) {
-    delete updated.wide;
+    updated.wide = undefined;
   }
   return JSON.stringify(updated);
 }
@@ -331,7 +331,6 @@ export const ImageGalleryBlock = ({
                 {canEdit && editingAlbum === album.key ? (
                   <input
                     className="gallery-album-input"
-                    autoFocus
                     value={albumDraft}
                     onChange={e => setAlbumDraft(e.target.value)}
                     onBlur={() => {

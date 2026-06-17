@@ -1,15 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { apiRequest } from "../utils/api";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type ForumThread,
-  categoryFeedThreadsAtom,
+  activeAllFeedIdAtom,
   activeCategoryFeedIdAtom,
-  userFeedThreadsAtom,
   activeUserFeedIdAtom,
   allFeedThreadsAtom,
-  activeAllFeedIdAtom,
+  categoryFeedThreadsAtom,
+  userFeedThreadsAtom,
 } from "../atoms/forum";
+import { apiRequest } from "../utils/api";
 
 /** Convenience alias - keeps imports in consumers unchanged. */
 export type FeedThread = ForumThread;

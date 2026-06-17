@@ -1,33 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
-  Users,
+  Atom,
   ChevronDown,
   ChevronUp,
+  Gauge,
   GhostIcon,
-  Navigation,
   LocateFixed,
   MessageCircle,
-  Gauge,
-  ShieldCheck,
   Mic,
-  Atom,
+  Navigation,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
-import { onlineUsersAtom, type OnlineUser, pendingTpUserAtom } from "../../../atoms/presence";
-import UserAvatar from "../../user/UserAvatar";
-import UserProfileOverlay from "../../user/UserProfileOverlay";
-import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
-import { currentUserAtom, socketAtom, hasPermissionAtom } from "../../../atoms/auth";
-import { globalChatMessagesAtom, type GlobalChatMessage } from "../../../atoms/chat";
-import { mediaStateAtom } from "../../../atoms/media";
-import { seoAtom } from "../../../atoms/config";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
+import { type GlobalChatMessage, globalChatMessagesAtom } from "../../../atoms/chat";
+import { seoAtom } from "../../../atoms/config";
+import { mediaStateAtom } from "../../../atoms/media";
+import { type OnlineUser, onlineUsersAtom, pendingTpUserAtom } from "../../../atoms/presence";
+import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../input/Input";
+import UserAvatar from "../../user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./PresencePanel.css";
-import VoicePanel from "./VoicePanel";
 import PhysicsControls from "./PhysicsControls";
+import VoicePanel from "./VoicePanel";
 
 /**
  * Extensible per-row action. Add new actions to the rowActions array below.
@@ -44,7 +44,7 @@ interface PresenceRowAction {
 
 const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 720 ? false : true
+    !(typeof window !== "undefined" && window.innerWidth <= 720)
   );
   const [activeTab, setActiveTab] = useState<"members" | "chat" | "voice" | "physics" | "defcon">(
     "members"
@@ -73,7 +73,7 @@ const PresencePanel = () => {
   const chatMessages = useAtomValue(globalChatMessagesAtom);
   const mediaState = useAtomValue(mediaStateAtom);
   const seo = useAtomValue(seoAtom);
-  const isMediaActive = mediaState && mediaState.queue && mediaState.queue.length > 0;
+  const isMediaActive = mediaState?.queue && mediaState.queue.length > 0;
   const location = useLocation();
   const navigate = useNavigate();
 

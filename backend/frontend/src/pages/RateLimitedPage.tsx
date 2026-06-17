@@ -1,8 +1,8 @@
+import { Loader, Lock, ShieldCheck } from "lucide-react";
 import React, { useState } from "react";
-import ErrorPage from "./ErrorPage";
-import { apiRequest } from "../utils/api";
 import { toast } from "sonner";
-import { Lock, Loader, ShieldCheck } from "lucide-react";
+import { apiRequest } from "../utils/api";
+import ErrorPage from "./ErrorPage";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
 import "./RateLimitedPage.css";
@@ -117,7 +117,6 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
                 onChange={e => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 required
                 disabled={isSubmitting}
-                autoFocus
                 style={{ paddingLeft: "36px", letterSpacing: "0.1em" }}
               />
             </div>

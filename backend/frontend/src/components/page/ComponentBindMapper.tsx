@@ -1,8 +1,8 @@
+import { GripHorizontal, X } from "lucide-react";
 import { useCallback, useState } from "react";
-import { X, GripHorizontal } from "lucide-react";
 import Button from "../input/Button";
 import Select from "../input/Select";
-import type { ComponentDefinition, BindPoint } from "./types";
+import type { BindPoint, ComponentDefinition } from "./types";
 import "./ColumnMapper.css"; // Reuse the same styles
 
 interface ComponentBindMapperProps {

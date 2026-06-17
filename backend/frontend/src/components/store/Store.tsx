@@ -1,21 +1,21 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "./ProductPage.css";
 import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
 import {
-  productsAtom,
-  productCategoriesAtom,
-  storeCartItemsAtom,
   type CartItem,
   type Product,
   type StoreCategory,
+  productCategoriesAtom,
+  productsAtom,
+  storeCartItemsAtom,
 } from "../../atoms/store";
-import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
 
-import { EditProductDialog } from "./EditProductDialog";
 import { useNavigate } from "react-router-dom";
+import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
 import { ImageLightbox } from "./ImageLightbox";
 import { StoreCategoryBar } from "./StoreCategoryBar";

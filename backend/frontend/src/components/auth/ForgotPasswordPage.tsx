@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle, Loader, Mail, ServerOff } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, AlertCircle, Loader, CheckCircle, ServerOff } from "lucide-react";
 import { forgotPassword } from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
@@ -82,7 +82,6 @@ export default function ForgotPasswordPage() {
                     onChange={e => setEmail(e.target.value)}
                     required
                     disabled={loading}
-                    autoFocus
                   />
                 </div>
               </div>
@@ -115,9 +114,9 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="auth-bg-decoration">
-          <div className="decoration-circle decoration-circle-1"></div>
-          <div className="decoration-circle decoration-circle-2"></div>
-          <div className="decoration-circle decoration-circle-3"></div>
+          <div className="decoration-circle decoration-circle-1" />
+          <div className="decoration-circle decoration-circle-2" />
+          <div className="decoration-circle decoration-circle-3" />
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { apiRequest } from "../../utils/api";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
-import type { ProfileUser, Permission, Role } from "./types";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { apiRequest } from "../../utils/api";
+import type { Permission, ProfileUser, Role } from "./types";
 
 export function formatDate(s: string): string {
   try {

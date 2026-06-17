@@ -1,16 +1,16 @@
-import { CalendarIcon, MessageCircleIcon, ClockIcon, EyeIcon } from "lucide-react";
+import { CalendarIcon, ClockIcon, EyeIcon, MessageCircleIcon } from "lucide-react";
 import "./ViewThreadMeta.css";
-import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
+import { truncate } from "lodash";
+import { useEffect, useState } from "react";
 import { currentThreadAtom } from "../../atoms/forum";
+import { apiRequest } from "../../utils/api";
+import RoleBadge from "../user/RoleBadge";
+import UserAvatar from "../user/UserAvatar";
 // import { formatDate } from "../../utils/serverTime";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import UserAvatar from "../user/UserAvatar";
-import { useEffect, useState } from "react";
-import { apiRequest } from "../../utils/api";
 import type { ProfileUser, Role } from "../user/types";
-import RoleBadge from "../user/RoleBadge";
 
 type Author = {
   name: string;
@@ -134,11 +134,10 @@ const ViewThreadMeta = ({
                   className="vtm-roles"
                   style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}
                 >
-                  {currentThread?.user_roles &&
-                    currentThread.user_roles.map(r => {
-                      const roleDetails = allRoles.find(ar => ar.name === r);
-                      return <RoleBadge key={r} role={roleDetails || r} />;
-                    })}
+                  {currentThread?.user_roles?.map(r => {
+                    const roleDetails = allRoles.find(ar => ar.name === r);
+                    return <RoleBadge key={r} role={roleDetails || r} />;
+                  })}
                 </div>
               </div>
             </div>

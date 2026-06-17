@@ -1,15 +1,15 @@
-import { customConfirm } from "../ui/Prompt";
-import { useEffect, useState } from "react";
 import { useSetAtom } from "jotai";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { apiRequest } from "../../utils/api";
+import type { User } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
-import type { Permission, Role, ProfileUser } from "../user/types";
+import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
+import { customConfirm } from "../ui/Prompt";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import type { User } from "../../atoms/auth";
+import type { Permission, ProfileUser, Role } from "../user/types";
 import "./RolesManagementPage.css";
 import Button from "../input/Button";
 import Checkbox from "../input/Checkbox";
@@ -703,7 +703,8 @@ export default function RolesManagementPage() {
                               <h4 className="rmp-perm-category">{category}</h4>
                               <div className="rmp-perm-grid">
                                 {perms.map(perm => {
-                                  const hasIt = role.loadedPerms!.some(p => p.name === perm.name);
+                                  const hasIt =
+                                    role.loadedPerms?.some(p => p.name === perm.name) ?? false;
                                   const toggling = permToggling.has(`${role.id}:${perm.name}`);
                                   return (
                                     <label

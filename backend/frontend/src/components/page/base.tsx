@@ -1,8 +1,8 @@
-import { type ReactNode } from "react";
-import { Header } from "./layout/Header";
 // import { Footer } from "./layout/Footer";
 import { useAtom } from "jotai";
+import type { ReactNode } from "react";
 import { layoutModeAtom } from "../../atoms/layoutMode";
+import { Header } from "./layout/Header";
 import "../../styles/Base.css";
 
 interface BaseLayoutProps {

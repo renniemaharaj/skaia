@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Lock, Home } from "lucide-react";
 import { useAtomValue } from "jotai";
+import { Home, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import "../../styles/NotFound.css";
 

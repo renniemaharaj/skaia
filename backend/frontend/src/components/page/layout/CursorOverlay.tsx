@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { cursorPositionsAtom } from "../../../atoms/presence";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { currentUserAtom } from "../../../atoms/auth";
+import { cursorPositionsAtom } from "../../../atoms/presence";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./CursorOverlay.css";
@@ -76,7 +76,9 @@ const CursorOverlay = () => {
     setParticles(prev => [...prev, ...newParticles]);
     setTimeout(() => {
       setParticles(prev =>
-        prev.filter(p => p.userId !== userId || Date.now() - parseInt(p.id.split("-")[1]) < 550)
+        prev.filter(
+          p => p.userId !== userId || Date.now() - Number.parseInt(p.id.split("-")[1]) < 550
+        )
       );
     }, 600);
   }, []);

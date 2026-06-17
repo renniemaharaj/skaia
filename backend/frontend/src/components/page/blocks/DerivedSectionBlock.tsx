@@ -1,44 +1,44 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type {
-  PageSection,
-  PageItem,
-  DataSource,
-  ColumnMap,
-  FactTableConfig,
   CardTemplate,
+  ColumnMap,
   ComponentDefinition,
+  DataSource,
+  FactTableConfig,
+  PageItem,
+  PageSection,
 } from "../types";
 import { DEFAULT_CARD_TEMPLATE } from "../types";
 import "./DerivedSectionBlock.css";
-import {
-  SectionToolbar,
-  getSectionLayout,
-  setSectionLayout,
-  getSectionMargins,
-  setSectionMargins,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-} from "../EditControls";
-import { ColumnMapper } from "../ColumnMapper";
-import { mapRowsToItems, detectColumns } from "../mapRows";
-import type { RawRow } from "../mapRows";
-import { apiRequest } from "../../../utils/api";
-import { AlertTriangle, Loader2, RefreshCw, Zap, ExternalLink } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, RefreshCw, Zap } from "lucide-react";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
-import { formatTimeAgo, cacheTTLLabel } from "../../../utils/cache";
+import { apiRequest } from "../../../utils/api";
+import { cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
+import { ColumnMapper } from "../ColumnMapper";
+import {
+  SectionToolbar,
+  getSectionAnimation,
+  getSectionAnimationIntensity,
+  getSectionLayout,
+  getSectionMargins,
+  setSectionAnimation,
+  setSectionAnimationIntensity,
+  setSectionLayout,
+  setSectionMargins,
+} from "../EditControls";
+import { detectColumns, mapRowsToItems } from "../mapRows";
+import type { RawRow } from "../mapRows";
 
-import { DesignedCardGrid } from "./DesignedCardGrid";
-import { CardDesigner } from "../CardDesigner";
-import { ComponentBindMapper } from "../ComponentBindMapper";
-import { ComponentGrid } from "../ComponentRenderer";
-import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
-import { ComponentGroupRenderer } from "../ComponentGroupEditor";
 import Button from "../../input/Button";
 import Select from "../../input/Select";
+import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
+import { CardDesigner } from "../CardDesigner";
+import { ComponentBindMapper } from "../ComponentBindMapper";
+import { ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { ComponentGrid } from "../ComponentRenderer";
+import { DesignedCardGrid } from "./DesignedCardGrid";
 
 interface Props {
   section: PageSection;
