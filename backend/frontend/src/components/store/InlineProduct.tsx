@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Package, Edit2, Trash2 } from "lucide-react";
-import SpotlightCard from "../ui/SpotlightCard";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import StarRating from "../ui/StarRating";
 import { formatCents } from "../../utils/money";
 import { type Product } from "../../atoms/store";
@@ -28,11 +28,7 @@ export const InlineProduct = ({
   const { averageRating, reviewCount } = useProductRatings(product.id);
 
   return (
-    <SpotlightCard
-      className="card--interactive product-card"
-      spotlightColor="rgba(255,255,255,0.15)"
-      style={{ padding: 0 }}
-    >
+    <ContentFlatCard className="product-card">
       <Link
         to={`/store/product/${product.id}`}
         style={{
@@ -159,6 +155,6 @@ export const InlineProduct = ({
           </div>
         </div>
       </Link>
-    </SpotlightCard>
+    </ContentFlatCard>
   );
 };

@@ -621,6 +621,17 @@ div#root {
   box-shadow: none;
 }
 
+.content-flat-card {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.content-flat-card:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
 .card__header,
 .card__body,
 .card__footer {

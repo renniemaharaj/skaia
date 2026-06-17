@@ -26,6 +26,7 @@ import { layoutModeAtom } from "../../atoms/layoutMode";
 import { createPortal } from "react-dom";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 interface ProductReview {
   id: string | number;
@@ -351,7 +352,7 @@ export const ProductPage = () => {
 
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
-        <div className="product-page-hero">
+        <ContentFlatCard className="product-page-hero">
           <div
             className={`product-page-image-container${!product.image_url ? " fallback" : ""}`}
           >
@@ -437,7 +438,7 @@ export const ProductPage = () => {
               </button>
             </div>
           </div>
-        </div>
+        </ContentFlatCard>
 
         {/* ── Bottom: similar products + reviews ── */}
         <div className="product-page-bottom">
