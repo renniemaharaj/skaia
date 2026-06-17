@@ -540,9 +540,14 @@ div#root {
 }
 
 .btn-danger:hover {
-  background: var(--error-color);
-  color: var(--bg-color);
+  background: var(--error-bg);
+  color: var(--error-color);
   border-color: var(--error-color);
+}
+
+.btn-danger svg {
+  color: currentColor;
+  stroke: currentColor;
 }
 
 .btn-warning {

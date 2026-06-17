@@ -195,12 +195,18 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem;
+  padding: 0.85rem 1rem;
 }
 
 .cart-checkout-item {
-  border: 1px solid var(--border-color);
+  padding: 0.85rem 1rem !important;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent) !important;
   border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 32px
+    color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
 }
 
 .cart-item-image {
@@ -261,6 +267,66 @@
 .cart-item-controls .btn {
   padding: 6px 10px;
   max-width: 40px;
+}
+
+.cart-filler {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.cart-filler-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cart-filler-item {
+  pointer-events: none;
+  opacity: 0.72;
+}
+
+.cart-filler-thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+}
+
+.cart-filler-lines {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cart-filler-line {
+  height: 0.75rem;
+  margin-bottom: 0;
+}
+
+.cart-filler-line--title {
+  width: min(62%, 18rem);
+}
+
+.cart-filler-line--meta {
+  width: min(38%, 10rem);
+}
+
+.cart-filler-action {
+  flex: 0 0 auto;
+  width: 5.5rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+}
+
+.cart-filler-message {
+  margin: 0;
+  padding: 0 0.25rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .cart-footer-actions {
@@ -546,8 +612,8 @@
 }
 
 /* ── Submit button ── */
-.cart-submit-btn {
-  width: min(100%, 18rem);
+.cart-summary .btn.cart-submit-btn {
+  width: min(100%, 12rem);
   margin-left: auto;
   padding: 0.75rem;
   font-size: 0.95rem;
@@ -895,7 +961,7 @@
   .cart-field--code,
   .cart-field--date,
   .cart-field--time,
-  .cart-submit-btn {
+  .cart-summary .btn.cart-submit-btn {
     max-width: 100%;
     width: 100%;
   }

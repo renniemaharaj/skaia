@@ -131,7 +131,7 @@
   color: var(--primary-color);
 }
 
-.cart-summary .btn {
+.cart-summary .btn:not(.cart-submit-btn) {
   width: 100%;
 }
 

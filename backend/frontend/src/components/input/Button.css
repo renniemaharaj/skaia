@@ -134,9 +134,14 @@
 }
 
 .sk-btn--danger:hover:not(:disabled) {
-  background: var(--error-color);
-  color: var(--bg-color);
+  background: var(--error-bg);
+  color: var(--error-color);
   border-color: var(--error-color);
+}
+
+.sk-btn--danger svg {
+  color: currentColor;
+  stroke: currentColor;
 }
 
 /* Warning */
