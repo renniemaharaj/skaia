@@ -17,6 +17,7 @@ Automated planning, strategizing, and todo management for Skaia. Use this routin
 - Relevant `.todo/*` and `.todo/*.tip` files
 - `.specs/` files for affected architecture or contracts
 - `.routines/correctness` for known drift/anti-patterns
+- `.routines/auditor` for quality gates or audit-driven plans
 
 ## Responsibilities
 
@@ -25,6 +26,7 @@ Automated planning, strategizing, and todo management for Skaia. Use this routin
 - Enforce `.tip` file presence and structure
 - Keep todo entries actionable, scoped, and linked to relevant specs/routines
 - Retire stale or completed todos only after verification is documented
+- Route quality/security/UX findings through `.routines/auditor` before large plans when the right fix is unclear
 
 ## Non-Goals
 
@@ -87,6 +89,7 @@ if new plan needed:
 - `.todo/*.tip`
 - `.todo/README.md`
 - `.routines/correctness`
+- `.routines/auditor`
 - `.routines/worker`
 - `.specs/`
 
@@ -94,6 +97,7 @@ if new plan needed:
 
 - `.routines/worker` — execution of planned work
 - `.routines/correctness` — validation and anti-patterns
+- `.routines/auditor` — strict quality/security/UX audit source
 - `.specs/` — architecture, design, and protocol details
 - `.todo/README.md` — planning and status conventions
 

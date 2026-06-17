@@ -1,64 +1,81 @@
 # Migration Spec
 
-## Policy: Idempotent Ordered Migrations
+## Scope
 
-All schema changes must be idempotent and safe to re-run. The migration runner executes every `*.sql` file in sorted order and does not rely on a migration history table.
+Idempotent PostgreSQL schema/data migrations for all tenant databases.
 
-Use the existing files by default:
+## Load when
 
-- **`001_schema.sql`** — All table definitions, indexes, and constraints
-- **`002_seed.sql`** — All seed data (roles, permissions, default config, etc.)
+Schema, seed data, model fields, indexes, store/auth/session/page tables, or
+`grengo migrate` behavior changes.
 
-Use a numbered incremental file only when the change must migrate or reshape data on existing deployments, or when isolating a reversible operational migration improves safety. Incremental files must be idempotent and ordered with a zero-padded numeric prefix.
+## Owns
 
-Current incremental migrations:
+- `backend/internal/migrations/*.sql`
+- Fresh schema: `backend/internal/migrations/001_schema.sql`
+- Seed data: `backend/internal/migrations/002_seed.sql`
+- Migration runner invoked by `grengo migrate <name|all>`
 
-- `003_datasource_env_data.sql`
-- `004_datasource_files.sql`
-- `005_datasource_cache_ttl.sql`
-- `006_resource_views.sql`
-- `007_rename_landing_to_page.sql`
-- `008_superuser_admin.sql`
-- `009_auth_user_separation.sql`
-- `010_add_indexes.sql`
-- `011_ui_cosmetics_and_skins.sql`
-- `012_sessions.sql`
-- `013_forum_category_pinning.sql`
-- `014_media_history.sql`
-- `015_superuser_color.sql`
+## Contracts
 
-When an incremental migration adds stable schema used by runtime code, mirror
-the fresh-database shape in `001_schema.sql` and keep the incremental file for
-existing deployments. Current examples include role cosmetic columns,
-stateful `sessions`, forum category pinning, and `media_history`.
+- Migrations run in filename sort order.
+- There is no migration history table; every SQL file must be safe to re-run.
+- Fresh installs must be represented in `001_schema.sql` and `002_seed.sql`.
+- Incremental files remain for existing deployments, data movement, compatibility
+  bridges, or one-time operational transitions.
+- Use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`,
+  `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT`, guarded `DO $$` blocks, and
+  `IF EXISTS` where needed.
+- Prices and monetary rewards are stored as integer cents.
 
-### Rationale
+## Current Files
 
-This project uses `grengo migrate all` to apply migrations across all site databases. The migration runner executes all `*.sql` files in sorted order. Since migrations are **not versioned or tracked** (no migration history table), they must be **idempotent** — using `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT DO NOTHING`, etc.
+| File | Purpose |
+| --- | --- |
+| `001_schema.sql` | Fresh schema, indexes, constraints |
+| `002_seed.sql` | Default roles, permissions, admin/config seed |
+| `003_datasource_env_data.sql` | Datasource env storage |
+| `004_datasource_files.sql` | Datasource file support |
+| `005_datasource_cache_ttl.sql` | Datasource cache TTL |
+| `006_resource_views.sql` | Analytics/resource view tables |
+| `007_rename_landing_to_page.sql` | Landing-to-page compatibility |
+| `008_superuser_admin.sql` | Superuser/admin transition |
+| `009_auth_user_separation.sql` | Auth-owned credential/TOTP tables |
+| `010_add_indexes.sql` | Additional indexes |
+| `011_ui_cosmetics_and_skins.sql` | UI cosmetics/skin fields |
+| `012_sessions.sql` | Stateful sessions |
+| `013_forum_category_pinning.sql` | Forum pinning |
+| `014_media_history.sql` | Media history |
+| `015_superuser_color.sql` | Superuser color |
+| `016_thread_editors.sql` | Thread editor permissions |
+| `017_role_storage_bonus.sql` | Role storage bonus |
+| `018_inbox_group_conversations.sql` | Group inbox conversations |
+| `019_inbox_group_roles.sql` | Group inbox roles |
+| `020_store_orders.sql` | Store orders/payments/subscriptions |
+| `020_user_cards.sql` | User card table; duplicate numeric prefix exists |
+| `021_store_wallet.sql` | Wallet transactions |
+| `022_store_reviews.sql` | Product reviews |
+| `023_store_special_actions.sql` | Product special actions JSONB |
+| `024_store_reference_codes.sql` | Checkout reference codes and payouts |
 
-Fresh schemas should be represented in `001_schema.sql` and `002_seed.sql`. Incremental files are reserved for existing-deployment data movement, compatibility bridges, or one-time operational transitions that cannot be represented solely by editing the base schema.
+## Invariants
 
-### How to Make Changes
+- New runtime schema must update `001_schema.sql`; do not rely only on an
+  incremental migration for fresh installs.
+- Duplicate numeric prefixes sort lexically; avoid adding more duplicate numbers.
+  The existing `020_*` pair is tolerated because filenames are distinct and
+  idempotent.
+- Column removal or data reshaping belongs in an incremental migration with
+  guarded reads/writes.
+- Auth secrets stay in auth tables, not `users`.
 
-1. **New table** — Add the `CREATE TABLE IF NOT EXISTS` statement to `001_schema.sql` in the appropriate section.
-2. **Alter existing table** — Modify the `CREATE TABLE` statement directly in `001_schema.sql`. Since we use `IF NOT EXISTS`, existing tables won't be recreated, so also add an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statement after the CREATE for existing deployments, or create an incremental migration if data movement/compatibility logic is required.
-3. **New seed data** — Add to `002_seed.sql` using `ON CONFLICT DO NOTHING` or `INSERT ... ON CONFLICT DO UPDATE`.
-4. **New indexes** — Add `CREATE INDEX IF NOT EXISTS` to `001_schema.sql`.
-5. **Data migration or column removal** — Add a numbered incremental migration with guarded reads/writes and `IF EXISTS`/`ON CONFLICT` behavior.
+## Verify
 
-### Running Migrations
+- `find backend/internal/migrations -maxdepth 1 -type f -name '*.sql' | sort`
+- `rg "CREATE TABLE IF NOT EXISTS|ADD COLUMN IF NOT EXISTS|ON CONFLICT" backend/internal/migrations`
 
-```bash
-grengo migrate all    # Migrate all site databases
-grengo migrate <name> # Migrate a specific site database
-```
+## Trace
 
-### Example: Adding a Column to an Existing Table
-
-```sql
--- In 001_schema.sql, update the CREATE TABLE to include the new column,
--- then add this after the CREATE TABLE block:
-ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS message_type VARCHAR(20) NOT NULL DEFAULT 'text';
-```
-
-This ensures both fresh installs and existing deployments get the column.
+- `.specs/backend_spec`
+- `.specs/auth_user_separation_spec`
+- `.routines/.specs_specialist`

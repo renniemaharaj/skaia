@@ -2,118 +2,88 @@
 
 ## Purpose
 
-Repository drift and anti-pattern detection routine. Use it to compare docs, specs, migrations, models, tests, and implementation facts, then surface or fix actionable inconsistencies.
+Architectural truth and drift-resolution routine for Skaia. Use it to determine
+what is actually correct when code, specs, routines, todos, migrations, tests, or
+docs disagree.
 
 ## Triggers
 
 - User references `.routines/correctness`
-- A routine asks for validation or an objective second pass
-- Specs/todos/migrations/models were changed
-- Documentation and code appear to disagree
-- A review request asks for risks, regressions, or missing tests
+- Any routine asks for validation or a second pass
+- Specs, todos, migrations, models, routes, or routines changed
+- Documentation and implementation appear to disagree
+- A finding needs authoritative classification before planning or implementation
 
 ## Inputs
 
-- Changed files
-- `README.md` files relevant to the touched area
-- `.specs/*`
-- `.todo/*` and `.todo/*.tip` related to the work
-- `backend/internal/migrations/`
-- `backend/models/`
-- Relevant tests and package files
+- Changed files and git diff/status
+- Relevant `.specs/*`, especially `.specs/README.md` and `.specs/PROTOCOL.md`
+- Relevant `.todo/*` and `.todo/*.tip`
+- Relevant `.routines/*`
+- `backend/internal/migrations/`, `backend/models/`, route handlers, tests
+- Frontend atoms/hooks/routes/components when UI/data contracts are involved
 
 ## Responsibilities
 
-- Detect contradictions between specs, todos, migrations, models, and code
-- Identify orphaned/deprecated files, stale references, and inefficient routines
-- Find at least one actionable criticism or explicitly record that the requested scope had no material findings
-- Suggest targeted fixes with priority and verification
-- Update docs/specs/todos when the correction is safe and in scope
+- Resolve contradictions between documented intent and implementation facts.
+- Identify stale references, orphaned docs, duplicated routine authority, and invalid assumptions.
+- Decide the professional path for each issue: patch docs, update specs, create/update todo, or implement through `worker`.
+- Keep routines subject to correctness, including `auditor` and this file.
+- Produce at least one actionable finding, or explicitly state that the requested scope had no material drift.
 
 ## Non-Goals
 
-- Do not run broad implementation work; use `.routines/worker`
-- Do not create new feature plans; use `.routines/todo_planner`
-- Do not duplicate backend/frontend audit details when those routines are more specific
-
-## Goal
-
-Keep Skaia internally consistent and reduce drift so agents can trust the local context they load.
-
-## Principles
-
-- Prefer concrete file/line findings over broad advice
-- Favor small corrections that remove confusion for future agents
-- Link to source files/specs rather than copying large passages
-- Escalate cross-cutting implementation work into `.todo` when it cannot be fixed safely in the current task
+- Do not perform broad implementation work; use `.routines/worker`.
+- Do not create large feature plans; use `.routines/todo_planner`.
+- Do not replace `.routines/auditor` for enterprise-grade quality review.
 
 ## Workflow
 
-1. Identify the scope from the triggering task
-2. Read relevant README/spec/todo files and changed code
-3. Compare stated policy against actual repo behavior
-4. Surface actionable contradictions, stale references, coverage gaps, or anti-patterns
-5. Apply small documentation or reference fixes when clearly safe
-6. Record durable findings in `.tip`, specs, or routine run remarks
-
-### Pseudocode
-
-```
-scope = changed files or requested area
-read docs/specs/todos/code for scope
-compare documented intent with implementation facts
-if safe small fix:
-    patch docs/references
-else:
-    record actionable finding and next step
-verify references and formatting
-```
+1. Define the contradiction/drift scope.
+2. Read only the relevant specs, routines, todos, migrations, and source files.
+3. Establish implementation truth from code/tests/migrations.
+4. Compare docs/routines/todos against that truth.
+5. Patch small safe drift immediately.
+6. For larger work, record a precise finding and route it to `auditor`,
+   `todo_planner`, `worker`, or `.specs_specialist`.
+7. Verify stale names/paths are gone and linked files exist.
 
 ## Verification
 
-- Use `rg` to confirm removed/renamed references are gone
-- Run relevant tests/builds only when code behavior changed
-- For docs-only corrections, verify links and file paths exist
+- Use `rg` for removed/renamed names, routes, files, and routine references.
+- For docs-only corrections, verify linked files exist.
+- For code-backed corrections, run the relevant tests/builds or record why not.
 
 ## Trace Outputs
 
-- Updated README/spec/todo/routine files for small drift fixes
+- Updated docs/specs/routines/todos for safe drift fixes
 - `.todo/<entry>.tip` notes for implementation-related findings
-- This routine's run log for standalone correctness audits
+- Correctness run remarks for material standalone audits
 
 ## Contexts
 
-- `README.md`
 - `.routines/`
 - `.specs/`
 - `.todo/`
-- `backend/internal/migrations/`
-- `backend/models/`
-- Relevant source/test files
+- `backend/`
+- `backend/frontend/`
+- `grengo/`
 
 ## Extension/See Also
 
-- `.routines/audit_backend` — backend-specific correctness
-- `.routines/audit_frontend` — frontend-specific correctness
-- `.routines/.specs_specialist` — specs authority and upkeep
-- `.routines/todo_planner` — convert findings into plans
+- `.routines/auditor` - stricter whole-repo quality gate
+- `.routines/.specs_specialist` - compact specs authority
+- `.routines/todo_planner` - convert findings into plans
+- `.routines/worker` - execute scoped fixes
 
 ## Last Ran
 
-- 2026-06-11
+- 2026-06-17
 
 ## Last Run Remarks
 
-- Audited `grengo` CLI and internal API for drift and regressions. Found and fixed critical vulnerabilities: unauthenticated internal API, SQL injection via string concat in `dbExists`, and truncated stream bug in `apiExportNode`.
-- Verified `backend/internal/grengo` proxy uses dynamic `WithPasscode` session header injection.
-- Found 4 critical issues in new mediascraper code: SSRF (no URL validation), JSON injection via string concat error, missing auth middleware on mount, 22MB binary tracked in git.
-- Found 2 general issues: startup `ClearCache()` debug call, variable shadowing in `scraper.go`.
-- Found 1 UI issue: `DesignedCardWrapper` rendered unsanitized `customCss` in `<style>` tag (CSS injection risk).
-- Found `hotfix_reconciliation` fully complete but not yet retired.
-- All findings resolved in same session via `critical_fixes_stabilization` todo.
-- No spec drift detected between `backend_spec` and actual mediascraper endpoints (new endpoints not yet in spec — flagged for `.specs_specialist`).
+- Recast correctness as the architectural truth/drift authority for the routine system. Split strict quality auditing into `.routines/auditor` while keeping all routines subject to correctness.
 
 ## Next Steps
 
-- Update `backend_spec` with mediascraper API endpoints via `.routines/.specs_specialist`.
-- Review `legacy_code_removal_plan` and `legacy_data_migration` for retirement candidacy (3+ weeks idle).
+- Use correctness to validate routine/spec/todo contradictions before planning or implementation.

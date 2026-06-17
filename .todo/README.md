@@ -29,6 +29,7 @@ Start from the file that matches the task:
 | --- | --- | --- |
 | Execute planned work | `.todo/<name>.tip`, then `.todo/<name>` | `.routines/worker` |
 | Create or reorganize plans | Existing `.todo/*` and `.todo/*.tip` | `.routines/todo_planner` |
+| Audit quality, security, UX, or contracts | Related todo, specs, code, and tests | `.routines/auditor` |
 | Validate drift or contradictions | Related todo, specs, and code | `.routines/correctness` |
 | Update durable architecture docs | Related todo and changed code | `.routines/.specs_specialist` |
 
@@ -148,5 +149,6 @@ done
 - `.routines/README.md` — routine routing and invocation contract
 - `.routines/todo_planner` — todo creation, dedupe, split, and retirement
 - `.routines/worker` — todo execution and verification
+- `.routines/auditor` — strict whole-repo quality/security/UX audit
 - `.routines/correctness` — drift and contradiction checks
 - `.specs/README.md` — durable project specification system

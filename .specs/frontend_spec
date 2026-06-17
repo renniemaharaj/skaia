@@ -1,603 +1,129 @@
-# Frontend UI Specification
-
-## Design System
-
-The frontend uses a centralized CSS design system defined in `backend/frontend/src/index.css`. All UI elements must derive their visual foundation from shared tokens and utility classes. This ensures visual consistency and allows smaller models to compose UI reliably from a small set of primitives.
-
-## CSS Token Reference
-
-### Color Tokens
-
-| Token                   | Light        | Dark         | Usage                    |
-| ----------------------- | ------------ | ------------ | ------------------------ |
-| `--primary-color`       | `#5b9e8e`    | `#7bb3a0`    | Buttons, links, accents  |
-| `--primary-light`       | `#7bb3a0`    | `#9dd4bf`    | Hover states             |
-| `--primary-dark`        | `#3d7366`    | `#5b9e8e`    | Active states            |
-| `--skaia-green-primary` | `#caffed`    | `#caffed`    | Brand highlight color    |
-| `--bg-color`            | `#ffffff`    | `#0f0f0f`    | Page background          |
-| `--bg-secondary`        | `#f9f9f9`    | `#1a1a1a`    | Card backgrounds         |
-| `--bg-tertiary`         | `#f0f0f0`    | `#252525`    | Section backgrounds      |
-| `--text-primary`        | `#1a1a1a`    | `#ffffff`    | Headings, body text      |
-| `--text-secondary`      | `#666666`    | `#b0b0b0`    | Descriptions, meta       |
-| `--border-color`        | `#e0e0e0`    | `#333333`    | Borders, dividers        |
-| `--shadow`              | light shadow | dark shadow  | Card resting state       |
-| `--shadow-hover`        | elevated     | elevated     | Card hover state         |
-| `--error-color`         | `#dc3545`    | `#ff6b7a`    | Error text, borders      |
-| `--error-bg`            | rgba error   | rgba error   | Error background tint    |
-| `--error-border`        | rgba error   | rgba error   | Error border tint        |
-| `--success-color`       | `#198754`    | `#34c97a`    | Success indicators       |
-| `--success-bg`          | rgba success | rgba success | Success background tint  |
-| `--success-border`      | rgba success | rgba success | Success border tint      |
-| `--warning-color`       | `#e67e00`    | `#ffaa44`    | Warning indicators       |
-| `--warning-bg`          | rgba warning | rgba warning | Warning background tint  |
-| `--info-color`          | `#0066cc`    | `#60a5fa`    | Informational indicators |
-| `--info-bg`             | rgba info    | rgba info    | Info background tint     |
-
-### Focus, Overlay & Utility Tokens
-
-| Token                  | Light                               | Dark                            | Usage                         |
-| ---------------------- | ----------------------------------- | ------------------------------- | ----------------------------- |
-| `--focus-ring`         | `0 0 0 3px rgba(primary, 0.15)`     | `0 0 0 3px rgba(primary, 0.25)` | Focus outline for inputs/btns |
-| `--overlay-dark`       | `rgba(0,0,0,0.5)`                   | `rgba(0,0,0,0.6)`               | Modal/dialog overlays         |
-| `--overlay-dark-heavy` | `rgba(15,23,42,0.88)`               | `rgba(15,23,42,0.92)`           | Full-screen overlays          |
-| `--scrollbar-thumb`    | `rgba(0,0,0,0.15)`                  | `rgba(255,255,255,0.15)`        | Custom scrollbar thumb        |
-| `--font-mono`          | JetBrains Mono, Fira Code, Consolas | same                            | All monospace text            |
-
-### Module Accent Colors (Activity Badges)
-
-| Token             | Color     | Usage                    |
-| ----------------- | --------- | ------------------------ |
-| `--module-user`   | `#3b82f6` | User-related activity    |
-| `--module-forum`  | `#22c55e` | Forum activity           |
-| `--module-store`  | `#a855f7` | Store activity           |
-| `--module-config` | `#f97316` | Config/settings activity |
-| `--module-page`   | `#ec4899` | Page activity            |
-| `--module-inbox`  | `#0ea5e9` | Inbox/message activity   |
-| `--module-upload` | `#eab308` | Upload activity          |
-| `--module-system` | `#ef4444` | System/error activity    |
-
-### Card Tokens
-
-| Token                   | Value                 | Purpose                      |
-| ----------------------- | --------------------- | ---------------------------- |
-| `--card-bg`             | `var(--bg-secondary)` | Card background              |
-| `--card-border`         | `var(--border-color)` | Card border color            |
-| `--card-radius`         | `16px`                | Card corner radius           |
-| `--card-padding`        | `1.5rem`              | Card inner padding           |
-| `--card-shadow`         | `var(--shadow)`       | Card resting shadow          |
-| `--card-shadow-hover`   | `var(--shadow-hover)` | Card hover shadow            |
-| `--card-hover-bg`       | subtle highlight      | Card hover background        |
-| `--section-bg`          | `var(--bg-tertiary)`  | Section background           |
-| `--section-gap`         | `1.5rem`              | Gap between section children |
-| `--section-padding`     | `1.5rem`              | Section inner padding        |
-| `--panel-border`        | `var(--border-color)` | Panel divider color          |
-| `--panel-heading-color` | `var(--text-primary)` | Panel heading text           |
-
-## Shared CSS Classes
-
-### Cards
-
-| Class                | Purpose                                                                  |
-| -------------------- | ------------------------------------------------------------------------ |
-| `.card`              | Base card: background, border, radius, padding, shadow, hover transition |
-| `.card--interactive` | Adds cursor pointer; hover elevates and highlights border                |
-| `.card--outlined`    | Border only, no shadow                                                   |
-| `.card--flat`        | No background, border, or shadow                                         |
-| `.card--compact`     | 65% of default padding                                                   |
-| `.card--section`     | Uses section background                                                  |
-| `.card--forum`       | Primary border accent                                                    |
-| `.card--store`       | Dark primary border accent                                               |
-| `.card--highlight`   | Primary border with subtle glow                                          |
-| `.card__header`      | Card header block with bottom margin                                     |
-| `.card__body`        | Card body block                                                          |
-| `.card__footer`      | Card footer block with top margin                                        |
-
-### Sections
-
-| Class               | Purpose                                                     |
-| ------------------- | ----------------------------------------------------------- |
-| `.section`          | Section container: background, border, radius, padding, gap |
-| `.section__header`  | Section heading with bottom margin                          |
-| `.section__content` | Section body                                                |
-
-### Buttons
-
-| Class            | Purpose                                        |
-| ---------------- | ---------------------------------------------- |
-| `.btn`           | Base button: padding, radius, font, transition |
-| `.btn-primary`   | Primary color fill                             |
-| `.btn-secondary` | Outlined with primary border                   |
-
-### Layout
-
-| Class                             | Purpose                                  |
-| --------------------------------- | ---------------------------------------- |
-| `.container`                      | Max-width `1400px` centered with padding |
-| `.grid`                           | CSS grid with `20px` gap                 |
-| `.grid-2` / `.grid-3` / `.grid-4` | Auto-fit responsive columns              |
-
-### Utilities
-
-| Class              | Purpose                     |
-| ------------------ | --------------------------- |
-| `.badge`           | Inline pill badge (primary) |
-| `.badge-secondary` | Outlined pill badge         |
-| `.skeleton`        | Loading shimmer animation   |
-
-## Rules for Building UI
-
-### 1. Always start with shared classes
-
-Every card-like element MUST use `.card` as its base class. Add modifiers for behavior:
-
-```html
-<div class="card card--interactive forum-category-card">
-  <div class="card card--interactive card--store product-card">
-    <div class="card grengo-create-form"></div>
-  </div>
-</div>
-```
-
-### 2. Component CSS handles layout only
-
-Component-specific CSS files should contain ONLY:
-
-- Layout properties: `display`, `flex-direction`, `gap`, `height`, `width`, `max-width`, `overflow`
-- Positioning: `position`, `top`, `left`, `z-index`, `margin`
-- Animations: `animation`, `@keyframes`
-- Component-specific transforms on hover (e.g. `transform: translateY(-8px) scale(1.02)`)
-
-Component CSS must NOT redeclare:
-
-- `background-color` (use card tokens or override via CSS variable)
-- `border` / `border-radius` (inherited from `.card` / `.section`)
-- `box-shadow` (inherited from `.card`)
-- `padding` (inherited from `.card` unless layout requires override, then set explicitly)
-- `cursor: pointer` (use `.card--interactive`)
-
-### 3. Theme compliance
-
-- All colors MUST come from CSS custom properties — never hardcode hex values
-- Use `var(--border-color)` not `rgba(0,0,0,0.07)`
-- Use `var(--shadow)` not `0 2px 8px rgba(0,0,0,0.08)`
-- The `data-theme` attribute on `<html>` toggles light/dark
-
----
-
-## Strict Enforcement Rules
-
-These rules are NON-NEGOTIABLE. Every CSS file must comply. Violations are blockers.
-
-### Rule 1: ZERO Hardcoded Colors
-
-No hex values (`#xxx`), no `rgb()`, no `rgba()` in component CSS. Every color must reference a design token via `var(--token)`.
-
-**Allowed**:
-
-```css
-color: var(--text-primary);
-background: var(--bg-secondary);
-border: 1px solid var(--border-color);
-color: white; /* Only for text on solid color buttons/badges */
-color: inherit; /* Inheriting parent color */
-color: transparent; /* Transparent keyword */
-color: currentColor; /* Inheriting current text color */
-```
-
-**Forbidden**:
-
-```css
-color: #666; /* Use var(--text-secondary) */
-background: rgba(0, 0, 0, 0.1); /* Use color-mix() with token */
-border: 1px solid #e0e0e0; /* Use var(--border-color) */
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Use var(--shadow) */
-```
-
-### Rule 2: ZERO var() Fallbacks
-
-Never provide fallback values in `var()` calls. If the token is undefined, the build is broken — fix the token, not the consumer.
-
-**Allowed**: `color: var(--text-primary);`
-**Forbidden**: `color: var(--text-primary, #1a1a1a);`
-
-### Rule 3: color-mix() for Opacity
-
-When you need a token color at reduced opacity, use `color-mix()`. Never use `rgba()` with raw color values.
-
-**Pattern**: `color-mix(in srgb, var(--token) XX%, transparent)`
-
-```css
-/* 10% opacity primary for subtle backgrounds */
-background: color-mix(in srgb, var(--primary-color) 10%, transparent);
-
-/* 15% opacity error for error backgrounds */
-background: color-mix(in srgb, var(--error-color) 15%, transparent);
-
-/* Mixing with another token */
-background: color-mix(in srgb, var(--primary-color) 50%, var(--bg-color));
-```
-
-### Rule 4: data-theme for Dark Mode
-
-Dark mode is controlled by `html[data-theme="dark"]` in `index.css`. Component CSS must NEVER use `@media (prefers-color-scheme: dark)`. All dark mode adaptation happens automatically through token switching.
-
-**Forbidden**:
-
-```css
-@media (prefers-color-scheme: dark) {
-  .my-component {
-    background: #1a1a1a;
-  }
-}
-```
-
-### Rule 5: Shared Shadows Only
-
-Use `var(--shadow)`, `var(--shadow-hover)`, or `var(--focus-ring)` for all shadows. If a unique shadow is needed, define a new token in `:root` — never inline a raw `box-shadow` value in component CSS.
-
-### Rule 6: var(--font-mono) for Monospace
-
-All monospace text must use `font-family: var(--font-mono)`. Never inline `"JetBrains Mono", monospace` or `"Consolas", monospace`.
-
-### Rule 7: var(--card-radius) for Border Radius
-
-Cards and modals must use `border-radius: var(--card-radius)` (16px). Only use raw `border-radius` values for pills (`50%`, `999px`), small elements (`4px`, `6px`, `8px` for badges/tags/inputs), or when explicitly smaller radii are needed for components within cards.
-
-### Rule 8: !important Usage
-
-`!important` is ONLY allowed for:
-
-1. **Third-party library overrides** (TipTap editor, rich text widgets) — component CSS files like `Editor.css`, `RichTextBlock.css`
-2. **Page builder layout alignment** — `page-builder-core.css` alignment utilities that override inline styles
-3. **Responsive grid breakpoints** — forcing `grid-template-columns: 1fr` at mobile
-4. **Intentional reset overrides** — e.g. `.stat-card` stripping `.card` chrome
-
-Never use `!important` for: normal styling, hover states, color overrides, or competing specificity. If you need higher specificity, restructure selectors.
-
-### Rule 9: Semantic Color Mapping
-
-| Concept       | Token                       | NOT                            |
-| ------------- | --------------------------- | ------------------------------ |
-| Error/danger  | `var(--error-color)`        | `#ef4444`, `#dc2626`, `red`    |
-| Warning/amber | `var(--warning-color)`      | `#f59e0b`, `#f39c12`, `orange` |
-| Success/green | `var(--success-color)`      | `#22c55e`, `#16a34a`           |
-| Info/blue     | `var(--info-color)`         | `#0066cc`, `#3b82f6`           |
-| Focus ring    | `var(--focus-ring)`         | `0 0 0 3px rgba(...)`          |
-| Modal overlay | `var(--overlay-dark)`       | `rgba(0,0,0,0.4)`              |
-| Heavy overlay | `var(--overlay-dark-heavy)` | `rgba(0,0,0,0.7)`              |
-
----
-
-## New Component CSS Checklist
-
-Before merging any new `.css` file:
-
-- [ ] No hardcoded hex values (except `white`, `transparent`, `currentColor`, `inherit`)
-- [ ] No `var()` fallbacks — every `var(--token)` stands alone
-- [ ] No `rgba()` / `rgb()` — use `color-mix()` with tokens for opacity
-- [ ] No `@media (prefers-color-scheme)` — dark mode is via `data-theme` attribute
-- [ ] No inline `box-shadow` values — use `var(--shadow)` / `var(--shadow-hover)` / `var(--focus-ring)`
-- [ ] No inline `font-family: "JetBrains Mono"` — use `var(--font-mono)`
-- [ ] No `!important` unless overriding third-party library or page builder inline styles
-- [ ] Uses `.card` base class for any card-like container
-- [ ] Uses `.section` base class for any section container
-- [ ] Uses `.thread-action-btn` + modifiers for icon-only buttons
-- [ ] Border radius uses `var(--card-radius)` for cards/modals
-
-### 4. Responsive behavior
-
-- Use `.grid-2` / `.grid-3` / `.grid-4` for responsive card layouts
-- Cards in grids should not set their own width; let the grid control it
-- Use `max-width` on cards only when they appear outside a grid
-
-### 5. Hover states
-
-The `.card--interactive:hover` provides: elevated shadow, border highlight, subtle lift. Component CSS may add additional transforms (scale, larger translateY) but must not redeclare shadow or border-color on hover.
-
-### 6. Status feedback
-
-Use semantic tokens: `--error-color`, `--error-bg`, `--success-color`, `--success-bg`, `--warning-color`, `--warning-bg`.
-
-## Component Map
-
-Components that use the shared card system:
-
-| Component      | Classes                                                   | File                                   |
-| -------------- | --------------------------------------------------------- | -------------------------------------- |
-| Forum category | `.card .card--interactive .forum-category-card`           | `components/forum/Forum.tsx`           |
-| New thread CTA | `.card .card--interactive .new-thread-card .feature-card` | `components/forum/Forum.tsx`           |
-| Product card   | `.card .card--interactive .card--store .product-card`     | `components/store/Store.tsx`           |
-| Empty state    | `.card .empty-state`                                      | `components/store/Store.tsx`           |
-| Feature card   | `.card .card--interactive .feature-card`                  | `page/blocks/FeatureGridBlock.tsx`  |
-| Stat card      | `.card .card--interactive .stat-card`                     | `page/blocks/StatCardsBlock.tsx`    |
-| Grengo gate    | `.card .grengo-gate`                                      | `components/admin/GrengoDashboard.tsx` |
-| Grengo table   | `.card .grengo-table-wrap`                                | `components/admin/GrengoDashboard.tsx` |
-| Create form    | `.card .grengo-create-form`                               | `components/admin/GrengoDashboard.tsx` |
-| Import form    | `.card .grengo-import-form`                               | `components/admin/GrengoDashboard.tsx` |
-| Stat card      | `.card .grengo-stat-card`                                 | `components/admin/GrengoDashboard.tsx` |
-
-## Migration Checklist for New Components
-
-When adding a new card/panel/section to the UI:
-
-1. Use `className="card"` (or `className="card card--interactive"`) as the base
-2. Add a domain-specific modifier class for any unique layout (e.g. `.card .my-widget`)
-3. In the component CSS, define ONLY layout and animation rules under `.my-widget`
-4. For sections/panels, use `.section` as the base class
-5. Never import or duplicate token definitions — they are global
-
-## File Structure
-
-```
-src/
-├ index.css              # Design tokens + shared utility classes (THE source of truth)
-├ App.css                # App-level layout
-├ components/
-│   ├ ui/                # Shared UI primitives (SkeletonCard, FormGroup, FeatureCard)
-│   ├ forum/             # Forum domain components + layout CSS
-│   ├ store/             # Store domain components + layout CSS
-│   ├ admin/             # Admin dashboard components + layout CSS
-│   ├ layout/            # Header, Footer, Page System, PresencePanel
-│   ├ auth/              # Auth forms
-│   ├ pages/            # Page block renderers
-│   ├ input/             # Input components
-│   └ notifications/     # Notification components
-├ styles/
-│   ├ Base.css           # Shared page-level styles
-│   ├ Cart.css           # Cart page styles
-│   └ NotFound.css       # 404 page styles
-├ atoms/                 # Jotai state atoms
-├ hooks/                 # Custom React hooks
-├ context/               # React context providers
-├ pages/                 # Route-level page components
-└ utils/                 # API client, helpers
-```
-
-## Extended Patterns
-
-### Feed Pages (Pages, Forum Categories)
-
-Feed-style listing pages follow a consistent layout pattern:
-
-- **No heading text or icons** — the page content speaks for itself
-- **Max-width `1400px`**, horizontally padded `40px`, vertically padded `40px 0`
-- **Grid**: `repeat(auto-fill, minmax(320px, 1fr))` with `24px` gap
-- **Cards**: Use `.card .card--interactive` base, fixed `height: 300px`, `overflow: hidden`
-- **Toolbar**: Positioned at the top as a horizontal bar (search, filters, counts) — never a centered header block
-- **Search input**: Inline in toolbar, `var(--bg-secondary)` background, `1px solid var(--border-color)` border, `8px` radius
-
-Reference: `pages/custom-pages/CustomPages.tsx` + `CustomPages.css`
-
-### Stat Cards Override
-
-Stat cards (`.stat-card`) intentionally override the `.card` base to remove visual chrome so they don't compete with primary content:
-
-```css
-.stat-card {
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-}
-/* .stat-card:hover {
-} */
-```
-
-Use `unset` (not `none`) to fully clear inherited `.card` properties.
-
-### Page Admin Bar
-
-The `.page-admin-bar` renders at the **top** of every editable page as a right-aligned toolbar handle. It contains admin/owner actions (Site Meta link, Sandbox toggle, ownership panel). Editors see inline editing controls but NOT the admin bar.
-
-### Guest Sandbox Mode
-
-When `guestSandboxMode` is active, ALL components should show their edit/management controls (toolbars, CRUD buttons, inline editors). The backend acts as the authorization boundary — frontend sandbox mode is purely for UI exploration. Components that check sandbox:
-
-- `PageBuilder` — `canEdit = isEditable || guestSandboxEnabled`
-- `Header` / `Footer` — `canEdit = hasPermission("home.manage") || guestSandboxMode`
-- `Store` — product/category CRUD permissions OR `guestSandboxMode`
-- `Forum` — category CRUD, thread edit/delete OR `guestSandboxMode`
-- `BlockRenderer` + all blocks — `canEdit` prop
-
----
-
-## Icon Buttons — `.thread-action-btn` System
-
-### Root cause of the padding issue
-
-The bare `button` selector in `index.css:468` sets `padding: 0.6em 1.2em` and
-`border: 1px solid transparent` on ALL `<button>` elements. This is a Vite/React
-template default that was never scoped. It makes text buttons look good out of
-the box, but icon-only buttons overflow or become invisible inside fixed-size
-containers because the large padding pushes the icon content outside the box.
-
-**DO NOT remove the global reset** — many existing text buttons rely on it.
-Instead, always apply `.thread-action-btn` on icon-only `<button>` elements. The class
-lives in `index.css` and resets `padding: 0`, `border: none`, `background: transparent`.
-
-### Usage (global utility in index.css)
-
-```html
-<!-- Size + variant modifiers compose freely -->
-<button className="thread-action-btn thread-action-btn--sm thread-action-btn--danger" title="Delete">
-  <Trash2 size="{14}" />
-</button>
-
-<button
-  className="thread-action-btn thread-action-btn--md thread-action-btn--outlined thread-action-btn--danger"
-  title="Delete"
->
-  <Trash2 size="{14}" />
-</button>
-
-<button className="thread-action-btn thread-action-btn--lg thread-action-btn--active">
-  <LayoutGrid size="{16}" />
-</button>
-```
-
-### Size modifiers
-
-| Modifier       | Size  | Use case                             |
-| -------------- | ----- | ------------------------------------ |
-| `thread-action-btn--xs` | 20×20 | Tiny inline actions (presence panel) |
-| `thread-action-btn--sm` | 28×28 | Card/row actions (default choice)    |
-| `thread-action-btn--md` | 32×32 | Toolbar actions                      |
-| `thread-action-btn--lg` | 36×36 | Header actions, toggle groups        |
-
-### Variant modifiers
-
-| Modifier             | Style                                                   |
-| -------------------- | ------------------------------------------------------- |
-| `thread-action-btn--ghost`    | Transparent bg (default)                                |
-| `thread-action-btn--subtle`   | `--bg-secondary` bg                                     |
-| `thread-action-btn--outlined` | Transparent bg + `--border-color` border                |
-| `thread-action-btn--danger`   | Hover: `--error-bg` + `--error-color`                   |
-| `thread-action-btn--primary`  | Hover: `--primary-color` bg + white text                |
-| `thread-action-btn--active`   | Solid `--primary-color` bg + white (for selected state) |
-
-### Legacy patterns (existing code, don't refactor unless touching)
-
-- `.pp-action-btn` (PresencePanel) — manual `padding: 0; width: 20px`
-- `.thread-action-btn` (Forum) — `padding: 4px 6px` (includes text label)
-- `.btn-admin-icon` (Store) — `padding: 6px` with `--bg-tertiary` bg
-- `.up-thread-action-btn` / `.inbox-action-btn` — `padding: 4px`
-  These all predate `.thread-action-btn`; new code should use the global utility.
-
----
-
-## Button Hierarchy
-
-| Level            | Class                                    | Appearance                   | Use                   |
-| ---------------- | ---------------------------------------- | ---------------------------- | --------------------- |
-| Primary action   | `.ds-page__create-btn` or `.btn-primary` | Solid `--primary-color`      | One per page max      |
-| Secondary action | `.ds-editor__run-btn`                    | Solid green (#22c55e)        | Run/execute           |
-| Tertiary action  | `.ds-editor__back-btn`                   | Outlined, `--text-secondary` | Navigation            |
-| Icon action      | `.thread-action-btn` + modifiers                  | See above                    | Toolbars, cards, rows |
-
-Text buttons (with labels) keep the global `button` padding. Always add:
-
-- `display: inline-flex; align-items: center; gap: 0.375rem` for icon+text buttons
-
----
-
-## Card Design
-
-- Base: `.card .card--interactive` from index.css
-- Fixed heights for grid cards to prevent layout shift (e.g., `height: 240px`)
-- Overflow: `overflow: hidden` on fixed-height cards
-- Preview panels: `max-height` + `overflow-y: auto` for scrollable content inside cards
-- Code preview snippets: `font-family: var(--font-mono); font-size: 0.6875rem`
-- Meta rows at bottom: `margin-top: auto; border-top: 1px solid var(--border-color)`
-
----
-
-## Professional Superset-like Design Patterns
-
-### Page layout
-
-- **Page header**: Title + subtitle left, action buttons right (flex, space-between)
-- **Toolbar**: Search input (border-radius: 8px, focus => primary-color) + count + view toggle
-- **Grid/List toggle**: Paired `.thread-action-btn` in border-group container (first/last radius override)
-- Max width: `1400px` for list pages, `1600px` for editor pages
-
-### Data tables / List view
-
-- Grid-based rows (`display: grid`) with fixed column template
-- Header row: `--bg-tertiary`, uppercase labels, 0.6875rem
-- Row hover: `background: var(--bg-secondary)`
-- Column overflow: `text-overflow: ellipsis; white-space: nowrap`
-
-### Split-pane editor
-
-- `grid-template-columns: 1fr 1fr`, collapse at 1024px
-- Each pane: border, border-radius: 10px, `--bg-secondary` background
-- Panel header: `--bg-tertiary`, icon + label + line count
-
-### Tab bar
-
-- Bottom-border active indicator: `border-bottom: 2px solid var(--primary-color)`
-- Tab badges: pill counts (min-width: 18px, border-radius: 9px)
-
-### Micro-patterns
-
-- **Creator chips**: Avatar (18px circle) + name in pill with `border-radius: 12px`
-- **Skeleton loading**: Shimmer gradient animation on `--bg-secondary` => `--bg-tertiary`
-- **Error display**: `--error-bg` background, `--error-color` text, left border accent
-- **Empty states**: Centered icon + heading + subtext + optional CTA button
-
----
-
-## Typography
-
-- Page title: `1.5rem / 700`
-- Subtitle: `0.8125rem` in `--text-secondary`
-- Card title: `0.9375rem / 600`
-- Body text: `0.8125rem`
-- Small meta: `0.75rem` / `0.6875rem`
-- Labels: `0.6875rem / 600 / uppercase / letter-spacing: 0.04em`
-- Mono code: `var(--font-mono)` => "JetBrains Mono", "Fira Code", "Consolas", monospace
-
----
-
-## Responsive Breakpoints
-
-- `1024px` — collapse split panes to single column, stack editor panels
-- `768px` — stack page header, single-column grid, hide secondary list columns, column meta fields
-
----
-
-## Custom Sections (Superset Charts Equivalent)
-
-Custom sections pair a **data source** (TypeScript code) with a **visualization type** to create reusable, named data-bound components — analogous to Superset charts. Pages (via the page builder) act as dashboards.
-
-### Architecture
-
-- **Data source**: TypeScript code snippet => compiles to JS => evaluates to `EvalItem[]`
-- **Custom section**: `{ name, datasource_id, section_type, config }` — saved to `custom_sections` table
-- **Page builder block**: `custom_section` block type selects a saved custom section, evaluates its datasource, and renders using the stored visualization type
-
-### Preview Types
-
-| Type         | Class prefix                              | Rendering                                                 |
-| ------------ | ----------------------------------------- | --------------------------------------------------------- |
-| `cards`      | `ds-preview-card` / `custom-section-card` | Grid of cards with image, icon, heading, subheading, link |
-| `stat_cards` | `ds-preview-stat` / `custom-section-stat` | Metric cards: large value + label + optional icon         |
-| `table`      | `ds-table` / `custom-section-table`       | Scrollable data table with auto-detected columns          |
-
-### Data Table Design
-
-Tables follow the Superset data grid pattern:
-
-- **Container**: `max-height: 480px`, `overflow: auto`, `border-radius: 10px`, `border: 1px solid var(--border-color)`
-- **Header**: `position: sticky; top: 0`, `--bg-tertiary`, uppercase labels at `0.6875rem / 600`
-- **Cells**: mono font (`var(--font-mono)`), `0.75rem`, `max-width: 280px` with `text-overflow: ellipsis`
-- **Zebra**: even rows use `--bg-tertiary`
-- **Hover**: `--card-hover-bg`
-- **Columns**: Auto-detected from all keys across all `EvalItem` objects
-
-### Flow
-
-1. User writes data source code in the editor
-2. Runs it => previews results
-3. Switches between visualization types (Cards / Stats / Table)
-4. Clicks "Save as Section" => names it => saved to `custom_sections` table
-5. In page builder, adds a `custom_section` block => selects from saved sections => renders automatically
-
-### Component Map Addition
-
-| Component                     | Classes                                 | File                            |
-| ----------------------------- | --------------------------------------- | ------------------------------- |
-| Custom section (page builder) | `.custom-section-block` + type-specific | `blocks/CustomSectionBlock.tsx` |
-| Preview cards                 | `.ds-preview-card`                      | `DataSourceEditorPage.tsx`      |
-| Preview stats                 | `.ds-preview-stat`                      | `DataSourceEditorPage.tsx`      |
-| Preview table                 | `.ds-table`                             | `DataSourceEditorPage.tsx`      |
-
-### API Routes
-
-```
-/config/custom-sections
-  GET  /                    — list all (optional ?datasource_id= filter)
-  GET  /{id}                — get by ID
-  POST /                    — create (JWT + home.manage)
-  PUT  /{id}                — update (JWT + home.manage)
-  DELETE /{id}              — delete (JWT + home.manage)
-```
+# Frontend Spec
+
+## Scope
+
+React UI architecture, shared state, route-level pages, CSS system, and store/cart
+frontend contracts.
+
+## Load when
+
+Changing React components, page routes, atoms/hooks, CSS, cart/store UI,
+WebSocket consumers, or page-builder UX.
+
+## Owns
+
+- App shell/routes: `backend/frontend/src/App.tsx`, `src/pages/routes.tsx`,
+  `src/pages/Layout.tsx`
+- State: `backend/frontend/src/atoms/*`
+- API utilities: `backend/frontend/src/utils/api.ts`
+- WebSocket singleton: `backend/frontend/src/hooks/useWebSocketSync.ts`
+- Design tokens/utilities: `backend/frontend/src/index.css`, `src/utilities.css`
+- Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
+
+## Architecture Contracts
+
+- React + TypeScript + Vite.
+- Jotai atoms are the cross-page state boundary.
+- REST is used for initial reads and mutations; mutable shared state converges
+  through WebSocket pushes into atoms.
+- `useWebSocketSync` is mounted by `Layout.tsx` and can be called by consumers
+  for `subscribe`/`unsubscribe`; it must remain a singleton per browser context.
+- Route pages live under `src/pages`; reusable domain UI lives under
+  `src/components`; shared CSS tokens live only in `src/index.css`.
+
+## State Ownership
+
+| Domain | Atoms | Primary writer |
+| --- | --- | --- |
+| Auth/session | `atoms/auth.ts` | auth flows + `user:update` |
+| Forum | `atoms/forum.ts` | REST initial load + `forum:update` |
+| Store/cart | `atoms/store.ts` | REST initial load/local cart + `store:update` |
+| Inbox | `atoms/inbox.ts` | REST initial load + inbox WS messages |
+| Notifications | `atoms/notifications.ts` | notification WS + read/delete REST |
+| Config/page | `atoms/config.ts`, page local state | config/page WS + page hooks |
+| Presence/chat/media | `atoms/presence.ts`, `chat.ts`, `voice.ts`, `media.ts` | WS only |
+
+## Store/Cart Frontend Contracts
+
+- `storeCartItemsAtom` persists in local storage as `store.cart`.
+- Product/category/catalog atoms persist as `store.products` and `store.categories`.
+- Cart page supports authenticated carts and guest checkout from local cart items.
+- Checkout payload includes `items`, `payment_method_id`, `currency`, guest contact,
+  delivery fields, `billing_info`, and `referral_code`.
+- Saved checkout details live in local storage key `checkoutSaved`; do not save
+  `deliveryTime`.
+- Authenticated users may load wallet cards from `/store/wallet/cards` and pay with
+  `card_{id}` or `wallet`.
+- Successful checkout clears local cart and shows the submitted order view.
+
+## CSS Token Contract
+
+All UI colors, shadows, radii, and fonts must route through global tokens in
+`src/index.css`.
+
+| Token family | Use |
+| --- | --- |
+| `--primary-*`, `--skaia-green-primary` | brand/actions |
+| `--bg-*`, `--text-*`, `--border-color` | layout and text |
+| `--error-*`, `--success-*`, `--warning-*`, `--info-*` | semantic state |
+| `--shadow`, `--shadow-hover`, `--focus-ring` | elevation/focus |
+| `--card-*`, `--section-*`, `--panel-*` | repeated containers |
+| `--module-*` | activity/module badges |
+| `--font-mono` | all monospace text |
+
+## CSS Rules
+
+- Component CSS must not hardcode hex/rgb/rgba colors; use tokens and
+  `color-mix(in srgb, var(--token) X%, transparent)` for alpha.
+- Do not use `var()` fallbacks.
+- Dark mode is `html[data-theme="dark"]`; do not use
+  `@media (prefers-color-scheme: dark)`.
+- Use shared shadows; add a token before introducing a new shadow.
+- Card-like containers use `.card`; section containers use `.section`.
+- Icon-only buttons use `.thread-action-btn` plus size/variant modifiers.
+- `!important` is allowed only for third-party overrides, page-builder inline
+  alignment overrides, intentional resets, or mobile grid collapse.
+- Component CSS should primarily own layout, positioning, overflow, and animation.
+
+## UI Layout Contracts
+
+- List/feed pages use dense, scannable layouts: toolbar first, responsive grid/list
+  below, max width around 1400px unless an editor needs more.
+- Fixed-format elements need stable dimensions to prevent hover/content layout shift.
+- Page-builder editor panes collapse below tablet widths.
+- Guest sandbox mode reveals management controls in the frontend only; backend auth
+  remains the authority.
+- Do not add marketing landing pages when building app functionality.
+
+## Important Files
+
+| File | Contract |
+| --- | --- |
+| `src/index.css` | global tokens, `.card`, `.section`, buttons, utilities |
+| `src/hooks/useWebSocketSync.ts` | WS singleton, message-to-atom reducer |
+| `src/hooks/usePageData.ts` | page load/live-update behavior |
+| `src/pages/page/PageBuilder.tsx` | page editor, section merge/save pipeline |
+| `src/pages/cart/index.tsx` | checkout state and guest/auth cart submission |
+| `src/components/store/cart/*` | cart UI panels and delivery picker |
+
+## Invariants
+
+- Do not create a second global WebSocket connection.
+- Do not poll for data that has a WS projection.
+- Do not duplicate token definitions in component CSS.
+- Do not persist sensitive card CVV-like data in frontend local storage.
+- Backend permissions are authoritative; frontend permission checks are UX only.
+
+## Verify
+
+- CSS drift: `rg "#[0-9a-fA-F]{3,8}|rgba\\(|rgb\\(|var\\([^)]*," backend/frontend/src --glob '*.css'`
+- WS usage: `rg "useWebSocketSync|subscribe\\(|unsubscribe\\(" backend/frontend/src -n`
+- Store/cart: `backend/frontend/src/pages/cart/index.tsx`, `src/atoms/store.ts`
+- Tests/build when relevant: run frontend package scripts from `backend/frontend/`.
+
+## Trace
+
+- `.specs/realtime_wss_spec`
+- `.specs/route_resolution_spec`
+- `.specs/custom_pages_multiplayer_spec`
+- `.specs/backend_spec`

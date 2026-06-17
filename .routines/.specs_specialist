@@ -8,7 +8,7 @@ Specification upkeep routine for keeping `.specs/` aligned with Skaia's implemen
 
 - User references `.routines/.specs_specialist` or `specs_specialist`
 - Backend/frontend protocol, model, route, migration, WebSocket, cache, auth, or infrastructure behavior changed
-- A worker/audit routine finds documentation drift
+- A worker/auditor/correctness routine finds documentation drift
 - A new major system or cross-cutting pattern is introduced
 
 ## Inputs
@@ -18,7 +18,7 @@ Specification upkeep routine for keeping `.specs/` aligned with Skaia's implemen
 - `.specs/README.md`
 - Related `.todo/<entry>` and `.todo/<entry>.tip`
 - `.routines/correctness`
-- `.routines/audit_backend` or `.routines/audit_frontend` when domain-specific review is needed
+- `.routines/auditor` when domain-specific quality review is needed
 
 ## Responsibilities
 
@@ -90,17 +90,16 @@ for changed architecture/model/protocol:
 ## Extension/See Also
 
 - `.routines/correctness` — drift and contradiction checks
-- `.routines/audit_backend` — backend architecture and migration standards
-- `.routines/audit_frontend` — frontend contract and UI standards
+- `.routines/auditor` — strict whole-repo quality and contract audit
 - `.routines/worker` — implementation routine
 
 ## Last Ran
 
-- 2026-05-24
+- 2026-06-17
 
 ## Last Run Remarks
 
-- Updated auth/user separation specs and then optimized the routine system itself: clarified routing, triggers, verification, trace outputs, and deprecated aliases.
+- Audited `.specs/` against current backend/frontend routes, store/cart contracts, migrations, WebSocket messages, and grengo layout. Added compact spec protocol/load sets and converted high-context specs into card-style contracts, reducing default model context and removing stale route/path references.
 
 ## Next Steps
 

@@ -1,165 +1,91 @@
-# Custom Pages — Multiplayer Fine-Grained Reactivity
+# Custom Pages Multiplayer Spec
 
-## Overview
+## Scope
 
-When multiple users are editing the same custom page simultaneously, changes
-must be applied at **section granularity**: only the section that actually
-changed should re-render. This eliminates visual flicker and preserves
-in-progress editing state for components the user has open.
+Fine-grained live reconciliation for multiple users editing/viewing the same
+custom page.
 
-The system supports two directions of change flow:
+## Load when
 
-1. **Outgoing (own edits)** — the editing user's changes are saved to the
-   server and the HTTP response echoes the full page content back. The
-   section-sync must recognize that only the edited section changed and
-   preserve references for all others.
+Changing `PageBuilder`, page section state, save debounce, `usePageData`,
+section registry validation, or page WebSocket handling.
 
-2. **Incoming (other users' edits)** — a WebSocket `page_updated` broadcast
-   arrives with the full page. If the local user is currently editing, the
-   update is held until editing ends. When applied, only the changed section(s)
-   from the other user should re-render.
+## Owns
 
-Both directions use the same `mergeSections` diff to unify behaviour.
+| File | Contract |
+| --- | --- |
+| `backend/frontend/src/pages/page/PageBuilder.tsx` | `mergeSections`, `stableStringify`, save pipeline |
+| `backend/frontend/src/pages/page/BlockRenderer.tsx` | memoized section rendering |
+| `backend/frontend/src/hooks/usePageData.ts` | live page events, refresh, edit guard |
+| `backend/frontend/src/pages/page/SaveStatusBar.tsx` | held incoming-change status |
+| `backend/frontend/src/pages/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit` |
+| `backend/internal/s_registry` | canonical section/component registry |
 
----
+## Reconciliation Contract
 
-## Architecture
+- All page updates, including a user's own save response and other users' WS
+  pushes, pass through `mergeSections(current, incoming)`.
+- `mergeSections` matches by section `id`.
+- Unchanged sections keep old object references so `React.memo` can skip rerender.
+- Equality uses `stableStringify`, which recursively sorts object keys to match
+  PostgreSQL JSONB key-order normalization.
+- Compare sections with `items` normalized to `[]` so local `undefined` and DB
+  empty arrays do not appear different.
 
-### Section Reference Preservation (`mergeSections`)
+## Incoming Edit Guard
 
-The core mechanism is a section-level diff that returns old object references
-for sections whose data hasn't changed:
+- `enterEdit`/`leaveEdit` maintain an editing count for active rich editors,
+  sliders, code editors, and similar controls.
+- While `editingCount > 0`, incoming `page_updated` data is held instead of
+  applied immediately.
+- Save debounce waits for all editors to leave, then flushes after the configured
+  pause.
+- When editing reaches zero, pending incoming data refreshes/applies through the
+  same section merge path.
 
-```
-mergeSections(current: PageSection[], incoming: PageSection[])
-  => PageSection[]  (preserves old refs for unchanged sections)
-```
+## Memo Chain
 
-Each incoming section is matched by `id` against the current array. If the
-section data is identical (via `stableStringify`), the **old object reference**
-is returned. React's `memo()` on `SectionBlock` then skips re-rendering.
+The section skip path depends on stable references across:
 
-### JSONB Key-Order Normalization (`stableStringify`)
+1. `mergeSections`
+2. wrapper callbacks such as `updateSectionWrapper`
+3. `React.memo(BlockRenderer)`
+4. `React.memo(SectionBlock)`
+5. memoized move context and ref-backed move handlers
 
-PostgreSQL JSONB sorts object keys alphabetically on storage. The frontend's
-`JSON.stringify` preserves JavaScript insertion order. A naïve stringify
-comparison always fails because key order differs.
+Breaking any link can make every section rerender on every save/push.
 
-`stableStringify` is a `JSON.stringify` replacer that recursively sorts object
-keys before serializing, producing identical output regardless of source key
-order. This is essential because sections round-trip through JSONB between
-save and re-fetch.
+## Backend Registry Contract
 
-### Optional Field Normalization
-
-The `items` field on `PageSection` is typed as `items?: PageItem[]`.
-JSONB always returns `[]` for empty arrays, but locally-created sections may
-have `items: undefined`. The comparison must normalize both to `[]`:
-
-```typescript
-stableStringify({ ...section, items: section.items ?? [] });
-```
-
-Without this, every section without items would appear "changed" on every
-server response.
-
----
-
-## Edit Guard (Incoming Change Hold)
-
-When a user enters edit mode on any section component (slider, rich text,
-code editor, etc.), the `enterEdit` / `leaveEdit` callbacks increment
-`editingCount`. While editing:
-
-- **WebSocket `page_updated` events** are intercepted in `usePageData`. Instead
-  of calling `refresh(slug)`, a `pendingIncoming` flag is set.
-- **Section-sync useEffect** bails out if `editingCountRef.current > 0`.
-- **Save pipeline (BBR adaptive)** holds the debounce timer until all editors
-  are released, then flushes after an 800 ms pause.
-
-When the last editor is released (`editingCount => 0`):
-
-1. The `suppressLiveRefresh` param to `usePageData` becomes `false`.
-2. If `pendingIncoming` is true, `refresh(slug)` fires and fetches the latest
-   page from the server.
-3. The section-sync useEffect runs `mergeSections` against the fresh server
-   data, applying only the sections that actually differ.
-
-The `SaveStatusBar` shows "Incoming changes held while editing…" while changes
-are deferred.
-
----
-
-## Memoisation Chain
-
-For section-level re-renders to actually be skipped, the entire prop chain
-must have stable references:
-
-1. **`mergeSections`** — preserves section object references for unchanged data.
-2. **Wrapper callbacks (`updateSectionWrapper`, etc.)** — defined with
-   `useCallback` and read current state from refs (`sectionsRef`,
-   `isPageFallbackRef`) so they never change identity.
-3. **`BlockRenderer`** — wrapped in `React.memo`. Receives stable sections
-   array + stable callbacks.
-4. **`SectionBlock`** — wrapped in `React.memo`. Receives individual section
-   reference + stable callbacks. Hosts `SectionMoveContext.Provider` internally
-   with `useMemo` so move-button context doesn't invalidate siblings.
-5. **`handleMove`** in `BlockRenderer` — uses a ref for current sections and
-   an empty dependency array so identity never changes.
-
-If any link in this chain creates a new reference on every render, `memo()`
-is defeated and all sections re-render.
-
----
+- `GET /config/sections` lists supported section types.
+- `GET /config/section-types/{type}` returns one section definition.
+- Page saves reject content that is not a JSON section array, omits
+  `section_type`, or uses an unsupported type.
+- Positive `derived_section.config.datasource_id` must resolve to a saved data
+  source.
+- Positive `custom_section.config.custom_section_id` must resolve to a saved
+  custom section.
+- Empty integration refs are allowed for drafts.
 
 ## Invariants
 
-- **No `ownSavePendingRef` skip.** All server responses — own saves AND
-  incoming WS refreshes — go through `mergeSections`. This ensures the local
-  sections state is always JSONB-normalized, so subsequent comparisons are
-  between like-for-like objects.
-- **`page_updated` excludes sender.** The backend uses
-  `BroadcastPageExceptUser(userID, ...)` so the editing user doesn't receive
-  their own update back — they already have the authoritative data from the
-  HTTP response.
-- **applyIncomingData preserves per-user fields.** The broadcast doesn't
-  carry `is_liked` or `can_delete` (user-specific). The setter merges incoming
-  data while keeping these fields from the previous state.
-- **Save timer cancelled on page swap.** When the custom page is changed
-  via the dropdown, `saveTimerRef` is cleared and `pendingSectionsRef` is
-  nulled BEFORE issuing the swap API call — otherwise the old page's queued
-  save would fire and overwrite the new page's content.
-- **Section-sync guards:** The useEffect always bails out if
-  `pendingSectionsRef.current !== null` (unsaved pending changes) or
-  `editingCountRef.current > 0` (active editor open).
-- **Single diff for all paths.** There is no separate "own save" path vs
-  "incoming update" path. `mergeSections` + `stableStringify` + items
-  normalisation is the universal reconciliation.
+- No `ownSavePendingRef` skip path; own saves also normalize through merge.
+- Backend `page_updated` excludes the sender because the HTTP response is already
+  authoritative for that user.
+- Incoming broadcasts do not carry user-specific `is_liked` / `can_delete`; keep
+  local values when applying page data.
+- Cancel queued save timers and clear pending sections before page or landing swaps.
+- Section sync bails out while unsaved local sections or active editors exist.
 
----
+## Verify
 
-## Key Files
+- `rg "mergeSections|stableStringify|editingCount|pendingIncoming|BroadcastPageExceptUser" backend/frontend/src backend/internal -n`
+- `backend/frontend/src/pages/page/PageBuilder.tsx`
+- `backend/frontend/src/hooks/usePageData.ts`
+- `backend/internal/s_registry`
 
-| File                                | Role                                              |
-| ----------------------------------- | ------------------------------------------------- |
-| `pages/page/PageBuilder.tsx`        | `mergeSections`, `stableStringify`, section-sync  |
-| `pages/page/BlockRenderer.tsx`      | `memo(SectionBlock)`, `memo(BlockRenderer)`       |
-| `hooks/usePageData.ts`              | Edit guard hold, `suppressLiveRefresh`, `refresh` |
-| `pages/page/SaveStatusBar.tsx`      | "Incoming changes held" indicator                 |
-| `pages/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit`          |
+## Trace
 
-## Backend Section Registry
-
-The backend exposes canonical section metadata through:
-
-- `GET /config/sections`
-- `GET /config/section-types/{type}`
-
-The registry lives in `backend/internal/s_registry` and is shared by the
-config API and page save validation. `POST /pages` and `PUT /pages/{id}` reject
-page content that is not a JSON section array, omits `section_type`, or uses an
-unsupported section type. Integration references are also validated on save:
-positive `derived_section.config.datasource_id` values must resolve to a saved
-data source, and positive `custom_section.config.custom_section_id` values must
-resolve to a saved custom section. Empty refs remain allowed so draft blocks can
-be saved while a user is still configuring them.
+- `.specs/route_resolution_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/frontend_spec`

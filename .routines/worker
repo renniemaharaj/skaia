@@ -15,9 +15,8 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 - `.todo/<entry>` and `.todo/<entry>.tip` for the requested work
 - `.todo/README.md` for todo/status conventions
 - Relevant `.specs/*` files for affected architecture, models, or protocols
-- `.routines/audit_backend` for backend work
-- `.routines/audit_frontend` for frontend work
-- `.routines/correctness` for drift and anti-pattern checks
+- `.routines/auditor` for backend/frontend/security/UI quality standards
+- `.routines/correctness` for drift and contradiction checks
 - `.routines/.specs_specialist` when specs or model/protocol docs may change
 
 ## Responsibilities
@@ -35,7 +34,7 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 ## Non-Goals
 
 - Do not invent unrelated todos; use `.routines/todo_planner`
-- Do not perform broad audits unrelated to the active todo; use `audit_backend`, `audit_frontend`, or `correctness`
+- Do not perform broad audits unrelated to the active todo; use `.routines/auditor` or `.routines/correctness`
 - Do not mark a `.tip` complete without relevant verification
 - Do not duplicate spec content inside todo files; link to specs and summarize only the delta
 
@@ -55,7 +54,7 @@ Deliver robust, high-quality, spec-compliant changes by executing todos with con
 ## Workflow
 
 1. Identify the target `.todo` entry from the user request or active `.tip`
-2. Read the target plan, target `.tip`, relevant specs, and relevant audit routines
+2. Read the target plan, target `.tip`, relevant specs, and `.routines/auditor` when quality gates apply
 3. Compare the plan against current code and revise the working checklist if needed
 4. Implement backend work first when shared contracts or data models are involved
 5. Implement frontend work after backend contracts are modeled and tested
@@ -70,10 +69,10 @@ todo = selected .todo entry
 read(todo, todo.tip, relevant specs, relevant audit routines)
 revise checklist against current code
 if backend work:
-    apply audit_backend standards
+    apply auditor backend/security/data standards
     implement with focused tests
 if frontend work:
-    apply audit_frontend standards
+    apply auditor UI/state/API standards
     implement with focused tests/build
 run verification proportional to blast radius
 update specs and .tip with durable facts
@@ -98,8 +97,7 @@ update specs and .tip with durable facts
 - `.todo/`
 - `.todo/*.tip`
 - `.routines/todo_planner`
-- `.routines/audit_backend`
-- `.routines/audit_frontend`
+- `.routines/auditor`
 - `.routines/.specs_specialist`
 - `.specs/`
 - `backend/`
@@ -108,8 +106,7 @@ update specs and .tip with durable facts
 ## Extension/See Also
 
 - `.routines/todo_planner` — planning and todo lifecycle management
-- `.routines/audit_backend` — backend standards and verification
-- `.routines/audit_frontend` — frontend standards and verification
+- `.routines/auditor` — whole-repo quality, security, backend/frontend, and UI audit standards
 - `.routines/correctness` — drift and anti-pattern checks
 - `.routines/.specs_specialist` — specs upkeep
 - `.specs/` — authoritative project specifications

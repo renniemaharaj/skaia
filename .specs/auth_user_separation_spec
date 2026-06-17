@@ -1,75 +1,86 @@
-# Auth/User Separation Specification
+# Auth Module Spec
 
-## Purpose
+## Scope
 
-Define the architecture, models, and migration plan for decoupling authentication from the user model in Skaia. This ensures sensitive authentication data is managed in a dedicated `auth` package and database tables, improving security, maintainability, and extensibility.
+Standalone authentication module contracts for credentials, sessions, MFA, backup
+codes, auth-owned storage, and the boundary between auth data and public users.
 
-## Motivation
+## Load when
 
-- Reduce risk by isolating password hashes, TOTP secrets, and backup codes from the main user table.
-- Enable future support for multiple authentication providers and methods.
-- Enforce clear boundaries between user profile data and authentication logic.
+Changing `internal/auth`, auth handlers, sessions, JWT/refresh behavior, MFA/TOTP,
+backup codes, auth migrations, password policy, or user/auth model boundaries.
 
-## Design
+## Owns
 
-### New Tables
+- Auth logic: `backend/internal/auth/`
+- Auth HTTP mount: `backend/internal/authhandler/`
+- Session logic: `backend/internal/session/`
+- JWT helpers: `backend/internal/jwt/`
+- Models: `backend/models/auth.go`, public profile boundary in `backend/models/user.go`
+- Tables: `auth_credentials`, `auth_totp_secrets`, `auth_backup_codes`, `user_sessions`
+- Migration history: `backend/internal/migrations/009_auth_user_separation.sql`
 
-- `auth_credentials`:
-  - `id` (PK)
-  - `user_id` (unique, FK to users.id)
-  - `password_hash`
-  - `created_at`
-  - `updated_at`
+## Contracts
 
-- `auth_totp_secrets`:
-  - `id` (PK)
-  - `user_id` (unique, FK to users.id)
-  - `totp_secret`
-  - `enabled` (bool)
-  - `created_at`
-  - `updated_at`
+- `users` stores public profile/account state, not password hashes, TOTP secrets,
+  or backup code hashes.
+- `auth_credentials` owns `password_hash` by `user_id`.
+- `auth_totp_secrets` owns TOTP secret material and enabled state by `user_id`.
+- `auth_backup_codes` owns one-use backup code hashes.
+- `user_sessions` owns refresh-token/session state.
+- Auth responses that need MFA state use `models.AuthUser`, which embeds the
+  public user profile and adds response-only auth metadata such as `totp_enabled`.
+- The core `models.User` must remain profile-only and must not cache or expose
+  auth secrets.
+- Username/email identity remains on the user profile side; auth tables link by
+  `user_id`.
 
-- `auth_backup_codes`:
-  - `id` (PK)
-  - `user_id` (FK to users.id)
-  - `code_hash`
-  - `used` (bool)
-  - `created_at`
+## Security Invariants
 
-### User Table Changes
+- Passwords are bcrypt hashed and never returned from repositories/services.
+- Backup codes are stored hashed and become unusable after consumption.
+- TOTP secrets are read only through auth service flows.
+- Refresh/session tokens are stateful and revocable through `user_sessions`.
+- Auth middleware must never depend on frontend permission checks.
+- Sensitive auth failures should not leak which secret or factor was valid beyond
+  the intended challenge flow.
 
-- Remove `password_hash`, `totp_secret`, `totp_enabled` from `users` table and `User` model.
-- All authentication data is accessed via the `auth` package and its tables.
-- Auth endpoints that need to return 2FA state use `models.AuthUser`, which embeds the public user profile and adds response-only `totp_enabled`. The core `models.User` remains profile-only and must not be used to store or cache auth state.
+## Migration Contract
 
-### Backend Refactor
+- Fresh schema defines auth-owned tables directly in `001_schema.sql`.
+- `009_auth_user_separation.sql` remains an idempotent legacy bridge: it copies
+  legacy `users.password_hash`, `users.totp_secret`, and `users.totp_enabled`
+  only if those columns exist, upserts by `user_id`, then drops legacy sensitive
+  columns.
+- Skaia has no legacy `users` backup-code column; backup codes are generated into
+  `auth_backup_codes` after TOTP enablement.
 
-- All password, TOTP, and backup code logic moves to `internal/auth`.
-- `auth` exposes interfaces for authentication, TOTP, and backup code management.
-- User service delegates authentication to `auth`.
-- No username or email is stored in auth tables—only `user_id` links.
+## Testing Contract
 
-### Migration Plan
+- Auth service tests cover registration credential creation, login, TOTP secret
+  enablement, backup code generation/use-once behavior, and TOTP disable cleanup.
+- Auth/session changes require focused backend tests, and shared auth middleware
+  changes should run the full backend suite.
 
-- Migrate all existing password hashes, TOTP secrets, and backup codes from `users` to new tables.
-- Ensure atomic migration and data integrity.
-- Remove sensitive fields from `users` table after migration.
-- Migration `009_auth_user_separation.sql` is idempotent across fresh and legacy schemas: it only reads legacy `users.password_hash`, `users.totp_secret`, and `users.totp_enabled` when those columns exist, upserts into auth-owned tables by `user_id`, then drops legacy sensitive columns. Skaia has no legacy `users` backup-code column; backup codes are generated into `auth_backup_codes` after TOTP enablement.
+## Invariants
 
-### API/Handler Changes
+- Keep auth module standalone; user service may depend on auth contracts, but auth
+  secrets must not migrate back into user/profile/cache code.
+- Do not expose card/payment-like secrets or auth secrets through generic user
+  JSON, events, logs, WebSocket payloads, or cache values.
+- Role/permission authorization is adjacent but distinct from credential/MFA
+  authentication.
 
-- Update registration, login, 2FA, and backup code endpoints to use new interfaces.
-- Ensure all flows are tested and backward compatible.
+## Verify
 
-## Testing
+- `rg "password_hash|totp_secret|totp_enabled|auth_backup_codes|user_sessions" backend/models backend/internal backend/internal/migrations -n`
+- `backend/internal/auth/*_test.go`
+- Full backend check when shared auth behavior changes:
+  `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
 
-- Comprehensive unit and integration tests for all authentication flows.
-- Migration tests to ensure no data loss.
-- Direct auth service tests cover registration credential creation, login, TOTP secret enablement, backup code generation/use-once behavior, and TOTP disable cleanup.
+## Trace
 
-## References
-
-- .todo/auth_user_separation
-- .routines/worker
-- .routines/correctness
-- .specs/backend_spec
+- `.specs/backend_spec`
+- `.specs/migrations_spec`
+- `.routines/auditor`
+- `.routines/correctness`

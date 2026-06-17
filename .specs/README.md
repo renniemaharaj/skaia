@@ -1,27 +1,43 @@
-# Skaia Project Specifications
+# Skaia Specs
 
-This directory contains the authoritative specifications for all major systems, models, and infrastructure in Skaia. It serves as the single source of truth for architecture, design patterns, protocols, and operational policies.
+`.specs/` is the authoritative, compact project context. Load this file first,
+then load only the matching spec cards below.
 
-## Structure
+## Consumption Protocol
 
-- **backend_spec** — Backend architecture, patterns, and package layout
-- **frontend_spec** — Frontend UI design system, CSS tokens, and module accents
-- **realtime_wss_spec** — Real-time WebSocket flows and delivery strategies
-- **infrastructure_spec** — Container, deployment, and infrastructure details
-- **route_resolution_spec** — Frontend/backend route and page resolution flow
-- **custom_pages_multiplayer_spec** — Multiplayer editing and section-level reactivity
-- **caching_cdn_spec** — Caching, CDN, and cache-control policies
-- **migrations_spec** — Migration policy and schema update process
-- **auth_user_separation_spec** — Auth-owned credential, TOTP, and backup-code model separation
+Full rules live in `.specs/PROTOCOL.md`. Short form:
 
-## Usage
+- Start with `README.md`; load a spec only when its `Load when` matches the task.
+- Prefer `Owns`, `Invariants`, and `Verify` over narrative history.
+- Use file links for implementation truth; do not paste code into specs.
+- Keep every spec card under about 160 lines unless the protocol itself needs more.
+- When code and specs disagree, read code/tests/migrations, update the spec, and note the verification.
 
-- All new features, changes, and architectural decisions must be reflected here.
-- Use these documents as the reference for onboarding, audits, and development.
-- Update specs immediately after protocol or model changes.
+## Load Sets
+
+| Task | Load |
+| --- | --- |
+| Backend routes, models, services, auth, store | `backend_spec`, `auth_user_separation_spec`, `migrations_spec` |
+| Frontend UI, state, routes, cart/store pages | `frontend_spec`, `realtime_wss_spec`, `route_resolution_spec` |
+| WebSocket, presence, voice, media, push delivery | `realtime_wss_spec`, `voice_chat_architecture.md` |
+| Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `caching_cdn_spec` |
+| Deploy, tenancy, grengo, nginx, cache headers | `infrastructure_spec`, `caching_cdn_spec`, `migrations_spec` |
+
+## Spec Cards
+
+- `PROTOCOL.md` - compact documentation protocol and maintenance rules.
+- `backend_spec` - Go backend contracts, routes, store domain, security.
+- `frontend_spec` - React/Jotai/CSS contracts and UI rules.
+- `realtime_wss_spec` - WebSocket message registry and delivery invariants.
+- `route_resolution_spec` - landing page and page route resolution.
+- `custom_pages_multiplayer_spec` - page-builder multiplayer reconciliation.
+- `caching_cdn_spec` - no-store APIs, static caching, CDN-safe flows.
+- `migrations_spec` - idempotent migration policy and current migration list.
+- `infrastructure_spec` - Docker/grengo/nginx tenancy model.
+- `auth_user_separation_spec` - standalone auth module contracts.
+- `voice_chat_architecture.md` - binary audio/media WebSocket plane.
 
 ## Maintenance
 
-- Regularly review for completeness and accuracy.
-- Solicit feedback from contributors to identify unclear or missing documentation.
-- Keep this directory up to date to ensure project robustness and clarity.
+Run `.routines/.specs_specialist` after changes to schema, models, routes,
+WebSocket messages, cache behavior, auth, infrastructure, or frontend contracts.

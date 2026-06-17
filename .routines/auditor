@@ -1,0 +1,96 @@
+# Routine: auditor
+
+## Purpose
+
+Strict whole-repository audit routine for enterprise-grade quality across Skaia:
+backend, frontend, dynamic pages, WebSocket protocols, migrations, specs, todos,
+routines, security, performance, tests, and user experience. It is more demanding
+than `correctness`: `correctness` resolves truth; `auditor` challenges whether the
+truth and implementation meet the highest maintainability and product-quality bar.
+
+## Triggers
+
+- User references `.routines/auditor`, `audit_backend`, `audit_frontend`, or asks for an audit/review
+- Cross-cutting backend/frontend contracts changed
+- A release, major feature, migration, auth/security, store/payment, page-builder, or routine change needs review
+- `correctness`, `worker`, `todo_planner`, or `.specs_specialist` asks for a quality gate
+
+## Inputs
+
+- `.routines/README.md`, `.routines/correctness`, and the routine being audited
+- `.specs/README.md`, `.specs/PROTOCOL.md`, and relevant spec cards
+- Related `.todo/*` and `.todo/*.tip`
+- Changed source/tests/migrations/package manifests
+- Existing verification outputs and git diff/status
+
+## Responsibilities
+
+- Audit the entire affected system, not just the changed file.
+- Enforce backend boundaries: handler/service/repository, authz, validation, migrations, cache, tests.
+- Enforce frontend quality: intentional design, token CSS, accessibility, mobile/empty/error/loading states, real-time state ownership.
+- Enforce dynamic-page quality: schema validation, page-builder edit safety, section reactivity, no stale CDN/data flows.
+- Review security and privacy first: auth, MFA, sessions, permissions, uploads, SSRF/XSS/CSS injection, payment/card data exposure.
+- Review performance and reliability: N+1s, unbounded memory/goroutines, polling, cache invalidation, slow-client WS behavior.
+- Audit docs/routines/specs/todos for stale references, duplicated authority, and poor handoff quality.
+- Produce findings ordered by severity with file/line evidence when possible.
+- Fix small safe documentation/process drift in scope; send implementation work to `worker` or `.todo` when larger.
+
+## Non-Goals
+
+- Do not replace `correctness` as the final arbiter of contradictory facts.
+- Do not implement broad fixes without a scoped todo or user request.
+- Do not praise style without evidence; findings must be actionable.
+- Do not lower the bar because code is legacy; name legacy risk clearly.
+
+## Workflow
+
+1. Define audit scope and blast radius.
+2. Read the relevant specs, routines, todos, and implementation files.
+3. Run `correctness` mentally/procedurally against the same scope: specs and code must agree.
+4. Inspect quality dimensions: security, data model, API, UI, state, realtime, tests, docs, operations.
+5. Classify findings: Critical, High, Medium, Low, or No material issue.
+6. Apply safe doc/routine/spec corrections directly; otherwise create/update todo guidance.
+7. Verify references and run tests/builds proportional to changes.
+8. Record durable audit facts in `.tip`, specs, or auditor run remarks.
+
+## Verification
+
+- Docs/routine-only: `rg` stale names, verify linked files exist, inspect `git diff --stat`.
+- Backend changes: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`.
+- Frontend changes: from `backend/frontend/`, run the relevant build/test/lint command.
+- Migrations: verify sorted filenames and idempotency patterns; note DB-backed gaps.
+- UI changes: inspect relevant CSS for token compliance and responsive/empty/error states.
+
+## Trace Outputs
+
+- Findings in the final response or related `.todo/<entry>.tip`
+- Updated specs via `.routines/.specs_specialist` when contracts changed
+- Updated routine run remarks for material standalone audits
+
+## Contexts
+
+- `.routines/`
+- `.specs/`
+- `.todo/`
+- `backend/`
+- `backend/frontend/`
+- `grengo/`
+
+## Extension/See Also
+
+- `.routines/correctness` - architectural truth and contradiction resolution
+- `.routines/worker` - scoped implementation fixes
+- `.routines/todo_planner` - durable plan creation/splitting/retirement
+- `.routines/.specs_specialist` - compact spec upkeep
+
+## Last Ran
+
+- 2026-06-17
+
+## Last Run Remarks
+
+- Created as the unified strict whole-repo audit routine replacing split backend/frontend audit authority. Auditor now covers repository quality, routines, specs, tests, security, dynamic page contracts, and intentional UI.
+
+## Next Steps
+
+- Use this routine for future review/audit gates and retire old audit redirects after dependent references are updated.

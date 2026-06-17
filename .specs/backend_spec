@@ -1,279 +1,153 @@
-# Backend Specification
+# Backend Spec
 
-## Architecture
+## Scope
 
-Go 1.24 server using chi/v5 router. Follows a strict **handler => service => repository** pattern with constructor-based dependency injection. No ORM — all database access is raw SQL via `lib/pq`.
+Go API, domain boundaries, routes, persistence, cache, security, and store/auth
+contracts.
 
-## Package Layout
+## Load when
 
-```
-backend/
-├ main.go                    # Entry: router setup, middleware wiring, server start
-├ database/db.go             # PostgreSQL + Redis client initialization
-├ models/
-│   ├ user.go                # Public user profile model
-│   ├ auth.go                # Auth response/credential/TOTP/backup-code models
-│   ├ commerce.go            # Store, order, payment, subscription models
-│   ├ page.go                # CMS page and allocation models
-│   └ *.go                   # Forum, datasource, inbox, notification, role, permission, analytics models
-└ internal/
-    ├ auth/                  # Credentials, registration/login, TOTP, backup codes, email/password tokens
-    ├ jwt/                   # JWT (HS256) generation and validation
-    ├ ctx/                   # Context helpers
-    ├ middleware/             # CORS, JWT auth, optional auth, RBAC, rate limit, armed guard
-    ├ user/                  # User CRUD, roles, permissions, suspension, Redis cache
-    ├ forum/                 # Categories, threads, comments, likes, Redis cache
-    ├ store/                 # Products, cart, orders, subscriptions, Stripe, Redis cache
-    ├ inbox/                 # 1-to-1 conversations + messages
-    ├ notification/          # Per-user notifications (typed, routed, real-time)
-    ├ config/                # site_config CRUD (branding, SEO, footer, features)
-    ├ page/                  # CMS pages (slug-based, JSONB block content)
-    ├ customsection/         # User-defined custom sections for pages
-    ├ datasource/            # Data source definitions, compiler, TS runner
-    ├ events/                # Event dispatcher and activity logging
-    ├ upload/                # Image/video/file/banner uploads (user-isolated dirs)
-    ├ ws/                    # WebSocket hub, presence, chat ring, cursor broadcast
-    ├ ssr/                   # index.html rewriting with SEO head tags
-    ├ utils/                 # Shared HTTP helpers
-    ├ grengo/                # Admin dashboard API proxy
-    ├ migrations/            # Idempotent ordered schema/seed/data migrations
-    ├ integration/           # Integration test suite
-    └ testutil/              # Test helpers (DB setup)
-```
+Changing backend handlers/services/repositories, routes, models, migrations,
+auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 
-## Handler => Service => Repository Pattern
+## Owns
 
-### Handlers (`handler.go`)
+- Entry/router: `backend/main.go`
+- Models: `backend/models/*.go`
+- Domains: `backend/internal/{auth,user,forum,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo}`
+- DB/Redis: `backend/database/db.go`
+- Migrations: `backend/internal/migrations/*.sql`
 
-- Receive `http.Request`, decode JSON body, validate required fields
-- Extract auth context via `auth.UserFromContext(r.Context())`
-- Call service methods, write JSON response or error
-- Never contain business logic or SQL
+## Architecture Contracts
 
-### Services (`service.go`)
+- Go 1.24, chi/v5, raw SQL via `lib/pq`; no ORM.
+- Domain shape is `handler => service => repository`.
+- Handlers decode/validate HTTP and auth context only.
+- Services own business rules, cache invalidation, event dispatch, and WS pushes.
+- Repositories execute SQL, accept `context.Context` where the local interface
+  does, and avoid business logic.
+- Interfaces live per domain in `interface.go` for test substitution.
+- Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
 
-- Contain all business logic
-- Orchestrate repository calls
-- Manage Redis cache (read-through with 5-min TTL, invalidate on writes)
-- Dispatch WebSocket events via hub
-- Return domain errors, not HTTP errors
+## Middleware Contracts
 
-### Repositories (`repository.go`)
+| Layer | Contract |
+| --- | --- |
+| CORS | Explicit `DOMAINS` allowlist; no wildcard production origins |
+| JWT | `Authorization: Bearer <token>` injects claims |
+| Optional JWT | Enriches anonymous reads without blocking |
+| MFA/IP hopping | Auth-sensitive middleware runs under `/api` |
+| Permission | RBAC by permission string; admin role implies all permissions |
+| Rate limit | General/auth/defcon limiters are per IP |
+| Armed guard | Blocks API traffic while tenant is armed except allowlisted paths |
+| API cache | JSON responses are `no-store` via `utils.WriteJSON/WriteError` |
 
-- Execute raw SQL against PostgreSQL
-- Accept `context.Context` as first parameter
-- Return models or `error`
-- No caching, no business logic
+## Auth Contracts
 
-### Interfaces (`interface.go`)
+- JWT access tokens use HS256 and `SESSION_TIMEOUT_MIN` (default 30 minutes).
+- Refresh tokens are stateful and stored in `user_sessions`.
+- Passwords use bcrypt cost 12 and 8-72 character validation.
+- Credentials, TOTP secrets, and backup codes are auth-owned tables, not `users`.
+- Role/permission changes push `user:update permissions_changed` with a fresh token.
+- MFA-required state can be pushed as `mfa:required` / user update challenge events.
 
-- Define service and repository contracts per domain
-- Enable test mocking
+## Route Registry
 
-## Middleware Stack
+All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
+`/uploads/*` also exist at the root where mounted in `backend/main.go`.
 
-All routes use composable chi middleware:
+| Prefix | Mount | Auth shape |
+| --- | --- | --- |
+| `/api/auth` | `internal/authhandler` | public/login/refresh plus protected auth flows |
+| `/api/session` | `internal/session` | session/security helpers |
+| `/api/users` | `internal/user` | mix of protected profile, admin, role, permission routes |
+| `/api/forum` | `internal/forum` | forum categories, threads, comments, likes |
+| `/api/store` | `internal/store` | catalog, cart, checkout, orders, wallet, reviews, subscriptions |
+| `/api/inbox` | `internal/inbox` | conversations, group participants, messages, blocks |
+| `/api/notifications` | `internal/notification` | list/read/delete/unread count |
+| `/api/config` | `internal/config`, datasource, customsection | public config reads, protected config writes |
+| `/api/pages` | `internal/page` | public page reads, protected page/page-admin writes |
+| `/api/upload` | `internal/upload` | image/video/file/banner/chunked uploads |
+| `/api/events` | `internal/events` | activity listing |
+| `/api/analytics` | `internal/analytics` | resource stats/visitors |
+| `/api/mediascraper` | `internal/mediascraper` | scrape/job controls |
+| `/api/grengo` | `internal/grengo` | in-app tenant administration proxy |
+| `/api/site` | `backend/main.go` | arm/disarm, `home.manage` + power-level gate |
 
-| Middleware     | Behavior                                                               |
-| -------------- | ---------------------------------------------------------------------- |
-| CORS           | Origin allowlist from `DOMAINS` env — no wildcards                     |
-| JWT Auth       | Validates `Authorization: Bearer <token>`, injects claims into context |
-| Optional JWT   | Enriches context when token present, doesn't block anonymous           |
-| Permission     | Checks specific permission or admin role                               |
-| Rate Limit     | 100 req/min general, 10 req/min auth (per IP via `httprate`)           |
-| Armed Guard    | Blocks API traffic when tenant is in maintenance mode                  |
-| Request Logger | Logs method, host, path, status, bytes, duration; redacts tokens       |
-| X-Backend      | Identifies which tenant handled the request                            |
-| Cache-Control  | `no-store` on all API responses                                        |
+## Page Routes
 
-## Authentication & Authorization
+| Method | Path | Contract |
+| --- | --- | --- |
+| `GET` | `/pages/landing-slug` | Current `landing_page_slug` |
+| `GET` | `/pages/index` | Legacy inline landing fetch |
+| `GET` | `/pages/list`, `/pages/browse`, `/pages/{slug}` | Page discovery/fetch |
+| `POST` | `/pages/{slug}/view` | Record page view |
+| `POST` | `/pages/` | Create page |
+| `POST` | `/pages/claim` | Claim/create allocated page |
+| `GET` | `/pages/my-allocation` | Current user's allocation |
+| `PUT/DELETE` | `/pages/{id}` | Update/delete page |
+| `POST` | `/pages/{id}/duplicate` | Duplicate page |
+| `PUT/DELETE` | `/pages/{id}/owner` | Set/clear owner |
+| `POST/DELETE` | `/pages/{id}/editors` | Add/remove editor |
+| `POST/DELETE` | `/pages/{id}/like` | Like/unlike page |
+| `POST/PUT/DELETE` | `/pages/.../comments` | Comments and comment likes |
+| `GET/PUT/DELETE` | `/pages/allocations...` | Page allocation admin |
+| `POST` | `/pages/{id}/set-homepage` | Set `landing_page_slug` by page id |
 
-- JWT access tokens: HS256, configurable TTL via `SESSION_TIMEOUT_MIN` (default 30)
-- Refresh tokens: 7-day lifetime, stored in `user_sessions`
-- Passwords: bcrypt cost 12, enforced 8–72 character length
-- 4 default roles: admin, member, moderator, banned
-- 18 granular permissions across forum, store, user management, presence, CMS
-- Permissions resolve from role assignments + direct per-user grants
-- Admin role implicitly holds all permissions
-- Role/permission changes push new JWTs to affected users via WebSocket
+## Store Contracts
 
-## Database
+- Product/category reads allow optional JWT; management writes require JWT plus
+  service-level permission checks.
+- Product prices, order totals, wallet amounts, and reference incentives are cents.
+- Products include `original_price`, `stock_unlimited`, `is_active`, and
+  `special_actions` JSONB exposed as JSON string.
+- Cart routes are authenticated; guest checkout sends explicit `items` in
+  `/store/checkout` and does not rely on server cart state.
+- Checkout supports `delivery_cash`, `wallet`, `card_{id}`, demo provider, and
+  Stripe provider depending on configuration.
+- Wallet routes expose balance, topups, transactions, and user-managed cards.
+- Reference codes pay the code owner once per order through wallet credit; users
+  cannot use their own active code.
+- Special actions execute when an order is completed, and paid special-action
+  orders can auto-complete after successful payment.
+- Store catalog mutations broadcast `store:update`; cart and checkout outcomes
+  push directly to the buyer.
 
-PostgreSQL 16 with per-tenant databases on a shared instance.
+## Persistence Contracts
 
-### Connection Pool
+- PostgreSQL 16, per-tenant databases on shared instance.
+- Pool defaults: open 100, idle 50, lifetime 30 minutes.
+- Migration policy is in `.specs/migrations_spec`.
+- Key tables include users/auth/session/RBAC, forum, products/cart/orders/payments,
+  wallet/cards/reference payouts, inbox, notifications, site_config, pages,
+  page comments, data sources, uploads/media history, analytics.
 
-- `DB_MAX_OPEN_CONNS`: 100
-- `DB_MAX_IDLE_CONNS`: 50
-- `DB_CONN_MAX_LIFETIME_MIN`: 30
+## Upload/SSR Contracts
 
-### Migration Strategy
+- Uploads are user-isolated under `uploads/users/{userID}/{type}/`.
+- Images: JPEG/PNG/WebP/GIF <= 10 MB with dimension validation.
+- Videos: MP4/WebM/OGG/MOV <= 50 MB.
+- Traversal (`..`) is rejected.
+- `internal/ssr` rewrites SPA HTML with SEO/site config and serves sitemap data.
 
-Idempotent ordered SQL files in `internal/migrations/`:
+## Invariants
 
-- `001_schema.sql` — all tables with `IF NOT EXISTS`
-- `002_seed.sql` — default roles, permissions, admin user
-- `003_*` and later — guarded incremental data/schema transitions for existing deployments
+- API JSON must go through `utils.WriteJSON` / `utils.WriteError`.
+- Business logic and SQL must not live in handlers.
+- Auth secrets must never be cached in public user models.
+- Landing page is `site_config.landing_page_slug`; there is no `is_index`.
+- WebSocket pushes are part of mutation correctness, not optional decoration.
 
-Prices stored as `BIGINT` cents. Timestamps are primarily `TIMESTAMP` with database defaults; new schema changes should preserve the convention already used by the affected table unless a spec explicitly requires otherwise.
+## Verify
 
-### Key Tables
+- Routes: `rg "r\\.(Get|Post|Put|Delete)|Route\\(" backend/main.go backend/internal -n`
+- Store contracts: `backend/internal/store/handler.go`, `service.go`, `models/commerce.go`
+- Auth separation: `backend/internal/auth`, `backend/models/auth.go`, migration `009_*`
+- Tests: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
 
-- `users`, `auth_credentials`, `auth_totp_secrets`, `auth_backup_codes`, `user_sessions`, `roles`, `permissions`, `role_permissions`, `user_roles`, `user_permissions`
-- `forum_categories`, `forum_threads`, `thread_comments`, `thread_likes`, `thread_comment_likes`
-- `products`, `store_categories`, `cart_items`, `orders`, `order_items`, `payments`, `subscription_plans`, `subscriptions`
-- `inbox_conversations`, `inbox_messages`, `notifications`
-- `site_config`, `page_sections`, `page_items`, `pages`
+## Trace
 
-## Cache Layer
-
-Redis 7, namespaced per tenant (e.g. `home:user:42`, `writer:forum:thread:7`).
-
-- Read-through cache with 5-minute TTL
-- Automatic invalidation on writes
-- Used for: users, threads, products, site config
-- All cache operations are best-effort — cache misses fall through to DB
-
-## WebSocket Hub
-
-Single event loop dispatching to a bounded worker pool (default 256 goroutines).
-
-| Feature                | Detail                                                       |
-| ---------------------- | ------------------------------------------------------------ |
-| Resource subscriptions | Key-based pub/sub (e.g. `thread:42`) with targeted updates   |
-| Presence               | Debounced broadcasts of online users + current routes        |
-| Global chat            | Ring buffer (80 messages) with history replay on connect     |
-| Cursor sharing         | Real-time mouse position relay to same-route users           |
-| Teleport               | Admin can navigate any connected user to a route             |
-| Permission push        | Role/permission changes push new JWT to affected connections |
-| Targeted delivery      | `SendToUser(userID, msg)` reaches all concurrent connections |
-
-Configurable: `WS_MAX_CONNECTIONS` (100K), `WS_MAX_WORKERS` (256), `WS_CHAT_RING_SIZE` (80), `WS_PRESENCE_INTERVAL_MS` (1000).
-
-## Payments
-
-Pluggable provider interface:
-
-- `DemoPaymentProvider` — simulates transactions locally (configurable failure rate)
-- `StripePaymentProvider` — PaymentIntents, Checkout Sessions, Customers, Subscriptions (Stripe API v82)
-
-Set via `PAYMENT_PROVIDER` env (`demo` or `stripe`).
-
-## File Uploads
-
-- Per-user isolated directories: `uploads/users/{userID}/{type}/`
-- Image: JPEG, PNG, WebP, GIF ≤ 10 MB with dimension validation
-- Video: MP4, WebM, OGG, MOV ≤ 50 MB
-- Directory-traversal protection (`..` rejection)
-- nginx serves uploads with 30-day cache TTL
-
-## SSR / SEO
-
-`internal/ssr/` rewrites `index.html` at serve time, injecting:
-
-- `<title>`, `<meta name="description">`, OG tags, favicon
-- Values sourced from `site_config` table
-- Dynamic sitemap at `/sitemap.xml`
-
-## Testing
-
-### Unit Tests
-
-- Go test files alongside source (`*_test.go`)
-- Repository tests use `testutil/db.go` for isolated DB setup
-- Service tests mock repository interfaces
-
-### Integration Tests
-
-- `internal/integration/` — full HTTP test suite
-- Covers: user registration/auth, forum CRUD, store checkout, uploads
-- Uses real DB + Redis instances
-
-### Frontend Tests
-
-- Vitest + Testing Library
-- Run via `npm test` in `backend/frontend/`
-
-## API Routes
-
-All under `/api/`. JWT-protected unless noted.
-
-- `GET /health` — health check (no auth)
-- `GET /time` — server UTC time (no auth)
-- `GET /ws` — WebSocket (token via query param)
-- `/auth/*` — register, login, refresh, logout
-- `/users/*` — CRUD, roles, permissions, suspension
-- `/forum/*` — categories, threads, comments, likes
-- `/store/*` — products, cart, checkout, orders, subscriptions
-- `/inbox/*` — conversations, messages, unread count
-- `/notifications/*` — list, read, delete
-- `/config/*` — branding, SEO, footer, features, landing, pages, section/component registry
-- `/upload/*` — image, video, file, banner
-
-### Config / Registry Endpoints
-
-All under `/config` (chi subroute). Public unless noted.
-
-| Method | Path                    | Auth | Purpose                                      |
-| ------ | ----------------------- | ---- | -------------------------------------------- |
-| GET    | /branding               | none | Branding settings (site name, logo, etc.)    |
-| GET    | /seo                    | none | SEO meta tags                                |
-| GET    | /footer                 | none | Footer content                               |
-| GET    | /comment-slowmode       | none | Comment slow-mode config                     |
-| GET    | /features               | none | Enabled feature flags                        |
-| GET    | /feature/{feature}      | none | Check single feature flag                    |
-| GET    | /sections               | none | List all supported section types + schema    |
-| GET    | /section-types/{type}   | none | Get one section type definition              |
-| GET    | /components             | none | List all registered component definitions    |
-| GET    | /components/{type}      | none | Get one component definition with bind points|
-| PUT    | /branding               | JWT  | Update branding                              |
-| PUT    | /seo                    | JWT  | Update SEO                                   |
-| PUT    | /footer                 | JWT  | Update footer                                |
-| PUT    | /comment-slowmode       | JWT  | Update comment slow-mode                     |
-
-### Page / Landing Endpoints
-
-All under `/pages` (chi subroute).
-
-| Method | Path                   | Auth      | Purpose                            |
-| ------ | ---------------------- | --------- | ---------------------------------- |
-| GET    | /landing-slug          | none      | Resolve configured landing slug    |
-| GET    | /index                 | opt JWT   | Fetch landing page inline (legacy) |
-| GET    | /list                  | none      | List all pages                     |
-| GET    | /browse                | opt JWT   | Public feed with ownership data    |
-| GET    | /{slug}                | opt JWT   | Fetch page by slug                 |
-| GET    | /{slug}/comments       | opt JWT   | List page comments                 |
-| POST   | /{slug}/view           | none      | Record page view                   |
-| POST   | /                      | JWT+perm  | Create page                        |
-| PUT    | /{id}                  | JWT+perm  | Update page content                |
-| DELETE | /{id}                  | JWT+perm  | Delete page                        |
-| POST   | /{id}/duplicate        | JWT+perm  | Duplicate page                     |
-| PUT    | /set-homepage          | JWT+perm  | Set landing page slug              |
-| POST   | /factory-reset         | JWT+perm  | Delete all pages + reset config    |
-| PUT    | /{id}/owner            | JWT+perm  | Set page owner                     |
-| DELETE | /{id}/owner            | JWT+perm  | Clear page owner                   |
-| POST   | /{id}/editors          | JWT+perm  | Add editor                         |
-| DELETE | /{id}/editors/{userId} | JWT+perm  | Remove editor                      |
-| POST   | /{id}/like             | JWT       | Like page                          |
-| DELETE | /{id}/like             | JWT       | Unlike page                        |
-| POST   | /{id}/comments         | JWT+limit | Create comment                     |
-| PUT    | /comments/{commentId}  | JWT+limit | Update comment                     |
-| DELETE | /comments/{commentId}  | JWT+limit | Delete comment                     |
-
-**Critical: Landing page is config-driven.** The `landing_page_slug` key in
-`site_config` determines which page renders at `/`. There is no `is_index`
-column. See `route_resolution_spec` for the full data flow.
-
-## Security Checklist
-
-- bcrypt cost 12 for passwords
-- HS256 JWT with env-sourced secret
-- CORS explicit origin allowlist (no wildcards)
-- Rate limiting per IP
-- RBAC on all protected endpoints
-- MIME type allowlist for uploads
-- Path traversal guards on file serving
-- Token redaction in logs
-- `Cache-Control: no-store` on API responses
-- Non-root container user (`appuser`)
-- Configurable DB connection pool limits
+- `.specs/realtime_wss_spec`
+- `.specs/migrations_spec`
+- `.specs/auth_user_separation_spec`
+- `.specs/route_resolution_spec`

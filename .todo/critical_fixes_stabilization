@@ -43,7 +43,7 @@ Post 2026-06-11 audit of recent commits (a956df0..660ab84) covering media scrape
 ## References
 - `.routines/correctness`
 - `.routines/worker`
-- `.routines/audit_backend`
+- `.routines/auditor`
 - `.todo/hotfix_reconciliation`
 - `.todo/ui_component_refactor_plan`
 - `backend/internal/mediascraper/handler.go`
