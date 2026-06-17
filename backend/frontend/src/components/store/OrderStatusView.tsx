@@ -11,6 +11,7 @@ import { useAtomValue } from "jotai";
 import { productsAtom } from "../../atoms/store";
 import { formatCents } from "../../utils/money";
 import type { Order, CartItem } from "../../atoms/store";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 import "../../styles/Cart.css";
 
@@ -76,7 +77,7 @@ const OrderSubmittedView: React.FC<Props> = ({
   }
 
   return (
-    <div className="cart-page-container">
+    <div className="cart-page-container order-status-view">
       <div
         className="cart-header"
         style={{
@@ -110,45 +111,37 @@ const OrderSubmittedView: React.FC<Props> = ({
         </Link>
       </div>
 
-      <div className="cart-content">
+      <div className="cart-content order-status-content">
         <div className="cart-items">
-          <h3 style={{ marginBottom: "0.5rem" }}>
+          <h3 className="order-status-items-title">
             Items ({itemsToRender.length})
           </h3>
           {itemsToRender.map((item) => {
             const product = getProduct(String(item.product_id));
+            const displayName = product?.name ?? `Product #${item.product_id}`;
             return (
-              <div key={item.product_id} className="card card--store cart-item">
-                {product?.image_url && (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="cart-item-image"
-                  />
-                )}
-                <div className="cart-item-info">
-                  <h3>{product?.name ?? `Product #${item.product_id}`}</h3>
-                  <p className="cart-item-price">
-                    {formatCents(item.price ?? 0)}
-                  </p>
+              <ContentFlatCard
+                key={item.product_id}
+                className="order-status-item"
+              >
+                <div className="order-status-item-media">
+                  {product?.image_url ? (
+                    <img src={product.image_url} alt={displayName} />
+                  ) : (
+                    <span>{displayName.slice(0, 1).toUpperCase()}</span>
+                  )}
                 </div>
-                <div
-                  className="cart-item-controls"
-                  style={{ flexDirection: "column", alignItems: "flex-end" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "0.875rem",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Qty: {item.quantity}
-                  </span>
-                  <strong style={{ color: "var(--text-primary)" }}>
+                <div className="order-status-item-info">
+                  <h3>{displayName}</h3>
+                  <span>{formatCents(item.price ?? 0)} each</span>
+                </div>
+                <div className="order-status-item-total">
+                  <span>Qty {item.quantity}</span>
+                  <strong>
                     {formatCents((item.price ?? 0) * item.quantity)}
                   </strong>
                 </div>
-              </div>
+              </ContentFlatCard>
             );
           })}
         </div>
