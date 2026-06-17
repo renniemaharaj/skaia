@@ -5,14 +5,15 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 // Category repository
 
-type sqlCategoryRepository struct{ db *sql.DB }
+type sqlCategoryRepository struct{ db database.Executor }
 
-func NewCategoryRepository(db *sql.DB) CategoryRepository {
+func NewCategoryRepository(db database.Executor) CategoryRepository {
 	return &sqlCategoryRepository{db: db}
 }
 
@@ -120,9 +121,9 @@ func (r *sqlCategoryRepository) Search(query string) ([]*models.ForumCategory, e
 
 // Thread repository
 
-type sqlThreadRepository struct{ db *sql.DB }
+type sqlThreadRepository struct{ db database.Executor }
 
-func NewThreadRepository(db *sql.DB) ThreadRepository {
+func NewThreadRepository(db database.Executor) ThreadRepository {
 	return &sqlThreadRepository{db: db}
 }
 
@@ -375,7 +376,7 @@ func (r *sqlThreadRepository) Update(thread *models.ForumThread) (*models.ForumT
 		&thread.IsShared, &thread.OriginalThreadID,
 		&thread.CreatedAt, &thread.UpdatedAt, &thread.LastEditedBy)
 	thread.ViewCount = vc
-	
+
 	if err == nil && thread.LastEditedBy != nil {
 		r.db.Exec(`INSERT INTO thread_editors (thread_id, user_id) VALUES ($1, $2) ON CONFLICT(thread_id, user_id) DO UPDATE SET edited_at = CURRENT_TIMESTAMP`, thread.ID, *thread.LastEditedBy)
 	}
@@ -576,9 +577,9 @@ func (r *sqlThreadRepository) GetThreadContributorsUsers(threadID int64, limit, 
 
 // Comment repository
 
-type sqlCommentRepository struct{ db *sql.DB }
+type sqlCommentRepository struct{ db database.Executor }
 
-func NewCommentRepository(db *sql.DB) CommentRepository {
+func NewCommentRepository(db database.Executor) CommentRepository {
 	return &sqlCommentRepository{db: db}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
@@ -28,17 +29,21 @@ type Repository interface {
 
 // SQLRepository implements Repository using a SQL database.
 type SQLRepository struct {
-	db *sql.DB
+	db database.Executor
 }
 
-func NewSQLRepository(db *sql.DB) *SQLRepository {
+func NewSQLRepository(db database.Executor) *SQLRepository {
 	return &SQLRepository{db: db}
+}
+
+func (r *SQLRepository) executor(ctx context.Context) database.Executor {
+	return database.ExecutorFromContext(ctx, r.db)
 }
 
 // Implementations for credential, TOTP, and backup code methods will go here.
 // Credential methods
 func (r *SQLRepository) CreateCredential(ctx context.Context, userID int64, passwordHash string) (*models.Credential, error) {
-	row := r.db.QueryRowContext(ctx, `INSERT INTO auth_credentials (user_id, password_hash) VALUES ($1, $2) RETURNING id, user_id, password_hash, created_at, updated_at`, userID, passwordHash)
+	row := r.executor(ctx).QueryRowContext(ctx, `INSERT INTO auth_credentials (user_id, password_hash) VALUES ($1, $2) RETURNING id, user_id, password_hash, created_at, updated_at`, userID, passwordHash)
 	cred := &models.Credential{}
 	if err := row.Scan(&cred.ID, &cred.UserID, &cred.PasswordHash, &cred.CreatedAt, &cred.UpdatedAt); err != nil {
 		return nil, err
@@ -47,7 +52,7 @@ func (r *SQLRepository) CreateCredential(ctx context.Context, userID int64, pass
 }
 
 func (r *SQLRepository) GetCredentialByUserID(ctx context.Context, userID int64) (*models.Credential, error) {
-	row := r.db.QueryRowContext(ctx, `SELECT id, user_id, password_hash, created_at, updated_at FROM auth_credentials WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT id, user_id, password_hash, created_at, updated_at FROM auth_credentials WHERE user_id = $1`, userID)
 	cred := &models.Credential{}
 	if err := row.Scan(&cred.ID, &cred.UserID, &cred.PasswordHash, &cred.CreatedAt, &cred.UpdatedAt); err != nil {
 		return nil, err
@@ -64,13 +69,13 @@ func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, userID int64, ne
 		}
 		return err
 	}
-	_, err := r.db.ExecContext(ctx, `UPDATE auth_credentials SET password_hash = $1, updated_at = NOW() WHERE user_id = $2`, newHash, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_credentials SET password_hash = $1, updated_at = NOW() WHERE user_id = $2`, newHash, userID)
 	return err
 }
 
 // TOTP methods
 func (r *SQLRepository) CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error) {
-	row := r.db.QueryRowContext(ctx, `
+	row := r.executor(ctx).QueryRowContext(ctx, `
 		INSERT INTO auth_totp_secrets (user_id, totp_secret, enabled)
 		VALUES ($1, $2, false)
 		ON CONFLICT (user_id) DO UPDATE SET totp_secret = EXCLUDED.totp_secret, enabled = false, updated_at = NOW()
@@ -84,7 +89,7 @@ func (r *SQLRepository) CreateTOTPSecret(ctx context.Context, userID int64, secr
 }
 
 func (r *SQLRepository) GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error) {
-	row := r.db.QueryRowContext(ctx, `SELECT id, user_id, totp_secret, enabled, created_at, updated_at FROM auth_totp_secrets WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT id, user_id, totp_secret, enabled, created_at, updated_at FROM auth_totp_secrets WHERE user_id = $1`, userID)
 	t := &models.TOTPSecret{}
 	if err := row.Scan(&t.ID, &t.UserID, &t.Secret, &t.Enabled, &t.CreatedAt, &t.UpdatedAt); err != nil {
 		return nil, err
@@ -93,12 +98,12 @@ func (r *SQLRepository) GetTOTPSecretByUserID(ctx context.Context, userID int64)
 }
 
 func (r *SQLRepository) SetTOTPEnabled(ctx context.Context, userID int64, enabled bool) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE auth_totp_secrets SET enabled = $1, updated_at = NOW() WHERE user_id = $2`, enabled, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_totp_secrets SET enabled = $1, updated_at = NOW() WHERE user_id = $2`, enabled, userID)
 	return err
 }
 
 func (r *SQLRepository) GetTOTPEnabled(ctx context.Context, userID int64) (bool, error) {
-	row := r.db.QueryRowContext(ctx, `SELECT enabled FROM auth_totp_secrets WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT enabled FROM auth_totp_secrets WHERE user_id = $1`, userID)
 	var enabled bool
 	if err := row.Scan(&enabled); err != nil {
 		return false, err
@@ -109,7 +114,7 @@ func (r *SQLRepository) GetTOTPEnabled(ctx context.Context, userID int64) (bool,
 // Backup code methods
 func (r *SQLRepository) CreateBackupCodes(ctx context.Context, userID int64, codeHashes []string) error {
 	for _, h := range codeHashes {
-		_, err := r.db.ExecContext(ctx, `INSERT INTO auth_backup_codes (user_id, code_hash) VALUES ($1, $2)`, userID, h)
+		_, err := r.executor(ctx).ExecContext(ctx, `INSERT INTO auth_backup_codes (user_id, code_hash) VALUES ($1, $2)`, userID, h)
 		if err != nil {
 			return err
 		}
@@ -118,7 +123,7 @@ func (r *SQLRepository) CreateBackupCodes(ctx context.Context, userID int64, cod
 }
 
 func (r *SQLRepository) GetBackupCodes(ctx context.Context, userID int64) ([]*models.BackupCode, error) {
-	rows, err := r.db.QueryContext(ctx, `SELECT id, user_id, code_hash, used, created_at FROM auth_backup_codes WHERE user_id = $1`, userID)
+	rows, err := r.executor(ctx).QueryContext(ctx, `SELECT id, user_id, code_hash, used, created_at FROM auth_backup_codes WHERE user_id = $1`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,22 +140,22 @@ func (r *SQLRepository) GetBackupCodes(ctx context.Context, userID int64) ([]*mo
 }
 
 func (r *SQLRepository) UseBackupCode(ctx context.Context, codeID int64) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE auth_backup_codes SET used = true WHERE id = $1`, codeID)
+	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_backup_codes SET used = true WHERE id = $1`, codeID)
 	return err
 }
 
 func (r *SQLRepository) DeleteBackupCodes(ctx context.Context, userID int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM auth_backup_codes WHERE user_id = $1`, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `DELETE FROM auth_backup_codes WHERE user_id = $1`, userID)
 	return err
 }
 
 func (r *SQLRepository) SetMFARequired(ctx context.Context, userID int64, required bool) error {
-	_, err := r.db.ExecContext(ctx, `INSERT INTO mfa_challenge_required (user_id, required) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET required = EXCLUDED.required, updated_at = NOW()`, userID, required)
+	_, err := r.executor(ctx).ExecContext(ctx, `INSERT INTO mfa_challenge_required (user_id, required) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET required = EXCLUDED.required, updated_at = NOW()`, userID, required)
 	return err
 }
 
 func (r *SQLRepository) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
-	row := r.db.QueryRowContext(ctx, `SELECT required, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT required, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
 	var status models.MFAChallengeStatus
 	status.UserID = userID
 	if err := row.Scan(&status.Required, &status.CreatedAt, &status.UpdatedAt); err != nil {

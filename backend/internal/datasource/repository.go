@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlRepository struct{ db *sql.DB }
+type sqlRepository struct{ db database.Executor }
 
 // NewRepository returns a Repository backed by Postgres.
-func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
+func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 func (r *sqlRepository) GetByID(id int64) (*models.DataSource, error) {
 	ds := &models.DataSource{}

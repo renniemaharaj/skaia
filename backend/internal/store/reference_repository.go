@@ -1,18 +1,20 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 type sqlReferenceCodeRepository struct {
-	db *sql.DB
+	db database.Executor
 }
 
-func NewReferenceCodeRepository(db *sql.DB) ReferenceCodeRepository {
+func NewReferenceCodeRepository(db database.Executor) ReferenceCodeRepository {
 	return &sqlReferenceCodeRepository{db: db}
 }
 
@@ -108,31 +110,27 @@ func (r *sqlReferenceCodeRepository) CreatePayout(payout *models.ReferenceCodePa
 }
 
 func (r *sqlReferenceCodeRepository) CreatePayoutWithWalletCredit(payout *models.ReferenceCodePayout, description string) (*models.ReferenceCodePayout, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() //nolint:errcheck
-
-	err = tx.QueryRow(
-		`INSERT INTO store_reference_code_payouts (reference_code_id, order_id, user_id, amount)
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(
+			`INSERT INTO store_reference_code_payouts (reference_code_id, order_id, user_id, amount)
 		 VALUES ($1, $2, $3, $4)
 		 RETURNING id, reference_code_id, order_id, user_id, amount, created_at`,
-		payout.ReferenceCodeID, payout.OrderID, payout.UserID, payout.Amount,
-	).Scan(&payout.ID, &payout.ReferenceCodeID, &payout.OrderID, &payout.UserID, &payout.Amount, &payout.CreatedAt)
-	if err != nil {
-		return nil, err
-	}
+			payout.ReferenceCodeID, payout.OrderID, payout.UserID, payout.Amount,
+		).Scan(&payout.ID, &payout.ReferenceCodeID, &payout.OrderID, &payout.UserID, &payout.Amount, &payout.CreatedAt)
+		if err != nil {
+			return err
+		}
 
-	if _, err := tx.Exec(
-		`INSERT INTO user_wallet_transactions (user_id, amount, type, description)
+		if _, err := exec.Exec(
+			`INSERT INTO user_wallet_transactions (user_id, amount, type, description)
 		 VALUES ($1, $2, 'credit', $3)`,
-		payout.UserID, payout.Amount, description,
-	); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+			payout.UserID, payout.Amount, description,
+		); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return payout, nil

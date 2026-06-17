@@ -3,16 +3,17 @@ package analytics
 import (
 	"database/sql"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 // Repository persists and queries resource views.
 type Repository struct {
-	db *sql.DB
+	db database.Executor
 }
 
 // NewRepository creates a Repository backed by the given database.
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db database.Executor) *Repository {
 	return &Repository{db: db}
 }
 

@@ -2,14 +2,14 @@ package store
 
 import (
 	"context"
-	"database/sql"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlReviewRepository struct{ db *sql.DB }
+type sqlReviewRepository struct{ db database.Executor }
 
-func NewReviewRepository(db *sql.DB) ReviewRepository {
+func NewReviewRepository(db database.Executor) ReviewRepository {
 	return &sqlReviewRepository{db: db}
 }
 

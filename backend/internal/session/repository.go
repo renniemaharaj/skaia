@@ -2,8 +2,9 @@ package session
 
 import (
 	"context"
-	"database/sql"
 	"time"
+
+	"github.com/skaia/backend/database"
 )
 
 // Repository defines the data-access contract for sessions.
@@ -20,11 +21,11 @@ type Repository interface {
 
 // SQLRepository implements Repository using PostgreSQL.
 type SQLRepository struct {
-	db *sql.DB
+	db database.Executor
 }
 
 // NewSQLRepository returns a new SQLRepository backed by db.
-func NewSQLRepository(db *sql.DB) *SQLRepository {
+func NewSQLRepository(db database.Executor) *SQLRepository {
 	return &SQLRepository{db: db}
 }
 

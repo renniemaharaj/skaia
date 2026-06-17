@@ -3,13 +3,14 @@ package page
 import (
 	"database/sql"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlRepository struct{ db *sql.DB }
+type sqlRepository struct{ db database.Executor }
 
 // NewRepository returns a Repository backed by Postgres.
-func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
+func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 // reads
 
@@ -234,14 +235,13 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		}
 		if oID.Valid {
 			p.Owner = &models.PageUser{
-				ID:          oID.Int64,
-				Username:    oUsername.String,
-				DisplayName: oDisplayName.String,
-				AvatarURL:   oAvatar.String,
+				ID:                 oID.Int64,
+				Username:           oUsername.String,
+				DisplayName:        oDisplayName.String,
+				AvatarURL:          oAvatar.String,
 				BackgroundVideoURL: bgVid.String,
 				BackgroundImageURL: bgImg.String,
 				BackgroundPosition: bgPos.String,
-
 			}
 		}
 		pages = append(pages, p)

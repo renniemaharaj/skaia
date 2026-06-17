@@ -1,16 +1,18 @@
 package inbox
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlRepository struct{ db *sql.DB }
+type sqlRepository struct{ db database.Executor }
 
 // NewRepository returns a Repository backed by db.
-func NewRepository(db *sql.DB) Repository {
+func NewRepository(db database.Executor) Repository {
 	return &sqlRepository{db: db}
 }
 
@@ -57,61 +59,53 @@ func (r *sqlRepository) GetOrCreateConversation(user1ID, user2ID int64) (*models
 	if err == nil {
 		return c, nil
 	}
-	tx, err := r.db.Begin()
+	err = database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		c = &models.InboxConversation{}
+		err = exec.QueryRow(
+			`INSERT INTO inbox_conversations (is_group) VALUES (false) RETURNING id, is_group, created_at, updated_at`,
+		).Scan(&c.ID, &c.IsGroup, &c.CreatedAt, &c.UpdatedAt)
+		if err != nil {
+			return err
+		}
+		_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)`, c.ID, user1ID, user2ID)
+		return err
+	})
 	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-	c = &models.InboxConversation{}
-	err = tx.QueryRow(
-		`INSERT INTO inbox_conversations (is_group) VALUES (false) RETURNING id, is_group, created_at, updated_at`,
-	).Scan(&c.ID, &c.IsGroup, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)`, c.ID, user1ID, user2ID)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
 func (r *sqlRepository) CreateGroupConversation(title string, creatorID int64, participantIDs []int64) (*models.InboxConversation, error) {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	c := &models.InboxConversation{}
-	var t sql.NullString
-	if title != "" {
-		t.String = title
-		t.Valid = true
-	}
-	err = tx.QueryRow(
-		`INSERT INTO inbox_conversations (is_group, title) VALUES (true, $1) RETURNING id, is_group, title, created_at, updated_at`, t,
-	).Scan(&c.ID, &c.IsGroup, &t, &c.CreatedAt, &c.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	if t.Valid {
-		c.Title = t.String
-	}
-	for _, pid := range participantIDs {
-		role := "member"
-		if pid == creatorID {
-			role = "owner"
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var t sql.NullString
+		if title != "" {
+			t.String = title
+			t.Valid = true
 		}
-		_, err = tx.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3)`, c.ID, pid, role)
+		err := exec.QueryRow(
+			`INSERT INTO inbox_conversations (is_group, title) VALUES (true, $1) RETURNING id, is_group, title, created_at, updated_at`, t,
+		).Scan(&c.ID, &c.IsGroup, &t, &c.CreatedAt, &c.UpdatedAt)
 		if err != nil {
-			return nil, err
+			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
+		if t.Valid {
+			c.Title = t.String
+		}
+		for _, pid := range participantIDs {
+			role := "member"
+			if pid == creatorID {
+				role = "owner"
+			}
+			_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3)`, c.ID, pid, role)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return c, nil

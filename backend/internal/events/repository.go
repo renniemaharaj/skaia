@@ -4,16 +4,17 @@ import (
 	"database/sql"
 	"strconv"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 // Repository persists events to the database.
 type Repository struct {
-	db *sql.DB
+	db database.Executor
 }
 
 // NewRepository returns a Repository backed by the given database handle.
-func NewRepository(db *sql.DB) *Repository {
+func NewRepository(db database.Executor) *Repository {
 	return &Repository{db: db}
 }
 

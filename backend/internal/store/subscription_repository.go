@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 // Subscription plan repository
 
-type sqlSubscriptionPlanRepository struct{ db *sql.DB }
+type sqlSubscriptionPlanRepository struct{ db database.Executor }
 
-func NewSubscriptionPlanRepository(db *sql.DB) SubscriptionPlanRepository {
+func NewSubscriptionPlanRepository(db database.Executor) SubscriptionPlanRepository {
 	return &sqlSubscriptionPlanRepository{db: db}
 }
 
@@ -75,9 +76,9 @@ func (r *sqlSubscriptionPlanRepository) List() ([]*models.SubscriptionPlan, erro
 
 // Subscription repository
 
-type sqlSubscriptionRepository struct{ db *sql.DB }
+type sqlSubscriptionRepository struct{ db database.Executor }
 
-func NewSubscriptionRepository(db *sql.DB) SubscriptionRepository {
+func NewSubscriptionRepository(db database.Executor) SubscriptionRepository {
 	return &sqlSubscriptionRepository{db: db}
 }
 

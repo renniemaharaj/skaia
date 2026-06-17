@@ -1,15 +1,15 @@
 package store
 
 import (
-	"database/sql"
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 type sqlWalletRepository struct {
-	db *sql.DB
+	db database.Executor
 }
 
-func NewWalletRepository(db *sql.DB) WalletRepository {
+func NewWalletRepository(db database.Executor) WalletRepository {
 	return &sqlWalletRepository{db: db}
 }
 
@@ -138,4 +138,3 @@ func (r *sqlWalletRepository) DeleteCard(cardID, userID int64) error {
 	_, err := r.db.Exec(`DELETE FROM user_cards WHERE id = $1 AND user_id = $2`, cardID, userID)
 	return err
 }
-

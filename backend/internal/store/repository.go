@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
 // Category repository
 
-type sqlCategoryRepository struct{ db *sql.DB }
+type sqlCategoryRepository struct{ db database.Executor }
 
-func NewCategoryRepository(db *sql.DB) CategoryRepository {
+func NewCategoryRepository(db database.Executor) CategoryRepository {
 	return &sqlCategoryRepository{db: db}
 }
 
@@ -93,9 +94,9 @@ func (r *sqlCategoryRepository) List() ([]*models.StoreCategory, error) {
 
 // Product repository
 
-type sqlProductRepository struct{ db *sql.DB }
+type sqlProductRepository struct{ db database.Executor }
 
-func NewProductRepository(db *sql.DB) ProductRepository {
+func NewProductRepository(db database.Executor) ProductRepository {
 	return &sqlProductRepository{db: db}
 }
 
@@ -181,9 +182,9 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 
 // Cart repository
 
-type sqlCartRepository struct{ db *sql.DB }
+type sqlCartRepository struct{ db database.Executor }
 
-func NewCartRepository(db *sql.DB) CartRepository {
+func NewCartRepository(db database.Executor) CartRepository {
 	return &sqlCartRepository{db: db}
 }
 
@@ -254,9 +255,9 @@ func (r *sqlCartRepository) ClearCart(userID int64) error {
 
 // Order repository
 
-type sqlOrderRepository struct{ db *sql.DB }
+type sqlOrderRepository struct{ db database.Executor }
 
-func NewOrderRepository(db *sql.DB) OrderRepository {
+func NewOrderRepository(db database.Executor) OrderRepository {
 	return &sqlOrderRepository{db: db}
 }
 
@@ -314,34 +315,31 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 }
 
 func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderItem) (*models.Order, error) {
-	tx, err := r.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() //nolint:errcheck
-
-	err = tx.QueryRow(
-		`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, referral_code)
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(
+			`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, referral_code)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
-		order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status, order.ReferralCode,
-	).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.ReferralCode, &order.CreatedAt, &order.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range items {
-		item.OrderID = order.ID
-		_, err := tx.Exec(
-			`INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)`,
-			item.OrderID, item.ProductID, item.Quantity, item.Price,
-		)
+			order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status, order.ReferralCode,
+		).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.ReferralCode, &order.CreatedAt, &order.UpdatedAt)
 		if err != nil {
-			return nil, err
+			return err
 		}
-	}
 
-	if err := tx.Commit(); err != nil {
+		for _, item := range items {
+			item.OrderID = order.ID
+			_, err := exec.Exec(
+				`INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)`,
+				item.OrderID, item.ProductID, item.Quantity, item.Price,
+			)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return order, nil
@@ -388,80 +386,74 @@ func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*mode
 }
 
 func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, error) {
-	tx, err := r.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() //nolint:errcheck
-
-	var currentStatus string
-	err = tx.QueryRow(`SELECT status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&currentStatus)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.New("order not found")
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := tx.Query(`SELECT product_id, quantity FROM order_items WHERE order_id = $1`, id)
-	if err != nil {
-		return nil, err
-	}
-	var items []*models.OrderItem
-	for rows.Next() {
-		item := &models.OrderItem{OrderID: id}
-		if err := rows.Scan(&item.ProductID, &item.Quantity); err != nil {
-			rows.Close()
-			return nil, err
+	o := &models.Order{}
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var currentStatus string
+		err := exec.QueryRow(`SELECT status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&currentStatus)
+		if errors.Is(err, sql.ErrNoRows) {
+			return errors.New("order not found")
 		}
-		items = append(items, item)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return err
+		}
 
-	shouldReserveStock := currentStatus != "accepted" && currentStatus != "paid" && currentStatus != "completed"
-	if shouldReserveStock {
-		for _, item := range items {
-			var productName string
-			err := tx.QueryRow(
-				`UPDATE products
+		rows, err := exec.Query(`SELECT product_id, quantity FROM order_items WHERE order_id = $1`, id)
+		if err != nil {
+			return err
+		}
+		var items []*models.OrderItem
+		for rows.Next() {
+			item := &models.OrderItem{OrderID: id}
+			if err := rows.Scan(&item.ProductID, &item.Quantity); err != nil {
+				rows.Close()
+				return err
+			}
+			items = append(items, item)
+		}
+		if err := rows.Close(); err != nil {
+			return err
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+
+		shouldReserveStock := currentStatus != "accepted" && currentStatus != "paid" && currentStatus != "completed"
+		if shouldReserveStock {
+			for _, item := range items {
+				var productName string
+				err := exec.QueryRow(
+					`UPDATE products
 				 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
 				     updated_at = CURRENT_TIMESTAMP
 				 WHERE id = $1 AND (stock_unlimited = true OR stock >= $2)
 				 RETURNING name`,
-				item.ProductID, item.Quantity,
-			).Scan(&productName)
-			if errors.Is(err, sql.ErrNoRows) {
-				var name string
-				_ = tx.QueryRow(`SELECT name FROM products WHERE id = $1`, item.ProductID).Scan(&name)
-				if name == "" {
-					name = fmt.Sprintf("%d", item.ProductID)
+					item.ProductID, item.Quantity,
+				).Scan(&productName)
+				if errors.Is(err, sql.ErrNoRows) {
+					var name string
+					_ = exec.QueryRow(`SELECT name FROM products WHERE id = $1`, item.ProductID).Scan(&name)
+					if name == "" {
+						name = fmt.Sprintf("%d", item.ProductID)
+					}
+					return fmt.Errorf("insufficient stock for product %q", name)
 				}
-				return nil, fmt.Errorf("insufficient stock for product %q", name)
-			}
-			if err != nil {
-				return nil, err
+				if err != nil {
+					return err
+				}
 			}
 		}
-	}
 
-	o := &models.Order{}
-	err = tx.QueryRow(
-		`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP WHERE id=$1
+		err = exec.QueryRow(
+			`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP WHERE id=$1
 		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
-		id,
-	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+			id,
+		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	if err := r.loadItems(o); err != nil {
 		return nil, err
 	}
@@ -530,9 +522,9 @@ func (r *sqlOrderRepository) Delete(id int64) error {
 
 // Payment repository
 
-type sqlPaymentRepository struct{ db *sql.DB }
+type sqlPaymentRepository struct{ db database.Executor }
 
-func NewPaymentRepository(db *sql.DB) PaymentRepository {
+func NewPaymentRepository(db database.Executor) PaymentRepository {
 	return &sqlPaymentRepository{db: db}
 }
 

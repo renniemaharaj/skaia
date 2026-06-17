@@ -1,15 +1,16 @@
 package config
 
 import (
-	"database/sql"
+	"context"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlRepository struct{ db *sql.DB }
+type sqlRepository struct{ db database.Executor }
 
 // NewRepository returns a Repository backed by Postgres.
-func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
+func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 // Site config
 
@@ -153,19 +154,16 @@ func (r *sqlRepository) ShiftSections(fromOrder int) error {
 }
 
 func (r *sqlRepository) ReorderSections(ids []int64) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	for i, id := range ids {
-		if _, err := tx.Exec(
-			`UPDATE page_sections SET display_order=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
-			i+1, id); err != nil {
-			tx.Rollback()
-			return err
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		for i, id := range ids {
+			if _, err := exec.Exec(
+				`UPDATE page_sections SET display_order=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
+				i+1, id); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.Commit()
+		return nil
+	})
 }
 
 // Landing items
@@ -238,18 +236,15 @@ func (r *sqlRepository) DeleteItem(id int64) error {
 }
 
 func (r *sqlRepository) ReorderItems(sectionID int64, ids []int64) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	for i, id := range ids {
-		if _, err := tx.Exec(
-			`UPDATE page_items SET display_order=$1, updated_at=CURRENT_TIMESTAMP
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		for i, id := range ids {
+			if _, err := exec.Exec(
+				`UPDATE page_items SET display_order=$1, updated_at=CURRENT_TIMESTAMP
 			       WHERE id=$2 AND page_section_id=$3`,
-			i+1, id, sectionID); err != nil {
-			tx.Rollback()
-			return err
+				i+1, id, sectionID); err != nil {
+				return err
+			}
 		}
-	}
-	return tx.Commit()
+		return nil
+	})
 }

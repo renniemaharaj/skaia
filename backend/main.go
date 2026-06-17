@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -135,7 +136,9 @@ func main() {
 	}
 	defer database.Close()
 
-	seedAdminPassword(database.DB)
+	if err := seedAdminPassword(database.DB); err != nil {
+		log.Printf("admin seed: %v", err)
+	}
 
 	hub := ws.NewHub()
 	hub.SetDB(database.DB)
@@ -194,57 +197,51 @@ func main() {
 	log.Println("server stopped")
 }
 
-func seedAdminPassword(db *sql.DB) {
+func seedAdminPassword(db *sql.DB) error {
 	pw := os.Getenv("ADMIN_PASSWORD")
 	if pw == "" {
 		log.Println("ADMIN_PASSWORD not set, skipping admin seed")
-		return
+		return nil
 	}
 	email := os.Getenv("ADMIN_EMAIL")
 
-	// Find admin user
-	var adminID int64
-	err := db.QueryRow(`SELECT id FROM users WHERE username = 'admin'`).Scan(&adminID)
-	if err != nil {
-		log.Printf("admin seed: could not find admin user: %v", err)
-		return
-	}
+	return database.NewTransactor(db).Transactional(context.Background(), func(ctx context.Context) error {
+		exec := database.ExecutorFromContext(ctx, db)
 
-	// Optionally update admin email
-	if email != "" {
-		if _, err := db.Exec(`UPDATE users SET email = $1 WHERE id = $2`, email, adminID); err != nil {
-			log.Printf("admin seed: failed to update admin email: %v", err)
-			return
-		}
-	}
-
-	// Use auth service to update password hash in auth_credentials
-	repo := auth.NewSQLRepository(db)
-	userRepo := iuser.NewRepository(db)
-	userSvc := iuser.NewService(userRepo, nil)
-	authSvc := auth.NewService(repo, userSvc)
-	ctx := context.Background()
-	_, err = repo.GetCredentialByUserID(ctx, adminID)
-	if err == nil {
-		passwordHash, err := auth.BcryptPassword(pw)
+		var adminID int64
+		err := exec.QueryRowContext(ctx, `SELECT id FROM users WHERE username = 'admin'`).Scan(&adminID)
 		if err != nil {
-			log.Printf("admin seed: failed to hash admin password: %v", err)
-			return
+			return fmt.Errorf("could not find admin user: %w", err)
 		}
-		// Update existing credential
-		if err := repo.UpdatePasswordHash(ctx, adminID, passwordHash); err != nil {
-			log.Printf("admin seed: failed to update admin password hash: %v", err)
-			return
+
+		if email != "" {
+			if _, err := exec.ExecContext(ctx, `UPDATE users SET email = $1 WHERE id = $2`, email, adminID); err != nil {
+				return fmt.Errorf("failed to update admin email: %w", err)
+			}
 		}
-		log.Println("admin seed: password updated in auth_credentials")
-	} else {
-		// Create new credential
+
+		repo := auth.NewSQLRepository(db)
+		if _, err = repo.GetCredentialByUserID(ctx, adminID); err == nil {
+			passwordHash, err := auth.BcryptPassword(pw)
+			if err != nil {
+				return fmt.Errorf("failed to hash admin password: %w", err)
+			}
+			if err := repo.UpdatePasswordHash(ctx, adminID, passwordHash); err != nil {
+				return fmt.Errorf("failed to update admin password hash: %w", err)
+			}
+			log.Println("admin seed: password updated in auth_credentials")
+			return nil
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("failed to inspect admin credential: %w", err)
+		}
+
+		authSvc := auth.NewService(repo, nil)
 		if _, err := authSvc.RegisterCredential(ctx, adminID, pw); err != nil {
-			log.Printf("admin seed: failed to create admin credential: %v", err)
-			return
+			return fmt.Errorf("failed to create admin credential: %w", err)
 		}
 		log.Println("admin seed: password created in auth_credentials")
-	}
+		return nil
+	})
 }
 
 func validateArmHeaders(r *http.Request) (string, error) {

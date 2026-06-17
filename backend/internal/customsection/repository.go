@@ -3,13 +3,14 @@ package customsection
 import (
 	"database/sql"
 
+	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
 
-type sqlRepository struct{ db *sql.DB }
+type sqlRepository struct{ db database.Executor }
 
 // NewRepository returns a Repository backed by Postgres.
-func NewRepository(db *sql.DB) Repository { return &sqlRepository{db: db} }
+func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 const selectCols = `id, name, description, datasource_id, section_type, config, created_by, created_at, updated_at`
 
