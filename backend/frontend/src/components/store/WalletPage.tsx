@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import {
@@ -8,19 +8,20 @@ import {
   PlusCircle,
   LayoutDashboard,
   DollarSign,
-  LogOut,
-  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useUserData } from "../user/useUserData";
 import { useAtomValue, useSetAtom } from "jotai";
-import { currentUserAtom } from "../../atoms/auth";
+import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
+import { getServerNow } from "../../utils/serverTime";
 import "./Store.css";
 import { SecondaryCard } from "../cards/GlassCard";
+import { StorePageShell } from "./StorePageShell";
+import "./WalletPage.css";
 
 interface Transaction {
   id: number;
@@ -46,20 +47,37 @@ export const WalletPage = () => {
   const [searchParams] = useSearchParams();
   const targetUserId = searchParams.get("userId");
   const currentUser = useAtomValue(currentUserAtom);
-  const effectiveUserId = targetUserId || currentUser?.id;
+  const hasPermission = useAtomValue(hasPermissionAtom);
+  const canManageStore = hasPermission("store.manageOrders");
+  const hasViewer = Boolean(currentUser?.id);
+  const isViewingOtherWallet = Boolean(
+    targetUserId &&
+      hasViewer &&
+      String(targetUserId) !== String(currentUser?.id),
+  );
+  const requestedOtherWallet = Boolean(
+    targetUserId && (!hasViewer || isViewingOtherWallet),
+  );
+  const canViewTargetWallet = !requestedOtherWallet || canManageStore;
+  const effectiveUserId = canViewTargetWallet
+    ? targetUserId || currentUser?.id
+    : currentUser?.id;
+  const walletQueryString =
+    canManageStore && isViewingOtherWallet && targetUserId
+      ? `?user_id=${encodeURIComponent(targetUserId)}`
+      : "";
 
-  // Fetch user data for the wallet owner
-  // The backend already handles authorization for store.manageOrders. We assume they have permission if they navigated here.
-  const { user: walletOwner } = useUserData(effectiveUserId, true);
+  const { user: walletOwner } = useUserData(effectiveUserId, canManageStore);
 
-  const navigate = useNavigate();
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
   const [editingCard, setEditingCard] = useState<UserCard | null>(null);
-  const [serverTime, setServerTime] = useState<Date>(new Date());
+  const [serverTime, setServerTime] = useState<Date>(
+    () => new Date(getServerNow()),
+  );
 
   const [cardForm, setCardForm] = useState({
     card_name: "",
@@ -82,48 +100,58 @@ export const WalletPage = () => {
   const hasFetched = React.useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setServerTime(new Date()), 1000);
+    const timer = setInterval(
+      () => setServerTime(new Date(getServerNow())),
+      1000,
+    );
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchData();
+  const fetchData = useCallback(async () => {
+    if (!currentUser?.id || !canViewTargetWallet) {
+      setBalance(0);
+      setTransactions([]);
+      setCards([]);
+      hasFetched.current = false;
+      return;
     }
-  }, [targetUserId]);
-
-  const fetchData = async () => {
     setLoading(true);
     try {
-      const queryStr = targetUserId ? `?user_id=${targetUserId}` : "";
       const [walletData, cardsData] = await Promise.all([
-        apiRequest(`/store/wallet${queryStr}`) as Promise<any>,
-        apiRequest(`/store/wallet/cards${queryStr}`) as Promise<any>,
+        apiRequest(`/store/wallet${walletQueryString}`) as Promise<any>,
+        apiRequest(`/store/wallet/cards${walletQueryString}`) as Promise<any>,
       ]);
       setBalance(walletData.balance || 0);
       setTransactions(walletData.transactions || []);
       setCards(cardsData.cards || []);
+      hasFetched.current = true;
     } catch (err) {
       toast.error("Failed to fetch wallet info");
     } finally {
       setLoading(false);
     }
-  };
+  }, [canViewTargetWallet, currentUser?.id, walletQueryString]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSaveCard = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canViewTargetWallet) return;
     setLoading(true);
     try {
-      const queryStr = targetUserId ? `?user_id=${targetUserId}` : "";
       if (editingCard) {
-        await apiRequest(`/store/wallet/cards/${editingCard.id}${queryStr}`, {
-          method: "PUT",
-          body: JSON.stringify(cardForm),
-        });
+        await apiRequest(
+          `/store/wallet/cards/${editingCard.id}${walletQueryString}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(cardForm),
+          },
+        );
         toast.success("Card updated successfully!");
       } else {
-        await apiRequest(`/store/wallet/cards${queryStr}`, {
+        await apiRequest(`/store/wallet/cards${walletQueryString}`, {
           method: "POST",
           body: JSON.stringify(cardForm),
         });
@@ -140,11 +168,11 @@ export const WalletPage = () => {
   };
 
   const handleDeleteCard = async (id: number) => {
+    if (!canViewTargetWallet) return;
     if (!confirm("Are you sure you want to delete this card?")) return;
     setLoading(true);
     try {
-      const queryStr = targetUserId ? `?user_id=${targetUserId}` : "";
-      await apiRequest(`/store/wallet/cards/${id}${queryStr}`, {
+      await apiRequest(`/store/wallet/cards/${id}${walletQueryString}`, {
         method: "DELETE",
       });
       toast.success("Card deleted successfully!");
@@ -192,79 +220,68 @@ export const WalletPage = () => {
     .filter((t) => t.type === "debit")
     .reduce((acc, t) => acc + t.amount, 0);
 
-  return (
-    <div className="store-container">
-      <div style={{ maxWidth: "1000px", margin: "2rem auto" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1.5rem",
-            background: "var(--bg-secondary)",
-            padding: "1.25rem",
-            borderRadius: "12px",
-            border: "1px solid var(--border-color)",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            {walletOwner?.avatar_url && (
-              <img
-                src={walletOwner.avatar_url}
-                alt="Avatar"
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
-              />
-            )}
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "1.6rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <LayoutDashboard size={26} />{" "}
-                {walletOwner
-                  ? `${walletOwner.display_name}'s Wallet`
-                  : "Wallet"}
-              </h2>
-              <span
-                style={{
-                  fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <Clock size={14} /> Server Time:{" "}
-                {serverTime.toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
-          <button
-            className="btn btn-secondary"
-            onClick={() => navigate("/store")}
-            style={{
-              padding: "0.5rem 1rem",
-              border: "1px solid var(--color-danger)",
-              color: "var(--color-danger)",
-            }}
-            title="Exit Session"
-          >
-            <LogOut size={18} style={{ marginRight: "6px" }} /> Exit Session
-          </button>
-        </div>
+  const walletOwnerName =
+    walletOwner?.display_name || walletOwner?.username || "Current user";
+  const serverDate = serverTime.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const serverClock = serverTime.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const shellMeta = (
+    <>
+      <span className="wallet-page__meta-item">
+        <span className="wallet-page__meta-label">Owner</span>
+        <strong>{walletOwnerName}</strong>
+      </span>
+      <span className="wallet-page__meta-item">
+        <span className="wallet-page__meta-label">Server</span>
+        <strong>
+          {serverDate} {serverClock}
+        </strong>
+      </span>
+    </>
+  );
 
+  if (!canViewTargetWallet) {
+    return (
+      <StorePageShell
+        className="wallet-page"
+        title={
+          <span className="wallet-page__title">
+            <LayoutDashboard size={24} />
+            Wallet
+          </span>
+        }
+        backTo="/store"
+        backLabel="Exit Session"
+        meta={shellMeta}
+      >
+        <SecondaryCard className="wallet-page__notice">
+          You need store management permission to view another user's wallet
+          session.
+        </SecondaryCard>
+      </StorePageShell>
+    );
+  }
+
+  return (
+    <StorePageShell
+      className="wallet-page"
+      title={
+        <span className="wallet-page__title">
+          <LayoutDashboard size={24} />
+          Wallet
+        </span>
+      }
+      backTo="/store"
+      backLabel="Exit Session"
+      meta={shellMeta}
+    >
         <div
           style={{
             display: "grid",
@@ -680,7 +697,6 @@ export const WalletPage = () => {
             />
           </div>
         </div>
-      </div>
-    </div>
+    </StorePageShell>
   );
 };

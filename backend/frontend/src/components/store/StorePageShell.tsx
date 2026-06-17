@@ -9,6 +9,7 @@ interface StorePageShellProps {
   subtitle?: ReactNode;
   backTo?: string;
   backLabel?: string;
+  meta?: ReactNode;
   actions?: ReactNode;
   className?: string;
 }
@@ -19,19 +20,26 @@ export function StorePageShell({
   subtitle,
   backTo,
   backLabel = "Back to Store",
+  meta,
   actions,
   className = "",
 }: StorePageShellProps) {
   const hasHeader = title || subtitle || actions;
+  const hasBar = backTo || meta;
 
   return (
     <div className={`store-page-shell ${className}`}>
-      {backTo && (
-        <div className="store-page-shell__back">
-          <Link to={backTo} className="store-page-shell__back-link">
-            <ArrowLeft size={14} />
-            <span>{backLabel}</span>
-          </Link>
+      {hasBar && (
+        <div className="store-page-shell__bar">
+          {backTo ? (
+            <Link to={backTo} className="store-page-shell__back-link">
+              <ArrowLeft size={14} />
+              <span>{backLabel}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {meta && <div className="store-page-shell__meta">{meta}</div>}
         </div>
       )}
 
