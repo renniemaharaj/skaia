@@ -35,6 +35,9 @@ import type {
  CardContentAlign,
 } from "./types";
 import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
+import Tile from "../../components/input/Tile";
 import "./CardDesigner.css";
 
 interface CardDesignerProps {
@@ -205,18 +208,20 @@ export const CardDesigner = ({
  <div className="card-designer">
  <div className="card-designer__header">
  <span className="card-designer__title">Card Designer</span>
- <button
+ <Button
+ unstyled
  type="button"
  className="card-designer__reset"
  onClick={resetToDefault}
  >
  Reset
- </button>
+ </Button>
  </div>
 
  <div className="card-designer__body">
  <div className="card-designer__section">
- <button
+ <Button
+ unstyled
  type="button"
  className={`card-designer__section-toggle${openSections.has("card-settings") ? " expanded" : ""}`}
  onClick={() => toggleSection("card-settings")}
@@ -230,29 +235,31 @@ export const CardDesigner = ({
  </span>
  </div>
  <ChevronDown size={16} />
- </button>
+ </Button>
 
  {openSections.has("card-settings") && (
  <div className="card-designer__section-body">
  <div className="cd-ctrl-row">
  <span className="cd-ctrl">
  <label>Width</label>
- <select
+ <Select
  value={template.cardWidth}
  onChange={(e) =>
  updateTemplate({ cardWidth: e.target.value as CardWidth })
  }
+ size="sm"
+ variant="minimal"
  >
  {CARD_WIDTH_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </span>
  <span className="cd-ctrl">
  <label>Ratio</label>
- <select
+ <Select
  value={template.aspectRatio ?? "auto"}
  onChange={(e) =>
  updateTemplate({
@@ -262,47 +269,53 @@ export const CardDesigner = ({
  : e.target.value,
  })
  }
+ size="sm"
+ variant="minimal"
  >
  {ASPECT_RATIO_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </span>
  <span className="cd-ctrl">
  <label>Overflow</label>
- <select
+ <Select
  value={template.overflow ?? "hidden"}
  onChange={(e) =>
  updateTemplate({
  overflow: e.target.value as CardOverflow,
  })
  }
+ size="sm"
+ variant="minimal"
  >
  {OVERFLOW_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </span>
  <span className="cd-ctrl">
  <label>Align</label>
- <select
+ <Select
  value={template.contentAlign ?? "start"}
  onChange={(e) =>
  updateTemplate({
  contentAlign: e.target.value as CardContentAlign,
  })
  }
+ size="sm"
+ variant="minimal"
  >
  {CONTENT_ALIGN_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </span>
  </div>
 
@@ -344,7 +357,7 @@ export const CardDesigner = ({
  />
  </span>
  <span className="cd-range-label">Radius</span>
- <div className="cd-range-row" style={{ flex: 1, minWidth: 80 }}>
+ <div className="cd-range-row cd-range-row--grow">
  <input
  type="range"
  min={0}
@@ -363,12 +376,13 @@ export const CardDesigner = ({
 
  <div className="card-designer__style-grid">
  {CARD_STYLE_OPTIONS.map((opt) => (
- <button
+ <Tile
  key={opt.value}
- type="button"
+ variant="interactive"
  className={`card-designer__style-btn${
  template.cardStyle === opt.value ? " active" : ""
  }`}
+ selected={template.cardStyle === opt.value}
  onClick={() => updateTemplate({ cardStyle: opt.value })}
  title={opt.hint}
  >
@@ -380,7 +394,7 @@ export const CardDesigner = ({
  <span className="card-designer__style-name">
  {opt.label}
  </span>
- </button>
+ </Tile>
  ))}
  </div>
  </div>
@@ -388,7 +402,8 @@ export const CardDesigner = ({
  </div>
 
  <div className="card-designer__section">
- <button
+ <Button
+ unstyled
  type="button"
  className={`card-designer__section-toggle${openSections.has("spacing") ? " expanded" : ""}`}
  onClick={() => toggleSection("spacing")}
@@ -400,7 +415,7 @@ export const CardDesigner = ({
  </span>
  </div>
  <ChevronDown size={16} />
- </button>
+ </Button>
 
  {openSections.has("spacing") && (
  <div className="card-designer__section-body">
@@ -433,20 +448,22 @@ export const CardDesigner = ({
  </span>
  <span className="cd-ctrl">
  <label>Img pos</label>
- <select
+ <Select
  value={template.imagePosition}
  onChange={(e) =>
  updateTemplate({
  imagePosition: e.target.value as ImagePosition,
  })
  }
+ size="sm"
+ variant="minimal"
  >
  {IMAGE_POSITION_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </span>
  <span className="cd-ctrl">
  <label>Img H</label>
@@ -509,7 +526,8 @@ export const CardDesigner = ({
 
  {mode === "table" && (
  <div className="card-designer__section">
- <button
+ <Button
+ unstyled
  type="button"
  className={`card-designer__section-toggle${openSections.has("table-style") ? " expanded" : ""}`}
  onClick={() => toggleSection("table-style")}
@@ -523,12 +541,13 @@ export const CardDesigner = ({
  </span>
  </div>
  <ChevronDown size={16} />
- </button>
+ </Button>
 
  {openSections.has("table-style") && (
  <div className="card-designer__section-body">
  <div className="cd-ctrl-row">
- <button
+ <Button
+ unstyled
  type="button"
  className={`cd-toggle${template.tableStriped ? " active" : ""}`}
  onClick={() =>
@@ -537,8 +556,9 @@ export const CardDesigner = ({
  >
  <span className="cd-toggle__dot" />
  Striped
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  className={`cd-toggle${template.tableHover ? " active" : ""}`}
  onClick={() =>
@@ -547,8 +567,9 @@ export const CardDesigner = ({
  >
  <span className="cd-toggle__dot" />
  Hover
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  className={`cd-toggle${template.tableBordered ? " active" : ""}`}
  onClick={() =>
@@ -557,8 +578,9 @@ export const CardDesigner = ({
  >
  <span className="cd-toggle__dot" />
  Bordered
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  className={`cd-toggle${template.tableCompact ? " active" : ""}`}
  onClick={() =>
@@ -567,7 +589,7 @@ export const CardDesigner = ({
  >
  <span className="cd-toggle__dot" />
  Compact
- </button>
+ </Button>
  </div>
  </div>
  )}
@@ -575,7 +597,8 @@ export const CardDesigner = ({
  )}
 
  <div className="card-designer__section">
- <button
+ <Button
+ unstyled
  type="button"
  className={`card-designer__section-toggle${openSections.has("custom-css") ? " expanded" : ""}`}
  onClick={() => toggleSection("custom-css")}
@@ -587,7 +610,7 @@ export const CardDesigner = ({
  </span>
  </div>
  <ChevronDown size={16} />
- </button>
+ </Button>
 
  {openSections.has("custom-css") && (
  <div className="card-designer__section-body">
@@ -620,7 +643,8 @@ export const CardDesigner = ({
  </div>
 
  <div className="card-designer__section">
- <button
+ <Button
+ unstyled
  type="button"
  className={`card-designer__section-toggle${openSections.has("zones") ? " expanded" : ""}`}
  onClick={() => toggleSection("zones")}
@@ -632,7 +656,7 @@ export const CardDesigner = ({
  </span>
  </div>
  <ChevronDown size={16} />
- </button>
+ </Button>
 
  {openSections.has("zones") && (
  <div className="card-designer__section-body">
@@ -674,7 +698,8 @@ export const CardDesigner = ({
  <div className="card-designer__zone-align">
  {(["left", "center", "right"] as ZoneAlign[]).map(
  (a) => (
- <button
+ <Button
+ unstyled
  key={a}
  type="button"
  className={`action-btn ${zone.align === a ? " active" : ""}`}
@@ -686,14 +711,15 @@ export const CardDesigner = ({
  {a === "left" && <AlignLeft size={12} />}
  {a === "center" && <AlignCenter size={12} />}
  {a === "right" && <AlignRight size={12} />}
- </button>
+ </Button>
  ),
  )}
  </div>
 
  <div className="card-designer__zone-size">
  {ZONE_SIZE_OPTIONS.map((opt) => (
- <button
+ <Button
+ unstyled
  key={opt.value}
  type="button"
  className={`card-designer__size-btn${zone.size === opt.value ? " active" : ""}`}
@@ -702,11 +728,12 @@ export const CardDesigner = ({
  }
  >
  {opt.label}
- </button>
+ </Button>
  ))}
  </div>
 
- <button
+ <Button
+ unstyled
  type="button"
  className="action-btn "
  disabled={visualIndex === 0}
@@ -719,8 +746,9 @@ export const CardDesigner = ({
  title="Move up"
  >
  <ChevronUp size={12} />
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  className="action-btn "
  disabled={visualIndex === bodyZoneIndices.length - 1}
@@ -733,9 +761,10 @@ export const CardDesigner = ({
  title="Move down"
  >
  <ChevronDown size={12} />
- </button>
+ </Button>
 
- <button
+ <Button
+ unstyled
  type="button"
  className={`action-btn ${zone.visible ? "" : " danger"}`}
  onClick={() =>
@@ -748,7 +777,7 @@ export const CardDesigner = ({
  ) : (
  <EyeOff size={12} />
  )}
- </button>
+ </Button>
  </div>
  );
  })}

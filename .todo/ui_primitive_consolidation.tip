@@ -5,12 +5,26 @@
 ### Current Progress
 - **Phase 1: Primitive Components** — ✅ Complete
 - **Phase 2: Input & Control Standardization** — ✅ Complete
-- **Phase 3: Route & Layout Consolidation** — ⬜ Not started
-- **Phase 4: Design Token Hardening** — ⬜ Not started
+- **Phase 3: Route & Layout Consolidation** — ✅ Builder/editor target slice complete
+- **Phase 4: Design Token Hardening** — 🔄 Started
 
 ### Next Steps
 - [x] 2026-06-09: `DerivedSectionBlock` and `CustomSectionBlock` now share the registered component picker/bind mapper path used by datasource previews.
-- [ ] Continue Phase 3: Builder & Editor Standardization — Convert remaining Component Picker UI in DataSourceEditorPage, PageBuilder, CardDesigner, and ColumnMapper to use new primitives.
-- [ ] Begin Phase 4: CSS Token Standardization — Audit `index.css` tokens, remove legacy inline styles and one-off classes.
+- [x] 2026-06-17: Continued Phase 3 builder/editor standardization.
+  - `DataSourceEditorPage` now uses `Button`/`Select` for editor topbar actions, cache selector, result tabs, component registry tab, save-section controls, and save-section dialog actions.
+  - `PageBuilder` admin toolbar, landing dropdown, more-menu actions, engagement like/analytics controls, and visibility selector now use `Button`/`Select`.
+  - `CardDesigner` now uses `Button` for reset/accordion/toggle/zone controls, `Select` for compact dropdowns, and `Tile` for card style choices.
+  - `ColumnMapper` and `ComponentBindMapper` now use `Select` and `Button`; component bind inline styles moved to `ColumnMapper.css`.
+  - `Button` primitive now renders plain children directly unless icon/loading slots require the label wrapper, preserving complex custom button layouts.
+- [x] 2026-06-17: Started Phase 4 token hardening for touched surfaces.
+  - Moved static DataSource component picker/preview styles, fetch chevron color, skipped-count color, PageBuilder empty/error state styles, PageBuilder reset danger color, and CardDesigner radius-row sizing out of JSX into CSS.
+  - Targeted grep confirms no raw `<button>`, `<select>`, or checkbox controls remain in `DataSourceEditorPage`, `PageBuilder`, `CardDesigner`, `ColumnMapper`, or `ComponentBindMapper`.
+  - Targeted grep confirms no `.btn-custom`, `.select-box`, `.cd-ctrl select`, or `.column-mapper-slot-value select` legacy selectors remain in the touched CSS paths.
+  - Verification: `mise exec node@24.16.0 -- npm run build` passes (`tsc -b && vite build`); Vite reports existing large chunk warnings only.
+- [x] 2026-06-17: Correctness/auditor diff follow-up fixed a visual regression in the initial migration.
+  - Finding: migrated custom-class buttons were rendered through `Button` without preserving visual ownership, so the primitive default `primary` styling could alter compact/action/source button appearances.
+  - Fix: added `unstyled` support to `Button` and applied it to migrated custom-class button call sites in the touched datasource/page-builder/card-designer/mapper surfaces.
+  - Verification: targeted PCRE2 grep confirms no migrated custom-class `Button` in the touched files lacks `unstyled`; `mise exec node@24.16.0 -- npm run build` passes.
+- [ ] Continue Phase 4: Broaden token/inline-style audit beyond the touched builder/editor files, including global `index.css` checkbox rules and remaining page-builder/layout block inline styles.
 
 <--/------->

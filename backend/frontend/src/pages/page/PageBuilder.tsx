@@ -25,6 +25,8 @@ import PageComments from "../../components/page/PageComments";
 import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 import "./PageBuilder.css";
 import "../../components/ui/FeatureCard.css";
 
@@ -695,8 +697,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  if (error && !canEdit) {
  return (
  <div className="pb-container">
- <div style={{ textAlign: "center", padding: "4rem 1rem" }}>
- <p style={{ color: "var(--color-danger, #e74c3c)" }}>
+ <div className="pb-state pb-state--error">
+ <p>
  {slug ? `Page not found: ${error}` : "No landing page configured."}
  </p>
  </div>
@@ -717,8 +719,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  return (
  <PageBuilderContext.Provider value={contextValue}>
  <div className="pb-container">
- <div style={{ textAlign: "center", padding: "3rem 1rem 1rem" }}>
- <p style={{ opacity: 0.6 }}>
+ <div className="pb-state pb-state--new">
+ <p>
  This page doesn&apos;t exist yet. Start building to create it.
  </p>
  </div>
@@ -746,7 +748,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  <div className="page-admin-bar page-admin-bar--menu">
  {canChangeVisibility && page && (
  <div className="page-admin-visibility">
- <select
+ <Select
  id="page-visibility"
  className="page-admin-select"
  value={page.visibility || "public"}
@@ -766,13 +768,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  <option value="public">Public</option>
  <option value="private">Private</option>
  <option value="unlisted">Unlisted</option>
- </select>
+ </Select>
  </div>
  )}
 
  {isAdmin && !slug && (
  <div className="page-admin-dropdown-wrap">
- <button
+ <Button
+ unstyled
  type="button"
  className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
  onClick={() => setLandingDropdownOpen((v) => !v)}
@@ -780,11 +783,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  >
  {landingPageLabel}
  <ChevronDown size={14} />
- </button>
+ </Button>
  {landingDropdownOpen && (
  <div className="page-admin-dropdown">
  {allPages.map((p) => (
- <button
+ <Button
+ unstyled
  key={p.id}
  className="page-admin-dropdown-item"
  onClick={() => {
@@ -798,7 +802,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  >
  {p.title || p.slug}
  {p.slug === landingPageSlug && " (Current)"}
- </button>
+ </Button>
  ))}
  </div>
  )}
@@ -806,18 +810,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  )}
 
  {canDelete && page?.id && (
- <button
+ <Button
+ unstyled
  type="button"
  className="page-admin-btn page-admin-btn--danger"
  onClick={handleDeletePage}
  title="Delete this page"
  >
  Delete
- </button>
+ </Button>
  )}
 
  {canArmSite && (
- <button
+ <Button
+ unstyled
  type="button"
  className={`page-admin-btn ${
  isArmed ? "page-admin-btn--success" : "page-admin-btn--danger"
@@ -833,35 +839,38 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  : isArmed
  ? "Disarm site"
  : "Arm site"}
- </button>
+ </Button>
  )}
 
  {sandboxToggleIsStandalone && (
- <button
+ <Button
+ unstyled
  type="button"
  className="page-admin-btn"
  onClick={() => setGuestSandboxEnabled((current) => !current)}
  >
  {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
- </button>
+ </Button>
  )}
 
  {(showOwnershipBtn ||
  (isAdmin && !slug) ||
  (!sandboxToggleIsStandalone && canShowSandboxToggle)) && (
  <div className="page-admin-more-wrap" ref={moreRef}>
- <button
+ <Button
+ unstyled
  type="button"
  className={`action-btn page-admin-more-btn${moreOpen ? " active" : ""}`}
  onClick={() => setMoreOpen((v) => !v)}
  title="More actions"
  >
  <MoreHorizontal size={18} />
- </button>
+ </Button>
  {moreOpen && (
  <div className="page-admin-more-dropdown">
  {showOwnershipBtn && (
- <button
+ <Button
+ unstyled
  type="button"
  className="page-admin-more-item"
  onClick={() => {
@@ -870,10 +879,11 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  }}
  >
  Manage page ownership
- </button>
+ </Button>
  )}
  {showOwnershipBtn && page?.id && (
- <button
+ <Button
+ unstyled
  type="button"
  className="page-admin-more-item"
  onClick={() => {
@@ -882,7 +892,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  }}
  >
  Page Analytics
- </button>
+ </Button>
  )}
  {isAdmin && !slug && (
  <>
@@ -900,10 +910,10 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  >
  Roles
  </Link>
- <button
+ <Button
+ unstyled
  type="button"
- className="page-admin-more-item"
- style={{ color: "var(--color-danger, #e74c3c)" }}
+ className="page-admin-more-item page-admin-more-item--danger"
  disabled={resetInProgress}
  onClick={() => {
  setMoreOpen(false);
@@ -911,11 +921,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  }}
  >
  {resetInProgress ? "Resetting…" : "Reset all pages"}
- </button>
+ </Button>
  </>
  )}
  {!isEditable && !sandboxToggleIsStandalone && (
- <button
+ <Button
+ unstyled
  type="button"
  className="page-admin-more-item"
  onClick={() => {
@@ -928,7 +939,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  {guestSandboxEnabled
  ? "Disable sandbox"
  : "Enable sandbox"}
- </button>
+ </Button>
  )}
  </div>
  )}
@@ -952,7 +963,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  <span className="page-engagement-stat">
  <Eye size={14} /> {page.view_count ?? 0} views
  </span>
- <button
+ <Button
+ unstyled
  className={`page-engagement-like${pageIsLiked ? " liked" : ""}`}
  onClick={handleLikePage}
  disabled={!isAuthenticated}
@@ -960,19 +972,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
  >
  <ThumbsUp size={14} />
  {pageLikes > 0 && <span>{pageLikes}</span>}
- </button>
+ </Button>
  <span className="page-engagement-stat">
  {page.comment_count ?? 0} comments
  </span>
  {slug && (isAdmin || isOwner) && (
- <button
+ <Button
+ unstyled
  type="button"
  className="action-btn page-engagement-analytics"
  onClick={() => setShowAnalytics(true)}
  title="Page analytics"
  >
  <BarChart3 size={14} />
- </button>
+ </Button>
  )}
  </div>
  )}

@@ -16,6 +16,8 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual variant. */
   variant?: ButtonVariant;
+  /** Let an existing class fully own visual styling. */
+  unstyled?: boolean;
   /** Size preset. */
   size?: ButtonSize;
   /** Render as a full-width block button. */
@@ -41,6 +43,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       variant = "primary",
+      unstyled = false,
       size = "md",
       block = false,
       pill = false,
@@ -55,17 +58,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
-    const classes = [
-      "sk-btn",
-      `sk-btn--${variant}`,
-      `sk-btn--${size}`,
-      block && "sk-btn--block",
-      pill && "sk-btn--pill",
-      loading && "sk-btn--loading",
-      className,
-    ]
-      .filter(Boolean)
-      .join(" ");
+    const classes = unstyled
+      ? className
+      : [
+          "sk-btn",
+          `sk-btn--${variant}`,
+          `sk-btn--${size}`,
+          block && "sk-btn--block",
+          pill && "sk-btn--pill",
+          loading && "sk-btn--loading",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ");
 
     return (
       <button
@@ -80,7 +85,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {!loading && iconLeft && (
           <span className="sk-btn__icon">{iconLeft}</span>
         )}
-        {children && <span className="sk-btn__label">{children}</span>}
+        {children &&
+          (iconLeft || iconRight || loading ? (
+            <span className="sk-btn__label">{children}</span>
+          ) : (
+            children
+          ))}
         {!loading && iconRight && (
           <span className="sk-btn__icon">{iconRight}</span>
         )}

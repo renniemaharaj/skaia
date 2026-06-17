@@ -785,6 +785,27 @@
  border-color: var(--primary-color);
 }
 
+.ds-component-picker {
+ padding: 1rem;
+ background: var(--bg-secondary);
+ border: 1px solid var(--border-color);
+ border-radius: 8px;
+ margin-bottom: 1rem;
+}
+
+.ds-component-picker__hooks {
+ margin-top: 1rem;
+}
+
+.ds-component-preview {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: flex-start;
+ gap: var(--ds-component-gap, 8px);
+ margin-top: 1rem;
+ position: relative;
+}
+
 /* Error display */
 .ds-editor__error {
  display: flex;
@@ -845,6 +866,15 @@
 
 .ds-diagnostic__message {
  color: var(--text-primary);
+}
+
+.ds-run-stat__skipped {
+ color: var(--warning-color);
+}
+
+.ds-fetch-entry__chevron {
+ flex-shrink: 0;
+ color: var(--text-secondary);
 }
 
 /* Spin animation */

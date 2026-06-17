@@ -1,5 +1,6 @@
 import { customConfirm } from "../../components/ui/Prompt";
 import {
+ type CSSProperties,
  useCallback,
  useEffect,
  useMemo,
@@ -41,6 +42,8 @@ import { ComponentGroupEditor, ComponentGroupRenderer } from "../page/ComponentG
 import { EventHookEditor } from "../page/EventHookEditor";
 import { toast } from "sonner";
 import TabbedEditor from "../../components/page/TabbedEditor";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 import "./DataSources.css";
 
 interface CompileResult {
@@ -591,15 +594,17 @@ export default function DataSourceEditorPage() {
  >
  {/* Top bar */}
  <div className="ds-editor__topbar">
- <button
+ <Button
+ unstyled
  onClick={() => navigate("/datasources")}
  className="ds-editor__back-btn"
  >
  <ArrowLeft size={16} /> Data Sources
- </button>
+ </Button>
  <div className="ds-editor__topbar-actions">
  <div className="ds-editor__layout-controls">
- <button
+ <Button
+ unstyled
  type="button"
  aria-pressed={layoutMode === "wide"}
  className={`ds-editor__layout-btn ${layoutMode === "wide" ? "active" : ""}`}
@@ -610,8 +615,9 @@ export default function DataSourceEditorPage() {
  aria-label="Wide focus mode"
  >
  <Maximize2 size={16} />
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  aria-pressed={layoutMode === "center"}
  className={`ds-editor__layout-btn ${layoutMode === "center" ? "active" : ""}`}
@@ -624,8 +630,9 @@ export default function DataSourceEditorPage() {
  aria-label="Centered focus mode"
  >
  <AlignCenterHorizontal size={16} />
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  type="button"
  aria-pressed={heightMode}
  className={`ds-editor__layout-btn ${heightMode ? "active" : ""}`}
@@ -634,9 +641,10 @@ export default function DataSourceEditorPage() {
  aria-label="Proportional height mode"
  >
  <MoveVertical size={16} />
- </button>
+ </Button>
  </div>
- <button
+ <Button
+ unstyled
  className="ds-editor__run-btn"
  onClick={handleRun}
  disabled={compiling || !mainCode.trim()}
@@ -647,23 +655,25 @@ export default function DataSourceEditorPage() {
  <Play size={14} />
  )}
  {compiling ? "Running…" : "Run"}
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  className="ds-editor__save-btn"
  onClick={handleSave}
  disabled={saving}
  >
  <Save size={14} />
  {saving ? "Saving…" : "Save"}
- </button>
+ </Button>
  {!isNew && (
- <button
+ <Button
+ unstyled
  className="action-btn danger"
  onClick={handleDelete}
  title="Delete data source"
  >
  <Trash2 size={14} />
- </button>
+ </Button>
  )}
  </div>
  </div>
@@ -690,17 +700,18 @@ export default function DataSourceEditorPage() {
  </div>
  <div className="ds-editor__field ds-editor__field--cache">
  <label>Cache</label>
- <select
+ <Select
  value={cacheTTL}
  onChange={(e) => setCacheTTL(Number(e.target.value))}
  className="ds-editor__cache-select"
+ size="sm"
  >
  {CACHE_TTL_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>
  {opt.label}
  </option>
  ))}
- </select>
+ </Select>
  </div>
  </div>
 
@@ -728,7 +739,8 @@ export default function DataSourceEditorPage() {
  {/* Right: Results panel */}
  <div className="ds-editor__results-panel">
  <div className="ds-editor__panel-tabs">
- <button
+ <Button
+ unstyled
  className={`ds-editor__tab ${activePanel === "preview" ? "ds-editor__tab--active" : ""}`}
  onClick={() => setActivePanel("preview")}
  >
@@ -738,14 +750,16 @@ export default function DataSourceEditorPage() {
  {previewItems.length}
  </span>
  )}
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  className={`ds-editor__tab ${activePanel === "compiled" ? "ds-editor__tab--active" : ""}`}
  onClick={() => setActivePanel("compiled")}
  >
  <FileJson size={13} /> Compiled JS
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  className={`ds-editor__tab ${activePanel === "diagnostics" ? "ds-editor__tab--active" : ""}`}
  onClick={() => setActivePanel("diagnostics")}
  >
@@ -755,7 +769,7 @@ export default function DataSourceEditorPage() {
  {issuesBadgeCount || "!"}
  </span>
  )}
- </button>
+ </Button>
 
  {lastRunAt && (
  <div className="ds-editor__last-updated">
@@ -778,17 +792,18 @@ export default function DataSourceEditorPage() {
   {previewItems.length > 0 && (
   <div className="ds-preview__toolbar">
   <div className="ds-preview__type-tabs">
-  <button className="ds-preview__type-tab ds-preview__type-tab--active">
+  <Button unstyled className="ds-preview__type-tab ds-preview__type-tab--active">
   <LayoutGrid size={13} /> Component Registry
-  </button>
+  </Button>
   </div>
   {!isNew && (
-  <button
+  <Button
+  unstyled
   className="ds-preview__save-section-btn"
   onClick={() => setShowSaveSection((v) => !v)}
   >
   <Bookmark size={13} /> Save as Section
-  </button>
+  </Button>
   )}
   </div>
   )}
@@ -842,7 +857,7 @@ export default function DataSourceEditorPage() {
   )}
 
   {previewItems.length > 0 && (
-  <div className="ds-component-picker" style={{ padding: "16px", backgroundColor: "var(--bg-secondary)", borderRadius: "8px", marginBottom: "16px" }}>
+  <div className="ds-component-picker">
   <ComponentGroupEditor
   group={componentGroup}
   components={componentsList}
@@ -850,14 +865,17 @@ export default function DataSourceEditorPage() {
   firstRow={previewItems[0] || null}
   onChange={setComponentGroup}
   />
-  <div style={{ marginTop: "16px" }}>
+  <div className="ds-component-picker__hooks">
   <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
   </div>
   </div>
   )}
 
   {previewItems.length > 0 && (
-  <div style={{ display: "flex", flexWrap: "wrap", gap: componentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+  <div
+  className="ds-component-preview"
+  style={{ "--ds-component-gap": `${componentGroup.gap}px` } as CSSProperties}
+  >
   {previewItems.map((row, i) => (
   <ComponentGroupRenderer
   key={i}
@@ -984,7 +1002,7 @@ function RunSummaryCard({ runStats }: { runStats: RunStats }) {
  <>
  {" "}
  (
- <strong style={{ color: "#f59e0b" }}>
+ <strong className="ds-run-stat__skipped">
  {runStats.skippedItems}
  </strong>{" "}
  skipped)
@@ -1053,15 +1071,9 @@ function FetchLogPanel({
  </span>
  )}
  {expanded ? (
- <ChevronDown
- size={13}
- style={{ flexShrink: 0, color: "var(--text-secondary)" }}
- />
+ <ChevronDown size={13} className="ds-fetch-entry__chevron" />
  ) : (
- <ChevronRight
- size={13}
- style={{ flexShrink: 0, color: "var(--text-secondary)" }}
- />
+ <ChevronRight size={13} className="ds-fetch-entry__chevron" />
  )}
  </div>
  {expanded &&
@@ -1110,13 +1122,14 @@ function SaveAsSectionForm({
  <div className="ds-save-section">
  <div className="ds-save-section__header">
  <span>Save as Custom Section</span>
- <button
+ <Button
+ unstyled
  className="action-btn "
  onClick={onClose}
  title="Close"
  >
  <X size={14} />
- </button>
+ </Button>
  </div>
  <div className="ds-save-section__body">
  <div className="ds-save-section__field">
@@ -1141,10 +1154,11 @@ function SaveAsSectionForm({
  Type: <strong>{DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}</strong>
  </div>
  <div className="ds-save-section__actions">
- <button className="ds-save-section__cancel" onClick={onClose}>
+ <Button unstyled className="ds-save-section__cancel" onClick={onClose}>
  Cancel
- </button>
- <button
+ </Button>
+ <Button
+ unstyled
  className="ds-save-section__submit"
  onClick={onSubmit}
  disabled={saving || !sectionName.trim()}
@@ -1155,7 +1169,7 @@ function SaveAsSectionForm({
  <Save size={13} />
  )}
  {saving ? "Saving…" : "Save Section"}
- </button>
+ </Button>
  </div>
  </div>
  </div>

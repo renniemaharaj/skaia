@@ -29,6 +29,26 @@
   padding: 0;
 }
 
+.pb-state {
+  text-align: center;
+}
+
+.pb-state--error {
+  padding: 4rem 1rem;
+}
+
+.pb-state--error p {
+  color: var(--error-color);
+}
+
+.pb-state--new {
+  padding: 3rem 1rem 1rem;
+}
+
+.pb-state--new p {
+  opacity: 0.6;
+}
+
 /* Guest sandbox */
 
 .guest-sandbox {
@@ -289,6 +309,15 @@
   color: var(--primary-color);
 }
 
+.page-admin-more-item--danger {
+  color: var(--error-color);
+}
+
+.page-admin-more-item--danger:hover {
+  background: var(--error-bg);
+  color: var(--error-color);
+}
+
 .page-admin-visibility {
   display: inline-flex;
   align-items: center;
@@ -306,6 +335,9 @@
 
 .page-admin-select {
   min-width: 140px;
+}
+
+.page-admin-select .sk-select__native {
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;

@@ -294,6 +294,10 @@
     background 140ms ease;
 }
 
+.card-designer__style-btn.sk-tile {
+  align-items: stretch;
+}
+
 .card-designer__style-btn:hover {
   background: color-mix(in srgb, var(--bg-color) 90%, var(--bg-secondary));
 }
@@ -536,14 +540,24 @@
 }
 
 .cd-ctrl input[type="number"]:focus,
-.cd-ctrl select:focus {
+.cd-ctrl .sk-select__native:focus {
   background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-color));
 }
 
-.cd-ctrl select {
+.cd-ctrl .sk-select {
+  min-width: 0;
+}
+
+.cd-ctrl .sk-select__wrapper {
   height: 26px;
-  padding: 0 2px 0 4px;
-  margin-top: 0.77rem;
+  min-height: 0;
+  border: none;
+  background: transparent;
+}
+
+.cd-ctrl .sk-select__native {
+  height: 26px;
+  padding: 0 22px 0 4px;
   font-size: 0.7rem;
   border: none;
   background: transparent;
@@ -551,6 +565,12 @@
   outline: none;
   cursor: pointer;
   min-width: 0;
+}
+
+.cd-ctrl .sk-select__arrow {
+  right: 4px;
+  width: 12px;
+  height: 12px;
 }
 
 /* Compact toggle pills */
@@ -606,6 +626,11 @@
   align-items: center;
   gap: 6px;
   height: 26px;
+}
+
+.cd-range-row--grow {
+  flex: 1;
+  min-width: 80px;
 }
 
 .cd-range-row input[type="range"] {

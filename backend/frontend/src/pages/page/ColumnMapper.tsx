@@ -8,6 +8,8 @@
  */
 import { useCallback, useState } from "react";
 import { X, GripHorizontal } from "lucide-react";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 import type { ColumnMap, MappableField } from "./types";
 import { MAPPABLE_FIELDS, MAPPABLE_FIELD_LABELS } from "./types";
 import "./ColumnMapper.css";
@@ -132,9 +134,12 @@ export const ColumnMapper = ({
                 {MAPPABLE_FIELD_LABELS[field]}
               </span>
               <span className="column-mapper-slot-value">
-                <select
+                <Select
                   value={mapped ?? ""}
                   onChange={(e) => handleSelect(field, e.target.value)}
+                  size="sm"
+                  variant="minimal"
+                  block
                 >
                   <option value="">— none —</option>
                   {availableColumns.map((col) => (
@@ -142,17 +147,18 @@ export const ColumnMapper = ({
                       {col}
                     </option>
                   ))}
-                </select>
+                </Select>
               </span>
               {mapped && (
-                <button
+                <Button
+                  unstyled
                   type="button"
                   className="column-mapper-slot-clear"
                   onClick={() => handleClear(field)}
                   title="Clear mapping"
                 >
                   <X size={14} />
-                </button>
+                </Button>
               )}
             </div>
           );

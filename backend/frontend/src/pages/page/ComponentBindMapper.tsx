@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { X, GripHorizontal } from "lucide-react";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 import type { ComponentDefinition, BindPoint } from "./types";
 import "./ColumnMapper.css"; // Reuse the same styles
 
@@ -70,7 +72,7 @@ export const ComponentBindMapper = ({
   );
 
   return (
-    <div className="column-mapper" style={{ marginTop: 16 }}>
+    <div className="column-mapper column-mapper--component-bind">
       <div className="column-mapper-header">
         <span className="column-mapper-title">
           Bind Data to {component.label}
@@ -112,21 +114,24 @@ export const ComponentBindMapper = ({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, bp.key)}
             >
-              <div style={{ display: "flex", flexDirection: "column" }}>
+              <div className="column-mapper-slot-meta">
                 <span className="column-mapper-slot-label">
                   {bp.label}{" "}
                   {bp.required && (
-                    <span style={{ color: "var(--error-color)" }}>*</span>
+                    <span className="column-mapper-required">*</span>
                   )}
                 </span>
-                <span style={{ fontSize: 10, color: "var(--text-secondary)" }}>
+                <span className="column-mapper-slot-kind">
                   {bp.kind}
                 </span>
               </div>
               <span className="column-mapper-slot-value">
-                <select
+                <Select
                   value={mapped ?? ""}
                   onChange={(e) => handleSelect(bp.key, e.target.value)}
+                  size="sm"
+                  variant="minimal"
+                  block
                 >
                   <option value="">— none —</option>
                   {availableColumns.map((col) => (
@@ -134,17 +139,18 @@ export const ComponentBindMapper = ({
                       {col}
                     </option>
                   ))}
-                </select>
+                </Select>
               </span>
               {mapped && (
-                <button
+                <Button
+                  unstyled
                   type="button"
                   className="column-mapper-slot-clear"
                   onClick={() => handleClear(bp.key)}
                   title="Clear mapping"
                 >
                   <X size={14} />
-                </button>
+                </Button>
               )}
             </div>
           );
