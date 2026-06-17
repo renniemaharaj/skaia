@@ -1,4 +1,4 @@
-import { ClipboardList, Plus, StoreIcon, Trash2, Wallet } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Wallet } from "lucide-react";
 import type { StoreCategory } from "../../atoms/store";
 
 interface StoreCategoryBarProps {
@@ -27,7 +27,6 @@ export function StoreCategoryBar({
   return (
     <div className="categories-bar">
       <div className="category-list">
-        <StoreIcon className="category-icon" size={24} />
         <button
           type="button"
           className={`category-button ${!selectedCategoryId ? "category-active" : ""}`}
@@ -35,7 +34,7 @@ export function StoreCategoryBar({
         >
           All
         </button>
-        {categories.map(cat => (
+        {categories.map((cat) => (
           <div key={cat.id} className="category-item">
             <button
               type="button"
