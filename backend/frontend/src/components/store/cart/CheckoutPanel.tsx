@@ -94,7 +94,7 @@ export function CheckoutPanel({
         {!isAuthenticated && (
           <div className="cart-summary-section">
             <h4>Guest Information</h4>
-            <label className="cart-field">
+            <label className="cart-field cart-field--compact">
               <span className="cart-field-label">Email address</span>
               <div className="input-group">
                 <Mail size={15} />

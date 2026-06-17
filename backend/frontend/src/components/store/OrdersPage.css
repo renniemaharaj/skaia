@@ -35,7 +35,7 @@
 .reference-code-form {
   display: grid;
   grid-template-columns:
-    minmax(120px, 1fr) minmax(220px, 1.6fr) minmax(130px, 1fr)
+    minmax(10rem, 12rem) minmax(220px, 1fr) minmax(8rem, 9rem)
     auto auto auto;
   gap: 0.75rem;
   align-items: center;
@@ -86,6 +86,12 @@
 
 .reference-code-input--amount {
   font-variant-numeric: tabular-nums;
+}
+
+.reference-code-input--code,
+.reference-code-input--amount {
+  justify-self: stretch;
+  max-width: 100%;
 }
 
 .reference-code-selected-user {

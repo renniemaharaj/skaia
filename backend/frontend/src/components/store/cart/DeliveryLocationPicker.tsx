@@ -63,7 +63,7 @@ export function DeliveryLocationPicker({
   return (
     <div className="cart-summary-section">
       <h4>Order Contact</h4>
-      <label className="cart-field">
+      <label className="cart-field cart-field--compact">
         <span className="cart-field-label">Contact phone</span>
         <div className="input-group">
           <Phone size={15} />
@@ -114,7 +114,7 @@ export function DeliveryLocationPicker({
           </label>
 
           <div className="cart-datetime-row">
-            <label className="cart-field">
+            <label className="cart-field cart-field--date">
               <span className="cart-field-label">Delivery date</span>
               <input
                 type="date"
@@ -123,7 +123,7 @@ export function DeliveryLocationPicker({
                 title="Delivery Date"
               />
             </label>
-            <label className="cart-field">
+            <label className="cart-field cart-field--time">
               <span className="cart-field-label">Delivery time</span>
               <input
                 type="time"
@@ -146,7 +146,7 @@ export function DeliveryLocationPicker({
         </div>
       )}
 
-      <label className="cart-field cart-referral-field">
+      <label className="cart-field cart-field--code cart-referral-field">
         <span className="cart-field-label">Referral code</span>
         <div className="input-group">
           <input

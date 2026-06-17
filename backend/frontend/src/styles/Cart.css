@@ -348,6 +348,24 @@
   margin-top: 0.75rem;
 }
 
+.cart-field--compact {
+  width: 100%;
+  max-width: 22rem;
+}
+
+.cart-field--code {
+  width: 100%;
+  max-width: 16rem;
+}
+
+.cart-field--date {
+  flex: 0 1 13rem;
+}
+
+.cart-field--time {
+  flex: 0 1 10rem;
+}
+
 .cart-field-label {
   color: var(--text-secondary);
   font-size: 0.78rem;
@@ -426,7 +444,7 @@
   margin-bottom: 0;
 }
 
-.cart-datetime-row .cart-field {
+.cart-datetime-row .cart-field:not(.cart-field--date):not(.cart-field--time) {
   flex: 1;
 }
 
@@ -529,7 +547,8 @@
 
 /* ── Submit button ── */
 .cart-submit-btn {
-  width: 100%;
+  width: min(100%, 18rem);
+  margin-left: auto;
   padding: 0.75rem;
   font-size: 0.95rem;
   display: flex;
@@ -869,6 +888,15 @@
   .cart-select,
   .cart-textarea,
   .cart-datetime-row input {
+    width: 100%;
+  }
+
+  .cart-field--compact,
+  .cart-field--code,
+  .cart-field--date,
+  .cart-field--time,
+  .cart-submit-btn {
+    max-width: 100%;
     width: 100%;
   }
 
