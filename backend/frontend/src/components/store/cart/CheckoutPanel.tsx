@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { formatCents } from "../../../utils/money";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
 import { SavedCheckoutCard } from "./SavedCheckoutCard";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 
 export type WalletCard = {
   id: string;
@@ -72,29 +73,36 @@ export function CheckoutPanel({
   onUseSavedCheckout,
 }: CheckoutPanelProps) {
   return (
-    <div className="card card--outlined cart-summary">
+    <div className="cart-summary cart-checkout-panel">
       <h3>Checkout</h3>
 
       {!isAuthenticated && (
         <div className="cart-summary-section">
           <h4>Guest Information</h4>
-          <div className="input-group">
-            <Mail size={15} />
-            <input
-              type="email"
-              placeholder="Email address"
-              value={guestEmail}
-              onChange={event => onGuestEmailChange(event.target.value)}
-            />
-          </div>
+          <label className="cart-field">
+            <span className="cart-field-label">Email address</span>
+            <div className="input-group">
+              <Mail size={15} />
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={guestEmail}
+                onChange={(event) => onGuestEmailChange(event.target.value)}
+              />
+            </div>
+          </label>
           <p className="cart-help-text">
-            <Link to="/login">Sign in</Link> to save your details and earn rewards.
+            <Link to="/login">Sign in</Link> to save your details and earn
+            rewards.
           </p>
         </div>
       )}
 
       {isAuthenticated && rememberBilling && (
-        <SavedCheckoutCard details={savedCheckoutInfo} onUseSavedCheckout={onUseSavedCheckout} />
+        <SavedCheckoutCard
+          details={savedCheckoutInfo}
+          onUseSavedCheckout={onUseSavedCheckout}
+        />
       )}
 
       <DeliveryLocationPicker
@@ -115,20 +123,26 @@ export function CheckoutPanel({
 
       <div className="cart-summary-section">
         <h4>Payment</h4>
-        <select
-          className="cart-select"
-          value={paymentMethod}
-          onChange={event => onPaymentMethodChange(event.target.value)}
-        >
-          <option value="delivery_cash">Payment on Delivery (Cash)</option>
-          {isAuthenticated && <option value="wallet">Store Wallet Balance</option>}
-          {isAuthenticated &&
-            userCards.map(card => (
-              <option key={card.id} value={`card_${card.id}`} disabled>
-                {card.card_name} (ending in {card.card_number.slice(-4)}) - Disabled
-              </option>
-            ))}
-        </select>
+        <label className="cart-field">
+          <span className="cart-field-label">Payment method</span>
+          <select
+            className="cart-select"
+            value={paymentMethod}
+            onChange={(event) => onPaymentMethodChange(event.target.value)}
+          >
+            <option value="delivery_cash">Payment on Delivery (Cash)</option>
+            {isAuthenticated && (
+              <option value="wallet">Store Wallet Balance</option>
+            )}
+            {isAuthenticated &&
+              userCards.map((card) => (
+                <option key={card.id} value={`card_${card.id}`} disabled>
+                  {card.card_name} (ending in {card.card_number.slice(-4)}) -
+                  Disabled
+                </option>
+              ))}
+          </select>
+        </label>
 
         {isAuthenticated && paymentMethod === "delivery_cash" && (
           <>
@@ -136,17 +150,22 @@ export function CheckoutPanel({
               <input
                 type="checkbox"
                 checked={rememberBilling}
-                onChange={event => onRememberBillingChange(event.target.checked)}
+                onChange={(event) =>
+                  onRememberBillingChange(event.target.checked)
+                }
               />
               Remember billing information
             </label>
             {rememberBilling && (
-              <textarea
-                className="cart-textarea"
-                placeholder="Billing details - name, note for driver, etc."
-                value={billingInfo}
-                onChange={event => onBillingInfoChange(event.target.value)}
-              />
+              <label className="cart-field cart-field--spaced">
+                <span className="cart-field-label">Billing note</span>
+                <textarea
+                  className="cart-textarea"
+                  placeholder="Name, note for driver, or billing details"
+                  value={billingInfo}
+                  onChange={(event) => onBillingInfoChange(event.target.value)}
+                />
+              </label>
             )}
           </>
         )}

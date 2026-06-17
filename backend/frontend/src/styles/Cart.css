@@ -22,7 +22,7 @@
 /* ── Two-column layout ── */
 .cart-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(24rem, 37rem);
+  grid-template-columns: minmax(0, 1.1fr) minmax(26rem, 39rem);
   gap: 2rem;
   align-items: start;
 }
@@ -157,6 +157,11 @@
   padding: 1rem 1.25rem;
 }
 
+.cart-checkout-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
 .cart-item-image {
   width: 56px;
   height: 56px;
@@ -227,13 +232,20 @@
 .cart-summary {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.25rem;
   width: 100%;
   max-width: 100%;
   padding: 1.5rem;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
+}
+
+.cart-checkout-panel {
+  background: transparent;
+  border-color: var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
 }
 
 .cart-summary h3 {
@@ -245,7 +257,7 @@
 
 /* ── Section blocks inside summary ── */
 .cart-summary-section {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .cart-summary-section h4 {
@@ -254,7 +266,25 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.cart-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.cart-field--spaced {
+  margin-top: 0.75rem;
+}
+
+.cart-field-label {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 /* ── Input group (icon + input) ── */
@@ -262,11 +292,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--bg-color);
+  background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 0 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
   transition: border-color 0.2s ease;
 }
 
@@ -283,7 +313,7 @@
 .input-group input {
   border: none;
   background: transparent;
-  padding: 0.5rem 0;
+  padding: 0.65rem 0;
   margin-bottom: 0;
   font-size: 0.875rem;
   flex: 1;
@@ -303,7 +333,10 @@
 }
 
 .saved-checkout-card {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
 }
 
 .saved-checkout-header {
@@ -326,15 +359,15 @@
 
 .cart-referral-field,
 .cart-checkbox-label + .cart-textarea {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 /* ── Map container ── */
 .cart-map-container {
-  height: 200px;
+  height: 220px;
   width: 100%;
-  margin-bottom: 0.5rem;
-  border-radius: var(--radius-md);
+  margin-bottom: 0.9rem;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border-color);
 }
@@ -342,8 +375,12 @@
 /* ── Date + time row ── */
 .cart-datetime-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+.cart-datetime-row .cart-field {
+  flex: 1;
 }
 
 .cart-datetime-row input {
@@ -355,10 +392,10 @@
 /* ── Textarea ── */
 .cart-textarea {
   width: 100%;
-  padding: 0.625rem 0.75rem;
-  min-height: 64px;
+  padding: 0.75rem 0.8rem;
+  min-height: 82px;
   resize: vertical;
-  background: var(--bg-color);
+  background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -378,8 +415,8 @@
 /* ── Select ── */
 .cart-select {
   width: 100%;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-color);
+  padding: 0.65rem 0.75rem;
+  background-color: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -396,7 +433,8 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
 }
 
 .cart-checkbox-label input[type="checkbox"] {

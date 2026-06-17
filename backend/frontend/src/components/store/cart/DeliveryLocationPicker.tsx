@@ -59,17 +59,20 @@ export function DeliveryLocationPicker({
   return (
     <div className="cart-summary-section">
       <h4>Delivery</h4>
-      <div className="input-group">
-        <Phone size={15} />
-        <input
-          type="tel"
-          inputMode="numeric"
-          pattern="[0-9+\-() ]*"
-          placeholder="Contact phone number"
-          value={guestPhone}
-          onChange={event => onGuestPhoneChange(event.target.value)}
-        />
-      </div>
+      <label className="cart-field">
+        <span className="cart-field-label">Contact phone</span>
+        <div className="input-group">
+          <Phone size={15} />
+          <input
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9+\-() ]*"
+            placeholder="+1 555 0100"
+            value={guestPhone}
+            onChange={event => onGuestPhoneChange(event.target.value)}
+          />
+        </div>
+      </label>
 
       <div className="cart-map-container">
         <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: "100%", width: "100%" }}>
@@ -82,46 +85,61 @@ export function DeliveryLocationPicker({
         </MapContainer>
       </div>
 
-      <div className="input-group">
-        <MapPin size={15} />
-        <input
-          type="text"
-          placeholder="Delivery location (or click map to pin)"
-          value={deliveryLocation}
-          onChange={event => onDeliveryLocationChange(event.target.value)}
-        />
-      </div>
+      <label className="cart-field">
+        <span className="cart-field-label">Delivery location</span>
+        <div className="input-group">
+          <MapPin size={15} />
+          <input
+            type="text"
+            placeholder="Click map or enter coordinates"
+            value={deliveryLocation}
+            onChange={event => onDeliveryLocationChange(event.target.value)}
+          />
+        </div>
+      </label>
 
       <div className="cart-datetime-row">
-        <input
-          type="date"
-          value={deliveryDate}
-          onChange={event => onDeliveryDateChange(event.target.value)}
-          title="Delivery Date"
-        />
-        <input
-          type="time"
-          value={deliveryTime}
-          onChange={event => onDeliveryTimeChange(event.target.value)}
-          title="Delivery Time"
-        />
+        <label className="cart-field">
+          <span className="cart-field-label">Delivery date</span>
+          <input
+            type="date"
+            value={deliveryDate}
+            onChange={event => onDeliveryDateChange(event.target.value)}
+            title="Delivery Date"
+          />
+        </label>
+        <label className="cart-field">
+          <span className="cart-field-label">Delivery time</span>
+          <input
+            type="time"
+            value={deliveryTime}
+            onChange={event => onDeliveryTimeChange(event.target.value)}
+            title="Delivery Time"
+          />
+        </label>
       </div>
 
-      <textarea
-        className="cart-textarea"
-        placeholder="Extra info - gate code, instructions, etc."
-        value={extraInfo}
-        onChange={event => onExtraInfoChange(event.target.value)}
-      />
-
-      <div className="input-group cart-referral-field">
-        <input
-          type="text"
-          placeholder="Referral code (optional)"
-          value={referralCode}
-          onChange={event => onReferralCodeChange(event.target.value)}
+      <label className="cart-field">
+        <span className="cart-field-label">Delivery notes</span>
+        <textarea
+          className="cart-textarea"
+          placeholder="Gate code, driver instructions, or drop-off details"
+          value={extraInfo}
+          onChange={event => onExtraInfoChange(event.target.value)}
         />
-      </div>
+      </label>
+
+      <label className="cart-field cart-referral-field">
+        <span className="cart-field-label">Referral code</span>
+        <div className="input-group">
+          <input
+            type="text"
+            placeholder="Optional"
+            value={referralCode}
+            onChange={event => onReferralCodeChange(event.target.value)}
+          />
+        </div>
+      </label>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
+
 interface SavedCheckoutCardProps {
   details: string[] | null;
   onUseSavedCheckout: () => void;
@@ -5,7 +7,7 @@ interface SavedCheckoutCardProps {
 
 export function SavedCheckoutCard({ details, onUseSavedCheckout }: SavedCheckoutCardProps) {
   return (
-    <div className="saved-checkout-card card card--outlined">
+    <ContentFlatCard className="saved-checkout-card">
       <div className="saved-checkout-header">
         <strong>Saved billing information</strong>
         <button className="btn btn-ghost" type="button" onClick={onUseSavedCheckout}>
@@ -19,6 +21,6 @@ export function SavedCheckoutCard({ details, onUseSavedCheckout }: SavedCheckout
           ))}
         </div>
       )}
-    </div>
+    </ContentFlatCard>
   );
 }

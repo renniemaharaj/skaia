@@ -2,6 +2,7 @@ import { Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CartItem, Product } from "../../../atoms/store";
 import { formatCents } from "../../../utils/money";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 
 interface CartItemsListProps {
   items: CartItem[];
@@ -28,7 +29,10 @@ export function CartItemsList({
         const product = getProduct(item.product_id);
         const displayName = product?.name ?? `Product #${item.product_id}`;
         return (
-          <div key={item.product_id} className="card card--store cart-item">
+          <ContentFlatCard
+            key={item.product_id}
+            className="cart-item cart-checkout-item"
+          >
             {product?.image_url && (
               <img src={product.image_url} alt={displayName} className="cart-item-image" />
             )}
@@ -52,7 +56,7 @@ export function CartItemsList({
                 <Trash2 size={16} />
               </button>
             </div>
-          </div>
+          </ContentFlatCard>
         );
       })}
 
