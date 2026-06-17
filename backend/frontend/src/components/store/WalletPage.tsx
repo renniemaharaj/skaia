@@ -2,15 +2,10 @@ import React, { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import {
-  Loader,
   CreditCard,
   Trash,
   Edit,
   PlusCircle,
-  ArrowDownRight,
-  ArrowUpRight,
-  Activity,
-  FileText,
   LayoutDashboard,
   DollarSign,
   LogOut,
@@ -22,6 +17,8 @@ import { useUserData } from "../../pages/users/useUserData";
 import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
+import { BalanceSheetCard } from "../cards/BalanceSheetCard";
+import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import "../../components/store/Store.css";
 
 interface Transaction {
@@ -669,237 +666,17 @@ export const WalletPage = () => {
           <div
             style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
           >
-            <div
-              style={{
-                padding: "1.5rem",
-                background: "transparent",
-                border: "1px solid var(--border-color)",
-                borderRadius: "12px",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 1.25rem 0",
-                  fontSize: "1.2rem",
-                  borderBottom: "1px solid var(--border-color)",
-                  paddingBottom: "0.75rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <Activity size={20} /> Balance Sheet
-              </h3>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.5rem",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    color: "var(--text-secondary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <ArrowDownRight size={16} color="var(--color-success)" />{" "}
-                  Total Credits
-                </span>
-                <span
-                  style={{ color: "var(--color-success)", fontWeight: "bold" }}
-                >
-                  + {formatCents(totalCredits)}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
-                  borderBottom: "1px solid var(--border-color)",
-                  paddingBottom: "1rem",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    color: "var(--text-secondary)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <ArrowUpRight size={16} color="var(--text-primary)" /> Total
-                  Debits
-                </span>
-                <span
-                  style={{ color: "var(--text-primary)", fontWeight: "bold" }}
-                >
-                  - {formatCents(totalDebits)}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "1.2rem",
-                  fontWeight: "bold",
-                }}
-              >
-                <span>Net Balance</span>
-                <span
-                  style={{
-                    color:
-                      balance >= 0
-                        ? "var(--color-success)"
-                        : "var(--color-danger)",
-                  }}
-                >
-                  {formatCents(balance)}
-                </span>
-              </div>
-            </div>
+            <BalanceSheetCard
+              balance={balance}
+              totalCredits={totalCredits}
+              totalDebits={totalDebits}
+            />
 
-            <div
-              style={{
-                padding: "1.5rem",
-                flex: 1,
-                background: "transparent",
-                border: "1px solid var(--border-color)",
-                borderRadius: "12px",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 1.25rem 0",
-                  fontSize: "1.2rem",
-                  borderBottom: "1px solid var(--border-color)",
-                  paddingBottom: "0.75rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
-              >
-                <FileText size={20} /> Transaction History
-              </h3>
-
-              {loading && !hasFetched.current ? (
-                <div style={{ textAlign: "center", padding: "2rem" }}>
-                  <Loader className="spin" />
-                </div>
-              ) : transactions.length > 0 ? (
-                <div
-                  style={{
-                    maxHeight: "500px",
-                    overflowY: "auto",
-                    paddingRight: "4px",
-                  }}
-                >
-                  {transactions.map((tx) => (
-                    <div
-                      key={tx.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "1rem",
-                        borderBottom: "1px solid var(--border-color)",
-                        background: "var(--bg-primary)",
-                        borderRadius: "8px",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <div>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontWeight: "600",
-                            fontSize: "1rem",
-                          }}
-                        >
-                          {tx.description}
-                        </p>
-                        <p
-                          style={{
-                            margin: "4px 0 0 0",
-                            fontSize: "0.85rem",
-                            color: "var(--text-secondary)",
-                          }}
-                        >
-                          {new Date(tx.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                      <div
-                        style={{
-                          fontWeight: "bold",
-                          fontSize: "1.15rem",
-                          color:
-                            tx.type === "credit"
-                              ? "var(--color-success)"
-                              : "var(--text-primary)",
-                        }}
-                      >
-                        {tx.type === "credit" ? "+" : "-"}
-                        {formatCents(tx.amount)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ opacity: 0.5, pointerEvents: "none" }}>
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={`skel-tx-${i}`}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "1rem",
-                        borderBottom: "1px solid var(--border-color)",
-                        background: "var(--bg-primary)",
-                        borderRadius: "8px",
-                        marginBottom: "8px",
-                        border: "1px dashed var(--border-color)",
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            height: "16px",
-                            background: "var(--border-color)",
-                            width: "50%",
-                            borderRadius: "4px",
-                            marginBottom: "8px",
-                          }}
-                        />
-                        <div
-                          style={{
-                            height: "12px",
-                            background: "var(--border-color)",
-                            width: "30%",
-                            borderRadius: "4px",
-                          }}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          height: "20px",
-                          background: "var(--border-color)",
-                          width: "60px",
-                          borderRadius: "4px",
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TransactionHistoryCard
+              loading={loading}
+              transactions={transactions}
+              hasFetched={hasFetched.current}
+            />
           </div>
         </div>
       </div>
