@@ -18,7 +18,7 @@
 - [x] Added `sanitizeCSS` function to `DesignedCardWrapper` for safe `customCss` rendering
 - [x] Retired `hotfix_reconciliation` todo pair (all phases verified complete)
 - [x] Cleaned `ui_component_refactor_plan.tip` with Phase 5 progress
-- [x] Updated `todo_planner`, `worker`, and `correctness` routine run remarks
+- [x] Updated `planner`, `worker`, and `correctness` routine run remarks
 
 ### Verification
 - [x] `go build ./...` passes from `backend/` (2026-06-11)

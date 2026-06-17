@@ -1,0 +1,112 @@
+# Routine: planner
+
+## Purpose
+
+Planning and durable-context upkeep routine for Skaia. Use it to create, split,
+dedupe, update, or retire `.todo/` entries and to keep `.specs/` aligned with
+implemented architecture, models, migrations, protocols, frontend contracts, and
+operational policies.
+
+## Triggers
+
+- User references `.routines/planner` or asks to plan, strategize, organize, or retire work
+- A todo lacks a `.tip` file or has stale status
+- Multiple todos overlap or conflict
+- Backend/frontend protocol, model, route, migration, WebSocket, cache, auth,
+  infrastructure, or dynamic-page behavior changed
+- `worker`, `auditor`, or `correctness` finds planning or spec drift
+
+## Inputs
+
+- `.todo/README.md`
+- Relevant `.todo/*` and `.todo/*.tip` files
+- `.specs/README.md`, `.specs/PROTOCOL.md`, and affected spec cards
+- Changed code/tests/migrations when updating specs
+- `.routines/correctness` for truth/drift questions
+- `.routines/auditor` for quality gates or audit-driven plans
+- `.routines/worker` when planning executable implementation steps
+
+## Responsibilities
+
+- Generate, organize, and maintain todos in `.todo/`.
+- Ensure every active todo has a compact, current `.tip`.
+- Split, merge, dedupe, or retire todos when it improves execution clarity.
+- Keep todo entries scoped, actionable, and linked to relevant specs/routines.
+- Keep `.specs/` authoritative, compact, and current after contract changes.
+- Document durable architecture/model/protocol decisions without pasting full code.
+- Route quality/security/UX findings through `.routines/auditor` when the right fix is unclear.
+- Escalate contradictions to `.routines/correctness` before encoding them as plans or specs.
+
+## Non-Goals
+
+- Do not implement code changes; hand execution to `.routines/worker`.
+- Do not run broad quality audits; use `.routines/auditor`.
+- Do not decide contradictory facts by preference; use `.routines/correctness`.
+- Do not copy large spec bodies into todos or large code/migration bodies into specs.
+
+## Workflow
+
+1. Identify whether the task is todo planning, spec upkeep, or both.
+2. Read the smallest relevant todo/spec/routine set.
+3. For todos:
+   - Confirm matching `.tip` files exist.
+   - Compare plan/status with current project state when needed.
+   - Update, split, merge, or retire with documented verification basis.
+4. For specs:
+   - Read affected spec cards and implementation truth.
+   - Patch compact contracts using `.specs/PROTOCOL.md`.
+   - Run reference checks for renamed routes/files/messages/tables.
+5. Cross-link related specs, todos, and routines.
+6. Record durable findings in `.tip`, specs, or planner run remarks.
+
+## Verification
+
+- Confirm every active todo has a matching `.tip`.
+- Confirm new plans do not duplicate existing `.todo` entries.
+- Confirm `.tip` files follow `.todo/README.md`.
+- For retired todos, record verification basis before deletion.
+- For specs, use `rg` to confirm stale names/paths/contracts are gone.
+- Verify linked files exist.
+- For code-backed spec changes, cite the verification already run by `worker` or `auditor`.
+
+## Trace Outputs
+
+- New or updated `.todo/<entry>` files
+- New or updated `.todo/<entry>.tip` files
+- Updated `.specs/*` files
+- Planner run remarks for material planning/spec maintenance
+
+## Contexts
+
+- `.todo/`
+- `.todo/*.tip`
+- `.todo/README.md`
+- `.specs/`
+- `.specs/README.md`
+- `.specs/PROTOCOL.md`
+- `.routines/correctness`
+- `.routines/auditor`
+- `.routines/worker`
+- `backend/`
+- `backend/frontend/`
+- `grengo/`
+
+## Extension/See Also
+
+- `.routines/worker` - execution of planned work
+- `.routines/correctness` - architectural truth and contradiction resolution
+- `.routines/auditor` - strict quality/security/UX audit source
+- `.specs/` - compact durable project contracts
+- `.todo/README.md` - planning and status conventions
+
+## Last Ran
+
+- 2026-06-17
+
+## Last Run Remarks
+
+- Planner is the single routine for todo lifecycle plus compact spec maintenance.
+
+## Next Steps
+
+- Use planner whenever work needs durable planning, todo lifecycle changes, or specs updates.

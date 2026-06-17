@@ -28,10 +28,10 @@ Start from the file that matches the task:
 | Task | Start With | Routine |
 | --- | --- | --- |
 | Execute planned work | `.todo/<name>.tip`, then `.todo/<name>` | `.routines/worker` |
-| Create or reorganize plans | Existing `.todo/*` and `.todo/*.tip` | `.routines/todo_planner` |
+| Create or reorganize plans | Existing `.todo/*` and `.todo/*.tip` | `.routines/planner` |
 | Audit quality, security, UX, or contracts | Related todo, specs, code, and tests | `.routines/auditor` |
 | Validate drift or contradictions | Related todo, specs, and code | `.routines/correctness` |
-| Update durable architecture docs | Related todo and changed code | `.routines/.specs_specialist` |
+| Update durable architecture docs | Related todo and changed code | `.routines/planner` |
 
 For implementation work, `.tip` is always the first file to open. It answers: what is done, what is next, and what verification is still missing.
 
@@ -124,7 +124,7 @@ A todo is complete only when:
 - Required backend/frontend/docs verification has passed or a skipped check is justified.
 - Related specs and routines have been updated if durable project knowledge changed.
 
-Completed todo pairs may be deleted by `.routines/todo_planner` after the verification basis is clear. If a completed todo documents important historical context, move that context to `.specs/` before deletion.
+Completed todo pairs may be deleted by `.routines/planner` after the verification basis is clear. If a completed todo documents important historical context, move that context to `.specs/` before deletion.
 
 ## Maintenance Checks
 
@@ -147,7 +147,7 @@ done
 ## Related Systems
 
 - `.routines/README.md` — routine routing and invocation contract
-- `.routines/todo_planner` — todo creation, dedupe, split, and retirement
+- `.routines/planner` — todo creation, dedupe, split, retirement, and spec upkeep
 - `.routines/worker` — todo execution and verification
 - `.routines/auditor` — strict whole-repo quality/security/UX audit
 - `.routines/correctness` — drift and contradiction checks

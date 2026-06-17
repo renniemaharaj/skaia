@@ -10,10 +10,10 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Triggers
 
-- User references `.routines/auditor`, `audit_backend`, `audit_frontend`, or asks for an audit/review
+- User references `.routines/auditor` or asks for an audit/review
 - Cross-cutting backend/frontend contracts changed
 - A release, major feature, migration, auth/security, store/payment, page-builder, or routine change needs review
-- `correctness`, `worker`, `todo_planner`, or `.specs_specialist` asks for a quality gate
+- `correctness`, `worker`, or `planner` asks for a quality gate
 
 ## Inputs
 
@@ -64,7 +64,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 ## Trace Outputs
 
 - Findings in the final response or related `.todo/<entry>.tip`
-- Updated specs via `.routines/.specs_specialist` when contracts changed
+- Updated specs via `.routines/planner` when contracts changed
 - Updated routine run remarks for material standalone audits
 
 ## Contexts
@@ -80,8 +80,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 - `.routines/correctness` - architectural truth and contradiction resolution
 - `.routines/worker` - scoped implementation fixes
-- `.routines/todo_planner` - durable plan creation/splitting/retirement
-- `.routines/.specs_specialist` - compact spec upkeep
+- `.routines/planner` - durable plan creation/splitting/retirement and compact spec upkeep
 
 ## Last Ran
 

@@ -16,7 +16,7 @@ Audit and, if possible, remove or refactor legacy code paths and fallback logic 
 ## References
 
 - .routines/correctness
-- .routines/todo_planner
+- .routines/planner
 - .specs/caching_cdn_spec
 
 ## Steps

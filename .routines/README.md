@@ -9,16 +9,9 @@ strict backend contracts, real-time state, and a high bar for intentional UI.
 | Need | Start With | Also Read | Output |
 | --- | --- | --- | --- |
 | Execute an existing todo | `.routines/worker` | `.todo/<name>`, `.todo/<name>.tip`, relevant specs, `.routines/auditor` as needed | Code/tests/docs plus updated `.tip` |
-| Create, split, dedupe, or retire todos | `.routines/todo_planner` | `.todo/README.md`, existing todos/tips, `.routines/correctness` | Updated `.todo` and `.tip` files |
+| Create, split, dedupe, retire todos, or update specs | `.routines/planner` | `.todo/README.md`, existing todos/tips, relevant specs, `.routines/correctness` | Updated `.todo`, `.tip`, and `.specs` files |
 | Whole-repo quality/security/UX audit | `.routines/auditor` | Specs, routines, todos, code, tests, package manifests | Findings, fixes, tests, trace notes |
 | Drift, contradictions, architectural truth | `.routines/correctness` | Specs/todos/routines/code for the scope | Authoritative correction or finding |
-| Specs/model/protocol documentation upkeep | `.routines/.specs_specialist` | `.specs/README.md`, `.specs/PROTOCOL.md`, changed code | Updated compact specs and run remarks |
-
-Deprecated redirects:
-
-- `.routines/audit_backend` -> `.routines/auditor`
-- `.routines/audit_frontend` -> `.routines/auditor`
-- `.routines/frontend_specialist` -> `.routines/auditor`
 
 ## Authority Model
 
@@ -27,8 +20,7 @@ Deprecated redirects:
 - `auditor` is the strict quality gate. It audits the whole repository, including
   `correctness`, itself, routines, specs, code, tests, security, UX, and process.
 - `worker` implements scoped work and applies the relevant auditor standards.
-- `todo_planner` keeps future work executable and non-overlapping.
-- `.specs_specialist` keeps `.specs/` compact and authoritative after contracts change.
+- `planner` keeps future work executable, non-overlapping, and reflected in compact specs.
 
 Every routine is subject to `correctness`: if a routine, spec, or todo contradicts
 the code or another authority, the contradiction must be handled professionally by
@@ -43,7 +35,7 @@ updating docs, planning work, or implementing a verified fix.
 5. Verify with the smallest meaningful command set; expand when shared contracts changed.
 6. Update trace files:
    - Implementation work: `.todo/<name>.tip`.
-   - Contract/spec changes: `.specs/*` via `.routines/.specs_specialist`.
+   - Contract/spec changes: `.specs/*` via `.routines/planner`.
    - Audit/correctness findings: routine run remarks only when durable.
 7. Report changed files, verification, skipped checks with reasons, and remaining risk.
 

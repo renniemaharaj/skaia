@@ -1,7 +1,0 @@
-# Deprecated Routine: audit_backend
-
-This file is a compatibility redirect.
-
-Use `.routines/auditor` instead. Backend quality is now audited as part of the
-whole-repository quality gate so API, data, security, WebSocket, and frontend
-consumer contracts are reviewed together.

@@ -39,5 +39,5 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 
 ## Maintenance
 
-Run `.routines/.specs_specialist` after changes to schema, models, routes,
+Run `.routines/planner` after changes to schema, models, routes,
 WebSocket messages, cache behavior, auth, infrastructure, or frontend contracts.

@@ -17,7 +17,7 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 - Relevant `.specs/*` files for affected architecture, models, or protocols
 - `.routines/auditor` for backend/frontend/security/UI quality standards
 - `.routines/correctness` for drift and contradiction checks
-- `.routines/.specs_specialist` when specs or model/protocol docs may change
+- `.routines/planner` when specs or model/protocol docs may change
 
 ## Responsibilities
 
@@ -29,11 +29,11 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 - Enforce idiomatic Go backend layering: service, interface, repository, API, caching, models, and tests
 - Keep implementations reliable, maintainable, and testable
 - Add or update backend/frontend tests proportional to risk and blast radius
-- Reference `.specs/` and `.routines/.specs_specialist` for authoritative architecture and model decisions
+- Reference `.specs/` and `.routines/planner` for authoritative architecture and model decisions
 
 ## Non-Goals
 
-- Do not invent unrelated todos; use `.routines/todo_planner`
+- Do not invent unrelated todos; use `.routines/planner`
 - Do not perform broad audits unrelated to the active todo; use `.routines/auditor` or `.routines/correctness`
 - Do not mark a `.tip` complete without relevant verification
 - Do not duplicate spec content inside todo files; link to specs and summarize only the delta
@@ -89,26 +89,24 @@ update specs and .tip with durable facts
 
 - Update `.todo/<entry>.tip` with phase status, completed checks, and remaining next steps
 - Update `.todo/<entry>` when the plan itself changed
-- Update `.specs/*` through `.routines/.specs_specialist` when architecture, models, protocols, migrations, or frontend contracts changed
+- Update `.specs/*` through `.routines/planner` when architecture, models, protocols, migrations, or frontend contracts changed
 - Note verification commands and any skipped tests with reasons
 
 ## Contexts
 
 - `.todo/`
 - `.todo/*.tip`
-- `.routines/todo_planner`
+- `.routines/planner`
 - `.routines/auditor`
-- `.routines/.specs_specialist`
 - `.specs/`
 - `backend/`
 - `backend/frontend/`
 
 ## Extension/See Also
 
-- `.routines/todo_planner` — planning and todo lifecycle management
+- `.routines/planner` — planning, todo lifecycle management, and specs upkeep
 - `.routines/auditor` — whole-repo quality, security, backend/frontend, and UI audit standards
 - `.routines/correctness` — drift and anti-pattern checks
-- `.routines/.specs_specialist` — specs upkeep
 - `.specs/` — authoritative project specifications
 
 ## Last Ran

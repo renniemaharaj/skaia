@@ -33,7 +33,7 @@ Post 2026-06-11 audit of recent commits (a956df0..660ab84) covering media scrape
 ### Phase 4: Project Audit & Todo Cleanup
 10. **Retire `hotfix_reconciliation`** — All 4 phases are ✅ Complete. Full frontend lint is the only unchecked item and is documented as a repo-wide pre-existing issue.
 11. **Update `ui_component_refactor_plan.tip`** — Phase 5 next steps have completed items mixed with unchecked items. Clean up checked items, update phase status.
-12. **Update routine run remarks** — Update `todo_planner`, `worker`, and `correctness` Last Ran dates and remarks.
+12. **Update routine run remarks** — Update `planner`, `worker`, and `correctness` Last Ran dates and remarks.
 
 ## Verification
 - Backend: `JWT_SECRET=test-secret go test ./...` from `backend/`

@@ -35,4 +35,4 @@ For example: A user could prompt "Show me what's going on right now in the Middl
 
 ## References
 - `backend/internal/datasource/`
-- `.routines/todo_planner`
+- `.routines/planner`

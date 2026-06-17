@@ -78,4 +78,4 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 
 - `.specs/backend_spec`
 - `.specs/auth_user_separation_spec`
-- `.routines/.specs_specialist`
+- `.routines/planner`

@@ -34,7 +34,7 @@ docs disagree.
 ## Non-Goals
 
 - Do not perform broad implementation work; use `.routines/worker`.
-- Do not create large feature plans; use `.routines/todo_planner`.
+- Do not create large feature plans; use `.routines/planner`.
 - Do not replace `.routines/auditor` for enterprise-grade quality review.
 
 ## Workflow
@@ -45,7 +45,7 @@ docs disagree.
 4. Compare docs/routines/todos against that truth.
 5. Patch small safe drift immediately.
 6. For larger work, record a precise finding and route it to `auditor`,
-   `todo_planner`, `worker`, or `.specs_specialist`.
+   `planner`, or `worker`.
 7. Verify stale names/paths are gone and linked files exist.
 
 ## Verification
@@ -72,8 +72,7 @@ docs disagree.
 ## Extension/See Also
 
 - `.routines/auditor` - stricter whole-repo quality gate
-- `.routines/.specs_specialist` - compact specs authority
-- `.routines/todo_planner` - convert findings into plans
+- `.routines/planner` - convert findings into plans and compact specs
 - `.routines/worker` - execute scoped fixes
 
 ## Last Ran

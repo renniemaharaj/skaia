@@ -1,5 +1,0 @@
-# Deprecated Routine: frontend_specialist
-
-This file is a compatibility redirect.
-
-Use `.routines/auditor` instead. Do not copy or update this file with audit logic.

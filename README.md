@@ -100,8 +100,8 @@ All collaborative planning, status tracking, specifications, and automation rout
 - `.todo/*` — Individual todo plans (no extension)
 - `.routines/` — First-class directory for routine definitions (project maintenance, automation, specialist roles)
   - `.routines/README.md` — Routine structure and usage
-  - `.routines/.specs_specialist` — Specialist for specs, technology, and infrastructure
-  - `.routines/audit_frontend`, `.routines/audit_backend`, `.routines/worker`, `.routines/todo_planner`, and `.routines/correctness` — Core project routines
+  - `.routines/planner` — Planning, todo lifecycle, specs, technology, and infrastructure context upkeep
+  - `.routines/auditor`, `.routines/worker`, and `.routines/correctness` — Core project routines
 
 Specs previously in `.todo/.specs` are now in `.specs/`.
 

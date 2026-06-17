@@ -1,7 +1,0 @@
-# Deprecated Routine: audit_frontend
-
-This file is a compatibility redirect.
-
-Use `.routines/auditor` instead. Frontend quality is now audited as part of the
-whole-repository quality gate so UI, state, API, dynamic pages, and backend
-contracts are reviewed together.
