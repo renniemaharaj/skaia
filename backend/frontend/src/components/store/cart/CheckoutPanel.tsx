@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { formatCents } from "../../../utils/money";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
 import { SavedCheckoutCard } from "./SavedCheckoutCard";
-import { ContentFlatCard } from "../../cards/ContentFlatCard";
 
 export type WalletCard = {
   id: string;
