@@ -725,7 +725,7 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
  header: "Actions",
  width: "120px",
  cell: (u) => (
- <div className="thread-actions">
+ <div className="table-view__row-actions">
  <button
  className="action-btn view-btn"
  title="Download"

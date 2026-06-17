@@ -26,7 +26,6 @@ export interface DirectoryLayoutProps<T> {
   // List mode props
   tableColumns?: TableColumn<T>[];
   tableRowKey?: (item: T, index: number) => string | number;
-  tableClassName?: string;
   tableEmptyState?: ReactNode;
   renderRowWrapper?: (
     item: T,
@@ -63,7 +62,6 @@ export function DirectoryLayout<T>({
   prependGridCard,
   tableColumns,
   tableRowKey,
-  tableClassName = "",
   tableEmptyState,
   renderRowWrapper,
   renderListRow,
@@ -79,8 +77,6 @@ export function DirectoryLayout<T>({
   const isList = viewMode === "list" && hasListRenderer;
   const canRenderGrid = !!renderGridCard || !!customGridContent;
   const contentMode = isList ? "list" : "grid";
-
-  const tableViewClassName = tableClassName;
 
   return (
     <div className={`directory-layout ${className}`} data-view={contentMode}>
@@ -152,7 +148,6 @@ export function DirectoryLayout<T>({
                 renderRowWrapper={renderRowWrapper}
                 rowKey={tableRowKey ?? ((_item, i) => i)}
                 emptyState={tableEmptyState}
-                className={tableViewClassName}
               />
             ) : (
               <>

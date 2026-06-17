@@ -237,13 +237,15 @@ export default function DataSourcesPage() {
  width: "48px",
  className: "table-view__cell--actions",
  cell: (ds) => (
+ <div className="table-view__row-actions">
  <button
- className="action-btn danger ds-card__danger-btn"
+ className="action-btn danger"
  onClick={(e) => handleDelete(e, ds.id)}
  title="Delete"
  >
  <Trash2 size={14} />
  </button>
+ </div>
  ),
  },
  ]}

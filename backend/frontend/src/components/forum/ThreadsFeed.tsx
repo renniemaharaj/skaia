@@ -52,6 +52,7 @@ const ThreadsFeed = ({
       ) : (
         <TableView
           data={threads}
+          chrome="embedded"
           rowKey={(t) => t.id}
           columns={[
             {

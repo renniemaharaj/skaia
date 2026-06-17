@@ -83,7 +83,7 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
       header: "Last Scanned",
       cell: (item: any) => <div className="media-time-cell">{item.lastScanned}</div>,
       width: "180px",
-      className: "table-view__cell--light",
+      className: "table-view__cell--muted",
     }
   ];
 
@@ -97,7 +97,7 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
           renderRowWrapper={(item, _index, rowProps, cells) => (
             <div 
               {...rowProps} 
-              className={`${rowProps.className} media-row`}
+              className={rowProps.className}
               onClick={() => {
                  if (item.isImage) setSelectedImage(item.link);
               }}

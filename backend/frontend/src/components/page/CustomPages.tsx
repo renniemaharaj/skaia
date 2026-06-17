@@ -387,7 +387,7 @@ export default function CustomPages() {
  {page.can_delete && hasPermission && (
  <button
  type="button"
- className={`action-btn cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
+ className={`action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
  title={page.slug === landingPageSlug ? "Current homepage" : "Set as homepage"}
  disabled={page.slug === landingPageSlug || settingHomepageId === page.id}
  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSetHomepage(page); }}
@@ -431,11 +431,11 @@ export default function CustomPages() {
  width: "120px",
  className: "table-view__cell--actions",
  cell: (page) => (
- <div style={{ display: 'flex', gap: '0.25rem' }}>
+ <div className="table-view__row-actions">
  {page.can_delete && (
  <button
  type="button"
- className="action-btn cp-action-btn"
+ className="action-btn"
  onClick={(e) => openRename(e, page)}
  title="Rename page"
  >
@@ -444,7 +444,7 @@ export default function CustomPages() {
  )}
  <button
  type="button"
- className="action-btn cp-action-btn"
+ className="action-btn"
  onClick={(e) => openDuplicate(e, page)}
  title="Duplicate page"
  >
@@ -453,7 +453,7 @@ export default function CustomPages() {
  {(page.can_delete || page.can_edit) && (
  <button
  type="button"
- className="action-btn cp-action-btn"
+ className="action-btn"
  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAnalyticsPage(page); }}
  title="Analytics"
  >
@@ -463,7 +463,7 @@ export default function CustomPages() {
  {page.can_delete ? (
  <button
  type="button"
- className="action-btn danger cp-danger-btn"
+ className="action-btn danger"
  onClick={(event) => handleDeletePage(event, page)}
  disabled={deletingPageId === page.id}
  title="Delete page"

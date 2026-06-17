@@ -464,8 +464,6 @@
 }
 
 .cp-card:hover .cp-action-btn,
-.cp-list__row:hover .cp-action-btn,
-.table-view__row:hover .cp-action-btn,
-.table-view__row:hover .cp-danger-btn {
+.cp-list__row:hover .cp-action-btn {
   opacity: 1;
 }

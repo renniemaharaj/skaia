@@ -52,14 +52,6 @@
   font-size: 0.75rem;
 }
 
-.reference-codes-table {
-  max-height: 280px;
-}
-
-.orders-table-view {
-  max-height: 680px;
-}
-
 .orders-expand-btn {
   display: inline-flex;
   align-items: center;

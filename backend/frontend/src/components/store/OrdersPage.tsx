@@ -606,7 +606,7 @@ export const OrdersPage = () => {
                   data={referenceCodes}
                   columns={referenceCodeColumns}
                   rowKey={(code) => code.id}
-                  className="reference-codes-table"
+                  maxHeight={280}
                   emptyState={
                     <p className="orders-empty-state">
                       No reference codes yet.
@@ -634,7 +634,7 @@ export const OrdersPage = () => {
                   columns={orderColumns}
                   rowKey={(order) => order.id}
                   renderRowWrapper={renderOrderRow}
-                  className="orders-table-view"
+                  maxHeight={680}
                 />
               )}
             </div>

@@ -147,8 +147,7 @@
 }
 
 .ds-card:hover .ds-card__danger-btn,
-.ds-list__row:hover .ds-card__danger-btn,
-.table-view__row:hover .ds-card__danger-btn {
+.ds-list__row:hover .ds-card__danger-btn {
  opacity: 1;
 }
 

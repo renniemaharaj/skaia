@@ -8,11 +8,6 @@
   scroll-behavior: smooth;
 }
 
-.threads-feed .table-view {
-  border: none;
-  border-radius: 0;
-}
-
 /* Thin elegant scrollbar */
 .threads-feed::-webkit-scrollbar {
   width: 5px;

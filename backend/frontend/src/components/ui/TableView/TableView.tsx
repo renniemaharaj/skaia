@@ -12,6 +12,8 @@ export interface TableViewProps<T> {
   data: T[];
   columns: TableColumn<T>[];
   rowKey?: (item: T, index: number) => string | number;
+  chrome?: "default" | "embedded";
+  maxHeight?: number | string;
   renderRowWrapper?: (
     item: T,
     index: number,
@@ -26,6 +28,8 @@ export function TableView<T>({
   data,
   columns,
   rowKey,
+  chrome = "default",
+  maxHeight,
   renderRowWrapper,
   emptyState,
   className = "",
@@ -38,8 +42,23 @@ export function TableView<T>({
     .map((col) => col.width || "1fr")
     .join(" ");
 
+  const tableStyle =
+    maxHeight === undefined
+      ? undefined
+      : {
+          maxHeight:
+            typeof maxHeight === "number" ? `${maxHeight}px` : maxHeight,
+        };
+  const tableClassName = [
+    "table-view",
+    chrome === "embedded" ? "table-view--embedded" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`table-view ${className}`}>
+    <div className={tableClassName} style={tableStyle}>
       <div className="table-view__header" style={{ gridTemplateColumns }}>
         {columns.map((col, i) => (
           <div
