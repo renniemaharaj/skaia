@@ -88,14 +88,18 @@ func (s *Service) SendOrderInboxMessage(ownerID int64, order *models.Order, msgT
 // Product methods
 
 func (s *Service) GetProduct(id int64) (*models.Product, error) {
-	if p, ok := s.cache.GetByID(id); ok {
-		return p, nil
+	if s.cache != nil {
+		if p, ok := s.cache.GetByID(id); ok {
+			return p, nil
+		}
 	}
 	p, err := s.products.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
-	s.cache.SetByID(id, p)
+	if s.cache != nil {
+		s.cache.SetByID(id, p)
+	}
 	return p, nil
 }
 
@@ -113,7 +117,7 @@ func (s *Service) CreateProduct(p *models.Product) (*models.Product, error) {
 
 func (s *Service) UpdateProduct(p *models.Product) (*models.Product, error) {
 	updated, err := s.products.Update(p)
-	if err == nil {
+	if err == nil && s.cache != nil {
 		s.cache.Invalidate(p.ID)
 	}
 	return updated, err
@@ -121,7 +125,7 @@ func (s *Service) UpdateProduct(p *models.Product) (*models.Product, error) {
 
 func (s *Service) DeleteProduct(id int64) error {
 	err := s.products.Delete(id)
-	if err == nil {
+	if err == nil && s.cache != nil {
 		s.cache.Invalidate(id)
 	}
 	return err
@@ -294,7 +298,8 @@ func (s *Service) AwardReferenceCodePayout(order *models.Order) error {
 // 3. Create the order record
 // 4. Charge via PaymentProvider
 // 5. Persist payment and update order status
-// 6. Decrement stock and clear cart on success
+// 6. Clear persisted cart for signed-in checkouts
+// 7. Decrement stock on successful immediate payment
 func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.CheckoutResponse, error) {
 	if len(req.Items) == 0 {
 		return nil, fmt.Errorf("no items in checkout request")
@@ -476,7 +481,13 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		order = updatedOrder
 	}
 
-	// on successful immediate payment: decrement stock, clear cart. Do NOT
+	// Once checkout has produced an order response, the cart no longer owns
+	// those items. Guests only have client-side carts.
+	if !req.IsGuest && s.cart != nil {
+		_ = s.cart.ClearCart(userID)
+	}
+
+	// on successful immediate payment: decrement stock. Do NOT
 	// execute special-actions until the order is marked `completed`. However,
 	// if an order contains special actions, we auto-complete it after payment
 	// and then execute those actions.
@@ -490,15 +501,15 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 						p.Stock = 0
 					}
 					s.products.Update(p) //nolint:errcheck
-					s.cache.Invalidate(oi.ProductID)
+					if s.cache != nil {
+						s.cache.Invalidate(oi.ProductID)
+					}
 				}
 				if p.SpecialActions != "" && p.SpecialActions != "[]" {
 					hasSpecial = true
 				}
 			}
 		}
-
-		_ = s.cart.ClearCart(userID)
 
 		// If there are special actions, complete the order and execute them now.
 		if hasSpecial && !req.IsGuest {

@@ -198,6 +198,45 @@ func TestCartRepository_GetItem_NotFound(t *testing.T) {
 	assert.Error(t, err, "GetItem for nonexistent entry must return an error")
 }
 
+func TestCheckout_CashOnDeliveryClearsPersistedCart(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	catRepo := store.NewCategoryRepository(db)
+	prodRepo := store.NewProductRepository(db)
+	cartRepo := store.NewCartRepository(db)
+	orderRepo := store.NewOrderRepository(db)
+	paymentRepo := store.NewPaymentRepository(db)
+	uid := createStoreTestUser(t, db)
+
+	cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("cod_cat")})
+	prod, err := prodRepo.Create(&models.Product{
+		CategoryID: cat.ID,
+		Name:       testutil.UniqueStr("cod_prod"),
+		Price:      1200,
+		Stock:      5,
+		IsActive:   true,
+	})
+	require.NoError(t, err)
+	_, err = cartRepo.AddToCart(uid, prod.ID, 2)
+	require.NoError(t, err)
+
+	svc := store.NewService(nil, prodRepo, cartRepo, orderRepo, nil, paymentRepo, nil, nil, nil, nil, nil, nil, nil, nil)
+	resp, err := svc.Checkout(uid, &models.CheckoutRequest{
+		Items: []models.CheckoutItem{{
+			ProductID: prod.ID,
+			Quantity:  2,
+		}},
+		PaymentMethodID: "delivery_cash",
+		Currency:        "usd",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, resp.Order)
+	assert.Equal(t, "pending", resp.Order.Status)
+
+	cart, err := cartRepo.GetUserCart(uid)
+	require.NoError(t, err)
+	assert.Empty(t, cart)
+}
+
 // OrderRepository extra
 
 func TestOrderRepository_GetByUser(t *testing.T) {
