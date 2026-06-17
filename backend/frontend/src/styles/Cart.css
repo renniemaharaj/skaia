@@ -242,10 +242,29 @@
 }
 
 .cart-checkout-panel {
+  gap: 1rem;
+  padding: 0;
   background: transparent;
-  border-color: var(--border-color);
-  border-radius: var(--radius-xl);
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
+}
+
+.cart-checkout-card {
+  width: 100%;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+}
+
+.cart-checkout-card--details {
+  background: var(--bg-secondary);
+}
+
+.cart-checkout-card--payment {
+  background: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
 }
 
 .cart-summary h3 {
@@ -258,6 +277,10 @@
 /* ── Section blocks inside summary ── */
 .cart-summary-section {
   margin-bottom: 1.5rem;
+}
+
+.cart-summary-section--last {
+  margin-bottom: 0;
 }
 
 .cart-summary-section h4 {
