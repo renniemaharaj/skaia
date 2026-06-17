@@ -1,7 +1,35 @@
-Phase: Planned
-Status: PENDING
+Phase: Initial package extraction
+Status: IN_PROGRESS
 
 # Next Steps
-1. [ ] Analyze `grengo/` to map existing functions to `api`, `services`, and `repo` layers.
-2. [ ] Create directories `internal/api`, `internal/services`, and `internal/repo`.
-3. [ ] Begin extracting configuration and file-system paths to the `repo` layer.
+1. [x] Analyze `grengo/` to map existing functions to `api`, `services`, and `repo` layers.
+2. [x] Create directories `internal/api`, `internal/services`, and `internal/repo`.
+3. [x] Begin extracting configuration and file-system paths to the `repo` layer.
+4. [x] Move HTTP handler implementations under `internal` while keeping router construction in `main`.
+5. [ ] Continue moving orchestration beyond self-command execution into narrower `internal/services` packages.
+6. [ ] Replace remaining app-level direct filesystem helpers with `internal/repo` methods where practical.
+7. [x] Move command implementations out of remaining root flat files into focused internal packages.
+
+# Progress
+- Added `grengo/internal/repo` with project-root/path helpers, site env read/write helpers, and arm/disarm filesystem operations.
+- Added `grengo/internal/services` with a `CommandRunner` for `grengo` self-command execution used by sync and async API command paths.
+- Added `grengo/internal/api` JSON response helpers and routed root API response wrappers through them.
+- Updated existing root handlers to use the new packages while preserving current exported command/handler names for this first buildable slice.
+- Moved API mux registration, `/health`, and passcode middleware back into `main`/`api.go` per project direction; `internal/api` now only holds reusable response helpers.
+- Moved CLI command dispatch into `grengo/internal/cli`; root `main.go` now wires callbacks into the internal CLI runner.
+- Split each top-level CLI command entry into a flat `grengo/internal/cli/<command>.go` file; `cli.go` is now the command registry and dispatcher.
+- Moved export output-flag parsing out of shared helpers and into the export command entry file where it is used.
+- Moved `.pcode` path ownership into `grengo/internal/repo` and routed root passcode path lookup through it.
+- Moved all former root command/service/API implementation files into `grengo/internal/app`; `grengo/` now has only `main.go` and `router.go`.
+- Added `grengo/router.go` so route registration, `/health`, and passcode middleware remain in the root main package while using handler callbacks from `internal/app`.
+- Added `app.CLICommands()` and `app.ConfigureAPIHandler()` so root wiring stays explicit and internal app logic remains tucked away.
+
+# Verification
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .` from `grengo/` passes.
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go test ./...` from `grengo/` passes.
+
+# Notes
+- A plain `go build .` attempted to use the sandboxed `~/.cache/go-build` and failed with a read-only cache error, so verification used writable Go cache/temp directories under `/tmp`.
+- Existing unrelated deletions remain in the worktree: `.todo/grengo_cli_improvements` and `.todo/grengo_cli_improvements.tip`.
+- `go build .` creates an untracked `grengo/grengo` binary; cleanup was not approved previously, so follow-up build verification now uses `-o /tmp/grengo-check`.
+- `backend/internal/grengo/handler.go` is modified in the worktree but was not changed as part of this refactor pass.

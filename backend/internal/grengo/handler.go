@@ -138,9 +138,7 @@ func (h *Handler) Mount(r chi.Router, jwtAuth func(http.Handler) http.Handler) {
 	})
 }
 
-// ---------------------------------------------------------------------------
 // Middleware
-// ---------------------------------------------------------------------------
 
 // requireAdmin checks that the JWT claims contain the "admin" role.
 func requireAdmin(next http.Handler) http.Handler {
@@ -192,9 +190,7 @@ func (h *Handler) svcFor(r *http.Request) *Service {
 	return h.svc
 }
 
-// ---------------------------------------------------------------------------
 // Session handlers
-// ---------------------------------------------------------------------------
 
 // handleCreateSession verifies admin + passcode, creates a temp session, returns the UUID.
 func (h *Handler) handleCreateSession(w http.ResponseWriter, r *http.Request) {
@@ -283,9 +279,7 @@ func (h *Handler) handleDestroySession(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
-// ---------------------------------------------------------------------------
 // Data handlers
-// ---------------------------------------------------------------------------
 
 func (h *Handler) handleListSites(w http.ResponseWriter, r *http.Request) {
 	sites, err := h.svcFor(r).ListSites()
