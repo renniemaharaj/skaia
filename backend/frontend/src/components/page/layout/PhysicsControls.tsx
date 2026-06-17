@@ -4,7 +4,7 @@ import { physicsSettingsAtom } from "../../../atoms/physics";
 import {
   defaultSettings,
   type PhysicsSettings,
-} from "../../../components/ui/GravityParticles/engine";
+} from "../../ui/GravityParticles/engine";
 
 const Section = ({
   title,

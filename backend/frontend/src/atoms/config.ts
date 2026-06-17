@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { Branding, SEOConfig, FooterConfig } from "../pages/page/types";
+import type { Branding, SEOConfig, FooterConfig } from "../components/page/types";
 
 export const apiBaseUrlAtom = atom("/api");
 

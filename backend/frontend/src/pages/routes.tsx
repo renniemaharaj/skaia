@@ -72,8 +72,8 @@ const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
 const RolesManagementPage = lazy(
   () => import("./admin/RolesManagementPage.tsx"),
 );
-const PageBuilder = lazy(() => import("./page/PageBuilder.tsx"));
-const CustomPages = lazy(() => import("./page/CustomPages.tsx"));
+const PageBuilder = lazy(() => import("./page/index.tsx"));
+const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
 const DataSourcesPage = lazy(() => import("./datasources/DataSourcesPage.tsx"));
 const DataSourceEditorPage = lazy(
   () => import("./datasources/DataSourceEditorPage.tsx"),

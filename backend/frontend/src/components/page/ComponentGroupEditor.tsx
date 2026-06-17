@@ -18,8 +18,8 @@ import { ComponentRenderer } from "./ComponentRenderer";
 import { CardDesigner } from "./CardDesigner";
 import { DEFAULT_CARD_TEMPLATE } from "./types";
 import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import Button from "../input/Button";
+import Select from "../input/Select";
 import "./ComponentGroupEditor.css";
 
 interface ComponentGroupEditorProps {

@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import {
  useCallback,
  useEffect,
@@ -30,10 +30,10 @@ import { relativeTimeAgo } from "../../utils/serverTime";
 import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import type { PageSection } from "./types";
 import { BlockRenderer } from "./BlockRenderer";
-import UserAvatar from "../../components/user/UserAvatar";
-import SpotlightCard from "../../components/ui/SpotlightCard";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
-import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
+import UserAvatar from "../user/UserAvatar";
+import SpotlightCard from "../ui/SpotlightCard";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import ResourceAnalytics from "../analytics/ResourceAnalytics";
 import { DirectoryLayout } from "./layout/templates/DirectoryLayout";
 import "./CustomPages.css";
 

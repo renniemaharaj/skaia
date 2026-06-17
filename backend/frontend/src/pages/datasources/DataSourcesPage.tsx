@@ -15,9 +15,9 @@ import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 
 import { relativeTimeAgo } from "../../utils/serverTime";
-import type { DataSource, DataSourceCreator } from "../page/types";
+import type { DataSource, DataSourceCreator } from "../../components/page/types";
 import { toast } from "sonner";
-import { DirectoryLayout } from "../page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import "./DataSources.css";
 
 type ViewMode = "grid" | "list";

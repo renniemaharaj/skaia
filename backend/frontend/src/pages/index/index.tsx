@@ -1,4 +1,4 @@
-import PageBuilder from "../page/PageBuilder";
+import PageBuilder from "../../components/page/PageBuilder";
 
 export default function Index() {
   return <PageBuilder />;

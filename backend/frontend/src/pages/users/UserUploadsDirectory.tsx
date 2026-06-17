@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { DirectoryLayout } from "../page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import { FolderUp } from "lucide-react";
 import UserUploads from "./UserUploads";
 import { apiRequest } from "../../utils/api";

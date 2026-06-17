@@ -35,9 +35,9 @@ import type {
  CardContentAlign,
 } from "./types";
 import { DEFAULT_CARD_TEMPLATE, MAPPABLE_FIELD_LABELS } from "./types";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
-import Tile from "../../components/input/Tile";
+import Button from "../input/Button";
+import Select from "../input/Select";
+import Tile from "../input/Tile";
 import "./CardDesigner.css";
 
 interface CardDesignerProps {
@@ -111,7 +111,7 @@ const CONTENT_ALIGN_OPTIONS: { value: CardContentAlign; label: string }[] = [
  { value: "stretch", label: "Stretch" },
 ];
 
-const MonacoEditor = lazy(() => import("../../components/monaco/Editor"));
+const MonacoEditor = lazy(() => import("../monaco/Editor"));
 
 const FIELD_ICONS: Record<MappableField, React.FC<{ size: number }>> = {
  image_url: Image,

@@ -32,7 +32,7 @@ import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
-import { DirectoryLayout } from "../../pages/page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import CategoryThreadsFeed from "../../pages/threads/categories/CategoryThreadsFeed";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 

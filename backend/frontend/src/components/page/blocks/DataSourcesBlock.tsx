@@ -1,4 +1,4 @@
-import { customConfirm } from "../../../components/ui/Prompt";
+import { customConfirm } from "../../ui/Prompt";
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import type { PageSection, DataSource } from "../types";
@@ -19,10 +19,10 @@ import {
 import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import Button from "../../../components/input/Button";
+import Button from "../../input/Button";
 
 const TabbedEditor = lazy(
-  () => import("../../../components/page/TabbedEditor"),
+  () => import("../TabbedEditor"),
 );
 
 interface Props {

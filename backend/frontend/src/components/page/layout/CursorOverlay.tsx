@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { cursorPositionsAtom } from "../../../atoms/presence";
 import { currentUserAtom } from "../../../atoms/auth";
-import UserAvatar from "../../../components/user/UserAvatar";
-import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
+import UserAvatar from "../../user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./CursorOverlay.css";
 
 const CURSOR_EXPIRY_MS = 4000;

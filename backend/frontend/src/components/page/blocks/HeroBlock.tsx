@@ -12,7 +12,7 @@ import {
   setSectionLayout,
 } from "../EditControls";
 import { Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import BlurText from "../../../components/ui/BlurText/BlurText";
+import BlurText from "../../ui/BlurText/BlurText";
 
 const HERO_VARIANTS = 2;
 

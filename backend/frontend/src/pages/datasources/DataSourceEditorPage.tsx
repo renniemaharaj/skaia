@@ -37,9 +37,9 @@ import type {
   ComponentDefinition,
   ComponentGroup,
   EventHook,
-} from "../page/types";
-import { ComponentGroupEditor, ComponentGroupRenderer } from "../page/ComponentGroupEditor";
-import { EventHookEditor } from "../page/EventHookEditor";
+} from "../../components/page/types";
+import { ComponentGroupEditor, ComponentGroupRenderer } from "../../components/page/ComponentGroupEditor";
+import { EventHookEditor } from "../../components/page/EventHookEditor";
 import { toast } from "sonner";
 import TabbedEditor from "../../components/page/TabbedEditor";
 import Button from "../../components/input/Button";

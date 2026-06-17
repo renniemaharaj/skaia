@@ -35,10 +35,10 @@ import { DesignedCardGrid } from "./DesignedCardGrid";
 import { CardDesigner } from "../CardDesigner";
 import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGrid } from "../ComponentRenderer";
-import { ActiveJobsBadge } from "../../../components/mediascraper/ActiveJobsBadge";
+import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
 import { ComponentGroupRenderer } from "../ComponentGroupEditor";
-import Button from "../../../components/input/Button";
-import Select from "../../../components/input/Select";
+import Button from "../../input/Button";
+import Select from "../../input/Select";
 
 interface Props {
   section: PageSection;

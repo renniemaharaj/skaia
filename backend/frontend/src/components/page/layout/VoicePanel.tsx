@@ -13,8 +13,8 @@ import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom } from "../../../atoms/presence";
-import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
-import UserAvatar from "../../../components/user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
+import UserAvatar from "../../user/UserAvatar";
 import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import {

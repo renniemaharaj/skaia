@@ -24,7 +24,7 @@ import { apiRequest } from "../../utils/api";
 import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
 import { TableView } from "../../components/ui/TableView/TableView";
 
-import "../page/layout/templates/DirectoryLayout.css";
+import "../../components/page/layout/templates/DirectoryLayout.css";
 
 interface UserUpload {
  url: string;

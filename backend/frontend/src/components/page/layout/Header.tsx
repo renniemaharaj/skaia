@@ -28,8 +28,8 @@ import {
 import { brandingAtom, featuresAtom } from "../../../atoms/config";
 import { apiRequest } from "../../../utils/api";
 import { EditableText, ImagePickerButton } from "../EditControls";
-import UserLink from "../../../components/user/UserLink";
-import NotificationBell from "../../../components/notifications/NotificationBell";
+import UserLink from "../../user/UserLink";
+import NotificationBell from "../../notifications/NotificationBell";
 import "./Header.css";
 import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import { toast } from "sonner";
@@ -40,7 +40,7 @@ import {
  setSoundVolume,
 } from "../../../utils/sound";
 import type { Branding } from "../types";
-import InboxMail from "../../../components/inbox/InboxMail";
+import InboxMail from "../../inbox/InboxMail";
 
 interface HeaderProps {
  cartCount: number;

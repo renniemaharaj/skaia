@@ -21,14 +21,14 @@ import {
 } from "lucide-react";
 import type { SectionEditor } from "./types";
 import { Link } from "react-router-dom";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { debounce } from "lodash";
 import { usePageBuilderContext } from "./PageBuilderContext";
 import { toast } from "sonner";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import Button from "../input/Button";
+import Select from "../input/Select";
 
 export type SectionLayout = "center" | "left" | "right" | "wide";
 

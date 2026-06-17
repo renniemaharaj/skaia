@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSetAtom } from "jotai";
-import type { Branding, SEOConfig, FooterConfig } from "../pages/page/types";
+import type { Branding, SEOConfig, FooterConfig } from "../components/page/types";
 import { apiRequest } from "../utils/api";
 import { brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
 

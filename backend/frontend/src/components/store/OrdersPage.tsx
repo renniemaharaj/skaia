@@ -31,7 +31,7 @@ import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
-import { DirectoryLayout } from "../../pages/page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
 import "leaflet/dist/leaflet.css";

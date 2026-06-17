@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import SearchField from "../../../../components/ui/SearchField";
+import SearchField from "../../../ui/SearchField";
 import { LayoutGrid, List } from "lucide-react";
 import {
  TableView,
  type TableColumn,
-} from "../../../../components/ui/TableView/TableView";
+} from "../../../ui/TableView/TableView";
 import "./DirectoryLayout.css";
 
 export type ViewMode = "grid" | "list";

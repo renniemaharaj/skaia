@@ -26,7 +26,7 @@ import TableOfContentsTile from "../../components/forum/TableOfContentsTile";
 import RecentThreadsTile from "../../components/forum/RecentThreadsTile";
 import { ThreadUserTiles } from "../../components/forum/ThreadUserTiles";
 import ThreadMediaViewer from "../../components/forum/ThreadMediaViewer";
-import VoicePanel from "../page/layout/VoicePanel";
+import VoicePanel from "../../components/page/layout/VoicePanel";
 import type { Role } from "../users/types";
 
 import "./index.css";

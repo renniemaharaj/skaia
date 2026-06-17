@@ -25,8 +25,8 @@ import { Copy, Download, FileCode } from "lucide-react";
 import { toast } from "sonner";
 
 /** Lazy-load the project's Monaco wrapper (inherits theme) and ViewThread for md/html. */
-const MonacoEditor = lazy(() => import("../../../components/monaco/Editor"));
-const ViewThread = lazy(() => import("../../../components/forum/ViewThread"));
+const MonacoEditor = lazy(() => import("../../monaco/Editor"));
+const ViewThread = lazy(() => import("../../forum/ViewThread"));
 
 interface Props {
   section: PageSection;

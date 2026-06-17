@@ -15,8 +15,8 @@ import {
   Atom,
 } from "lucide-react";
 import { onlineUsersAtom, type OnlineUser, pendingTpUserAtom } from "../../../atoms/presence";
-import UserAvatar from "../../../components/user/UserAvatar";
-import UserProfileOverlay from "../../../components/user/UserProfileOverlay";
+import UserAvatar from "../../user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
 import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
 import {
   currentUserAtom,
@@ -31,7 +31,7 @@ import { mediaStateAtom } from "../../../atoms/media";
 import { seoAtom } from "../../../atoms/config";
 import { toast } from "sonner";
 import { formatLocalTime } from "../../../utils/serverTime";
-import ComposerInput from "../../../components/input/Input";
+import ComposerInput from "../../input/Input";
 import "./PresencePanel.css";
 import VoicePanel from "./VoicePanel";
 import PhysicsControls from "./PhysicsControls";

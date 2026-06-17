@@ -8,7 +8,7 @@ import type { ComponentDefinition } from "./types";
 import {
   MediaViewer,
   type MediaScrapeJob,
-} from "../../components/mediascraper/MediaViewer";
+} from "../mediascraper/MediaViewer";
 import { apiRequest } from "../../utils/api";
 import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";

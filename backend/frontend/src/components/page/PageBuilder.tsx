@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { useNavigate, useParams, Link } from "react-router-dom";
@@ -20,15 +20,15 @@ import { isAuthenticatedAtom, currentUserAtom } from "../../atoms/auth";
 import { contextUserAtom } from "../../atoms/contextUser";
 import { PageSkeleton } from "./PageSkeleton";
 import { BlockRenderer } from "./BlockRenderer";
-import PageOwnershipPanel from "../../components/page/PageOwnershipPanel";
-import PageComments from "../../components/page/PageComments";
-import ResourceAnalytics from "../../components/analytics/ResourceAnalytics";
+import PageOwnershipPanel from "./PageOwnershipPanel";
+import PageComments from "./PageComments";
+import ResourceAnalytics from "../analytics/ResourceAnalytics";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import Button from "../input/Button";
+import Select from "../input/Select";
 import "./PageBuilder.css";
-import "../../components/ui/FeatureCard.css";
+import "../ui/FeatureCard.css";
 
 const sortSections = (secs: PageSection[]) =>
  [...secs].sort((a, b) => a.display_order - b.display_order);
