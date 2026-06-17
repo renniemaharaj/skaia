@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/skaia/backend/models"
@@ -384,6 +385,87 @@ func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*mode
 		_ = r.loadItems(orders...)
 	}
 	return orders, rows.Err()
+}
+
+func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, error) {
+	tx, err := r.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	var currentStatus string
+	err = tx.QueryRow(`SELECT status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&currentStatus)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("order not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := tx.Query(`SELECT product_id, quantity FROM order_items WHERE order_id = $1`, id)
+	if err != nil {
+		return nil, err
+	}
+	var items []*models.OrderItem
+	for rows.Next() {
+		item := &models.OrderItem{OrderID: id}
+		if err := rows.Scan(&item.ProductID, &item.Quantity); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	shouldReserveStock := currentStatus != "accepted" && currentStatus != "paid" && currentStatus != "completed"
+	if shouldReserveStock {
+		for _, item := range items {
+			var productName string
+			err := tx.QueryRow(
+				`UPDATE products
+				 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
+				     updated_at = CURRENT_TIMESTAMP
+				 WHERE id = $1 AND (stock_unlimited = true OR stock >= $2)
+				 RETURNING name`,
+				item.ProductID, item.Quantity,
+			).Scan(&productName)
+			if errors.Is(err, sql.ErrNoRows) {
+				var name string
+				_ = tx.QueryRow(`SELECT name FROM products WHERE id = $1`, item.ProductID).Scan(&name)
+				if name == "" {
+					name = fmt.Sprintf("%d", item.ProductID)
+				}
+				return nil, fmt.Errorf("insufficient stock for product %q", name)
+			}
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	o := &models.Order{}
+	err = tx.QueryRow(
+		`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP WHERE id=$1
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
+		id,
+	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	if err := r.loadItems(o); err != nil {
+		return nil, err
+	}
+	return o, nil
 }
 
 func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Order, error) {

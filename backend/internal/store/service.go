@@ -192,9 +192,22 @@ func (s *Service) DeleteOrder(id int64) error {
 
 func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
 	before, _ := s.orders.GetByID(id)
-	order, err := s.orders.UpdateStatus(id, status)
+	var order *models.Order
+	var err error
+	if status == "accepted" {
+		order, err = s.orders.AcceptWithStockCheck(id)
+	} else {
+		order, err = s.orders.UpdateStatus(id, status)
+	}
 	if err != nil {
 		return nil, err
+	}
+	if status == "accepted" && before != nil && before.Status != "accepted" && before.Status != "paid" && before.Status != "completed" {
+		if s.cache != nil {
+			for _, item := range order.Items {
+				s.cache.Invalidate(item.ProductID)
+			}
+		}
 	}
 	if status == "completed" && before != nil && before.Status != "completed" {
 		_ = s.AwardReferenceCodePayout(order)

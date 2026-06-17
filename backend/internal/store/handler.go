@@ -1053,6 +1053,10 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.svc.UpdateOrderStatus(id, req.Status)
 	if err != nil {
+		if strings.Contains(err.Error(), "insufficient stock") {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update order status")
 		return
 	}
