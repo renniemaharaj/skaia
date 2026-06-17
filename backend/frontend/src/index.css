@@ -187,9 +187,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   letter-spacing: -0.01em;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 html,
@@ -426,8 +424,12 @@ div#root {
 }
 
 @keyframes dialogOverlayFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .ui-dialog {
@@ -442,8 +444,14 @@ div#root {
 }
 
 @keyframes dialogSlideUp {
-  from { opacity: 0; transform: scale(0.96) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .ui-dialog__header,
@@ -484,7 +492,6 @@ div#root {
   font-size: 0.85rem;
   letter-spacing: 0.03em;
 }
-
 
 .btn-lg {
   padding: 16px 32px;
@@ -569,7 +576,6 @@ div#root {
   box-shadow: none;
 }
 
-
 .btn-badge {
   position: absolute;
   top: -4px;
@@ -592,11 +598,8 @@ div#root {
   border-radius: var(--card-radius);
   padding: var(--card-padding);
   box-shadow: var(--card-shadow);
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s
+    ease;
 }
 
 .card--interactive {
@@ -782,7 +785,7 @@ select,
   color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.3s ease;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 select:not(.sk-select__native) {
