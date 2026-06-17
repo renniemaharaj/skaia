@@ -561,6 +561,7 @@ export const OrdersPage = () => {
                       placeholder="Assign user..."
                       excludeSelf={false}
                       autoFocus={false}
+                      resultsVariant="glass-menu"
                       onSelect={handleReferenceUserSelect}
                     />
                   </div>

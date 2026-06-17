@@ -14,6 +14,8 @@ interface SearchFieldProps {
   autoFocus?: boolean;
   "aria-label"?: string;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  onFocus?: React.FocusEventHandler<HTMLInputElement>;
+  onBlur?: React.FocusEventHandler<HTMLInputElement>;
   children?: React.ReactNode;
 }
 
@@ -28,6 +30,8 @@ export default function SearchField({
   autoFocus = false,
   "aria-label": ariaLabel,
   onKeyDown,
+  onFocus,
+  onBlur,
   children,
 }: SearchFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +59,8 @@ export default function SearchField({
         aria-label={ariaLabel ?? placeholder}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
       />
       {children}
     </div>

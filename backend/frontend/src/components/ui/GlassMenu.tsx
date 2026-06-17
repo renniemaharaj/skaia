@@ -1,14 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft } from "lucide-react";
 import "./GlassMenu.css";
 
 export interface GlassMenuOption {
+  key?: React.Key;
   title: string | React.ReactNode;
   icon?: React.ReactNode;
   info?: string | React.ReactNode;
   onClick?: () => void;
   subOptions?: GlassMenuOption[];
+  disabled?: boolean;
 }
 
 export interface GlassMenuProps {
@@ -59,10 +62,18 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
     setHistory((prev) => prev.slice(0, -1));
   };
 
+  const getOptionKey = (opt: GlassMenuOption) => {
+    if (opt.key !== undefined) return opt.key;
+    if (typeof opt.title === "string") return opt.title;
+    if (typeof opt.info === "string") return opt.info;
+    return "glass-menu-option";
+  };
+
   return createPortal(
     <div className="glass-menu-wrap" style={style} ref={menuRef}>
       {history.length > 0 && (
-        <div
+        <button
+          type="button"
           className="glass-menu-op"
           onClick={goBack}
           style={{
@@ -75,16 +86,19 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
             <ChevronLeft size={16} />
           </span>
           <span className="glass-menu-title">Back</span>
-        </div>
+        </button>
       )}
-      {currentOptions.map((opt, i) => (
-        <div
-          key={i}
-          className="glass-menu-op"
+      {currentOptions.map((opt) => (
+        <button
+          type="button"
+          key={getOptionKey(opt)}
+          className={`glass-menu-op${opt.disabled ? " glass-menu-op--disabled" : ""}`}
+          disabled={opt.disabled}
           onClick={(e) => {
             e.stopPropagation();
-            if (opt.subOptions && opt.subOptions.length > 0) {
-              setHistory((prev) => [...prev, opt.subOptions!]);
+            const subOptions = opt.subOptions;
+            if (subOptions && subOptions.length > 0) {
+              setHistory((prev) => [...prev, subOptions]);
             } else if (opt.onClick) {
               opt.onClick();
               onClose();
@@ -98,7 +112,7 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           )}
           <span className="glass-menu-title">{opt.title}</span>
           {opt.info && <span className="glass-menu-info">{opt.info}</span>}
-        </div>
+        </button>
       ))}
     </div>,
     document.body,

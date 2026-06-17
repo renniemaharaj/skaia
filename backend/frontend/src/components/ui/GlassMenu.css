@@ -33,13 +33,26 @@
   align-items: center;
   box-sizing: border-box;
   border-radius: var(--radius-md);
+  border: none;
   padding: 8px 12px;
+  background: transparent;
   transition: background-color 150ms ease;
   color: var(--text-primary);
+  font: inherit;
+  text-align: left;
 }
 
 .glass-menu-op:hover {
   background-color: var(--bg-tertiary);
+}
+
+.glass-menu-op--disabled {
+  cursor: default;
+  color: var(--text-secondary);
+}
+
+.glass-menu-op--disabled:hover {
+  background-color: transparent;
 }
 
 .glass-menu-title {
