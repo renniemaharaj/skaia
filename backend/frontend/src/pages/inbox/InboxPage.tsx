@@ -1632,7 +1632,7 @@ function MessageBubble({
               };
               return (
                 <Link
-                  to={`/orders/${card.order_id}`}
+                  to={`store/orders/${card.order_id}`}
                   className="inbox-page-card"
                 >
                   <div className="inbox-page-card__icon">
