@@ -1,3 +1,1 @@
-import Activity from "./Activity.tsx";
-
-export default Activity;
+export { default } from "../../components/activity/Activity";

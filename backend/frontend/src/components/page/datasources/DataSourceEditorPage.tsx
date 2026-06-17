@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../../ui/Prompt";
 import {
  type CSSProperties,
  useCallback,
@@ -30,20 +30,20 @@ import {
   AlignCenterHorizontal,
   MoveVertical,
 } from "lucide-react";
-import { apiRequest } from "../../utils/api";
+import { apiRequest } from "../../../utils/api";
 import type {
   DataSource,
   CustomSection,
   ComponentDefinition,
   ComponentGroup,
   EventHook,
-} from "../../components/page/types";
-import { ComponentGroupEditor, ComponentGroupRenderer } from "../../components/page/ComponentGroupEditor";
-import { EventHookEditor } from "../../components/page/EventHookEditor";
+} from "../types";
+import { ComponentGroupEditor, ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { EventHookEditor } from "../EventHookEditor";
 import { toast } from "sonner";
-import TabbedEditor from "../../components/page/TabbedEditor";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import TabbedEditor from "../TabbedEditor";
+import Button from "../../input/Button";
+import Select from "../../input/Select";
 import "./DataSources.css";
 
 interface CompileResult {
@@ -113,7 +113,7 @@ import {
  CACHE_TTL_OPTIONS,
  formatTimeAgo,
  cacheTTLLabel,
-} from "../../utils/cache";
+} from "../../../utils/cache";
 
 const DATASOURCE_PREVIEW_TYPES = [
   "component",

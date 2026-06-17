@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../../ui/Prompt";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -10,14 +10,14 @@ import {
  Trash2,
  Zap,
 } from "lucide-react";
-import { apiRequest } from "../../utils/api";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import { apiRequest } from "../../../utils/api";
+import UserAvatar from "../../user/UserAvatar";
+import UserProfileOverlay from "../../user/UserProfileOverlay";
 
-import { relativeTimeAgo } from "../../utils/serverTime";
-import type { DataSource, DataSourceCreator } from "../../components/page/types";
+import { relativeTimeAgo } from "../../../utils/serverTime";
+import type { DataSource, DataSourceCreator } from "../types";
 import { toast } from "sonner";
-import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../layout/templates/DirectoryLayout";
 import "./DataSources.css";
 
 type ViewMode = "grid" | "list";

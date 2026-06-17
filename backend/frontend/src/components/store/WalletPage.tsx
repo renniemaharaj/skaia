@@ -13,13 +13,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useUserData } from "../../pages/users/useUserData";
+import { useUserData } from "../user/useUserData";
 import { useAtomValue, useSetAtom } from "jotai";
 import { currentUserAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
-import "../../components/store/Store.css";
+import "./Store.css";
 import { SecondaryCard } from "../cards/GlassCard";
 
 interface Transaction {

@@ -14,7 +14,7 @@ import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
-import type { ProfileUser, Role } from "../../pages/users/types";
+import type { ProfileUser, Role } from "../user/types";
 import RoleBadge from "../user/RoleBadge";
 
 type Author = {

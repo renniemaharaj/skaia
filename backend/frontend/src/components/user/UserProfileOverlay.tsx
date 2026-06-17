@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import SpotlightCard from "../ui/SpotlightCard";
 import { apiRequest } from "../../utils/api";
-import type { ProfileUser, Role } from "../../pages/users/types";
+import type { ProfileUser, Role } from "./types";
 import UserAvatar from "./UserAvatar";
 import RoleBadge from "./RoleBadge";
 import "./UserProfileOverlay.css";

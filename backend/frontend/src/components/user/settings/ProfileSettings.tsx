@@ -1,9 +1,9 @@
 import { Save, Loader, Trash2 } from "lucide-react";
-import { useProfileEdit } from "../users/useProfileEdit";
-import type { ProfileUser } from "../users/types";
-import "../users/UserProfile.css";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import { useProfileEdit } from "../useProfileEdit";
+import type { ProfileUser } from "../types";
+import "../UserProfile.css";
+import Button from "../../input/Button";
+import Select from "../../input/Select";
 
 interface Props {
   user: ProfileUser;

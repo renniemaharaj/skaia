@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
+import { DirectoryLayout } from "../page/layout/templates/DirectoryLayout";
 import { FolderUp } from "lucide-react";
 import UserUploads from "./UserUploads";
 import { apiRequest } from "../../utils/api";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import UserAvatar from "./UserAvatar";
+import UserProfileOverlay from "./UserProfileOverlay";
 
 export default function UserUploadsDirectory() {
   const { userId } = useParams();

@@ -64,19 +64,19 @@ const UserDiscovery = lazy(() => import("./users/index.tsx"));
 const CategoryThreadsPage = lazy(
   () => import("./threads/categories/index.tsx"),
 );
-const InboxPage = lazy(() => import("./inbox/InboxPage.tsx"));
+const InboxPage = lazy(() => import("./inbox/index.tsx"));
 const AdminMetaSettings = lazy(() =>
   import("./admin/meta.tsx").then((m) => ({ default: m.AdminMetaSettings })),
 );
 const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
 const RolesManagementPage = lazy(
-  () => import("./admin/RolesManagementPage.tsx"),
+  () => import("../components/admin/RolesManagementPage.tsx"),
 );
 const PageBuilder = lazy(() => import("./page/index.tsx"));
 const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
-const DataSourcesPage = lazy(() => import("./datasources/DataSourcesPage.tsx"));
+const DataSourcesPage = lazy(() => import("../components/page/datasources/DataSourcesPage.tsx"));
 const DataSourceEditorPage = lazy(
-  () => import("./datasources/DataSourceEditorPage.tsx"),
+  () => import("../components/page/datasources/DataSourceEditorPage.tsx"),
 );
 const ActivityPage = lazy(() => import("./activity/index.tsx"));
 const VerifyEmailPage = lazy(() => import("./verify-email/index.tsx"));
@@ -84,7 +84,7 @@ const ForgotPasswordPage = lazy(() => import("./forgot-password/index.tsx"));
 const ResetPasswordPage = lazy(() => import("./reset-password/index.tsx"));
 const VisualizerPage = lazy(() => import("./visualizer/index.tsx"));
 const UserUploadsDirectory = lazy(
-  () => import("./users/UserUploadsDirectory.tsx"),
+  () => import("../components/user/UserUploadsDirectory.tsx"),
 );
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
 

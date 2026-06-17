@@ -2,9 +2,9 @@ import { useMemo, useState, useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { currentThreadAtom } from "../../atoms/forum";
 import { ImageIcon } from "lucide-react";
-import "../../pages/users/UserProfile.css";
+import "../user/UserProfile.css";
 import "./ThreadMediaViewer.css";
-import UserUploads from "../../pages/users/UserUploads";
+import UserUploads from "../user/UserUploads";
 
 interface ParsedMedia {
   url: string;

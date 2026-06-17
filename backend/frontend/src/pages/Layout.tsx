@@ -43,7 +43,7 @@ import { physicsSettingsAtom } from "../atoms/physics";
 import Particles from "../components/ui/Particles/Particles";
 import RateLimitedPage from "./RateLimitedPage";
 import MFAChallenge from "./MFAChallenge";
-import type { Role } from "./users/types";
+import type { Role } from "../components/user/types";
 
 interface LayoutProps {
   children: ReactNode;

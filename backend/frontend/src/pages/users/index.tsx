@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
 import UserPermissionManager from "../../components/user/UserPermissionManager";
-import UserProfile from "./UserProfile";
+import UserProfile from "../../components/user/UserProfile";
 
 const UserDiscovery = () => {
   const { userId } = useParams<{ userId: string }>();

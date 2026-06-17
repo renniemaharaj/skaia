@@ -1,16 +1,16 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../utils/api";
-import type { Permission, Role, ProfileUser } from "../users/types";
-import PersonPicker from "../../components/ui/PersonPicker";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import type { Permission, Role, ProfileUser } from "../user/types";
+import PersonPicker from "../ui/PersonPicker";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import type { User } from "../../atoms/auth";
 import "./RolesManagementPage.css";
-import Button from "../../components/input/Button";
-import Checkbox from "../../components/input/Checkbox";
+import Button from "../input/Button";
+import Checkbox from "../input/Checkbox";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];

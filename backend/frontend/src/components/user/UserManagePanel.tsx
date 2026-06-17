@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { apiRequest } from "../../utils/api";

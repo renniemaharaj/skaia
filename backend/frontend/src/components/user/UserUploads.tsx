@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -22,9 +22,9 @@ import { Link } from "react-router-dom";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
-import { TableView } from "../../components/ui/TableView/TableView";
+import { TableView } from "../ui/TableView/TableView";
 
-import "../../components/page/layout/templates/DirectoryLayout.css";
+import "../page/layout/templates/DirectoryLayout.css";
 
 interface UserUpload {
  url: string;

@@ -11,7 +11,7 @@ import ViewThread from "../forum/ViewThread";
 import SpotlightCard from "../ui/SpotlightCard";
 import StarRating from "../ui/StarRating";
 import { apiRequest } from "../../utils/api";
-import type { Role } from "../../pages/users/types";
+import type { Role } from "../user/types";
 import "./CommentSection.css";
 
 type CommentSectionComment = {

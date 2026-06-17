@@ -12,9 +12,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ProfileUser, Role } from "./types";
 import { formatDate } from "./useUserData";
-import UserAvatar from "../../components/user/UserAvatar";
-import SpotlightCard from "../../components/ui/SpotlightCard";
-import RoleBadge from "../../components/user/RoleBadge";
+import UserAvatar from "./UserAvatar";
+import SpotlightCard from "../ui/SpotlightCard";
+import RoleBadge from "./RoleBadge";
 
 interface Props {
   user: ProfileUser;

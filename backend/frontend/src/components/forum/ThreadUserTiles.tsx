@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { apiRequest } from "../../utils/api";
-import type { ProfileUser } from "../../pages/users/types";
+import type { ProfileUser } from "../user/types";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import UserAvatar from "../user/UserAvatar";
 import { Heart, Eye, Loader2, Users } from "lucide-react";

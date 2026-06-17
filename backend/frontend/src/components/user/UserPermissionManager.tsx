@@ -4,11 +4,11 @@ import { apiRequest } from "../../utils/api";
 import SearchField from "../ui/SearchField";
 import UserAvatar from "./UserAvatar";
 import UserProfileOverlay from "./UserProfileOverlay";
-import { useUserData } from "../../pages/users/useUserData";
-import UserManagePanel from "../../pages/users/UserManagePanel";
+import { useUserData } from "./useUserData";
+import UserManagePanel from "./UserManagePanel";
 import { useAtomValue } from "jotai";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
-import "../../pages/users/UserProfile.css";
+import "./UserProfile.css";
 import "./UserPermissionManager.css";
 
 interface UserSearchItem {

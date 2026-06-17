@@ -1,5 +1,5 @@
-import type { FeedThread } from "../../../hooks/useThreadsFeed";
-import ThreadsFeed from "../../../components/forum/ThreadsFeed";
+import type { FeedThread } from "../../hooks/useThreadsFeed";
+import ThreadsFeed from "./ThreadsFeed";
 
 interface Props {
   threads: FeedThread[];

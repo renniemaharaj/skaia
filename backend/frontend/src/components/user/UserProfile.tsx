@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";

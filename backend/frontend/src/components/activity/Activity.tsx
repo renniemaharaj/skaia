@@ -5,8 +5,8 @@ import { activityEventsAtom, type ActivityEvent } from "../../atoms/events";
 import { apiRequest } from "../../utils/api";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 import { relativeTimeAgo } from "../../utils/serverTime";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
 import "./Activity.css";
 
 interface EventsResponse {

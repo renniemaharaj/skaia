@@ -33,7 +33,7 @@ import UserProfileOverlay from "../user/UserProfileOverlay";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import SpotlightCard from "../ui/SpotlightCard";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
-import CategoryThreadsFeed from "../../pages/threads/categories/CategoryThreadsFeed";
+import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 
 const CategoryThreadsPreview = ({

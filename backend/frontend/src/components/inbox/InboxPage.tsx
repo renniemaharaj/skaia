@@ -1,4 +1,4 @@
-import { customConfirm } from "../../components/ui/Prompt";
+import { customConfirm } from "../ui/Prompt";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtom, useSetAtom, useAtomValue } from "jotai";
 import { Link, useSearchParams } from "react-router-dom";
@@ -24,9 +24,9 @@ import {
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
-import UserAvatar from "../../components/user/UserAvatar";
-import UserProfileOverlay from "../../components/user/UserProfileOverlay";
-import PersonPicker from "../../components/ui/PersonPicker";
+import UserAvatar from "../user/UserAvatar";
+import UserProfileOverlay from "../user/UserProfileOverlay";
+import PersonPicker from "../ui/PersonPicker";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import {
@@ -47,8 +47,8 @@ import {
   formatLocalTime,
   formatFullDateTime,
 } from "../../utils/serverTime";
-import Input from "../../components/input/Input";
-import { GlassMenu } from "../../components/ui/GlassMenu";
+import Input from "../input/Input";
+import { GlassMenu } from "../ui/GlassMenu";
 import "./InboxPage.css";
 import { parseInt } from "lodash";
 

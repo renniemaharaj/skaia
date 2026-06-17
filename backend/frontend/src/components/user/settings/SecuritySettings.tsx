@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { apiRequest } from "../../utils/api";
+import { apiRequest } from "../../../utils/api";
 import { toast } from "sonner";
-import Button from "../../components/input/Button";
+import Button from "../../input/Button";
 
 export default function SecuritySettings() {
   const [oldPassword, setOldPassword] = useState("");
