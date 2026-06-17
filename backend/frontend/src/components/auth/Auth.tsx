@@ -2,11 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useSetAtom } from "jotai";
 import { Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-react";
-import {
-  currentUserAtom,
-  accessTokenAtom,
-  refreshTokenAtom,
-} from "../../atoms/auth";
+import { currentUserAtom, accessTokenAtom, refreshTokenAtom } from "../../atoms/auth";
 import { loginUser, registerUser, type AuthResponse } from "../../utils/api";
 import "../ui/FormGroup.css";
 import "./Auth.css";
@@ -18,10 +14,7 @@ interface AuthPageProps {
   initialMode?: "login" | "register";
 }
 
-export const Auth: React.FC<AuthPageProps> = ({
-  onAuthSuccess,
-  initialMode = "login",
-}) => {
+export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "login" }) => {
   const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +43,7 @@ export const Auth: React.FC<AuthPageProps> = ({
       setSuccess(state.message);
       // Pre-fill email if provided
       if (state?.email) {
-        setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
           email: state.email,
         }));
@@ -62,7 +55,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
@@ -78,8 +71,7 @@ export const Auth: React.FC<AuthPageProps> = ({
       onAuthSuccess(data.access_token);
     }
     const from = (location.state as any)?.from?.pathname;
-    const redirectTo =
-      from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
+    const redirectTo = from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
     navigate(redirectTo);
   };
 
@@ -106,11 +98,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 
         completeLogin(data);
       } else {
-        data = await registerUser(
-          formData.username,
-          formData.email,
-          formData.password,
-        );
+        data = await registerUser(formData.username, formData.email, formData.password);
 
         setError(null);
         setFormData({
@@ -255,13 +243,7 @@ export const Auth: React.FC<AuthPageProps> = ({
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="auth-button"
-              variant="primary"
-              loading={loading}
-              block
-            >
+            <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
               {isLogin ? "Log In" : "Create Account"}
             </Button>
           </form>

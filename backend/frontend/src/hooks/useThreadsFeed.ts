@@ -34,7 +34,9 @@ export function useThreadsFeed({
   const isCategory = Boolean(categoryId);
   const isAuthor = Boolean(authorId);
   const isAll = !isCategory && !isAuthor;
-  const filterKey = isAll ? `all-${searchQuery ?? ""}` : `${categoryId ?? authorId ?? ""}-${searchQuery ?? ""}`;
+  const filterKey = isAll
+    ? `all-${searchQuery ?? ""}`
+    : `${categoryId ?? authorId ?? ""}-${searchQuery ?? ""}`;
 
   let feedAtom = allFeedThreadsAtom;
   let activeIdAtom = activeAllFeedIdAtom;
@@ -92,13 +94,13 @@ export function useThreadsFeed({
       let param = "";
       if (categoryId) param = `category_id=${categoryId}`;
       else if (authorId) param = `author_id=${authorId}`;
-      let url = `/forum/threads?limit=${limit}&offset=${offset}${param ? `&${param}` : ''}`;
+      let url = `/forum/threads?limit=${limit}&offset=${offset}${param ? `&${param}` : ""}`;
       if (searchQuery) {
         url += `&q=${encodeURIComponent(searchQuery)}`;
       }
       return url;
     },
-    [categoryId, authorId, searchQuery, limit],
+    [categoryId, authorId, searchQuery, limit]
   );
 
   // Initial load
@@ -135,20 +137,17 @@ export function useThreadsFeed({
     // Anchor current view: remember scroll distance from the bottom before prepend
     const prevScrollHeight = feedRef.current?.scrollHeight ?? 0;
     try {
-      const res = await apiRequest<{ threads: ForumThread[] }>(
-        buildUrl(offsetRef.current),
-      );
+      const res = await apiRequest<{ threads: ForumThread[] }>(buildUrl(offsetRef.current));
       const page = res?.threads ?? [];
       if (page.length > 0) {
-        setThreads((prev) => [...[...page].reverse(), ...prev]);
+        setThreads(prev => [...[...page].reverse(), ...prev]);
         offsetRef.current += page.length;
         if (page.length < limit) exhaustedRef.current = true;
 
         // Restore the user's scroll position after prepend
         requestAnimationFrame(() => {
           if (feedRef.current) {
-            feedRef.current.scrollTop +=
-              feedRef.current.scrollHeight - prevScrollHeight;
+            feedRef.current.scrollTop += feedRef.current.scrollHeight - prevScrollHeight;
           }
         });
       } else {
@@ -200,12 +199,12 @@ export function useThreadsFeed({
     const el = sentinelRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      (entries) => {
+      entries => {
         if (entries[0].isIntersecting && !isInitialLoadRef.current) {
           loadOlder();
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
     obs.observe(el);
     return () => obs.disconnect();

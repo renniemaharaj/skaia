@@ -21,11 +21,7 @@ type Props = {
   onBackLink?: string;
 };
 
-const OrderSubmittedView: React.FC<Props> = ({
-  order,
-  cartItems,
-  onBackLink,
-}) => {
+const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) => {
   const products = useAtomValue(productsAtom);
 
   // Ensure marker icon is configured for Leaflet
@@ -39,17 +35,16 @@ const OrderSubmittedView: React.FC<Props> = ({
     L.Marker.prototype.options.icon = DefaultIcon;
   } catch (e) {}
 
-  const getProduct = (productId: string) =>
-    products.find((p) => p.id === (productId as any));
+  const getProduct = (productId: string) => products.find(p => p.id === (productId as any));
 
   // If order.items exists, prefer them (they include price at time of purchase)
   const itemsToRender =
-    order.items?.map((it) => ({
+    order.items?.map(it => ({
       product_id: String(it.product_id),
       quantity: it.quantity,
       price: it.price,
     })) ||
-    (cartItems || []).map((c) => ({
+    (cartItems || []).map(c => ({
       product_id: String(c.product_id),
       quantity: c.quantity,
       price: getProduct(c.product_id as any)?.price ?? 0,
@@ -101,9 +96,7 @@ const OrderSubmittedView: React.FC<Props> = ({
           >
             <TitleIcon size={24} />
           </div>
-          <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>
-            {titleText}
-          </h1>
+          <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>{titleText}</h1>
         </div>
 
         <Link to={onBackLink ?? "/store"} className="btn">
@@ -113,17 +106,12 @@ const OrderSubmittedView: React.FC<Props> = ({
 
       <div className="cart-content order-status-content">
         <div className="cart-items">
-          <h3 className="order-status-items-title">
-            Items ({itemsToRender.length})
-          </h3>
-          {itemsToRender.map((item) => {
+          <h3 className="order-status-items-title">Items ({itemsToRender.length})</h3>
+          {itemsToRender.map(item => {
             const product = getProduct(String(item.product_id));
             const displayName = product?.name ?? `Product #${item.product_id}`;
             return (
-              <ContentFlatCard
-                key={item.product_id}
-                className="order-status-item"
-              >
+              <ContentFlatCard key={item.product_id} className="order-status-item">
                 <div className="order-status-item-media">
                   {product?.image_url ? (
                     <img src={product.image_url} alt={displayName} />
@@ -137,9 +125,7 @@ const OrderSubmittedView: React.FC<Props> = ({
                 </div>
                 <div className="order-status-item-total">
                   <span>Qty {item.quantity}</span>
-                  <strong>
-                    {formatCents((item.price ?? 0) * item.quantity)}
-                  </strong>
+                  <strong>{formatCents((item.price ?? 0) * item.quantity)}</strong>
                 </div>
               </ContentFlatCard>
             );
@@ -162,9 +148,7 @@ const OrderSubmittedView: React.FC<Props> = ({
             >
               <TitleIcon size={32} />
             </div>
-            <h3
-              style={{ marginBottom: 0, fontSize: "1.15rem", fontWeight: 700 }}
-            >
+            <h3 style={{ marginBottom: 0, fontSize: "1.15rem", fontWeight: 700 }}>
               Order #{order.id}
             </h3>
           </div>
@@ -185,9 +169,7 @@ const OrderSubmittedView: React.FC<Props> = ({
             <div className="cart-success-meta-row">
               <span>Delivery Time</span>
               <span>
-                {order.delivery_date
-                  ? new Date(order.delivery_date).toLocaleDateString()
-                  : ""}{" "}
+                {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : ""}{" "}
                 {order.delivery_time || ""}
               </span>
             </div>
@@ -218,7 +200,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
 
   const parse = (s?: string | null) => {
     if (!s) return null;
-    const parts = s.split(",").map((p) => p.trim());
+    const parts = s.split(",").map(p => p.trim());
     if (parts.length < 2) return null;
     const lat = parseFloat(parts[0]);
     const lng = parseFloat(parts[1]);
@@ -240,7 +222,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
             setOpen(true);
           }
         }}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === "Enter") {
             const p = parse(loc);
             if (p) {
@@ -292,10 +274,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
               }}
             >
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  className="btn-admin-icon"
-                  onClick={() => setOpen(false)}
-                >
+                <button className="btn-admin-icon" onClick={() => setOpen(false)}>
                   ×
                 </button>
               </div>
@@ -319,7 +298,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
               </div>
             </div>
           </>,
-          document.body,
+          document.body
         )}
     </>
   );

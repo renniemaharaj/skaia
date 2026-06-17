@@ -29,7 +29,9 @@ const CursorOverlay = () => {
   // Interaction effects state
   const [pokedUsers, setPokedUsers] = useState<Set<number>>(new Set());
   const [spinningUsers, setSpinningUsers] = useState<Set<number>>(new Set());
-  const [particles, setParticles] = useState<{ id: string; userId: number; tx: string; ty: string; color: string }[]>([]);
+  const [particles, setParticles] = useState<
+    { id: string; userId: number; tx: string; ty: string; color: string }[]
+  >([]);
 
   // Physics state
   const physicsRef = useRef<Map<number, PhysicsNode>>(new Map());
@@ -53,7 +55,12 @@ const CursorOverlay = () => {
     if (now - last < 500) return; // Cooldown
     lastParticleTimeRef.current.set(userId, now);
 
-    const colors = ['var(--primary-color)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-danger)'];
+    const colors = [
+      "var(--primary-color)",
+      "var(--color-success)",
+      "var(--color-warning)",
+      "var(--color-danger)",
+    ];
     const newParticles = Array.from({ length: 8 }).map((_, i) => {
       const angle = (i / 8) * Math.PI * 2;
       const distance = 25 + Math.random() * 25;
@@ -66,9 +73,11 @@ const CursorOverlay = () => {
       };
     });
 
-    setParticles((prev) => [...prev, ...newParticles]);
+    setParticles(prev => [...prev, ...newParticles]);
     setTimeout(() => {
-      setParticles((prev) => prev.filter((p) => p.userId !== userId || Date.now() - parseInt(p.id.split('-')[1]) < 550));
+      setParticles(prev =>
+        prev.filter(p => p.userId !== userId || Date.now() - parseInt(p.id.split("-")[1]) < 550)
+      );
     }, 600);
   }, []);
 
@@ -76,7 +85,7 @@ const CursorOverlay = () => {
   useEffect(() => {
     const id = setInterval(() => {
       const now = Date.now();
-      setCursors((prev) => {
+      setCursors(prev => {
         let changed = false;
         const next = new Map(prev);
         for (const [uid, pos] of next) {
@@ -107,7 +116,15 @@ const CursorOverlay = () => {
           const targetY = cursor.y * docHeight;
 
           if (!node) {
-            node = { userId: uid, x: targetX, y: targetY, vx: 0, vy: 0, renderedX: targetX, renderedY: targetY };
+            node = {
+              userId: uid,
+              x: targetX,
+              y: targetY,
+              vx: 0,
+              vy: 0,
+              renderedX: targetX,
+              renderedY: targetY,
+            };
             physicsRef.current.set(uid, node);
           } else {
             // Spring towards target
@@ -157,7 +174,7 @@ const CursorOverlay = () => {
         }
 
         // Apply velocities and update DOM directly for 60fps performance
-        nodes.forEach((node) => {
+        nodes.forEach(node => {
           node.vx *= 0.75; // friction
           node.vy *= 0.75;
           node.renderedX += node.vx;
@@ -182,11 +199,11 @@ const CursorOverlay = () => {
   }, [cursors, triggerParticles]);
 
   const handlePoke = (userId: number) => {
-    setPokedUsers((prev) => new Set(prev).add(userId));
-    setSpinningUsers((prev) => new Set(prev).add(userId));
+    setPokedUsers(prev => new Set(prev).add(userId));
+    setSpinningUsers(prev => new Set(prev).add(userId));
 
     setTimeout(() => {
-      setPokedUsers((prev) => {
+      setPokedUsers(prev => {
         const next = new Set(prev);
         next.delete(userId);
         return next;
@@ -194,7 +211,7 @@ const CursorOverlay = () => {
     }, 200);
 
     setTimeout(() => {
-      setSpinningUsers((prev) => {
+      setSpinningUsers(prev => {
         const next = new Set(prev);
         next.delete(userId);
         return next;
@@ -209,25 +226,32 @@ const CursorOverlay = () => {
 
   return (
     <div className="cursor-overlay" aria-hidden="true">
-      {Array.from(cursors.values()).map((cursor) => (
+      {Array.from(cursors.values()).map(cursor => (
         <div
           key={cursor.user_id}
           id={`cursor-avatar-${cursor.user_id}`}
-          className={`cursor-avatar glowing ${pokedUsers.has(cursor.user_id) ? 'poked' : ''} ${spinningUsers.has(cursor.user_id) ? 'spinning' : ''}`}
+          className={`cursor-avatar glowing ${pokedUsers.has(cursor.user_id) ? "poked" : ""} ${spinningUsers.has(cursor.user_id) ? "spinning" : ""}`}
           onClick={() => handlePoke(cursor.user_id)}
           title={cursor.user_name}
         >
           {particles
-            .filter((p) => p.userId === cursor.user_id)
-            .map((p) => (
+            .filter(p => p.userId === cursor.user_id)
+            .map(p => (
               <div
                 key={p.id}
                 className="cursor-particle"
-                style={{ '--tx': p.tx, '--ty': p.ty, backgroundColor: p.color } as React.CSSProperties}
+                style={
+                  { "--tx": p.tx, "--ty": p.ty, backgroundColor: p.color } as React.CSSProperties
+                }
               />
             ))}
           <div className="cursor-avatar-img-container">
-            <UserProfileOverlay userId={cursor.user_id} fallbackName={cursor.user_name} fallbackAvatar={cursor.avatar || undefined} disableClick={true}>
+            <UserProfileOverlay
+              userId={cursor.user_id}
+              fallbackName={cursor.user_name}
+              fallbackAvatar={cursor.avatar || undefined}
+              disableClick={true}
+            >
               <div>
                 <UserAvatar
                   src={cursor.avatar || undefined}

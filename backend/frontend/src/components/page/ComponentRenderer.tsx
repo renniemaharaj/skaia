@@ -5,10 +5,7 @@
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
-import {
-  MediaViewer,
-  type MediaScrapeJob,
-} from "../mediascraper/MediaViewer";
+import { MediaViewer, type MediaScrapeJob } from "../mediascraper/MediaViewer";
 import { apiRequest } from "../../utils/api";
 import { useState, useEffect } from "react";
 import "./ComponentRenderer.css";
@@ -25,15 +22,14 @@ function str(v: unknown): string {
 
 function bool(v: unknown): boolean {
   if (typeof v === "boolean") return v;
-  if (typeof v === "string")
-    return v.toLowerCase() === "true" || v === "1" || v === "yes";
+  if (typeof v === "string") return v.toLowerCase() === "true" || v === "1" || v === "yes";
   return !!v;
 }
 
 function resolveBindings(
   component: ComponentDefinition,
   bindings: Record<string, string>,
-  row: Record<string, unknown>,
+  row: Record<string, unknown>
 ): Resolved {
   const resolved: Resolved = {};
   for (const bp of component.bind_points) {
@@ -49,7 +45,7 @@ function resolveBindings(
 
 function resolveStyles(
   component: ComponentDefinition,
-  overrides?: Record<string, Record<string, string>>,
+  overrides?: Record<string, Record<string, string>>
 ): StyleMap {
   const m: StyleMap = {};
   for (const t of component.style_targets) {
@@ -86,7 +82,7 @@ function PrimitiveButton({
       className="cr-button"
       style={styles.root}
       disabled={bool(data.disabled)}
-      onClick={(e) => {
+      onClick={e => {
         e.preventDefault();
         onEvent?.("onClick", data);
         if (data.href) window.open(str(data.href), "_blank");
@@ -106,12 +102,7 @@ function PrimitiveCheckbox({
 }) {
   return (
     <label className="cr-checkbox" style={styles.root}>
-      <input
-        type="checkbox"
-        checked={bool(data.checked)}
-        disabled={bool(data.disabled)}
-        readOnly
-      />
+      <input type="checkbox" checked={bool(data.checked)} disabled={bool(data.disabled)} readOnly />
       {!!data.title && (
         <span className="cr-checkbox__label" style={styles.label}>
           {str(data.title)}
@@ -166,11 +157,7 @@ function PrimitiveIcon({ data, styles }: { data: Resolved; styles: StyleMap }) {
   const icon = str(data.icon);
   const isUrl = /^https?:\/\//i.test(icon);
   return (
-    <span
-      className="cr-icon"
-      style={styles.root}
-      aria-label={str(data.aria_label)}
-    >
+    <span className="cr-icon" style={styles.root} aria-label={str(data.aria_label)}>
       {isUrl ? (
         <img className="cr-icon__img" src={icon} alt="" />
       ) : (
@@ -192,11 +179,7 @@ function CompoundCard({
   onEvent?: (e: string, d: unknown) => void;
 }) {
   return (
-    <div
-      className="cr-card"
-      style={styles.root}
-      onClick={() => onEvent?.("onClick", data)}
-    >
+    <div className="cr-card" style={styles.root} onClick={() => onEvent?.("onClick", data)}>
       {!!data.media && (
         <div className="cr-card__image" style={styles.image}>
           <img src={str(data.media)} alt={str(data.title)} />
@@ -253,11 +236,7 @@ function CompoundMediaCard({
 }) {
   const src = str(data.media);
   return (
-    <div
-      className="cr-media-card"
-      style={styles.root}
-      onClick={() => onEvent?.("onClick", data)}
-    >
+    <div className="cr-media-card" style={styles.root} onClick={() => onEvent?.("onClick", data)}>
       <div className="cr-media-card__media" style={styles.media}>
         {src ? (
           <img src={src} alt={str(data.title)} />
@@ -327,9 +306,9 @@ function CompoundMediaScraper({
       setJob({ url, status: "pending" });
       apiRequest<{ images?: string[]; last_scanned?: string; status?: string }>(
         `/mediascraper/scrape?url=${encodeURIComponent(url)}`,
-        { method: "GET" },
+        { method: "GET" }
       )
-        .then((res) => {
+        .then(res => {
           if (active && res && res.images) {
             setJob({
               url,
@@ -339,7 +318,7 @@ function CompoundMediaScraper({
             });
           }
         })
-        .catch((err) => {
+        .catch(err => {
           if (active) {
             setJob({ url, status: "error", error: err.message });
           }
@@ -454,9 +433,7 @@ export function ComponentRenderer({
     case "compound.stat":
       return <CompoundStat data={data} styles={styles} />;
     case "compound.media_card":
-      return (
-        <CompoundMediaCard data={data} styles={styles} onEvent={onEvent} />
-      );
+      return <CompoundMediaCard data={data} styles={styles} onEvent={onEvent} />;
     case "compound.profile":
       return <CompoundProfile data={data} styles={styles} />;
     case "compound.mediascraper":

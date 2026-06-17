@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
-import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
+import { useEffect, useRef } from "react";
+import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
 
-import './Aurora.css';
+import "./Aurora.css";
 
 const VERT = `#version 300 es
 in vec2 position;
@@ -118,7 +118,7 @@ interface AuroraProps {
 }
 
 export default function Aurora(props: AuroraProps) {
-  const { colorStops = ['#5227FF', '#7cff67', '#5227FF'], amplitude = 1.0, blend = 0.5 } = props;
+  const { colorStops = ["#5227FF", "#7cff67", "#5227FF"], amplitude = 1.0, blend = 0.5 } = props;
   const propsRef = useRef<AuroraProps>(props);
   propsRef.current = props;
 
@@ -131,13 +131,13 @@ export default function Aurora(props: AuroraProps) {
     const renderer = new Renderer({
       alpha: true,
       premultipliedAlpha: true,
-      antialias: true
+      antialias: true,
     });
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.canvas.style.backgroundColor = 'transparent';
+    gl.canvas.style.backgroundColor = "transparent";
 
     let program: Program | undefined;
 
@@ -150,7 +150,7 @@ export default function Aurora(props: AuroraProps) {
         program.uniforms.uResolution.value = [width, height];
       }
     }
-    window.addEventListener('resize', resize);
+    window.addEventListener("resize", resize);
 
     const geometry = new Triangle(gl);
     if (geometry.attributes.uv) {
@@ -170,8 +170,8 @@ export default function Aurora(props: AuroraProps) {
         uAmplitude: { value: amplitude },
         uColorStops: { value: colorStopsArray },
         uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
-        uBlend: { value: blend }
-      }
+        uBlend: { value: blend },
+      },
     });
 
     const mesh = new Mesh(gl, { geometry, program });
@@ -199,11 +199,11 @@ export default function Aurora(props: AuroraProps) {
 
     return () => {
       cancelAnimationFrame(animateId);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener("resize", resize);
       if (ctn && gl.canvas.parentNode === ctn) {
         ctn.removeChild(gl.canvas);
       }
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
   }, [amplitude]);
 

@@ -43,8 +43,21 @@ export default function UserUploadsDirectory() {
       title={
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {user ? (
-            <UserProfileOverlay userId={user.id} fallbackName={displayName} fallbackAvatar={user.avatar_url}>
-              <Link to={`/users/${user.id}`} style={{ display: "flex", alignItems: "center", gap: "12px", color: "inherit", textDecoration: "none" }}>
+            <UserProfileOverlay
+              userId={user.id}
+              fallbackName={displayName}
+              fallbackAvatar={user.avatar_url}
+            >
+              <Link
+                to={`/users/${user.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  color: "inherit",
+                  textDecoration: "none",
+                }}
+              >
                 <UserAvatar
                   src={user.avatar_url}
                   alt={displayName}
@@ -67,7 +80,7 @@ export default function UserUploadsDirectory() {
       searchValue={search}
       onSearchChange={setSearch}
       viewMode={viewMode}
-      onViewModeChange={(m) => setViewMode(m as "grid" | "list")}
+      onViewModeChange={m => setViewMode(m as "grid" | "list")}
       customListContent={uploadsContent}
       customGridContent={uploadsContent}
       items={user ? [1] : []} // Dummy items array so emptyState isn't triggered erroneously if we handle empty inside UserUploads

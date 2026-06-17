@@ -83,7 +83,7 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   // Advance to next video when the current one ends
   const handleVideoEnded = useCallback(() => {
     if (videos.length > 1) {
-      setVideoIdx((prev) => (prev + 1) % videos.length);
+      setVideoIdx(prev => (prev + 1) % videos.length);
     }
   }, [videos.length]);
 
@@ -109,13 +109,11 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const removeVideo = (idx: number) => {
     const updated = videos.filter((_, i) => i !== idx);
     updateCfg({ videos: updated, video_url: undefined });
-    if (videoIdx >= updated.length)
-      setVideoIdx(Math.max(0, updated.length - 1));
+    if (videoIdx >= updated.length) setVideoIdx(Math.max(0, updated.length - 1));
   };
 
-  const goPrev = () =>
-    setVideoIdx((p) => (p - 1 + videos.length) % videos.length);
-  const goNext = () => setVideoIdx((p) => (p + 1) % videos.length);
+  const goPrev = () => setVideoIdx(p => (p - 1 + videos.length) % videos.length);
+  const goNext = () => setVideoIdx(p => (p + 1) % videos.length);
 
   return (
     <section className={`hero-banner hero-v${variant}`}>
@@ -139,21 +137,13 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
       {/* Video cycling controls (non-edit visitors too) */}
       {isVideo && videos.length > 1 && (
         <div className="hero-video-nav">
-          <button
-            className="hero-video-nav-btn"
-            onClick={goPrev}
-            title="Previous video"
-          >
+          <button className="hero-video-nav-btn" onClick={goPrev} title="Previous video">
             <ChevronLeft size={20} />
           </button>
           <span className="hero-video-nav-counter">
             {videoIdx + 1} / {videos.length}
           </span>
-          <button
-            className="hero-video-nav-btn"
-            onClick={goNext}
-            title="Next video"
-          >
+          <button className="hero-video-nav-btn" onClick={goNext} title="Next video">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -171,7 +161,7 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
                 onDelete={() => onDelete(section.id)}
                 label="Hero"
                 layout={getSectionLayout(section.config)}
-                onLayoutChange={(nextLayout) =>
+                onLayoutChange={nextLayout =>
                   onUpdate({
                     ...section,
                     config: setSectionLayout(section.config, nextLayout),
@@ -182,16 +172,14 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
                     <VariantCycler
                       current={variant}
                       total={HERO_VARIANTS}
-                      onCycle={(v) => updateCfg({ variant: v })}
+                      onCycle={v => updateCfg({ variant: v })}
                       label="Hero"
                     />
-                    <ImagePickerButton
-                      onUploaded={(url) => updateCfg({ background_image: url })}
-                    />
+                    <ImagePickerButton onUploaded={url => updateCfg({ background_image: url })} />
                     {isVideo && <VideoPickerButton onUploaded={addVideo} />}
                     <ColorPickerButton
                       value={tintColor}
-                      onChange={(c) => updateCfg({ tint_color: c })}
+                      onChange={c => updateCfg({ tint_color: c })}
                       title="Tint color"
                     />
                     <label className="hero-opacity-slider" title="Tint opacity">
@@ -200,7 +188,7 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
                         min={0}
                         max={100}
                         value={Math.round(tintOpacity * 100)}
-                        onChange={(e) =>
+                        onChange={e =>
                           updateCfg({
                             tint_opacity: Number(e.target.value) / 100,
                           })
@@ -220,12 +208,10 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
                       className={`hero-video-chip${i === videoIdx ? " active" : ""}`}
                       onClick={() => setVideoIdx(i)}
                     >
-                      <span className="hero-video-chip-label">
-                        Video {i + 1}
-                      </span>
+                      <span className="hero-video-chip-label">Video {i + 1}</span>
                       <button
                         className="hero-video-chip-remove"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           removeVideo(i);
                         }}
@@ -240,16 +226,12 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
 
               <EditableText
                 value={section.heading}
-                onSave={(v) =>
-                  onUpdate({ ...sectionRef.current, heading: v })
-                }
+                onSave={v => onUpdate({ ...sectionRef.current, heading: v })}
                 tag="h1"
               />
               <EditableText
                 value={section.subheading}
-                onSave={(v) =>
-                  onUpdate({ ...sectionRef.current, subheading: v })
-                }
+                onSave={v => onUpdate({ ...sectionRef.current, subheading: v })}
                 tag="p"
               />
             </>

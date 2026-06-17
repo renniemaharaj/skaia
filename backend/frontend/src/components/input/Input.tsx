@@ -88,7 +88,7 @@ const Input: React.FC<InputProps> = ({
   // Insert text at cursor (e.g. emoji)
   useEffect(() => {
     if (insertText && insertText.length > 0) {
-      setMessage((prev) => prev + insertText);
+      setMessage(prev => prev + insertText);
       onInsertTextConsumed?.();
       textAreaRef.current?.focus();
     }
@@ -115,7 +115,7 @@ const Input: React.FC<InputProps> = ({
           maxRows={maxRows}
           maxLength={maxLength}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={e => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           aria-label={placeholder}
         />

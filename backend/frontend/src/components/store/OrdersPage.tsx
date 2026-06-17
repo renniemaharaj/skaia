@@ -15,19 +15,12 @@ import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  hasPermissionAtom,
-  isAuthenticatedAtom,
-  socketAtom,
-} from "../../atoms/auth";
+import { hasPermissionAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
 import type { User } from "../../atoms/auth";
 import type { Order, Payment, ReferenceCode } from "../../atoms/store";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
 import PersonPicker from "../../components/ui/PersonPicker";
-import {
-  type TableColumn,
-  TableView,
-} from "../../components/ui/TableView/TableView";
+import { type TableColumn, TableView } from "../../components/ui/TableView/TableView";
 import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { apiRequest } from "../../utils/api";
@@ -64,14 +57,9 @@ export const OrdersPage = () => {
     incentive_amount: "",
     is_active: true,
   });
-  const [editingReferenceCodeId, setEditingReferenceCodeId] = useState<
-    string | null
-  >(null);
-  const [selectedReferenceUser, setSelectedReferenceUser] =
-    useState<User | null>(null);
-  const [paymentsByOrder, setPaymentsByOrder] = useState<
-    Record<string, Payment>
-  >({});
+  const [editingReferenceCodeId, setEditingReferenceCodeId] = useState<string | null>(null);
+  const [selectedReferenceUser, setSelectedReferenceUser] = useState<User | null>(null);
+  const [paymentsByOrder, setPaymentsByOrder] = useState<Record<string, Payment>>({});
   const [loading, setLoading] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [mapPopover, setMapPopover] = useState<{
@@ -106,9 +94,7 @@ export const OrdersPage = () => {
       try {
         const focus = localStorage.getItem(FOCUS_KEY);
         if (focus) {
-          const found = ordersArr.find(
-            (order) => String(order.id) === String(focus),
-          );
+          const found = ordersArr.find(order => String(order.id) === String(focus));
           if (found) setExpandedOrders(new Set([String(focus)]));
           localStorage.removeItem(FOCUS_KEY);
         }
@@ -131,7 +117,7 @@ export const OrdersPage = () => {
                 JSON.stringify({
                   type: "subscribe",
                   payload: { resource_type: "order", resource_id: order.id },
-                }),
+                })
               );
             } catch {}
           }
@@ -146,9 +132,7 @@ export const OrdersPage = () => {
 
   const fetchReferenceCodes = async () => {
     try {
-      const data = (await apiRequest(
-        "/store/reference-codes",
-      )) as ReferenceCode[];
+      const data = (await apiRequest("/store/reference-codes")) as ReferenceCode[];
       setReferenceCodes(data || []);
     } catch {
       toast.error("Failed to load reference codes");
@@ -166,9 +150,7 @@ export const OrdersPage = () => {
     setEditingReferenceCodeId(null);
   };
 
-  const submitReferenceCode = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const submitReferenceCode = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const userID = Number.parseInt(referenceForm.user_id, 10);
     const incentiveAmount = Number.parseInt(referenceForm.incentive_amount, 10);
@@ -193,19 +175,13 @@ export const OrdersPage = () => {
             incentive_amount: incentiveAmount,
             is_active: referenceForm.is_active,
           }),
-        },
+        }
       );
-      toast.success(
-        editingReferenceCodeId
-          ? "Reference code updated"
-          : "Reference code created",
-      );
+      toast.success(editingReferenceCodeId ? "Reference code updated" : "Reference code created");
       resetReferenceForm();
       fetchReferenceCodes();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save reference code",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save reference code");
     }
   };
 
@@ -230,33 +206,27 @@ export const OrdersPage = () => {
       if (editingReferenceCodeId === id) resetReferenceForm();
       fetchReferenceCodes();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to delete reference code",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to delete reference code");
     }
   };
 
   const handleReferenceUserSelect = (user: User) => {
     setSelectedReferenceUser(user);
-    setReferenceForm((prev) => ({ ...prev, user_id: String(user.id) }));
+    setReferenceForm(prev => ({ ...prev, user_id: String(user.id) }));
   };
 
   const clearReferenceUser = () => {
     setSelectedReferenceUser(null);
-    setReferenceForm((prev) => ({ ...prev, user_id: "" }));
+    setReferenceForm(prev => ({ ...prev, user_id: "" }));
   };
 
   const renderOrderStatus = (order: Order) => (
     <div className="orders-status-cell">
-      <span
-        className={`orders-status orders-status--${order.status || "pending"}`}
-      >
+      <span className={`orders-status orders-status--${order.status || "pending"}`}>
         {order.status}
       </span>
       {paymentsByOrder[order.id] && (
-        <span
-          className={`orders-payment orders-payment--${paymentsByOrder[order.id].status}`}
-        >
+        <span className={`orders-payment orders-payment--${paymentsByOrder[order.id].status}`}>
           {paymentsByOrder[order.id].status === "succeeded"
             ? "Paid"
             : paymentsByOrder[order.id].status}
@@ -278,11 +248,7 @@ export const OrdersPage = () => {
     return (
       <UserProfileOverlay userId={order.user_id}>
         <div className="orders-user-cell">
-          <UserAvatar
-            src={undefined}
-            initials={`U${order.user_id}`}
-            size={32}
-          />
+          <UserAvatar src={undefined} initials={`U${order.user_id}`} size={32} />
           <span>User #{order.user_id}</span>
         </div>
       </UserProfileOverlay>
@@ -295,7 +261,7 @@ export const OrdersPage = () => {
         <button
           type="button"
           className="action-btn edit-btn"
-          onClick={(event) => {
+          onClick={event => {
             event.stopPropagation();
             updateOrderStatus(order.id, "accepted");
           }}
@@ -307,25 +273,18 @@ export const OrdersPage = () => {
       <button
         type="button"
         className={`action-btn ${order.status === "completed" ? "active" : ""}`}
-        onClick={(event) => {
+        onClick={event => {
           event.stopPropagation();
-          updateOrderStatus(
-            order.id,
-            order.status === "completed" ? "pending" : "completed",
-          );
+          updateOrderStatus(order.id, order.status === "completed" ? "pending" : "completed");
         }}
         title={order.status === "completed" ? "Mark Pending" : "Mark Completed"}
       >
-        {order.status === "completed" ? (
-          <RotateCcw size={16} />
-        ) : (
-          <CheckCircle size={16} />
-        )}
+        {order.status === "completed" ? <RotateCcw size={16} /> : <CheckCircle size={16} />}
       </button>
       <button
         type="button"
         className="action-btn danger"
-        onClick={(event) => {
+        onClick={event => {
           event.stopPropagation();
           deleteOrder(order.id);
         }}
@@ -341,28 +300,26 @@ export const OrdersPage = () => {
       header: "Code",
       width: "minmax(120px, 1.2fr)",
       className: "table-view__cell--bold",
-      cell: (code) => code.code,
+      cell: code => code.code,
     },
     {
       header: "User",
       width: "minmax(140px, 1fr)",
-      cell: (code) => `User #${code.user_id}`,
+      cell: code => `User #${code.user_id}`,
     },
     {
       header: "Incentive",
       width: "minmax(110px, 0.8fr)",
       className: "table-view__cell--muted",
-      cell: (code) => formatCents(code.incentive_amount),
+      cell: code => formatCents(code.incentive_amount),
     },
     {
       header: "Status",
       width: "minmax(90px, 0.7fr)",
-      cell: (code) => (
+      cell: code => (
         <span
           className={`orders-status ${
-            code.is_active
-              ? "orders-status--completed"
-              : "orders-status--cancelled"
+            code.is_active ? "orders-status--completed" : "orders-status--cancelled"
           }`}
         >
           {code.is_active ? "Active" : "Inactive"}
@@ -373,7 +330,7 @@ export const OrdersPage = () => {
       header: "Actions",
       width: "96px",
       className: "table-view__cell--actions",
-      cell: (code) => (
+      cell: code => (
         <div className="order-actions">
           <button
             type="button"
@@ -400,13 +357,13 @@ export const OrdersPage = () => {
     {
       header: "",
       width: "44px",
-      cell: (order) => {
+      cell: order => {
         const isExpanded = expandedOrders.has(order.id);
         return (
           <button
             type="button"
             className="orders-expand-btn"
-            onClick={(event) => {
+            onClick={event => {
               event.stopPropagation();
               toggleExpand(order.id);
             }}
@@ -421,18 +378,18 @@ export const OrdersPage = () => {
       header: "Order",
       width: "minmax(110px, 0.8fr)",
       className: "table-view__cell--bold",
-      cell: (order) => `#${order.id}`,
+      cell: order => `#${order.id}`,
     },
     {
       header: "Date",
       width: "minmax(120px, 1fr)",
       className: "table-view__cell--muted",
-      cell: (order) => new Date(order.created_at).toLocaleDateString(),
+      cell: order => new Date(order.created_at).toLocaleDateString(),
     },
     {
       header: "Total",
       width: "minmax(100px, 0.8fr)",
-      cell: (order) => formatCents(order.total_price || 0),
+      cell: order => formatCents(order.total_price || 0),
     },
     {
       header: "Status",
@@ -460,7 +417,7 @@ export const OrdersPage = () => {
     order: Order,
     _index: number,
     rowProps: { className: string; style: React.CSSProperties },
-    cells: React.ReactNode[],
+    cells: React.ReactNode[]
   ) => {
     const isExpanded = expandedOrders.has(order.id);
     return (
@@ -487,9 +444,7 @@ export const OrdersPage = () => {
       ? `User #${referenceForm.user_id}`
       : "No user selected";
 
-  const referenceSectionTitle = editingReferenceCodeId
-    ? "Edit Reference Code"
-    : "Reference Codes";
+  const referenceSectionTitle = editingReferenceCodeId ? "Edit Reference Code" : "Reference Codes";
 
   const saveReferenceLabel = editingReferenceCodeId ? "Save" : "Create";
 
@@ -520,7 +475,7 @@ export const OrdersPage = () => {
   };
 
   const toggleExpand = (id: string) => {
-    setExpandedOrders((prev) => {
+    setExpandedOrders(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) newSet.delete(id);
       else newSet.add(id);
@@ -544,16 +499,13 @@ export const OrdersPage = () => {
             {isStoreAdmin && (
               <section className="reference-codes-panel">
                 <h3>{referenceSectionTitle}</h3>
-                <form
-                  onSubmit={submitReferenceCode}
-                  className="reference-code-form"
-                >
+                <form onSubmit={submitReferenceCode} className="reference-code-form">
                   <input
                     className="form-input reference-code-input reference-code-input--code"
                     placeholder="Code"
                     value={referenceForm.code}
-                    onChange={(event) =>
-                      setReferenceForm((prev) => ({
+                    onChange={event =>
+                      setReferenceForm(prev => ({
                         ...prev,
                         code: event.target.value,
                       }))
@@ -574,8 +526,8 @@ export const OrdersPage = () => {
                     inputMode="numeric"
                     placeholder="Incentive cents"
                     value={referenceForm.incentive_amount}
-                    onChange={(event) =>
-                      setReferenceForm((prev) => ({
+                    onChange={event =>
+                      setReferenceForm(prev => ({
                         ...prev,
                         incentive_amount: event.target.value,
                       }))
@@ -585,8 +537,8 @@ export const OrdersPage = () => {
                     <input
                       type="checkbox"
                       checked={referenceForm.is_active}
-                      onChange={(event) =>
-                        setReferenceForm((prev) => ({
+                      onChange={event =>
+                        setReferenceForm(prev => ({
                           ...prev,
                           is_active: event.target.checked,
                         }))
@@ -598,11 +550,7 @@ export const OrdersPage = () => {
                     {saveReferenceLabel}
                   </button>
                   {editingReferenceCodeId && (
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={resetReferenceForm}
-                    >
+                    <button type="button" className="btn btn-ghost" onClick={resetReferenceForm}>
                       Cancel
                     </button>
                   )}
@@ -617,34 +565,21 @@ export const OrdersPage = () => {
                       <UserProfileOverlay
                         userId={selectedReferenceUser.id}
                         fallbackName={
-                          selectedReferenceUser.display_name ||
-                          selectedReferenceUser.username
+                          selectedReferenceUser.display_name || selectedReferenceUser.username
                         }
-                        fallbackAvatar={
-                          selectedReferenceUser.avatar_url || undefined
-                        }
+                        fallbackAvatar={selectedReferenceUser.avatar_url || undefined}
                         disableClick={true}
                       >
                         <UserAvatar
                           src={selectedReferenceUser.avatar_url || undefined}
-                          alt={
-                            selectedReferenceUser.display_name ||
-                            selectedReferenceUser.username
-                          }
+                          alt={selectedReferenceUser.display_name || selectedReferenceUser.username}
                           size={24}
-                          initials={(
-                            selectedReferenceUser.display_name ||
-                            selectedReferenceUser.username
-                          )?.[0]?.toUpperCase()}
+                          initials={(selectedReferenceUser.display_name ||
+                            selectedReferenceUser.username)?.[0]?.toUpperCase()}
                         />
                       </UserProfileOverlay>
                     ) : referenceForm.user_id ? (
-                      <UserAvatar
-                        src={undefined}
-                        alt={referenceUserLabel}
-                        size={24}
-                        initials="#"
-                      />
+                      <UserAvatar src={undefined} alt={referenceUserLabel} size={24} initials="#" />
                     ) : (
                       <span
                         className="reference-code-selected-user__avatar-placeholder"
@@ -686,13 +621,9 @@ export const OrdersPage = () => {
                 <TableView
                   data={referenceCodes}
                   columns={referenceCodeColumns}
-                  rowKey={(code) => code.id}
+                  rowKey={code => code.id}
                   maxHeight={280}
-                  emptyState={
-                    <p className="orders-empty-state">
-                      No reference codes yet.
-                    </p>
-                  }
+                  emptyState={<p className="orders-empty-state">No reference codes yet.</p>}
                 />
               </section>
             )}
@@ -713,7 +644,7 @@ export const OrdersPage = () => {
                 <TableView
                   data={orders}
                   columns={orderColumns}
-                  rowKey={(order) => order.id}
+                  rowKey={order => order.id}
                   renderRowWrapper={renderOrderRow}
                   maxHeight={680}
                 />
@@ -739,7 +670,7 @@ export const OrdersPage = () => {
                 zIndex: 9998,
               }}
               onClick={() => setMapPopover(null)}
-              onKeyDown={(event) => {
+              onKeyDown={event => {
                 if (event.key === "Escape") setMapPopover(null);
               }}
             />
@@ -836,7 +767,7 @@ export const OrdersPage = () => {
               </div>
             </div>
           </>,
-          document.body,
+          document.body
         )}
     </StorePageShell>
   );

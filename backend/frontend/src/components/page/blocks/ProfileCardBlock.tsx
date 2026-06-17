@@ -54,17 +54,10 @@ interface Props {
   onItemDelete: (id: number) => void;
 }
 
-export const ProfileCardBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const cfg = getCfg(section.config);
-  const bannerUrl =
-    JSON.parse(section.config || "{}").banner_url || "/banner_7783x7783.png";
-  const avatarUrl =
-    JSON.parse(section.config || "{}").avatar_url || "/logo.png";
+  const bannerUrl = JSON.parse(section.config || "{}").banner_url || "/banner_7783x7783.png";
+  const avatarUrl = JSON.parse(section.config || "{}").avatar_url || "/logo.png";
 
   const sectionRef = useRef(section);
   useEffect(() => {
@@ -95,13 +88,8 @@ export const ProfileCardBlock = ({
   };
 
   // Links CRUD
-  const updateLink = (
-    index: number,
-    updates: Partial<{ label: string; url: string }>,
-  ) => {
-    const items = cfg.links.map((l, i) =>
-      i === index ? { ...l, ...updates } : l,
-    );
+  const updateLink = (index: number, updates: Partial<{ label: string; url: string }>) => {
+    const items = cfg.links.map((l, i) => (i === index ? { ...l, ...updates } : l));
     updateConfig({ links: items });
   };
 
@@ -122,28 +110,28 @@ export const ProfileCardBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Profile Card"
           layout={getSectionLayout(section.config)}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -157,16 +145,12 @@ export const ProfileCardBlock = ({
           <>
             <EditableText
               value={section.heading}
-              onSave={(v) =>
-                onUpdate({ ...sectionRef.current, heading: v })
-              }
+              onSave={v => onUpdate({ ...sectionRef.current, heading: v })}
               tag="h2"
             />
             <EditableText
               value={section.subheading}
-              onSave={(v) =>
-                onUpdate({ ...sectionRef.current, subheading: v })
-              }
+              onSave={v => onUpdate({ ...sectionRef.current, subheading: v })}
               tag="p"
             />
           </>
@@ -186,20 +170,16 @@ export const ProfileCardBlock = ({
             <img src={bannerUrl} alt="Banner" />
             {canEdit && (
               <ImagePickerButton
-                onUploaded={(url) => updateConfig({ banner_url: url })}
+                onUploaded={url => updateConfig({ banner_url: url })}
                 className="pb-action-btn-abs"
               />
             )}
             {/* Avatar overlapping bottom of banner */}
             <div className="profile-card-avatar-wrapper">
-              <img
-                src={avatarUrl}
-                alt="Profile"
-                className="profile-card-avatar"
-              />
+              <img src={avatarUrl} alt="Profile" className="profile-card-avatar" />
               {canEdit && (
                 <ImagePickerButton
-                  onUploaded={(url) => updateConfig({ avatar_url: url })}
+                  onUploaded={url => updateConfig({ avatar_url: url })}
                   className="profile-card-avatar-edit"
                 />
               )}
@@ -211,30 +191,22 @@ export const ProfileCardBlock = ({
             {canEdit ? (
               <>
                 <EditableText
-                  value={
-                    JSON.parse(section.config || "{}").profile_name || "Name"
-                  }
-                  onSave={(v) => updateConfig({ profile_name: v })}
+                  value={JSON.parse(section.config || "{}").profile_name || "Name"}
+                  onSave={v => updateConfig({ profile_name: v })}
                   tag="h3"
                 />
                 <EditableText
-                  value={
-                    JSON.parse(section.config || "{}").profile_subtitle ||
-                    "Subtitle"
-                  }
-                  onSave={(v) => updateConfig({ profile_subtitle: v })}
+                  value={JSON.parse(section.config || "{}").profile_subtitle || "Subtitle"}
+                  onSave={v => updateConfig({ profile_subtitle: v })}
                   tag="p"
                   className="profile-card-subtitle"
                 />
               </>
             ) : (
               <>
-                <h3>
-                  {JSON.parse(section.config || "{}").profile_name || "Name"}
-                </h3>
+                <h3>{JSON.parse(section.config || "{}").profile_name || "Name"}</h3>
                 <p className="profile-card-subtitle">
-                  {JSON.parse(section.config || "{}").profile_subtitle ||
-                    "Subtitle"}
+                  {JSON.parse(section.config || "{}").profile_subtitle || "Subtitle"}
                 </p>
               </>
             )}
@@ -249,7 +221,7 @@ export const ProfileCardBlock = ({
                         <ExternalLink size={14} />
                         <EditableText
                           value={link.label}
-                          onSave={(v) => updateLink(i, { label: v })}
+                          onSave={v => updateLink(i, { label: v })}
                           tag="span"
                         />
                         <button
@@ -261,11 +233,7 @@ export const ProfileCardBlock = ({
                         </button>
                       </>
                     ) : (
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <a href={link.url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink size={14} />
                         {link.label}
                       </a>
@@ -286,7 +254,7 @@ export const ProfileCardBlock = ({
                 {canEdit ? (
                   <EditableText
                     value={cfg.description}
-                    onSave={(v) => updateConfig({ description: v })}
+                    onSave={v => updateConfig({ description: v })}
                     tag="p"
                     placeholder="Add a description…"
                   />
@@ -306,11 +274,7 @@ export const ProfileCardBlock = ({
                 <Check size={16} className="profile-card-check-icon" />
                 {canEdit ? (
                   <>
-                    <EditableText
-                      value={item}
-                      onSave={(v) => updateCheckItem(i, v)}
-                      tag="span"
-                    />
+                    <EditableText value={item} onSave={v => updateCheckItem(i, v)} tag="span" />
                     <button
                       className="footer-remove-item-btn"
                       onClick={() => removeCheckItem(i)}

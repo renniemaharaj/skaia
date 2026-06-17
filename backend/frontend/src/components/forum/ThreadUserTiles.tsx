@@ -27,14 +27,14 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
       const data = await apiRequest<ProfileUser[]>(
         `/forum/threads/${threadId}/${type}?limit=${PAGE_SIZE}&offset=${pageNum * PAGE_SIZE}`
       );
-      
+
       const newUsers = data || [];
       if (pageNum === 0) {
         setUsers(newUsers);
       } else {
         setUsers(prev => [...prev, ...newUsers]);
       }
-      
+
       if (newUsers.length < PAGE_SIZE) {
         setHasMore(false);
       }
@@ -53,20 +53,23 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId, type]);
 
-  const lastUserRef = useCallback((node: HTMLDivElement) => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prev => {
-          const next = prev + 1;
-          fetchUsers(next);
-          return next;
-        });
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
+  const lastUserRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage(prev => {
+            const next = prev + 1;
+            fetchUsers(next);
+            return next;
+          });
+        }
+      });
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore]
+  );
 
   if (users.length === 0 && !loading) {
     return null; // Don't show the tile if empty
@@ -85,18 +88,18 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
         {users.map((user, idx) => {
           const isLast = idx === users.length - 1;
           return (
-            <div 
-              key={`${user.id}-${idx}`} 
+            <div
+              key={`${user.id}-${idx}`}
               ref={isLast ? lastUserRef : null}
               className="tut-user-icon"
             >
-              <UserProfileOverlay 
-                userId={user.id} 
+              <UserProfileOverlay
+                userId={user.id}
                 fallbackName={user.display_name || user.username}
                 fallbackAvatar={user.avatar_url}
               >
-                <UserAvatar 
-                  src={user.avatar_url} 
+                <UserAvatar
+                  src={user.avatar_url}
                   alt={user.display_name || user.username}
                   size={32}
                   initials={(user.display_name || user.username || "?")[0]?.toUpperCase()}

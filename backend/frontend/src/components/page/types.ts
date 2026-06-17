@@ -145,27 +145,14 @@ export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
   {
     id: "content",
     label: "Content blocks",
-    description:
-      "Cards, stats, galleries and social links for structured content.",
-    types: [
-      "card_group",
-      "stat_cards",
-      "social_links",
-      "image_gallery",
-      "feature_grid",
-    ],
+    description: "Cards, stats, galleries and social links for structured content.",
+    types: ["card_group", "stat_cards", "social_links", "image_gallery", "feature_grid"],
   },
   {
     id: "rich",
     label: "Rich content",
     description: "Text, code and custom sections for advanced content.",
-    types: [
-      "rich_text",
-      "code_editor",
-      "data_sources",
-      "derived_section",
-      "custom_section",
-    ],
+    types: ["rich_text", "code_editor", "data_sources", "derived_section", "custom_section"],
   },
 ];
 
@@ -224,13 +211,7 @@ export const RENDERABLE_TYPE_LABELS: Record<RenderableSectionType, string> = {
 };
 
 /** Fields on a PageItem that a datasource column can be mapped to. */
-export const MAPPABLE_FIELDS = [
-  "heading",
-  "subheading",
-  "icon",
-  "image_url",
-  "link_url",
-] as const;
+export const MAPPABLE_FIELDS = ["heading", "subheading", "icon", "image_url", "link_url"] as const;
 export type MappableField = (typeof MAPPABLE_FIELDS)[number];
 
 export const MAPPABLE_FIELD_LABELS: Record<MappableField, string> = {
@@ -245,10 +226,7 @@ export const MAPPABLE_FIELD_LABELS: Record<MappableField, string> = {
 export type ColumnMap = Partial<Record<MappableField, string>>;
 
 /** Per-row overrides keyed by a stable row identifier. */
-export type RowOverrides = Record<
-  string,
-  Partial<Record<MappableField, string>>
->;
+export type RowOverrides = Record<string, Partial<Record<MappableField, string>>>;
 
 /* Card Designer types */
 
@@ -379,11 +357,7 @@ export const DEFAULT_CARD_TEMPLATE: CardTemplate = {
 export function migrateCardTemplate(t: Partial<CardTemplate>): CardTemplate {
   const base = { ...DEFAULT_CARD_TEMPLATE, ...t };
   // Migrate legacy single padding to per-side
-  if (
-    t.padding !== undefined &&
-    t.paddingTop === undefined &&
-    t.paddingRight === undefined
-  ) {
+  if (t.padding !== undefined && t.paddingTop === undefined && t.paddingRight === undefined) {
     base.paddingTop = t.padding;
     base.paddingRight = t.padding;
     base.paddingBottom = t.padding;

@@ -1,12 +1,6 @@
 import "./Select.css";
 import { ChevronDown } from "lucide-react";
-import React, {
-  forwardRef,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { GlassMenu, type GlassMenuOption } from "../ui/GlassMenu";
 
 export type SelectVariant = "standard" | "minimal";
@@ -18,8 +12,7 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps
-  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   /** Visual variant. */
   variant?: SelectVariant;
   /** Size preset. */
@@ -60,7 +53,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       onChange,
       ...rest
     },
-    ref,
+    ref
   ) => {
     const nativeSelectRef = useRef<HTMLSelectElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -69,7 +62,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       y: number;
     } | null>(null);
     const [uncontrolledValue, setUncontrolledValue] = useState(() =>
-      defaultValue !== undefined ? String(defaultValue) : "",
+      defaultValue !== undefined ? String(defaultValue) : ""
     );
 
     useImperativeHandle(ref, () => nativeSelectRef.current as HTMLSelectElement);
@@ -86,12 +79,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       .filter(Boolean)
       .join(" ");
 
-    const selectId = id || (label ? `sk-select-${label.replace(/\s+/g, "-").toLowerCase()}` : undefined);
+    const selectId =
+      id || (label ? `sk-select-${label.replace(/\s+/g, "-").toLowerCase()}` : undefined);
     const nativeSelectId = selectId ? `${selectId}-native` : undefined;
     const optionItems = useMemo<SelectOption[]>(() => {
       if (options) return options;
 
-      return React.Children.toArray(children).flatMap((child) => {
+      return React.Children.toArray(children).flatMap(child => {
         if (!React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child)) {
           return [];
         }
@@ -108,14 +102,14 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       });
     }, [children, options]);
     const fallbackValue =
-      optionItems.find((opt) => !opt.disabled)?.value ?? optionItems[0]?.value ?? "";
+      optionItems.find(opt => !opt.disabled)?.value ?? optionItems[0]?.value ?? "";
     const selectedValue =
       value !== undefined ? String(value) : String(uncontrolledValue || fallbackValue);
-    const selectedOption = optionItems.find((opt) => opt.value === selectedValue);
+    const selectedOption = optionItems.find(opt => opt.value === selectedValue);
     const selectedLabel = selectedOption?.label || "Select";
     const menuOptions = useMemo<GlassMenuOption[]>(
       () =>
-        optionItems.map((opt) => ({
+        optionItems.map(opt => ({
           key: opt.value,
           title: opt.label,
           disabled: opt.disabled,
@@ -132,7 +126,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             }
           },
         })),
-      [onChange, optionItems, value],
+      [onChange, optionItems, value]
     );
 
     const openMenu = () => {
@@ -163,19 +157,15 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-hidden="true"
             tabIndex={-1}
             value={selectedValue}
-            onChange={(event) => {
+            onChange={event => {
               if (value === undefined) setUncontrolledValue(event.target.value);
               onChange?.(event);
             }}
             {...rest}
           >
             {options
-              ? options.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    disabled={opt.disabled}
-                  >
+              ? options.map(opt => (
+                  <option key={opt.value} value={opt.value} disabled={opt.disabled}>
                     {opt.label}
                   </option>
                 ))
@@ -193,7 +183,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-labelledby={label ? selectId : undefined}
             aria-label={ariaLabel}
             onClick={openMenu}
-            onKeyDown={(event) => {
+            onKeyDown={event => {
               if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
                 openMenu();
@@ -215,7 +205,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {error && <p className="sk-select__error">{error}</p>}
       </div>
     );
-  },
+  }
 );
 
 Select.displayName = "Select";

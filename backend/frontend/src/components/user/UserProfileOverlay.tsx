@@ -114,14 +114,13 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   };
 
   // Compute visual details based on fetched user OR fallbacks
-  const displayName =
-    user?.display_name || user?.username || fallbackName || "Unknown User";
+  const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";
   const avatarUrl = user?.avatar_url || fallbackAvatar;
   const bannerUrl = user?.banner_url || "/banner_7783x7783.png";
   const roles = user?.roles || fallbackRoles || [];
 
   const rolesWithDetails = allRoles
-    .filter((r) => roles.includes(r.name))
+    .filter(r => roles.includes(r.name))
     .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const themeColor = topRole?.theme_color;
@@ -133,7 +132,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
       ref={wrapperRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={(e) => {
+      onClick={e => {
         if (disableClick) return;
         e.stopPropagation();
         e.preventDefault();
@@ -151,13 +150,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
             style={popoverStyle}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             <SpotlightCard
               className="upo-card"
-              spotlightColor={
-                themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
-              }
+              spotlightColor={themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"}
             >
               <div className="upo-banner">
                 <img src={bannerUrl} alt="Banner" className="upo-banner-img" />
@@ -183,13 +180,19 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
 
                 <div className="upo-info">
                   <h3 className="upo-display-name">{displayName}</h3>
-                  {user?.username && (
-                    <p className="upo-username">@{user.username}</p>
-                  )}
+                  {user?.username && <p className="upo-username">@{user.username}</p>}
 
-                  <div className="upo-roles" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
-                    {roles.map((r) => {
-                      const roleDetails = allRoles.find((ar) => ar.name === r);
+                  <div
+                    className="upo-roles"
+                    style={{
+                      display: "flex",
+                      gap: "0.4rem",
+                      flexWrap: "wrap",
+                      marginTop: "0.2rem",
+                    }}
+                  >
+                    {roles.map(r => {
+                      const roleDetails = allRoles.find(ar => ar.name === r);
                       return <RoleBadge key={r} role={roleDetails || r} />;
                     })}
                   </div>
@@ -209,7 +212,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
               </div>
             </SpotlightCard>
           </div>,
-          document.body,
+          document.body
         )}
     </div>
   );

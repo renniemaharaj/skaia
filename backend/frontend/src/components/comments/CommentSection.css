@@ -43,10 +43,7 @@
   border-radius: 999px;
   padding: 6px 10px;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .comment-slowmode-toggle:hover {
@@ -222,10 +219,7 @@
   font-size: 0.82rem;
   padding: 6px 10px;
   border-radius: 8px;
-  transition:
-    color 0.15s,
-    background 0.15s,
-    transform 0.12s ease;
+  transition: color 0.15s, background 0.15s, transform 0.12s ease;
 }
 
 .comment-section .action-btn:hover {
@@ -260,10 +254,7 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    background-color 0.2s ease,
-    opacity 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
   justify-content: center;
 }
 

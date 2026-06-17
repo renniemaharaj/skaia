@@ -7,21 +7,12 @@ interface CardPartLinkProps {
   size?: ZoneSize;
 }
 
-export const CardPartLink = ({
-  url,
-  align = "left",
-  size = "sm",
-}: CardPartLinkProps) => {
+export const CardPartLink = ({ url, align = "left", size = "sm" }: CardPartLinkProps) => {
   if (!url) return null;
 
   return (
     <div className={`cdp-link cdp-link--${size}`} style={{ textAlign: align }}>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="cdp-link__anchor"
-      >
+      <a href={url} target="_blank" rel="noopener noreferrer" className="cdp-link__anchor">
         {url}
       </a>
     </div>

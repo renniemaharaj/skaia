@@ -38,11 +38,9 @@ export interface AuthState {
 // Helper: Create an atom with custom localStorage storage (no JSON serialization)
 // In-memory fallback for test environments
 const memoryStore: Record<string, string> = {};
-function customStorageAtom<T extends string | null>(
-  key: string,
-  initialValue: T,
-) {
-  const hasLocalStorage = typeof localStorage !== "undefined" && typeof localStorage.getItem === "function";
+function customStorageAtom<T extends string | null>(key: string, initialValue: T) {
+  const hasLocalStorage =
+    typeof localStorage !== "undefined" && typeof localStorage.getItem === "function";
   const getValue = () => {
     if (hasLocalStorage) {
       let val = localStorage.getItem(key);
@@ -61,7 +59,7 @@ function customStorageAtom<T extends string | null>(
   const baseAtom = atom<T>(getValue());
 
   return atom(
-    (get) => get(baseAtom),
+    get => get(baseAtom),
     (_get, set, newValue: T) => {
       if (hasLocalStorage) {
         if (newValue === null) {
@@ -84,19 +82,13 @@ function customStorageAtom<T extends string | null>(
         }
       }
       set(baseAtom, newValue);
-    },
+    }
   );
 }
 
 // Store tokens in localStorage WITHOUT JSON serialization
-export const accessTokenAtom = customStorageAtom<string | null>(
-  "auth.accessToken",
-  null,
-);
-export const refreshTokenAtom = customStorageAtom<string | null>(
-  "auth.refreshToken",
-  null,
-);
+export const accessTokenAtom = customStorageAtom<string | null>("auth.accessToken", null);
+export const refreshTokenAtom = customStorageAtom<string | null>("auth.refreshToken", null);
 
 // Auth state - separate atoms for better granularity
 export const currentUserAtom = atomWithStorage<User | null>("auth.user", null);
@@ -104,14 +96,12 @@ export const currentUserAtom = atomWithStorage<User | null>("auth.user", null);
 // Derived from accessTokenAtom (synchronous localStorage read) so that
 // ProtectedRoute sees the correct value on the very first render after a
 // page reload - no async-hydration race condition.
-export const isAuthenticatedAtom = atom<boolean>(
-  (get) => get(accessTokenAtom) !== null,
-);
+export const isAuthenticatedAtom = atom<boolean>(get => get(accessTokenAtom) !== null);
 export const authLoadingAtom = atom<boolean>(false);
 export const authErrorAtom = atom<string | null>(null);
 
 // Derived atom for full auth state
-export const authStateAtom = atom((get) => ({
+export const authStateAtom = atom(get => ({
   isAuthenticated: get(isAuthenticatedAtom),
   user: get(currentUserAtom),
   accessToken: get(accessTokenAtom),
@@ -121,7 +111,7 @@ export const authStateAtom = atom((get) => ({
 }));
 
 // Atom for checking specific permissions
-export const hasPermissionAtom = atom((get) => (permission: string) => {
+export const hasPermissionAtom = atom(get => (permission: string) => {
   const user = get(currentUserAtom);
   if (!user) return false;
   // Admin has all permissions
@@ -130,7 +120,7 @@ export const hasPermissionAtom = atom((get) => (permission: string) => {
 });
 
 // Atom for checking specific roles
-export const hasRoleAtom = atom((get) => (role: string) => {
+export const hasRoleAtom = atom(get => (role: string) => {
   const user = get(currentUserAtom);
   return (user?.roles ?? []).includes(role);
 });

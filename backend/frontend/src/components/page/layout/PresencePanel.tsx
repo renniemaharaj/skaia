@@ -18,15 +18,8 @@ import { onlineUsersAtom, type OnlineUser, pendingTpUserAtom } from "../../../at
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import { apiRequest, adminTriggerMFAChallenge } from "../../../utils/api";
-import {
-  currentUserAtom,
-  socketAtom,
-  hasPermissionAtom,
-} from "../../../atoms/auth";
-import {
-  globalChatMessagesAtom,
-  type GlobalChatMessage,
-} from "../../../atoms/chat";
+import { currentUserAtom, socketAtom, hasPermissionAtom } from "../../../atoms/auth";
+import { globalChatMessagesAtom, type GlobalChatMessage } from "../../../atoms/chat";
 import { mediaStateAtom } from "../../../atoms/media";
 import { seoAtom } from "../../../atoms/config";
 import { toast } from "sonner";
@@ -51,19 +44,21 @@ interface PresenceRowAction {
 
 const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 720 ? false : true,
+    typeof window !== "undefined" && window.innerWidth <= 720 ? false : true
   );
-  const [activeTab, setActiveTab] = useState<'members' | 'chat' | 'voice' | 'physics' | 'defcon'>('members');
+  const [activeTab, setActiveTab] = useState<"members" | "chat" | "voice" | "physics" | "defcon">(
+    "members"
+  );
   const [defconInfo, setDefconInfo] = useState<any>(null);
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 720,
+    typeof window !== "undefined" && window.innerWidth <= 720
   );
   const [mobilePanelHeight, setMobilePanelHeight] = useState(
     typeof window !== "undefined"
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
-      : 0,
+      : 0
   );
   const [slowModeEnabled, setSlowModeEnabled] = useState(false);
   const [slowModeInterval, setSlowModeInterval] = useState(10);
@@ -83,7 +78,7 @@ const PresencePanel = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (activeTab === 'defcon') {
+    if (activeTab === "defcon") {
       // Listen for WebSocket pushes from the backend
       const handler = (e: MessageEvent) => {
         try {
@@ -130,9 +125,9 @@ const PresencePanel = () => {
   })();
 
   // Users on the same route as the viewer
-  const here = onlineUsers.filter((u) => u.route === location.pathname);
+  const here = onlineUsers.filter(u => u.route === location.pathname);
   // All other online registered users
-  const elsewhere = onlineUsers.filter((u) => u.route !== location.pathname);
+  const elsewhere = onlineUsers.filter(u => u.route !== location.pathname);
 
   const total = onlineUsers.length;
 
@@ -143,21 +138,16 @@ const PresencePanel = () => {
       key: "dm",
       icon: <MessageCircle size={11} />,
       title: "Send message",
-      hidden: (u) =>
-        u.user_id < 0 ||
-        !currentUser ||
-        String(u.user_id) === String(currentUser.id),
-      handler: (u) => navigate(`/inbox?with=${u.user_id}`),
+      hidden: u => u.user_id < 0 || !currentUser || String(u.user_id) === String(currentUser.id),
+      handler: u => navigate(`/inbox?with=${u.user_id}`),
     },
     {
       key: "tp_to",
       icon: <Navigation size={11} />,
       title: "Go to their location",
-      hidden: (u) =>
-        !currentUser ||
-        !u.route ||
-        (u.user_id > 0 && String(u.user_id) === String(currentUser.id)),
-      handler: (u) => {
+      hidden: u =>
+        !currentUser || !u.route || (u.user_id > 0 && String(u.user_id) === String(currentUser.id)),
+      handler: u => {
         setPendingTpUser(u.user_id);
         navigate(u.route);
       },
@@ -166,17 +156,17 @@ const PresencePanel = () => {
       key: "tp_here",
       icon: <LocateFixed size={11} />,
       title: "Summon here",
-      hidden: (u) =>
+      hidden: u =>
         !hasPermission("presence.tp-here") ||
         (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
-      handler: (u) => {
+      handler: u => {
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
         socket.send(
           JSON.stringify({
             type: "tp",
             user_id: currentUser?.id ? Number(currentUser.id) : 0,
             payload: { target_user_id: u.user_id, route: location.pathname },
-          }),
+          })
         );
         toast(`${u.user_name || "User"} summoned`, {
           description: `Teleporting them to ${location.pathname}`,
@@ -189,11 +179,11 @@ const PresencePanel = () => {
       key: "mfa_challenge",
       icon: <ShieldCheck size={11} />,
       title: "Trigger MFA challenge",
-      hidden: (u) =>
+      hidden: u =>
         !hasPermission("home.manage") ||
         u.user_id < 0 ||
         (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
-      handler: async (u) => {
+      handler: async u => {
         try {
           await adminTriggerMFAChallenge(String(u.user_id));
           toast.success(`Successfully triggered challenge for ${u.user_name || "User"}`);
@@ -204,11 +194,9 @@ const PresencePanel = () => {
     },
   ];
 
-  
-
   // Auto-scroll chat feed to bottom when new messages arrive
   useEffect(() => {
-    if (activeTab === 'chat' && expanded) {
+    if (activeTab === "chat" && expanded) {
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages, activeTab, expanded]);
@@ -219,8 +207,8 @@ const PresencePanel = () => {
   useEffect(() => {
     const delta = chatMessages.length - prevChatLenRef.current;
     prevChatLenRef.current = chatMessages.length;
-    if (delta === 1 && activeTab !== 'chat') {
-      setChatUnread((n) => n + 1);
+    if (delta === 1 && activeTab !== "chat") {
+      setChatUnread(n => n + 1);
     }
   }, [chatMessages.length, activeTab]);
 
@@ -250,7 +238,7 @@ const PresencePanel = () => {
     setSlowModeLoading(true);
     try {
       const data = await apiRequest<{ enabled: boolean; interval: number }>(
-        "/config/comment-slowmode",
+        "/config/comment-slowmode"
       );
       setSlowModeEnabled(data?.enabled ?? false);
       setSlowModeInterval(data?.interval ?? 10);
@@ -273,15 +261,11 @@ const PresencePanel = () => {
             enabled: !slowModeEnabled,
             interval: slowModeInterval || 10,
           }),
-        },
+        }
       );
       setSlowModeEnabled(data?.enabled ?? false);
       setSlowModeInterval(data?.interval ?? 10);
-      toast.success(
-        data?.enabled
-          ? "Comment slow mode enabled"
-          : "Comment slow mode disabled",
-      );
+      toast.success(data?.enabled ? "Comment slow mode enabled" : "Comment slow mode disabled");
     } catch {
       toast.error("Failed to update comment slow mode");
     } finally {
@@ -294,9 +278,7 @@ const PresencePanel = () => {
     void loadSlowMode();
 
     const handler = (e: Event) => {
-      const { action, data } = (
-        e as CustomEvent<{ action: string; data?: any }>
-      ).detail;
+      const { action, data } = (e as CustomEvent<{ action: string; data?: any }>).detail;
       if (action === "comment_slowmode_updated") {
         setSlowModeEnabled(data?.enabled ?? false);
         setSlowModeInterval(data?.interval ?? 10);
@@ -317,12 +299,10 @@ const PresencePanel = () => {
     };
   }, [expanded, isMobile]);
 
-  
-
   const UserRow = ({ u, dim }: { u: OnlineUser; dim?: boolean }) => {
     const isGuest = u.user_id < 0;
     const isMe = !isGuest && String(u.user_id) === String(currentUser?.id);
-    const visibleActions = rowActions.filter((a) => !a.hidden?.(u));
+    const visibleActions = rowActions.filter(a => !a.hidden?.(u));
 
     const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -345,17 +325,17 @@ const PresencePanel = () => {
     const actions = visibleActions.length > 0 && (
       <span
         className="pp-actions"
-        onClick={(e) => {
+        onClick={e => {
           e.preventDefault();
           e.stopPropagation();
         }}
       >
-        {visibleActions.map((action) => (
+        {visibleActions.map(action => (
           <button
             key={action.key}
             className={`pp-action-btn pp-action-btn--${action.key}`}
             title={action.title}
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               e.stopPropagation();
               action.handler(u);
@@ -373,8 +353,13 @@ const PresencePanel = () => {
           {isGuest ? (
             <GhostIcon size={14} />
           ) : (
-            <UserProfileOverlay userId={u.user_id} fallbackName={u.user_name} fallbackAvatar={u.avatar || undefined} disableClick={true}>
-              <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+            <UserProfileOverlay
+              userId={u.user_id}
+              fallbackName={u.user_name}
+              fallbackAvatar={u.avatar || undefined}
+              disableClick={true}
+            >
+              <div style={{ display: "flex", width: "100%", height: "100%" }}>
                 <UserAvatar
                   src={u.avatar || undefined}
                   alt={u.user_name}
@@ -417,8 +402,7 @@ const PresencePanel = () => {
 
   // Helper: render a single chat bubble
   const ChatBubble = ({ msg }: { msg: GlobalChatMessage }) => {
-    const isMe =
-      !msg.is_guest && String(msg.user_id) === String(currentUser?.id);
+    const isMe = !msg.is_guest && String(msg.user_id) === String(currentUser?.id);
     const time = formatLocalTime(msg.created_at);
     const nameEl = msg.is_guest ? (
       <span className="pp-chat-author pp-chat-author--guest">Guest</span>
@@ -454,42 +438,40 @@ const PresencePanel = () => {
       <div className="pp-controls">
         <div className="pp-tabs">
           <button
-            className={`pp-tab${activeTab === 'members' ? " pp-tab--active" : ""}`}
-            onClick={() => setActiveTab('members')}
+            className={`pp-tab${activeTab === "members" ? " pp-tab--active" : ""}`}
+            onClick={() => setActiveTab("members")}
             title="Online members"
           >
             <Users size={13} />
             <span className="pp-count">{total}</span>
           </button>
           <button
-            className={`pp-tab${activeTab === 'chat' ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== 'chat' ? " pp-tab--has-unread" : ""}`}
+            className={`pp-tab${activeTab === "chat" ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== "chat" ? " pp-tab--has-unread" : ""}`}
             onClick={() => {
-              setActiveTab('chat');
+              setActiveTab("chat");
               setChatUnread(0);
             }}
             title="Global chat"
           >
             <MessageCircle size={13} />
-            {chatUnread > 0 && activeTab !== 'chat' && (
-              <span className="pp-chat-badge">
-                {chatUnread > 9 ? "9+" : chatUnread}
-              </span>
+            {chatUnread > 0 && activeTab !== "chat" && (
+              <span className="pp-chat-badge">{chatUnread > 9 ? "9+" : chatUnread}</span>
             )}
           </button>
           <button
-            className={`pp-tab${activeTab === 'voice' ? " pp-tab--active" : ""}`}
+            className={`pp-tab${activeTab === "voice" ? " pp-tab--active" : ""}`}
             onClick={() => {
               setHasOpenedVoice(true);
-              setActiveTab('voice');
+              setActiveTab("voice");
             }}
             title="Voice & Media"
           >
             <Mic size={13} strokeWidth={2.5} />
           </button>
-          {seo?.particle_style === 'gravity' && (
+          {seo?.particle_style === "gravity" && (
             <button
-              className={`pp-tab${activeTab === 'physics' ? " pp-tab--active" : ""}`}
-              onClick={() => setActiveTab('physics')}
+              className={`pp-tab${activeTab === "physics" ? " pp-tab--active" : ""}`}
+              onClick={() => setActiveTab("physics")}
               title="Physics Engine Controls"
             >
               <Atom size={13} strokeWidth={2.5} />
@@ -497,8 +479,8 @@ const PresencePanel = () => {
           )}
           {hasPermission("admin.general") && (
             <button
-              className={`pp-tab${activeTab === 'defcon' ? " pp-tab--active" : ""}`}
-              onClick={() => setActiveTab('defcon')}
+              className={`pp-tab${activeTab === "defcon" ? " pp-tab--active" : ""}`}
+              onClick={() => setActiveTab("defcon")}
               title="DEFCON Telemetry"
             >
               <ShieldCheck size={13} strokeWidth={2.5} />
@@ -524,7 +506,7 @@ const PresencePanel = () => {
         )}
         <button
           className="pp-chevron"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => setExpanded(v => !v)}
           title={expanded ? "Collapse" : "Expand"}
         >
           {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
@@ -533,13 +515,13 @@ const PresencePanel = () => {
 
       {/* Expanded panel */}
       <div
-        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === 'chat' ? " pp-body--chat" : ""}${activeTab === 'voice' ? " pp-body--voice" : ""}${activeTab === 'voice' && isMediaActive ? " pp-body--voice-media-active" : ""}`}
+        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === "chat" ? " pp-body--chat" : ""}${activeTab === "voice" ? " pp-body--voice" : ""}${activeTab === "voice" && isMediaActive ? " pp-body--voice-media-active" : ""}`}
       >
-        <div style={{ display: activeTab === 'members' ? 'block' : 'none' }} className="pp-scroll">
+        <div style={{ display: activeTab === "members" ? "block" : "none" }} className="pp-scroll">
           {here.length > 0 && (
             <>
               <p className="pp-section-label">On this page</p>
-              {here.map((u) => (
+              {here.map(u => (
                 <UserRow key={u.user_id} u={u} />
               ))}
             </>
@@ -547,39 +529,41 @@ const PresencePanel = () => {
 
           {elsewhere.length > 0 && (
             <>
-              <p className="pp-section-label pp-section-label--elsewhere">
-                Elsewhere
-              </p>
-              {elsewhere.map((u) => (
+              <p className="pp-section-label pp-section-label--elsewhere">Elsewhere</p>
+              {elsewhere.map(u => (
                 <UserRow key={u.user_id} u={u} dim />
               ))}
             </>
           )}
 
-          {total === 0 && (
-            <p className="pp-empty">No one online right now.</p>
-          )}
+          {total === 0 && <p className="pp-empty">No one online right now.</p>}
         </div>
 
-        <div style={{ display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', height: '100%', minHeight: 0, flex: 1 }}>
+        <div
+          style={{
+            display: activeTab === "chat" ? "flex" : "none",
+            flexDirection: "column",
+            height: "100%",
+            minHeight: 0,
+            flex: 1,
+          }}
+        >
           <div className="pp-chat-feed">
-            {chatMessages.length === 0 && (
-              <p className="pp-empty">No messages yet. Say hi!</p>
-            )}
-            {chatMessages.map((msg) => (
+            {chatMessages.length === 0 && <p className="pp-empty">No messages yet. Say hi!</p>}
+            {chatMessages.map(msg => (
               <ChatBubble key={msg.id} msg={msg} />
             ))}
             <div ref={chatEndRef} />
           </div>
           <div className="pp-chat-input-row">
             <ComposerInput
-              handleSend={(msg) => {
+              handleSend={msg => {
                 if (!socket || socket.readyState !== WebSocket.OPEN) return;
                 socket.send(
                   JSON.stringify({
                     type: "global:chat",
                     payload: { content: msg },
-                  }),
+                  })
                 );
               }}
               placeholder="Say something…"
@@ -590,52 +574,94 @@ const PresencePanel = () => {
           </div>
         </div>
 
-        <div style={{ display: activeTab === 'voice' ? 'block' : 'none' }} className="pp-scroll pp-scroll--flush">
-          {hasOpenedVoice && <VoicePanel voiceOnly={location.pathname.startsWith('/view-thread/') && !isMobile} />}
+        <div
+          style={{ display: activeTab === "voice" ? "block" : "none" }}
+          className="pp-scroll pp-scroll--flush"
+        >
+          {hasOpenedVoice && (
+            <VoicePanel voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile} />
+          )}
         </div>
 
-        <div style={{ display: activeTab === 'physics' ? 'flex' : 'none', flexDirection: 'column' }} className="pp-scroll">
-          {activeTab === 'physics' && <PhysicsControls />}
+        <div
+          style={{ display: activeTab === "physics" ? "flex" : "none", flexDirection: "column" }}
+          className="pp-scroll"
+        >
+          {activeTab === "physics" && <PhysicsControls />}
         </div>
 
-        <div style={{ display: activeTab === 'defcon' ? 'block' : 'none', padding: '1rem' }} className="pp-scroll">
-          {activeTab === 'defcon' && defconInfo && (
-            <div className="defcon-telemetry-tile" style={{ 
-              fontSize: "0.85rem", 
-              fontFamily: "var(--font-mono, monospace)",
-              textAlign: "left"
-            }}>
-              <div style={{ 
-                marginBottom: "1rem", 
-                fontWeight: 700, 
-                color: "var(--text-primary, #fff)",
-                letterSpacing: "1px",
-                textTransform: "uppercase",
-                borderBottom: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
-                paddingBottom: "0.5rem"
-              }}>
+        <div
+          style={{ display: activeTab === "defcon" ? "block" : "none", padding: "1rem" }}
+          className="pp-scroll"
+        >
+          {activeTab === "defcon" && defconInfo && (
+            <div
+              className="defcon-telemetry-tile"
+              style={{
+                fontSize: "0.85rem",
+                fontFamily: "var(--font-mono, monospace)",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  fontWeight: 700,
+                  color: "var(--text-primary, #fff)",
+                  letterSpacing: "1px",
+                  textTransform: "uppercase",
+                  borderBottom: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
+                  paddingBottom: "0.5rem",
+                }}
+              >
                 [ DEFCON THREAT TELEMETRY ]
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span> 
-                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.ips_jailed}</strong>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+              >
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span>
+                <strong style={{ color: "var(--text-primary, #fff)" }}>
+                  {defconInfo.ips_jailed}
+                </strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Tracked Signatures:</span> 
-                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.distinct_ips_tracked}</strong>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+              >
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Tracked Signatures:</span>
+                <strong style={{ color: "var(--text-primary, #fff)" }}>
+                  {defconInfo.distinct_ips_tracked}
+                </strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span> 
-                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.citizens}</strong>
+              <div
+                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+              >
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span>
+                <strong style={{ color: "var(--text-primary, #fff)" }}>
+                  {defconInfo.citizens}
+                </strong>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))" }}>
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span> 
-                <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.limiter_state} req/m</strong>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginTop: "1rem",
+                  paddingTop: "1rem",
+                  borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
+                }}
+              >
+                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span>
+                <strong style={{ color: "var(--text-primary, #fff)" }}>
+                  {defconInfo.limiter_state} req/m
+                </strong>
               </div>
             </div>
           )}
-          {activeTab === 'defcon' && !defconInfo && (
-            <div style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}>Loading telemetry...</div>
+          {activeTab === "defcon" && !defconInfo && (
+            <div
+              style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}
+            >
+              Loading telemetry...
+            </div>
           )}
         </div>
       </div>

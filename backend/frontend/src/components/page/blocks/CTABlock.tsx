@@ -34,28 +34,28 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
           onDelete={() => onDelete(section.id)}
           label="CTA"
           layout={getSectionLayout(section.config)}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -80,12 +80,12 @@ export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
           <>
             <EditableText
               value={section.heading}
-              onSave={(v) => onUpdate({ ...section, heading: v })}
+              onSave={v => onUpdate({ ...section, heading: v })}
               tag="h2"
             />
             <EditableText
               value={section.subheading}
-              onSave={(v) => onUpdate({ ...section, subheading: v })}
+              onSave={v => onUpdate({ ...section, subheading: v })}
               tag="p"
             />
           </>

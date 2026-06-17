@@ -54,7 +54,7 @@ export const InlineProduct = ({
                 objectFit: "cover",
                 cursor: "pointer",
               }}
-              onClick={(e) => {
+              onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -76,12 +76,9 @@ export const InlineProduct = ({
           <div className="product-page-price">
             <span className="current-price">{formatCents(product.price)}</span>
 
-            {product.original_price &&
-              product.original_price > product.price && (
-                <span className="original-price">
-                  {formatCents(product.original_price)}
-                </span>
-              )}
+            {product.original_price && product.original_price > product.price && (
+              <span className="original-price">{formatCents(product.original_price)}</span>
+            )}
           </div>
 
           <div className="product-page-rating-summary">
@@ -118,9 +115,7 @@ export const InlineProduct = ({
 
           {!product.stock_unlimited && (
             <div className="product-page-stock">
-              {product.stock > 0
-                ? `${product.stock} available`
-                : "Out of Stock"}
+              {product.stock > 0 ? `${product.stock} available` : "Out of Stock"}
             </div>
           )}
 
@@ -138,7 +133,7 @@ export const InlineProduct = ({
               {canEdit && (
                 <button
                   className="action-btn edit-btn"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     onEdit?.(product);
@@ -151,7 +146,7 @@ export const InlineProduct = ({
               {canDelete && (
                 <button
                   className="action-btn danger"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     onDelete?.(product.id);
@@ -164,16 +159,14 @@ export const InlineProduct = ({
 
             <button
               className="btn-add-to-cart"
-              onClick={(e) => {
+              onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
                 onAddToCart?.(product);
               }}
               disabled={!product.stock_unlimited && product.stock === 0}
             >
-              {!product.stock_unlimited && product.stock === 0
-                ? "Sold Out"
-                : "Add to Cart"}
+              {!product.stock_unlimited && product.stock === 0 ? "Sold Out" : "Add to Cart"}
             </button>
           </div>
         </div>

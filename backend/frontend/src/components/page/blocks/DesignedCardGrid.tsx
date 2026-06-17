@@ -27,12 +27,7 @@ function renderZone(zone: CardZone, item: PageItem) {
   switch (zone.field) {
     case "heading":
       return (
-        <CardPartHeading
-          key="heading"
-          text={item.heading}
-          align={zone.align}
-          size={zone.size}
-        />
+        <CardPartHeading key="heading" text={item.heading} align={zone.align} size={zone.size} />
       );
     case "subheading":
       return (
@@ -44,22 +39,10 @@ function renderZone(zone: CardZone, item: PageItem) {
         />
       );
     case "icon":
-      return (
-        <CardPartIcon
-          key="icon"
-          icon={item.icon}
-          align={zone.align}
-          size={zone.size}
-        />
-      );
+      return <CardPartIcon key="icon" icon={item.icon} align={zone.align} size={zone.size} />;
     case "link_url":
       return (
-        <CardPartLink
-          key="link_url"
-          url={item.link_url}
-          align={zone.align}
-          size={zone.size}
-        />
+        <CardPartLink key="link_url" url={item.link_url} align={zone.align} size={zone.size} />
       );
     case "image_url":
       // image_url in body zones (non-positional) renders inline
@@ -104,20 +87,18 @@ const DesignedCard = ({
   } = template;
 
   // Separate image zone from body zones
-  const imageZone = zones.find((z) => z.field === "image_url");
-  const bodyZones = zones.filter((z) => z.field !== "image_url" && z.visible);
+  const imageZone = zones.find(z => z.field === "image_url");
+  const bodyZones = zones.filter(z => z.field !== "image_url" && z.visible);
 
   const showImage = imagePosition !== "none" && imageZone?.visible !== false;
 
-  const styleClass =
-    cardStyle && cardStyle !== "default" ? ` dcard--${cardStyle}` : "";
+  const styleClass = cardStyle && cardStyle !== "default" ? ` dcard--${cardStyle}` : "";
   const customCssClass = template.customCss ? " dcard--custom-css" : "";
 
   const cardCss: React.CSSProperties = {
     minHeight: minHeight ? `${minHeight}px` : undefined,
     maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-    aspectRatio:
-      aspectRatio && aspectRatio !== "auto" ? aspectRatio : undefined,
+    aspectRatio: aspectRatio && aspectRatio !== "auto" ? aspectRatio : undefined,
     borderRadius: `${borderRadius ?? 16}px`,
     overflow: overflow ?? "hidden",
     margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
@@ -164,7 +145,7 @@ const DesignedCard = ({
         className={`dcard__body${imagePosition === "background" ? " dcard__body--overlay" : ""}`}
         style={bodyStyle}
       >
-        {bodyZones.map((zone) => renderZone(zone, item))}
+        {bodyZones.map(zone => renderZone(zone, item))}
       </div>
 
       {/* Bottom image */}
@@ -182,10 +163,7 @@ const DesignedCard = ({
   );
 };
 
-export const DesignedCardGrid = ({
-  items,
-  template: rawTemplate,
-}: DesignedCardGridProps) => {
+export const DesignedCardGrid = ({ items, template: rawTemplate }: DesignedCardGridProps) => {
   const template = migrateCardTemplate(rawTemplate);
   const gridStyle: React.CSSProperties = {
     gap: `${template.gridGap ?? 24}px`,

@@ -169,10 +169,7 @@
   border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .page-admin-btn--danger {
@@ -255,9 +252,7 @@
 
 .page-admin-more-btn {
   color: var(--text-secondary);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .page-admin-more-btn:hover,
@@ -294,9 +289,7 @@
   border-radius: 8px;
   text-align: left;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .page-admin-more-item:first-child {
@@ -379,10 +372,7 @@
   cursor: pointer;
   color: var(--text-secondary);
   font-size: 0.8rem;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .page-engagement-like:hover:not(:disabled) {

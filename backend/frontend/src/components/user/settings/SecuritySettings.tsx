@@ -54,51 +54,61 @@ export default function SecuritySettings() {
         </div>
 
         <div className="section__content">
-          <form onSubmit={handleSubmit} style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "1rem" }}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="old-password" style={{ fontWeight: 500 }}>Old Password</label>
+              <label htmlFor="old-password" style={{ fontWeight: 500 }}>
+                Old Password
+              </label>
               <input
                 id="old-password"
                 type="password"
                 value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
+                onChange={e => setOldPassword(e.target.value)}
                 disabled={loading}
                 required
               />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="new-password" style={{ fontWeight: 500 }}>New Password</label>
+              <label htmlFor="new-password" style={{ fontWeight: 500 }}>
+                New Password
+              </label>
               <input
                 id="new-password"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 disabled={loading}
                 required
               />
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="confirm-password" style={{ fontWeight: 500 }}>Confirm New Password</label>
+              <label htmlFor="confirm-password" style={{ fontWeight: 500 }}>
+                Confirm New Password
+              </label>
               <input
                 id="confirm-password"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 disabled={loading}
                 required
               />
             </div>
 
-            {error && <div style={{ color: "var(--error-color)", fontSize: "0.875rem", marginTop: "0.5rem" }}>{error}</div>}
+            {error && (
+              <div
+                style={{ color: "var(--error-color)", fontSize: "0.875rem", marginTop: "0.5rem" }}
+              >
+                {error}
+              </div>
+            )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              loading={loading}
-              style={{ marginTop: "1rem" }}
-            >
+            <Button type="submit" variant="primary" loading={loading} style={{ marginTop: "1rem" }}>
               Update Password
             </Button>
           </form>

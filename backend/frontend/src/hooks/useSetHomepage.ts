@@ -5,11 +5,9 @@ import type { PageBuilderDoc } from "../hooks/usePageData";
 
 export function useSetHomepage(
   landingPageSlug: string,
-  setLandingPageSlug: (slug: string) => void,
+  setLandingPageSlug: (slug: string) => void
 ) {
-  const [settingHomepageId, setSettingHomepageId] = useState<number | null>(
-    null,
-  );
+  const [settingHomepageId, setSettingHomepageId] = useState<number | null>(null);
 
   const handleSetHomepage = useCallback(
     async (page: PageBuilderDoc) => {
@@ -25,7 +23,7 @@ export function useSetHomepage(
         setSettingHomepageId(null);
       }
     },
-    [landingPageSlug],
+    [landingPageSlug]
   );
 
   return { handleSetHomepage, settingHomepageId };

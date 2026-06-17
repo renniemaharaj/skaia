@@ -24,8 +24,7 @@ export interface GlassMenuProps {
 export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [history, setHistory] = useState<GlassMenuOption[][]>([]);
-  const currentOptions =
-    history.length > 0 ? history[history.length - 1] : options;
+  const currentOptions = history.length > 0 ? history[history.length - 1] : options;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -52,8 +51,7 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
   }, [onClose]);
 
   // Adjust positioning to avoid edge clipping
-  const estimatedHeight =
-    currentOptions.length * 40 + 20 + (history.length > 0 ? 40 : 0);
+  const estimatedHeight = currentOptions.length * 40 + 20 + (history.length > 0 ? 40 : 0);
   const estimatedWidth = 250;
   const safeY = Math.min(y, window.innerHeight - estimatedHeight);
   const safeX = Math.min(x, window.innerWidth - estimatedWidth);
@@ -65,7 +63,7 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
 
   const goBack = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setHistory((prev) => prev.slice(0, -1));
+    setHistory(prev => prev.slice(0, -1));
   };
 
   const getOptionKey = (opt: GlassMenuOption) => {
@@ -82,7 +80,7 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           type="button"
           className="glass-menu-op"
           role="menuitem"
-          onMouseDown={(e) => {
+          onMouseDown={e => {
             e.preventDefault();
             e.stopPropagation();
           }}
@@ -99,7 +97,7 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           <span className="glass-menu-title">Back</span>
         </button>
       )}
-      {currentOptions.map((opt) => (
+      {currentOptions.map(opt => (
         <button
           type="button"
           key={getOptionKey(opt)}
@@ -107,15 +105,15 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           disabled={opt.disabled}
           role="menuitem"
           aria-disabled={opt.disabled || undefined}
-          onMouseDown={(e) => {
+          onMouseDown={e => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             const subOptions = opt.subOptions;
             if (subOptions && subOptions.length > 0) {
-              setHistory((prev) => [...prev, subOptions]);
+              setHistory(prev => [...prev, subOptions]);
             } else if (opt.onClick) {
               opt.onClick();
               onClose();
@@ -132,6 +130,6 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
         </button>
       ))}
     </div>,
-    document.body,
+    document.body
   );
 }

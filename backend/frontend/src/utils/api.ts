@@ -39,7 +39,7 @@ export interface AdminTOTPEnableResponse {
 export async function adminEnableTOTP(
   userId: string,
   secret: string,
-  code: string,
+  code: string
 ): Promise<AdminTOTPEnableResponse> {
   return apiRequest(`/auth/admin/totp/${userId}/enable`, {
     method: "POST",
@@ -50,9 +50,7 @@ export async function adminEnableTOTP(
 /**
  * Admin: Disable TOTP for another user
  */
-export async function adminDisableTOTP(
-  userId: string,
-): Promise<{ status: string }> {
+export async function adminDisableTOTP(userId: string): Promise<{ status: string }> {
   return apiRequest(`/auth/admin/totp/${userId}/disable`, {
     method: "POST",
   });
@@ -61,9 +59,7 @@ export async function adminDisableTOTP(
 /**
  * Admin: Trigger MFA Challenge for another user
  */
-export async function adminTriggerMFAChallenge(
-  userId: string,
-): Promise<{ status: string }> {
+export async function adminTriggerMFAChallenge(userId: string): Promise<{ status: string }> {
   return apiRequest(`/auth/admin/totp/${userId}/challenge`, {
     method: "POST",
   });
@@ -73,7 +69,7 @@ export async function adminTriggerMFAChallenge(
  * Admin: Generate backup codes for another user
  */
 export async function adminGenerateBackupCodes(
-  userId: string,
+  userId: string
 ): Promise<{ backup_codes: string[] }> {
   return apiRequest(`/auth/admin/totp/${userId}/generate-backup-codes`, {
     method: "POST",
@@ -94,7 +90,7 @@ function getAuthHeaders(includeContentType = true): Record<string, string> {
   if (token) {
     console.debug(
       "Auth token found in localStorage (first 20 chars):",
-      token.substring(0, 20) + "...",
+      token.substring(0, 20) + "..."
     );
   } else {
     console.warn("No auth token found in localStorage");
@@ -121,10 +117,7 @@ function mergeHeaders(base: HeadersInit, extra?: HeadersInit): Headers {
 /**
  * Make authenticated API request
  */
-export async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const isFormData = options.body instanceof FormData;
@@ -155,11 +148,9 @@ export async function apiRequest<T>(
     if (response.status === 429) {
       const requestHeaders = new Headers(options.headers || {});
       const isTotpBypass = requestHeaders.has("X-TOTP-Code") || requestHeaders.has("x-totp-code");
-      
+
       if (!isTotpBypass) {
-        toast.error(
-          `${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`,
-        );
+        toast.error(`${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`);
         window.dispatchEvent(
           new CustomEvent("api:rate-limit", {
             detail: {
@@ -168,37 +159,32 @@ export async function apiRequest<T>(
               challenge: errorData?.challenge,
               defconInfo: errorData?.defcon_info,
             },
-          }),
+          })
         );
       }
     }
 
     // Handle 503 - site may be armed (maintenance mode)
-    if (
-      response.status === 503 &&
-      errorMessage.toLowerCase().includes("armed")
-    ) {
+    if (response.status === 503 && errorMessage.toLowerCase().includes("armed")) {
       window.dispatchEvent(new CustomEvent("site:armed"));
       throw new Error(errorMessage);
     }
 
     // Handle 401 Unauthorized
     if (response.status === 401) {
-      if (
-        response.statusText === "MFA Required" ||
-        errorMessage === "MFA Required"
-      ) {
+      if (response.statusText === "MFA Required" || errorMessage === "MFA Required") {
         toast.error(
-          "Multi-factor authentication required. Please complete MFA challenge to continue.",
+          "Multi-factor authentication required. Please complete MFA challenge to continue."
         );
-        window.dispatchEvent(
-          new CustomEvent("auth:mfa-required", { detail: {} }),
-        );
+        window.dispatchEvent(new CustomEvent("auth:mfa-required", { detail: {} }));
         throw new Error("MFA Required");
       }
 
       // Check if this 401 is an actual auth/token failure or a business logic 401 (e.g. invalid password)
-      const isAuthFailure = /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(errorMessage);
+      const isAuthFailure =
+        /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
+          errorMessage
+        );
 
       if (isAuthFailure) {
         const refreshToken = localStorage.getItem("auth.refreshToken");
@@ -223,10 +209,7 @@ export async function apiRequest<T>(
               // Retry the original request with the new token
               const retryResp = await fetch(url, {
                 ...options,
-                headers: mergeHeaders(
-                  getAuthHeaders(!isFormData),
-                  options.headers,
-                ),
+                headers: mergeHeaders(getAuthHeaders(!isFormData), options.headers),
               });
               if (retryResp.ok) {
                 try {
@@ -249,9 +232,7 @@ export async function apiRequest<T>(
         localStorage.removeItem("auth.isAuthenticated");
 
         // Dispatch custom event that the app can listen to
-        window.dispatchEvent(
-          new CustomEvent("auth:unauthorized", { detail: { errorMessage } }),
-        );
+        window.dispatchEvent(new CustomEvent("auth:unauthorized", { detail: { errorMessage } }));
       }
     }
 
@@ -277,10 +258,7 @@ export async function apiRequest<T>(
 /**
  * Login user
  */
-export async function loginUser(
-  email: string,
-  password: string,
-): Promise<AuthResponse> {
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
   return apiRequest<AuthResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
@@ -293,7 +271,7 @@ export async function loginUser(
 export async function registerUser(
   username: string,
   email: string,
-  password: string,
+  password: string
 ): Promise<AuthResponse> {
   return apiRequest<AuthResponse>("/auth/register", {
     method: "POST",
@@ -309,9 +287,7 @@ export async function registerUser(
 /**
  * Refresh access token
  */
-export async function refreshAccessToken(
-  refreshToken: string,
-): Promise<AuthResponse> {
+export async function refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
   return apiRequest<AuthResponse>("/auth/refresh", {
     method: "POST",
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -330,10 +306,7 @@ export async function getCurrentUser() {
 /**
  * Upload file
  */
-export async function uploadFile(
-  file: File,
-  endpoint: string,
-): Promise<{ url: string }> {
+export async function uploadFile(file: File, endpoint: string): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -369,9 +342,7 @@ export async function resendVerificationEmail(): Promise<{ status: string }> {
 
 // Password Reset
 
-export async function forgotPassword(
-  email: string,
-): Promise<{ status: string }> {
+export async function forgotPassword(email: string): Promise<{ status: string }> {
   return apiRequest("/auth/forgot-password", {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -380,7 +351,7 @@ export async function forgotPassword(
 
 export async function resetPassword(
   token: string,
-  newPassword: string,
+  newPassword: string
 ): Promise<{ status: string }> {
   return apiRequest("/auth/reset-password", {
     method: "POST",
@@ -404,7 +375,7 @@ export interface TOTPEnableResponse {
 export async function loginTOTP(
   totpToken: string,
   totpCode?: string,
-  backupCode?: string,
+  backupCode?: string
 ): Promise<AuthResponse> {
   return apiRequest("/auth/login/totp", {
     method: "POST",
@@ -435,9 +406,7 @@ export async function totpStatus(userId?: string): Promise<TOTPStatusResponse> {
   return apiRequest(userId ? `/auth/totp/${userId}` : "/auth/totp");
 }
 
-export async function totpDisable(
-  password: string,
-): Promise<{ status: string }> {
+export async function totpDisable(password: string): Promise<{ status: string }> {
   return apiRequest("/auth/totp/disable", {
     method: "POST",
     body: JSON.stringify({ password }),
@@ -446,7 +415,7 @@ export async function totpDisable(
 
 export async function verifyMFAChallenge(
   totpCode?: string,
-  backupCode?: string,
+  backupCode?: string
 ): Promise<{ status: string }> {
   return apiRequest("/auth/mfa-challenge", {
     method: "POST",

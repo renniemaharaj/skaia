@@ -1,4 +1,5 @@
-[data-type="mention"], .mention-badge {
+[data-type="mention"],
+.mention-badge {
   font-weight: 600;
   color: var(--color-primary);
   background-color: rgba(var(--color-primary-rgb), 0.1);
@@ -11,16 +12,19 @@
   line-height: 1;
 }
 
-[data-type="mention"]:hover, .mention-badge:hover {
+[data-type="mention"]:hover,
+.mention-badge:hover {
   background-color: rgba(var(--color-primary-rgb), 0.2);
 }
 
-[data-type="mention"][data-id="special-here"], .mention-special {
+[data-type="mention"][data-id="special-here"],
+.mention-special {
   color: var(--color-warning);
   background-color: rgba(var(--color-warning-rgb), 0.1);
 }
 
-[data-type="mention"][data-id="special-here"]:hover, .mention-special:hover {
+[data-type="mention"][data-id="special-here"]:hover,
+.mention-special:hover {
   background-color: rgba(var(--color-warning-rgb), 0.2);
 }
 

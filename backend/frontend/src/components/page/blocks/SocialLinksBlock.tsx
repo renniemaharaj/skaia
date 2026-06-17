@@ -47,17 +47,14 @@ const BlockSocialLinkEditor = ({
   if (editing) {
     return (
       <div className="social-link-editor">
-        <IconPicker
-          current={link.icon}
-          onPick={(name) => onUpdate(index, { icon: name })}
-        />
+        <IconPicker current={link.icon} onPick={name => onUpdate(index, { icon: name })} />
         <input
           className="social-link-url-input"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={e => setUrl(e.target.value)}
           placeholder="https://..."
           autoFocus
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             if (e.key === "Enter") {
               setEditing(false);
               if (url !== link.url) onUpdate(index, { url });
@@ -116,12 +113,7 @@ const BlockSocialLinkEditor = ({
   );
 };
 
-export const SocialLinksBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const SocialLinksBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const cfg = JSON.parse(section.config || "{}");
   const links: SocialLink[] = cfg.links ?? [];
 
@@ -150,28 +142,28 @@ export const SocialLinksBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Social Links"
           layout={getSectionLayout(section.config)}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -203,14 +195,10 @@ export const SocialLinksBlock = ({
                 return Ic ? <Ic size={20} /> : social.icon;
               })()}
             </a>
-          ),
+          )
         )}
         {canEdit && (
-          <button
-            className="social-link-add-btn"
-            onClick={addLink}
-            title="Add social link"
-          >
+          <button className="social-link-add-btn" onClick={addLink} title="Add social link">
             <Plus size={16} />
           </button>
         )}

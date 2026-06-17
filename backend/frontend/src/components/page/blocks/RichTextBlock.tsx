@@ -38,12 +38,7 @@ function getContent(config: string): string {
   }
 }
 
-export const RichTextBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const RichTextBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const [editing, setEditing] = useState(false);
   const { enterEdit, leaveEdit } = usePageBuilderContext();
   // Hold saves in PageBuilder while this editor is active.
@@ -56,9 +51,7 @@ export const RichTextBlock = ({
   }, [editing]);
   // Derive content from props only when not editing; local state insulates the
   // editor from parent re-renders (e.g. color slider on another block).
-  const [localContent, setLocalContent] = useState(() =>
-    getContent(section.config),
-  );
+  const [localContent, setLocalContent] = useState(() => getContent(section.config));
   useEffect(() => {
     if (!editing) setLocalContent(getContent(section.config));
   }, [section.config, editing]);
@@ -78,28 +71,28 @@ export const RichTextBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Rich Text"
           layout={layout}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -120,12 +113,7 @@ export const RichTextBlock = ({
       )}
 
       <Suspense
-        fallback={
-          <div
-            className="skeleton-bar"
-            style={{ height: 200, borderRadius: 12 }}
-          />
-        }
+        fallback={<div className="skeleton-bar" style={{ height: 200, borderRadius: 12 }} />}
       >
         {canEdit && editing ? (
           <div className="richtext-block-editor">
@@ -136,10 +124,7 @@ export const RichTextBlock = ({
             <ViewThread content={localContent} />
           </div>
         ) : canEdit ? (
-          <div
-            className="richtext-block-empty"
-            onClick={() => setEditing(true)}
-          >
+          <div className="richtext-block-empty" onClick={() => setEditing(true)}>
             <p>Click "Edit" to add rich text content…</p>
           </div>
         ) : null}

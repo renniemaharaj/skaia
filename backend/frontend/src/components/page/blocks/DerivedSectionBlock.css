@@ -98,9 +98,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg-secondary);
-  transition:
-    box-shadow 0.2s,
-    transform 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .derived-section-card:hover {
@@ -110,7 +108,7 @@
 
 .derived-section-card-image {
   width: 100%;
-  aspect-ratio: 16/9;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 
@@ -271,11 +269,7 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--primary-color, #3b82f6);
-  background: color-mix(
-    in srgb,
-    var(--primary-color, #3b82f6) 10%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--primary-color, #3b82f6) 10%, transparent);
   border-radius: 4px;
 }
 

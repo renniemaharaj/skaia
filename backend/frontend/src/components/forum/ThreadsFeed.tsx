@@ -53,18 +53,32 @@ const ThreadsFeed = ({
         <TableView
           data={threads}
           chrome="embedded"
-          rowKey={(t) => t.id}
+          rowKey={t => t.id}
           columns={[
             {
               header: "Thread",
               width: "minmax(300px, 4fr)",
               className: "table-view__cell--bold",
-              cell: (t) => (
-                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              cell: t => (
+                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, gap: "4px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     {t.is_pinned && (
                       <span className="threads-feed-pinned-badge" title="Pinned">
-                        <svg className="threads-feed-pinned-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+                        <svg
+                          className="threads-feed-pinned-icon"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 17v5" />
+                          <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+                        </svg>
                       </span>
                     )}
                     {t.is_shared && (
@@ -72,66 +86,95 @@ const ThreadsFeed = ({
                         <Share2 size={12} />
                       </span>
                     )}
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</span>
+                    <span
+                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {t.title}
+                    </span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 'normal' }}>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-secondary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontWeight: "normal",
+                    }}
+                  >
                     {t.content.replace(/<[^>]*>/g, "").slice(0, 130)}
                     {t.content.length > 130 ? "…" : ""}
                   </div>
                 </div>
-              )
+              ),
             },
-            ...(showAuthor ? [{
-              header: "Author",
-              width: "minmax(150px, 1.5fr)",
-              cell: (t: FeedThread) => (
-                <div onClick={(e) => e.preventDefault()} style={{ display: "flex", alignItems: "center" }}>
-                  <UserProfileOverlay
-                    userId={String(t.user_id)}
-                    fallbackName={t.user_name ?? "Unknown"}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-                      <UserAvatar
-                        src={t.user_avatar || undefined}
-                        alt={t.user_name || "Unknown"}
-                        size={16}
-                        initials={t.user_name?.[0]?.toUpperCase()}
-                      />
-                      <UserLink
-                        userId={String(t.user_id)}
-                        displayName={t.user_name ?? ""}
-                        variant="subtle"
-                      />
-                    </div>
-                  </UserProfileOverlay>
-                </div>
-              )
-            }] : []),
+            ...(showAuthor
+              ? [
+                  {
+                    header: "Author",
+                    width: "minmax(150px, 1.5fr)",
+                    cell: (t: FeedThread) => (
+                      <div
+                        onClick={e => e.preventDefault()}
+                        style={{ display: "flex", alignItems: "center" }}
+                      >
+                        <UserProfileOverlay
+                          userId={String(t.user_id)}
+                          fallbackName={t.user_name ?? "Unknown"}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <UserAvatar
+                              src={t.user_avatar || undefined}
+                              alt={t.user_name || "Unknown"}
+                              size={16}
+                              initials={t.user_name?.[0]?.toUpperCase()}
+                            />
+                            <UserLink
+                              userId={String(t.user_id)}
+                              displayName={t.user_name ?? ""}
+                              variant="subtle"
+                            />
+                          </div>
+                        </UserProfileOverlay>
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
             {
               header: "Stats",
               width: "minmax(180px, 2fr)",
               className: "table-view__cell--muted",
-              cell: (t) => (
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={13} /> {t.view_count}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={13} /> {t.reply_count}</span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Heart size={13} /> {t.likes ?? 0}</span>
+              cell: t => (
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Eye size={13} /> {t.view_count}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <MessageSquare size={13} /> {t.reply_count}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Heart size={13} /> {t.likes ?? 0}
+                  </span>
                 </div>
-              )
+              ),
             },
             {
               header: "Date",
               width: "minmax(120px, 1fr)",
               className: "table-view__cell--muted",
-              cell: (t) => formatDate(t.created_at)
-            }
+              cell: t => formatDate(t.created_at),
+            },
           ]}
           renderRowWrapper={(t, _, props, cells) => (
-            <Link
-              key={t.id}
-              to={`/view-thread/${t.id}`}
-              {...props}
-            >
+            <Link key={t.id} to={`/view-thread/${t.id}`} {...props}>
               {cells}
             </Link>
           )}

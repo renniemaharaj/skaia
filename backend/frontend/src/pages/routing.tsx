@@ -19,15 +19,14 @@ export interface IndexRoute extends Primitve {
   index: true;
 }
 
-const passThrough = (route: CustomRoute) =>
-  route.suspended ? <Suspended /> : route.element;
+const passThrough = (route: CustomRoute) => (route.suspended ? <Suspended /> : route.element);
 
 const SANDBOX_ENABLED_FEATURES = new Set(["store", "forum", "users"]);
 
 const featureAllowed = (
   conditional: string | undefined,
   features: Record<string, boolean> | null,
-  guestSandboxMode = false,
+  guestSandboxMode = false
 ): boolean => {
   if (!conditional) return true;
   if (guestSandboxMode && SANDBOX_ENABLED_FEATURES.has(conditional)) {
@@ -39,52 +38,40 @@ const featureAllowed = (
 
 export const publicRoutesFunc = (
   features: Record<string, boolean> | null,
-  guestSandboxMode = false,
+  guestSandboxMode = false
 ) => {
   return publicRoutes
-    .filter((route) =>
-      featureAllowed(route.conditional, features, guestSandboxMode),
-    )
+    .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) =>
       "index" in route ? (
         <Route key={`public-index` + i} index element={route.element} />
       ) : (
-        <Route
-          key={`public-${route.path}` + i}
-          path={route.path}
-          element={passThrough(route)}
-        />
-      ),
+        <Route key={`public-${route.path}` + i} path={route.path} element={passThrough(route)} />
+      )
     );
 };
 
 export const protectedRoutesFunc = (
   features: Record<string, boolean> | null,
-  guestSandboxMode = false,
+  guestSandboxMode = false
 ) => {
   return protectedRoutes
-    .filter((route) =>
-      featureAllowed(route.conditional, features, guestSandboxMode),
-    )
+    .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) => (
       <Route
         key={`private-${(route as CustomRoute).path || i}` + i}
         path={(route as CustomRoute).path}
-        element={
-          <ProtectedRoute>{passThrough(route as CustomRoute)}</ProtectedRoute>
-        }
+        element={<ProtectedRoute>{passThrough(route as CustomRoute)}</ProtectedRoute>}
       />
     ));
 };
 
 export const guestRoutesFunc = (
   features: Record<string, boolean> | null,
-  guestSandboxMode = false,
+  guestSandboxMode = false
 ) => {
   return guestRoutes
-    .filter((route) =>
-      featureAllowed(route.conditional, features, guestSandboxMode),
-    )
+    .filter(route => featureAllowed(route.conditional, features, guestSandboxMode))
     .map((route, i) => (
       <Route
         key={`guest-${(route as CustomRoute).path || i}` + i}

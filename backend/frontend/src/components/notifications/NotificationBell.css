@@ -15,9 +15,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .notif-bell-btn:hover,
 .notif-bell-btn--open {
@@ -79,9 +77,7 @@
   cursor: pointer;
   margin-right: 6px;
   flex-shrink: 0;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .notif-panel-close:hover {
@@ -248,10 +244,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   opacity: 0;
-  transition:
-    opacity 0.12s ease,
-    background 0.12s ease,
-    color 0.12s ease;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
   margin-top: 2px;
 }
 .notif-item:hover .notif-action-btn.danger {

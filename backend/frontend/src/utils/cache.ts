@@ -18,5 +18,5 @@ export function formatTimeAgo(date: Date): string {
 }
 
 export function cacheTTLLabel(ttl: number): string {
-  return CACHE_TTL_OPTIONS.find((o) => o.value === ttl)?.label ?? `${ttl}s`;
+  return CACHE_TTL_OPTIONS.find(o => o.value === ttl)?.label ?? `${ttl}s`;
 }

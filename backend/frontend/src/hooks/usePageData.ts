@@ -46,17 +46,11 @@ interface UsePageDataReturn {
   pendingIncoming: boolean;
   refresh: (slug?: string) => Promise<void>;
   createPage: (
-    page: Omit<PageBuilderDoc, "id" | "created_at" | "updated_at">,
+    page: Omit<PageBuilderDoc, "id" | "created_at" | "updated_at">
   ) => Promise<PageBuilderDoc>;
-  updatePage: (
-    page: Omit<PageBuilderDoc, "created_at" | "updated_at">,
-  ) => Promise<PageBuilderDoc>;
+  updatePage: (page: Omit<PageBuilderDoc, "created_at" | "updated_at">) => Promise<PageBuilderDoc>;
   deletePage: (id: number) => Promise<void>;
-  duplicatePage: (
-    id: number,
-    newSlug: string,
-    newTitle?: string,
-  ) => Promise<PageBuilderDoc>;
+  duplicatePage: (id: number, newSlug: string, newTitle?: string) => Promise<PageBuilderDoc>;
 }
 
 export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
@@ -84,7 +78,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
    * without an HTTP round-trip or loading-skeleton flash.
    */
   const applyIncomingData = useCallback((data: any) => {
-    setPage((prev) => {
+    setPage(prev => {
       if (!prev || !data) return prev;
       return {
         ...prev,
@@ -121,7 +115,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     Number(page.owner_id) === Number(currentUser.id)
   );
   const isEditor = !!page?.editors?.some(
-    (e) => currentUser && Number(e.id) === Number(currentUser.id),
+    e => currentUser && Number(e.id) === Number(currentUser.id)
   );
   const isEditable = isAdmin || isOwner || isEditor;
 
@@ -187,30 +181,25 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
         // The backend returns the existing page in the response body, but
         // apiRequest already consumed it. Fetch by slug instead.
         if (err instanceof Error && (err as any).status === 409) {
-          const existing = await apiRequest<PageBuilderDoc>(
-            `/pages/${encodeURIComponent(p.slug)}`,
-          );
+          const existing = await apiRequest<PageBuilderDoc>(`/pages/${encodeURIComponent(p.slug)}`);
           return existing;
         }
         throw err;
       }
     },
-    [],
+    []
   );
 
-  const updatePage = useCallback(
-    async (p: Omit<PageBuilderDoc, "created_at" | "updated_at">) => {
-      const updated = await apiRequest<PageBuilderDoc>(`/pages/${p.id}`, {
-        method: "PUT",
-        body: JSON.stringify(p),
-      });
-      // The backend no longer echoes page:update back to the sender, so we
-      // use the HTTP response as the authoritative update for local state.
-      if (updated) setPage(updated);
-      return updated;
-    },
-    [],
-  );
+  const updatePage = useCallback(async (p: Omit<PageBuilderDoc, "created_at" | "updated_at">) => {
+    const updated = await apiRequest<PageBuilderDoc>(`/pages/${p.id}`, {
+      method: "PUT",
+      body: JSON.stringify(p),
+    });
+    // The backend no longer echoes page:update back to the sender, so we
+    // use the HTTP response as the authoritative update for local state.
+    if (updated) setPage(updated);
+    return updated;
+  }, []);
 
   const deletePage = useCallback(async (id: number) => {
     await apiRequest(`/pages/${id}`, {
@@ -218,21 +207,16 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     });
   }, []);
 
-  const duplicatePage = useCallback(
-    async (id: number, newSlug: string, newTitle?: string) => {
-      return await apiRequest<PageBuilderDoc>(`/pages/${id}/duplicate`, {
-        method: "POST",
-        body: JSON.stringify({ slug: newSlug, title: newTitle }),
-      });
-    },
-    [],
-  );
+  const duplicatePage = useCallback(async (id: number, newSlug: string, newTitle?: string) => {
+    return await apiRequest<PageBuilderDoc>(`/pages/${id}/duplicate`, {
+      method: "POST",
+      body: JSON.stringify({ slug: newSlug, title: newTitle }),
+    });
+  }, []);
 
   useEffect(() => {
     const handler = (e: Event) => {
-      const { action, data } = (
-        e as CustomEvent<{ action: string; data?: any }>
-      ).detail;
+      const { action, data } = (e as CustomEvent<{ action: string; data?: any }>).detail;
       const slug = currentSlugRef.current;
 
       // Landing page was swapped to a different page - replace entirely.
@@ -248,10 +232,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
 
       if (!slug) return;
 
-      if (
-        action === "page_updated" &&
-        (data?.slug === slug || data?.id === page?.id)
-      ) {
+      if (action === "page_updated" && (data?.slug === slug || data?.id === page?.id)) {
         if (suppressRef.current) {
           // Hold the incoming update - store the data and apply when editing ends.
           pendingDataRef.current = data;

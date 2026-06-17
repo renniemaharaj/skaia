@@ -94,10 +94,18 @@ function ProductTwoUpCard({
         </div>
         <p>{product.description}</p>
         <div className="product-page-meta-grid">
-          <span><User size={14} /> {product.owner?.display_name || "Store"}</span>
-          <span><ShoppingBag size={14} /> {product.recent_purchases ?? 0} purchases</span>
-          <span><TrendingUp size={14} /> {product.current_orders ?? 0} current orders</span>
-          <span><Clock size={14} /> {new Date(product.updated_at).toLocaleDateString()}</span>
+          <span>
+            <User size={14} /> {product.owner?.display_name || "Store"}
+          </span>
+          <span>
+            <ShoppingBag size={14} /> {product.recent_purchases ?? 0} purchases
+          </span>
+          <span>
+            <TrendingUp size={14} /> {product.current_orders ?? 0} current orders
+          </span>
+          <span>
+            <Clock size={14} /> {new Date(product.updated_at).toLocaleDateString()}
+          </span>
         </div>
         <button
           className="btn-add-to-cart"
@@ -152,16 +160,16 @@ export const ProductPage = () => {
   };
 
   useEffect(() => {
-    const cached = allProducts.find((p) => String(p.id) === id);
+    const cached = allProducts.find(p => String(p.id) === id);
     if (cached) {
       setProduct(cached);
       setLoadingProduct(false);
     } else {
       apiRequest<Product>(`/store/products/${id}`)
-        .then((p) => {
+        .then(p => {
           if (p) setProduct(p);
         })
-        .catch((err) => {
+        .catch(err => {
           console.error("Failed to load product", err);
           toast.error("Product not found");
         })
@@ -173,7 +181,7 @@ export const ProductPage = () => {
     if (!id) return;
     setSimilarLoading(true);
     apiRequest<Product[]>(`/store/products/${id}/similar`)
-      .then((data) => {
+      .then(data => {
         setSimilarProducts(data || []);
       })
       .catch(() => {
@@ -186,7 +194,7 @@ export const ProductPage = () => {
     setReviewsLoading(true);
     try {
       const data = await apiRequest<any[]>(`/store/products/${id}/reviews`);
-      const mappedReviews: ProductReview[] = (data || []).map((r) => ({
+      const mappedReviews: ProductReview[] = (data || []).map(r => ({
         id: r.id,
         author_id: r.user?.id || r.user_id,
         author_name: r.user?.display_name,
@@ -213,7 +221,7 @@ export const ProductPage = () => {
 
   const userHasReviewed = useMemo(() => {
     if (!currentUser) return false;
-    return reviews.some((r) => String(r.author_id) === String(currentUser.id));
+    return reviews.some(r => String(r.author_id) === String(currentUser.id));
   }, [reviews, currentUser]);
 
   const handleReviewSubmit = async (text: string, rating?: number) => {
@@ -237,15 +245,15 @@ export const ProductPage = () => {
         body: JSON.stringify({ product_id: targetProduct.id, quantity: 1 }),
       });
 
-      setCartItems((prev) => {
+      setCartItems(prev => {
         const exists = prev.find(
-          (i) => i.product?.id === targetProduct.id || i.product_id === targetProduct.id,
+          i => i.product?.id === targetProduct.id || i.product_id === targetProduct.id
         );
         if (exists) {
-          return prev.map((i) =>
+          return prev.map(i =>
             i.product?.id === targetProduct.id || i.product_id === targetProduct.id
               ? { ...i, quantity: i.quantity + 1 }
-              : i,
+              : i
           );
         }
         return [
@@ -286,17 +294,11 @@ export const ProductPage = () => {
         <div className="product-page-layout">
           <div className="product-page-hero">
             <div className="product-page-image-container">
-              <div
-                className="skeleton"
-                style={{ width: "100%", height: "100%" }}
-              />
+              <div className="skeleton" style={{ width: "100%", height: "100%" }} />
             </div>
 
             <div className="product-page-details">
-              <div
-                className="skeleton skeleton-heading"
-                style={{ width: "60%", height: 28 }}
-              />
+              <div className="skeleton skeleton-heading" style={{ width: "60%", height: 28 }} />
 
               <div
                 style={{
@@ -305,58 +307,28 @@ export const ProductPage = () => {
                   alignItems: "center",
                 }}
               >
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: 120, height: 20 }}
-                />
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: 80, height: 16 }}
-                />
+                <div className="skeleton skeleton-text" style={{ width: 120, height: 20 }} />
+                <div className="skeleton skeleton-text" style={{ width: 80, height: 16 }} />
               </div>
 
-              <div
-                className="skeleton skeleton-text"
-                style={{ width: "40%", height: 12 }}
-              />
-              <div
-                className="skeleton skeleton-text"
-                style={{ width: "80%", height: 12 }}
-              />
-              <div
-                className="skeleton skeleton-text"
-                style={{ width: "70%", height: 12 }}
-              />
+              <div className="skeleton skeleton-text" style={{ width: "40%", height: 12 }} />
+              <div className="skeleton skeleton-text" style={{ width: "80%", height: 12 }} />
+              <div className="skeleton skeleton-text" style={{ width: "70%", height: 12 }} />
 
               <div style={{ display: "flex", gap: "0.5rem", marginTop: 12 }}>
-                <div
-                  className="skeleton"
-                  style={{ height: 36, width: 100, borderRadius: 8 }}
-                />
-                <div
-                  className="skeleton"
-                  style={{ height: 36, width: 80, borderRadius: 8 }}
-                />
+                <div className="skeleton" style={{ height: 36, width: 100, borderRadius: 8 }} />
+                <div className="skeleton" style={{ height: 36, width: 80, borderRadius: 8 }} />
               </div>
             </div>
           </div>
 
           <div className="product-page-bottom">
             <div>
-              <div
-                className="skeleton skeleton-heading"
-                style={{ width: 140, height: 18 }}
-              />
+              <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
               <div style={{ marginTop: 12 }}>
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    style={{ display: "flex", gap: 12, marginBottom: 10 }}
-                  >
-                    <div
-                      className="skeleton skeleton-circle"
-                      style={{ width: 44, height: 44 }}
-                    />
+                  <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                    <div className="skeleton skeleton-circle" style={{ width: 44, height: 44 }} />
                     <div style={{ flex: 1 }}>
                       <div
                         className="skeleton skeleton-text"
@@ -373,22 +345,12 @@ export const ProductPage = () => {
             </div>
 
             <div>
-              <div
-                className="skeleton skeleton-heading"
-                style={{ width: 140, height: 18 }}
-              />
+              <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
               <div style={{ marginTop: 12 }}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="skeleton-card"
-                    style={{ padding: 12, marginBottom: 12 }}
-                  >
+                  <div key={i} className="skeleton-card" style={{ padding: 12, marginBottom: 12 }}>
                     <div style={{ display: "flex", gap: 12 }}>
-                      <div
-                        className="skeleton skeleton-circle"
-                        style={{ width: 36, height: 36 }}
-                      />
+                      <div className="skeleton skeleton-circle" style={{ width: 36, height: 36 }} />
                       <div style={{ flex: 1 }}>
                         <div
                           className="skeleton skeleton-text"
@@ -422,8 +384,10 @@ export const ProductPage = () => {
   const media = getProductMedia(product);
   const pairedProduct =
     similarProducts[0] ??
-    allProducts.find((p) => String(p.id) !== String(product.id) && p.category_id === product.category_id) ??
-    allProducts.find((p) => String(p.id) !== String(product.id));
+    allProducts.find(
+      p => String(p.id) !== String(product.id) && p.category_id === product.category_id
+    ) ??
+    allProducts.find(p => String(p.id) !== String(product.id));
   const setTwoUpLayout = (next: boolean) => {
     const params = new URLSearchParams(searchParams);
     if (next) params.set("layout", "two-up");
@@ -448,14 +412,22 @@ export const ProductPage = () => {
       <StorePageShell className="product-page-container" backTo="/store">
         <div className="product-two-up-shell">
           <div className="product-two-up-toolbar">
-            <button className="action-btn edit-btn" title="Full product view" onClick={() => setTwoUpLayout(false)}>
+            <button
+              className="action-btn edit-btn"
+              title="Full product view"
+              onClick={() => setTwoUpLayout(false)}
+            >
               <LayoutGrid size={15} />
             </button>
             <button className="action-btn edit-btn" title="Share product" onClick={handleShare}>
               <Share2 size={15} />
             </button>
             {canEditProduct && (
-              <button className="action-btn edit-btn" title="Edit product" onClick={() => setEditingProduct(product)}>
+              <button
+                className="action-btn edit-btn"
+                title="Edit product"
+                onClick={() => setEditingProduct(product)}
+              >
                 <Edit2 size={15} />
               </button>
             )}
@@ -470,7 +442,7 @@ export const ProductPage = () => {
             {pairedProduct ? (
               <ProductTwoUpCard
                 product={pairedProduct}
-                onPreview={(index) => setSelectedMediaIndex(pairedOffset + index)}
+                onPreview={index => setSelectedMediaIndex(pairedOffset + index)}
                 onAddToCart={addProductToCart}
                 addingToCart={addingToCart}
               />
@@ -491,7 +463,7 @@ export const ProductPage = () => {
             onSuccess={() => {
               setLoadingProduct(true);
               apiRequest<Product>(`/store/products/${id}`)
-                .then((p) => {
+                .then(p => {
                   if (p) setProduct(p);
                 })
                 .finally(() => setLoadingProduct(false));
@@ -516,15 +488,13 @@ export const ProductPage = () => {
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
         <ContentFlatCard className="product-page-hero">
-          <div
-            className={`product-page-image-container${!product.image_url ? " fallback" : ""}`}
-          >
+          <div className={`product-page-image-container${!product.image_url ? " fallback" : ""}`}>
             {media[0] ? (
               <img
                 src={media[0].url}
                 alt={product.name}
                 className="product-page-image"
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
                   setSelectedMediaIndex(0);
@@ -539,22 +509,14 @@ export const ProductPage = () => {
             <h1>{product.name}</h1>
 
             <div className="product-page-price">
-              <span className="current-price">
-                {formatCents(product.price)}
-              </span>
+              <span className="current-price">{formatCents(product.price)}</span>
               {product.original_price && (
-                <span className="original-price">
-                  {formatCents(product.original_price)}
-                </span>
+                <span className="original-price">{formatCents(product.original_price)}</span>
               )}
             </div>
 
             <div className="product-page-rating-summary">
-              <StarRating
-                rating={Math.round(averageRating)}
-                disabled
-                size={15}
-              />
+              <StarRating rating={Math.round(averageRating)} disabled size={15} />
               <span>
                 {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
               </span>
@@ -563,17 +525,25 @@ export const ProductPage = () => {
             <p className="product-page-description">{product.description}</p>
 
             <div className="product-page-meta-grid">
-              <span><User size={14} /> {product.owner?.display_name || "Store"}</span>
-              <span><Clock size={14} /> Created {formatDateTime(product.created_at)}</span>
-              <span><Clock size={14} /> Updated {formatDateTime(product.updated_at)}</span>
-              <span><ShoppingBag size={14} /> {product.recent_purchases ?? 0} recent purchases</span>
-              <span><TrendingUp size={14} /> {product.current_orders ?? 0} current orders</span>
+              <span>
+                <User size={14} /> {product.owner?.display_name || "Store"}
+              </span>
+              <span>
+                <Clock size={14} /> Created {formatDateTime(product.created_at)}
+              </span>
+              <span>
+                <Clock size={14} /> Updated {formatDateTime(product.updated_at)}
+              </span>
+              <span>
+                <ShoppingBag size={14} /> {product.recent_purchases ?? 0} recent purchases
+              </span>
+              <span>
+                <TrendingUp size={14} /> {product.current_orders ?? 0} current orders
+              </span>
             </div>
 
             <div className="product-page-stock">
-              {product.stock_unlimited
-                ? "In Stock"
-                : `${product.stock} available`}
+              {product.stock_unlimited ? "In Stock" : `${product.stock} available`}
             </div>
 
             <div className="product-page-actions-row">
@@ -585,11 +555,7 @@ export const ProductPage = () => {
                 <LayoutGrid size={15} />
               </button>
 
-              <button
-                className="action-btn edit-btn"
-                title="Share product"
-                onClick={handleShare}
-              >
+              <button className="action-btn edit-btn" title="Share product" onClick={handleShare}>
                 <Share2 size={15} />
               </button>
 
@@ -609,11 +575,7 @@ export const ProductPage = () => {
                 disabled={!product.is_active || isSoldOut || addingToCart}
               >
                 <ShoppingCart size={14} />
-                {addingToCart
-                  ? "Adding…"
-                  : isSoldOut
-                    ? "Sold Out"
-                    : "Add to Cart"}
+                {addingToCart ? "Adding…" : isSoldOut ? "Sold Out" : "Add to Cart"}
               </button>
             </div>
           </div>
@@ -656,7 +618,7 @@ export const ProductPage = () => {
                         </div>
                       </div>
                     ))
-                  : similarProducts.map((sp) => (
+                  : similarProducts.map(sp => (
                       <Link
                         key={sp.id}
                         to={`/store/products/${sp.id}`}
@@ -670,17 +632,10 @@ export const ProductPage = () => {
                           )}
                         </div>
                         <div className="similar-product-info">
-                          <span className="similar-product-name">
-                            {sp.name}
-                          </span>
-                          <span className="similar-product-price">
-                            {formatCents(sp.price)}
-                          </span>
+                          <span className="similar-product-name">{sp.name}</span>
+                          <span className="similar-product-price">{formatCents(sp.price)}</span>
                         </div>
-                        <ChevronRight
-                          size={14}
-                          className="similar-product-arrow"
-                        />
+                        <ChevronRight size={14} className="similar-product-arrow" />
                       </Link>
                     ))}
             </div>
@@ -715,7 +670,7 @@ export const ProductPage = () => {
           onSuccess={() => {
             setLoadingProduct(true);
             apiRequest<Product>(`/store/products/${id}`)
-              .then((p) => {
+              .then(p => {
                 if (p) setProduct(p);
               })
               .finally(() => setLoadingProduct(false));

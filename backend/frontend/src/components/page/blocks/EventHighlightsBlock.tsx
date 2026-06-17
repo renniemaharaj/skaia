@@ -44,28 +44,28 @@ export const EventHighlightsBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Event Highlights"
           layout={getSectionLayout(section.config)}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -79,12 +79,12 @@ export const EventHighlightsBlock = ({
           <>
             <EditableText
               value={section.heading}
-              onSave={(v) => onUpdate({ ...section, heading: v })}
+              onSave={v => onUpdate({ ...section, heading: v })}
               tag="h2"
             />
             <EditableText
               value={section.subheading}
-              onSave={(v) => onUpdate({ ...section, subheading: v })}
+              onSave={v => onUpdate({ ...section, subheading: v })}
               tag="p"
             />
           </>
@@ -97,36 +97,31 @@ export const EventHighlightsBlock = ({
       </div>
 
       <div className="event-highlights-grid">
-        {items.map((item) => (
+        {items.map(item => (
           <div key={item.id} className="event-highlight-card">
             <div className="event-highlight-image">
               {canEdit && (
                 <>
                   <ImagePickerButton
-                    onUploaded={(url) =>
-                      onItemUpdate({ ...item, image_url: url })
-                    }
+                    onUploaded={url => onItemUpdate({ ...item, image_url: url })}
                     className="pb-action-btn-abs"
                   />
                   <DeleteItemButton onClick={() => onItemDelete(item.id)} />
                 </>
               )}
-              <img
-                src={item.image_url || "/placeholder.webp"}
-                alt={item.heading}
-              />
+              <img src={item.image_url || "/placeholder.webp"} alt={item.heading} />
             </div>
             <div className="event-highlight-body">
               {canEdit ? (
                 <>
                   <EditableText
                     value={item.heading}
-                    onSave={(v) => onItemUpdate({ ...item, heading: v })}
+                    onSave={v => onItemUpdate({ ...item, heading: v })}
                     tag="h3"
                   />
                   <EditableText
                     value={item.subheading}
-                    onSave={(v) => onItemUpdate({ ...item, subheading: v })}
+                    onSave={v => onItemUpdate({ ...item, subheading: v })}
                     tag="p"
                   />
                 </>

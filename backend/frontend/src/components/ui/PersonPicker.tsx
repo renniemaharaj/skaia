@@ -67,7 +67,7 @@ export default function PersonPicker({
         ...excludeIds.map(String),
         ...(excludeSelf && currentUser ? [String(currentUser.id)] : []),
       ]),
-    [excludeIds, excludeSelf, currentUser],
+    [excludeIds, excludeSelf, currentUser]
   );
 
   const updateMenuPosition = useCallback(() => {
@@ -99,9 +99,7 @@ export default function PersonPicker({
           ? `/users/search?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}&offset=0`
           : `/users/search?limit=${PAGE_SIZE}&offset=0`;
         const users = await apiRequest<User[]>(url);
-        const filtered = (users ?? []).filter(
-          (u) => !excludeSet.has(String(u.id)),
-        );
+        const filtered = (users ?? []).filter(u => !excludeSet.has(String(u.id)));
         setResults(filtered);
         setOffset(PAGE_SIZE);
         setHasMore((users ?? []).length >= PAGE_SIZE);
@@ -143,14 +141,12 @@ export default function PersonPicker({
         ? `/users/search?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}&offset=${offset}`
         : `/users/search?limit=${PAGE_SIZE}&offset=${offset}`;
       const users = await apiRequest<User[]>(url);
-      const filtered = (users ?? []).filter(
-        (u) => !excludeSet.has(String(u.id)),
-      );
-      setResults((prev) => {
-        const ids = new Set(prev.map((u) => u.id));
-        return [...prev, ...filtered.filter((u) => !ids.has(u.id))];
+      const filtered = (users ?? []).filter(u => !excludeSet.has(String(u.id)));
+      setResults(prev => {
+        const ids = new Set(prev.map(u => u.id));
+        return [...prev, ...filtered.filter(u => !ids.has(u.id))];
       });
-      setOffset((prev) => prev + PAGE_SIZE);
+      setOffset(prev => prev + PAGE_SIZE);
       setHasMore((users ?? []).length >= PAGE_SIZE);
     } catch {
       // ignore
@@ -176,7 +172,7 @@ export default function PersonPicker({
       setOffset(0);
       setHasMore(false);
     },
-    [clearQueryOnSelect, onSelect],
+    [clearQueryOnSelect, onSelect]
   );
 
   const glassMenuOptions = useMemo<GlassMenuOption[]>(() => {
@@ -186,7 +182,7 @@ export default function PersonPicker({
     if (results.length === 0) {
       return [{ title: "No users found.", disabled: true }];
     }
-    return results.map((user) => ({
+    return results.map(user => ({
       key: user.id,
       title: user.display_name || user.username,
       info: `@${user.username}`,
@@ -216,7 +212,7 @@ export default function PersonPicker({
         value={query}
         autoFocus={autoFocus}
         onChange={setQuery}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === "Escape") {
             if (shouldShowGlassMenu) setIsFocused(false);
             if (onClose) onClose();
@@ -237,12 +233,7 @@ export default function PersonPicker({
         }}
       >
         {onClose && (
-          <button
-            type="button"
-            className="person-picker__close"
-            onClick={onClose}
-            title="Close"
-          >
+          <button type="button" className="person-picker__close" onClick={onClose} title="Close">
             <X size={14} />
           </button>
         )}
@@ -257,16 +248,12 @@ export default function PersonPicker({
           />
         )
       ) : (
-        <div
-          className="person-picker__results"
-          ref={listRef}
-          onScroll={handleScroll}
-        >
+        <div className="person-picker__results" ref={listRef} onScroll={handleScroll}>
           {loading && <p className="person-picker__status">Searching…</p>}
           {!loading && results.length === 0 && (
             <p className="person-picker__status">No users found.</p>
           )}
-          {results.map((user) => (
+          {results.map(user => (
             <button
               type="button"
               key={user.id}
@@ -284,15 +271,12 @@ export default function PersonPicker({
                     src={user.avatar_url || undefined}
                     alt={user.display_name || user.username}
                     size={32}
-                    initials={(user.display_name ||
-                      user.username)?.[0]?.toUpperCase()}
+                    initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
                   />
                 </UserProfileOverlay>
               </span>
               <span className="person-picker__info">
-                <span className="person-picker__name">
-                  {user.display_name || user.username}
-                </span>
+                <span className="person-picker__name">{user.display_name || user.username}</span>
                 <span className="person-picker__username">@{user.username}</span>
               </span>
             </button>

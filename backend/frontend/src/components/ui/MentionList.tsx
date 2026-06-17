@@ -19,7 +19,9 @@ export const MentionList = forwardRef((props: any, ref) => {
         const data = await apiRequest(`/users/mentions?q=${encodeURIComponent(query)}`);
         if (active) {
           if (Array.isArray(data)) {
-            setItems(data.map((i: any) => ({ id: i.id, label: i.name, type: i.type, avatar: i.avatar })));
+            setItems(
+              data.map((i: any) => ({ id: i.id, label: i.name, type: i.type, avatar: i.avatar }))
+            );
           } else {
             setItems([]);
           }
@@ -93,20 +95,16 @@ export const MentionList = forwardRef((props: any, ref) => {
             {item.avatar ? (
               <img src={item.avatar} alt={item.label} className="mention-item-avatar" />
             ) : item.type === "user" ? (
-              <div className="mention-item-avatar-placeholder">{item.label?.[0]?.toUpperCase()}</div>
+              <div className="mention-item-avatar-placeholder">
+                {item.label?.[0]?.toUpperCase()}
+              </div>
             ) : null}
             <span className="mention-item-label">{item.label}</span>
-            {item.type && (
-              <span className="mention-item-type">
-                {item.type}
-              </span>
-            )}
+            {item.type && <span className="mention-item-type">{item.type}</span>}
           </button>
         ))
       ) : (
-        <div className="mention-empty">
-          No results
-        </div>
+        <div className="mention-empty">No results</div>
       )}
     </div>
   );

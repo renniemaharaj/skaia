@@ -310,9 +310,7 @@
   border-radius: 8px;
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
   background: var(--bg-color);
 }
 

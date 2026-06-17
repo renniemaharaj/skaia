@@ -80,9 +80,7 @@
   color: var(--text-primary);
   cursor: pointer;
   font-size: 0.8rem;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .grengo-session-actions .btn:hover {

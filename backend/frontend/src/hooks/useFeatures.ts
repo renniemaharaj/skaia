@@ -19,19 +19,15 @@ export function useFeatures() {
   useEffect(() => {
     const load = async () => {
       try {
-        const remote = await apiRequest<string[] | Record<string, boolean>>(
-          "/config/features",
-        );
+        const remote = await apiRequest<string[] | Record<string, boolean>>("/config/features");
 
         const enabledSet = new Set<string>();
         if (Array.isArray(remote)) {
-          (remote as string[]).forEach((f) => enabledSet.add(f));
+          (remote as string[]).forEach(f => enabledSet.add(f));
         } else if (remote && typeof remote === "object") {
-          Object.entries(remote as Record<string, boolean>).forEach(
-            ([name, enabled]) => {
-              if (enabled) enabledSet.add(name);
-            },
-          );
+          Object.entries(remote as Record<string, boolean>).forEach(([name, enabled]) => {
+            if (enabled) enabledSet.add(name);
+          });
         }
 
         const mergedFeatures: Record<string, boolean> = {
@@ -44,7 +40,7 @@ export function useFeatures() {
           presence: false,
         };
 
-        Object.keys(mergedFeatures).forEach((name) => {
+        Object.keys(mergedFeatures).forEach(name => {
           mergedFeatures[name] = enabledSet.has(name);
         });
 

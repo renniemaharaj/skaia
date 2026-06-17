@@ -43,11 +43,7 @@ const mediaFromUploadResponse = (res: any, file: File): ProductMedia => {
   };
 };
 
-export function ProductMediaTable({
-  media,
-  onChange,
-  editable = false,
-}: ProductMediaTableProps) {
+export function ProductMediaTable({ media, onChange, editable = false }: ProductMediaTableProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -77,7 +73,7 @@ export function ProductMediaTable({
   };
 
   const removeItem = (url: string) => {
-    onChange?.(media.filter((item) => item.url !== url));
+    onChange?.(media.filter(item => item.url !== url));
   };
 
   const copyUrl = (url: string) => {
@@ -89,7 +85,9 @@ export function ProductMediaTable({
   return (
     <div className="product-media-table">
       <div className="product-media-table__toolbar">
-        <span className="product-media-table__count">{media.length} media item{media.length === 1 ? "" : "s"}</span>
+        <span className="product-media-table__count">
+          {media.length} media item{media.length === 1 ? "" : "s"}
+        </span>
         {editable && (
           <>
             <button
@@ -117,7 +115,7 @@ export function ProductMediaTable({
         data={media}
         chrome="embedded"
         maxHeight={240}
-        rowKey={(item) => item.url}
+        rowKey={item => item.url}
         emptyState={<div className="product-media-table__empty">No product media yet</div>}
         renderRowWrapper={(item, index, rowProps, cells) => (
           <div
@@ -134,7 +132,7 @@ export function ProductMediaTable({
             header: "Media",
             width: "minmax(220px, 3fr)",
             className: "table-view__cell--bold",
-            cell: (item) => (
+            cell: item => (
               <div className="product-media-table__file">
                 <div className="product-media-table__thumb">
                   {isVideo(item) ? (
@@ -151,7 +149,7 @@ export function ProductMediaTable({
             header: "Type",
             width: "110px",
             className: "table-view__cell--muted",
-            cell: (item) => (
+            cell: item => (
               <span className="product-media-table__type">
                 {isVideo(item) ? <Film size={14} /> : <ImageIcon size={14} />}
                 {isVideo(item) ? "Video" : "Image"}
@@ -162,24 +160,34 @@ export function ProductMediaTable({
             header: "Size",
             width: "90px",
             className: "table-view__cell--muted",
-            cell: (item) => formatSize(item.size),
+            cell: item => formatSize(item.size),
           },
           {
             header: "Added",
             width: "130px",
             className: "table-view__cell--muted",
-            cell: (item) => formatDate(item.created_at),
+            cell: item => formatDate(item.created_at),
           },
           {
             header: "Actions",
             width: editable ? "92px" : "48px",
-            cell: (item) => (
-              <div className="table-view__row-actions" onClick={(e) => e.stopPropagation()}>
-                <button type="button" className="action-btn copy-btn" title="Copy URL" onClick={() => copyUrl(item.url)}>
+            cell: item => (
+              <div className="table-view__row-actions" onClick={e => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="action-btn copy-btn"
+                  title="Copy URL"
+                  onClick={() => copyUrl(item.url)}
+                >
                   {copiedUrl === item.url ? <Check size={14} /> : <Copy size={14} />}
                 </button>
                 {editable && (
-                  <button type="button" className="action-btn danger" title="Remove media" onClick={() => removeItem(item.url)}>
+                  <button
+                    type="button"
+                    className="action-btn danger"
+                    title="Remove media"
+                    onClick={() => removeItem(item.url)}
+                  >
                     <Trash2 size={14} />
                   </button>
                 )}

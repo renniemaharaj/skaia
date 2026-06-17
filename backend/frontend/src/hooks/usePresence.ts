@@ -39,7 +39,7 @@ export const usePresence = (enabled = true) => {
           avatar: user?.avatar_url ?? "",
           is_muted: muteRef.current,
         },
-      }),
+      })
     );
   };
 

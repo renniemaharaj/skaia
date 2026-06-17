@@ -1,23 +1,6 @@
 import { customConfirm } from "../ui/Prompt";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  lazy,
-  Suspense,
-} from "react";
-import {
-  Plus,
-  X,
-  Lock,
-  Unlock,
-  Save,
-  Trash2,
-  AlertTriangle,
-  FileCode,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { Plus, X, Lock, Unlock, Save, Trash2, AlertTriangle, FileCode } from "lucide-react";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { apiRequest } from "../../utils/api";
 import { toast } from "sonner";
@@ -55,7 +38,7 @@ const isEnv = (f: string) => f === ".env";
 const langFor = (f: string) => (isEnv(f) ? "ini" : "typescript");
 
 function nextFileName(existing: string[]): string {
-  const tsFiles = existing.filter((f) => f.endsWith(".ts") && f !== "main.ts");
+  const tsFiles = existing.filter(f => f.endsWith(".ts") && f !== "main.ts");
   for (let i = 1; ; i++) {
     const name = `file${i}.ts`;
     if (!tsFiles.includes(name) && !existing.includes(name)) return name;
@@ -66,7 +49,7 @@ function nextFileName(existing: string[]): string {
  * Count diagnostics per file for badge rendering.
  */
 function countByFile(
-  diags: CompileDiagnostic[],
+  diags: CompileDiagnostic[]
 ): Record<string, { errors: number; warnings: number }> {
   const m: Record<string, { errors: number; warnings: number }> = {};
   for (const d of diags) {
@@ -90,9 +73,7 @@ export default function TabbedEditor({
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const modelsRef = useRef<Map<string, MonacoEditor.ITextModel>>(new Map());
-  const viewStatesRef = useRef<
-    Map<string, MonacoEditor.ICodeEditorViewState | null>
-  >(new Map());
+  const viewStatesRef = useRef<Map<string, MonacoEditor.ICodeEditorViewState | null>>(new Map());
   const suppressChangeRef = useRef(false);
   const disposeRef = useRef<IDisposable | null>(null);
 
@@ -127,7 +108,7 @@ export default function TabbedEditor({
   /* Get content for active tab */
   const getContent = useCallback(
     (tab: string) => (isEnv(tab) ? envData : (files[tab] ?? "")),
-    [files, envData],
+    [files, envData]
   );
 
   /* Monaco model management */
@@ -138,13 +119,11 @@ export default function TabbedEditor({
         return model;
       }
       const uri = monaco.Uri.parse(`file:///${name}`);
-      model =
-        monaco.editor.getModel(uri) ??
-        monaco.editor.createModel(content, langFor(name), uri);
+      model = monaco.editor.getModel(uri) ?? monaco.editor.createModel(content, langFor(name), uri);
       modelsRef.current.set(name, model);
       return model;
     },
-    [],
+    []
   );
 
   /* Switch editor to a tab */
@@ -158,7 +137,7 @@ export default function TabbedEditor({
       const currentModel = editor.getModel();
       if (currentModel) {
         const currentName = [...modelsRef.current.entries()].find(
-          ([, m]) => m === currentModel,
+          ([, m]) => m === currentModel
         )?.[0];
         if (currentName) {
           viewStatesRef.current.set(currentName, editor.saveViewState());
@@ -187,7 +166,7 @@ export default function TabbedEditor({
       // Apply markers for this file
       applyMarkers(monaco, tab);
     },
-    [files, envData, getOrCreateModel],
+    [files, envData, getOrCreateModel]
   );
 
   /* Apply diagnostic markers to a file's model */
@@ -196,12 +175,9 @@ export default function TabbedEditor({
       const model = modelsRef.current.get(tab);
       if (!model || model.isDisposed()) return;
 
-      const fileDiags = diagnostics.filter((d) => d.file === tab);
-      const markers = fileDiags.map((d) => ({
-        severity:
-          d.category === 1
-            ? monaco.MarkerSeverity.Error
-            : monaco.MarkerSeverity.Warning,
+      const fileDiags = diagnostics.filter(d => d.file === tab);
+      const markers = fileDiags.map(d => ({
+        severity: d.category === 1 ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
         message: d.message,
         startLineNumber: d.line,
         startColumn: d.col + 1,
@@ -210,7 +186,7 @@ export default function TabbedEditor({
       }));
       monaco.editor.setModelMarkers(model, "tscompile", markers);
     },
-    [diagnostics],
+    [diagnostics]
   );
 
   /* Re-apply markers when diagnostics change */
@@ -255,10 +231,7 @@ export default function TabbedEditor({
 
   /* Editor mount */
   const handleEditorMount = useCallback(
-    (
-      editor: MonacoEditor.IStandaloneCodeEditor,
-      monaco: typeof import("monaco-editor"),
-    ) => {
+    (editor: MonacoEditor.IStandaloneCodeEditor, monaco: typeof import("monaco-editor")) => {
       editorRef.current = editor;
       monacoRef.current = monaco;
 
@@ -275,9 +248,7 @@ export default function TabbedEditor({
         if (suppressChangeRef.current) return;
         const model = editor.getModel();
         if (!model) return;
-        const name = [...modelsRef.current.entries()].find(
-          ([, m]) => m === model,
-        )?.[0];
+        const name = [...modelsRef.current.entries()].find(([, m]) => m === model)?.[0];
         if (!name) return;
         const val = model.getValue();
         if (isEnv(name)) {
@@ -290,7 +261,7 @@ export default function TabbedEditor({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    []
   );
 
   /* Cleanup on unmount */
@@ -386,16 +357,14 @@ export default function TabbedEditor({
       });
       toast.success("Environment variables saved.");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save env vars",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save env vars");
     } finally {
       setEnvSaving(false);
     }
   };
 
   const handleEnvClear = async () => {
-    if (!await customConfirm("Remove all environment variables?")) return;
+    if (!(await customConfirm("Remove all environment variables?"))) return;
     if (datasourceId > 0) {
       setEnvSaving(true);
       try {
@@ -404,9 +373,7 @@ export default function TabbedEditor({
         });
         toast.success("Environment variables cleared.");
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to clear env vars",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to clear env vars");
         return;
       } finally {
         setEnvSaving(false);
@@ -416,8 +383,8 @@ export default function TabbedEditor({
   };
 
   /* Total errors/warnings */
-  const totalErrors = diagnostics.filter((d) => d.category === 1).length;
-  const totalWarnings = diagnostics.filter((d) => d.category !== 1).length;
+  const totalErrors = diagnostics.filter(d => d.category === 1).length;
+  const totalWarnings = diagnostics.filter(d => d.category !== 1).length;
 
   /* Env tab read-only state */
   const isReadOnly = activeTab === ".env" && envLocked;
@@ -427,7 +394,7 @@ export default function TabbedEditor({
       {/* Tab bar */}
       <div className="tabbed-editor__tabs">
         <div className="tabbed-editor__tab-list">
-          {allTabs.map((tab) => {
+          {allTabs.map(tab => {
             const counts = diagCounts[tab];
             const active = tab === activeTab;
             return (
@@ -438,33 +405,27 @@ export default function TabbedEditor({
                   setActiveTab(tab);
                   setRenamingTab(null);
                 }}
-                onDoubleClick={() =>
-                  !isEnv(tab) && tab !== "main.ts" && startRename(tab)
-                }
+                onDoubleClick={() => !isEnv(tab) && tab !== "main.ts" && startRename(tab)}
               >
                 {renamingTab === tab ? (
                   <input
                     className="tabbed-editor__rename-input"
                     value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                    onKeyDown={(e) => {
+                    onChange={e => setRenameValue(e.target.value)}
+                    onKeyDown={e => {
                       if (e.key === "Enter") commitRename();
                       if (e.key === "Escape") setRenamingTab(null);
                     }}
                     onBlur={commitRename}
                     autoFocus
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                   />
                 ) : (
                   <>
                     <span className="tabbed-editor__tab-name">
                       {isEnv(tab) ? (
                         <>
-                          {envLocked ? (
-                            <Lock size={11} />
-                          ) : (
-                            <Unlock size={11} />
-                          )}
+                          {envLocked ? <Lock size={11} /> : <Unlock size={11} />}
                           <span>.env</span>
                         </>
                       ) : (
@@ -484,7 +445,7 @@ export default function TabbedEditor({
                     {!isEnv(tab) && tab !== "main.ts" && (
                       <button
                         className="tabbed-editor__tab-close"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           removeFile(tab);
                         }}
@@ -499,11 +460,7 @@ export default function TabbedEditor({
             );
           })}
 
-          <button
-            className="tabbed-editor__add-btn"
-            onClick={addFile}
-            title="New file"
-          >
+          <button className="tabbed-editor__add-btn" onClick={addFile} title="New file">
             <Plus size={14} />
           </button>
         </div>
@@ -514,7 +471,7 @@ export default function TabbedEditor({
             <>
               <button
                 className={`action-btn ${envLocked ? "" : "active"}`}
-                onClick={() => setEnvLocked((v) => !v)}
+                onClick={() => setEnvLocked(v => !v)}
                 title={envLocked ? "Unlock to edit" : "Lock editor"}
               >
                 {envLocked ? <Lock size={13} /> : <Unlock size={13} />}
@@ -549,9 +506,7 @@ export default function TabbedEditor({
                 </span>
               )}
               {totalWarnings > 0 && (
-                <span className="tabbed-editor__diag-warnings">
-                  {totalWarnings} warn
-                </span>
+                <span className="tabbed-editor__diag-warnings">{totalWarnings} warn</span>
               )}
             </span>
           )}
@@ -568,14 +523,11 @@ export default function TabbedEditor({
                   envData
                     .trim()
                     .split("\n")
-                    .filter((l) => l.trim() && !l.trim().startsWith("#")).length
+                    .filter(l => l.trim() && !l.trim().startsWith("#")).length
                 } variable(s) configured`
               : "No variables set"}
           </span>
-          <button
-            className="tabbed-editor__env-unlock-btn"
-            onClick={() => setEnvLocked(false)}
-          >
+          <button className="tabbed-editor__env-unlock-btn" onClick={() => setEnvLocked(false)}>
             Unlock to edit
           </button>
         </div>
@@ -584,17 +536,9 @@ export default function TabbedEditor({
       {/* Always keep editor mounted to avoid InstantiationService disposal */}
       <div
         className="tabbed-editor__editor-wrap"
-        style={
-          activeTab === ".env" && envLocked
-            ? { height: 0, overflow: "hidden" }
-            : undefined
-        }
+        style={activeTab === ".env" && envLocked ? { height: 0, overflow: "hidden" } : undefined}
       >
-        <Suspense
-          fallback={
-            <div className="skeleton-bar" style={{ height, borderRadius: 0 }} />
-          }
-        >
+        <Suspense fallback={<div className="skeleton-bar" style={{ height, borderRadius: 0 }} />}>
           <Editor
             height={height}
             theme={theme === "dark" ? "vs-dark" : "vs-light"}

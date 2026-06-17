@@ -20,7 +20,7 @@ export const customPrompt = (
   placeholder?: string,
   type?: string
 ): Promise<string | null> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (setPromptConfigGlobal) {
       setPromptConfigGlobal({ message, defaultValue, placeholder, type, resolve });
     } else {
@@ -30,7 +30,7 @@ export const customPrompt = (
 };
 
 export const customConfirm = (message: string): Promise<boolean> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (setPromptConfigGlobal) {
       setPromptConfigGlobal({ message, defaultValue: "", isConfirm: true, resolve });
     } else {
@@ -40,7 +40,7 @@ export const customConfirm = (message: string): Promise<boolean> => {
 };
 
 export const customAlert = (message: string): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (setPromptConfigGlobal) {
       setPromptConfigGlobal({ message, defaultValue: "", isAlert: true, resolve });
     } else {
@@ -99,12 +99,21 @@ export const PromptContainer = () => {
   return createPortal(
     <div
       className="ui-dialog-overlay"
-      onMouseDown={(e) => {
+      onMouseDown={e => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div className="ui-dialog" style={{ maxWidth: "420px" }}>
-        <div className="ui-dialog__header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "none", paddingBottom: "0" }}>
+        <div
+          className="ui-dialog__header"
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "none",
+            paddingBottom: "0",
+          }}
+        >
           <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 600 }}>
             {config.isAlert ? "Notice" : config.isConfirm ? "Please Confirm" : "Input Required"}
           </h3>
@@ -112,14 +121,36 @@ export const PromptContainer = () => {
             onClick={handleClose}
             type="button"
             className="btn-ghost"
-            style={{ padding: "0.35rem", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", border: "none" }}
+            style={{
+              padding: "0.35rem",
+              borderRadius: "var(--radius-md)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+            }}
           >
             <X size={18} />
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="ui-dialog__body" style={{ display: "flex", flexDirection: "column", gap: "1.25rem", paddingTop: "0.5rem" }}>
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.95rem", lineHeight: 1.6 }}>
+          <div
+            className="ui-dialog__body"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.25rem",
+              paddingTop: "0.5rem",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                color: "var(--text-secondary)",
+                fontSize: "0.95rem",
+                lineHeight: 1.6,
+              }}
+            >
               {config.message}
             </p>
             {!config.isConfirm && !config.isAlert && (
@@ -127,7 +158,7 @@ export const PromptContainer = () => {
                 ref={inputRef}
                 type={config.type || "text"}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={e => setValue(e.target.value)}
                 placeholder={config.placeholder}
                 style={{ marginBottom: 0 }}
               />
@@ -135,20 +166,12 @@ export const PromptContainer = () => {
           </div>
           <div className="ui-dialog__footer" style={{ borderTop: "none", paddingTop: "0" }}>
             {config.isAlert ? (
-              <button
-                type="button"
-                onClick={handleClose}
-                className="btn btn-ghost"
-              >
+              <button type="button" onClick={handleClose} className="btn btn-ghost">
                 Close
               </button>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="btn btn-ghost"
-                >
+                <button type="button" onClick={handleClose} className="btn btn-ghost">
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">

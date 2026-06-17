@@ -30,7 +30,7 @@ function mapSingleRow(
   columnMap: ColumnMap,
   sectionId: number,
   index: number,
-  override?: Partial<Record<MappableField, string>>,
+  override?: Partial<Record<MappableField, string>>
 ): PageItem {
   const item: PageItem = {
     id: -(index + 1), // negative synthetic IDs so they don't collide with real DB items
@@ -47,9 +47,7 @@ function mapSingleRow(
   // Apply column map: item[field] = row[columnName]
   for (const [field, colName] of Object.entries(columnMap)) {
     if (colName && row[colName] !== undefined && row[colName] !== null) {
-      (item as unknown as Record<string, unknown>)[field] = String(
-        row[colName],
-      );
+      (item as unknown as Record<string, unknown>)[field] = String(row[colName]);
     }
   }
 
@@ -73,7 +71,7 @@ export function mapRowsToItems(
   columnMap: ColumnMap,
   sectionId: number,
   rowOverrides?: RowOverrides,
-  keyColumn?: string,
+  keyColumn?: string
 ): PageItem[] {
   return rows.map((row, i) => {
     const key = rowKey(row, i, keyColumn);

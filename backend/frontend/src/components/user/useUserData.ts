@@ -25,12 +25,8 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
 
-  const [permTogglingSet, setPermTogglingSet] = useState<Set<string>>(
-    new Set(),
-  );
-  const [roleTogglingSet, setRoleTogglingSet] = useState<Set<string>>(
-    new Set(),
-  );
+  const [permTogglingSet, setPermTogglingSet] = useState<Set<string>>(new Set());
+  const [roleTogglingSet, setRoleTogglingSet] = useState<Set<string>>(new Set());
 
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
@@ -75,7 +71,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
         e as CustomEvent<{ userId: string; user: ProfileUser }>
       ).detail;
       if (String(updatedId) === String(userId)) {
-        setUser((u) =>
+        setUser(u =>
           u
             ? {
                 ...u,
@@ -83,7 +79,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
                 roles: updatedUser.roles ?? u.roles,
                 permissions: updatedUser.permissions ?? u.permissions,
               }
-            : u,
+            : u
         );
       }
     };
@@ -96,9 +92,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
     if (!canManage) return;
     const fetchCatalogues = async () => {
       const [perms, roles] = await Promise.all([
-        apiRequest<Permission[]>("/users/permissions").catch(
-          () => [] as Permission[],
-        ),
+        apiRequest<Permission[]>("/users/permissions").catch(() => [] as Permission[]),
         apiRequest<Role[]>("/users/roles").catch(() => [] as Role[]),
       ]);
       setAllPermissions(perms ?? []);
@@ -110,16 +104,16 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
   const handlePermissionToggle = async (permName: string) => {
     if (!user || !canManage || permTogglingSet.has(permName)) return;
     const hasIt = (user.permissions ?? []).includes(permName);
-    setPermTogglingSet((s) => new Set(s).add(permName));
-    setUser((u) =>
+    setPermTogglingSet(s => new Set(s).add(permName));
+    setUser(u =>
       u
         ? {
             ...u,
             permissions: hasIt
-              ? (u.permissions ?? []).filter((p) => p !== permName)
+              ? (u.permissions ?? []).filter(p => p !== permName)
               : [...(u.permissions ?? []), permName],
           }
-        : u,
+        : u
     );
     try {
       if (hasIt) {
@@ -133,20 +127,20 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
         });
       }
     } catch {
-      setUser((u) =>
+      setUser(u =>
         u
           ? {
               ...u,
               permissions: hasIt
                 ? [...(u.permissions ?? []), permName]
-                : (u.permissions ?? []).filter((p) => p !== permName),
+                : (u.permissions ?? []).filter(p => p !== permName),
             }
-          : u,
+          : u
       );
 
       toast.error(`Failed to ${hasIt ? "remove" : "add"} permission`);
     } finally {
-      setPermTogglingSet((s) => {
+      setPermTogglingSet(s => {
         const ns = new Set(s);
         ns.delete(permName);
         return ns;
@@ -157,16 +151,16 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
   const handleRoleToggle = async (roleName: string) => {
     if (!user || !canManage || roleTogglingSet.has(roleName)) return;
     const hasIt = (user.roles ?? []).includes(roleName);
-    setRoleTogglingSet((s) => new Set(s).add(roleName));
-    setUser((u) =>
+    setRoleTogglingSet(s => new Set(s).add(roleName));
+    setUser(u =>
       u
         ? {
             ...u,
             roles: hasIt
-              ? (u.roles ?? []).filter((r) => r !== roleName)
+              ? (u.roles ?? []).filter(r => r !== roleName)
               : [...(u.roles ?? []), roleName],
           }
-        : u,
+        : u
     );
     try {
       if (hasIt) {
@@ -180,22 +174,22 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
         });
       }
     } catch {
-      setUser((u) =>
+      setUser(u =>
         u
           ? {
               ...u,
               roles: hasIt
                 ? [...(u.roles ?? []), roleName]
-                : (u.roles ?? []).filter((r) => r !== roleName),
+                : (u.roles ?? []).filter(r => r !== roleName),
             }
-          : u,
+          : u
       );
 
       toast.error(
-        `Failed to ${hasIt ? "remove" : "add"} role. Make sure you have sufficient permissions and power level to manage this role.`,
+        `Failed to ${hasIt ? "remove" : "add"} role. Make sure you have sufficient permissions and power level to manage this role.`
       );
     } finally {
-      setRoleTogglingSet((s) => {
+      setRoleTogglingSet(s => {
         const ns = new Set(s);
         ns.delete(roleName);
         return ns;
@@ -211,9 +205,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
         method: "POST",
         body: JSON.stringify({ reason: suspendReason }),
       });
-      setUser((u) =>
-        u ? { ...u, is_suspended: true, suspended_reason: suspendReason } : u,
-      );
+      setUser(u => (u ? { ...u, is_suspended: true, suspended_reason: suspendReason } : u));
       setSuspendDialogOpen(false);
       setSuspendReason("");
     } catch {
@@ -228,9 +220,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
     setSuspendLoading(true);
     try {
       await apiRequest(`/users/${user.id}/suspend`, { method: "DELETE" });
-      setUser((u) =>
-        u ? { ...u, is_suspended: false, suspended_reason: undefined } : u,
-      );
+      setUser(u => (u ? { ...u, is_suspended: false, suspended_reason: undefined } : u));
     } catch {
       toast.error("Failed to unsuspend user");
     } finally {

@@ -196,16 +196,29 @@
   align-items: center;
 }
 
-.global-uploader-chunk-status.status-pending { color: var(--text-secondary); }
-.global-uploader-chunk-status.status-uploading { color: var(--primary-color); font-weight: 600; }
-.global-uploader-chunk-status.status-complete { color: var(--success-color); }
-.global-uploader-chunk-status.status-error { color: var(--error-color); }
+.global-uploader-chunk-status.status-pending {
+  color: var(--text-secondary);
+}
+.global-uploader-chunk-status.status-uploading {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+.global-uploader-chunk-status.status-complete {
+  color: var(--success-color);
+}
+.global-uploader-chunk-status.status-error {
+  color: var(--error-color);
+}
 
 .spin {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

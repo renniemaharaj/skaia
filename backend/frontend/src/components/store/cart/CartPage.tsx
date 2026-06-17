@@ -48,13 +48,12 @@ export const CartPage = () => {
   const [billingInfo, setBillingInfo] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [userCards, setUserCards] = useState<WalletCard[]>([]);
-  const [savedCheckoutBrief, setSavedCheckoutBrief] =
-    useState<SavedCheckoutInfo | null>(null);
+  const [savedCheckoutBrief, setSavedCheckoutBrief] = useState<SavedCheckoutInfo | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       apiRequest<{ cards?: WalletCard[] }>("/store/wallet/cards")
-        .then((data) => {
+        .then(data => {
           setUserCards(data.cards || []);
         })
         .catch(() => {});
@@ -81,8 +80,7 @@ export const CartPage = () => {
           };
           setSavedCheckoutBrief(saved);
           if (saved.billingInfo) setBillingInfo(saved.billingInfo);
-          if (saved.deliveryLocation)
-            setDeliveryLocation(saved.deliveryLocation);
+          if (saved.deliveryLocation) setDeliveryLocation(saved.deliveryLocation);
           if (saved.guestPhone) setGuestPhone(saved.guestPhone);
           if (saved.extraInfo) setExtraInfo(saved.extraInfo);
           setRememberBilling(true);
@@ -99,8 +97,7 @@ export const CartPage = () => {
           setSavedCheckoutBrief(saved);
           setBillingInfo(saved.billingInfo);
           setRememberBilling(true);
-          if (saved.deliveryLocation)
-            setDeliveryLocation(saved.deliveryLocation);
+          if (saved.deliveryLocation) setDeliveryLocation(saved.deliveryLocation);
           if (saved.guestPhone) setGuestPhone(saved.guestPhone);
           if (saved.extraInfo) setExtraInfo(saved.extraInfo);
         }
@@ -109,7 +106,7 @@ export const CartPage = () => {
   }, [isAuthenticated]);
 
   const handleRemove = async (productId: string) => {
-    setCartItems((prev) => prev.filter((i) => i.product_id !== productId));
+    setCartItems(prev => prev.filter(i => i.product_id !== productId));
     if (isAuthenticated) {
       try {
         await apiRequest("/store/cart/remove", {
@@ -132,10 +129,8 @@ export const CartPage = () => {
   const handleQuantityChange = async (productId: string, raw: string) => {
     const qty = Number.parseInt(raw, 10);
     if (!Number.isNaN(qty) && qty > 0) {
-      setCartItems((prev) =>
-        prev.map((i) =>
-          i.product_id === productId ? { ...i, quantity: qty } : i,
-        ),
+      setCartItems(prev =>
+        prev.map(i => (i.product_id === productId ? { ...i, quantity: qty } : i))
       );
       if (isAuthenticated) {
         try {
@@ -147,11 +142,7 @@ export const CartPage = () => {
             }),
           });
         } catch (err) {
-          toast.error(
-            err instanceof Error
-              ? err.message
-              : "Could not update cart quantity.",
-          );
+          toast.error(err instanceof Error ? err.message : "Could not update cart quantity.");
         }
       }
     }
@@ -219,11 +210,7 @@ export const CartPage = () => {
       setSuccessOrder(data.order);
       setCartItems([]);
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Checkout failed. Please try again.",
-      );
+      toast.error(err instanceof Error ? err.message : "Checkout failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -300,11 +287,7 @@ export const CartPage = () => {
   /* ── Success screen ── */
   if (successOrder) {
     return (
-      <OrderSubmittedView
-        order={successOrder}
-        cartItems={successCartItems}
-        onBackLink="/store"
-      />
+      <OrderSubmittedView order={successOrder} cartItems={successCartItems} onBackLink="/store" />
     );
   }
 
@@ -319,11 +302,7 @@ export const CartPage = () => {
 
   /* ── Main cart ── */
   return (
-    <StorePageShell
-      className="cart-page-container"
-      backTo="/store"
-      meta={savedCheckoutMeta}
-    >
+    <StorePageShell className="cart-page-container" backTo="/store" meta={savedCheckoutMeta}>
       <CartHeader />
 
       <div className="cart-content">

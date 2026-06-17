@@ -170,9 +170,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .btn-add-to-cart:hover:not(:disabled) {

@@ -34,7 +34,7 @@ export function MediaPreviewLightbox({
 
   return createPortal(
     <div className="up-upload-lightbox media-preview-lightbox" onClick={onClose}>
-      <div className="up-upload-lightbox-content" onClick={(e) => e.stopPropagation()}>
+      <div className="up-upload-lightbox-content" onClick={e => e.stopPropagation()}>
         <div className="media-preview-frame">
           {isVideo(item) ? (
             <video src={item.url} controls autoPlay className="media-preview-object" />
@@ -74,6 +74,6 @@ export function MediaPreviewLightbox({
         </div>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

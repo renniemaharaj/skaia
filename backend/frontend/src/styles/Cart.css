@@ -205,8 +205,7 @@
   background: color-mix(in srgb, var(--bg-secondary) 72%, transparent) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 32px
-    color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
 }
 
 .cart-item-image {
@@ -368,8 +367,7 @@
   border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 32px
-    color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .cart-checkout-card--details,

@@ -23,37 +23,25 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       expect(screen.getByText("Welcome Back")).toBeInTheDocument();
-      expect(
-        screen.getByText("Log in to your account to continue"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Enter your email address"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Enter your password"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /log in/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Log in to your account to continue")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter your email address")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
     });
 
     it("does not show username field in login mode", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      expect(
-        screen.queryByPlaceholderText("Choose a username"),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByPlaceholderText("Confirm your password"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText("Choose a username")).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText("Confirm your password")).not.toBeInTheDocument();
     });
 
     it("allows toggling to register mode", async () => {
@@ -61,16 +49,14 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       const toggleButton = screen.getByRole("button", { name: /sign up/i });
       await user.click(toggleButton);
 
       expect(screen.getByText("Join Us")).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Choose a username"),
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Choose a username")).toBeInTheDocument();
     });
 
     it("submits login form with valid credentials", async () => {
@@ -88,24 +74,15 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" onAuthSuccess={mockSuccessCallback} />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          "/api/auth/login",
-          expect.any(Object),
-        );
+        expect(mockFetch).toHaveBeenCalledWith("/api/auth/login", expect.any(Object));
       });
 
       expect(localStorage.getItem("auth.accessToken")).toBe("test-token-123");
@@ -121,24 +98,16 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "wrongpassword",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "wrongpassword");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText((content) =>
-            content.includes("Invalid credentials"),
-          ),
+          screen.getByText(content => content.includes("Invalid credentials"))
         ).toBeInTheDocument();
       });
     });
@@ -146,7 +115,7 @@ describe("Auth Component", () => {
     it("shows loading state during submission", async () => {
       mockFetch.mockImplementationOnce(
         () =>
-          new Promise((resolve) =>
+          new Promise(resolve =>
             setTimeout(
               () =>
                 resolve({
@@ -156,26 +125,20 @@ describe("Auth Component", () => {
                     user: { email: "test@example.com" },
                   }),
                 }),
-              100,
-            ),
-          ),
+              100
+            )
+          )
       );
 
       const user = userEvent.setup();
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
 
       const submitButton = screen.getByRole("button", { name: /log in/i });
       await user.click(submitButton);
@@ -189,43 +152,27 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       expect(screen.getByText("Join Us")).toBeInTheDocument();
-      expect(
-        screen.getByText("Create a new account to get started"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Choose a username"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Confirm your password"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: /create account/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Create a new account to get started")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Choose a username")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Confirm your password")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /create account/i })).toBeInTheDocument();
     });
 
     it("shows all required fields for registration", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      expect(
-        screen.getByPlaceholderText("Choose a username"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Enter your email address"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Enter your password"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText("Confirm your password"),
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Choose a username")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter your email address")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Enter your password")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Confirm your password")).toBeInTheDocument();
     });
 
     it("submits registration form with valid data", async () => {
@@ -242,32 +189,17 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Choose a username"),
-        "newuser",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "new@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Confirm your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Choose a username"), "newuser");
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "new@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Confirm your password"), "password123");
       await user.click(screen.getByRole("button", { name: /create account/i }));
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith(
-          "/api/auth/register",
-          expect.any(Object),
-        );
+        expect(mockFetch).toHaveBeenCalledWith("/api/auth/register", expect.any(Object));
       });
     });
 
@@ -276,16 +208,14 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       const toggleButton = screen.getByRole("button", { name: /log in/i });
       await user.click(toggleButton);
 
       expect(screen.getByText("Welcome Back")).toBeInTheDocument();
-      expect(
-        screen.queryByPlaceholderText("Choose a username"),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText("Choose a username")).not.toBeInTheDocument();
     });
 
     it("displays error on registration failure", async () => {
@@ -298,32 +228,21 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Choose a username"),
-        "existinguser",
-      );
+      await user.type(screen.getByPlaceholderText("Choose a username"), "existinguser");
       await user.type(
         screen.getByPlaceholderText("Enter your email address"),
-        "existing@example.com",
+        "existing@example.com"
       );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Confirm your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
+      await user.type(screen.getByPlaceholderText("Confirm your password"), "password123");
       await user.click(screen.getByRole("button", { name: /create account/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText((content) =>
-            content.includes("User already exists"),
-          ),
+          screen.getByText(content => content.includes("User already exists"))
         ).toBeInTheDocument();
       });
     });
@@ -335,15 +254,13 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       const emailInput = screen.getByPlaceholderText(
-        "Enter your email address",
+        "Enter your email address"
       ) as HTMLInputElement;
-      const passwordInput = screen.getByPlaceholderText(
-        "Enter your password",
-      ) as HTMLInputElement;
+      const passwordInput = screen.getByPlaceholderText("Enter your password") as HTMLInputElement;
 
       await user.type(emailInput, "test@example.com");
       await user.type(passwordInput, "password123");
@@ -356,7 +273,7 @@ describe("Auth Component", () => {
 
       // Form should be reset
       const newEmailInput = screen.getByPlaceholderText(
-        "Enter your email address",
+        "Enter your email address"
       ) as HTMLInputElement;
       expect(newEmailInput.value).toBe("");
     });
@@ -371,24 +288,16 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "wrongpassword",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "wrongpassword");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
         expect(
-          screen.getByText((content) =>
-            content.includes("Invalid credentials"),
-          ),
+          screen.getByText(content => content.includes("Invalid credentials"))
         ).toBeInTheDocument();
       });
 
@@ -399,7 +308,7 @@ describe("Auth Component", () => {
     it("disables inputs during submission", async () => {
       mockFetch.mockImplementationOnce(
         () =>
-          new Promise((resolve) =>
+          new Promise(resolve =>
             setTimeout(
               () =>
                 resolve({
@@ -409,29 +318,23 @@ describe("Auth Component", () => {
                     user: { email: "test@example.com" },
                   }),
                 }),
-              200,
-            ),
-          ),
+              200
+            )
+          )
       );
 
       const user = userEvent.setup();
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
 
       const emailInput = screen.getByPlaceholderText(
-        "Enter your email address",
+        "Enter your email address"
       ) as HTMLInputElement;
       const submitButton = screen.getByRole("button", {
         name: /log in/i,
@@ -464,17 +367,11 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
@@ -497,17 +394,11 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" onAuthSuccess={mockCallback} />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
@@ -530,17 +421,11 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      await user.type(
-        screen.getByPlaceholderText("Enter your email address"),
-        "test@example.com",
-      );
-      await user.type(
-        screen.getByPlaceholderText("Enter your password"),
-        "password123",
-      );
+      await user.type(screen.getByPlaceholderText("Enter your email address"), "test@example.com");
+      await user.type(screen.getByPlaceholderText("Enter your password"), "password123");
       await user.click(screen.getByRole("button", { name: /log in/i }));
 
       await waitFor(() => {
@@ -554,15 +439,13 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="login" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
       const emailInput = screen.getByPlaceholderText(
-        "Enter your email address",
+        "Enter your email address"
       ) as HTMLInputElement;
-      const passwordInput = screen.getByPlaceholderText(
-        "Enter your password",
-      ) as HTMLInputElement;
+      const passwordInput = screen.getByPlaceholderText("Enter your password") as HTMLInputElement;
 
       expect(emailInput.required).toBe(true);
       expect(passwordInput.required).toBe(true);
@@ -572,21 +455,15 @@ describe("Auth Component", () => {
       render(
         <BrowserRouter>
           <Auth initialMode="register" />
-        </BrowserRouter>,
+        </BrowserRouter>
       );
 
-      const usernameInput = screen.getByPlaceholderText(
-        "Choose a username",
-      ) as HTMLInputElement;
+      const usernameInput = screen.getByPlaceholderText("Choose a username") as HTMLInputElement;
       const emailInput = screen.getByPlaceholderText(
-        "Enter your email address",
+        "Enter your email address"
       ) as HTMLInputElement;
-      const passwordInput = screen.getByPlaceholderText(
-        "Enter your password",
-      ) as HTMLInputElement;
-      const confirmInput = screen.getByPlaceholderText(
-        "Confirm your password",
-      ) as HTMLInputElement;
+      const passwordInput = screen.getByPlaceholderText("Enter your password") as HTMLInputElement;
+      const confirmInput = screen.getByPlaceholderText("Confirm your password") as HTMLInputElement;
 
       expect(usernameInput.required).toBe(true);
       expect(emailInput.required).toBe(true);

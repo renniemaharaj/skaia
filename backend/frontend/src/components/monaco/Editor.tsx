@@ -57,7 +57,7 @@ const MonacoEditor = ({
   const debounceClearIgnoreChange = useRef(
     debounce(() => {
       ignoreChangeRef.current = false;
-    }, 500),
+    }, 500)
   );
 
   const debounceSendChanges = useRef(
@@ -67,7 +67,7 @@ const MonacoEditor = ({
         onChange(value);
         debounceClearIgnoreChange.current();
       }
-    }, 300),
+    }, 300)
   );
 
   return (
@@ -85,7 +85,7 @@ const MonacoEditor = ({
           fontSize: 14, // Adjusts font size
           lineNumbersMinChars: 3, // Adjusts left gutter space
         }}
-        onChange={(value) => {
+        onChange={value => {
           debounceSendChanges.current(value ?? "");
         }}
       />

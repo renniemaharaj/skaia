@@ -23,10 +23,7 @@ import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
 import Select from "../input/Select";
-import {
-  useWebSocketSync,
-  sendGrengoJobAction,
-} from "../../hooks/useWebSocketSync";
+import { useWebSocketSync, sendGrengoJobAction } from "../../hooks/useWebSocketSync";
 import { uploader } from "../../atoms/uploadAtom";
 import { GlassCard, PrimaryCard, SecondaryCard } from "../cards/GlassCard";
 
@@ -155,9 +152,7 @@ export default function GrengoDashboard() {
   const [composeBusy, setComposeBusy] = useState(false);
   const [composeOutput, setComposeOutput] = useState("");
   const [migrateBusy, setMigrateBusy] = useState<Record<string, boolean>>({});
-  const [migrateOutput, setMigrateOutput] = useState<Record<string, string>>(
-    {},
-  );
+  const [migrateOutput, setMigrateOutput] = useState<Record<string, string>>({});
   const [migrateAllBusy, setMigrateAllBusy] = useState(false);
   const [migrateAllOutput, setMigrateAllOutput] = useState("");
 
@@ -174,9 +169,7 @@ export default function GrengoDashboard() {
   const [envError, setEnvError] = useState("");
 
   // Exports
-  const [exports, setExports] = useState<
-    { name: string; size: number; created_at: string }[]
-  >([]);
+  const [exports, setExports] = useState<{ name: string; size: number; created_at: string }[]>([]);
   const [fetchingExports, setFetchingExports] = useState(false);
 
   // Jobs
@@ -192,7 +185,7 @@ export default function GrengoDashboard() {
     async <T,>(endpoint: string, opts: RequestInit = {}): Promise<T> => {
       return apiRequest<T>(`${apiBase}${endpoint}`, opts);
     },
-    [apiBase],
+    [apiBase]
   );
 
   // Session validation & keep-alive
@@ -276,14 +269,8 @@ export default function GrengoDashboard() {
     setFetchingExports(true);
     try {
       const data =
-        await grengoRequest<
-          { name: string; size: number; created_at: string }[]
-        >("/exports");
-      setExports(
-        Array.isArray(data)
-          ? data.sort((a, b) => b.name.localeCompare(a.name))
-          : [],
-      );
+        await grengoRequest<{ name: string; size: number; created_at: string }[]>("/exports");
+      setExports(Array.isArray(data) ? data.sort((a, b) => b.name.localeCompare(a.name)) : []);
     } catch {
       // ignore
     } finally {
@@ -302,7 +289,7 @@ export default function GrengoDashboard() {
       const data = await grengoRequest<any[]>("/jobs");
       if (Array.isArray(data)) {
         const jobsMap: Record<string, any> = {};
-        data.forEach((job) => {
+        data.forEach(job => {
           if (job.status === "running") {
             jobsMap[job.id] = job;
           }
@@ -319,7 +306,7 @@ export default function GrengoDashboard() {
       fetchJobs();
       const handleJobUpdate = (e: Event) => {
         const job = (e as CustomEvent).detail;
-        setActiveJobs((prev) => {
+        setActiveJobs(prev => {
           const next = { ...prev };
           if (job.status === "running") {
             next[job.id] = job;
@@ -331,16 +318,13 @@ export default function GrengoDashboard() {
 
         if (
           job.status === "completed" &&
-          (job.type === "export-site" ||
-            job.type === "export-node" ||
-            job.type === "delete-export")
+          (job.type === "export-site" || job.type === "export-node" || job.type === "delete-export")
         ) {
           fetchExports();
         }
       };
       window.addEventListener("grengo:job_update", handleJobUpdate);
-      return () =>
-        window.removeEventListener("grengo:job_update", handleJobUpdate);
+      return () => window.removeEventListener("grengo:job_update", handleJobUpdate);
     }
   }, [sessionValid, fetchJobs]);
 
@@ -375,10 +359,7 @@ export default function GrengoDashboard() {
 
       return () => {
         window.removeEventListener("grengo:stats_update", handleStatsUpdate);
-        window.removeEventListener(
-          "grengo:hardware_update",
-          handleHardwareUpdate,
-        );
+        window.removeEventListener("grengo:hardware_update", handleHardwareUpdate);
       };
     }
   }, [sessionValid, fetchStats]);
@@ -402,11 +383,7 @@ export default function GrengoDashboard() {
         setStorage(detail ?? null);
       };
       window.addEventListener("grengo:storage_update", handleStorageUpdate);
-      return () =>
-        window.removeEventListener(
-          "grengo:storage_update",
-          handleStorageUpdate,
-        );
+      return () => window.removeEventListener("grengo:storage_update", handleStorageUpdate);
     }
   }, [sessionValid, fetchStorage]);
 
@@ -436,12 +413,10 @@ export default function GrengoDashboard() {
         "global-cmd",
         undefined,
         "compose",
-        build ? ["up", "--build", "-d"] : ["up", "-d"],
+        build ? ["up", "--build", "-d"] : ["up", "-d"]
       );
       await waitPromise;
-      setComposeOutput(
-        build ? "compose up --build completed" : "compose up completed",
-      );
+      setComposeOutput(build ? "compose up --build completed" : "compose up completed");
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Compose up failed");
     } finally {
@@ -467,28 +442,23 @@ export default function GrengoDashboard() {
   // Migrate actions
 
   const handleMigrate = async (name: string, rebuild = false) => {
-    setMigrateBusy((prev) => ({ ...prev, [name]: true }));
-    setMigrateOutput((prev) => ({ ...prev, [name]: "" }));
+    setMigrateBusy(prev => ({ ...prev, [name]: true }));
+    setMigrateOutput(prev => ({ ...prev, [name]: "" }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction(
-        "site-cmd",
-        name,
-        "migrate",
-        rebuild ? ["--rebuild"] : undefined,
-      );
+      sendGrengoJobAction("site-cmd", name, "migrate", rebuild ? ["--rebuild"] : undefined);
       await waitPromise;
-      setMigrateOutput((prev) => ({
+      setMigrateOutput(prev => ({
         ...prev,
         [name]: "Migration completed successfully",
       }));
     } catch (e: unknown) {
-      setMigrateOutput((prev) => ({
+      setMigrateOutput(prev => ({
         ...prev,
         [name]: e instanceof Error ? e.message : "Migration failed",
       }));
     } finally {
-      setMigrateBusy((prev) => ({ ...prev, [name]: false }));
+      setMigrateBusy(prev => ({ ...prev, [name]: false }));
     }
   };
 
@@ -497,18 +467,11 @@ export default function GrengoDashboard() {
     setMigrateAllOutput("");
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction(
-        "site-cmd",
-        "all",
-        "migrate",
-        rebuild ? ["--rebuild"] : undefined,
-      );
+      sendGrengoJobAction("site-cmd", "all", "migrate", rebuild ? ["--rebuild"] : undefined);
       await waitPromise;
       setMigrateAllOutput("All migrations completed successfully");
     } catch (e: unknown) {
-      setMigrateAllOutput(
-        e instanceof Error ? e.message : "Migrate all failed",
-      );
+      setMigrateAllOutput(e instanceof Error ? e.message : "Migrate all failed");
     } finally {
       setMigrateAllBusy(false);
     }
@@ -605,12 +568,8 @@ export default function GrengoDashboard() {
 
   // Site actions
 
-  const siteAction = async (
-    name: string,
-    action: string,
-    _method: string = "POST",
-  ) => {
-    setBusy((prev) => ({ ...prev, [name]: true }));
+  const siteAction = async (name: string, action: string, _method: string = "POST") => {
+    setBusy(prev => ({ ...prev, [name]: true }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
       sendGrengoJobAction("site-cmd", name, action);
@@ -619,18 +578,13 @@ export default function GrengoDashboard() {
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Action failed");
     } finally {
-      setBusy((prev) => ({ ...prev, [name]: false }));
+      setBusy(prev => ({ ...prev, [name]: false }));
     }
   };
 
   const handleDelete = async (name: string) => {
-    if (
-      !(await customConfirm(
-        `Permanently delete site "${name}" and all its data?`,
-      ))
-    )
-      return;
-    setBusy((prev) => ({ ...prev, [name]: true }));
+    if (!(await customConfirm(`Permanently delete site "${name}" and all its data?`))) return;
+    setBusy(prev => ({ ...prev, [name]: true }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
       sendGrengoJobAction("site-cmd", name, "remove");
@@ -639,12 +593,12 @@ export default function GrengoDashboard() {
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Delete failed");
     } finally {
-      setBusy((prev) => ({ ...prev, [name]: false }));
+      setBusy(prev => ({ ...prev, [name]: false }));
     }
   };
 
   const handleExport = async (name: string) => {
-    setBusy((prev) => ({ ...prev, [name]: true }));
+    setBusy(prev => ({ ...prev, [name]: true }));
     try {
       const waitPromise = triggerAndDownloadJob("export-site");
       sendGrengoJobAction("export-site", name);
@@ -652,7 +606,7 @@ export default function GrengoDashboard() {
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Export failed");
     } finally {
-      setBusy((prev) => ({ ...prev, [name]: false }));
+      setBusy(prev => ({ ...prev, [name]: false }));
     }
   };
 
@@ -663,9 +617,7 @@ export default function GrengoDashboard() {
     setEnvLoading(true);
     setEnvError("");
     try {
-      const data = await grengoRequest<{ content: string }>(
-        `/sites/${name}/env`,
-      );
+      const data = await grengoRequest<{ content: string }>(`/sites/${name}/env`);
       setEnvContent(data.content);
       setEnvDraft(data.content);
     } catch (e: unknown) {
@@ -747,16 +699,14 @@ export default function GrengoDashboard() {
                 setShowImportNode(false);
               }}
             >
-              <DownloadCloud size={14} />{" "}
-              {showImport ? "Cancel" : "Import Site"}
+              <DownloadCloud size={14} /> {showImport ? "Cancel" : "Import Site"}
             </button>
             <span className="toolbar-separator" />
             <button
               className="action-btn"
               onClick={handleExportNode}
               disabled={
-                nodeExportBusy ||
-                Object.values(activeJobs).some((j) => j.type === "export-node")
+                nodeExportBusy || Object.values(activeJobs).some(j => j.type === "export-node")
               }
             >
               <Archive size={14} /> Export Node
@@ -805,7 +755,7 @@ export default function GrengoDashboard() {
                   >
                     {job.message.replace(/\x1B\[[0-9;]*[mK]/g, "")}
                   </span>
-                ) : null,
+                ) : null
               )}
             </div>
           </div>
@@ -845,12 +795,8 @@ export default function GrengoDashboard() {
                 {migrateAllBusy ? "Migrating..." : "Migrate All"}
               </button>
             </div>
-            {composeOutput && (
-              <pre className="compose-output">{composeOutput}</pre>
-            )}
-            {migrateAllOutput && (
-              <pre className="compose-output">{migrateAllOutput}</pre>
-            )}
+            {composeOutput && <pre className="compose-output">{composeOutput}</pre>}
+            {migrateAllOutput && <pre className="compose-output">{migrateAllOutput}</pre>}
           </PrimaryCard>
 
           {/* Create form */}
@@ -913,7 +859,7 @@ export default function GrengoDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {exports.map((exp) => (
+                  {exports.map(exp => (
                     <tr key={exp.name}>
                       <td>{exp.name}</td>
                       <td>{(exp.size / 1024 / 1024).toFixed(2)} MB</td>
@@ -930,15 +876,10 @@ export default function GrengoDashboard() {
                           <button
                             className="action-btn"
                             title="Download"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.preventDefault();
-                              let token =
-                                localStorage.getItem("auth.accessToken");
-                              if (
-                                token &&
-                                token.startsWith('"') &&
-                                token.endsWith('"')
-                              )
+                              let token = localStorage.getItem("auth.accessToken");
+                              if (token && token.startsWith('"') && token.endsWith('"'))
                                 token = token.slice(1, -1);
                               const url =
                                 `/api${apiBase}/exports/${exp.name}/download` +
@@ -957,14 +898,10 @@ export default function GrengoDashboard() {
                             className="action-btn danger"
                             title="Delete"
                             disabled={Object.values(activeJobs).some(
-                              (j) =>
-                                j.type === "delete-export" &&
-                                j.target === exp.name,
+                              j => j.type === "delete-export" && j.target === exp.name
                             )}
                             onClick={async () => {
-                              const confirmed = await customConfirm(
-                                `Delete ${exp.name}?`,
-                              );
+                              const confirmed = await customConfirm(`Delete ${exp.name}?`);
                               if (!confirmed) return;
                               try {
                                 await grengoRequest(`/exports/${exp.name}`, {
@@ -1026,9 +963,7 @@ export default function GrengoDashboard() {
           <ContainerStatsPanel stats={stats} />
         </div>
         <div className="grengo-layout-right">
-          {storage && (
-            <StoragePanel storage={storage} hardwareInfo={hardwareInfo} />
-          )}
+          {storage && <StoragePanel storage={storage} hardwareInfo={hardwareInfo} />}
 
           <PerformanceMetrics
             stats={stats}
@@ -1083,9 +1018,7 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
     <PrimaryCard className="grengo-sysinfo" flat radius="flat">
       <div className="sysinfo-item">
         <span className="sysinfo-label">Server Time</span>
-        <span className="sysinfo-value">
-          {new Date(sysInfo.server_time).toLocaleString()}
-        </span>
+        <span className="sysinfo-value">{new Date(sysInfo.server_time).toLocaleString()}</span>
       </div>
       {sysInfo.cpu_model && (
         <div className="sysinfo-item">
@@ -1147,11 +1080,7 @@ function SiteTable({
   onDelete: (name: string) => void;
 }) {
   if ((sites?.length ?? 0) === 0 && !loading) {
-    return (
-      <div className="grengo-empty">
-        No sites yet. Create one or import an archive.
-      </div>
-    );
+    return <div className="grengo-empty">No sites yet. Create one or import an archive.</div>;
   }
   return (
     <div className="card grengo-table-wrap">
@@ -1169,14 +1098,10 @@ function SiteTable({
           </tr>
         </thead>
         <tbody>
-          {sites.map((site) => {
-            const siteStorage = storage?.sites.find(
-              (s) => s.name === site.name,
-            );
+          {sites.map(site => {
+            const siteStorage = storage?.sites.find(s => s.name === site.name);
             const sitePct =
-              siteStorage && storage
-                ? (siteStorage.used / storage.total_limit) * 100
-                : 0;
+              siteStorage && storage ? (siteStorage.used / storage.total_limit) * 100 : 0;
             return (
               <tr key={site.name}>
                 <td>
@@ -1191,25 +1116,19 @@ function SiteTable({
                   </span>
                 </td>
                 <td>
-                  <span
-                    className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}
-                  >
+                  <span className={`badge ${site.running ? "badge-running" : "badge-stopped"}`}>
                     {site.running ? "running" : "stopped"}
                   </span>
                 </td>
                 <td>
-                  <span
-                    className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}
-                  >
+                  <span className={`badge ${site.armed ? "badge-armed" : "badge-disarmed"}`}>
                     {site.armed ? "armed" : "disarmed"}
                   </span>
                 </td>
                 <td className="site-storage-cell">
                   {siteStorage ? (
                     <div className="site-storage-mini">
-                      <span className="site-storage-text">
-                        {siteStorage.used_human}
-                      </span>
+                      <span className="site-storage-text">{siteStorage.used_human}</span>
                       <div className="stat-bar">
                         <div
                           className={`stat-bar-fill ${barClass(sitePct)}`}
@@ -1290,16 +1209,11 @@ function SiteTable({
                     )}
                     <button
                       className="action-btn"
-                      title={
-                        migrateBusy[site.name] ? "Migrating..." : "Migrate"
-                      }
+                      title={migrateBusy[site.name] ? "Migrating..." : "Migrate"}
                       onClick={() => onMigrate(site.name)}
                       disabled={busy[site.name] || migrateBusy[site.name]}
                     >
-                      <RefreshCw
-                        size={14}
-                        className={migrateBusy[site.name] ? "spin" : ""}
-                      />
+                      <RefreshCw size={14} className={migrateBusy[site.name] ? "spin" : ""} />
                     </button>
                     <button
                       className="action-btn"
@@ -1314,8 +1228,7 @@ function SiteTable({
                       title={
                         busy[site.name] ||
                         Object.values(activeJobs).some(
-                          (j: any) =>
-                            j.type === "export-site" && j.target === site.name,
+                          (j: any) => j.type === "export-site" && j.target === site.name
                         )
                           ? "Exporting..."
                           : "Export"
@@ -1324,8 +1237,7 @@ function SiteTable({
                       disabled={
                         busy[site.name] ||
                         Object.values(activeJobs).some(
-                          (j: any) =>
-                            j.type === "export-site" && j.target === site.name,
+                          (j: any) => j.type === "export-site" && j.target === site.name
                         )
                       }
                     >
@@ -1341,9 +1253,7 @@ function SiteTable({
                     </button>
                   </div>
                   {migrateOutput[site.name] && (
-                    <div className="migrate-output-inline">
-                      {migrateOutput[site.name]}
-                    </div>
+                    <div className="migrate-output-inline">{migrateOutput[site.name]}</div>
                   )}
                 </td>
               </tr>
@@ -1383,14 +1293,8 @@ function EnvEditorPanel({
       <div className="grengo-env-header">
         <h3>.env — {envSite}</h3>
         <div className="grengo-env-actions">
-          {envDirty && (
-            <span className="grengo-env-unsaved">unsaved changes</span>
-          )}
-          <button
-            className="action-btn"
-            onClick={onSave}
-            disabled={!envDirty || envSaving}
-          >
+          {envDirty && <span className="grengo-env-unsaved">unsaved changes</span>}
+          <button className="action-btn" onClick={onSave} disabled={!envDirty || envSaving}>
             <Settings size={14} /> Save
           </button>
           <button className="action-btn danger" onClick={onClose}>
@@ -1425,16 +1329,12 @@ function StoragePanel({
 }) {
   let diskUsedPct = 0;
   if (hardwareInfo && hardwareInfo.dynamic.disk_total > 0) {
-    const used =
-      hardwareInfo.dynamic.disk_total - hardwareInfo.dynamic.disk_free;
+    const used = hardwareInfo.dynamic.disk_total - hardwareInfo.dynamic.disk_free;
     diskUsedPct = (used / hardwareInfo.dynamic.disk_total) * 100;
   }
 
   return (
-    <div
-      className="grengo-performance-section"
-      style={{ marginBottom: "2rem" }}
-    >
+    <div className="grengo-performance-section" style={{ marginBottom: "2rem" }}>
       <div className="grengo-hardware">
         <h3>Storage Dashboard</h3>
         <div className="grengo-stats-cards">
@@ -1457,11 +1357,9 @@ function StoragePanel({
               </div>
             </div>
             {storage.sites && storage.sites.length > 0 && (
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}>
                 <strong>Per Client:</strong>
-                {storage.sites.map((s) => (
+                {storage.sites.map(s => (
                   <div
                     key={s.name}
                     style={{
@@ -1493,25 +1391,13 @@ function StoragePanel({
                 <div className="stat-item">
                   <span className="stat-label">Total Disk</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.dynamic.disk_total /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.dynamic.disk_total / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Free Space</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.dynamic.disk_free /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.dynamic.disk_free / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
               </div>
@@ -1519,36 +1405,20 @@ function StoragePanel({
                 <div className="stat-item">
                   <span className="stat-label">Total Read</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.dynamic.disk_reads /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Total Write</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.dynamic.disk_writes /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
-                {hardwareInfo.static.storage_drives?.map(
-                  (drive: string, i: number) => (
-                    <div key={i}>{drive}</div>
-                  ),
-                )}
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}>
+                {hardwareInfo.static.storage_drives?.map((drive: string, i: number) => (
+                  <div key={i}>{drive}</div>
+                ))}
               </div>
             </GlassCard>
           )}
@@ -1585,37 +1455,24 @@ function PerformanceMetrics({
       : 0;
     memPct =
       hardwareInfo.static.memory_total > 0
-        ? (hardwareInfo.dynamic.memory_used /
-            hardwareInfo.static.memory_total) *
-          100
+        ? (hardwareInfo.dynamic.memory_used / hardwareInfo.static.memory_total) * 100
         : 0;
     const temps = hardwareInfo.dynamic.temps || [];
-    avgTemp = temps.length
-      ? temps.reduce((a, b) => a + b, 0) / temps.length
-      : 0;
+    avgTemp = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
   }
 
   return (
     <div className="grengo-performance-section">
       {hardwareInfo && (
-        <div
-          className="grengo-hardware"
-          style={{ marginTop: "2rem", marginBottom: "2rem" }}
-        >
+        <div className="grengo-hardware" style={{ marginTop: "2rem", marginBottom: "2rem" }}>
           <h3>Hardware & Thermals</h3>
           <div className="grengo-stats-cards">
             {/* CPU Cores */}
             <GlassCard className="grengo-stat-card">
               <div className="stat-card-header">
-                <strong>
-                  CPU Load ({hardwareInfo.static.total_cores} Cores)
-                </strong>
+                <strong>CPU Load ({hardwareInfo.static.total_cores} Cores)</strong>
               </div>
-              <Gauge
-                percent={avgCpu}
-                label={`${avgCpu.toFixed(1)}%`}
-                subtext="Avg CPU"
-              />
+              <Gauge percent={avgCpu} label={`${avgCpu.toFixed(1)}%`} subtext="Avg CPU" />
               <div
                 className="stat-card-grid"
                 style={{
@@ -1623,14 +1480,12 @@ function PerformanceMetrics({
                   marginTop: "1rem",
                 }}
               >
-                {hardwareInfo.dynamic.core_percents?.map(
-                  (pct: number, i: number) => (
-                    <div className="stat-item" key={i}>
-                      <span className="stat-label">Core {i}</span>
-                      <span className="stat-value">{pct.toFixed(1)}%</span>
-                    </div>
-                  ),
-                )}
+                {hardwareInfo.dynamic.core_percents?.map((pct: number, i: number) => (
+                  <div className="stat-item" key={i}>
+                    <span className="stat-label">Core {i}</span>
+                    <span className="stat-value">{pct.toFixed(1)}%</span>
+                  </div>
+                ))}
               </div>
             </GlassCard>
 
@@ -1639,45 +1494,25 @@ function PerformanceMetrics({
               <div className="stat-card-header">
                 <strong>Physical Memory</strong>
               </div>
-              <Gauge
-                percent={memPct}
-                label={`${memPct.toFixed(1)}%`}
-                subtext="Memory"
-              />
+              <Gauge percent={memPct} label={`${memPct.toFixed(1)}%`} subtext="Memory" />
               <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
                 <div className="stat-item">
                   <span className="stat-label">Total RAM</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.static.memory_total /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.static.memory_total / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Used RAM</span>
                   <span className="stat-value">
-                    {(
-                      hardwareInfo.dynamic.memory_used /
-                      1024 /
-                      1024 /
-                      1024
-                    ).toFixed(2)}{" "}
-                    GB
+                    {(hardwareInfo.dynamic.memory_used / 1024 / 1024 / 1024).toFixed(2)} GB
                   </span>
                 </div>
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
-                {hardwareInfo.static.memory_sticks?.map(
-                  (stick: string, i: number) => (
-                    <div key={i}>{stick}</div>
-                  ),
-                )}
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}>
+                {hardwareInfo.static.memory_sticks?.map((stick: string, i: number) => (
+                  <div key={i}>{stick}</div>
+                ))}
               </div>
             </GlassCard>
 
@@ -1692,18 +1527,14 @@ function PerformanceMetrics({
                 subtext="Avg Temp"
               />
               <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
-                {hardwareInfo.dynamic.temps
-                  ?.slice(0, 4)
-                  .map((temp: number, i: number) => (
-                    <div className="stat-item" key={i}>
-                      <span className="stat-label">Sensor {i + 1}</span>
-                      <span className="stat-value">{temp.toFixed(1)}°C</span>
-                    </div>
-                  ))}
+                {hardwareInfo.dynamic.temps?.slice(0, 4).map((temp: number, i: number) => (
+                  <div className="stat-item" key={i}>
+                    <span className="stat-label">Sensor {i + 1}</span>
+                    <span className="stat-value">{temp.toFixed(1)}°C</span>
+                  </div>
+                ))}
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+              <div style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}>
                 {hardwareInfo.static.gpus?.map((gpu: string, i: number) => (
                   <div key={i}>{gpu}</div>
                 ))}
@@ -1721,14 +1552,11 @@ function PerformanceMetrics({
 function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
   if (stats.length === 0) return null;
   return (
-    <SecondaryCard
-      className="grengo-stats"
-      style={{ marginTop: "2rem", marginBottom: "2rem" }}
-    >
+    <SecondaryCard className="grengo-stats" style={{ marginTop: "2rem", marginBottom: "2rem" }}>
       <h3>Container Stats</h3>
       <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
-        {stats.map((s) => (
+        {stats.map(s => (
           <GlassCard key={s.name}>
             <div className="stat-card-header">
               <strong>{s.name}</strong>
@@ -1855,7 +1683,7 @@ function CreateSiteForm({
   const [error, setError] = useState("");
 
   const set = (key: keyof CreateSiteParams, value: string | string[]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm(prev => ({ ...prev, [key]: value }));
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -1867,9 +1695,9 @@ function CreateSiteForm({
       }
       const parsedDomains = domainsText
         .split(/[\s,]+/)
-        .map((d) => d.trim())
+        .map(d => d.trim())
         .filter(Boolean);
-      parsedDomains.forEach((d) => {
+      parsedDomains.forEach(d => {
         args.push("--domain", d);
       });
 
@@ -1893,24 +1721,20 @@ function CreateSiteForm({
           Name *
           <input
             value={form.name}
-            onChange={(e) => set("name", e.target.value.toLowerCase())}
+            onChange={e => set("name", e.target.value.toLowerCase())}
             placeholder="my-site"
             autoFocus
           />
         </label>
         <label>
           Port
-          <input
-            value={form.port}
-            onChange={(e) => set("port", e.target.value)}
-            placeholder="auto"
-          />
+          <input value={form.port} onChange={e => set("port", e.target.value)} placeholder="auto" />
         </label>
         <label>
           Domains (space or comma separated)
           <input
             value={domainsText}
-            onChange={(e) => setDomainsText(e.target.value)}
+            onChange={e => setDomainsText(e.target.value)}
             placeholder="localhost example.com"
           />
         </label>
@@ -1918,7 +1742,7 @@ function CreateSiteForm({
           Database name
           <input
             value={form.db_name}
-            onChange={(e) => set("db_name", e.target.value)}
+            onChange={e => set("db_name", e.target.value)}
             placeholder="same as name"
           />
         </label>
@@ -1926,28 +1750,25 @@ function CreateSiteForm({
           Admin password
           <input
             value={form.admin_password}
-            onChange={(e) => set("admin_password", e.target.value)}
+            onChange={e => set("admin_password", e.target.value)}
           />
         </label>
         <label>
           Admin email
-          <input
-            value={form.admin_email}
-            onChange={(e) => set("admin_email", e.target.value)}
-          />
+          <input value={form.admin_email} onChange={e => set("admin_email", e.target.value)} />
         </label>
         <label>
           Session timeout (min)
           <input
             value={form.session_timeout}
-            onChange={(e) => set("session_timeout", e.target.value)}
+            onChange={e => set("session_timeout", e.target.value)}
           />
         </label>
         <label>
           Environment
           <Select
             value={form.environment}
-            onChange={(e) => set("environment", e.target.value)}
+            onChange={e => set("environment", e.target.value)}
             options={[
               { value: "production", label: "production" },
               { value: "development", label: "development" },
@@ -1958,17 +1779,13 @@ function CreateSiteForm({
           Features (comma separated)
           <input
             value={form.features}
-            onChange={(e) => set("features", e.target.value)}
+            onChange={e => set("features", e.target.value)}
             placeholder={DEFAULT_FEATURES}
           />
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="action-btn"
-          onClick={handleSubmit}
-          disabled={!form.name || saving}
-        >
+        <button className="action-btn" onClick={handleSubmit} disabled={!form.name || saving}>
           <Plus size={14} /> {saving ? "Creating..." : "Create Site"}
         </button>
       </div>
@@ -2004,8 +1821,7 @@ function ImportSiteForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"'))
-        token = token.slice(1, -1);
+      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import`, {
         method: "POST",
         headers: {
@@ -2045,32 +1861,20 @@ function ImportSiteForm({
           <input
             type="file"
             accept=".tar.gz,.tgz"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={e => setFile(e.target.files?.[0] ?? null)}
           />
         </label>
         <label>
           Override name
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="optional"
-          />
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="optional" />
         </label>
         <label>
           Override port
-          <input
-            value={port}
-            onChange={(e) => setPort(e.target.value)}
-            placeholder="optional"
-          />
+          <input value={port} onChange={e => setPort(e.target.value)} placeholder="optional" />
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="action-btn"
-          onClick={handleImport}
-          disabled={!file || importing}
-        >
+        <button className="action-btn" onClick={handleImport} disabled={!file || importing}>
           <UploadCloud size={14} /> {importing ? "Importing..." : "Import"}
         </button>
       </div>
@@ -2097,7 +1901,7 @@ function ImportNodeForm({
     if (!file) return;
     if (
       !(await customConfirm(
-        "Import a full node archive? This will add all clients from the archive.",
+        "Import a full node archive? This will add all clients from the archive."
       ))
     )
       return;
@@ -2110,8 +1914,7 @@ function ImportNodeForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"'))
-        token = token.slice(1, -1);
+      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import-node`, {
         method: "POST",
         headers: {
@@ -2149,8 +1952,7 @@ function ImportNodeForm({
           marginBottom: "0.75rem",
         }}
       >
-        Import a full node archive containing all clients, databases, and
-        uploads.
+        Import a full node archive containing all clients, databases, and uploads.
       </p>
       {error && <div className="error">{error}</div>}
       <div className="import-fields">
@@ -2159,16 +1961,12 @@ function ImportNodeForm({
           <input
             type="file"
             accept=".tar.gz,.tgz"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={e => setFile(e.target.files?.[0] ?? null)}
           />
         </label>
       </div>
       <div className="form-actions">
-        <button
-          className="action-btn"
-          onClick={handleImport}
-          disabled={!file || importing}
-        >
+        <button className="action-btn" onClick={handleImport} disabled={!file || importing}>
           <UploadCloud size={14} /> {importing ? "Importing..." : "Import Node"}
         </button>
       </div>

@@ -70,14 +70,8 @@ export interface ForumCategory {
 }
 
 // Forum state with localStorage persistence
-export const forumCategoriesAtom = atomWithStorage<ForumCategory[]>(
-  "forum.categories",
-  [],
-);
-export const forumThreadsAtom = atomWithStorage<ForumThread[]>(
-  "forum.threads",
-  [],
-);
+export const forumCategoriesAtom = atomWithStorage<ForumCategory[]>("forum.categories", []);
+export const forumThreadsAtom = atomWithStorage<ForumThread[]>("forum.threads", []);
 export const selectedThreadIdAtom = atom<string | null>(null);
 
 // Current thread being viewed
@@ -103,7 +97,7 @@ export const activeAllFeedIdAtom = atom<string | null>(null);
 // Derived thread permissions
 // Reactively recomputes permissions from the live user atom so any
 // permission/role change propagated over WS is instantly reflected.
-export const threadPermissionsAtom = atom((get) => {
+export const threadPermissionsAtom = atom(get => {
   const user = get(currentUserAtom);
   const thread = get(currentThreadAtom);
   const sandbox = get(guestSandboxAtom);
@@ -122,26 +116,22 @@ export const threadPermissionsAtom = atom((get) => {
   const isOwner = String(user.id) === String(thread.user_id);
 
   return {
-    canEdit:
-      isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
-    canDelete:
-      isOwner || isAdmin || perms.includes("forum.thread-delete") || sandbox,
-    canLock:
-      isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
+    canEdit: isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
+    canDelete: isOwner || isAdmin || perms.includes("forum.thread-delete") || sandbox,
+    canLock: isOwner || isAdmin || perms.includes("forum.thread-edit") || sandbox,
     canLikeComments: true,
-    canDeleteThreadComment:
-      isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,
+    canDeleteThreadComment: isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,
     canLikeThreads: true,
   };
 });
 
 // Derived per-comment permissions - enriches each comment with live user perms.
-export const enrichedThreadCommentsAtom = atom((get) => {
+export const enrichedThreadCommentsAtom = atom(get => {
   const user = get(currentUserAtom);
   const comments = get(threadCommentsAtom);
   const sandbox = get(guestSandboxAtom);
   if (!user) {
-    return comments.map((c) => ({
+    return comments.map(c => ({
       ...c,
       can_edit: sandbox,
       can_delete: sandbox,
@@ -150,20 +140,12 @@ export const enrichedThreadCommentsAtom = atom((get) => {
   }
   const isAdmin = (user.roles ?? []).includes("admin");
   const perms = user.permissions ?? [];
-  return comments.map((c) => {
+  return comments.map(c => {
     const isOwner = String(user.id) === String(c.user_id);
     return {
       ...c,
-      can_edit:
-        isOwner ||
-        isAdmin ||
-        perms.includes("forum.thread-comment-delete") ||
-        sandbox,
-      can_delete:
-        isOwner ||
-        isAdmin ||
-        perms.includes("forum.thread-comment-delete") ||
-        sandbox,
+      can_edit: isOwner || isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,
+      can_delete: isOwner || isAdmin || perms.includes("forum.thread-comment-delete") || sandbox,
       can_like_comments: true,
     };
   });

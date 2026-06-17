@@ -30,12 +30,12 @@ const NewThread = () => {
 
   const handleCreateThread = async () => {
     setError(null);
-    
+
     if (!threadTitle.trim()) {
       setError("Thread title is required");
       return;
     }
-    
+
     if (!threadContent.trim()) {
       setError("Thread content is required");
       return;
@@ -49,36 +49,31 @@ const NewThread = () => {
     setLoading(true);
 
     try {
-      const response = await apiRequest<CreateThreadResponse>(
-        "/forum/threads",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            category_id: selectedCategory,
-            title: threadTitle,
-            content: threadContent,
-          }),
-        }
-      );
+      const response = await apiRequest<CreateThreadResponse>("/forum/threads", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          category_id: selectedCategory,
+          title: threadTitle,
+          content: threadContent,
+        }),
+      });
 
       if (response?.id) {
         // Navigate to the created thread
         navigate(`/view-thread/${response.id}`);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create thread"
-      );
+      setError(err instanceof Error ? err.message : "Failed to create thread");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal" onClick={e => e.stopPropagation()}>
       <div className="modal-header">
         <div className="modal-title-wrapper">
           <h2>Create New Thread</h2>
@@ -88,11 +83,7 @@ const NewThread = () => {
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
-          <button
-            className="action-btn btn-close"
-            onClick={() => navigate("/forum")}
-            title="Close"
-          >
+          <button className="action-btn btn-close" onClick={() => navigate("/forum")} title="Close">
             <X size={20} />
           </button>
           <button
@@ -129,7 +120,7 @@ const NewThread = () => {
             type="text"
             placeholder="What's on your mind?"
             value={threadTitle}
-            onChange={(e) => setThreadTitle(e.target.value)}
+            onChange={e => setThreadTitle(e.target.value)}
             disabled={loading}
           />
         </div>
@@ -137,7 +128,7 @@ const NewThread = () => {
         <div className="form-group">
           <ForumCategory value={selectedCategory} onChange={setSelectedCategory} />
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="content">Message *</label>
           <Editor value={threadContent} onChange={setThreadContent} />
@@ -148,4 +139,3 @@ const NewThread = () => {
 };
 
 export default NewThread;
-

@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Mail,
-  AlertCircle,
-  Loader,
-  CheckCircle,
-  ServerOff,
-} from "lucide-react";
+import { Mail, AlertCircle, Loader, CheckCircle, ServerOff } from "lucide-react";
 import { forgotPassword } from "../../utils/api";
 import "./Auth.css";
 import "../ui/FormGroup.css";
@@ -62,16 +56,16 @@ export default function ForgotPasswordPage() {
             <div className="auth-error">
               <ServerOff size={20} />
               <span>
-                Email is not configured on this server. Please contact an
-                administrator to reset your password.
+                Email is not configured on this server. Please contact an administrator to reset
+                your password.
               </span>
             </div>
           ) : sent ? (
             <div className="auth-success">
               <CheckCircle size={20} />
               <span>
-                If an account with that email exists, we've sent a password
-                reset link. Please check your inbox.
+                If an account with that email exists, we've sent a password reset link. Please check
+                your inbox.
               </span>
             </div>
           ) : (
@@ -85,7 +79,7 @@ export default function ForgotPasswordPage() {
                     type="email"
                     placeholder="Enter your email address"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     required
                     disabled={loading}
                     autoFocus

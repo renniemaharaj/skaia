@@ -25,12 +25,10 @@ export function useProductRatings(productId?: string | number) {
     setLoading(true);
 
     try {
-      const data = await apiRequest<any[]>(
-        `/store/products/${productId}/reviews`,
-      );
+      const data = await apiRequest<any[]>(`/store/products/${productId}/reviews`);
 
       setReviews(
-        (data || []).map((r) => ({
+        (data || []).map(r => ({
           id: r.id,
           author_id: r.user?.id || r.user_id,
           author_name: r.user?.display_name,
@@ -40,7 +38,7 @@ export function useProductRatings(productId?: string | number) {
           created_at: r.created_at,
           rating: r.rating,
           can_delete: r.can_delete,
-        })),
+        }))
       );
     } finally {
       setLoading(false);
@@ -54,10 +52,7 @@ export function useProductRatings(productId?: string | number) {
   const averageRating = useMemo(() => {
     if (reviews.length === 0) return 0;
 
-    const total = reviews.reduce(
-      (sum, review) => sum + (review.rating || 0),
-      0,
-    );
+    const total = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
 
     return total / reviews.length;
   }, [reviews]);

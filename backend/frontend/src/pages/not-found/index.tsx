@@ -13,8 +13,7 @@ export const NotFoundPage = () => {
         <h2>Page Not Found</h2>
         <p>Sorry, we couldn't find the page you're looking for.</p>
         <p className="secondary-text">
-          The route you're trying to access doesn't exist. Let's get you back on
-          track!
+          The route you're trying to access doesn't exist. Let's get you back on track!
         </p>
         <Link to="/" className="btn btn-primary btn-lg">
           Return to Home

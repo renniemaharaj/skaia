@@ -39,15 +39,13 @@ export const DesignedCardWrapper = ({
     contentAlign,
   } = template;
 
-  const styleClass =
-    cardStyle && cardStyle !== "default" ? ` dcard--${cardStyle}` : "";
+  const styleClass = cardStyle && cardStyle !== "default" ? ` dcard--${cardStyle}` : "";
   const customCssClass = template.customCss ? " dcard--custom-css" : "";
 
   const cardCss: React.CSSProperties = {
     minHeight: minHeight ? `${minHeight}px` : undefined,
     maxHeight: maxHeight ? `${maxHeight}px` : undefined,
-    aspectRatio:
-      aspectRatio && aspectRatio !== "auto" ? aspectRatio : undefined,
+    aspectRatio: aspectRatio && aspectRatio !== "auto" ? aspectRatio : undefined,
     borderRadius: `${borderRadius ?? 16}px`,
     overflow: overflow ?? "hidden",
     margin: `${template.marginTop ?? 0}px ${template.marginRight ?? 0}px ${template.marginBottom ?? 0}px ${template.marginLeft ?? 0}px`,
@@ -68,4 +66,3 @@ export const DesignedCardWrapper = ({
     </div>
   );
 };
-

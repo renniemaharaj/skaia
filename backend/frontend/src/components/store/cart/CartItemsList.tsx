@@ -32,10 +32,7 @@ export function CartItemsList({
         const product = getProduct(item.product_id);
         const displayName = product?.name ?? `Product #${item.product_id}`;
         return (
-          <ContentFlatCard
-            key={item.product_id}
-            className="cart-item cart-checkout-item"
-          >
+          <ContentFlatCard key={item.product_id} className="cart-item cart-checkout-item">
             {product?.image_url && (
               <img src={product.image_url} alt={displayName} className="cart-item-image" />
             )}
@@ -67,10 +64,7 @@ export function CartItemsList({
         <div className="cart-filler" aria-label="More room in your cart">
           <div className="cart-filler-list" aria-hidden="true">
             {CART_FILLER_IDS.map(fillerId => (
-              <div
-                key={fillerId}
-                className="cart-item cart-checkout-item cart-filler-item"
-              >
+              <div key={fillerId} className="cart-item cart-checkout-item cart-filler-item">
                 <div className="cart-filler-thumb skeleton" />
                 <div className="cart-filler-lines">
                   <div className="cart-filler-line cart-filler-line--title skeleton" />

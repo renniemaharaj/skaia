@@ -43,9 +43,7 @@
   border-right: 1px solid var(--border-color);
   white-space: nowrap;
   user-select: none;
-  transition:
-    background 0.1s,
-    color 0.1s;
+  transition: background 0.1s, color 0.1s;
 }
 
 .tabbed-editor__tab:hover {
@@ -80,9 +78,7 @@
   padding: 0;
   margin-left: 2px;
   opacity: 0;
-  transition:
-    opacity 0.1s,
-    background 0.1s;
+  transition: opacity 0.1s, background 0.1s;
 }
 
 .tabbed-editor__tab:hover .tabbed-editor__tab-close {
@@ -118,9 +114,7 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition:
-    color 0.1s,
-    background 0.1s;
+  transition: color 0.1s, background 0.1s;
 }
 
 .tabbed-editor__add-btn:hover {
@@ -204,9 +198,7 @@
   color: var(--text-secondary);
   font-size: 0.75rem;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .tabbed-editor__env-unlock-btn:hover {

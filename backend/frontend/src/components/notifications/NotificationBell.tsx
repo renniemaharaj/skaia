@@ -77,7 +77,7 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!isAuthenticated || notifs.length > 0) return;
     apiRequest<AppNotification[]>(`/notifications?limit=${PAGE_SIZE}&offset=0`)
-      .then((data) => {
+      .then(data => {
         setNotifs(data ?? []);
         if ((data ?? []).length < PAGE_SIZE) setHasMore(false);
       })
@@ -101,7 +101,7 @@ const NotificationBell = () => {
     setLoadingMore(true);
     try {
       const data = await apiRequest<AppNotification[]>(
-        `/notifications?limit=${PAGE_SIZE}&offset=${notifs.length}`,
+        `/notifications?limit=${PAGE_SIZE}&offset=${notifs.length}`
       );
       const rows = data ?? [];
       if (rows.length === 0 || rows.length < PAGE_SIZE) setHasMore(false);
@@ -110,7 +110,7 @@ const NotificationBell = () => {
         const prevHeight = list?.scrollHeight ?? 0;
         // Atom is newest-first; older items go to the end so reversed display
         // puts them at the top of the feed.
-        setNotifs((prev) => [...prev, ...rows]);
+        setNotifs(prev => [...prev, ...rows]);
         requestAnimationFrame(() => {
           if (list) list.scrollTop += list.scrollHeight - prevHeight;
         });
@@ -125,10 +125,10 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!open || !topSentinelRef.current) return;
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         if (entries[0].isIntersecting) loadMore();
       },
-      { root: feedRef.current, threshold: 0.1 },
+      { root: feedRef.current, threshold: 0.1 }
     );
     observer.observe(topSentinelRef.current);
     return () => observer.disconnect();
@@ -137,8 +137,7 @@ const NotificationBell = () => {
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node))
-        setOpen(false);
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
     };
     if (open) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -147,16 +146,14 @@ const NotificationBell = () => {
   const markRead = async (id: string) => {
     try {
       await apiRequest(`/notifications/${id}/read`, { method: "PUT" });
-      setNotifs((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-      );
+      setNotifs(prev => prev.map(n => (n.id === id ? { ...n, is_read: true } : n)));
     } catch {}
   };
 
   const markAllRead = async () => {
     try {
       await apiRequest("/notifications/read-all", { method: "PUT" });
-      setNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch {}
   };
 
@@ -164,7 +161,7 @@ const NotificationBell = () => {
     e.stopPropagation();
     try {
       await apiRequest(`/notifications/${id}`, { method: "DELETE" });
-      setNotifs((prev) => prev.filter((n) => n.id !== id));
+      setNotifs(prev => prev.filter(n => n.id !== id));
     } catch {}
   };
 
@@ -193,14 +190,12 @@ const NotificationBell = () => {
     <div className="notif-bell-wrap" ref={panelRef}>
       <button
         className={`notif-bell-btn${open ? " notif-bell-btn--open" : ""}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(v => !v)}
         title="Notifications"
         aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
       >
         <Bell size={20} />
-        {unread > 0 && (
-          <span className="notif-badge">{unread > 99 ? "99+" : unread}</span>
-        )}
+        {unread > 0 && <span className="notif-badge">{unread > 99 ? "99+" : unread}</span>}
       </button>
 
       {open && (
@@ -217,11 +212,7 @@ const NotificationBell = () => {
                 <X size={16} />
               </button>
               {unread > 0 && (
-                <button
-                  className="notif-mark-all"
-                  onClick={markAllRead}
-                  title="Mark all as read"
-                >
+                <button className="notif-mark-all" onClick={markAllRead} title="Mark all as read">
                   <CheckCheck size={14} />
                   <span>Mark all read</span>
                 </button>
@@ -252,7 +243,7 @@ const NotificationBell = () => {
               <p className="notif-empty">You're all caught up!</p>
             )}
 
-            {feed.map((n) => (
+            {feed.map(n => (
               <div
                 key={n.id}
                 className={`notif-item${!n.is_read ? " notif-item--unread" : ""}${n.route ? " notif-item--clickable" : ""}`}
@@ -263,14 +254,12 @@ const NotificationBell = () => {
                 </span>
                 <div className="notif-body">
                   <p className="notif-message">{n.message}</p>
-                  <span className="notif-time">
-                    {relativeTimeAgo(n.created_at)}
-                  </span>
+                  <span className="notif-time">{relativeTimeAgo(n.created_at)}</span>
                 </div>
                 <button
                   className="notif-action-btn danger"
                   title="Dismiss"
-                  onClick={(e) => deleteNotif(n.id, e)}
+                  onClick={e => deleteNotif(n.id, e)}
                 >
                   <X size={12} />
                 </button>

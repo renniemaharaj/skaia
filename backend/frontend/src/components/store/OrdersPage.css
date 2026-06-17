@@ -60,10 +60,7 @@
   font-size: 0.8125rem;
   line-height: 1.2;
   outline: none;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .reference-code-input:focus {
@@ -77,8 +74,8 @@
 }
 
 .reference-code-input--code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;

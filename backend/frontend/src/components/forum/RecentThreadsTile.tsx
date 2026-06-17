@@ -15,7 +15,10 @@ interface RecentThreadsTileProps {
   currentThreadId?: string | number;
 }
 
-const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId, currentThreadId }) => {
+const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
+  currentCategoryId,
+  currentThreadId,
+}) => {
   const [threads, setThreads] = useState<ForumThread[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,10 +27,10 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
       try {
         setLoading(true);
         // If category is provided, maybe we fetch by category? But there's no endpoint for just "recent everywhere" except /forum/threads
-        const url = currentCategoryId 
-          ? `/forum/categories/${currentCategoryId}/threads?limit=6` 
+        const url = currentCategoryId
+          ? `/forum/categories/${currentCategoryId}/threads?limit=6`
           : `/forum/threads?limit=6`;
-        
+
         const data = await apiRequest<ForumThread[]>(url);
         if (data) {
           // filter out current thread
@@ -54,26 +57,28 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({ currentCategoryId
       </div>
       <div className="toc-content">
         {threads.map(thread => (
-          <Link 
-            key={thread.id} 
+          <Link
+            key={thread.id}
             to={`/view-thread/${thread.id}`}
             className="toc-item recent-threads-item"
           >
             <span className="toc-dot recent-threads-dot"></span>
             <div className="recent-threads-content">
-              <span className="recent-threads-title">
-                {thread.title}
-              </span>
+              <span className="recent-threads-title">{thread.title}</span>
               <div className="recent-threads-meta">
-                <UserProfileOverlay userId={thread.user_id} fallbackName={thread.user_name} fallbackAvatar={thread.user_avatar}>
-                  <UserAvatar src={thread.user_avatar} alt={thread.user_name || "Unknown"} size={20} />
+                <UserProfileOverlay
+                  userId={thread.user_id}
+                  fallbackName={thread.user_name}
+                  fallbackAvatar={thread.user_avatar}
+                >
+                  <UserAvatar
+                    src={thread.user_avatar}
+                    alt={thread.user_name || "Unknown"}
+                    size={20}
+                  />
                 </UserProfileOverlay>
-                <span className="recent-threads-author">
-                  By {thread.user_name || "Unknown"}
-                </span>
-                <span className="recent-threads-time">
-                  {relativeTimeAgo(thread.created_at)}
-                </span>
+                <span className="recent-threads-author">By {thread.user_name || "Unknown"}</span>
+                <span className="recent-threads-time">{relativeTimeAgo(thread.created_at)}</span>
               </div>
             </div>
           </Link>

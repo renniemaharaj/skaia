@@ -288,10 +288,7 @@
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition:
-    transform 140ms ease,
-    border-color 140ms ease,
-    background 140ms ease;
+  transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
 }
 
 .card-designer__style-btn.sk-tile {
@@ -333,8 +330,7 @@
 
 .card-designer__style-chip--elevated {
   background: var(--bg-secondary);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--text-primary) 5%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 5%, transparent);
 }
 
 .card-designer__style-chip--outlined {
@@ -591,10 +587,7 @@
   text-transform: uppercase;
   user-select: none;
   cursor: pointer;
-  transition:
-    border-color 120ms ease,
-    background 120ms ease,
-    color 120ms ease;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
 }
 
 .cd-toggle:hover {

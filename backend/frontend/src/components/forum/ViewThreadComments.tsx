@@ -22,26 +22,21 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const currentThread = useAtomValue(currentThreadAtom);
   const { subscribe } = useWebSocketSync();
 
-  const {
-    feedRef,
-    sentinelRef,
-    handleScroll,
-    isLoading,
-    highlightedCommentId,
-  } = useCommentsFeed<ThreadComment>({
-    comments,
-    setComments,
-    loadPage: async (offset) => {
-      if (!threadId) return [];
-      const response = await apiRequest<ThreadComment[]>(
-        `/forum/threads/${threadId}/comments?limit=50&offset=${offset}`,
-      );
-      return response ?? [];
-    },
-    deps: [threadId],
-    getId: (comment) => String(comment.id),
-    limit: 50,
-  });
+  const { feedRef, sentinelRef, handleScroll, isLoading, highlightedCommentId } =
+    useCommentsFeed<ThreadComment>({
+      comments,
+      setComments,
+      loadPage: async offset => {
+        if (!threadId) return [];
+        const response = await apiRequest<ThreadComment[]>(
+          `/forum/threads/${threadId}/comments?limit=50&offset=${offset}`
+        );
+        return response ?? [];
+      },
+      deps: [threadId],
+      getId: comment => String(comment.id),
+      limit: 50,
+    });
 
   useEffect(() => {
     if (!threadId) return;
@@ -62,18 +57,16 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const handleLikeComment = useCallback(
     async (commentId: string, isCurrentlyLiked: boolean) => {
       // Optimistically flip is_liked immediately for the acting user
-      setComments((prev) =>
-        prev.map((p) =>
+      setComments(prev =>
+        prev.map(p =>
           p.id === commentId
             ? {
                 ...p,
                 is_liked: !isCurrentlyLiked,
-                likes: isCurrentlyLiked
-                  ? Math.max(0, p.likes - 1)
-                  : p.likes + 1,
+                likes: isCurrentlyLiked ? Math.max(0, p.likes - 1) : p.likes + 1,
               }
-            : p,
-        ),
+            : p
+        )
       );
       try {
         if (isCurrentlyLiked) {
@@ -89,22 +82,20 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       } catch (error) {
         console.error("Error toggling like:", error);
         // Revert optimistic update on failure
-        setComments((prev) =>
-          prev.map((p) =>
+        setComments(prev =>
+          prev.map(p =>
             p.id === commentId
               ? {
                   ...p,
                   is_liked: isCurrentlyLiked,
-                  likes: isCurrentlyLiked
-                    ? p.likes + 1
-                    : Math.max(0, p.likes - 1),
+                  likes: isCurrentlyLiked ? p.likes + 1 : Math.max(0, p.likes - 1),
                 }
-              : p,
-          ),
+              : p
+          )
         );
       }
     },
-    [setComments],
+    [setComments]
   );
 
   const canEditThread = hasPermission("forum.thread-edit");
@@ -115,15 +106,12 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
       comments={comments}
       isLoading={isLoading}
       canComment={
-        (!currentThread?.is_locked || canEditThread) &&
-        hasPermission("forum.thread-comment-new")
+        (!currentThread?.is_locked || canEditThread) && hasPermission("forum.thread-comment-new")
       }
       lockedMessage={
-        currentThread?.is_locked && !canEditThread
-          ? "This thread is locked."
-          : undefined
+        currentThread?.is_locked && !canEditThread ? "This thread is locked." : undefined
       }
-      onSubmit={async (text) => {
+      onSubmit={async text => {
         if (!threadId || isSubmitting) return;
         try {
           setIsSubmitting(true);
@@ -137,10 +125,8 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
           setIsSubmitting(false);
         }
       }}
-      onLike={(comment) =>
-        void handleLikeComment(String(comment.id), comment.is_liked ?? false)
-      }
-      onDelete={(comment) => void handleDeleteComment(String(comment.id))}
+      onLike={comment => void handleLikeComment(String(comment.id), comment.is_liked ?? false)}
+      onDelete={comment => void handleDeleteComment(String(comment.id))}
       currentUserId={currentUser?.id}
       noCommentsText="No comments yet. Be the first!"
       placeholder="Write a comment… (Shift+Enter for new line)"

@@ -31,10 +31,10 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
         domNode.attribs["data-type"] === "mention"
       ) {
         const id = domNode.attribs["data-id"] || domNode.attribs["id"];
-        const label = domNode.attribs["data-label"] || domNode.attribs["label"] ||
-          (domNode.children && domNode.children[0]
-            ? (domNode.children[0] as any).data
-            : "");
+        const label =
+          domNode.attribs["data-label"] ||
+          domNode.attribs["label"] ||
+          (domNode.children && domNode.children[0] ? (domNode.children[0] as any).data : "");
         // const type = domNode.attribs["data-mention-type"] || "user"; // Assume user by default, or maybe id has 'role-' prefix
 
         let badgeClass = "mention-badge";
@@ -61,18 +61,10 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
           );
         }
 
-        return (
-          <span className={badgeClass}>
-            {text}
-          </span>
-        );
+        return <span className={badgeClass}>{text}</span>;
       }
     },
   };
 
-  return (
-    <div className={`rich-text-renderer ${className}`}>
-      {parse(sanitized, options)}
-    </div>
-  );
+  return <div className={`rich-text-renderer ${className}`}>{parse(sanitized, options)}</div>;
 };

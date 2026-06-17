@@ -26,9 +26,7 @@ export function useCommentsFeed<T>({
 }: UseCommentsFeedOptions<T>) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
-  const [highlightedCommentId, setHighlightedCommentId] = useState<
-    string | number | null
-  >(null);
+  const [highlightedCommentId, setHighlightedCommentId] = useState<string | number | null>(null);
 
   const feedRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -89,7 +87,7 @@ export function useCommentsFeed<T>({
         return;
       }
 
-      setComments((prev) => {
+      setComments(prev => {
         const next = [...page, ...prev];
         return next;
       });
@@ -98,8 +96,7 @@ export function useCommentsFeed<T>({
 
       requestAnimationFrame(() => {
         if (feedRef.current) {
-          feedRef.current.scrollTop +=
-            feedRef.current.scrollHeight - prevScrollHeight;
+          feedRef.current.scrollTop += feedRef.current.scrollHeight - prevScrollHeight;
         }
       });
     } catch {
@@ -150,12 +147,12 @@ export function useCommentsFeed<T>({
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         if (entries[0].isIntersecting && !isInitialLoadRef.current) {
           loadOlder();
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -163,15 +160,15 @@ export function useCommentsFeed<T>({
 
   const appendComment = useCallback(
     (comment: T) => {
-      setComments((prev) => {
+      setComments(prev => {
         const id = String(getId(comment));
-        if (prev.some((item) => String(getId(item)) === id)) {
+        if (prev.some(item => String(getId(item)) === id)) {
           return prev;
         }
         return [...prev, comment];
       });
     },
-    [getId, setComments],
+    [getId, setComments]
   );
 
   return {

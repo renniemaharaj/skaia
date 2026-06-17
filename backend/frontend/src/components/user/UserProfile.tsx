@@ -21,12 +21,8 @@ import "./UserProfile.css";
 interface UserProfileProps {
   userIdOverride?: string;
   hideUploads?: boolean;
-  handleThreads?: (
-    threadsPanelHandle: React.ReactElement,
-  ) => React.ReactElement;
-  handlePermissions?: (
-    permissionsPanelHandle: React.ReactElement,
-  ) => React.ReactElement;
+  handleThreads?: (threadsPanelHandle: React.ReactElement) => React.ReactElement;
+  handlePermissions?: (permissionsPanelHandle: React.ReactElement) => React.ReactElement;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -73,7 +69,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
     if (!user?.id) return;
     if (
       !(await customConfirm(
-        `Reset password for ${user.display_name || user.username}? A new password will be sent to their inbox.`,
+        `Reset password for ${user.display_name || user.username}? A new password will be sent to their inbox.`
       ))
     )
       return;
@@ -112,12 +108,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return () => setContextUser(null);
   }, [user, setContextUser]);
 
-  if (loading)
-    return <div className="up-container up-loading">Loading profile…</div>;
+  if (loading) return <div className="up-container up-loading">Loading profile…</div>;
   if (error || !user)
-    return (
-      <div className="up-container up-error">{error ?? "User not found"}</div>
-    );
+    return <div className="up-container up-error">{error ?? "User not found"}</div>;
 
   const displayAvatar = user.avatar_url || null;
   const displayBanner = user.banner_url || null;
@@ -166,18 +159,11 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onResetPassword={handleResetPassword}
       />
 
-      {handlePermissions
-        ? handlePermissions(permissionPanel)
-        : canManage
-          ? permissionPanel
-          : null}
+      {handlePermissions ? handlePermissions(permissionPanel) : canManage ? permissionPanel : null}
 
       {!hideUploads && (
         <>
-          <UserUploads
-            userId={effectiveUserId}
-            displayName={user.display_name || user.username}
-          />
+          <UserUploads userId={effectiveUserId} displayName={user.display_name || user.username} />
         </>
       )}
 

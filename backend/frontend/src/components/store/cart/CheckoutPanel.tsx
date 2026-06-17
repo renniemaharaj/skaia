@@ -74,11 +74,9 @@ export function CheckoutPanel({
 }: CheckoutPanelProps) {
   const paymentOptions: SelectOption[] = [
     { value: "delivery_cash", label: "Payment on Delivery (Cash)" },
+    ...(isAuthenticated ? [{ value: "wallet", label: "Store Wallet Balance" }] : []),
     ...(isAuthenticated
-      ? [{ value: "wallet", label: "Store Wallet Balance" }]
-      : []),
-    ...(isAuthenticated
-      ? userCards.map((card) => ({
+      ? userCards.map(card => ({
           value: `card_${card.id}`,
           label: `${card.card_name} (ending in ${card.card_number.slice(-4)}) - Disabled`,
           disabled: true,
@@ -102,13 +100,12 @@ export function CheckoutPanel({
                   type="email"
                   placeholder="you@example.com"
                   value={guestEmail}
-                  onChange={(event) => onGuestEmailChange(event.target.value)}
+                  onChange={event => onGuestEmailChange(event.target.value)}
                 />
               </div>
             </label>
             <p className="cart-help-text">
-              <Link to="/login">Sign in</Link> to save your details and earn
-              rewards.
+              <Link to="/login">Sign in</Link> to save your details and earn rewards.
             </p>
           </div>
         )}
@@ -150,7 +147,7 @@ export function CheckoutPanel({
               label="Payment method"
               value={paymentMethod}
               options={paymentOptions}
-              onChange={(event) => onPaymentMethodChange(event.target.value)}
+              onChange={event => onPaymentMethodChange(event.target.value)}
               block
             />
           </div>

@@ -9,20 +9,23 @@ interface UseProfileEditOptions {
   onSaved: (updated: Partial<ProfileUser>) => void;
 }
 
-export function useProfileEdit({
-  user,
-  onSaved,
-}: UseProfileEditOptions) {
+export function useProfileEdit({ user, onSaved }: UseProfileEditOptions) {
   const [editOpen, setEditOpen] = useState(false);
   const [editBio, setEditBio] = useState(user?.bio ?? "");
-  const [editDisplayName, setEditDisplayName] = useState(
-    user?.display_name ?? "",
+  const [editDisplayName, setEditDisplayName] = useState(user?.display_name ?? "");
+  const [editBackgroundImageUrl, setEditBackgroundImageUrl] = useState(
+    user?.background_image_url ?? ""
   );
-  const [editBackgroundImageUrl, setEditBackgroundImageUrl] = useState(user?.background_image_url ?? "");
-  const [editBackgroundVideoUrl, setEditBackgroundVideoUrl] = useState(user?.background_video_url ?? "");
-  const [editBackgroundPosition, setEditBackgroundPosition] = useState(user?.background_position ?? "");
+  const [editBackgroundVideoUrl, setEditBackgroundVideoUrl] = useState(
+    user?.background_video_url ?? ""
+  );
+  const [editBackgroundPosition, setEditBackgroundPosition] = useState(
+    user?.background_position ?? ""
+  );
   const [editFontFamily, setEditFontFamily] = useState(user?.font_family ?? "");
-  const [editProfileCardArtUrl, setEditProfileCardArtUrl] = useState(user?.profile_card_art_url ?? "");
+  const [editProfileCardArtUrl, setEditProfileCardArtUrl] = useState(
+    user?.profile_card_art_url ?? ""
+  );
   const [editAvatarUrl, setEditAvatarUrl] = useState(user?.avatar_url ?? "");
   const [editBannerUrl, setEditBannerUrl] = useState(user?.banner_url ?? "");
 

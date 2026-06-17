@@ -13,8 +13,7 @@ import "./GrengoSessionDialog.css";
  * Render this once at the app root (inside Router).
  */
 export default function GrengoSessionDialog() {
-  const { showDialog, loading, error, armed, createSession, closeDialog } =
-    useGrengoShortcut();
+  const { showDialog, loading, error, armed, createSession, closeDialog } = useGrengoShortcut();
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const p1InputRef = useRef<HTMLInputElement>(null);
@@ -50,10 +49,7 @@ export default function GrengoSessionDialog() {
       <div className="grengo-maintenance-overlay">
         <div className="grengo-maintenance-card">
           <h2>Under Maintenance</h2>
-          <p>
-            This site is currently undergoing maintenance. Please check back
-            shortly.
-          </p>
+          <p>This site is currently undergoing maintenance. Please check back shortly.</p>
         </div>
       </div>,
       document.body
@@ -64,14 +60,9 @@ export default function GrengoSessionDialog() {
 
   return createPortal(
     <div className="grengo-session-overlay" onClick={handleClose}>
-      <div
-        className="grengo-session-dialog"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="grengo-session-dialog" onClick={e => e.stopPropagation()}>
         <h3>Grengo Access</h3>
-        <p>
-          Enter your server passcode to open a temporary management session.
-        </p>
+        <p>Enter your server passcode to open a temporary management session.</p>
 
         {error && <div className="grengo-session-error">{error}</div>}
 
@@ -81,7 +72,7 @@ export default function GrengoSessionDialog() {
             ref={p1InputRef}
             type="password"
             value={p1}
-            onChange={(e) => setP1(e.target.value)}
+            onChange={e => setP1(e.target.value)}
             autoFocus
             disabled={loading}
           />
@@ -92,8 +83,8 @@ export default function GrengoSessionDialog() {
           <input
             type="password"
             value={p2}
-            onChange={(e) => setP2(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            onChange={e => setP2(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
             disabled={loading}
           />
         </label>

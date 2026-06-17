@@ -15,8 +15,7 @@
   --richtext-shadow-colored: none !important;
 }
 
-.reactjs-tiptap-editor.reactjs-tiptap-editor
-  .ProseMirror.ProseMirror.ProseMirror {
+.reactjs-tiptap-editor.reactjs-tiptap-editor .ProseMirror.ProseMirror.ProseMirror {
   min-height: auto !important;
 }
 

@@ -31,17 +31,14 @@ const SocialLinkEditor = ({
   if (editing) {
     return (
       <div className="social-link-editor">
-        <IconPicker
-          current={link.icon}
-          onPick={(name) => onUpdate(index, { icon: name })}
-        />
+        <IconPicker current={link.icon} onPick={name => onUpdate(index, { icon: name })} />
         <input
           className="social-link-url-input"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={e => setUrl(e.target.value)}
           placeholder="https://..."
           autoFocus
-          onKeyDown={(e) => {
+          onKeyDown={e => {
             if (e.key === "Enter") {
               setEditing(false);
               if (url !== link.url) onUpdate(index, { url });
@@ -126,14 +123,10 @@ const SocialLinks = ({ links, canEdit, onUpdate, onAdd, onRemove }: Props) => {
               return Icon ? <Icon size={20} /> : social.icon;
             })()}
           </a>
-        ),
+        )
       )}
       {canEdit && onAdd && (
-        <button
-          className="social-link-add-btn"
-          onClick={onAdd}
-          title="Add social link"
-        >
+        <button className="social-link-add-btn" onClick={onAdd} title="Add social link">
           <Plus size={16} />
         </button>
       )}

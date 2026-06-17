@@ -45,9 +45,7 @@ const EditThread = () => {
       if (!threadId) return;
       try {
         setLoading(true);
-        const response = await apiRequest<ThreadData>(
-          `/forum/threads/${threadId}`,
-        );
+        const response = await apiRequest<ThreadData>(`/forum/threads/${threadId}`);
         if (response) {
           setCurrentThread(response);
           setEditTitle(response.title);
@@ -75,11 +73,7 @@ const EditThread = () => {
 
   // Silently sync editor fields when the thread is updated via WebSocket
   useEffect(() => {
-    if (
-      currentThread &&
-      lastUpdated &&
-      currentThread.updated_at !== lastUpdated
-    ) {
+    if (currentThread && lastUpdated && currentThread.updated_at !== lastUpdated) {
       setEditTitle(currentThread.title);
       setEditContent(currentThread.content);
       setSelectedCategory(String(currentThread.category_id));
@@ -103,20 +97,17 @@ const EditThread = () => {
     setSubmitting(true);
 
     try {
-      const response = await apiRequest<ThreadData>(
-        `/forum/threads/${threadId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: editTitle,
-            content: editContent,
-            category_id: String(selectedCategory),
-          }),
+      const response = await apiRequest<ThreadData>(`/forum/threads/${threadId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+          category_id: String(selectedCategory),
+        }),
+      });
 
       // Update the atom with the fresh response from backend
       if (response) {
@@ -143,13 +134,11 @@ const EditThread = () => {
   }
 
   return (
-    <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal" onClick={e => e.stopPropagation()}>
       <div className="modal-header">
         <div className="modal-title-wrapper">
           <h2>Edit Thread</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
-            Update your discussion
-          </p>
+          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>Update your discussion</p>
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
@@ -194,16 +183,13 @@ const EditThread = () => {
             type="text"
             placeholder="Update title..."
             value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
+            onChange={e => setEditTitle(e.target.value)}
             disabled={submitting}
           />
         </div>
 
         <div className="form-group">
-          <ForumCategory
-            value={selectedCategory}
-            onChange={setSelectedCategory}
-          />
+          <ForumCategory value={selectedCategory} onChange={setSelectedCategory} />
         </div>
 
         <div className="form-group">

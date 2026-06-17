@@ -146,9 +146,7 @@
   padding: 0.875rem;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .cp-card:hover {
@@ -383,7 +381,6 @@
 }
 
 @media (max-width: 720px) {
-
   .cp-list__header,
   .cp-list__row {
     grid-template-columns: 1fr 1fr;

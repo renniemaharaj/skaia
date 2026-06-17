@@ -15,7 +15,7 @@ function ViewThread({ content }: { content: string }) {
   const [key, setKey] = useState(1);
   useEffect(() => {
     setLocalContent(content);
-    setKey((prev) => prev + 1);
+    setKey(prev => prev + 1);
   }, [content]);
 
   return (
@@ -26,11 +26,7 @@ function ViewThread({ content }: { content: string }) {
           <RichTextEditor
             output="html"
             key={key}
-            content={
-              typeof localContent === "string"
-                ? localContent
-                : String(localContent ?? "")
-            }
+            content={typeof localContent === "string" ? localContent : String(localContent ?? "")}
             extensions={extensions}
             dark={theme === "dark"}
             disableBubble

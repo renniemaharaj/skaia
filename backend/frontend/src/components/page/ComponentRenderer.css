@@ -153,9 +153,7 @@
   background: var(--card-bg, var(--bg-secondary));
   border: 1px solid var(--card-border, var(--border-color));
   overflow: hidden;
-  transition:
-    box-shadow 0.25s ease,
-    transform 0.2s ease;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
   cursor: pointer;
 }
 .cr-card:hover {
@@ -250,9 +248,7 @@
   overflow: hidden;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  transition:
-    box-shadow 0.25s ease,
-    transform 0.2s ease;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
   cursor: pointer;
 }
 .cr-media-card:hover {

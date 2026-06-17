@@ -117,9 +117,7 @@
   padding: 2px 4px;
   color: var(--text-secondary);
   border-radius: 4px;
-  transition:
-    color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, background 0.15s;
   flex-shrink: 0;
 }
 
@@ -140,9 +138,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.8rem;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .footer-add-item-btn:hover {

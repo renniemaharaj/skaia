@@ -18,7 +18,7 @@ export interface TableViewProps<T> {
     item: T,
     index: number,
     rowProps: { className: string; style: React.CSSProperties },
-    cells: ReactNode[],
+    cells: ReactNode[]
   ) => ReactNode;
   emptyState?: ReactNode;
   className?: string;
@@ -38,16 +38,13 @@ export function TableView<T>({
     return <>{emptyState}</>;
   }
 
-  const gridTemplateColumns = columns
-    .map((col) => col.width || "1fr")
-    .join(" ");
+  const gridTemplateColumns = columns.map(col => col.width || "1fr").join(" ");
 
   const tableStyle =
     maxHeight === undefined
       ? undefined
       : {
-          maxHeight:
-            typeof maxHeight === "number" ? `${maxHeight}px` : maxHeight,
+          maxHeight: typeof maxHeight === "number" ? `${maxHeight}px` : maxHeight,
         };
   const tableClassName = [
     "table-view",
@@ -61,10 +58,7 @@ export function TableView<T>({
     <div className={tableClassName} style={tableStyle}>
       <div className="table-view__header" style={{ gridTemplateColumns }}>
         {columns.map((col, i) => (
-          <div
-            key={i}
-            className={`table-view__col-header ${col.className || ""}`}
-          >
+          <div key={i} className={`table-view__col-header ${col.className || ""}`}>
             {col.header}
           </div>
         ))}

@@ -85,12 +85,7 @@ const formatTimestamp = (iso: string) => {
 
 /* component */
 
-export default function ResourceAnalytics({
-  resource,
-  resourceId,
-  title,
-  onClose,
-}: Props) {
+export default function ResourceAnalytics({ resource, resourceId, title, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +106,7 @@ export default function ResourceAnalytics({
     setError(null);
     try {
       const res = await apiRequest<StatsResponse>(
-        `/analytics/views/${resource}/${resourceId}?days=${days}`,
+        `/analytics/views/${resource}/${resourceId}?days=${days}`
       );
       if (!res) {
         throw new Error("Invalid analytics response");
@@ -137,23 +132,21 @@ export default function ResourceAnalytics({
       try {
         const identified = identifiedOnly ? "&identified=true" : "";
         const res = await apiRequest<VisitorsResponse>(
-          `/analytics/visitors/${resource}/${resourceId}?limit=${PAGE_SIZE}&offset=${offset}${identified}`,
+          `/analytics/visitors/${resource}/${resourceId}?limit=${PAGE_SIZE}&offset=${offset}${identified}`
         );
         if (!res) {
           throw new Error("Invalid visitors response");
         }
         const list = res.visitors ?? [];
-        setVisitors((prev) => (offset === 0 ? list : [...prev, ...list]));
+        setVisitors(prev => (offset === 0 ? list : [...prev, ...list]));
         setHasMore(list.length === PAGE_SIZE);
       } catch (err) {
-        setVisitorsError(
-          err instanceof Error ? err.message : "Failed to load visitors",
-        );
+        setVisitorsError(err instanceof Error ? err.message : "Failed to load visitors");
       } finally {
         setVisitorsLoading(false);
       }
     },
-    [resource, resourceId, identifiedOnly],
+    [resource, resourceId, identifiedOnly]
   );
 
   // reset + fetch when switching to visitors tab or filter changes
@@ -214,9 +207,7 @@ export default function ResourceAnalytics({
 
   const visitorLabel = (entry: VisitorEntry) => {
     const effective = effectiveVisitor(entry);
-    return effective.user_id
-      ? effective.display_name || effective.username || "User"
-      : "Anonymous";
+    return effective.user_id ? effective.display_name || effective.username || "User" : "Anonymous";
   };
 
   const renderVisitorUser = (entry: VisitorEntry) => {
@@ -226,15 +217,17 @@ export default function ResourceAnalytics({
     }
 
     return (
-      <UserProfileOverlay userId={effective.user_id} fallbackName={effective.display_name || effective.username || "User"} fallbackAvatar={effective.avatar_url || undefined}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <UserProfileOverlay
+        userId={effective.user_id}
+        fallbackName={effective.display_name || effective.username || "User"}
+        fallbackAvatar={effective.avatar_url || undefined}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <UserAvatar
             src={effective.avatar_url || undefined}
             alt={effective.display_name || effective.username || "User"}
             size={18}
-            initials={(effective.display_name || effective.username || "?")
-              .charAt(0)
-              .toUpperCase()}
+            initials={(effective.display_name || effective.username || "?").charAt(0).toUpperCase()}
           />
           <span>{effective.display_name || effective.username || "User"}</span>
         </div>
@@ -267,7 +260,7 @@ export default function ResourceAnalytics({
 
   return (
     <div className="ra-overlay" onClick={onClose}>
-      <div className="ra-panel" onClick={(e) => e.stopPropagation()}>
+      <div className="ra-panel" onClick={e => e.stopPropagation()}>
         {/* header */}
         <div className="ra-header">
           <h3>
@@ -276,12 +269,7 @@ export default function ResourceAnalytics({
               ? `Analytics — ${title}`
               : `${resource === "page" ? "Page" : "Thread"} Analytics`}
           </h3>
-          <button
-            type="button"
-            className="action-btn"
-            onClick={onClose}
-            title="Close"
-          >
+          <button type="button" className="action-btn" onClick={onClose} title="Close">
             <X size={16} />
           </button>
         </div>
@@ -327,10 +315,7 @@ export default function ResourceAnalytics({
               <div className="ra-stat">
                 <div className="ra-stat__value">
                   {daily.length > 0
-                    ? Math.round(
-                        daily.reduce((sum, d) => sum + d.views, 0) /
-                          daily.length,
-                      )
+                    ? Math.round(daily.reduce((sum, d) => sum + d.views, 0) / daily.length)
                     : 0}
                 </div>
                 <div className="ra-stat__label">Avg / Day</div>
@@ -346,11 +331,7 @@ export default function ResourceAnalytics({
               ) : error ? (
                 <div className="ra-error">
                   Failed to load analytics: {error}
-                  <button
-                    type="button"
-                    className="ra-retry"
-                    onClick={loadStats}
-                  >
+                  <button type="button" className="ra-retry" onClick={loadStats}>
                     Retry
                   </button>
                 </div>
@@ -361,11 +342,11 @@ export default function ResourceAnalytics({
                     <Select
                       className="ra-range-select"
                       value={String(days)}
-                      options={RANGE_OPTIONS.map((opt) => ({
+                      options={RANGE_OPTIONS.map(opt => ({
                         value: String(opt.value),
                         label: opt.label,
                       }))}
-                      onChange={(e) => setDays(Number(e.target.value))}
+                      onChange={e => setDays(Number(e.target.value))}
                     />
                   </div>
 
@@ -374,29 +355,12 @@ export default function ResourceAnalytics({
                       <ResponsiveContainer width="100%" height={220}>
                         <AreaChart data={daily}>
                           <defs>
-                            <linearGradient
-                              id="viewGradient"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="0%"
-                                stopColor={chartColor}
-                                stopOpacity={0.3}
-                              />
-                              <stop
-                                offset="100%"
-                                stopColor={chartColor}
-                                stopOpacity={0}
-                              />
+                            <linearGradient id="viewGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={chartColor} stopOpacity={0.3} />
+                              <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="var(--border-color)"
-                          />
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis
                             dataKey="date"
                             tickFormatter={formatDate}
@@ -411,9 +375,7 @@ export default function ResourceAnalytics({
                             width={36}
                           />
                           <Tooltip
-                            labelFormatter={(label) =>
-                              new Date(label as string).toLocaleDateString()
-                            }
+                            labelFormatter={label => new Date(label as string).toLocaleDateString()}
                             contentStyle={{
                               background: "var(--bg-secondary)",
                               border: "1px solid var(--border-color)",
@@ -458,7 +420,7 @@ export default function ResourceAnalytics({
                   <input
                     type="checkbox"
                     checked={identifiedOnly}
-                    onChange={(e) => setIdentifiedOnly(e.target.checked)}
+                    onChange={e => setIdentifiedOnly(e.target.checked)}
                   />
                   <Users size={13} />
                   Identified visitors only
@@ -475,19 +437,13 @@ export default function ResourceAnalytics({
               ) : visitorsError ? (
                 <div className="ra-error">
                   Failed to load visitors: {visitorsError}
-                  <button
-                    type="button"
-                    className="ra-retry"
-                    onClick={() => loadVisitors(0)}
-                  >
+                  <button type="button" className="ra-retry" onClick={() => loadVisitors(0)}>
                     Retry
                   </button>
                 </div>
               ) : visitors.length === 0 ? (
                 <div className="ra-empty-visitors">
-                  {identifiedOnly
-                    ? "No identified visitors yet"
-                    : "No visitor data yet"}
+                  {identifiedOnly ? "No identified visitors yet" : "No visitor data yet"}
                 </div>
               ) : (
                 <>
@@ -500,14 +456,12 @@ export default function ResourceAnalytics({
                       </tr>
                     </thead>
                     <tbody>
-                      {visitorGroups(visitors).map((group) => (
+                      {visitorGroups(visitors).map(group => (
                         <Fragment key={`${group.key}-${group.head.id}`}>
                           <tr key={`${group.key}-${group.head.id}`}>
                             <td>{formatTimestamp(group.head.created_at)}</td>
                             <td>
-                              <span className="ra-ip">
-                                {group.head.ip || "—"}
-                              </span>
+                              <span className="ra-ip">{group.head.ip || "—"}</span>
                             </td>
                             <td>
                               <span className="ra-visitor-user">
@@ -522,27 +476,19 @@ export default function ResourceAnalytics({
                           </tr>
                           {group.others.length > 0 && (
                             <tr key={`${group.key}-${group.head.id}-details`}>
-                              <td
-                                colSpan={3}
-                                className="ra-visitor-group-details-cell"
-                              >
+                              <td colSpan={3} className="ra-visitor-group-details-cell">
                                 <details className="ra-visitor-group-details">
                                   <summary>
                                     View {group.others.length} earlier visit
                                     {group.others.length > 1 ? "s" : ""}
                                   </summary>
                                   <div className="ra-visitor-group-list">
-                                    {group.others.map((visit) => (
-                                      <div
-                                        className="ra-visitor-group-item"
-                                        key={visit.id}
-                                      >
+                                    {group.others.map(visit => (
+                                      <div className="ra-visitor-group-item" key={visit.id}>
                                         <span className="ra-visitor-group-time">
                                           {formatTimestamp(visit.created_at)}
                                         </span>
-                                        <span className="ra-ip">
-                                          {visit.ip || "—"}
-                                        </span>
+                                        <span className="ra-ip">{visit.ip || "—"}</span>
                                         <span>{visitorLabel(visit)}</span>
                                       </div>
                                     ))}

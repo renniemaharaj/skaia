@@ -101,9 +101,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   border-radius: 4px;
-  transition:
-    color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 .cge__item-remove:hover {
   color: var(--error-color);

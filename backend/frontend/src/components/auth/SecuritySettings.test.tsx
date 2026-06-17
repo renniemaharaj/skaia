@@ -27,7 +27,7 @@ describe("SecuritySettings", () => {
         canManage={true}
         managedUserId="123"
         managedUsername="testuser"
-      />,
+      />
     );
     expect(screen.getByText(/Manage 2FA for/i)).toBeInTheDocument();
     expect(screen.getByText(/Enable 2FA/i)).toBeInTheDocument();

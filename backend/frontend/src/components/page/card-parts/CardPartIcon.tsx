@@ -13,21 +13,14 @@ const SIZE_PX: Record<ZoneSize, number> = {
   lg: 48,
 };
 
-export const CardPartIcon = ({
-  icon,
-  align = "left",
-  size = "md",
-}: CardPartIconProps) => {
+export const CardPartIcon = ({ icon, align = "left", size = "md" }: CardPartIconProps) => {
   if (!icon) return null;
 
   const px = SIZE_PX[size];
 
   return (
     <div className="cdp-icon" style={{ textAlign: align }}>
-      <span
-        className="cdp-icon__glyph"
-        style={{ width: px, height: px, fontSize: px * 0.6 }}
-      >
+      <span className="cdp-icon__glyph" style={{ width: px, height: px, fontSize: px * 0.6 }}>
         {icon}
       </span>
     </div>

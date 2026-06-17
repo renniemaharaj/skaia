@@ -31,7 +31,7 @@ export const useCursorTracking = () => {
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
       const container = getScrollContainer();
-      
+
       const x = (clientX + container.scrollLeft) / container.scrollWidth;
       const y = (clientY + container.scrollTop) / container.scrollHeight;
       const uid = userRef.current?.id ? Number(userRef.current.id) : 0;
@@ -41,7 +41,7 @@ export const useCursorTracking = () => {
           type: "cursor:update",
           user_id: uid,
           payload: { x, y },
-        }),
+        })
       );
     };
 
@@ -55,10 +55,10 @@ export const useCursorTracking = () => {
     };
 
     const container = getScrollContainer();
-    
+
     document.addEventListener("mousemove", handleMouseMove);
     container.addEventListener("scroll", handleScroll, { passive: true });
-    
+
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("scroll", handleScroll);

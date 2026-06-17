@@ -23,14 +23,8 @@ interface ColumnMapperProps {
   onChange: (map: ColumnMap) => void;
 }
 
-export const ColumnMapper = ({
-  availableColumns,
-  columnMap,
-  onChange,
-}: ColumnMapperProps) => {
-  const [dragOverField, setDragOverField] = useState<MappableField | null>(
-    null,
-  );
+export const ColumnMapper = ({ availableColumns, columnMap, onChange }: ColumnMapperProps) => {
+  const [dragOverField, setDragOverField] = useState<MappableField | null>(null);
 
   // Set of columns already mapped
   const mappedCols = new Set(Object.values(columnMap).filter(Boolean));
@@ -40,14 +34,11 @@ export const ColumnMapper = ({
     e.dataTransfer.effectAllowed = "copy";
   }, []);
 
-  const handleDragOver = useCallback(
-    (e: React.DragEvent, field: MappableField) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-      setDragOverField(field);
-    },
-    [],
-  );
+  const handleDragOver = useCallback((e: React.DragEvent, field: MappableField) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOverField(field);
+  }, []);
 
   const handleDragLeave = useCallback(() => {
     setDragOverField(null);
@@ -62,7 +53,7 @@ export const ColumnMapper = ({
         onChange({ ...columnMap, [field]: colName });
       }
     },
-    [columnMap, onChange],
+    [columnMap, onChange]
   );
 
   const handleSelect = useCallback(
@@ -75,7 +66,7 @@ export const ColumnMapper = ({
         onChange({ ...columnMap, [field]: colName });
       }
     },
-    [columnMap, onChange],
+    [columnMap, onChange]
   );
 
   const handleClear = useCallback(
@@ -84,7 +75,7 @@ export const ColumnMapper = ({
       delete next[field];
       onChange(next);
     },
-    [columnMap, onChange],
+    [columnMap, onChange]
   );
 
   return (
@@ -98,12 +89,12 @@ export const ColumnMapper = ({
 
       {/* Available columns */}
       <div className="column-mapper-sources">
-        {availableColumns.map((col) => (
+        {availableColumns.map(col => (
           <span
             key={col}
             className={`column-mapper-chip${mappedCols.has(col) ? " mapped" : ""}`}
             draggable
-            onDragStart={(e) => handleDragStart(e, col)}
+            onDragStart={e => handleDragStart(e, col)}
           >
             <GripHorizontal size={12} />
             {col}
@@ -120,29 +111,27 @@ export const ColumnMapper = ({
 
       {/* Target slots */}
       <div className="column-mapper-targets">
-        {MAPPABLE_FIELDS.map((field) => {
+        {MAPPABLE_FIELDS.map(field => {
           const mapped = columnMap[field];
           return (
             <div
               key={field}
               className={`column-mapper-slot${dragOverField === field ? " drag-over" : ""}${mapped ? " filled" : ""}`}
-              onDragOver={(e) => handleDragOver(e, field)}
+              onDragOver={e => handleDragOver(e, field)}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, field)}
+              onDrop={e => handleDrop(e, field)}
             >
-              <span className="column-mapper-slot-label">
-                {MAPPABLE_FIELD_LABELS[field]}
-              </span>
+              <span className="column-mapper-slot-label">{MAPPABLE_FIELD_LABELS[field]}</span>
               <span className="column-mapper-slot-value">
                 <Select
                   value={mapped ?? ""}
-                  onChange={(e) => handleSelect(field, e.target.value)}
+                  onChange={e => handleSelect(field, e.target.value)}
                   size="sm"
                   variant="minimal"
                   block
                 >
                   <option value="">— none —</option>
-                  {availableColumns.map((col) => (
+                  {availableColumns.map(col => (
                     <option key={col} value={col}>
                       {col}
                     </option>

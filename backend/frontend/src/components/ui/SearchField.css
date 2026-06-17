@@ -6,9 +6,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .search-field:focus-within {

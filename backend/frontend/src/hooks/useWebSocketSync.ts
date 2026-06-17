@@ -23,12 +23,7 @@ import {
   isAuthenticatedAtom,
   type User,
 } from "../atoms/auth";
-import {
-  wsBaseUrlAtom,
-  brandingAtom,
-  footerConfigAtom,
-  seoAtom,
-} from "../atoms/config";
+import { wsBaseUrlAtom, brandingAtom, footerConfigAtom, seoAtom } from "../atoms/config";
 import {
   onlineUsersAtom,
   pendingTpRouteAtom,
@@ -43,16 +38,9 @@ import {
   inboxUnreadCountAtom,
   activeConversationIdAtom,
 } from "../atoms/inbox";
-import {
-  notificationsAtom,
-  type AppNotification,
-} from "../atoms/notifications";
+import { notificationsAtom, type AppNotification } from "../atoms/notifications";
 import { activityEventsAtom, type ActivityEvent } from "../atoms/events";
-import {
-  playNotificationSound,
-  playMessageSound,
-  playChatSound,
-} from "../utils/sound";
+import { playNotificationSound, playMessageSound, playChatSound } from "../utils/sound";
 import { voicePermissionsAtom } from "../atoms/voice";
 import { mediaStateAtom } from "../atoms/media";
 
@@ -187,33 +175,29 @@ export const useWebSocketSync = () => {
         setSocket(ws);
 
         // Re-subscribe to all tracked resources after (re)connect
-        subscriptionsRef.current.forEach((key) => {
+        subscriptionsRef.current.forEach(key => {
           const [resourceType, resourceId] = key.split(":");
           ws.send(
             JSON.stringify({
               type: "subscribe",
               payload: { resource_type: resourceType, resource_id: resourceId },
-            }),
+            })
           );
           console.log(`[reconnect] Re-subscribed to ${key}`);
         });
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = event => {
         try {
           if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-            window.dispatchEvent(
-              new CustomEvent("voice:binary", { detail: event.data }),
-            );
+            window.dispatchEvent(new CustomEvent("voice:binary", { detail: event.data }));
             return;
           }
 
           const message: WebSocketMessage = JSON.parse(event.data);
           // Parse payload since it's a JSON-encoded string from backend
           const payload =
-            typeof message.payload === "string"
-              ? JSON.parse(message.payload)
-              : message.payload;
+            typeof message.payload === "string" ? JSON.parse(message.payload) : message.payload;
 
           // Handle generic WS error and rate-limit notices
           if (message.type === "error") {
@@ -236,50 +220,36 @@ export const useWebSocketSync = () => {
               window.dispatchEvent(
                 new CustomEvent("mediascraper:jobs", {
                   detail: { active_jobs, cache_hits_1h, new_scrapes_1h },
-                }),
+                })
               );
             }
             return;
           }
 
           if (message.type === "mediascraper:result") {
-            window.dispatchEvent(
-              new CustomEvent("mediascraper:result", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("mediascraper:result", { detail: payload }));
             return;
           }
           if (message.type === "mediascraper:started") {
-            window.dispatchEvent(
-              new CustomEvent("mediascraper:started", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("mediascraper:started", { detail: payload }));
             return;
           }
           if (message.type === "mediascraper:pending") {
-            window.dispatchEvent(
-              new CustomEvent("mediascraper:pending", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("mediascraper:pending", { detail: payload }));
             return;
           }
 
           if (message.type === "grengo:job_update") {
-            window.dispatchEvent(
-              new CustomEvent("grengo:job_update", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("grengo:job_update", { detail: payload }));
           }
           if (message.type === "grengo:stats_update") {
-            window.dispatchEvent(
-              new CustomEvent("grengo:stats_update", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("grengo:stats_update", { detail: payload }));
           }
           if (message.type === "grengo:storage_update") {
-            window.dispatchEvent(
-              new CustomEvent("grengo:storage_update", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("grengo:storage_update", { detail: payload }));
           }
           if (message.type === "grengo:hardware_update") {
-            window.dispatchEvent(
-              new CustomEvent("grengo:hardware_update", { detail: payload }),
-            );
+            window.dispatchEvent(new CustomEvent("grengo:hardware_update", { detail: payload }));
           }
           if (
             message.type === "grengo:job_update" ||
@@ -301,7 +271,7 @@ export const useWebSocketSync = () => {
             if (userAction === "permissions_changed" && userData) {
               const myId = currentUserIdRef.current;
               if (myId && String(userData.id) === String(myId)) {
-                setCurrentUser((prev) => {
+                setCurrentUser(prev => {
                   if (!prev) return prev;
                   return {
                     ...prev,
@@ -321,7 +291,7 @@ export const useWebSocketSync = () => {
                       permissions: userData.permissions,
                     },
                   },
-                }),
+                })
               );
             }
 
@@ -346,7 +316,7 @@ export const useWebSocketSync = () => {
                     userId: String(updatedUser.id),
                     user: updatedUser,
                   },
-                }),
+                })
               );
 
               // Apply session changes if this is the logged-in user
@@ -363,15 +333,12 @@ export const useWebSocketSync = () => {
             }
 
             // Uploads changed - notify the profile uploads tab
-            if (
-              userAction === "user_updated" &&
-              (userData as any)?.action === "uploads_changed"
-            ) {
+            if (userAction === "user_updated" && (userData as any)?.action === "uploads_changed") {
               const { id } = payload as { id?: number };
               window.dispatchEvent(
                 new CustomEvent("user:uploads:changed", {
                   detail: { userId: String(id ?? 0) },
-                }),
+                })
               );
             }
           }
@@ -388,7 +355,7 @@ export const useWebSocketSync = () => {
           if (message.type === "cursor:update") {
             const cp = payload as CursorPosition;
             if (cp && typeof cp.user_id === "number") {
-              setCursorPositions((prev) => {
+              setCursorPositions(prev => {
                 const next = new Map(prev);
                 next.set(cp.user_id, { ...cp, updatedAt: Date.now() });
                 return next;
@@ -401,8 +368,7 @@ export const useWebSocketSync = () => {
             const route = payload?.route;
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
-              if ((message as any).user_id)
-                setPendingTpUser((message as any).user_id as number);
+              if ((message as any).user_id) setPendingTpUser((message as any).user_id as number);
             }
           }
 
@@ -412,9 +378,7 @@ export const useWebSocketSync = () => {
           }
 
           if (message.type === "media:sfx") {
-            window.dispatchEvent(
-              new CustomEvent("media:sfx", { detail: payload?.sfx_type }),
-            );
+            window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
           }
 
           // MFA Required
@@ -425,17 +389,12 @@ export const useWebSocketSync = () => {
           // Handle forum update propagation
           if (message.type === "forum:update") {
             const { action, id, data } = payload;
-            console.log(
-              `Received forum propagation: ${action} for ${id ?? data?.id}`,
-            );
+            console.log(`Received forum propagation: ${action} for ${id ?? data?.id}`);
 
             // Handle thread updates
             if (action === "thread_updated" || action === "thread_created") {
-              setCurrentThread((prev) => {
-                if (
-                  prev &&
-                  (prev.id === String(data.id) || prev.id === data.id)
-                ) {
+              setCurrentThread(prev => {
+                if (prev && (prev.id === String(data.id) || prev.id === data.id)) {
                   return {
                     ...prev,
                     title: data.title || prev.title,
@@ -457,9 +416,8 @@ export const useWebSocketSync = () => {
                 activeCategoryFeedIdRef.current &&
                 String(thread.category_id) === activeCategoryFeedIdRef.current
               ) {
-                setCategoryFeedThreads((prev) => {
-                  if (prev.some((t) => String(t.id) === String(thread.id)))
-                    return prev;
+                setCategoryFeedThreads(prev => {
+                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
                   return [...prev, thread]; // newest at end => bottom of the chat feed
                 });
               }
@@ -468,17 +426,15 @@ export const useWebSocketSync = () => {
                 activeUserFeedIdRef.current &&
                 String(thread.user_id) === activeUserFeedIdRef.current
               ) {
-                setUserFeedThreads((prev) => {
-                  if (prev.some((t) => String(t.id) === String(thread.id)))
-                    return prev;
+                setUserFeedThreads(prev => {
+                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
                   return [...prev, thread];
                 });
               }
               // All threads feed
               if (activeAllFeedIdRef.current) {
-                setAllFeedThreads((prev) => {
-                  if (prev.some((t) => String(t.id) === String(thread.id)))
-                    return prev;
+                setAllFeedThreads(prev => {
+                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
                   return [...prev, thread];
                 });
               }
@@ -487,9 +443,7 @@ export const useWebSocketSync = () => {
             // Live feed: thread updated (metadata refresh in both feeds)
             if (action === "thread_updated" && data) {
               const update = (prev: ForumThread[]) =>
-                prev.map((t) =>
-                  String(t.id) === String(data.id) ? { ...t, ...data } : t,
-                );
+                prev.map(t => (String(t.id) === String(data.id) ? { ...t, ...data } : t));
               setCategoryFeedThreads(update);
               setUserFeedThreads(update);
               setAllFeedThreads(update);
@@ -497,7 +451,7 @@ export const useWebSocketSync = () => {
 
             // Handle thread deletion
             if (action === "thread_deleted") {
-              setCurrentThread((prev) => {
+              setCurrentThread(prev => {
                 if (prev && String(prev.id) === String(id)) {
                   return null;
                 }
@@ -507,8 +461,7 @@ export const useWebSocketSync = () => {
 
             // Live feed: thread deleted (broadcast to all clients)
             if (action === "thread_deleted" && id) {
-              const remove = (prev: ForumThread[]) =>
-                prev.filter((t) => String(t.id) !== String(id));
+              const remove = (prev: ForumThread[]) => prev.filter(t => String(t.id) !== String(id));
               setCategoryFeedThreads(remove);
               setUserFeedThreads(remove);
               setAllFeedThreads(remove);
@@ -516,27 +469,20 @@ export const useWebSocketSync = () => {
 
             // Handle comment operations
             if (action === "comment_created") {
-              setThreadComments((prev) => {
+              setThreadComments(prev => {
                 // Add new comment if it's not already in the list
                 const newComment = data.new_comment;
-                const exists = prev.some(
-                  (p) => String(p.id) === String(newComment.id),
-                );
+                const exists = prev.some(p => String(p.id) === String(newComment.id));
                 if (!exists) {
                   // Enrich permissions for the receiving client
                   const userId = currentUserIdRef.current;
                   const perms = currentUserPermissionsRef.current;
-                  const isOwner =
-                    userId != null &&
-                    String(newComment.user_id) === String(userId);
+                  const isOwner = userId != null && String(newComment.user_id) === String(userId);
                   const enriched = {
                     ...newComment,
                     can_delete:
-                      isOwner ||
-                      (perms?.includes("forum.thread-comment-delete") ?? false),
-                    can_edit:
-                      isOwner ||
-                      (perms?.includes("forum.thread-comment-delete") ?? false),
+                      isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
+                    can_edit: isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
                     can_like_comments: true,
                   };
 
@@ -559,71 +505,60 @@ export const useWebSocketSync = () => {
             }
 
             if (action === "comment_deleted") {
-              setThreadComments((prev) =>
-                prev.filter((p) => String(p.id) !== String(data.comment_id)),
-              );
+              setThreadComments(prev => prev.filter(p => String(p.id) !== String(data.comment_id)));
             }
 
             if (action === "comment_updated") {
-              setThreadComments((prev) =>
-                prev.map((p) =>
+              setThreadComments(prev =>
+                prev.map(p =>
                   String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         content: data.content || p.content,
                         updated_at: data.updated_at || p.updated_at,
                       }
-                    : p,
-                ),
+                    : p
+                )
               );
             }
             if (action === "comment_liked") {
               const actingUserId = String(data.user_id);
-              setThreadComments((prev) =>
-                prev.map((p) =>
+              setThreadComments(prev =>
+                prev.map(p =>
                   String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         likes: data.likes ?? p.likes + 1,
-                        is_liked:
-                          actingUserId === currentUserIdRef.current
-                            ? true
-                            : p.is_liked,
+                        is_liked: actingUserId === currentUserIdRef.current ? true : p.is_liked,
                       }
-                    : p,
-                ),
+                    : p
+                )
               );
             }
 
             if (action === "comment_unliked") {
               const actingUserId = String(data.user_id);
-              setThreadComments((prev) =>
-                prev.map((p) =>
+              setThreadComments(prev =>
+                prev.map(p =>
                   String(p.id) === String(data.comment_id)
                     ? {
                         ...p,
                         likes: Math.max(0, data.likes ?? p.likes - 1),
-                        is_liked:
-                          actingUserId === currentUserIdRef.current
-                            ? false
-                            : p.is_liked,
+                        is_liked: actingUserId === currentUserIdRef.current ? false : p.is_liked,
                       }
-                    : p,
-                ),
+                    : p
+                )
               );
             }
 
             if (action === "thread_liked") {
               const actingUserId = String(data.user_id);
-              setCurrentThread((prev) => {
+              setCurrentThread(prev => {
                 if (prev && String(prev.id) === String(data.thread_id)) {
                   return {
                     ...prev,
                     likes: data.likes ?? (prev.likes || 0) + 1,
-                    is_liked:
-                      actingUserId === currentUserIdRef.current
-                        ? true
-                        : prev.is_liked,
+                    is_liked: actingUserId === currentUserIdRef.current ? true : prev.is_liked,
                   };
                 }
                 return prev;
@@ -632,25 +567,22 @@ export const useWebSocketSync = () => {
 
             if (action === "thread_unliked") {
               const actingUserId = String(data.user_id);
-              setCurrentThread((prev) => {
+              setCurrentThread(prev => {
                 if (prev && String(prev.id) === String(data.thread_id)) {
                   return {
                     ...prev,
                     likes: Math.max(0, data.likes ?? (prev.likes || 1) - 1),
-                    is_liked:
-                      actingUserId === currentUserIdRef.current
-                        ? false
-                        : prev.is_liked,
+                    is_liked: actingUserId === currentUserIdRef.current ? false : prev.is_liked,
                   };
                 }
                 return prev;
               });
             }
-            setForumCategories((prevCategories) => {
+            setForumCategories(prevCategories => {
               switch (action) {
                 case "category_created": {
                   // Add new category if not already present
-                  const exists = prevCategories.some((c) => c.id === data.id);
+                  const exists = prevCategories.some(c => c.id === data.id);
                   if (exists) return prevCategories;
 
                   // Subscribe to this category so we receive future updates (e.g. deletion)
@@ -665,7 +597,7 @@ export const useWebSocketSync = () => {
                             resource_type: "forum_category",
                             resource_id: data.id,
                           },
-                        }),
+                        })
                       );
                     }
                   }
@@ -686,13 +618,11 @@ export const useWebSocketSync = () => {
                 }
 
                 case "category_deleted": {
-                  return prevCategories.filter(
-                    (c) => String(c.id) !== String(id ?? data?.id),
-                  );
+                  return prevCategories.filter(c => String(c.id) !== String(id ?? data?.id));
                 }
 
                 case "category_updated": {
-                  return prevCategories.map((c) =>
+                  return prevCategories.map(c =>
                     String(c.id) === String(id ?? data?.id)
                       ? {
                           ...c,
@@ -703,19 +633,19 @@ export const useWebSocketSync = () => {
                           updated_at: data.updated_at || c.updated_at,
                           threads: c.threads,
                         }
-                      : c,
+                      : c
                   );
                 }
 
                 case "category_threads_updated": {
-                  return prevCategories.map((c) =>
+                  return prevCategories.map(c =>
                     String(c.id) === String(id ?? data?.id)
                       ? {
                           ...c,
                           threads: data.threads ?? c.threads,
                           updated_at: new Date().toISOString(),
                         }
-                      : c,
+                      : c
                   );
                 }
 
@@ -723,10 +653,10 @@ export const useWebSocketSync = () => {
                   // Broadcast fallback: update category list directly
                   if (!data || !data.category_id) return prevCategories;
                   const catId = String(data.category_id);
-                  return prevCategories.map((c) => {
+                  return prevCategories.map(c => {
                     if (String(c.id) !== catId) return c;
                     const alreadyExists = (c.threads || []).some(
-                      (t) => String(t.id) === String(data.id),
+                      t => String(t.id) === String(data.id)
                     );
                     if (alreadyExists) return c;
                     return {
@@ -739,10 +669,8 @@ export const useWebSocketSync = () => {
 
                 case "thread_deleted": {
                   // Broadcast fallback: remove deleted thread from all categories
-                  return prevCategories.map((c) => {
-                    const filtered = (c.threads || []).filter(
-                      (t) => String(t.id) !== String(id),
-                    );
+                  return prevCategories.map(c => {
+                    const filtered = (c.threads || []).filter(t => String(t.id) !== String(id));
                     if (filtered.length === (c.threads || []).length) return c;
                     return {
                       ...c,
@@ -765,7 +693,7 @@ export const useWebSocketSync = () => {
             if (String(chatMsg.user_id) !== String(currentUserIdRef.current)) {
               playChatSound();
             }
-            setGlobalChatMessages((prev) => {
+            setGlobalChatMessages(prev => {
               const msgs = [...prev, chatMsg];
               return msgs.slice(-80);
             });
@@ -782,15 +710,14 @@ export const useWebSocketSync = () => {
           if (message.type === "inbox:update") {
             const { action: inboxAction, data: inboxData } = payload as any;
             if (inboxAction === "conversation_created" && inboxData) {
-              setInboxConversations((prev) => {
-                if (prev.some((c) => String(c.id) === String(inboxData.id)))
-                  return prev;
+              setInboxConversations(prev => {
+                if (prev.some(c => String(c.id) === String(inboxData.id))) return prev;
                 return [inboxData, ...prev];
               });
             }
             if (inboxAction === "conversation_deleted" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.filter((c) => String(c.id) !== String(inboxData.id)),
+              setInboxConversations(prev =>
+                prev.filter(c => String(c.id) !== String(inboxData.id))
               );
               if (String(_activeConversationId) === String(inboxData.id)) {
                 setActiveConversationId(null);
@@ -798,78 +725,75 @@ export const useWebSocketSync = () => {
               }
             }
             if (inboxAction === "participant_removed" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === String(inboxData.conversation_id)
                     ? {
                         ...c,
                         participants: c.participants?.filter(
-                          (p) => String(p.id) !== String(inboxData.user_id),
+                          p => String(p.id) !== String(inboxData.user_id)
                         ),
                       }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
             if (inboxAction === "participant_added" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.map((c) => {
+              setInboxConversations(prev =>
+                prev.map(c => {
                   if (String(c.id) === String(inboxData.conversation_id)) {
                     const existing = c.participants?.find(
-                      (p) => String(p.id) === String(inboxData.participant.id),
+                      p => String(p.id) === String(inboxData.participant.id)
                     );
                     if (existing) return c;
                     return {
                       ...c,
-                      participants: [
-                        ...(c.participants || []),
-                        inboxData.participant,
-                      ],
+                      participants: [...(c.participants || []), inboxData.participant],
                     };
                   }
                   return c;
-                }),
+                })
               );
             }
             if (inboxAction === "participant_muted" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === String(inboxData.conversation_id)
                     ? {
                         ...c,
-                        participants: c.participants?.map((p) =>
+                        participants: c.participants?.map(p =>
                           String(p.id) === String(inboxData.user_id)
                             ? { ...p, is_muted: inboxData.is_muted }
-                            : p,
+                            : p
                         ),
                       }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
             if (inboxAction === "participant_role_changed" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === String(inboxData.conversation_id)
                     ? {
                         ...c,
-                        participants: c.participants?.map((p) =>
+                        participants: c.participants?.map(p =>
                           String(p.id) === String(inboxData.user_id)
                             ? { ...p, role: inboxData.role }
-                            : p,
+                            : p
                         ),
                       }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
             if (inboxAction === "conversation_locked" && inboxData) {
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === String(inboxData.conversation_id)
                     ? { ...c, is_locked: inboxData.is_locked }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
             if (inboxAction === "message_created" && inboxData) {
@@ -880,29 +804,27 @@ export const useWebSocketSync = () => {
               // the conversation currently open, just like thread comments.
               // No extra activeId check needed; the backend only pushes to
               // subscribers of that specific conversation.
-              setInboxMessages((prev) => {
-                if (prev.some((m) => String(m.id) === String(inboxData.id)))
-                  return prev;
+              setInboxMessages(prev => {
+                if (prev.some(m => String(m.id) === String(inboxData.id))) return prev;
                 return [...prev, inboxData];
               });
               // Always update sidebar: bump last_message + unread count
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === convStr
                     ? {
                         ...c,
                         last_message: inboxData,
                         unread_count:
                           convStr !== activeId &&
-                          String(inboxData.sender_id) !==
-                            String(currentUserIdRef.current)
+                          String(inboxData.sender_id) !== String(currentUserIdRef.current)
                             ? (c.unread_count ?? 0) + 1
                             : convStr === activeId
                               ? 0
                               : c.unread_count,
                       }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
           }
@@ -913,25 +835,22 @@ export const useWebSocketSync = () => {
             // list stays current even when no specific chat is open.
             const msgPayload = payload as any;
             const msgSenderId = String(msgPayload?.sender_id ?? "");
-            const isFromCurrentUser =
-              msgSenderId === String(currentUserIdRef.current);
+            const isFromCurrentUser = msgSenderId === String(currentUserIdRef.current);
             const inboxMsgConvId = String(msgPayload?.conversation_id ?? "");
-            const isActiveConv =
-              inboxMsgConvId &&
-              inboxMsgConvId === String(_activeConversationId);
+            const isActiveConv = inboxMsgConvId && inboxMsgConvId === String(_activeConversationId);
 
             if (!isFromCurrentUser) {
               playMessageSound();
             }
 
             if (!isActiveConv && !isFromCurrentUser) {
-              setInboxUnreadCount((prev) => prev + 1);
+              setInboxUnreadCount(prev => prev + 1);
             }
             // Always refresh last_message in the sidebar; only bump
             // unread_count when the conversation is not currently open AND it's not from the current user.
             if (inboxMsgConvId) {
-              setInboxConversations((prev) =>
-                prev.map((c) =>
+              setInboxConversations(prev =>
+                prev.map(c =>
                   String(c.id) === inboxMsgConvId
                     ? {
                         ...c,
@@ -943,8 +862,8 @@ export const useWebSocketSync = () => {
                               : c.unread_count
                             : (c.unread_count ?? 0) + 1,
                       }
-                    : c,
-                ),
+                    : c
+                )
               );
             }
           }
@@ -954,43 +873,33 @@ export const useWebSocketSync = () => {
             const { action, data } = payload as { action: string; data?: any };
 
             if (action === "category_created" && data) {
-              setStoreCategories((prev) => {
-                if (prev.some((c) => String(c.id) === String(data.id)))
-                  return prev;
+              setStoreCategories(prev => {
+                if (prev.some(c => String(c.id) === String(data.id))) return prev;
                 return [...prev, data as StoreCategory];
               });
             }
             if (action === "category_updated" && data) {
-              setStoreCategories((prev) =>
-                prev.map((c) =>
-                  String(c.id) === String(data.id) ? { ...c, ...data } : c,
-                ),
+              setStoreCategories(prev =>
+                prev.map(c => (String(c.id) === String(data.id) ? { ...c, ...data } : c))
               );
             }
             if (action === "category_deleted" && data?.id) {
-              setStoreCategories((prev) =>
-                prev.filter((c) => String(c.id) !== String(data.id)),
-              );
+              setStoreCategories(prev => prev.filter(c => String(c.id) !== String(data.id)));
             }
 
             if (action === "product_created" && data) {
-              setProducts((prev) => {
-                if (prev.some((p) => String(p.id) === String(data.id)))
-                  return prev;
+              setProducts(prev => {
+                if (prev.some(p => String(p.id) === String(data.id))) return prev;
                 return [...prev, data as Product];
               });
             }
             if (action === "product_updated" && data) {
-              setProducts((prev) =>
-                prev.map((p) =>
-                  String(p.id) === String(data.id) ? { ...p, ...data } : p,
-                ),
+              setProducts(prev =>
+                prev.map(p => (String(p.id) === String(data.id) ? { ...p, ...data } : p))
               );
             }
             if (action === "product_deleted" && data?.id) {
-              setProducts((prev) =>
-                prev.filter((p) => String(p.id) !== String(data.id)),
-              );
+              setProducts(prev => prev.filter(p => String(p.id) !== String(data.id)));
             }
 
             // Purchase outcomes - targeted at the purchasing user only
@@ -998,7 +907,7 @@ export const useWebSocketSync = () => {
               const resp = data as CheckoutResponse;
               toast.success("Payment successful!", {
                 description: `Order #${resp?.order?.id} — ${formatCents(
-                  resp?.order?.total_price || 0,
+                  resp?.order?.total_price || 0
                 )}`,
                 duration: 8000,
               });
@@ -1017,7 +926,7 @@ export const useWebSocketSync = () => {
           // Notifications
           if (message.type === "notification") {
             const notif = payload as AppNotification;
-            setNotifications((prev) => [notif, ...prev]);
+            setNotifications(prev => [notif, ...prev]);
             playNotificationSound();
             toast(notif.message, {
               duration: 6000,
@@ -1040,7 +949,7 @@ export const useWebSocketSync = () => {
             if (Array.isArray(notifs) && notifs.length > 0) {
               // Only seed the atom when the bell hasn't loaded yet to avoid
               // overwriting a user-navigated paginated view.
-              setNotifications((prev) => (prev.length === 0 ? notifs : prev));
+              setNotifications(prev => (prev.length === 0 ? notifs : prev));
             }
           }
 
@@ -1051,21 +960,15 @@ export const useWebSocketSync = () => {
               id?: number;
             };
             if (na === "notification_read" && nid) {
-              setNotifications((prev) =>
-                prev.map((n) =>
-                  String(n.id) === String(nid) ? { ...n, is_read: true } : n,
-                ),
+              setNotifications(prev =>
+                prev.map(n => (String(n.id) === String(nid) ? { ...n, is_read: true } : n))
               );
             }
             if (na === "notification_all_read") {
-              setNotifications((prev) =>
-                prev.map((n) => ({ ...n, is_read: true })),
-              );
+              setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
             }
             if (na === "notification_deleted" && nid) {
-              setNotifications((prev) =>
-                prev.filter((n) => String(n.id) !== String(nid)),
-              );
+              setNotifications(prev => prev.filter(n => String(n.id) !== String(nid)));
             }
             if (na === "notification_all_deleted") {
               setNotifications([]);
@@ -1096,7 +999,7 @@ export const useWebSocketSync = () => {
             window.dispatchEvent(
               new CustomEvent("config:live:event", {
                 detail: { action: ca, data: cd },
-              }),
+              })
             );
           }
 
@@ -1107,7 +1010,7 @@ export const useWebSocketSync = () => {
               action: string;
               target_user_id?: number;
             };
-            setVoicePermissions((prev) => {
+            setVoicePermissions(prev => {
               const next = { ...prev };
               if (prev.route !== vp.route) {
                 next.route = vp.route;
@@ -1151,7 +1054,7 @@ export const useWebSocketSync = () => {
             window.dispatchEvent(
               new CustomEvent("page:live:event", {
                 detail: { action: pa, data: pd },
-              }),
+              })
             );
           }
 
@@ -1162,8 +1065,8 @@ export const useWebSocketSync = () => {
               data?: ActivityEvent;
             };
             if (evtData) {
-              setActivityEvents((prev) => {
-                if (prev.some((e) => e.id === evtData.id)) return prev;
+              setActivityEvents(prev => {
+                if (prev.some(e => e.id === evtData.id)) return prev;
                 return [...prev, evtData];
               });
             }
@@ -1173,7 +1076,7 @@ export const useWebSocketSync = () => {
         }
       };
 
-      ws.onerror = (error) => {
+      ws.onerror = error => {
         _globalConnecting = false;
         console.error("WebSocket error:", error);
       };
@@ -1241,62 +1144,51 @@ export const useWebSocketSync = () => {
    * Subscribe to a specific resource so client receives propagated updates
    * Backend tracks this subscription and sends updates for changes to that resource
    */
-  const subscribe = useCallback(
-    (resourceType: string, resourceId: number | string) => {
-      const key = `${resourceType}:${resourceId}`;
-      // Always track so reconnects can replay this subscription
-      subscriptionsRef.current.add(key);
+  const subscribe = useCallback((resourceType: string, resourceId: number | string) => {
+    const key = `${resourceType}:${resourceId}`;
+    // Always track so reconnects can replay this subscription
+    subscriptionsRef.current.add(key);
 
-      if (!_globalWs) {
-        console.warn(
-          `[subscribe] WebSocket not initialized for ${key}, queued for reconnect`,
-        );
-        return;
-      }
-      if (_globalWs.readyState !== WebSocket.OPEN) {
-        console.warn(
-          `[subscribe] WebSocket not OPEN (state=${_globalWs.readyState}) for ${key}, queued for reconnect`,
-        );
-        return;
-      }
-      const subscription = {
-        type: "subscribe",
+    if (!_globalWs) {
+      console.warn(`[subscribe] WebSocket not initialized for ${key}, queued for reconnect`);
+      return;
+    }
+    if (_globalWs.readyState !== WebSocket.OPEN) {
+      console.warn(
+        `[subscribe] WebSocket not OPEN (state=${_globalWs.readyState}) for ${key}, queued for reconnect`
+      );
+      return;
+    }
+    const subscription = {
+      type: "subscribe",
+      payload: {
+        resource_type: resourceType,
+        resource_id: resourceId,
+      },
+    };
+    _globalWs.send(JSON.stringify(subscription));
+    console.log(`[subscribe] Sent subscribe message for ${key}`, subscription);
+  }, []);
+
+  /**
+   * Unsubscribe from a resource (e.g., when user leaves a page)
+   */
+  const unsubscribe = useCallback((resourceType: string, resourceId: number | string) => {
+    const key = `${resourceType}:${resourceId}`;
+    subscriptionsRef.current.delete(key);
+
+    if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
+      const unsubscription = {
+        type: "unsubscribe",
         payload: {
           resource_type: resourceType,
           resource_id: resourceId,
         },
       };
-      _globalWs.send(JSON.stringify(subscription));
-      console.log(
-        `[subscribe] Sent subscribe message for ${key}`,
-        subscription,
-      );
-    },
-    [],
-  );
-
-  /**
-   * Unsubscribe from a resource (e.g., when user leaves a page)
-   */
-  const unsubscribe = useCallback(
-    (resourceType: string, resourceId: number | string) => {
-      const key = `${resourceType}:${resourceId}`;
-      subscriptionsRef.current.delete(key);
-
-      if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
-        const unsubscription = {
-          type: "unsubscribe",
-          payload: {
-            resource_type: resourceType,
-            resource_id: resourceId,
-          },
-        };
-        _globalWs.send(JSON.stringify(unsubscription));
-        console.log(`Unsubscribed from ${key}`);
-      }
-    },
-    [],
-  );
+      _globalWs.send(JSON.stringify(unsubscription));
+      console.log(`Unsubscribed from ${key}`);
+    }
+  }, []);
 
   useEffect(() => {
     // Only setup once on mount; setupWebSocket has internal checks to prevent re-connecting
@@ -1325,14 +1217,14 @@ export const sendGrengoJobAction = (
   action: string,
   name?: string,
   command?: string,
-  args?: string[],
+  args?: string[]
 ) => {
   if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
     _globalWs.send(
       JSON.stringify({
         type: "grengo:action",
         payload: { action, name, command, args },
-      }),
+      })
     );
   } else {
     console.warn("WebSocket not connected, cannot send grengo action");

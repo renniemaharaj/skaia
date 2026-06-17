@@ -115,34 +115,31 @@ export interface CheckoutResponse {
 // Atoms
 
 export const productsAtom = atomWithStorage<Product[]>("store.products", []);
-export const productCategoriesAtom = atomWithStorage<StoreCategory[]>(
-  "store.categories",
-  [],
-);
+export const productCategoriesAtom = atomWithStorage<StoreCategory[]>("store.categories", []);
 export const isLoadingStoreAtom = atom(false);
 export const selectedCategoryIdAtom = atom<string | null>(null);
 export const storeCartItemsAtom = atomWithStorage<CartItem[]>("store.cart", []);
 
 // Derived: products for the currently selected category
-export const filteredProductsAtom = atom((get) => {
+export const filteredProductsAtom = atom(get => {
   const products = get(productsAtom);
   const selected = get(selectedCategoryIdAtom);
-  if (!selected) return products.filter((p) => p.is_active);
-  return products.filter((p) => p.category_id === selected && p.is_active);
+  if (!selected) return products.filter(p => p.is_active);
+  return products.filter(p => p.category_id === selected && p.is_active);
 });
 
 // Derived: cart total (uses product prices from productsAtom for accuracy)
-export const cartTotalAtom = atom((get) => {
+export const cartTotalAtom = atom(get => {
   const items = get(storeCartItemsAtom);
   const products = get(productsAtom);
   const cents = items.reduce((total, item) => {
-    const product = products.find((p) => p.id === item.product_id);
+    const product = products.find(p => p.id === item.product_id);
     return total + (product?.price ?? 0) * item.quantity;
   }, 0);
   return centsToDollars(cents);
 });
 
-export const cartItemCountAtom = atom((get) => {
+export const cartItemCountAtom = atom(get => {
   const items = get(storeCartItemsAtom);
   return items.reduce((count, item) => count + item.quantity, 0);
 });

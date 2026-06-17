@@ -49,14 +49,10 @@ export default function ResetPasswordPage() {
       <div className="auth-page">
         <div className="auth-container">
           <div className="auth-card" style={{ textAlign: "center" }}>
-            <CheckCircle
-              size={40}
-              style={{ color: "var(--success-color)", marginBottom: 16 }}
-            />
+            <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
             <h2 style={{ margin: "0 0 12px" }}>Password Reset</h2>
             <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-              Your password has been changed. You can now log in with your new
-              password.
+              Your password has been changed. You can now log in with your new password.
             </p>
             <button
               className="auth-button"
@@ -97,7 +93,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   placeholder="Enter new password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   required
                   disabled={loading}
                   autoFocus
@@ -114,7 +110,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   placeholder="Confirm new password"
                   value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  onChange={e => setConfirm(e.target.value)}
                   required
                   disabled={loading}
                 />

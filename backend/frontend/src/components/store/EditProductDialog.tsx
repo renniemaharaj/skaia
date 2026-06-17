@@ -36,15 +36,13 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [specialActions, setSpecialActions] = useState<
-    { type: string; value: string }[]
-  >([]);
+  const [specialActions, setSpecialActions] = useState<{ type: string; value: string }[]>([]);
   const [availableRoles, setAvailableRoles] = useState<any[]>([]);
 
   useEffect(() => {
     apiRequest("/users/roles")
-      .then((res) => setAvailableRoles(Array.isArray(res) ? res : []))
-      .catch((err) => console.error("Failed to load roles:", err));
+      .then(res => setAvailableRoles(Array.isArray(res) ? res : []))
+      .catch(err => console.error("Failed to load roles:", err));
   }, []);
 
   // Re-sync if the product prop changes
@@ -61,14 +59,16 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
         product.media && product.media.length > 0
           ? product.media
           : product.image_url
-            ? [{
-                url: product.image_url,
-                filename: product.image_url.split("/").pop() || product.name,
-                mime_type: "",
-                type: "image",
-                size: 0,
-                created_at: product.created_at,
-              }]
+            ? [
+                {
+                  url: product.image_url,
+                  filename: product.image_url.split("/").pop() || product.name,
+                  mime_type: "",
+                  type: "image",
+                  size: 0,
+                  created_at: product.created_at,
+                },
+              ]
             : [],
       is_active: product.is_active,
     });
@@ -107,9 +107,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           image_url: formData.media[0]?.url ?? formData.image_url,
           media: formData.media,
           is_active: formData.is_active,
-          special_actions: JSON.stringify(
-            specialActions.filter((a) => a.value !== ""),
-          ),
+          special_actions: JSON.stringify(specialActions.filter(a => a.value !== "")),
         }),
       });
 
@@ -148,7 +146,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           maxHeight: "90vh",
           overflowY: "auto",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div
           style={{
@@ -186,11 +184,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                 color: "white",
               }}
             >
-              {loading ? (
-                <Loader size={16} className="spin" />
-              ) : (
-                <Check size={16} />
-              )}
+              {loading ? <Loader size={16} className="spin" /> : <Check size={16} />}
             </button>
             <button
               type="button"
@@ -234,13 +228,11 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               className="form-input"
               label="Category *"
               value={formData.category_id}
-              options={categories.map((c) => ({
+              options={categories.map(c => ({
                 value: String(c.id),
                 label: c.name,
               }))}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, category_id: e.target.value }))
-              }
+              onChange={e => setFormData(p => ({ ...p, category_id: e.target.value }))}
             />
           </div>
 
@@ -250,9 +242,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               className="form-input"
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, name: e.target.value }))
-              }
+              onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
               required
               autoFocus
             />
@@ -264,9 +254,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               className="form-input"
               rows={3}
               value={formData.description}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, description: e.target.value }))
-              }
+              onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
             />
           </div>
 
@@ -285,9 +273,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                 step="0.01"
                 min="0"
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, price: e.target.value }))
-                }
+                onChange={e => setFormData(p => ({ ...p, price: e.target.value }))}
                 required
               />
             </div>
@@ -299,9 +285,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                 min="0"
                 value={formData.stock}
                 disabled={formData.stock_unlimited}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, stock: e.target.value }))
-                }
+                onChange={e => setFormData(p => ({ ...p, stock: e.target.value }))}
               />
             </div>
           </div>
@@ -314,8 +298,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               type="checkbox"
               id="edit_stock_unlimited"
               checked={formData.stock_unlimited}
-              onChange={(e) =>
-                setFormData((p) => ({
+              onChange={e =>
+                setFormData(p => ({
                   ...p,
                   stock_unlimited: e.target.checked,
                 }))
@@ -335,8 +319,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
             <ProductMediaTable
               media={formData.media}
               editable
-              onChange={(media) =>
-                setFormData((p) => ({
+              onChange={media =>
+                setFormData(p => ({
                   ...p,
                   media,
                   image_url: media[0]?.url ?? "",
@@ -353,32 +337,20 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               type="checkbox"
               id="edit_is_active"
               checked={formData.is_active}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, is_active: e.target.checked }))
-              }
+              onChange={e => setFormData(p => ({ ...p, is_active: e.target.checked }))}
             />
-            <label
-              htmlFor="edit_is_active"
-              className="form-label"
-              style={{ marginBottom: 0 }}
-            >
+            <label htmlFor="edit_is_active" className="form-label" style={{ marginBottom: 0 }}>
               Active (visible to players)
             </label>
           </div>
 
-          <div
-            className="form-group store-special-actions"
-          >
+          <div className="form-group store-special-actions">
             <label className="form-label">Special Actions on Purchase</label>
             <p className="store-special-actions__help">
-              Add digital assets or perks to give users when they buy this
-              product.
+              Add digital assets or perks to give users when they buy this product.
             </p>
             {specialActions.map((action, idx) => (
-              <div
-                key={idx}
-                className="store-special-action-row"
-              >
+              <div key={idx} className="store-special-action-row">
                 <Select
                   className="form-input"
                   value={action.type}
@@ -386,7 +358,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                     { value: "role", label: "Assign Role" },
                     { value: "credit", label: "Give Store Credit (cents)" },
                   ]}
-                  onChange={(e) => {
+                  onChange={e => {
                     const newActions = [...specialActions];
                     newActions[idx].type = e.target.value;
                     newActions[idx].value = "";
@@ -400,12 +372,12 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                     value={action.value}
                     options={[
                       { value: "", label: "Select Role..." },
-                      ...availableRoles.map((r) => ({
+                      ...availableRoles.map(r => ({
                         value: r.name,
                         label: r.name,
                       })),
                     ]}
-                    onChange={(e) => {
+                    onChange={e => {
                       const newActions = [...specialActions];
                       newActions[idx].value = e.target.value;
                       setSpecialActions(newActions);
@@ -417,7 +389,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                     className="form-input"
                     placeholder="Amount in cents"
                     value={action.value}
-                    onChange={(e) => {
+                    onChange={e => {
                       const newActions = [...specialActions];
                       newActions[idx].value = e.target.value;
                       setSpecialActions(newActions);
@@ -428,11 +400,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                   type="button"
                   className="btn-admin-icon"
                   style={{ color: "var(--color-danger)" }}
-                  onClick={() =>
-                    setSpecialActions(
-                      specialActions.filter((_, i) => i !== idx),
-                    )
-                  }
+                  onClick={() => setSpecialActions(specialActions.filter((_, i) => i !== idx))}
                 >
                   <X size={18} />
                 </button>
@@ -442,12 +410,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               type="button"
               className="btn btn-ghost btn-sm"
               style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
-              onClick={() =>
-                setSpecialActions([
-                  ...specialActions,
-                  { type: "role", value: "" },
-                ])
-              }
+              onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
             >
               + Add Action
             </button>
@@ -455,6 +418,6 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
         </form>
       </div>
     </div>,
-    document.body,
+    document.body
   );
 };

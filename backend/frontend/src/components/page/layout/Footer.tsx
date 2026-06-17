@@ -99,13 +99,8 @@ export const Footer: React.FC = () => {
 
   // Social links
   const socialLinks = cfg.social_links;
-  const updateSocialLink = (
-    index: number,
-    updates: Partial<FooterSocialLink>,
-  ) => {
-    const next = socialLinks.map((l, i) =>
-      i === index ? { ...l, ...updates } : l,
-    );
+  const updateSocialLink = (index: number, updates: Partial<FooterSocialLink>) => {
+    const next = socialLinks.map((l, i) => (i === index ? { ...l, ...updates } : l));
     saveFooter({ social_links: next });
   };
 
@@ -132,25 +127,13 @@ export const Footer: React.FC = () => {
           }}
         >
           <div style={{ flex: 1, maxWidth: 300 }}>
-            <div
-              className="skeleton"
-              style={{ width: "60%", height: 18, marginBottom: 12 }}
-            />
-            <div
-              className="skeleton"
-              style={{ width: "90%", height: 12, marginBottom: 8 }}
-            />
+            <div className="skeleton" style={{ width: "60%", height: 18, marginBottom: 12 }} />
+            <div className="skeleton" style={{ width: "90%", height: 12, marginBottom: 8 }} />
             <div className="skeleton" style={{ width: "70%", height: 12 }} />
           </div>
           <div style={{ flex: 1, maxWidth: 300 }}>
-            <div
-              className="skeleton"
-              style={{ width: "50%", height: 18, marginBottom: 12 }}
-            />
-            <div
-              className="skeleton"
-              style={{ width: "80%", height: 12, marginBottom: 8 }}
-            />
+            <div className="skeleton" style={{ width: "50%", height: 18, marginBottom: 12 }} />
+            <div className="skeleton" style={{ width: "80%", height: 12, marginBottom: 8 }} />
             <div className="skeleton" style={{ width: "60%", height: 12 }} />
           </div>
         </div>
@@ -165,7 +148,7 @@ export const Footer: React.FC = () => {
           <VariantCycler
             current={variant}
             total={FOOTER_VARIANTS}
-            onCycle={(v) => saveFooter({ variant: v })}
+            onCycle={v => saveFooter({ variant: v })}
             label="Footer"
           />
         </div>
@@ -180,12 +163,12 @@ export const Footer: React.FC = () => {
                 <>
                   <EditableText
                     value={cfg.site_title}
-                    onSave={(v) => saveFooter({ site_title: v })}
+                    onSave={v => saveFooter({ site_title: v })}
                     tag="h3"
                   />
                   <EditableText
                     value={cfg.site_description}
-                    onSave={(v) => saveFooter({ site_description: v })}
+                    onSave={v => saveFooter({ site_description: v })}
                     tag="p"
                   />
                 </>
@@ -201,7 +184,7 @@ export const Footer: React.FC = () => {
               {canEdit ? (
                 <EditableText
                   value={cfg.community_heading}
-                  onSave={(v) => saveFooter({ community_heading: v })}
+                  onSave={v => saveFooter({ community_heading: v })}
                   tag="h4"
                 />
               ) : (
@@ -215,7 +198,7 @@ export const Footer: React.FC = () => {
                       <>
                         <EditableText
                           value={item}
-                          onSave={(v) => updateCommunityItem(i, v)}
+                          onSave={v => updateCommunityItem(i, v)}
                           tag="span"
                         />
                         <button
@@ -233,10 +216,7 @@ export const Footer: React.FC = () => {
                 ))}
               </ul>
               {canEdit && (
-                <button
-                  className="footer-add-item-btn"
-                  onClick={addCommunityItem}
-                >
+                <button className="footer-add-item-btn" onClick={addCommunityItem}>
                   <Plus size={14} /> Add item
                 </button>
               )}
@@ -260,7 +240,7 @@ export const Footer: React.FC = () => {
               {canEdit ? (
                 <EditableText
                   value={cfg.copyright_text}
-                  onSave={(v) => saveFooter({ copyright_text: v })}
+                  onSave={v => saveFooter({ copyright_text: v })}
                   tag="span"
                 />
               ) : (
@@ -275,12 +255,7 @@ export const Footer: React.FC = () => {
       {variant === 2 && (
         <>
           {/* Background watermark logo */}
-          <img
-            src={logoUrl}
-            alt=""
-            className="footer-v2-watermark"
-            aria-hidden="true"
-          />
+          <img src={logoUrl} alt="" className="footer-v2-watermark" aria-hidden="true" />
 
           <div className="footer-content footer-v2-grid">
             {/* Brand column */}
@@ -289,12 +264,12 @@ export const Footer: React.FC = () => {
                 <>
                   <EditableText
                     value={cfg.site_title}
-                    onSave={(v) => saveFooter({ site_title: v })}
+                    onSave={v => saveFooter({ site_title: v })}
                     tag="h3"
                   />
                   <EditableText
                     value={cfg.site_description}
-                    onSave={(v) => saveFooter({ site_description: v })}
+                    onSave={v => saveFooter({ site_description: v })}
                     tag="p"
                   />
                 </>
@@ -323,7 +298,7 @@ export const Footer: React.FC = () => {
                       <>
                         <EditableText
                           value={link.label}
-                          onSave={(v) => updateLink(i, { label: v })}
+                          onSave={v => updateLink(i, { label: v })}
                           tag="span"
                         />
                         <button
@@ -353,12 +328,12 @@ export const Footer: React.FC = () => {
                 <>
                   <EditableText
                     value={cfg.contact_heading || DEFAULTS.contact_heading!}
-                    onSave={(v) => saveFooter({ contact_heading: v })}
+                    onSave={v => saveFooter({ contact_heading: v })}
                     tag="h4"
                   />
                   <EditableText
                     value={cfg.contact_text || DEFAULTS.contact_text!}
-                    onSave={(v) => saveFooter({ contact_text: v })}
+                    onSave={v => saveFooter({ contact_text: v })}
                     tag="p"
                   />
                 </>
@@ -377,7 +352,7 @@ export const Footer: React.FC = () => {
               {canEdit ? (
                 <EditableText
                   value={cfg.copyright_text}
-                  onSave={(v) => saveFooter({ copyright_text: v })}
+                  onSave={v => saveFooter({ copyright_text: v })}
                   tag="span"
                 />
               ) : (
@@ -388,7 +363,7 @@ export const Footer: React.FC = () => {
               {canEdit ? (
                 <EditableText
                   value={cfg.tagline || DEFAULTS.tagline!}
-                  onSave={(v) => saveFooter({ tagline: v })}
+                  onSave={v => saveFooter({ tagline: v })}
                   tag="span"
                 />
               ) : (

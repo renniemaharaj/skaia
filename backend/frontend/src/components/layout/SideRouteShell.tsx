@@ -53,20 +53,16 @@ export function SideRouteShell({
         <header className="side-route-shell__header">
           <div className="side-route-shell__heading">
             {title && <h1 className="side-route-shell__title">{title}</h1>}
-            {subtitle && (
-              <p className="side-route-shell__subtitle">{subtitle}</p>
-            )}
+            {subtitle && <p className="side-route-shell__subtitle">{subtitle}</p>}
           </div>
-          {actions && (
-            <div className="side-route-shell__actions">{actions}</div>
-          )}
+          {actions && <div className="side-route-shell__actions">{actions}</div>}
         </header>
       )}
 
       <div className={`side-route-shell__body${hasTabs ? " side-route-shell__body--tabs" : ""}`}>
         {hasTabs && (
           <nav className="side-route-shell__tabs" aria-label="Section navigation">
-            {tabs.map((tab) => {
+            {tabs.map(tab => {
               const matchPath = tab.match ?? tab.to;
               const active = tab.end
                 ? location.pathname === matchPath
@@ -77,9 +73,7 @@ export function SideRouteShell({
                   to={tab.to}
                   className={`side-route-shell__tab${active ? " side-route-shell__tab--active" : ""}`}
                 >
-                  {tab.icon && (
-                    <span className="side-route-shell__tab-icon">{tab.icon}</span>
-                  )}
+                  {tab.icon && <span className="side-route-shell__tab-icon">{tab.icon}</span>}
                   <span>{tab.label}</span>
                 </Link>
               );
@@ -87,9 +81,7 @@ export function SideRouteShell({
           </nav>
         )}
 
-        <main className={`side-route-shell__content ${contentClassName}`}>
-          {children}
-        </main>
+        <main className={`side-route-shell__content ${contentClassName}`}>{children}</main>
       </div>
     </div>
   );

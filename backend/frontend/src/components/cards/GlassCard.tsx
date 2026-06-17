@@ -49,19 +49,12 @@ export const Card = ({
 
 type VariantCardProps = CardProps;
 
-export const PrimaryCard = (props: VariantCardProps) => (
-  <Card {...props} variant="primary" />
-);
+export const PrimaryCard = (props: VariantCardProps) => <Card {...props} variant="primary" />;
 
-export const SecondaryCard = (props: VariantCardProps) => (
-  <Card {...props} variant="secondary" />
-);
+export const SecondaryCard = (props: VariantCardProps) => <Card {...props} variant="secondary" />;
 
 export const GlassCard = ({ children, className, style }: BaseCardProps) => (
-  <div
-    className={className}
-    style={{ ...glassCardStyle, ...style }}
-  >
+  <div className={className} style={{ ...glassCardStyle, ...style }}>
     {children}
   </div>
 );

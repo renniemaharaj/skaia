@@ -20,7 +20,11 @@ interface UserSearchItem {
   permissions: string[];
 }
 
-const ManageUserWrapper = ({ userId, canManage, currentUserRoles }: { userId: string, canManage: boolean, currentUserRoles: string[] }) => {
+const ManageUserWrapper = ({
+  userId,
+  canManage,
+  currentUserRoles,
+}: { userId: string; canManage: boolean; currentUserRoles: string[] }) => {
   const {
     user,
     loading,
@@ -32,13 +36,23 @@ const ManageUserWrapper = ({ userId, canManage, currentUserRoles }: { userId: st
     handleRoleToggle,
   } = useUserData(userId, canManage);
 
-  if (loading) return <div className="upm-pane-loading"><span className="upm-spinner" /> Loading user data...</div>;
+  if (loading)
+    return (
+      <div className="upm-pane-loading">
+        <span className="upm-spinner" /> Loading user data...
+      </div>
+    );
   if (!user) return <div className="upm-empty">User not found</div>;
 
   return (
     <div className="upm-pane-content">
       <div className="upm-pane-header">
-        <UserAvatar src={user.avatar_url} alt={user.display_name || user.username} size={64} initials={(user.display_name || user.username)[0]?.toUpperCase()} />
+        <UserAvatar
+          src={user.avatar_url}
+          alt={user.display_name || user.username}
+          size={64}
+          initials={(user.display_name || user.username)[0]?.toUpperCase()}
+        />
         <div className="upm-pane-header-info">
           <h3>{user.display_name || user.username}</h3>
           <p>{user.email}</p>
@@ -62,7 +76,7 @@ const UserPermissionManager: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearchItem[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  
+
   const currentUser = useAtomValue(currentUserAtom);
   const hasPermission = useAtomValue(hasPermissionAtom);
   const canManage = hasPermission("user.manage-others");
@@ -79,7 +93,7 @@ const UserPermissionManager: React.FC = () => {
     try {
       const results = await apiRequest<UserSearchItem[]>(
         `/users/search?q=${encodeURIComponent(query)}`,
-        { method: "GET" },
+        { method: "GET" }
       );
       if (results && Array.isArray(results)) {
         setSearchResults(results);
@@ -111,18 +125,22 @@ const UserPermissionManager: React.FC = () => {
           />
         </div>
         <div className="upm-sidebar-results">
-          {searchResults.map((user) => (
+          {searchResults.map(user => (
             <div
               key={user.id}
               className={`upm-list-item ${selectedUserId === user.id ? "selected" : ""}`}
               onClick={() => setSelectedUserId(user.id)}
             >
-              <UserProfileOverlay userId={user.id} fallbackName={user.display_name || user.username} fallbackAvatar={user.avatar_url}>
+              <UserProfileOverlay
+                userId={user.id}
+                fallbackName={user.display_name || user.username}
+                fallbackAvatar={user.avatar_url}
+              >
                 <div style={{ cursor: "pointer" }}>
-                  <UserAvatar 
-                    src={user.avatar_url} 
-                    alt={user.display_name || user.username} 
-                    size={40} 
+                  <UserAvatar
+                    src={user.avatar_url}
+                    alt={user.display_name || user.username}
+                    size={40}
                     initials={(user.display_name || user.username)[0]?.toUpperCase()}
                   />
                 </div>
@@ -145,10 +163,10 @@ const UserPermissionManager: React.FC = () => {
       {/* Main Content Area */}
       <div className="upm-main-content">
         {selectedUserId ? (
-          <ManageUserWrapper 
-            userId={selectedUserId} 
-            canManage={canManage} 
-            currentUserRoles={currentUser?.roles ?? []} 
+          <ManageUserWrapper
+            userId={selectedUserId}
+            canManage={canManage}
+            currentUserRoles={currentUser?.roles ?? []}
           />
         ) : (
           <div className="upm-placeholder">

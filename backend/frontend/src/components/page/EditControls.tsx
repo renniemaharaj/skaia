@@ -46,8 +46,7 @@ export const SectionMoveContext = createContext<SectionMoveContextValue>({
 });
 
 export const SectionMoveButtons = () => {
-  const { onMoveUp, onMoveDown, canMoveUp, canMoveDown } =
-    useContext(SectionMoveContext);
+  const { onMoveUp, onMoveDown, canMoveUp, canMoveDown } = useContext(SectionMoveContext);
   if (!onMoveUp && !onMoveDown) return null;
 
   return (
@@ -93,10 +92,7 @@ export function getSectionLayout(config: string): SectionLayout {
   return "center";
 }
 
-export function setSectionLayout(
-  config: string,
-  nextLayout: SectionLayout,
-): string {
+export function setSectionLayout(config: string, nextLayout: SectionLayout): string {
   const parsed = safeParseConfig(config);
   const updated = { ...parsed, layout: nextLayout };
   if ("wide" in updated) delete updated.wide;
@@ -137,10 +133,7 @@ export function getSectionMargins(config: string): SectionMargins {
   };
 }
 
-export function setSectionMargins(
-  config: string,
-  margins: Partial<SectionMargins>,
-): string {
+export function setSectionMargins(config: string, margins: Partial<SectionMargins>): string {
   const parsed = safeParseConfig(config);
   return JSON.stringify({ ...parsed, ...margins });
 }
@@ -165,10 +158,7 @@ export function getSectionAnimation(config: string): SectionAnimation {
   return "none";
 }
 
-export function setSectionAnimation(
-  config: string,
-  animation: SectionAnimation,
-): string {
+export function setSectionAnimation(config: string, animation: SectionAnimation): string {
   const parsed = safeParseConfig(config);
   return JSON.stringify({ ...parsed, animation });
 }
@@ -178,18 +168,15 @@ export function setSectionAnimation(
 export const ANIMATION_INTENSITIES = ["subtle", "normal", "dramatic"] as const;
 export type AnimationIntensity = (typeof ANIMATION_INTENSITIES)[number];
 
-export function getSectionAnimationIntensity(
-  config: string,
-): AnimationIntensity {
+export function getSectionAnimationIntensity(config: string): AnimationIntensity {
   const parsed = safeParseConfig(config);
-  if (ANIMATION_INTENSITIES.includes(parsed.animationIntensity))
-    return parsed.animationIntensity;
+  if (ANIMATION_INTENSITIES.includes(parsed.animationIntensity)) return parsed.animationIntensity;
   return "normal";
 }
 
 export function setSectionAnimationIntensity(
   config: string,
-  intensity: AnimationIntensity,
+  intensity: AnimationIntensity
 ): string {
   const parsed = safeParseConfig(config);
   return JSON.stringify({ ...parsed, animationIntensity: intensity });
@@ -282,8 +269,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.paddingTop}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 paddingTop: Number(e.target.value),
               }))
@@ -299,8 +286,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.paddingBottom}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 paddingBottom: Number(e.target.value),
               }))
@@ -316,8 +303,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.paddingLeft}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 paddingLeft: Number(e.target.value),
               }))
@@ -333,8 +320,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.paddingRight}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 paddingRight: Number(e.target.value),
               }))
@@ -352,8 +339,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.marginTop}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 marginTop: Number(e.target.value),
               }))
@@ -369,8 +356,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.marginBottom}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 marginBottom: Number(e.target.value),
               }))
@@ -386,8 +373,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.marginLeft}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 marginLeft: Number(e.target.value),
               }))
@@ -403,8 +390,8 @@ export const SectionSpacingControls = ({
           <input
             type="number"
             value={draftMargins.marginRight}
-            onChange={(e) =>
-              setDraftMargins((prev) => ({
+            onChange={e =>
+              setDraftMargins(prev => ({
                 ...prev,
                 marginRight: Number(e.target.value),
               }))
@@ -418,9 +405,7 @@ export const SectionSpacingControls = ({
       </div>
       <button
         type="button"
-        className={`pb-action-btn section-spacing-capture-btn${
-          changed ? " dirty" : ""
-        }`}
+        className={`pb-action-btn section-spacing-capture-btn${changed ? " dirty" : ""}`}
         onClick={() => onChange(draftMargins)}
         disabled={!changed}
         title="Apply spacing"
@@ -463,8 +448,8 @@ export const BoxSpacingControls = ({
             <input
               type="number"
               value={draft.top}
-              onChange={(e) =>
-                setDraft((prev) => ({
+              onChange={e =>
+                setDraft(prev => ({
                   ...prev,
                   top: Number(e.target.value),
                 }))
@@ -480,8 +465,8 @@ export const BoxSpacingControls = ({
             <input
               type="number"
               value={draft.bottom}
-              onChange={(e) =>
-                setDraft((prev) => ({
+              onChange={e =>
+                setDraft(prev => ({
                   ...prev,
                   bottom: Number(e.target.value),
                 }))
@@ -499,8 +484,8 @@ export const BoxSpacingControls = ({
             <input
               type="number"
               value={draft.left}
-              onChange={(e) =>
-                setDraft((prev) => ({
+              onChange={e =>
+                setDraft(prev => ({
                   ...prev,
                   left: Number(e.target.value),
                 }))
@@ -516,8 +501,8 @@ export const BoxSpacingControls = ({
             <input
               type="number"
               value={draft.right}
-              onChange={(e) =>
-                setDraft((prev) => ({
+              onChange={e =>
+                setDraft(prev => ({
                   ...prev,
                   right: Number(e.target.value),
                 }))
@@ -531,9 +516,7 @@ export const BoxSpacingControls = ({
         </div>
         <button
           type="button"
-          className={`pb-action-btn section-spacing-capture-btn${
-            changed ? " dirty" : ""
-          }`}
+          className={`pb-action-btn section-spacing-capture-btn${changed ? " dirty" : ""}`}
           onClick={() => onChange(draft)}
           disabled={!changed}
           title={`Apply ${label.toLowerCase()}`}
@@ -561,11 +544,11 @@ export const SectionAnimationControl = ({
   <div className="section-animation-control">
     <Select
       value={animation}
-      onChange={(e) => onChange(e.target.value as SectionAnimation)}
+      onChange={e => onChange(e.target.value as SectionAnimation)}
       title="Section animation"
       size="sm"
     >
-      {SECTION_ANIMATIONS.map((a) => (
+      {SECTION_ANIMATIONS.map(a => (
         <option key={a} value={a}>
           {a === "none" ? "No animation" : a.replace(/-/g, " ")}
         </option>
@@ -573,7 +556,7 @@ export const SectionAnimationControl = ({
     </Select>
     {animation !== "none" && onIntensityChange && (
       <div className="section-intensity-control">
-        {ANIMATION_INTENSITIES.map((i) => (
+        {ANIMATION_INTENSITIES.map(i => (
           <Button
             unstyled
             key={i}
@@ -613,12 +596,12 @@ export const EditableText = ({
         className="pb-inline-input"
         autoFocus
         value={draft}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={e => setDraft(e.target.value)}
         onBlur={() => {
           setEditing(false);
           if (draft !== value) onSave(draft);
         }}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === "Enter") {
             setEditing(false);
             if (draft !== value) onSave(draft);
@@ -628,8 +611,8 @@ export const EditableText = ({
             setEditing(false);
           }
         }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
       />
     );
   }
@@ -639,12 +622,12 @@ export const EditableText = ({
       {value || <em style={{ opacity: 0.4 }}>{placeholder}</em>}
       <button
         className="pb-edit-btn"
-        onClick={(e) => {
+        onClick={e => {
           e.stopPropagation();
           setDraft(value);
           setEditing(true);
         }}
-        onMouseDown={(e) => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
         title="Edit"
       >
         <Pencil size={12} />
@@ -666,16 +649,12 @@ export const IconPicker = ({
 
   return (
     <div className="pb-icon-picker">
-      <button
-        className="pb-icon-picker-trigger"
-        onClick={() => setOpen(!open)}
-        title="Change icon"
-      >
+      <button className="pb-icon-picker-trigger" onClick={() => setOpen(!open)} title="Change icon">
         {Icon ? <Icon size={20} /> : <ChevronDown size={16} />}
       </button>
       {open && (
         <div className="pb-icon-picker-dropdown">
-          {ICON_NAMES.map((name) => {
+          {ICON_NAMES.map(name => {
             const Ic = ICON_MAP[name];
             return (
               <button
@@ -713,12 +692,17 @@ function formatRelativeTime(iso: string): string {
 
 /** Small avatar + name chip showing who last edited this section. */
 const LastEditedByBadge = ({ editor }: { editor: SectionEditor }) => (
-  <UserProfileOverlay userId={editor.user_id} fallbackName={editor.display_name || editor.username} fallbackAvatar={editor.avatar_url || undefined} disableClick={true}>
+  <UserProfileOverlay
+    userId={editor.user_id}
+    fallbackName={editor.display_name || editor.username}
+    fallbackAvatar={editor.avatar_url || undefined}
+    disableClick={true}
+  >
     <Link
       to={`/users/${editor.user_id}`}
       className="pb-last-edited-badge"
       title={`Last edited by ${editor.display_name || editor.username}${editor.edited_at ? ` · ${new Date(editor.edited_at).toLocaleString()}` : ""}`}
-      onClick={(e) => e.stopPropagation()}
+      onClick={e => e.stopPropagation()}
     >
       <UserAvatar
         src={editor.avatar_url || undefined}
@@ -727,13 +711,9 @@ const LastEditedByBadge = ({ editor }: { editor: SectionEditor }) => (
         initials={(editor.display_name || editor.username)?.[0]?.toUpperCase()}
         className="pb-last-edited-avatar"
       />
-      <span className="pb-last-edited-name">
-        {editor.display_name || editor.username}
-      </span>
+      <span className="pb-last-edited-name">{editor.display_name || editor.username}</span>
       {editor.edited_at && (
-        <span className="pb-last-edited-time">
-          {formatRelativeTime(editor.edited_at)}
-        </span>
+        <span className="pb-last-edited-time">{formatRelativeTime(editor.edited_at)}</span>
       )}
     </Link>
   </UserProfileOverlay>
@@ -780,10 +760,7 @@ export const SectionToolbar = ({
           <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
         ) : null}
         {margins && onMarginsChange ? (
-          <SectionSpacingControls
-            margins={margins}
-            onChange={onMarginsChange}
-          />
+          <SectionSpacingControls margins={margins} onChange={onMarginsChange} />
         ) : null}
         {animation !== undefined && onAnimationChange ? (
           <SectionAnimationControl
@@ -794,11 +771,7 @@ export const SectionToolbar = ({
           />
         ) : null}
         {bgColor !== undefined && onBgColorChange ? (
-          <ColorPickerButton
-            value={bgColor}
-            onChange={onBgColorChange}
-            title="Section color"
-          />
+          <ColorPickerButton value={bgColor} onChange={onBgColorChange} title="Section color" />
         ) : null}
         {extra}
         <button
@@ -831,7 +804,7 @@ export const AddItemButton = ({
 export const DeleteItemButton = ({ onClick }: { onClick: () => void }) => (
   <button
     className="pb-delete-item-btn"
-    onClick={(e) => {
+    onClick={e => {
       e.stopPropagation();
       onClick();
     }}
@@ -842,10 +815,7 @@ export const DeleteItemButton = ({ onClick }: { onClick: () => void }) => (
 );
 
 /** Helper to create a blank item for a section. */
-export function blankItem(
-  sectionId: number,
-  order: number,
-): Omit<PageItem, "id"> {
+export function blankItem(sectionId: number, order: number): Omit<PageItem, "id"> {
   return {
     section_id: sectionId,
     display_order: order,
@@ -900,24 +870,20 @@ export const ImagePickerButton = ({
     <>
       <button
         className={`pb-action-btn ${className}`}
-        onClick={(e) => {
+        onClick={e => {
           e.stopPropagation();
           if (!uploading) inputRef.current?.click();
         }}
         title="Change image"
       >
-        {uploading ? (
-          <Loader2 size={14} className="spin" />
-        ) : (
-          <ImageIcon size={14} />
-        )}
+        {uploading ? <Loader2 size={14} className="spin" /> : <ImageIcon size={14} />}
       </button>
       <input
         ref={inputRef}
         type="file"
         style={{ display: "none" }}
         accept="image/jpeg,image/png,image/webp,image/gif"
-        onChange={(e) => {
+        onChange={e => {
           const f = e.target.files?.[0];
           if (f) handleFile(f);
           e.target.value = "";
@@ -942,12 +908,7 @@ export const VideoPickerButton = ({
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (file: File) => {
-    const validTypes = [
-      "video/mp4",
-      "video/webm",
-      "video/ogg",
-      "video/quicktime",
-    ];
+    const validTypes = ["video/mp4", "video/webm", "video/ogg", "video/quicktime"];
     if (!validTypes.includes(file.type)) {
       toast.error("Only MP4, WebM, OGG or MOV videos are allowed");
       return;
@@ -973,24 +934,20 @@ export const VideoPickerButton = ({
     <>
       <button
         className={`pb-action-btn ${className}`}
-        onClick={(e) => {
+        onClick={e => {
           e.stopPropagation();
           if (!uploading) inputRef.current?.click();
         }}
         title="Upload video"
       >
-        {uploading ? (
-          <Loader2 size={14} className="spin" />
-        ) : (
-          <Video size={14} />
-        )}
+        {uploading ? <Loader2 size={14} className="spin" /> : <Video size={14} />}
       </button>
       <input
         ref={inputRef}
         type="file"
         style={{ display: "none" }}
         accept="video/mp4,video/webm,video/ogg,video/quicktime"
-        onChange={(e) => {
+        onChange={e => {
           const f = e.target.files?.[0];
           if (f) handleFile(f);
           e.target.value = "";
@@ -1026,7 +983,7 @@ export const ColorPickerButton = ({
   return (
     <button
       className={`pb-action-btn pb-color-picker ${className}`}
-      onClick={(e) => {
+      onClick={e => {
         e.stopPropagation();
         inputRef.current?.click();
       }}
@@ -1051,7 +1008,7 @@ export const ColorPickerButton = ({
           debouncedOnChange.current.flush();
           leaveEdit();
         }}
-        onChange={(e) => {
+        onChange={e => {
           setLocalValue(e.target.value);
           debouncedOnChange.current(e.target.value);
         }}
@@ -1081,7 +1038,7 @@ export const VariantCycler = ({
 }) => (
   <button
     className="pb-variant-cycler"
-    onClick={(e) => {
+    onClick={e => {
       e.stopPropagation();
       e.preventDefault();
       onCycle((current % total) + 1);

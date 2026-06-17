@@ -1,11 +1,4 @@
-import {
-  lazy,
-  Suspense,
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-} from "react";
+import { lazy, Suspense, useState, useCallback, useMemo, useEffect } from "react";
 import type { PageSection } from "../types";
 import { usePageBuilderContext } from "../PageBuilderContext";
 import "./CodeEditorBlock.css";
@@ -74,8 +67,7 @@ function parseConfig(config: string): CodeConfig {
     const parsed = JSON.parse(config || "{}");
     return {
       code: typeof parsed.code === "string" ? parsed.code : "",
-      language:
-        typeof parsed.language === "string" ? parsed.language : "typescript",
+      language: typeof parsed.language === "string" ? parsed.language : "typescript",
       filename: typeof parsed.filename === "string" ? parsed.filename : "",
       layout: parsed.layout,
     };
@@ -126,7 +118,7 @@ function markdownToHtml(md: string): string {
 function handleCopy(code: string) {
   navigator.clipboard.writeText(code).then(
     () => toast.success("Copied to clipboard"),
-    () => toast.error("Failed to copy"),
+    () => toast.error("Failed to copy")
   );
 }
 
@@ -140,12 +132,7 @@ function handleDownload(code: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export const CodeEditorBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const CodeEditorBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const cfg = parseConfig(section.config);
   const layout = getSectionLayout(section.config);
   const [editing, setEditing] = useState(false);
@@ -188,7 +175,7 @@ export const CodeEditorBlock = ({
         config: updateConfig(section.config, { code: value }),
       });
     },
-    [section, onUpdate],
+    [section, onUpdate]
   );
 
   const handleLanguageChange = (lang: string) => {
@@ -217,8 +204,7 @@ export const CodeEditorBlock = ({
     return localCode; // html
   }, [isRenderable, localCode, localLanguage]);
 
-  const showingRenderedPreview =
-    isRenderable && showRendered && !editing && !!localCode;
+  const showingRenderedPreview = isRenderable && showRendered && !editing && !!localCode;
 
   return (
     <section className="code-editor-block">
@@ -227,28 +213,28 @@ export const CodeEditorBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Code Editor"
           layout={layout}
-          onLayoutChange={(nextLayout) =>
+          onLayoutChange={nextLayout =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, nextLayout),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -266,7 +252,7 @@ export const CodeEditorBlock = ({
               {isRenderable && !editing && localCode && (
                 <button
                   className="pb-section-toolbar-btn"
-                  onClick={() => setShowRendered((v) => !v)}
+                  onClick={() => setShowRendered(v => !v)}
                   title={showRendered ? "Show source" : "Render content"}
                 >
                   {showRendered ? "Source" : "Render"}
@@ -284,11 +270,11 @@ export const CodeEditorBlock = ({
             <Select
               label="Language"
               value={localLanguage}
-              options={DEFAULT_LANGUAGES.map((lang) => ({
+              options={DEFAULT_LANGUAGES.map(lang => ({
                 value: lang,
                 label: lang,
               }))}
-              onChange={(e) => handleLanguageChange(e.target.value)}
+              onChange={e => handleLanguageChange(e.target.value)}
             />
           </div>
 
@@ -297,7 +283,7 @@ export const CodeEditorBlock = ({
             <input
               type="text"
               value={localFilename}
-              onChange={(e) => handleFilenameChange(e.target.value)}
+              onChange={e => handleFilenameChange(e.target.value)}
               placeholder="e.g. main.ts"
             />
           </label>
@@ -318,15 +304,13 @@ export const CodeEditorBlock = ({
               {localFilename}
             </span>
           )}
-          {localLanguage && (
-            <span className="code-editor-lang-badge">{localLanguage}</span>
-          )}
+          {localLanguage && <span className="code-editor-lang-badge">{localLanguage}</span>}
           {/* Guest action buttons */}
           <span className="code-editor-actions">
             {isRenderable && !canEdit && localCode && (
               <button
                 className="code-editor-action-btn"
-                onClick={() => setShowRendered((v) => !v)}
+                onClick={() => setShowRendered(v => !v)}
                 title={showRendered ? "Show source" : "Render content"}
               >
                 {showRendered ? "Source" : "Render"}
@@ -352,10 +336,7 @@ export const CodeEditorBlock = ({
 
       <Suspense
         fallback={
-          <div
-            className="skeleton-bar"
-            style={{ height: editorHeight, borderRadius: 12 }}
-          />
+          <div className="skeleton-bar" style={{ height: editorHeight, borderRadius: 12 }} />
         }
       >
         {canEdit && editing ? (

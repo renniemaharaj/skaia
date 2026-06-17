@@ -12,11 +12,7 @@ function SuperUsersDemotionVoteButton({
 }) {
   const [loading, setLoading] = useState(false);
   const handleVote = async () => {
-    if (
-      !await customConfirm(
-        "Are you sure? more than 50% of superusers must vote to demote",
-      )
-    )
+    if (!(await customConfirm("Are you sure? more than 50% of superusers must vote to demote")))
       return;
     setLoading(true);
     try {
@@ -30,14 +26,12 @@ function SuperUsersDemotionVoteButton({
       if (result.demoted) {
         toast.success("Superuser role removed.");
       } else {
-        toast.success(
-          `Vote recorded (${result.votes ?? "?"}/${result.threshold ?? "?"}).`,
-        );
+        toast.success(`Vote recorded (${result.votes ?? "?"}/${result.threshold ?? "?"}).`);
       }
       window.location.reload();
     } catch (e) {
       toast.error(
-        "Failed to cast sacrifice vote. You may have already voted, or there may be a network error.",
+        "Failed to cast sacrifice vote. You may have already voted, or there may be a network error."
       );
     } finally {
       setLoading(false);
@@ -69,7 +63,7 @@ interface Props {
 /** Compute the highest power_level among the given role names from the catalogue. */
 function maxPowerLevel(roleNames: string[], allRoles: Role[]): number {
   return roleNames.reduce((max, name) => {
-    const r = allRoles.find((ro) => ro.name === name);
+    const r = allRoles.find(ro => ro.name === name);
     return r ? Math.max(max, r.power_level) : max;
   }, 0);
 }
@@ -106,7 +100,7 @@ const UserManagePanel = ({
       acc[cat].push(p);
       return acc;
     },
-    {} as Record<string, Permission[]>,
+    {} as Record<string, Permission[]>
   );
 
   return (
@@ -114,13 +108,12 @@ const UserManagePanel = ({
       {!canManageTarget && (
         <div className="up-manage-notice">
           <div>
-            You cannot modify this user — they have equal or greater power level
-            than you ({actorPower}⚡ is not greater than {targetPower}⚡).
+            You cannot modify this user — they have equal or greater power level than you (
+            {actorPower}⚡ is not greater than {targetPower}⚡).
           </div>
-          {currentUserRoles.includes("superuser") &&
-            (user.roles ?? []).includes("superuser") && (
-              <SuperUsersDemotionVoteButton targetUserId={user.id} />
-            )}
+          {currentUserRoles.includes("superuser") && (user.roles ?? []).includes("superuser") && (
+            <SuperUsersDemotionVoteButton targetUserId={user.id} />
+          )}
         </div>
       )}
 
@@ -128,7 +121,7 @@ const UserManagePanel = ({
       <section className="up-manage-section">
         <h3 className="up-manage-heading">Roles</h3>
         <div className="up-checkbox-grid">
-          {allRoles.map((role) => {
+          {allRoles.map(role => {
             const checked = (user.roles ?? []).includes(role.name);
             const toggling = roleTogglingSet.has(role.name);
             const disabled = !canManageTarget || toggling;
@@ -145,9 +138,7 @@ const UserManagePanel = ({
                 />
                 <span className="up-checkbox-label">{role.name}</span>
                 <span className="up-checkbox-power">⚡{role.power_level}</span>
-                {role.description && (
-                  <span className="up-checkbox-desc">{role.description}</span>
-                )}
+                {role.description && <span className="up-checkbox-desc">{role.description}</span>}
                 {toggling && <span className="up-spinner" />}
               </label>
             );
@@ -160,16 +151,17 @@ const UserManagePanel = ({
         <h3 className="up-manage-heading">Permissions</h3>
         {Object.entries(groupedPermissions).map(([category, perms]) => (
           <div key={category} className="up-perm-group">
-            <h4 
-              className="up-perm-category"
-              onClick={() => toggleCategory(category)}
-            >
+            <h4 className="up-perm-category" onClick={() => toggleCategory(category)}>
               <span>{category}</span>
-              {expandedCategories.has(category) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              {expandedCategories.has(category) ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              )}
             </h4>
             {expandedCategories.has(category) && (
               <div className="up-checkbox-grid">
-                {perms.map((perm) => {
+                {perms.map(perm => {
                   const checked = (user.permissions ?? []).includes(perm.name);
                   const toggling = permTogglingSet.has(perm.name);
                   const disabled = !canManageTarget || toggling;
@@ -186,9 +178,7 @@ const UserManagePanel = ({
                       />
                       <span className="up-checkbox-label">{perm.name}</span>
                       {perm.description && (
-                        <span className="up-checkbox-desc">
-                          {perm.description}
-                        </span>
+                        <span className="up-checkbox-desc">{perm.description}</span>
                       )}
                       {toggling && <span className="up-spinner" />}
                     </label>

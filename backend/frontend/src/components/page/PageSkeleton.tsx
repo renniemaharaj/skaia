@@ -3,14 +3,8 @@ export const PageSkeleton = () => (
   <>
     {/* Hero skeleton */}
     <div className="skeleton-pb-hero">
-      <div
-        className="skeleton skeleton-bar"
-        style={{ width: "40%", height: 36 }}
-      />
-      <div
-        className="skeleton skeleton-bar"
-        style={{ width: "55%", height: 18, marginTop: 12 }}
-      />
+      <div className="skeleton skeleton-bar" style={{ width: "40%", height: 36 }} />
+      <div className="skeleton skeleton-bar" style={{ width: "55%", height: 18, marginTop: 12 }} />
     </div>
 
     {/* Card group skeleton */}
@@ -24,12 +18,9 @@ export const PageSkeleton = () => (
         style={{ width: "50%", height: 14, margin: "8px auto 0" }}
       />
       <div className="skeleton-pb-cards">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <div key={i} className="skeleton-pb-card">
-            <div
-              className="skeleton skeleton-bar"
-              style={{ width: "60%", height: 18 }}
-            />
+            <div className="skeleton skeleton-bar" style={{ width: "60%", height: 18 }} />
             <div
               className="skeleton skeleton-bar"
               style={{ width: "90%", height: 12, marginTop: 8 }}
@@ -46,14 +37,11 @@ export const PageSkeleton = () => (
     {/* Stats skeleton */}
     <div className="skeleton-pb-section">
       <div className="skeleton-pb-cards">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
           <div key={i} className="skeleton-pb-stat">
             <div className="skeleton skeleton-circle" />
             <div style={{ flex: 1 }}>
-              <div
-                className="skeleton skeleton-bar"
-                style={{ width: "50%", height: 14 }}
-              />
+              <div className="skeleton skeleton-bar" style={{ width: "50%", height: 14 }} />
               <div
                 className="skeleton skeleton-bar"
                 style={{ width: "70%", height: 12, marginTop: 6 }}
@@ -71,7 +59,7 @@ export const PageSkeleton = () => (
         style={{ width: "30%", height: 24, margin: "0 auto" }}
       />
       <div className="skeleton-pb-gallery">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <div key={i} className="skeleton skeleton-gallery-item" />
         ))}
       </div>
@@ -84,7 +72,7 @@ export const PageSkeleton = () => (
         style={{ width: "40%", height: 24, margin: "0 auto" }}
       />
       <div className="skeleton-pb-features">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map(i => (
           <div key={i} className="skeleton-pb-feature">
             <div className="skeleton skeleton-circle-sm" />
             <div

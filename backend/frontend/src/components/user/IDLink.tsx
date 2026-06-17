@@ -30,9 +30,7 @@ const IDLink: React.FC<IDLinkProps> = ({
   const route = type === "user" ? `/users/${id}` : `/view-thread/${id}`;
 
   const displayText =
-    type === "user"
-      ? displayName || username || truncatedId
-      : title || truncatedId;
+    type === "user" ? displayName || username || truncatedId : title || truncatedId;
 
   const hoverText = `View ${type === "user" ? "user profile" : "thread"}`;
   const fullId = `${type}:${id}`;

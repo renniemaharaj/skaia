@@ -9,7 +9,7 @@ import { uploader } from "../atoms/uploadAtom";
  */
 export async function uploadEditorFile(
   file: File,
-  type: "image" | "video" | "file",
+  type: "image" | "video" | "file"
 ): Promise<string> {
   const res = await uploader.upload(file, { uploadType: type });
 

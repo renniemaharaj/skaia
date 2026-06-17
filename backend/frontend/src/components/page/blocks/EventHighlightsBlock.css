@@ -20,9 +20,7 @@
   overflow: hidden;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
-  transition:
-    transform 0.3s,
-    box-shadow 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s;
   position: relative;
 }
 

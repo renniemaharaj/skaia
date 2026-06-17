@@ -16,7 +16,7 @@ const InboxMail = ({ setMenuOpen }: { setMenuOpen: (v: boolean) => void }) => {
   // Load conversations on mount
   useEffect(() => {
     apiRequest<InboxConversation[]>("/inbox/conversations")
-      .then(async (data) => {
+      .then(async data => {
         const convs = data ?? [];
         setInboxConversations(convs);
         // Compute total unread

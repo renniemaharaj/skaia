@@ -31,7 +31,7 @@ export interface DirectoryLayoutProps<T> {
     item: T,
     index: number,
     rowProps: { className: string; style: React.CSSProperties },
-    cells: ReactNode[],
+    cells: ReactNode[]
   ) => ReactNode;
 
   // Prefer tableColumns for list mode. These remain for bespoke feeds only.
@@ -151,11 +151,7 @@ export function DirectoryLayout<T>({
               />
             ) : (
               <>
-                {listHeader && (
-                  <div className="directory-layout__list-header">
-                    {listHeader}
-                  </div>
-                )}
+                {listHeader && <div className="directory-layout__list-header">{listHeader}</div>}
                 {items?.map((item, index) => renderListRow!(item, index))}
               </>
             )}
@@ -169,9 +165,7 @@ export function DirectoryLayout<T>({
           {items?.map((item, index) => renderGridCard!(item, index))}
         </div>
       ) : (
-        <div className="directory-layout__empty-container">
-          {emptyState ?? null}
-        </div>
+        <div className="directory-layout__empty-container">{emptyState ?? null}</div>
       )}
     </div>
   );

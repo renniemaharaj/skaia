@@ -21,9 +21,7 @@ import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import Button from "../../input/Button";
 
-const TabbedEditor = lazy(
-  () => import("../TabbedEditor"),
-);
+const TabbedEditor = lazy(() => import("../TabbedEditor"));
 
 interface Props {
   section: PageSection;
@@ -32,12 +30,7 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-export const DataSourcesBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const DataSourcesBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const layout = getSectionLayout(section.config);
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +111,7 @@ export const DataSourcesBlock = ({
     setFormEnvData("");
     if (ds.id > 0) {
       apiRequest<{ env_data?: string }>(`/config/datasources/${ds.id}/env`)
-        .then((res) => setFormEnvData(res.env_data ?? ""))
+        .then(res => setFormEnvData(res.env_data ?? ""))
         .catch(() => {});
     }
   };
@@ -166,7 +159,7 @@ export const DataSourcesBlock = ({
   };
 
   const handleDelete = async (id: number) => {
-    if (!await customConfirm("Delete this data source?")) return;
+    if (!(await customConfirm("Delete this data source?"))) return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");
@@ -188,28 +181,28 @@ export const DataSourcesBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Data Sources"
           layout={layout}
-          onLayoutChange={(l) =>
+          onLayoutChange={l =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, l),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -222,18 +215,12 @@ export const DataSourcesBlock = ({
         <h2>
           {editingDS ? (
             <>
-              <Database
-                size={20}
-                style={{ marginRight: 8, verticalAlign: "middle" }}
-              />
+              <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
               {section.heading || "Data Sources"}
             </>
           ) : (
             <Link to="/datasources" className="data-sources-heading-link">
-              <Database
-                size={20}
-                style={{ marginRight: 8, verticalAlign: "middle" }}
-              />
+              <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
               {section.heading || "Data Sources"}
             </Link>
           )}
@@ -254,7 +241,7 @@ export const DataSourcesBlock = ({
               <input
                 type="text"
                 value={formName}
-                onChange={(e) => setFormName(e.target.value)}
+                onChange={e => setFormName(e.target.value)}
                 placeholder="e.g. Recent forum threads"
               />
             </label>
@@ -263,19 +250,14 @@ export const DataSourcesBlock = ({
               <input
                 type="text"
                 value={formDesc}
-                onChange={(e) => setFormDesc(e.target.value)}
+                onChange={e => setFormDesc(e.target.value)}
                 placeholder="What this data source produces"
               />
             </label>
           </div>
           <div className="data-sources-editor-code">
             <Suspense
-              fallback={
-                <div
-                  className="skeleton-bar"
-                  style={{ height: 400, borderRadius: 8 }}
-                />
-              }
+              fallback={<div className="skeleton-bar" style={{ height: 400, borderRadius: 8 }} />}
             >
               <TabbedEditor
                 files={formFiles}
@@ -306,14 +288,9 @@ export const DataSourcesBlock = ({
       <div className="data-sources-frame">
         {/* Data sources table */}
         {loading ? (
-          <div
-            className="skeleton-bar"
-            style={{ height: 100, borderRadius: 8 }}
-          />
+          <div className="skeleton-bar" style={{ height: 100, borderRadius: 8 }} />
         ) : dataSources.length === 0 ? (
-          <p className="data-sources-empty">
-            No data sources yet. Create one to get started.
-          </p>
+          <p className="data-sources-empty">No data sources yet. Create one to get started.</p>
         ) : (
           <>
             <table className="data-sources-table">
@@ -327,13 +304,11 @@ export const DataSourcesBlock = ({
                 </tr>
               </thead>
               <tbody>
-                {dataSources.map((ds) => (
+                {dataSources.map(ds => (
                   <tr key={ds.id}>
                     <td className="data-sources-id">{ds.id}</td>
                     <td className="data-sources-name">{ds.name}</td>
-                    <td className="data-sources-desc">
-                      {ds.description || "—"}
-                    </td>
+                    <td className="data-sources-desc">{ds.description || "—"}</td>
                     <td className="data-sources-date">
                       {new Date(ds.updated_at).toLocaleDateString()}
                     </td>
@@ -345,10 +320,7 @@ export const DataSourcesBlock = ({
                           onClick={() => startEdit(ds)}
                           title="Edit"
                         >
-                          <Pencil
-                            size={14}
-                            className="data-sources-action-icon"
-                          />
+                          <Pencil size={14} className="data-sources-action-icon" />
                         </Button>
                         <Button
                           unstyled
@@ -356,10 +328,7 @@ export const DataSourcesBlock = ({
                           onClick={() => handleDelete(ds.id)}
                           title="Delete"
                         >
-                          <Trash2
-                            size={14}
-                            className="data-sources-action-icon"
-                          />
+                          <Trash2 size={14} className="data-sources-action-icon" />
                         </Button>
                       </td>
                     )}
@@ -369,7 +338,7 @@ export const DataSourcesBlock = ({
             </table>
             <div className="data-sources-card-preview">
               <ImageCardGrid
-                items={dataSources.map((ds) => ({
+                items={dataSources.map(ds => ({
                   heading: ds.name,
                   subheading: ds.description,
                   icon: <Database size={18} />,

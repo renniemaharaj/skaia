@@ -16,11 +16,7 @@ interface Props {
   onChange: (v: string) => void;
 }
 
-export default function EnvVarsEditor({
-  datasourceId,
-  value,
-  onChange,
-}: Props) {
+export default function EnvVarsEditor({ datasourceId, value, onChange }: Props) {
   const [locked, setLocked] = useState(true);
   const [saving, setSaving] = useState(false);
   const isPersisted = datasourceId > 0;
@@ -35,19 +31,14 @@ export default function EnvVarsEditor({
       });
       toast.success("Environment variables saved.");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save env vars",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save env vars");
     } finally {
       setSaving(false);
     }
   }, [datasourceId, value, isPersisted]);
 
   const handleClear = useCallback(async () => {
-    if (
-      !await customConfirm("Remove all environment variables for this datasource?")
-    )
-      return;
+    if (!(await customConfirm("Remove all environment variables for this datasource?"))) return;
     if (isPersisted) {
       setSaving(true);
       try {
@@ -56,9 +47,7 @@ export default function EnvVarsEditor({
         });
         toast.success("Environment variables cleared.");
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to clear env vars",
-        );
+        toast.error(err instanceof Error ? err.message : "Failed to clear env vars");
         setSaving(false);
         return;
       } finally {
@@ -76,15 +65,13 @@ export default function EnvVarsEditor({
       <div className="env-vars-header">
         <div className="env-vars-title">
           <span className="env-vars-label">Environment Variables</span>
-          <span className="env-vars-hint">
-            .env format — injected at runtime
-          </span>
+          <span className="env-vars-hint">.env format — injected at runtime</span>
         </div>
         <div className="env-vars-actions">
           <button
             type="button"
             className={`action-btn ${locked ? "" : "active"}`}
-            onClick={() => setLocked((v) => !v)}
+            onClick={() => setLocked(v => !v)}
             title={locked ? "Unlock to edit" : "Lock editor"}
           >
             {locked ? <Lock size={14} /> : <Unlock size={14} />}
@@ -127,8 +114,7 @@ export default function EnvVarsEditor({
                     value
                       .trim()
                       .split("\n")
-                      .filter((l) => l.trim() && !l.trim().startsWith("#"))
-                      .length
+                      .filter(l => l.trim() && !l.trim().startsWith("#")).length
                   } variable(s) configured`
                 : "No variables set"}
             </span>
@@ -136,10 +122,7 @@ export default function EnvVarsEditor({
         ) : (
           <Suspense
             fallback={
-              <div
-                className="skeleton-bar"
-                style={{ height: editorHeight, borderRadius: 8 }}
-              />
+              <div className="skeleton-bar" style={{ height: editorHeight, borderRadius: 8 }} />
             }
           >
             <MonacoEditor

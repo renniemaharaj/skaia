@@ -26,7 +26,7 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
       try {
         const response = await apiRequest<any[]>("/forum/categories");
         const categoryList =
-          response?.map((cat) => ({
+          response?.map(cat => ({
             id: cat.id,
             name: cat.name,
             is_locked: cat.is_locked,
@@ -43,22 +43,22 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
 
   return (
     <div className="form-group">
-        <Select
-          id="category"
-          className="form-input"
-          label="Category *"
-          value={value || ""}
-          options={[
-            { value: "", label: "Select a category" },
-            ...categories.map((cat) => ({
-              value: cat.id,
-              label: `${cat.name}${cat.is_locked ? " (locked)" : ""}`,
-              disabled: cat.is_locked && !canEditCategory,
-            })),
-          ]}
-          onChange={(e) => onChange?.(e.target.value)}
-          disabled={loading}
-        />
+      <Select
+        id="category"
+        className="form-input"
+        label="Category *"
+        value={value || ""}
+        options={[
+          { value: "", label: "Select a category" },
+          ...categories.map(cat => ({
+            value: cat.id,
+            label: `${cat.name}${cat.is_locked ? " (locked)" : ""}`,
+            disabled: cat.is_locked && !canEditCategory,
+          })),
+        ]}
+        onChange={e => onChange?.(e.target.value)}
+        disabled={loading}
+      />
     </div>
   );
 };

@@ -21,19 +21,7 @@ export interface CheckboxProps
  * and consistent label spacing.
  */
 const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
-  (
-    {
-      label,
-      size = "md",
-      description,
-      disabled,
-      className,
-      id,
-      checked,
-      ...rest
-    },
-    ref,
-  ) => {
+  ({ label, size = "md", description, disabled, className, id, checked, ...rest }, ref) => {
     const autoId = useId();
     const inputId = id || autoId;
 
@@ -72,14 +60,12 @@ const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
                 {label}
               </label>
             )}
-            {description && (
-              <p className="sk-checkbox__description">{description}</p>
-            )}
+            {description && <p className="sk-checkbox__description">{description}</p>}
           </div>
         )}
       </div>
     );
-  },
+  }
 );
 
 Checkbox.displayName = "Checkbox";

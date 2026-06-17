@@ -13,18 +13,11 @@ const SIZE_CLASS: Record<ZoneSize, string> = {
   lg: "cdp-heading--lg",
 };
 
-export const CardPartHeading = ({
-  text,
-  align = "left",
-  size = "md",
-}: CardPartHeadingProps) => {
+export const CardPartHeading = ({ text, align = "left", size = "md" }: CardPartHeadingProps) => {
   if (!text) return null;
 
   return (
-    <h3
-      className={`cdp-heading ${SIZE_CLASS[size]}`}
-      style={{ textAlign: align }}
-    >
+    <h3 className={`cdp-heading ${SIZE_CLASS[size]}`} style={{ textAlign: align }}>
       {text}
     </h3>
   );

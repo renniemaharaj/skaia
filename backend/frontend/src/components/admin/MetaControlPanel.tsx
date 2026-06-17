@@ -30,7 +30,7 @@ export default function MetaControlPanel({
   const [error, setError] = useState<string | null>(null);
 
   const handleInput = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -88,11 +88,14 @@ export default function MetaControlPanel({
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <form
+      onSubmit={handleSubmit}
+      style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+    >
       <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
         {category === "seo" ? "SEO Settings" : "Visual Settings"}
       </h2>
-      
+
       {category === "seo" && (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -109,7 +112,7 @@ export default function MetaControlPanel({
                 background: "var(--bg-color)",
                 color: "var(--text-primary)",
                 minHeight: "100px",
-                fontFamily: "inherit"
+                fontFamily: "inherit",
               }}
             />
           </div>
@@ -131,11 +134,24 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("og_image"); }} title="Reset OG Image">
+              <button
+                className="action-btn danger"
+                onClick={(e: any) => {
+                  e.preventDefault();
+                  handleReset("og_image");
+                }}
+                title="Reset OG Image"
+              >
                 <Trash2 size={14} />
               </button>
             </div>
-            <input type="file" name="og_image_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
+            <input
+              type="file"
+              name="og_image_file"
+              accept="image/*"
+              onChange={handleFile}
+              style={{ marginTop: "0.5rem" }}
+            />
           </div>
         </>
       )}
@@ -156,7 +172,9 @@ export default function MetaControlPanel({
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>DOM Skin Background Image</label>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+              DOM Skin Background Image
+            </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"
@@ -173,14 +191,29 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("dom_skin"); }} title="Reset Background Image">
+              <button
+                className="action-btn danger"
+                onClick={(e: any) => {
+                  e.preventDefault();
+                  handleReset("dom_skin");
+                }}
+                title="Reset Background Image"
+              >
                 <Trash2 size={14} />
               </button>
             </div>
-            <input type="file" name="dom_skin_file" accept="image/*" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
+            <input
+              type="file"
+              name="dom_skin_file"
+              accept="image/*"
+              onChange={handleFile}
+              style={{ marginTop: "0.5rem" }}
+            />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>DOM Skin Background Video</label>
+            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+              DOM Skin Background Video
+            </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"
@@ -197,11 +230,24 @@ export default function MetaControlPanel({
                   color: "var(--text-primary)",
                 }}
               />
-              <button className="action-btn danger" onClick={(e: any) => { e.preventDefault(); handleReset("dom_video"); }} title="Reset Background Video">
+              <button
+                className="action-btn danger"
+                onClick={(e: any) => {
+                  e.preventDefault();
+                  handleReset("dom_video");
+                }}
+                title="Reset Background Video"
+              >
                 <Trash2 size={14} />
               </button>
             </div>
-            <input type="file" name="dom_video_file" accept="video/mp4,video/webm" onChange={handleFile} style={{ marginTop: "0.5rem" }} />
+            <input
+              type="file"
+              name="dom_video_file"
+              accept="video/mp4,video/webm"
+              onChange={handleFile}
+              style={{ marginTop: "0.5rem" }}
+            />
           </div>
         </>
       )}

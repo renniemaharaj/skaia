@@ -1,9 +1,4 @@
-import {
-  CalendarIcon,
-  MessageCircleIcon,
-  ClockIcon,
-  EyeIcon,
-} from "lucide-react";
+import { CalendarIcon, MessageCircleIcon, ClockIcon, EyeIcon } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { truncate } from "lodash";
 import { useAtomValue } from "jotai";
@@ -32,7 +27,10 @@ type ThreadMeta = {
   status: "Open" | "Closed" | "Archived";
 };
 
-const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, actions?: React.ReactNode }) => {
+const ViewThreadMeta = ({
+  threadId,
+  actions,
+}: { threadId: string | undefined; actions?: React.ReactNode }) => {
   const currentThread = useAtomValue(currentThreadAtom);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [authorProfile, setAuthorProfile] = useState<ProfileUser | null>(null);
@@ -40,10 +38,10 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
   useEffect(() => {
     if (currentThread?.user_id) {
       apiRequest<Role[]>("/users/roles")
-        .then((res) => res && setAllRoles(res))
+        .then(res => res && setAllRoles(res))
         .catch(() => {});
       apiRequest<ProfileUser>(`/users/${currentThread.user_id}`)
-        .then((res) => res && setAuthorProfile(res))
+        .then(res => res && setAuthorProfile(res))
         .catch(() => {});
     }
   }, [currentThread?.user_id]);
@@ -67,7 +65,7 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
   const extractPreviewText = (html: string) => {
     if (!html) return "";
     const doc = new DOMParser().parseFromString(html, "text/html");
-    return doc.body.textContent?.trim().replace(/\s+/g, ' ') || "";
+    return doc.body.textContent?.trim().replace(/\s+/g, " ") || "";
   };
   const previewText = truncate(extractPreviewText(rawHtml), { length: 250 });
 
@@ -96,29 +94,28 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
     },
   ];
 
-  const cardStyle: React.CSSProperties = {};  return (
+  const cardStyle: React.CSSProperties = {};
+  return (
     <div className="card vtm-panel" style={cardStyle}>
       <div className="vtm-header">
-        <UserProfileOverlay 
+        <UserProfileOverlay
           userId={currentThread?.user_id || ""}
           fallbackName={author.name}
           fallbackAvatar={author.profilePicture}
           fallbackRoles={currentThread?.user_roles}
         >
           <div className="vtm-icon vtm-icon-avatar">
-            <UserAvatar 
-              src={author.profilePicture} 
-              alt={author.name} 
-              size={48} 
-              initials={author.name[0]?.toUpperCase()} 
+            <UserAvatar
+              src={author.profilePicture}
+              alt={author.name}
+              size={48}
+              initials={author.name[0]?.toUpperCase()}
             />
           </div>
         </UserProfileOverlay>
         <div className="vtm-info">
           <div className="vtm-label">Thread Viewer</div>
-          <h1 className="vtm-title">
-            {currentThread?.title || "Untitled Thread"}
-          </h1>
+          <h1 className="vtm-title">{currentThread?.title || "Untitled Thread"}</h1>
           {previewText ? (
             <p className="vtm-description">{previewText}</p>
           ) : (
@@ -133,45 +130,43 @@ const ViewThreadMeta = ({ threadId, actions }: { threadId: string | undefined, a
                   displayName={author.name}
                   className="vtm-author-link"
                 />
-                <div className="vtm-roles" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  {currentThread?.user_roles && currentThread.user_roles.map((r) => {
-                    const roleDetails = allRoles.find(ar => ar.name === r);
-                    return <RoleBadge key={r} role={roleDetails || r} />;
-                  })}
+                <div
+                  className="vtm-roles"
+                  style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}
+                >
+                  {currentThread?.user_roles &&
+                    currentThread.user_roles.map(r => {
+                      const roleDetails = allRoles.find(ar => ar.name === r);
+                      return <RoleBadge key={r} role={roleDetails || r} />;
+                    })}
                 </div>
               </div>
             </div>
             <div className="vtm-group">
               <span className={statusClass}>{threadMeta.status}</span>
-              <span className="vtm-id">
-                ID: {truncate(threadMeta.threadId, { length: 10 })}
-              </span>
+              <span className="vtm-id">ID: {truncate(threadMeta.threadId, { length: 10 })}</span>
             </div>
           </div>
         </div>
-        {actions && (
-          <div className="vtm-actions">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="vtm-actions">{actions}</div>}
       </div>
 
       <div className="vtm-metrics">
-        {metrics.map((metric) => {
+        {metrics.map(metric => {
           const Icon = metric.icon;
           return (
             <div key={metric.id} className="vtm-chip">
               {metric.id === "activity" ? (
-                <UserProfileOverlay 
+                <UserProfileOverlay
                   userId={currentThread?.last_edited_by?.toString() || currentThread?.user_id || ""}
                   fallbackName={currentThread?.last_edited_by_name || author.name}
                   fallbackAvatar={currentThread?.last_edited_by_avatar || author.profilePicture}
                 >
-                  <UserAvatar 
-                    src={currentThread?.last_edited_by_avatar || author.profilePicture} 
-                    alt={currentThread?.last_edited_by_name || author.name} 
-                    size={14} 
-                    initials={(currentThread?.last_edited_by_name || author.name)[0]?.toUpperCase()} 
+                  <UserAvatar
+                    src={currentThread?.last_edited_by_avatar || author.profilePicture}
+                    alt={currentThread?.last_edited_by_name || author.name}
+                    size={14}
+                    initials={(currentThread?.last_edited_by_name || author.name)[0]?.toUpperCase()}
                   />
                 </UserProfileOverlay>
               ) : (

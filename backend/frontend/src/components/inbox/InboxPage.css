@@ -80,8 +80,7 @@
 }
 
 .inbox-search-input-wrapper:focus-within {
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 10%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .inbox-search-icon {
@@ -109,9 +108,7 @@
   flex-shrink: 0;
   opacity: 0.45;
   line-height: 0;
-  transition:
-    opacity 0.12s ease,
-    background 0.12s ease;
+  transition: opacity 0.12s ease, background 0.12s ease;
 }
 
 .inbox-search-clear:hover {
@@ -723,9 +720,7 @@
   text-decoration: none;
   color: inherit;
   max-width: 320px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .inbox-page-card:hover {

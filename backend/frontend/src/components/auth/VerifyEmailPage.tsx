@@ -7,9 +7,7 @@ import "./Auth.css";
 export default function VerifyEmailPage() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -24,7 +22,7 @@ export default function VerifyEmailPage() {
         setStatus("success");
         setMessage("Your email has been verified!");
       })
-      .catch((err) => {
+      .catch(err => {
         setStatus("error");
         setMessage(err instanceof Error ? err.message : "Verification failed");
       });
@@ -46,10 +44,7 @@ export default function VerifyEmailPage() {
           )}
           {status === "success" && (
             <>
-              <CheckCircle
-                size={40}
-                style={{ color: "var(--success-color)", marginBottom: 16 }}
-              />
+              <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
               <h2 style={{ margin: "0 0 12px" }}>{message}</h2>
               <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
                 You can now use all features of your account.
@@ -65,14 +60,9 @@ export default function VerifyEmailPage() {
           )}
           {status === "error" && (
             <>
-              <AlertCircle
-                size={40}
-                style={{ color: "var(--error-color)", marginBottom: 16 }}
-              />
+              <AlertCircle size={40} style={{ color: "var(--error-color)", marginBottom: 16 }} />
               <h2 style={{ margin: "0 0 12px" }}>Verification Failed</h2>
-              <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-                {message}
-              </p>
+              <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>{message}</p>
               <Link
                 to="/login"
                 className="auth-button"

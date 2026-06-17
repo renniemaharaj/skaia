@@ -1,16 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { useAtomValue } from 'jotai';
-import { physicsSettingsAtom } from '../../../atoms/physics';
-import type { Particle, Explosion, AttractorParticle } from './engine';
-import { 
-  spawnParticle, 
-  stepPhysics, 
-  getRadius 
-} from './engine';
-import { computeCourtship } from './particleSystems';
-import type { ParticleWithSystems } from './particleSystems';
-import { renderParticle, renderExplosion } from './particleRenderer';
-import './GravityParticles.css';
+import React, { useEffect, useRef } from "react";
+import { useAtomValue } from "jotai";
+import { physicsSettingsAtom } from "../../../atoms/physics";
+import type { Particle, Explosion, AttractorParticle } from "./engine";
+import { spawnParticle, stepPhysics, getRadius } from "./engine";
+import { computeCourtship } from "./particleSystems";
+import type { ParticleWithSystems } from "./particleSystems";
+import { renderParticle, renderExplosion } from "./particleRenderer";
+import "./GravityParticles.css";
 
 interface GravityParticlesProps {
   particleCount?: number;
@@ -23,31 +19,35 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
   particleCount = 150,
   externalCursors = [],
   attractors = [],
-  className = '',
+  className = "",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const nextId = useRef(0);
   const explosionsRef = useRef<Explosion[]>([]);
-  const mousePosRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  const mousePosRef = useRef<{ x: number; y: number; active: boolean }>({
+    x: 0,
+    y: 0,
+    active: false,
+  });
 
   const settings = useAtomValue(physicsSettingsAtom);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
-  
+
   const externalCursorsRef = useRef(externalCursors);
   externalCursorsRef.current = externalCursors;
 
   const attractorsRef = useRef(attractors);
   attractorsRef.current = attractors;
-  
+
   const grabbedParticleRef = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     let width = window.innerWidth;
@@ -60,7 +60,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       canvas.height = height;
     };
     setSize();
-    window.addEventListener('resize', setSize);
+    window.addEventListener("resize", setSize);
 
     const handleMouseMove = (e: MouseEvent) => {
       mousePosRef.current = { x: e.clientX, y: e.clientY, active: true };
@@ -83,7 +83,7 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
           break;
         }
       }
-      
+
       if (!grabbed && settingsRef.current.createOnClick) {
         const threshold = settingsRef.current.explosionThreshold;
         // Central massive particle just below threshold
@@ -101,13 +101,13 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
             Math.random() * 3 + 2,
             nextId
           );
-          
+
           // Add tangential velocity for orbit
           const G = settingsRef.current.gravityConstant;
           const vOrbit = Math.sqrt((G * central.mass) / dist);
           orbiter.vx = -Math.sin(angle) * vOrbit;
           orbiter.vy = Math.cos(angle) * vOrbit;
-          
+
           particlesRef.current.push(orbiter);
         }
       }
@@ -116,21 +116,18 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
       grabbedParticleRef.current = null;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('mouseleave', handleMouseLeave);
-    window.addEventListener('mouseout', handleMouseLeave);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("mouseout", handleMouseLeave);
 
     // Initialize particles
     const particles: Particle[] = [];
     for (let i = 0; i < particleCount; i++) {
-      particles.push(spawnParticle(
-        Math.random() * width,
-        Math.random() * height,
-        Math.random() * 3 + 1,
-        nextId
-      ));
+      particles.push(
+        spawnParticle(Math.random() * width, Math.random() * height, Math.random() * 3 + 1, nextId)
+      );
     }
     particlesRef.current = particles;
 
@@ -190,19 +187,23 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
 
       if (isAudioActive && analyser && dataArray) {
         analyser.getByteFrequencyData(dataArray as any);
-        
+
         let bassSum = 0;
-        for (let i = 0; i < 5; i++) { bassSum += dataArray[i]; }
+        for (let i = 0; i < 5; i++) {
+          bassSum += dataArray[i];
+        }
         const bass = bassSum / (5 * 255);
-        
+
         let highSum = 0;
         const half = Math.floor(dataArray.length / 2);
-        for (let i = half; i < dataArray.length; i++) { highSum += dataArray[i]; }
+        for (let i = half; i < dataArray.length; i++) {
+          highSum += dataArray[i];
+        }
         const highs = highSum / ((dataArray.length - half) * 255);
-        
+
         // Map gravity to bass
         currentSettings.gravityConstant = settingsRef.current.gravityConstant * (1 + bass * 15);
-        
+
         // Map highs to velocity
         if (highs > 0.05) {
           const kick = highs * 10;
@@ -252,23 +253,18 @@ const GravityParticles: React.FC<GravityParticlesProps> = ({
     loop();
 
     return () => {
-      window.removeEventListener('resize', setSize);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('mouseout', handleMouseLeave);
+      window.removeEventListener("resize", setSize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("mouseout", handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
       cleanupAudio();
     };
   }, [particleCount]);
 
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className={`gravity-particles-canvas ${className}`}
-    />
-  );
+  return <canvas ref={canvasRef} className={`gravity-particles-canvas ${className}`} />;
 };
 
 export default GravityParticles;

@@ -64,18 +64,9 @@ export const SkeletonCard: React.FC<{
               </>
             ) : (
               <>
-                <div
-                  className="skeleton skeleton-heading"
-                  style={{ width: "70%" }}
-                />
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: "100%" }}
-                />
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: "90%" }}
-                />
+                <div className="skeleton skeleton-heading" style={{ width: "70%" }} />
+                <div className="skeleton skeleton-text" style={{ width: "100%" }} />
+                <div className="skeleton skeleton-text" style={{ width: "90%" }} />
                 <div
                   className="skeleton skeleton-text"
                   style={{ width: "60%", marginBottom: "16px" }}

@@ -21,10 +21,7 @@ export const CardPartSubheading = ({
   if (!text) return null;
 
   return (
-    <p
-      className={`cdp-subheading ${SIZE_CLASS[size]}`}
-      style={{ textAlign: align }}
-    >
+    <p className={`cdp-subheading ${SIZE_CLASS[size]}`} style={{ textAlign: align }}>
       {text}
     </p>
   );

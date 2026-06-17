@@ -14,11 +14,8 @@
   border-radius: var(--card-radius);
   padding: var(--card-padding);
   box-shadow: var(--card-shadow);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s
+    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Interactive variant ----------------------------------------------------- */
@@ -53,15 +50,11 @@
 /* Selected state ---------------------------------------------------------- */
 .sk-tile--selected {
   border-color: var(--primary-color);
-  box-shadow:
-    0 0 0 1px var(--primary-color),
-    var(--card-shadow);
+  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow);
 }
 
 .sk-tile--selected.sk-tile--interactive:hover {
-  box-shadow:
-    0 0 0 1px var(--primary-color),
-    var(--card-shadow-hover);
+  box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow-hover);
 }
 
 /* Compact ----------------------------------------------------------------- */

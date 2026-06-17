@@ -4,7 +4,11 @@ import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
-  const [metrics, setMetrics] = useState<{ active_jobs: number; cache_hits_1h: number; new_scrapes_1h: number } | null>(null);
+  const [metrics, setMetrics] = useState<{
+    active_jobs: number;
+    cache_hits_1h: number;
+    new_scrapes_1h: number;
+  } | null>(null);
   const [isRestarting, setIsRestarting] = useState(false);
 
   const handleRestart = async () => {
@@ -21,11 +25,15 @@ export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
 
   useEffect(() => {
     let mounted = true;
-    
+
     // Initial fetch to get the current state
     const fetchJobs = async () => {
       try {
-        const res = await apiRequest<{ active_jobs: number; cache_hits_1h: number; new_scrapes_1h: number }>("/mediascraper/jobs");
+        const res = await apiRequest<{
+          active_jobs: number;
+          cache_hits_1h: number;
+          new_scrapes_1h: number;
+        }>("/mediascraper/jobs");
         if (mounted && res && typeof res.active_jobs === "number") {
           setMetrics(res);
         }
@@ -38,7 +46,11 @@ export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
 
     // Listen for WebSocket updates
     const handleJobsUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<{ active_jobs: number; cache_hits_1h: number; new_scrapes_1h: number }>;
+      const customEvent = e as CustomEvent<{
+        active_jobs: number;
+        cache_hits_1h: number;
+        new_scrapes_1h: number;
+      }>;
       if (mounted) {
         setMetrics(customEvent.detail);
       }
@@ -71,34 +83,36 @@ export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
         border: "1px solid var(--border-color, #e5e7eb)",
         borderRadius: "6px",
         letterSpacing: "0.01em",
-        width: "fit-content"
+        width: "fit-content",
       }}
     >
       {metrics.active_jobs > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <div 
+            <div
               style={{
                 width: "12px",
                 height: "12px",
                 borderRadius: "50%",
                 border: "2px solid rgba(187, 134, 252, 0.3)",
                 borderTopColor: "#bb86fc",
-                animation: "spin 1s linear infinite"
+                animation: "spin 1s linear infinite",
               }}
             />
             <span style={{ color: "#bb86fc" }}>1 scraping</span>
           </div>
           {metrics.active_jobs > 1 && (
-            <span style={{ color: "var(--text-secondary)" }}>
-              {metrics.active_jobs - 1} queued
-            </span>
+            <span style={{ color: "var(--text-secondary)" }}>{metrics.active_jobs - 1} queued</span>
           )}
         </div>
       )}
       <div style={{ display: "flex", gap: "10px", opacity: 0.8, alignItems: "center" }}>
-        <span>{metrics.cache_hits_1h} cache hit{metrics.cache_hits_1h !== 1 ? 's' : ''}/h</span>
-        <span>{metrics.new_scrapes_1h} cache miss{metrics.new_scrapes_1h !== 1 ? 'es' : ''}/h</span>
+        <span>
+          {metrics.cache_hits_1h} cache hit{metrics.cache_hits_1h !== 1 ? "s" : ""}/h
+        </span>
+        <span>
+          {metrics.new_scrapes_1h} cache miss{metrics.new_scrapes_1h !== 1 ? "es" : ""}/h
+        </span>
         {canEdit && (
           <button
             onClick={handleRestart}
@@ -112,7 +126,7 @@ export function ActiveJobsBadge({ canEdit }: { canEdit?: boolean }) {
               display: "flex",
               alignItems: "center",
               color: "inherit",
-              opacity: isRestarting ? 0.5 : 1
+              opacity: isRestarting ? 0.5 : 1,
             }}
             title="Restart Scraper Jobs"
           >

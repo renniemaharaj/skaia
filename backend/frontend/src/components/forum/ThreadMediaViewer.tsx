@@ -23,14 +23,14 @@ const ThreadMediaViewer = () => {
   // Parse HTML to extract media
   const rawMediaItems = useMemo(() => {
     if (!currentThread?.content) return [];
-    
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(currentThread.content, "text/html");
     const items: ParsedMedia[] = [];
 
     // Extract images
     const imgs = doc.querySelectorAll("img");
-    imgs.forEach((img) => {
+    imgs.forEach(img => {
       const src = img.getAttribute("src");
       if (src && !src.includes("data:image/svg+xml")) {
         items.push({ url: src, type: "images" });
@@ -39,7 +39,7 @@ const ThreadMediaViewer = () => {
 
     // Extract videos
     const videos = doc.querySelectorAll("video, iframe");
-    videos.forEach((video) => {
+    videos.forEach(video => {
       const src = video.getAttribute("src") || video.querySelector("source")?.getAttribute("src");
       // If it's an iframe, we only want internal uploads. If it's a video tag, we can take it.
       if (src && (src.startsWith("/uploads/") || video.tagName.toLowerCase() === "video")) {
@@ -49,9 +49,12 @@ const ThreadMediaViewer = () => {
 
     // Extract attachments
     const attachments = doc.querySelectorAll(".attachment, [data-type='attachment']");
-    attachments.forEach((attachment) => {
+    attachments.forEach(attachment => {
       const a = attachment.querySelector("a");
-      const url = a?.getAttribute("href") || attachment.getAttribute("data-url") || attachment.getAttribute("src");
+      const url =
+        a?.getAttribute("href") ||
+        attachment.getAttribute("data-url") ||
+        attachment.getAttribute("src");
       if (url && url !== "#") {
         items.push({ url, type: "file" });
       }
@@ -65,15 +68,17 @@ const ThreadMediaViewer = () => {
 
   // Fetch metadata via HEAD request
   useEffect(() => {
-    rawMediaItems.forEach((m) => {
-      if (m.url.startsWith('/uploads/') && !metadata[m.url]) {
-        fetch(m.url, { method: "HEAD" }).then(res => {
-          if (res.ok) {
-            const size = parseInt(res.headers.get("content-length") || "0", 10);
-            const date = res.headers.get("last-modified") || new Date().toISOString();
-            setMetadata(prev => ({ ...prev, [m.url]: { size, date } }));
-          }
-        }).catch(() => {});
+    rawMediaItems.forEach(m => {
+      if (m.url.startsWith("/uploads/") && !metadata[m.url]) {
+        fetch(m.url, { method: "HEAD" })
+          .then(res => {
+            if (res.ok) {
+              const size = parseInt(res.headers.get("content-length") || "0", 10);
+              const date = res.headers.get("last-modified") || new Date().toISOString();
+              setMetadata(prev => ({ ...prev, [m.url]: { size, date } }));
+            }
+          })
+          .catch(() => {});
       }
     });
   }, [rawMediaItems, metadata]);
@@ -83,10 +88,15 @@ const ThreadMediaViewer = () => {
       const meta = metadata[m.url];
       return {
         url: m.url,
-        filename: m.url.split('/').pop() || m.url,
+        filename: m.url.split("/").pop() || m.url,
         size: meta?.size || 0,
         type: m.type,
-        mime_type: m.type === "images" ? "image/jpeg" : m.type === "videos" ? "video/mp4" : "application/octet-stream",
+        mime_type:
+          m.type === "images"
+            ? "image/jpeg"
+            : m.type === "videos"
+              ? "video/mp4"
+              : "application/octet-stream",
         created_at: meta?.date || new Date().toISOString(),
       };
     });
@@ -107,7 +117,10 @@ const ThreadMediaViewer = () => {
   );
 
   return (
-    <div className="card up-uploads-section tmv-container" style={{ marginBottom: "1.5rem", padding: 0, border: "none" }}>
+    <div
+      className="card up-uploads-section tmv-container"
+      style={{ marginBottom: "1.5rem", padding: 0, border: "none" }}
+    >
       <UserUploads
         userId={String(currentThread?.user_id)}
         displayName={currentThread?.user_name || "Thread"}

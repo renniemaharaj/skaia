@@ -14,4 +14,3 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
   mutedUsers: {},
   kickedUsers: {},
 });
-

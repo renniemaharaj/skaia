@@ -341,9 +341,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   padding: 0;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .header-sound-toggle:hover {
   background: var(--bg-tertiary);
@@ -362,8 +360,7 @@
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow: 0 4px 16px
-    color-mix(in srgb, var(--text-primary) 12%, transparent);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--text-primary) 12%, transparent);
   z-index: 200;
   white-space: nowrap;
 }
@@ -442,9 +439,7 @@
   border-radius: 8px;
   color: var(--text-secondary);
   text-decoration: none;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .header-inbox-btn:hover {
   background: var(--bg-tertiary);
@@ -536,9 +531,7 @@
 
 .header-more-btn {
   color: var(--text-secondary);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .header-more-btn:hover {
@@ -569,9 +562,7 @@
   padding: 8px 12px;
   margin: 2px 0;
   white-space: nowrap;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .header-more-item:hover,

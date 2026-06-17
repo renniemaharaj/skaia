@@ -32,35 +32,24 @@ export default function Activity() {
   const setEvents = useSetAtom(activityEventsAtom);
   const [total, setTotal] = useState(0);
 
-  const loadPage = useCallback(
-    async (offset: number): Promise<ActivityEvent[]> => {
-      const data = await apiRequest<EventsResponse>(
-        `/events?limit=${LIMIT}&offset=${offset}`,
-      );
-      if (offset === 0) {
-        setTotal(data.total);
-      }
-      // API returns DESC (newest first). Reverse so oldest first (chat-style).
-      return (data.events ?? []).slice().reverse();
-    },
-    [],
-  );
+  const loadPage = useCallback(async (offset: number): Promise<ActivityEvent[]> => {
+    const data = await apiRequest<EventsResponse>(`/events?limit=${LIMIT}&offset=${offset}`);
+    if (offset === 0) {
+      setTotal(data.total);
+    }
+    // API returns DESC (newest first). Reverse so oldest first (chat-style).
+    return (data.events ?? []).slice().reverse();
+  }, []);
 
-  const {
-    feedRef,
-    sentinelRef,
-    handleScroll,
-    isLoading,
-    isLoadingOlder,
-    highlightedCommentId,
-  } = useCommentsFeed<ActivityEvent>({
-    comments: events,
-    setComments: setEvents,
-    loadPage,
-    deps: [],
-    getId: (e) => e.id,
-    limit: LIMIT,
-  });
+  const { feedRef, sentinelRef, handleScroll, isLoading, isLoadingOlder, highlightedCommentId } =
+    useCommentsFeed<ActivityEvent>({
+      comments: events,
+      setComments: setEvents,
+      loadPage,
+      deps: [],
+      getId: e => e.id,
+      limit: LIMIT,
+    });
 
   return (
     <div className="activity-page">
@@ -83,7 +72,7 @@ export default function Activity() {
         ) : events.length === 0 ? (
           <div className="activity-empty">No events recorded yet.</div>
         ) : (
-          events.map((evt) => (
+          events.map(evt => (
             <div
               key={evt.id}
               className={`activity-event${
@@ -92,7 +81,11 @@ export default function Activity() {
             >
               <div className="activity-event-avatar">
                 {evt.user_id ? (
-                  <UserProfileOverlay userId={evt.user_id} fallbackName={evt.username || "System"} fallbackAvatar={evt.avatar_url || undefined}>
+                  <UserProfileOverlay
+                    userId={evt.user_id}
+                    fallbackName={evt.username || "System"}
+                    fallbackAvatar={evt.avatar_url || undefined}
+                  >
                     <UserAvatar
                       src={evt.avatar_url || undefined}
                       alt={evt.username || "System"}
@@ -111,17 +104,13 @@ export default function Activity() {
               </div>
               <div className="activity-event-body">
                 <div className="activity-event-meta">
-                  <span className="activity-event-user">
-                    {evt.username || "System"}
-                  </span>
+                  <span className="activity-event-user">{evt.username || "System"}</span>
                   <span
                     className={`activity-event-badge activity-badge-${activityLabel(evt.activity)}`}
                   >
                     {activityLabel(evt.activity)}
                   </span>
-                  <span className="activity-event-time">
-                    {relativeTimeAgo(evt.created_at)}
-                  </span>
+                  <span className="activity-event-time">{relativeTimeAgo(evt.created_at)}</span>
                 </div>
                 <div className="activity-event-action">
                   {formatActivity(evt.activity)}

@@ -55,7 +55,7 @@ export function useGrengoShortcut() {
   useEffect(() => {
     let cancelled = false;
     apiRequest<{ armed: boolean }>("/armed-status")
-      .then((data) => {
+      .then(data => {
         if (cancelled) return;
         if (data.armed) {
           setArmed(true);
@@ -75,13 +75,10 @@ export function useGrengoShortcut() {
     setLoading(true);
     setError("");
     try {
-      const data = await apiRequest<{ session_id: string; expires_at: string }>(
-        "/grengo/session",
-        {
-          method: "POST",
-          body: JSON.stringify({ p1, p2 }),
-        },
-      );
+      const data = await apiRequest<{ session_id: string; expires_at: string }>("/grengo/session", {
+        method: "POST",
+        body: JSON.stringify({ p1, p2 }),
+      });
       setShowDialog(false);
       navigate(`/tmp/${data.session_id}`);
     } catch (e: unknown) {

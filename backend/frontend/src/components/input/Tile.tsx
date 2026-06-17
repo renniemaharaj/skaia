@@ -34,7 +34,7 @@ const Tile = forwardRef<HTMLDivElement, TileProps>(
       onClick,
       ...rest
     },
-    ref,
+    ref
   ) => {
     const classes = [
       "sk-tile",
@@ -58,7 +58,7 @@ const Tile = forwardRef<HTMLDivElement, TileProps>(
         onClick={disabled ? undefined : onClick}
         onKeyDown={
           variant === "interactive" && !disabled
-            ? (e) => {
+            ? e => {
                 if ((e.key === "Enter" || e.key === " ") && onClick) {
                   e.preventDefault();
                   onClick(e as unknown as React.MouseEvent<HTMLDivElement>);
@@ -71,7 +71,7 @@ const Tile = forwardRef<HTMLDivElement, TileProps>(
         {children}
       </div>
     );
-  },
+  }
 );
 
 Tile.displayName = "Tile";

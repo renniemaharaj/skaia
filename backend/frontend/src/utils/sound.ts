@@ -125,10 +125,7 @@ function playTone(params: ToneParams) {
     osc.type = params.type;
     osc.frequency.setValueAtTime(params.frequency, t);
     if (params.frequency2) {
-      osc.frequency.linearRampToValueAtTime(
-        params.frequency2,
-        t + params.duration * 0.5,
-      );
+      osc.frequency.linearRampToValueAtTime(params.frequency2, t + params.duration * 0.5);
     }
     osc.connect(gain);
     osc.start(t);

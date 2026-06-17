@@ -36,12 +36,8 @@ export default function SearchField({
 }: SearchFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const classes = ["search-field", className].filter(Boolean).join(" ");
-  const inputClasses = ["search-field__input", inputClassName]
-    .filter(Boolean)
-    .join(" ");
-  const iconClasses = ["search-field__icon", iconClassName]
-    .filter(Boolean)
-    .join(" ");
+  const inputClasses = ["search-field__input", inputClassName].filter(Boolean).join(" ");
+  const iconClasses = ["search-field__icon", iconClassName].filter(Boolean).join(" ");
 
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus();
@@ -57,7 +53,7 @@ export default function SearchField({
         placeholder={placeholder}
         value={value}
         aria-label={ariaLabel ?? placeholder}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}

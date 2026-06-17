@@ -1,10 +1,7 @@
 import { useAtom } from "jotai";
 import { Link } from "react-router-dom";
 import { physicsSettingsAtom } from "../../../atoms/physics";
-import {
-  defaultSettings,
-  type PhysicsSettings,
-} from "../../ui/GravityParticles/engine";
+import { defaultSettings, type PhysicsSettings } from "../../ui/GravityParticles/engine";
 import Select from "../../input/Select";
 
 const Section = ({
@@ -25,11 +22,8 @@ const Section = ({
 const PhysicsControls = () => {
   const [settings, setSettings] = useAtom(physicsSettingsAtom);
 
-  const updateSetting = <K extends keyof PhysicsSettings>(
-    key: K,
-    value: PhysicsSettings[K],
-  ) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+  const updateSetting = <K extends keyof PhysicsSettings>(key: K, value: PhysicsSettings[K]) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const resetToDefaults = () => {
@@ -56,11 +50,8 @@ const PhysicsControls = () => {
                 { value: "center-anchored", label: "Center Anchored System" },
                 { value: "text", label: "Text Swarm (Not Ready)", disabled: true },
               ]}
-              onChange={(e) =>
-                updateSetting(
-                  "rendererType",
-                  e.target.value as PhysicsSettings["rendererType"],
-                )
+              onChange={e =>
+                updateSetting("rendererType", e.target.value as PhysicsSettings["rendererType"])
               }
               className="pp-physics-select"
               aria-label="Style"
@@ -81,7 +72,7 @@ const PhysicsControls = () => {
               <input
                 type="text"
                 value={settings.rendererText}
-                onChange={(e) => updateSetting("rendererText", e.target.value)}
+                onChange={e => updateSetting("rendererText", e.target.value)}
                 className="pp-physics-input"
                 style={{ width: "120px", textAlign: "right" }}
               />
@@ -102,9 +93,7 @@ const PhysicsControls = () => {
             max="2.0"
             step="0.01"
             value={settings.gravityConstant}
-            onChange={(e) =>
-              updateSetting("gravityConstant", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("gravityConstant", parseFloat(e.target.value))}
           />
         </div>
 
@@ -119,9 +108,7 @@ const PhysicsControls = () => {
             max="50"
             step="1"
             value={settings.maxVelocity}
-            onChange={(e) =>
-              updateSetting("maxVelocity", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("maxVelocity", parseFloat(e.target.value))}
           />
         </div>
 
@@ -136,9 +123,7 @@ const PhysicsControls = () => {
             max="4"
             step="1"
             value={settings.subSteps}
-            onChange={(e) =>
-              updateSetting("subSteps", parseInt(e.target.value, 10))
-            }
+            onChange={e => updateSetting("subSteps", parseInt(e.target.value, 10))}
           />
         </div>
       </Section>
@@ -155,9 +140,7 @@ const PhysicsControls = () => {
             max="1.5"
             step="0.05"
             value={settings.bounceRestitution}
-            onChange={(e) =>
-              updateSetting("bounceRestitution", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("bounceRestitution", parseFloat(e.target.value))}
           />
         </div>
 
@@ -172,9 +155,7 @@ const PhysicsControls = () => {
             max="0.1"
             step="0.001"
             value={settings.orbitalDecayChance}
-            onChange={(e) =>
-              updateSetting("orbitalDecayChance", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("orbitalDecayChance", parseFloat(e.target.value))}
           />
         </div>
 
@@ -189,9 +170,7 @@ const PhysicsControls = () => {
             max="10"
             step="0.1"
             value={settings.mergeThreshold}
-            onChange={(e) =>
-              updateSetting("mergeThreshold", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("mergeThreshold", parseFloat(e.target.value))}
           />
         </div>
       </Section>
@@ -208,9 +187,7 @@ const PhysicsControls = () => {
             max="500"
             step="5"
             value={settings.explosionThreshold}
-            onChange={(e) =>
-              updateSetting("explosionThreshold", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("explosionThreshold", parseFloat(e.target.value))}
           />
         </div>
 
@@ -225,9 +202,7 @@ const PhysicsControls = () => {
             max="20"
             step="0.5"
             value={settings.shockwaveForce}
-            onChange={(e) =>
-              updateSetting("shockwaveForce", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("shockwaveForce", parseFloat(e.target.value))}
           />
         </div>
 
@@ -242,9 +217,7 @@ const PhysicsControls = () => {
             max="10"
             step="0.5"
             value={settings.fragmentMass}
-            onChange={(e) =>
-              updateSetting("fragmentMass", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("fragmentMass", parseFloat(e.target.value))}
           />
         </div>
       </Section>
@@ -261,9 +234,7 @@ const PhysicsControls = () => {
             max="1000"
             step="10"
             value={settings.cursorMass}
-            onChange={(e) =>
-              updateSetting("cursorMass", parseFloat(e.target.value))
-            }
+            onChange={e => updateSetting("cursorMass", parseFloat(e.target.value))}
           />
         </div>
 
@@ -283,11 +254,8 @@ const PhysicsControls = () => {
                 { value: "gravity", label: "Gravity (Pull)" },
                 { value: "repel", label: "Repel" },
               ]}
-              onChange={(e) =>
-                updateSetting(
-                  "cursorMode",
-                  e.target.value as PhysicsSettings["cursorMode"],
-                )
+              onChange={e =>
+                updateSetting("cursorMode", e.target.value as PhysicsSettings["cursorMode"])
               }
               className="pp-physics-select"
               aria-label="Cursor Mode"
@@ -308,7 +276,7 @@ const PhysicsControls = () => {
             <input
               type="checkbox"
               checked={settings.createOnClick}
-              onChange={(e) => updateSetting("createOnClick", e.target.checked)}
+              onChange={e => updateSetting("createOnClick", e.target.checked)}
               style={{ width: "auto", margin: 0 }}
             />
           </label>
@@ -327,9 +295,7 @@ const PhysicsControls = () => {
             <input
               type="checkbox"
               checked={settings.particlesAreAlive}
-              onChange={(e) =>
-                updateSetting("particlesAreAlive", e.target.checked)
-              }
+              onChange={e => updateSetting("particlesAreAlive", e.target.checked)}
               style={{ width: "auto", margin: 0 }}
             />
           </label>
@@ -350,9 +316,7 @@ const PhysicsControls = () => {
             <input
               type="checkbox"
               checked={settings.audioVisualization}
-              onChange={(e) =>
-                updateSetting("audioVisualization", e.target.checked)
-              }
+              onChange={e => updateSetting("audioVisualization", e.target.checked)}
               style={{ width: "auto", margin: 0 }}
             />
           </label>
@@ -368,9 +332,7 @@ const PhysicsControls = () => {
             max="30"
             step="1"
             value={settings.trailLength}
-            onChange={(e) =>
-              updateSetting("trailLength", parseInt(e.target.value, 10))
-            }
+            onChange={e => updateSetting("trailLength", parseInt(e.target.value, 10))}
           />
         </div>
       </Section>

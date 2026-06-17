@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
 import type {
@@ -68,10 +62,7 @@ function parseConfig(config: string): CustomSectionConfig {
   }
 }
 
-function updateConfig(
-  config: string,
-  updates: Partial<CustomSectionConfig>,
-): string {
+function updateConfig(config: string, updates: Partial<CustomSectionConfig>): string {
   try {
     const parsed = JSON.parse(config || "{}");
     return JSON.stringify({ ...parsed, ...updates });
@@ -98,15 +89,12 @@ const isAuthError = (message: string) =>
 
 async function evaluateDataSource(
   datasourceId: number,
-  envData?: string,
+  envData?: string
 ): Promise<{ rows: RawRow[]; cachedAt: Date; cacheTTL: number }> {
-  const execRes = await apiRequest<ExecuteResult>(
-    `/config/datasources/${datasourceId}/execute`,
-    {
-      method: "POST",
-      body: JSON.stringify({ env_data: envData ?? "" }),
-    },
-  );
+  const execRes = await apiRequest<ExecuteResult>(`/config/datasources/${datasourceId}/execute`, {
+    method: "POST",
+    body: JSON.stringify({ env_data: envData ?? "" }),
+  });
   if (execRes.error) {
     throw new Error(execRes.error);
   }
@@ -122,17 +110,12 @@ async function evaluateDataSource(
 
 function getStringValue(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
   return undefined;
 }
 
 function coerceHeading(row: RawRow): string | undefined {
-  return (
-    getStringValue(row.heading) ||
-    getStringValue(row.title) ||
-    getStringValue(row.name)
-  );
+  return getStringValue(row.heading) || getStringValue(row.title) || getStringValue(row.name);
 }
 
 function coerceSubheading(row: RawRow): string | undefined {
@@ -148,11 +131,7 @@ function coerceImageUrl(row: RawRow): string | undefined {
 }
 
 function coerceLinkUrl(row: RawRow): string | undefined {
-  return (
-    getStringValue(row.link_url) ||
-    getStringValue(row.url) ||
-    getStringValue(row.link)
-  );
+  return getStringValue(row.link_url) || getStringValue(row.url) || getStringValue(row.link);
 }
 
 function coerceIcon(row: RawRow): string | undefined {
@@ -183,9 +162,10 @@ function TablePreview({
     .filter(Boolean)
     .join(" ");
 
-  const zoneMap = Object.fromEntries(
-    template.zones.map((zone) => [zone.field, zone]),
-  ) as Record<string, CardZone>;
+  const zoneMap = Object.fromEntries(template.zones.map(zone => [zone.field, zone])) as Record<
+    string,
+    CardZone
+  >;
 
   const getColumnStyle = (col: string): CSSProperties => {
     const zone = zoneMap[col];
@@ -213,7 +193,7 @@ function TablePreview({
         <table className={tableClass}>
           <thead>
             <tr>
-              {columns.map((col) => (
+              {columns.map(col => (
                 <th key={col} style={getColumnStyle(col)}>
                   {col}
                 </th>
@@ -223,7 +203,7 @@ function TablePreview({
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr key={rowKey(row, rowIndex)}>
-                {columns.map((col) => (
+                {columns.map(col => (
                   <td key={col} style={getColumnStyle(col)}>
                     {formatCellValue(row[col])}
                   </td>
@@ -237,12 +217,7 @@ function TablePreview({
   );
 }
 
-export const CustomSectionBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const CustomSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const layout = getSectionLayout(section.config);
   const cfg = parseConfig(section.config);
 
@@ -255,9 +230,7 @@ export const CustomSectionBlock = ({
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [dscacheTTL, setDsCacheTTL] = useState(0);
   const [loadingList, setLoadingList] = useState(true);
-  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
-    [],
-  );
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>([]);
   const [loadingComponents, setLoadingComponents] = useState(true);
   const customSectionSelectId = `custom-section-source-${section.id}`;
   const rowKeySelectId = `custom-section-row-key-${section.id}`;
@@ -267,7 +240,7 @@ export const CustomSectionBlock = ({
   useEffect(() => {
     setAuthError(false);
     apiRequest<CustomSection[]>("/config/custom-sections")
-      .then((list) => setCustomSections(list ?? []))
+      .then(list => setCustomSections(list ?? []))
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
         if (isAuthError(msg)) {
@@ -280,14 +253,14 @@ export const CustomSectionBlock = ({
 
   useEffect(() => {
     apiRequest<ComponentDefinition[]>("/config/components")
-      .then((list) => setComponentsList(list ?? []))
+      .then(list => setComponentsList(list ?? []))
       .catch(console.error)
       .finally(() => setLoadingComponents(false));
   }, []);
 
   const selectedCS = useMemo(
-    () => customSections.find((cs) => cs.id === Number(cfg.custom_section_id)),
-    [customSections, cfg.custom_section_id],
+    () => customSections.find(cs => cs.id === Number(cfg.custom_section_id)),
+    [customSections, cfg.custom_section_id]
   );
 
   // Evaluate the selected custom section's datasource
@@ -304,9 +277,7 @@ export const CustomSectionBlock = ({
     setCompileCached(null);
     setLastRunAt(null);
     try {
-      const { rows, cachedAt, cacheTTL } = await evaluateDataSource(
-        selectedCS.datasource_id,
-      );
+      const { rows, cachedAt, cacheTTL } = await evaluateDataSource(selectedCS.datasource_id);
       setRawRows(rows);
       setCompileCached(true);
       setLastRunAt(cachedAt);
@@ -318,9 +289,7 @@ export const CustomSectionBlock = ({
       setAuthError(auth);
       setEvalError(auth ? null : msg);
       setRawRows([]);
-      toast.error(
-        `Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`,
-      );
+      toast.error(`Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`);
     } finally {
       setEvaluating(false);
     }
@@ -346,24 +315,17 @@ export const CustomSectionBlock = ({
   }, [selectedCS]);
 
   const effectiveTemplate = useMemo<CardTemplate>(() => {
-    return (
-      cfg.card_template ??
-      selectedCSConfig.card_template ??
-      DEFAULT_CARD_TEMPLATE
-    );
+    return cfg.card_template ?? selectedCSConfig.card_template ?? DEFAULT_CARD_TEMPLATE;
   }, [cfg.card_template, selectedCSConfig.card_template]);
 
-  const effectiveComponentType =
-    cfg.component_type ?? selectedCSConfig.component_type;
-  const effectiveComponentGroup =
-    cfg.component_group ?? selectedCSConfig.component_group;
+  const effectiveComponentType = cfg.component_type ?? selectedCSConfig.component_type;
+  const effectiveComponentGroup = cfg.component_group ?? selectedCSConfig.component_group;
   const selectedComponent = useMemo(
-    () => componentsList.find((c) => c.type === effectiveComponentType),
-    [componentsList, effectiveComponentType],
+    () => componentsList.find(c => c.type === effectiveComponentType),
+    [componentsList, effectiveComponentType]
   );
   const effectiveBindings = cfg.bindings ?? selectedCSConfig.bindings ?? {};
-  const effectiveStyleOverrides =
-    cfg.style_overrides ?? selectedCSConfig.style_overrides;
+  const effectiveStyleOverrides = cfg.style_overrides ?? selectedCSConfig.style_overrides;
 
   const hasColumnMap = cfg.column_map && Object.keys(cfg.column_map).length > 0;
 
@@ -406,15 +368,9 @@ export const CustomSectionBlock = ({
       cfg.column_map,
       section.id,
       cfg.row_overrides,
-      cfg.row_key_column,
+      cfg.row_key_column
     );
-  }, [
-    rawRows,
-    cfg.column_map,
-    cfg.row_overrides,
-    cfg.row_key_column,
-    section.id,
-  ]);
+  }, [rawRows, cfg.column_map, cfg.row_overrides, cfg.row_key_column, section.id]);
 
   const handleCSChange = (csId: number) => {
     onUpdate({
@@ -440,7 +396,7 @@ export const CustomSectionBlock = ({
   };
 
   const handleComponentChange = (componentType: string) => {
-    const component = componentsList.find((c) => c.type === componentType);
+    const component = componentsList.find(c => c.type === componentType);
     onUpdate({
       ...section,
       config: updateConfig(section.config, {
@@ -468,28 +424,28 @@ export const CustomSectionBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Custom Section"
           layout={layout}
-          onLayoutChange={(l) =>
+          onLayoutChange={l =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, l),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -514,10 +470,7 @@ export const CustomSectionBlock = ({
       {/* Controls bar */}
       {canEdit && (
         <div className="custom-section-controls">
-          <label
-            className="custom-section-control"
-            htmlFor={customSectionSelectId}
-          >
+          <label className="custom-section-control" htmlFor={customSectionSelectId}>
             <span>Custom Section</span>
             {loadingList ? (
               <span>Loading…</span>
@@ -525,11 +478,11 @@ export const CustomSectionBlock = ({
               <Select
                 id={customSectionSelectId}
                 value={cfg.custom_section_id ?? ""}
-                onChange={(e) => handleCSChange(Number(e.target.value))}
+                onChange={e => handleCSChange(Number(e.target.value))}
                 size="sm"
               >
                 <option value="">— Select a saved section —</option>
-                {customSections.map((cs) => (
+                {customSections.map(cs => (
                   <option key={cs.id} value={cs.id}>
                     {cs.name} ({cs.section_type})
                   </option>
@@ -544,11 +497,11 @@ export const CustomSectionBlock = ({
               <Select
                 id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
-                onChange={(e) => handleRowKeyColumnChange(e.target.value)}
+                onChange={e => handleRowKeyColumnChange(e.target.value)}
                 size="sm"
               >
                 <option value="">— index —</option>
-                {availableColumns.map((col) => (
+                {availableColumns.map(col => (
                   <option key={col} value={col}>
                     {col}
                   </option>
@@ -560,9 +513,9 @@ export const CustomSectionBlock = ({
           {selectedCS && (
             <span className="custom-section-cs-info">
               <Zap size={14} /> {selectedCS.name}
-              <Link 
-                to={`/admin/datasources/${selectedCS.datasource_id}`} 
-                target="_blank" 
+              <Link
+                to={`/admin/datasources/${selectedCS.datasource_id}`}
+                target="_blank"
                 title="Edit Data Source"
                 className="custom-section-cs-link"
               >
@@ -572,10 +525,7 @@ export const CustomSectionBlock = ({
           )}
 
           {availableColumns.length > 0 && !isLegacyTable && (
-            <label
-              className="custom-section-control"
-              htmlFor={componentSelectId}
-            >
+            <label className="custom-section-control" htmlFor={componentSelectId}>
               <span>Component</span>
               {loadingComponents ? (
                 <span>Loading…</span>
@@ -583,13 +533,13 @@ export const CustomSectionBlock = ({
                 <Select
                   id={componentSelectId}
                   value={effectiveComponentType ?? ""}
-                  onChange={(e) => handleComponentChange(e.target.value)}
+                  onChange={e => handleComponentChange(e.target.value)}
                   size="sm"
                 >
                   <option value="">— Saved layout —</option>
                   {componentsList
-                    .filter((component) => component.repeatable)
-                    .map((component) => (
+                    .filter(component => component.repeatable)
+                    .map(component => (
                       <option key={component.type} value={component.type}>
                         {component.label}
                       </option>
@@ -611,10 +561,7 @@ export const CustomSectionBlock = ({
       )}
 
       {/* Column mapping UI */}
-      {canEdit &&
-        availableColumns.length > 0 &&
-        !isLegacyTable &&
-        !selectedComponent && (
+      {canEdit && availableColumns.length > 0 && !isLegacyTable && !selectedComponent && (
         <ColumnMapper
           availableColumns={availableColumns}
           columnMap={cfg.column_map ?? {}}
@@ -651,16 +598,15 @@ export const CustomSectionBlock = ({
             <Clock size={11} />
             <span>Updated {formatTimeAgo(lastRunAt)}</span>
             {dscacheTTL > 0 && (
-              <span className="ds-last-updated__cache-badge">
-                {cacheTTLLabel(dscacheTTL)}
-              </span>
+              <span className="ds-last-updated__cache-badge">{cacheTTLLabel(dscacheTTL)}</span>
             )}
           </div>
         )}
 
-        {(selectedComponent?.type === "compound.mediascraper" || effectiveComponentGroup?.items.some((c) => c.component_type === "compound.mediascraper")) && (
-          <ActiveJobsBadge canEdit={canEdit} />
-        )}
+        {(selectedComponent?.type === "compound.mediascraper" ||
+          effectiveComponentGroup?.items.some(
+            c => c.component_type === "compound.mediascraper"
+          )) && <ActiveJobsBadge canEdit={canEdit} />}
 
         {/* Loading state */}
         {evaluating && (
@@ -687,7 +633,16 @@ export const CustomSectionBlock = ({
         )}
 
         {!authError && effectiveComponentGroup && rawRows.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: effectiveComponentGroup.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: effectiveComponentGroup.gap,
+              marginTop: "16px",
+              alignItems: "flex-start",
+              position: "relative",
+            }}
+          >
             {rawRows.map((row, i) => (
               <ComponentGroupRenderer
                 key={rowKey(row, i)}
@@ -705,8 +660,8 @@ export const CustomSectionBlock = ({
           !effectiveComponentGroup &&
           hasColumnMap &&
           mappedItems.length > 0 && (
-          <DesignedCardGrid items={mappedItems} template={effectiveTemplate} />
-        )}
+            <DesignedCardGrid items={mappedItems} template={effectiveTemplate} />
+          )}
 
         {/* Render saved custom section preview items */}
         {!authError &&
@@ -715,10 +670,7 @@ export const CustomSectionBlock = ({
           !hasColumnMap &&
           selectedCS?.section_type !== "table" &&
           previewItems.length > 0 && (
-            <DesignedCardGrid
-              items={previewItems}
-              template={effectiveTemplate}
-            />
+            <DesignedCardGrid items={previewItems} template={effectiveTemplate} />
           )}
 
         {/* Render table preview for saved table custom sections */}
@@ -727,11 +679,7 @@ export const CustomSectionBlock = ({
           !hasColumnMap &&
           selectedCS?.section_type === "table" &&
           rawRows.length > 0 && (
-            <TablePreview
-              rows={rawRows}
-              columns={availableColumns}
-              template={effectiveTemplate}
-            />
+            <TablePreview rows={rawRows} columns={availableColumns} template={effectiveTemplate} />
           )}
 
         {/* Has rows but no column map - prompt to configure */}
@@ -746,9 +694,8 @@ export const CustomSectionBlock = ({
           previewItems.length === 0 && (
             <div className="custom-section-empty">
               <p>
-                Saved custom section returned rows, but no display fields were
-                found. Ensure the datasource produces heading/subheading or add
-                a column mapping.
+                Saved custom section returned rows, but no display fields were found. Ensure the
+                datasource produces heading/subheading or add a column mapping.
               </p>
             </div>
           )}

@@ -30,12 +30,12 @@ export default function StarRating({
               cursor: disabled || !onChange ? "default" : "pointer",
               transition: "transform 0.1s ease",
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               if (!disabled && onChange) {
                 e.currentTarget.style.transform = "scale(1.1)";
               }
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               if (!disabled && onChange) {
                 e.currentTarget.style.transform = "scale(1)";
               }

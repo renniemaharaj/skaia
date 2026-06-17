@@ -61,8 +61,7 @@
 
 .pb-inline-input:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 25%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
 .pb-edit-btn {
@@ -252,10 +251,7 @@
   margin: 0;
   cursor: pointer;
   padding: 0;
-  transition:
-    color 0.15s,
-    border-color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
 .layout-control-btn:hover {
@@ -329,9 +325,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.85rem;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .pb-add-item-btn:hover {
@@ -374,9 +368,7 @@
   cursor: pointer;
   color: var(--text-secondary);
   z-index: 5;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .pb-action-btn:hover {
@@ -412,9 +404,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.85rem;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .pb-add-section-btn:hover {
@@ -786,8 +776,7 @@
 
 /* Section animates out (reverse) when leaving viewport */
 .pb-section-layout[data-animation][data-out-view]:not([data-in-view]) {
-  animation: var(--section-out-animation, sectionFadeOut)
-    var(--anim-duration, 0.6s) ease-in both;
+  animation: var(--section-out-animation, sectionFadeOut) var(--anim-duration, 0.6s) ease-in both;
 }
 
 /* Intensity variables - default to "normal" */
@@ -818,9 +807,7 @@
   animation: sectionFadeIn var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="fade-in"][data-out-view]:not(
-    [data-in-view]
-  ) {
+.pb-section-layout[data-animation="fade-in"][data-out-view]:not([data-in-view]) {
   --section-out-animation: sectionFadeOut;
 }
 
@@ -828,9 +815,7 @@
   animation: sectionSlideUp var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="slide-up"][data-out-view]:not(
-    [data-in-view]
-  ) {
+.pb-section-layout[data-animation="slide-up"][data-out-view]:not([data-in-view]) {
   --section-out-animation: sectionSlideDown;
 }
 
@@ -838,9 +823,7 @@
   animation: sectionSlideLeft var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="slide-left"][data-out-view]:not(
-    [data-in-view]
-  ) {
+.pb-section-layout[data-animation="slide-left"][data-out-view]:not([data-in-view]) {
   --section-out-animation: sectionSlideRightOut;
 }
 
@@ -848,9 +831,7 @@
   animation: sectionSlideRight var(--anim-duration, 0.6s) ease-out both;
 }
 
-.pb-section-layout[data-animation="slide-right"][data-out-view]:not(
-    [data-in-view]
-  ) {
+.pb-section-layout[data-animation="slide-right"][data-out-view]:not([data-in-view]) {
   --section-out-animation: sectionSlideLeftOut;
 }
 
@@ -858,9 +839,7 @@
   animation: sectionZoomIn var(--anim-duration, 0.5s) ease-out both;
 }
 
-.pb-section-layout[data-animation="zoom-in"][data-out-view]:not(
-    [data-in-view]
-  ) {
+.pb-section-layout[data-animation="zoom-in"][data-out-view]:not([data-in-view]) {
   --section-out-animation: sectionZoomOut;
 }
 
@@ -1033,9 +1012,7 @@
   letter-spacing: 0.02em;
   color: var(--text-secondary);
   cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .section-intensity-btn + .section-intensity-btn {

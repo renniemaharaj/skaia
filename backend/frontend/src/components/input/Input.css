@@ -5,16 +5,13 @@
   border-radius: 1rem;
   background: var(--bg-color);
   padding: 0.55rem 0.7rem;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .composer-wrapper--focused {
   border-color: var(--primary-color);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--primary-color) 10%, transparent),
-    0 2px 8px color-mix(in srgb, var(--text-primary) 6%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 10%, transparent), 0 2px 8px
+    color-mix(in srgb, var(--text-primary) 6%, transparent);
 }
 
 /* Compact variant (global chat sidebar) */
@@ -84,9 +81,7 @@
   color: white;
   cursor: pointer;
   font-size: 1rem;
-  transition:
-    opacity 0.15s ease,
-    transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .composer-send-btn:hover:not(:disabled) {

@@ -61,9 +61,7 @@ export const NewForumCategory = () => {
 
       navigate("/forum");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create category",
-      );
+      setError(err instanceof Error ? err.message : "Failed to create category");
     } finally {
       setLoading(false);
     }
@@ -81,9 +79,7 @@ export const NewForumCategory = () => {
         }}
       >
         <div className="modal-title-wrapper">
-          <h2 style={{ fontSize: "24px", fontWeight: "600", margin: 0 }}>
-            Create Category
-          </h2>
+          <h2 style={{ fontSize: "24px", fontWeight: "600", margin: 0 }}>Create Category</h2>
           <p style={{ color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
             Add a new forum category for discussions
           </p>
@@ -116,8 +112,7 @@ export const NewForumCategory = () => {
             style={{
               background: "none",
               border: "none",
-              cursor:
-                loading || !formData.name.trim() ? "not-allowed" : "pointer",
+              cursor: loading || !formData.name.trim() ? "not-allowed" : "pointer",
               color:
                 loading || !formData.name.trim()
                   ? "var(--text-disabled, #9ca3af)"
@@ -159,9 +154,7 @@ export const NewForumCategory = () => {
             type="text"
             placeholder="e.g., General Discussion"
             value={formData.name}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, name: e.target.value }))
-            }
+            onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
             style={{
               padding: "12px",
               border: "1px solid var(--border-color)",
@@ -185,8 +178,8 @@ export const NewForumCategory = () => {
             id="category-description"
             placeholder="Describe the category (optional)"
             value={formData.description}
-            onChange={(e) =>
-              setFormData((prev) => ({
+            onChange={e =>
+              setFormData(prev => ({
                 ...prev,
                 description: e.target.value,
               }))

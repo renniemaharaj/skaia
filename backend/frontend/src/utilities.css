@@ -1,82 +1,240 @@
-.u-display-flex { display: flex !important; }
-.u-width-100 { width: 100%; }
-.u-height-100 { height: 100%; }
-.u-flex-1 { flex: 1px; }
-.u-min-width-80 { min-width: 80px; }
-.u-margin-top-16 { margin-top: 16px; }
-.u-flex-direction-column { flex-direction: column; }
-.u-color-var-error-color { color: var(--error-color); }
-.u-font-size-10 { font-size: 10px; }
-.u-color-var-text-secondary { color: var(--text-secondary); }
-.u-margin-left-8 { margin-left: 8px; }
-.u-gap-0-25rem { gap: 0.25rem; }
-.u-padding-0 { padding: 0; }
-.u-margin-0 { margin: 0; }
-.u-border-none { border: none; }
-.u-background-transparent { background: transparent; }
-.u-box-shadow-none { box-shadow: none; }
-.u-cursor-pointer { cursor: pointer; }
-.u-opacity-0-4 { opacity: 0.4; }
-.u-display-none { display: none !important; }
-.u-position-relative { position: relative; }
-.u-position-absolute { position: absolute; }
-.u-opacity-0 { opacity: 0; }
-.u-width-0 { width: 0; }
-.u-height-0 { height: 0; }
-.u-overflow-hidden { overflow: hidden; }
-.u-text-align-center { text-align: center; }
-.u-padding-4rem-1rem { padding: 4rem 1rem; }
-.u-color-var-color-danger-e74c3c { color: var(--color-danger, #e74c3c); }
-.u-padding-3rem-1rem-1rem { padding: 3rem 1rem 1rem; }
-.u-opacity-0-6 { opacity: 0.6; }
-.u-display-block { display: block !important; }
-.u-min-height-0 { min-height: 0; }
-.u-flex-1 { flex: 1; }
-.u-flex-wrap-wrap { flex-wrap: wrap; }
-.u-align-items-center { align-items: center; }
-.u-justify-content-center { justify-content: center; }
-.u-margin-bottom-0 { margin-bottom: 0; }
-.u-border-top-1px-solid-border { border-top: 1px solid var(--border-color); }
-.u-gap-8 { gap: 8px; }
-.u-gap-4 { gap: 4px; }
-.u-margin-right-8 { margin-right: 8px; }
-.u-margin-top-8 { margin-top: 8px; }
-.u-border-radius-50pct { border-radius: 50%; }
-.u-position-absolute { position: absolute; }
-.u-top-2 { top: 2px; }
-.u-right-2 { right: 2px; }
-.u-background-rgba-red { background: rgba(255,0,0,0.7); }
-.u-padding-0-25rem { padding: 0.25rem; }
-.u-padding-4px-8px { padding: 4px 8px; }
-.u-font-size-0-75rem { font-size: 0.75rem; }
-.u-margin-right-6 { margin-right: 6px; }
-.u-margin-bottom-1-5rem { margin-bottom: 1.5rem; }
-.u-margin-top-0-5rem { margin-top: 0.5rem; }
-.u-margin-top-12 { margin-top: 12px; }
-.u-gap-0-4rem { gap: 0.4rem; }
-.u-margin-top-0-4rem { margin-top: 0.4rem; }
-.u-display-inline-flex { display: inline-flex !important; }
-.u-gap-6 { gap: 6px; }
-.u-justify-content-space-between { justify-content: space-between; }
-.u-gap-12 { gap: 12px; }
-.u-font-size-12 { font-size: 12px; }
-.u-line-height-1-5 { line-height: 1.5; }
-.u-z-index-10 { z-index: 10; }
-.u-top-8 { top: 8px; }
-.u-left-8 { left: 8px; }
-.u-width-32 { width: 32px; }
-.u-height-32 { height: 32px; }
-.u-border-radius-4 { border-radius: 4px; }
-.u-flex-shrink-0 { flex-shrink: 0; }
-.u-object-fit-cover { object-fit: cover; }
-.u-background-black { background-color: black; }
-.u-background-bg-tertiary { background-color: var(--bg-tertiary); }
-.u-min-width-0 { min-width: 0; }
-.u-max-width-100 { max-width: 100%; }
-.u-max-height-80vh { max-height: 80vh; }
-.u-background-000 { background-color: #000; }
-.u-color-var-text-warning { color: var(--text-warning); }
-.u-margin-top-2 { margin-top: 2px; }
+.u-display-flex {
+  display: flex !important;
+}
+.u-width-100 {
+  width: 100%;
+}
+.u-height-100 {
+  height: 100%;
+}
+.u-flex-1 {
+  flex: 1px;
+}
+.u-min-width-80 {
+  min-width: 80px;
+}
+.u-margin-top-16 {
+  margin-top: 16px;
+}
+.u-flex-direction-column {
+  flex-direction: column;
+}
+.u-color-var-error-color {
+  color: var(--error-color);
+}
+.u-font-size-10 {
+  font-size: 10px;
+}
+.u-color-var-text-secondary {
+  color: var(--text-secondary);
+}
+.u-margin-left-8 {
+  margin-left: 8px;
+}
+.u-gap-0-25rem {
+  gap: 0.25rem;
+}
+.u-padding-0 {
+  padding: 0;
+}
+.u-margin-0 {
+  margin: 0;
+}
+.u-border-none {
+  border: none;
+}
+.u-background-transparent {
+  background: transparent;
+}
+.u-box-shadow-none {
+  box-shadow: none;
+}
+.u-cursor-pointer {
+  cursor: pointer;
+}
+.u-opacity-0-4 {
+  opacity: 0.4;
+}
+.u-display-none {
+  display: none !important;
+}
+.u-position-relative {
+  position: relative;
+}
+.u-position-absolute {
+  position: absolute;
+}
+.u-opacity-0 {
+  opacity: 0;
+}
+.u-width-0 {
+  width: 0;
+}
+.u-height-0 {
+  height: 0;
+}
+.u-overflow-hidden {
+  overflow: hidden;
+}
+.u-text-align-center {
+  text-align: center;
+}
+.u-padding-4rem-1rem {
+  padding: 4rem 1rem;
+}
+.u-color-var-color-danger-e74c3c {
+  color: var(--color-danger, #e74c3c);
+}
+.u-padding-3rem-1rem-1rem {
+  padding: 3rem 1rem 1rem;
+}
+.u-opacity-0-6 {
+  opacity: 0.6;
+}
+.u-display-block {
+  display: block !important;
+}
+.u-min-height-0 {
+  min-height: 0;
+}
+.u-flex-1 {
+  flex: 1;
+}
+.u-flex-wrap-wrap {
+  flex-wrap: wrap;
+}
+.u-align-items-center {
+  align-items: center;
+}
+.u-justify-content-center {
+  justify-content: center;
+}
+.u-margin-bottom-0 {
+  margin-bottom: 0;
+}
+.u-border-top-1px-solid-border {
+  border-top: 1px solid var(--border-color);
+}
+.u-gap-8 {
+  gap: 8px;
+}
+.u-gap-4 {
+  gap: 4px;
+}
+.u-margin-right-8 {
+  margin-right: 8px;
+}
+.u-margin-top-8 {
+  margin-top: 8px;
+}
+.u-border-radius-50pct {
+  border-radius: 50%;
+}
+.u-position-absolute {
+  position: absolute;
+}
+.u-top-2 {
+  top: 2px;
+}
+.u-right-2 {
+  right: 2px;
+}
+.u-background-rgba-red {
+  background: rgba(255, 0, 0, 0.7);
+}
+.u-padding-0-25rem {
+  padding: 0.25rem;
+}
+.u-padding-4px-8px {
+  padding: 4px 8px;
+}
+.u-font-size-0-75rem {
+  font-size: 0.75rem;
+}
+.u-margin-right-6 {
+  margin-right: 6px;
+}
+.u-margin-bottom-1-5rem {
+  margin-bottom: 1.5rem;
+}
+.u-margin-top-0-5rem {
+  margin-top: 0.5rem;
+}
+.u-margin-top-12 {
+  margin-top: 12px;
+}
+.u-gap-0-4rem {
+  gap: 0.4rem;
+}
+.u-margin-top-0-4rem {
+  margin-top: 0.4rem;
+}
+.u-display-inline-flex {
+  display: inline-flex !important;
+}
+.u-gap-6 {
+  gap: 6px;
+}
+.u-justify-content-space-between {
+  justify-content: space-between;
+}
+.u-gap-12 {
+  gap: 12px;
+}
+.u-font-size-12 {
+  font-size: 12px;
+}
+.u-line-height-1-5 {
+  line-height: 1.5;
+}
+.u-z-index-10 {
+  z-index: 10;
+}
+.u-top-8 {
+  top: 8px;
+}
+.u-left-8 {
+  left: 8px;
+}
+.u-width-32 {
+  width: 32px;
+}
+.u-height-32 {
+  height: 32px;
+}
+.u-border-radius-4 {
+  border-radius: 4px;
+}
+.u-flex-shrink-0 {
+  flex-shrink: 0;
+}
+.u-object-fit-cover {
+  object-fit: cover;
+}
+.u-background-black {
+  background-color: black;
+}
+.u-background-bg-tertiary {
+  background-color: var(--bg-tertiary);
+}
+.u-min-width-0 {
+  min-width: 0;
+}
+.u-max-width-100 {
+  max-width: 100%;
+}
+.u-max-height-80vh {
+  max-height: 80vh;
+}
+.u-background-000 {
+  background-color: #000;
+}
+.u-color-var-text-warning {
+  color: var(--text-warning);
+}
+.u-margin-top-2 {
+  margin-top: 2px;
+}
 
 .up-disclaimer-box {
   display: flex;
@@ -100,19 +258,48 @@
   border-color: var(--primary-color);
 }
 
-.u-color-inherit { color: inherit; }
-.u-padding-2rem { padding: 2rem; }
-.u-text-align-center { text-align: center; }
-.u-display-grid { display: grid !important; }
-.u-grid-template-columns-auto-fit { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-.u-gap-2rem { gap: 2rem; }
-.u-align-items-start { align-items: flex-start; }
-.u-grid-column-1-minus-1 { grid-column: 1 / -1; }
-.u-padding-1rem { padding: 1rem; }
-.u-flex-wrap-wrap { flex-wrap: wrap; }
-.u-gap-0-5rem { gap: 0.5rem; }
-.u-flex-1-1-auto { flex: 1 1 auto; }
-.u-justify-content-center { justify-content: center; }
-.u-font-size-0-95rem { font-size: 0.95rem; }
-.u-min-height-400px { min-height: 400px; }
-
+.u-color-inherit {
+  color: inherit;
+}
+.u-padding-2rem {
+  padding: 2rem;
+}
+.u-text-align-center {
+  text-align: center;
+}
+.u-display-grid {
+  display: grid !important;
+}
+.u-grid-template-columns-auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+.u-gap-2rem {
+  gap: 2rem;
+}
+.u-align-items-start {
+  align-items: flex-start;
+}
+.u-grid-column-1-minus-1 {
+  grid-column: 1 / -1;
+}
+.u-padding-1rem {
+  padding: 1rem;
+}
+.u-flex-wrap-wrap {
+  flex-wrap: wrap;
+}
+.u-gap-0-5rem {
+  gap: 0.5rem;
+}
+.u-flex-1-1-auto {
+  flex: 1 1 auto;
+}
+.u-justify-content-center {
+  justify-content: center;
+}
+.u-font-size-0-95rem {
+  font-size: 0.95rem;
+}
+.u-min-height-400px {
+  min-height: 400px;
+}

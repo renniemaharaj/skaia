@@ -125,9 +125,7 @@
   cursor: pointer;
   font-size: 0.75rem;
   font-family: inherit;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
 .code-editor-action-btn:hover {
@@ -178,9 +176,7 @@
 
 /* When there's no file header, round all corners */
 .code-editor-block > section > .monaco-editor,
-.code-editor-block
-  > div:not(.code-editor-file-header):first-of-type
-  .monaco-editor {
+.code-editor-block > div:not(.code-editor-file-header):first-of-type .monaco-editor {
   border-radius: 12px;
 }
 

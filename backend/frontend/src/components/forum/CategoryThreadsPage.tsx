@@ -23,7 +23,7 @@ const CategoryThreadsPage = () => {
   const categories = useAtomValue(forumCategoriesAtom);
   const [forumExpanded, setForumExpanded] = useState(true);
 
-  const category = categories.find((c) => String(c.id) === String(categoryId));
+  const category = categories.find(c => String(c.id) === String(categoryId));
   const currentUser = useAtomValue(currentUserAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
 
@@ -34,8 +34,10 @@ const CategoryThreadsPage = () => {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const { threads, isLoading, loading, feedRef, sentinelRef, handleScroll } =
-    useThreadsFeed({ categoryId, searchQuery: debouncedSearch });
+  const { threads, isLoading, loading, feedRef, sentinelRef, handleScroll } = useThreadsFeed({
+    categoryId,
+    searchQuery: debouncedSearch,
+  });
 
   // Show the forum briefly on mount, then retract so the transition is visible
   useEffect(() => {
@@ -44,8 +46,7 @@ const CategoryThreadsPage = () => {
   }, []);
 
   const canDeleteCategory =
-    currentUser?.permissions?.includes("forum.category-delete") ||
-    guestSandboxMode;
+    currentUser?.permissions?.includes("forum.category-delete") || guestSandboxMode;
   const canEditCategories =
     currentUser?.permissions?.includes("forum.category-edit") ||
     currentUser?.roles?.includes("admin") ||
@@ -87,7 +88,7 @@ const CategoryThreadsPage = () => {
         }}
       >
         <button
-          onClick={() => setForumExpanded((v) => !v)}
+          onClick={() => setForumExpanded(v => !v)}
           title={forumExpanded ? "Collapse forum" : "Expand forum"}
           style={{
             borderRadius: "50%",
@@ -114,15 +115,22 @@ const CategoryThreadsPage = () => {
       >
         <Forum />
       </div>
-      <div className="forum-container" style={{ paddingTop: forumExpanded ? 0 : '40px' }}>
+      <div className="forum-container" style={{ paddingTop: forumExpanded ? 0 : "40px" }}>
         {/* Header and Controls */}
-        <div className="forum-header" style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
+        <div
+          className="forum-header"
+          style={{
+            marginBottom: "24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
           <div className="forum-header-left" style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <MessageSquare
-                size={28}
-                style={{ color: "var(--primary-color)", flexShrink: 0 }}
-              />
+              <MessageSquare size={28} style={{ color: "var(--primary-color)", flexShrink: 0 }} />
               <div>
                 <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--text-primary)" }}>
                   {category?.name ?? `Category #${categoryId}`}
@@ -141,7 +149,10 @@ const CategoryThreadsPage = () => {
               </div>
             </div>
           </div>
-          <div className="forum-header-actions" style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
+          <div
+            className="forum-header-actions"
+            style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}
+          >
             <SearchField
               value={searchQuery}
               onChange={setSearchQuery}

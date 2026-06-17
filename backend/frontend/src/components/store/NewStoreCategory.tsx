@@ -27,9 +27,7 @@ export const NewStoreCategory = () => {
       });
       navigate("/store");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create category",
-      );
+      setError(err instanceof Error ? err.message : "Failed to create category");
     } finally {
       setLoading(false);
     }
@@ -60,11 +58,7 @@ export const NewStoreCategory = () => {
             disabled={loading || !formData.name.trim()}
             title="Create"
           >
-            {loading ? (
-              <Loader size={20} className="spin" />
-            ) : (
-              <Check size={20} />
-            )}
+            {loading ? <Loader size={20} className="spin" /> : <Check size={20} />}
           </button>
         </div>
       </div>
@@ -92,9 +86,7 @@ export const NewStoreCategory = () => {
             type="text"
             placeholder="e.g. Ranks"
             value={formData.name}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, name: e.target.value }))
-            }
+            onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
             required
             autoFocus
           />
@@ -107,9 +99,7 @@ export const NewStoreCategory = () => {
             type="text"
             placeholder="Optional short description"
             value={formData.description}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, description: e.target.value }))
-            }
+            onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
           />
         </div>
 
@@ -120,8 +110,8 @@ export const NewStoreCategory = () => {
             type="number"
             min={0}
             value={formData.display_order}
-            onChange={(e) =>
-              setFormData((p) => ({
+            onChange={e =>
+              setFormData(p => ({
                 ...p,
                 display_order: Number(e.target.value),
               }))

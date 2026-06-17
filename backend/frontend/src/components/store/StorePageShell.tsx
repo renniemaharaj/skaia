@@ -47,13 +47,9 @@ export function StorePageShell({
         <header className="store-page-shell__header">
           <div className="store-page-shell__heading">
             {title && <h1 className="store-page-shell__title">{title}</h1>}
-            {subtitle && (
-              <p className="store-page-shell__subtitle">{subtitle}</p>
-            )}
+            {subtitle && <p className="store-page-shell__subtitle">{subtitle}</p>}
           </div>
-          {actions && (
-            <div className="store-page-shell__actions">{actions}</div>
-          )}
+          {actions && <div className="store-page-shell__actions">{actions}</div>}
         </header>
       )}
 

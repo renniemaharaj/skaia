@@ -137,9 +137,7 @@
   font-size: 0.75rem;
   padding: 2px 6px;
   border-radius: 4px;
-  transition:
-    color 0.15s,
-    background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 
 .page-comment__like-btn:hover {

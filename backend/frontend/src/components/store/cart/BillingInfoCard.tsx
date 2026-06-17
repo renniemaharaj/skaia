@@ -19,7 +19,7 @@ export function BillingInfoCard({
           <input
             type="checkbox"
             checked={rememberBilling}
-            onChange={(event) => onRememberBillingChange(event.target.checked)}
+            onChange={event => onRememberBillingChange(event.target.checked)}
           />
           Remember billing information
         </label>
@@ -30,7 +30,7 @@ export function BillingInfoCard({
               className="cart-textarea"
               placeholder="Name, note for driver, or billing details"
               value={billingInfo}
-              onChange={(event) => onBillingInfoChange(event.target.value)}
+              onChange={event => onBillingInfoChange(event.target.value)}
             />
           </label>
         )}

@@ -17,19 +17,14 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
     {items.map((item, index) => {
       const width = item.width ?? "regular";
       return (
-        <div
-          key={index}
-          className={`image-card-item image-card-item--${width}`}
-        >
+        <div key={index} className={`image-card-item image-card-item--${width}`}>
           <div className="image-card-image">
             {item.image_url ? (
               <img src={item.image_url} alt={item.heading ?? ""} loading="lazy" />
             ) : item.icon ? (
               <div className="image-card-placeholder">
                 {typeof item.icon === "string" ? (
-                  <span className="image-card-placeholder-text">
-                    {item.icon}
-                  </span>
+                  <span className="image-card-placeholder-text">{item.icon}</span>
                 ) : (
                   item.icon
                 )}
@@ -39,18 +34,10 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
             )}
           </div>
           <div className="image-card-body">
-            {item.icon && item.image_url && (
-              <span className="image-card-icon">{item.icon}</span>
-            )}
-            {item.heading && (
-              <h3 className="image-card-heading">{item.heading}</h3>
-            )}
-            {item.subheading && (
-              <p className="image-card-subheading">{item.subheading}</p>
-            )}
-            {item.link_url && (
-              <span className="image-card-link">{item.link_url}</span>
-            )}
+            {item.icon && item.image_url && <span className="image-card-icon">{item.icon}</span>}
+            {item.heading && <h3 className="image-card-heading">{item.heading}</h3>}
+            {item.subheading && <p className="image-card-subheading">{item.subheading}</p>}
+            {item.link_url && <span className="image-card-link">{item.link_url}</span>}
           </div>
         </div>
       );

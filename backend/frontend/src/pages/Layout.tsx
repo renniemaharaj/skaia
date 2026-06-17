@@ -7,18 +7,9 @@ import { useSetAtom, useAtomValue } from "jotai";
 import { layoutModeAtom } from "../atoms/layoutMode";
 import { useAtom } from "jotai";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  accessTokenAtom,
-  refreshTokenAtom,
-  currentUserAtom,
-  type User,
-} from "../atoms/auth";
+import { accessTokenAtom, refreshTokenAtom, currentUserAtom, type User } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
-import {
-  pendingTpRouteAtom,
-  cursorPositionsAtom,
-  pendingTpUserAtom,
-} from "../atoms/presence";
+import { pendingTpRouteAtom, cursorPositionsAtom, pendingTpUserAtom } from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { contextUserAtom } from "../atoms/contextUser";
 import { apiRequest } from "../utils/api";
@@ -105,22 +96,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const features = useAtomValue(featuresAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
 
-  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(
-    () => {
-      const until = getStoredRateLimitUntil();
-      return until ? Math.ceil((until - Date.now()) / 1000) : undefined;
-    },
-  );
+  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(() => {
+    const until = getStoredRateLimitUntil();
+    return until ? Math.ceil((until - Date.now()) / 1000) : undefined;
+  });
 
-  const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(getStoredRateLimitChallenge());
+  const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(
+    getStoredRateLimitChallenge()
+  );
   const [rateLimitDefcon, setRateLimitDefcon] = useState<any>(getStoredRateLimitDefcon());
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
-      const detail = (event as CustomEvent<{ retryAfter?: number, challenge?: string, defconInfo?: any }>).detail;
+      const detail = (
+        event as CustomEvent<{ retryAfter?: number; challenge?: string; defconInfo?: any }>
+      ).detail;
       const seconds = detail.retryAfter ?? 60;
-      
+
       setRateLimitChallenge(detail.challenge);
       setRateLimitDefcon(detail.defconInfo);
       if (detail.challenge) {
@@ -133,15 +126,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           sessionStorage.setItem(RATE_LIMIT_DEFCON_KEY, JSON.stringify(detail.defconInfo));
         } catch {}
       }
-      
-      setHoldingSeconds((current) => {
-        const next =
-          current === undefined ? seconds : Math.max(current, seconds);
+
+      setHoldingSeconds(current => {
+        const next = current === undefined ? seconds : Math.max(current, seconds);
         try {
-          sessionStorage.setItem(
-            RATE_LIMIT_KEY,
-            String(Date.now() + next * 1000),
-          );
+          sessionStorage.setItem(RATE_LIMIT_KEY, String(Date.now() + next * 1000));
         } catch {
           /* ignore */
         }
@@ -156,7 +145,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     if (holdingSeconds === undefined) return;
     const interval = window.setInterval(() => {
-      setHoldingSeconds((seconds) => {
+      setHoldingSeconds(seconds => {
         if (seconds === undefined || seconds <= 1) {
           try {
             sessionStorage.removeItem(RATE_LIMIT_KEY);
@@ -180,8 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       setMfaRequired(true);
     };
     window.addEventListener("auth:mfa-required", handleMfaRequired);
-    return () =>
-      window.removeEventListener("auth:mfa-required", handleMfaRequired);
+    return () => window.removeEventListener("auth:mfa-required", handleMfaRequired);
   }, []);
 
   usePresence(features?.presence ?? true);
@@ -195,7 +183,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const clearTpUser = useSetAtom(pendingTpUserAtom);
   const cursorPositions = useAtomValue(cursorPositionsAtom);
   const externalCursors = useMemo(() => {
-    return Array.from(cursorPositions.values()).map((c) => ({
+    return Array.from(cursorPositions.values()).map(c => ({
       x: c.x * (typeof window !== "undefined" ? window.innerWidth : 1920),
       y: c.y * (typeof window !== "undefined" ? window.innerHeight : 1080),
     }));
@@ -231,13 +219,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         const storedRefreshToken = localStorage.getItem("auth.refreshToken");
         if (storedRefreshToken) {
           try {
-            const refreshResp = await apiRequest<{ access_token: string }>(
-              "/auth/refresh",
-              {
-                method: "POST",
-                body: JSON.stringify({ refresh_token: storedRefreshToken }),
-              },
-            );
+            const refreshResp = await apiRequest<{ access_token: string }>("/auth/refresh", {
+              method: "POST",
+              body: JSON.stringify({ refresh_token: storedRefreshToken }),
+            });
             if (refreshResp?.access_token) {
               setAccessToken(refreshResp.access_token);
             }
@@ -271,7 +256,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
         const shouldLogout =
           /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
-            errorMessage,
+            errorMessage
           );
         if (shouldLogout) {
           // Only clear state if it's explicitly an auth failure, not a 500 or timeout
@@ -341,12 +326,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             root.style.scrollBehavior = "auto";
             root.scrollTo({ top: 0, left: 0, behavior: "instant" });
             root.scrollTop = 0;
-            setTimeout(() => { root.style.scrollBehavior = ""; }, 10);
+            setTimeout(() => {
+              root.style.scrollBehavior = "";
+            }, 10);
           }
-          
+
           document.documentElement.style.scrollBehavior = "auto";
           window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-          setTimeout(() => { document.documentElement.style.scrollBehavior = ""; }, 10);
+          setTimeout(() => {
+            document.documentElement.style.scrollBehavior = "";
+          }, 10);
         }, 10);
       }
     }
@@ -361,11 +350,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           const root = document.getElementById("root");
           const target = root || window;
           const scrollContainer = root || document.documentElement;
-          
+
           target.scrollTo({
             left: targetCursor.x * scrollContainer.scrollWidth - window.innerWidth / 2,
             top: targetCursor.y * scrollContainer.scrollHeight - window.innerHeight / 2,
-            behavior: "smooth"
+            behavior: "smooth",
           });
         }
         clearTpUser(null);
@@ -390,7 +379,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     if (!currentUser) return;
     apiRequest<Role[]>("/users/roles")
-      .then((roles) => {
+      .then(roles => {
         if (roles) setAllRoles(roles);
       })
       .catch(console.error);
@@ -398,28 +387,30 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const userRoles = currentUser?.roles ?? [];
   const rolesWithDetails = allRoles
-    .filter((r) => userRoles.includes(r.name))
+    .filter(r => userRoles.includes(r.name))
     .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const themeColor = topRole?.theme_color;
 
   if (holdingSeconds !== undefined) {
-    return <RateLimitedPage 
-      retrySeconds={holdingSeconds} 
-      challenge={rateLimitChallenge}
-      defconInfo={rateLimitDefcon}
-      onCleared={() => {
-        setHoldingSeconds(undefined);
-        try {
-          sessionStorage.removeItem(RATE_LIMIT_KEY);
-          sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
-          sessionStorage.removeItem(RATE_LIMIT_DEFCON_KEY);
-        } catch {}
-        setRateLimitChallenge(undefined);
-        setRateLimitDefcon(undefined);
-        window.dispatchEvent(new CustomEvent("api:rate-limit-cleared"));
-      }} 
-    />;
+    return (
+      <RateLimitedPage
+        retrySeconds={holdingSeconds}
+        challenge={rateLimitChallenge}
+        defconInfo={rateLimitDefcon}
+        onCleared={() => {
+          setHoldingSeconds(undefined);
+          try {
+            sessionStorage.removeItem(RATE_LIMIT_KEY);
+            sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
+            sessionStorage.removeItem(RATE_LIMIT_DEFCON_KEY);
+          } catch {}
+          setRateLimitChallenge(undefined);
+          setRateLimitDefcon(undefined);
+          window.dispatchEvent(new CustomEvent("api:rate-limit-cleared"));
+        }}
+      />
+    );
   }
 
   if (mfaRequired) {
@@ -461,15 +452,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       {(() => {
         const hasContextMedia =
-          contextUser &&
-          (contextUser.background_image_url ||
-            contextUser.background_video_url);
+          contextUser && (contextUser.background_image_url || contextUser.background_video_url);
         const effectiveBgImage =
-          contextUser?.background_image_url ||
-          (!hasContextMedia ? seo?.dom_skin : null);
+          contextUser?.background_image_url || (!hasContextMedia ? seo?.dom_skin : null);
         const effectiveBgVideo =
-          contextUser?.background_video_url ||
-          (!hasContextMedia ? seo?.dom_video : null);
+          contextUser?.background_video_url || (!hasContextMedia ? seo?.dom_video : null);
         const effectiveBgPos = contextUser?.background_position || "center";
 
         return (
@@ -532,8 +519,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="layout-guest-sandbox-banner">
           <Info size={16} className="layout-guest-sandbox-icon" />
           <span>
-            Site is in guest sandbox mode for you, most things will fail, but
-            you can still explore the page editor.
+            Site is in guest sandbox mode for you, most things will fail, but you can still explore
+            the page editor.
           </span>
         </div>
       )}
@@ -552,15 +539,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           {physicsSettings.rendererType === "center-anchored" ? (
             <CenterAnchoredSystem particleCount={200} />
           ) : physicsSettings.rendererType === "text" ? (
-            <TextGravityRenderer
-              text={physicsSettings.rendererText}
-              particleCount={300}
-            />
+            <TextGravityRenderer text={physicsSettings.rendererText} particleCount={300} />
           ) : (
-            <GravityParticles
-              particleCount={150}
-              externalCursors={externalCursors}
-            />
+            <GravityParticles particleCount={150} externalCursors={externalCursors} />
           )}
         </div>
       )}
@@ -577,9 +558,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         >
           <Particles
-            particleColors={
-              isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]
-            }
+            particleColors={isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]}
             particleCount={200}
             particleSpread={10}
             speed={0.1}

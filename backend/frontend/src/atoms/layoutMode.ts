@@ -14,5 +14,5 @@ function getDefaultLayoutMode(): "application" | "web" {
 
 export const layoutModeAtom = atomWithStorage<"application" | "web">(
   "layoutMode",
-  getDefaultLayoutMode(),
+  getDefaultLayoutMode()
 );

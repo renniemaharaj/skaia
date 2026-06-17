@@ -42,11 +42,7 @@ import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
 import type { User } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
-import {
-  relativeTime,
-  formatLocalTime,
-  formatFullDateTime,
-} from "../../utils/serverTime";
+import { relativeTime, formatLocalTime, formatFullDateTime } from "../../utils/serverTime";
 import Input from "../input/Input";
 import { GlassMenu } from "../ui/GlassMenu";
 import "./InboxPage.css";
@@ -123,7 +119,7 @@ const InboxPage = () => {
   useEffect(() => {
     const withUserId = searchParams.get("with");
     apiRequest<InboxConversation[]>("/inbox/conversations")
-      .then(async (data) => {
+      .then(async data => {
         const convs = data ?? [];
         setConversations(convs);
         // Compute total unread
@@ -133,24 +129,19 @@ const InboxPage = () => {
         // Auto-open conversation if ?with=userId was passed (e.g. from PresencePanel DM btn)
         if (withUserId) {
           setSearchParams({}, { replace: true }); // clear param from URL
-          const existing = convs.find(
-            (c) => String(c.other_user?.id) === String(withUserId),
-          );
+          const existing = convs.find(c => String(c.other_user?.id) === String(withUserId));
           if (existing) {
             setActiveId(existing.id);
           } else {
             // Create or retrieve the conversation by user ID
             try {
-              const conv = await apiRequest<InboxConversation>(
-                "/inbox/conversations",
-                {
-                  method: "POST",
-                  body: JSON.stringify({ target_user_id: Number(withUserId) }),
-                },
-              );
+              const conv = await apiRequest<InboxConversation>("/inbox/conversations", {
+                method: "POST",
+                body: JSON.stringify({ target_user_id: Number(withUserId) }),
+              });
               if (conv) {
-                setConversations((prev) => {
-                  if (prev.some((c) => c.id === conv.id)) return prev;
+                setConversations(prev => {
+                  if (prev.some(c => c.id === conv.id)) return prev;
                   return [conv, ...prev];
                 });
                 setActiveId(conv.id);
@@ -168,9 +159,7 @@ const InboxPage = () => {
       // Clear active when leaving the page
       setActiveId(null);
       // Unsubscribe from all conversations subscribed while on this page
-      subscribedConvsRef.current.forEach((id) =>
-        unsubscribe("inbox_conversation", id),
-      );
+      subscribedConvsRef.current.forEach(id => unsubscribe("inbox_conversation", id));
       subscribedConvsRef.current.clear();
     };
   }, []);
@@ -178,7 +167,7 @@ const InboxPage = () => {
   // Subscribe to every conversation so inbox:update events propagate to the
   // sidebar even when no specific chat is open.
   useEffect(() => {
-    conversations.forEach((c) => {
+    conversations.forEach(c => {
       if (!subscribedConvsRef.current.has(parseInt(String(c.id)))) {
         subscribe("inbox_conversation", c.id);
         subscribedConvsRef.current.add(parseInt(String(c.id)));
@@ -200,12 +189,10 @@ const InboxPage = () => {
     isAtBottomRef.current = true;
 
     apiRequest<InboxMessage[]>(`/inbox/conversations/${activeId}/messages`)
-      .then((data) => {
+      .then(data => {
         if (!cancelled) {
           const sorted = (data ?? []).sort(
-            (a, b) =>
-              new Date(a.created_at).getTime() -
-              new Date(b.created_at).getTime(),
+            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
           setMessages(sorted);
         }
@@ -219,14 +206,14 @@ const InboxPage = () => {
 
     // Mark conversation as read - subtract the actual per-conversation
     // unread count so the global badge stays accurate.
-    const convToMark = conversations.find((c) => c.id === activeId);
+    const convToMark = conversations.find(c => c.id === activeId);
     const prevUnread = convToMark?.unread_count ?? 0;
     apiRequest(`/inbox/conversations/${activeId}/read`, { method: "PUT" })
       .then(() => {
-        setConversations((prev) =>
-          prev.map((c) => (c.id === activeId ? { ...c, unread_count: 0 } : c)),
+        setConversations(prev =>
+          prev.map(c => (c.id === activeId ? { ...c, unread_count: 0 } : c))
         );
-        setUnreadCount((prev) => Math.max(0, prev - prevUnread));
+        setUnreadCount(prev => Math.max(0, prev - prevUnread));
       })
       .catch(() => {});
 
@@ -269,7 +256,7 @@ const InboxPage = () => {
         body = { target_user_id: Number(selectedUsers[0].id) };
       } else {
         body = {
-          participant_ids: selectedUsers.map((u) => Number(u.id)),
+          participant_ids: selectedUsers.map(u => Number(u.id)),
           title: groupTitle.trim(),
         };
       }
@@ -284,12 +271,10 @@ const InboxPage = () => {
           const user = selectedUsers[0];
           conv.other_user = user;
         }
-        setConversations((prev) => {
-          const existing = prev.find((c) => c.id === conv.id);
+        setConversations(prev => {
+          const existing = prev.find(c => c.id === conv.id);
           if (existing) {
-            return prev.map((c) =>
-              c.id === conv.id ? { ...c, other_user: conv.other_user } : c,
-            );
+            return prev.map(c => (c.id === conv.id ? { ...c, other_user: conv.other_user } : c));
           }
           return [conv, ...prev];
         });
@@ -305,7 +290,7 @@ const InboxPage = () => {
   };
   // Infinite scroll handler for search results
 
-  const activeConv = conversations.find((c) => c.id === activeId);
+  const activeConv = conversations.find(c => c.id === activeId);
   const blockedByCurrentUser = activeConv?.blocked_by_current_user ?? false;
   const blockedByOtherUser = activeConv?.blocked_by_other_user ?? false;
   const isBlocked = blockedByCurrentUser || blockedByOtherUser;
@@ -336,13 +321,12 @@ const InboxPage = () => {
 
   const handleDeleteConversation = async () => {
     if (!activeId) return;
-    if (!(await customConfirm("Delete this conversation and all messages?")))
-      return;
+    if (!(await customConfirm("Delete this conversation and all messages?"))) return;
     try {
       await apiRequest(`/inbox/conversations/${activeId}`, {
         method: "DELETE",
       });
-      setConversations((prev) => prev.filter((c) => c.id !== activeId));
+      setConversations(prev => prev.filter(c => c.id !== activeId));
       setActiveId(null);
       setMessages([]);
       toast.success("Conversation deleted");
@@ -357,23 +341,23 @@ const InboxPage = () => {
     if (!otherUserId) return;
     if (
       !(await customConfirm(
-        `Block ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
+        `Block ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`
       ))
     )
       return;
     try {
       await apiRequest(`/inbox/block/${otherUserId}`, { method: "POST" });
       toast.success("User blocked");
-      setConversations((prev) =>
-        prev.map((c) =>
+      setConversations(prev =>
+        prev.map(c =>
           c.id === activeId
             ? {
                 ...c,
                 blocked_by_current_user: true,
                 blocked_by_other_user: false,
               }
-            : c,
-        ),
+            : c
+        )
       );
     } catch {
       toast.error("Failed to block user");
@@ -386,17 +370,15 @@ const InboxPage = () => {
     if (!otherUserId) return;
     if (
       !(await customConfirm(
-        `Unblock ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`,
+        `Unblock ${activeConv?.other_user?.display_name || activeConv?.other_user?.username}?`
       ))
     )
       return;
     try {
       await apiRequest(`/inbox/block/${otherUserId}`, { method: "DELETE" });
       toast.success("User unblocked");
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === activeId ? { ...c, blocked_by_current_user: false } : c,
-        ),
+      setConversations(prev =>
+        prev.map(c => (c.id === activeId ? { ...c, blocked_by_current_user: false } : c))
       );
     } catch {
       toast.error("Failed to unblock user");
@@ -411,10 +393,8 @@ const InboxPage = () => {
         method: "PUT",
         body: JSON.stringify({ locked }),
       });
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id.toString() === activeId ? { ...c, is_locked: locked } : c,
-        ),
+      setConversations(prev =>
+        prev.map(c => (c.id.toString() === activeId ? { ...c, is_locked: locked } : c))
       );
       toast.success(locked ? "Conversation locked" : "Conversation unlocked");
     } catch (e: any) {
@@ -427,36 +407,27 @@ const InboxPage = () => {
     const isMe = userId === currentUser?.id?.toString();
     if (
       !(await customConfirm(
-        isMe
-          ? "Are you sure you want to leave this group?"
-          : "Remove this participant?",
+        isMe ? "Are you sure you want to leave this group?" : "Remove this participant?"
       ))
     )
       return;
     try {
-      await apiRequest(
-        `/inbox/conversations/${activeId}/participants/${isMe ? "me" : userId}`,
-        {
-          method: "DELETE",
-        },
-      );
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${isMe ? "me" : userId}`, {
+        method: "DELETE",
+      });
       if (isMe) {
-        setConversations((prev) =>
-          prev.filter((c) => c.id.toString() !== activeId),
-        );
+        setConversations(prev => prev.filter(c => c.id.toString() !== activeId));
         setActiveId(null);
       } else {
-        setConversations((prev) =>
-          prev.map((c) =>
+        setConversations(prev =>
+          prev.map(c =>
             c.id.toString() === activeId
               ? {
                   ...c,
-                  participants: c.participants?.filter(
-                    (p) => p.id.toString() !== userId,
-                  ),
+                  participants: c.participants?.filter(p => p.id.toString() !== userId),
                 }
-              : c,
-          ),
+              : c
+          )
         );
       }
       toast.success(isMe ? "You left the group" : "Participant removed");
@@ -468,13 +439,10 @@ const InboxPage = () => {
   const handleMute = async (userId: string, muted: boolean) => {
     if (!activeId) return;
     try {
-      await apiRequest(
-        `/inbox/conversations/${activeId}/participants/${userId}/mute`,
-        {
-          method: "PUT",
-          body: JSON.stringify({ muted }),
-        },
-      );
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/mute`, {
+        method: "PUT",
+        body: JSON.stringify({ muted }),
+      });
       toast.success(muted ? "Participant muted" : "Participant unmuted");
     } catch (e: any) {
       toast.error(e.message || "Failed to mute participant");
@@ -484,13 +452,10 @@ const InboxPage = () => {
   const handleChangeRole = async (userId: string, role: string) => {
     if (!activeId) return;
     try {
-      await apiRequest(
-        `/inbox/conversations/${activeId}/participants/${userId}/role`,
-        {
-          method: "PUT",
-          body: JSON.stringify({ role }),
-        },
-      );
+      await apiRequest(`/inbox/conversations/${activeId}/participants/${userId}/role`, {
+        method: "PUT",
+        body: JSON.stringify({ role }),
+      });
       toast.success("Role updated");
     } catch (e: any) {
       toast.error(e.message || "Failed to update role");
@@ -522,9 +487,7 @@ const InboxPage = () => {
 
   const [emojiToInsert, setEmojiToInsert] = useState<string | null>(null);
 
-  const inboxPageClass = isMobile
-    ? `inbox-page inbox-page--mobile-${mobileView}`
-    : "inbox-page";
+  const inboxPageClass = isMobile ? `inbox-page inbox-page--mobile-${mobileView}` : "inbox-page";
 
   return (
     <div className="inbox-page-wrapper" ref={wrapperRef}>
@@ -535,11 +498,7 @@ const InboxPage = () => {
             <h2 className="inbox-sidebar-title">Messages</h2>
             <div style={{ display: "flex", gap: "8px" }}>
               {showNewDm && selectedUsers.length > 0 && (
-                <button
-                  className="inbox-new-btn"
-                  onClick={startConversation}
-                  title="Create"
-                >
+                <button className="inbox-new-btn" onClick={startConversation} title="Create">
                   <Check size={16} />
                 </button>
               )}
@@ -568,7 +527,7 @@ const InboxPage = () => {
             >
               {selectedUsers.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                  {selectedUsers.map((u) => (
+                  {selectedUsers.map(u => (
                     <span
                       key={u.id}
                       style={{
@@ -583,11 +542,7 @@ const InboxPage = () => {
                     >
                       {u.display_name || u.username}
                       <button
-                        onClick={() =>
-                          setSelectedUsers((prev) =>
-                            prev.filter((x) => x.id !== u.id),
-                          )
-                        }
+                        onClick={() => setSelectedUsers(prev => prev.filter(x => x.id !== u.id))}
                         style={{
                           cursor: "pointer",
                           background: "none",
@@ -616,19 +571,17 @@ const InboxPage = () => {
                   }}
                   placeholder="Group Name (Optional)"
                   value={groupTitle}
-                  onChange={(e) => setGroupTitle(e.target.value)}
+                  onChange={e => setGroupTitle(e.target.value)}
                 />
               )}
               <PersonPicker
-                onSelect={(user) => {
-                  if (!selectedUsers.find((u) => u.id === user.id)) {
-                    setSelectedUsers((prev) => [...prev, user]);
+                onSelect={user => {
+                  if (!selectedUsers.find(u => u.id === user.id)) {
+                    setSelectedUsers(prev => [...prev, user]);
                   }
                 }}
-                excludeIds={selectedUsers.map((u) => u.id)}
-                placeholder={
-                  selectedUsers.length > 0 ? "Add more users…" : "Search users…"
-                }
+                excludeIds={selectedUsers.map(u => u.id)}
+                placeholder={selectedUsers.length > 0 ? "Add more users…" : "Search users…"}
                 onClose={() => {
                   setShowNewDm(false);
                   setSelectedUsers([]);
@@ -646,7 +599,7 @@ const InboxPage = () => {
 
             {/* Existing conversations (dimmed when search is active) */}
             <div className={showNewDm ? "inbox-convs-dimmed" : ""}>
-              {conversations.map((c) => (
+              {conversations.map(c => (
                 <ConversationRow
                   key={c.id}
                   c={c}
@@ -680,7 +633,7 @@ const InboxPage = () => {
                 blockedByCurrentUser={blockedByCurrentUser}
                 blockedByOtherUser={blockedByOtherUser}
                 showChatMenu={showChatMenu}
-                onToggleChatMenu={() => setShowChatMenu((v) => !v)}
+                onToggleChatMenu={() => setShowChatMenu(v => !v)}
                 onDelete={handleDeleteConversation}
                 onBlock={handleBlockUser}
                 onUnblock={handleUnblockUser}
@@ -693,9 +646,7 @@ const InboxPage = () => {
               />
               {/* Messages */}
               <div className="inbox-feed" ref={feedRef} onScroll={handleScroll}>
-                {loadingMsgs && (
-                  <p className="inbox-loading">Loading messages…</p>
-                )}
+                {loadingMsgs && <p className="inbox-loading">Loading messages…</p>}
                 {activeConv?.is_group && !loadingMsgs && (
                   <div
                     style={{
@@ -726,8 +677,8 @@ const InboxPage = () => {
                           marginBottom: 2,
                         }}
                       />
-                      This is the start of the group chat. No one outside of
-                      this chat can read or listen to them.
+                      This is the start of the group chat. No one outside of this chat can read or
+                      listen to them.
                     </div>
                     <div
                       style={{
@@ -740,27 +691,19 @@ const InboxPage = () => {
                         maxWidth: "85%",
                       }}
                     >
-                      {activeConv?.participants?.find((p) => p.role === "owner")
-                        ?.display_name ||
-                        activeConv?.participants?.find(
-                          (p) => p.role === "owner",
-                        )?.username ||
+                      {activeConv?.participants?.find(p => p.role === "owner")?.display_name ||
+                        activeConv?.participants?.find(p => p.role === "owner")?.username ||
                         "Someone"}{" "}
                       created this group "{activeConv?.title}". You and{" "}
-                      {Math.max(0, (activeConv?.participants?.length || 0) - 2)}{" "}
-                      others were added.
+                      {Math.max(0, (activeConv?.participants?.length || 0) - 2)} others were added.
                     </div>
                   </div>
                 )}
                 {!loadingMsgs && messages.length === 0 && (
                   <p className="inbox-empty">No messages yet. Say hello!</p>
                 )}
-                {messages.map((m) => (
-                  <MessageBubble
-                    key={m.id}
-                    m={m}
-                    currentUserId={currentUser?.id}
-                  />
+                {messages.map(m => (
+                  <MessageBubble key={m.id} m={m} currentUserId={currentUser?.id} />
                 ))}
               </div>
 
@@ -769,7 +712,7 @@ const InboxPage = () => {
                 <div className="inbox-input-toolbar">
                   <button
                     className="action-btn"
-                    onClick={() => setShowEmojiPicker((v) => !v)}
+                    onClick={() => setShowEmojiPicker(v => !v)}
                     title="Emoji"
                     type="button"
                     disabled={
@@ -777,9 +720,7 @@ const InboxPage = () => {
                       activeConv?.is_locked ||
                       (activeConv?.is_group &&
                         !!activeConv.participants?.find(
-                          (p) =>
-                            p.id.toString() === currentUser?.id?.toString() &&
-                            p.is_muted,
+                          p => p.id.toString() === currentUser?.id?.toString() && p.is_muted
                         ))
                     }
                   >
@@ -795,9 +736,7 @@ const InboxPage = () => {
                       activeConv?.is_locked ||
                       (activeConv?.is_group &&
                         !!activeConv.participants?.find(
-                          (p) =>
-                            p.id.toString() === currentUser?.id?.toString() &&
-                            p.is_muted,
+                          p => p.id.toString() === currentUser?.id?.toString() && p.is_muted
                         ))
                     }
                   >
@@ -825,7 +764,7 @@ const InboxPage = () => {
                   )}
                   <Input
                     className="inbox-chat-input"
-                    handleSend={async (msg) => {
+                    handleSend={async msg => {
                       if (!msg.trim() || !activeId) return;
                       try {
                         await apiRequest<InboxMessage>(
@@ -833,7 +772,7 @@ const InboxPage = () => {
                           {
                             method: "POST",
                             body: JSON.stringify({ content: msg }),
-                          },
+                          }
                         );
                       } catch (err) {
                         console.error("Failed to send message:", err);
@@ -845,9 +784,7 @@ const InboxPage = () => {
                       !!(
                         activeConv?.is_group &&
                         activeConv.participants?.find(
-                          (p) =>
-                            p.id.toString() === currentUser?.id?.toString() &&
-                            p.is_muted,
+                          p => p.id.toString() === currentUser?.id?.toString() && p.is_muted
                         )
                       )
                     }
@@ -856,9 +793,7 @@ const InboxPage = () => {
                         ? "Conversation is locked"
                         : activeConv?.is_group &&
                             activeConv.participants?.find(
-                              (p) =>
-                                p.id.toString() ===
-                                  currentUser?.id?.toString() && p.is_muted,
+                              p => p.id.toString() === currentUser?.id?.toString() && p.is_muted
                             )
                           ? "You are muted"
                           : "Write a message…"
@@ -936,8 +871,7 @@ function ConversationRow({
                 src={other.avatar_url || undefined}
                 alt={other.display_name || other.username}
                 size={36}
-                initials={(other.display_name ||
-                  other.username)?.[0]?.toUpperCase()}
+                initials={(other.display_name || other.username)?.[0]?.toUpperCase()}
               />
             </div>
           </UserProfileOverlay>
@@ -948,16 +882,12 @@ function ConversationRow({
       <span className="inbox-conv-info">
         <span className="inbox-conv-name">{displayName}</span>
         {c.last_message && (
-          <span className="inbox-conv-preview">
-            {c.last_message.content.slice(0, 50)}
-          </span>
+          <span className="inbox-conv-preview">{c.last_message.content.slice(0, 50)}</span>
         )}
       </span>
       <span className="inbox-conv-meta">
         {c.last_message && (
-          <span className="inbox-conv-time">
-            {relativeTime(c.last_message.created_at)}
-          </span>
+          <span className="inbox-conv-time">{relativeTime(c.last_message.created_at)}</span>
         )}
         {(c.unread_count || 0) > 0 && c.id !== activeId && (
           <span className="inbox-unread-badge">{c.unread_count}</span>
@@ -1014,14 +944,14 @@ function InboxChatHeader({
     : other?.display_name || other?.username || "Unknown";
 
   const myParticipant = isGroup
-    ? activeConv.participants?.find((p) => p.id.toString() === currentUserId)
+    ? activeConv.participants?.find(p => p.id.toString() === currentUserId)
     : null;
   const isOwner = myParticipant?.role === "owner";
   const isManager = myParticipant?.role === "manager" || isOwner;
 
   const buildParticipantOptions = () => {
     if (!activeConv?.participants) return [];
-    return activeConv.participants.map((p) => {
+    return activeConv.participants.map(p => {
       const isTargetOwner = p.role === "owner";
       const isTargetManager = p.role === "manager";
       const isSelf = p.id.toString() === currentUserId;
@@ -1032,11 +962,7 @@ function InboxChatHeader({
           subOptions.push({
             title: isTargetManager ? "Demote to Member" : "Promote to Manager",
             icon: <Shield size={14} />,
-            onClick: () =>
-              onChangeRole(
-                p.id.toString(),
-                isTargetManager ? "member" : "manager",
-              ),
+            onClick: () => onChangeRole(p.id.toString(), isTargetManager ? "member" : "manager"),
           });
         }
         if (!isTargetOwner && (!isTargetManager || isOwner)) {
@@ -1081,11 +1007,7 @@ function InboxChatHeader({
   return (
     <div className="inbox-chat-header">
       {isMobile && (
-        <button
-          className="inbox-back-btn"
-          onClick={onMobileBack}
-          title="Back to conversations"
-        >
+        <button className="inbox-back-btn" onClick={onMobileBack} title="Back to conversations">
           ←
         </button>
       )}
@@ -1099,10 +1021,7 @@ function InboxChatHeader({
               <span className="inbox-chat-username">
                 {displayName}{" "}
                 {activeConv.is_locked && (
-                  <Lock
-                    size={12}
-                    style={{ display: "inline", marginLeft: 4 }}
-                  />
+                  <Lock size={12} style={{ display: "inline", marginLeft: 4 }} />
                 )}
               </span>
               <span
@@ -1112,14 +1031,12 @@ function InboxChatHeader({
                   marginTop: "2px",
                   cursor: "pointer",
                 }}
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   setMenuPos({ x: e.clientX, y: e.clientY });
                 }}
               >
-                {activeConv.participants
-                  ?.map((p) => p.display_name || p.username)
-                  .join(", ")}
+                {activeConv.participants?.map(p => p.display_name || p.username).join(", ")}
               </span>
             </div>
           </>
@@ -1133,14 +1050,8 @@ function InboxChatHeader({
                   fallbackAvatar={other.avatar_url || undefined}
                   disableClick={true}
                 >
-                  <div
-                    style={{ display: "flex", width: "100%", height: "100%" }}
-                  >
-                    <UserAvatar
-                      src={other.avatar_url || undefined}
-                      alt={displayName}
-                      size={32}
-                    />
+                  <div style={{ display: "flex", width: "100%", height: "100%" }}>
+                    <UserAvatar src={other.avatar_url || undefined} alt={displayName} size={32} />
                   </div>
                 </UserProfileOverlay>
               </span>
@@ -1149,9 +1060,7 @@ function InboxChatHeader({
             {isBlocked && (
               <span className="inbox-block-status">
                 <Info size={14} />
-                {blockedByCurrentUser
-                  ? "You blocked this user"
-                  : "Blocked by user"}
+                {blockedByCurrentUser ? "You blocked this user" : "Blocked by user"}
               </span>
             )}
           </>
@@ -1184,10 +1093,7 @@ function InboxChatHeader({
         </button>
 
         {showAddUser && isGroup && isManager && (
-          <div
-            className="inbox-chat-menu"
-            style={{ width: 300, right: 30, padding: "12px" }}
-          >
+          <div className="inbox-chat-menu" style={{ width: 300, right: 30, padding: "12px" }}>
             <h4
               style={{
                 margin: "0 0 12px 0",
@@ -1198,12 +1104,12 @@ function InboxChatHeader({
               Add to Group
             </h4>
             <PersonPicker
-              onSelect={(user) => {
+              onSelect={user => {
                 onAddUser(user)
                   .then(() => setShowAddUser(false))
                   .catch(() => {});
               }}
-              excludeIds={activeConv.participants?.map((p) => p.id) || []}
+              excludeIds={activeConv.participants?.map(p => p.id) || []}
               placeholder="Search users..."
               onClose={() => setShowAddUser(false)}
             />
@@ -1219,11 +1125,7 @@ function InboxChatHeader({
             )}
             {isGroup && isManager && (
               <button onClick={() => onLock(!activeConv.is_locked)}>
-                {activeConv.is_locked ? (
-                  <Unlock size={14} />
-                ) : (
-                  <Lock size={14} />
-                )}
+                {activeConv.is_locked ? <Unlock size={14} /> : <Lock size={14} />}
                 {activeConv.is_locked ? "Unlock Group" : "Lock Group"}
               </button>
             )}
@@ -1261,7 +1163,7 @@ function InboxChatHeader({
                 >
                   Participants
                 </div>
-                {activeConv.participants?.map((p) => {
+                {activeConv.participants?.map(p => {
                   const pIsMe = p.id.toString() === currentUserId;
                   return (
                     <div
@@ -1292,8 +1194,7 @@ function InboxChatHeader({
                               src={p.avatar_url || undefined}
                               alt={p.display_name || p.username}
                               size={20}
-                              initials={(p.display_name ||
-                                p.username)?.[0]?.toUpperCase()}
+                              initials={(p.display_name || p.username)?.[0]?.toUpperCase()}
                             />
                           </div>
                         </UserProfileOverlay>
@@ -1330,10 +1231,7 @@ function InboxChatHeader({
                         )}
                         {p.is_muted && (
                           <span title="Muted" style={{ display: "flex" }}>
-                            <VolumeX
-                              size={14}
-                              style={{ color: "var(--color-danger)" }}
-                            />
+                            <VolumeX size={14} style={{ color: "var(--color-danger)" }} />
                           </span>
                         )}
 
@@ -1354,16 +1252,10 @@ function InboxChatHeader({
                                 display: "flex",
                                 background: "transparent",
                               }}
-                              onClick={() =>
-                                onMute(p.id.toString(), !p.is_muted)
-                              }
+                              onClick={() => onMute(p.id.toString(), !p.is_muted)}
                               title={p.is_muted ? "Unmute" : "Mute"}
                             >
-                              {p.is_muted ? (
-                                <Volume2 size={14} />
-                              ) : (
-                                <VolumeX size={14} />
-                              )}
+                              {p.is_muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
                             </button>
                             {isOwner && p.role !== "owner" && (
                               <button
@@ -1378,12 +1270,10 @@ function InboxChatHeader({
                                 onClick={() =>
                                   onChangeRole(
                                     p.id.toString(),
-                                    p.role === "manager" ? "member" : "manager",
+                                    p.role === "manager" ? "member" : "manager"
                                   )
                                 }
-                                title={
-                                  p.role === "manager" ? "Demote" : "Promote"
-                                }
+                                title={p.role === "manager" ? "Demote" : "Promote"}
                               >
                                 <Shield size={14} />
                               </button>
@@ -1400,10 +1290,7 @@ function InboxChatHeader({
                               onClick={() => onKick(p.id.toString())}
                               title="Remove"
                             >
-                              <UserMinus
-                                size={14}
-                                style={{ color: "var(--color-danger)" }}
-                              />
+                              <UserMinus size={14} style={{ color: "var(--color-danger)" }} />
                             </button>
                           </div>
                         )}
@@ -1471,10 +1358,7 @@ function MessageBubble({
       onClick: () => toast.error("Reported message"),
     },
   ];
-  if (
-    m.message_type === "system_group_created" ||
-    m.message_type === "system_group_update"
-  ) {
+  if (m.message_type === "system_group_created" || m.message_type === "system_group_update") {
     return (
       <div
         className="inbox-msg-system"
@@ -1488,8 +1372,7 @@ function MessageBubble({
         <span>
           {m.message_type === "system_group_created" ? (
             <>
-              <strong>{m.sender_name}</strong> {m.content} on{" "}
-              {formatLocalTime(m.created_at)}
+              <strong>{m.sender_name}</strong> {m.content} on {formatLocalTime(m.created_at)}
             </>
           ) : (
             <>{m.content}</>
@@ -1559,28 +1442,17 @@ function MessageBubble({
             try {
               const card = JSON.parse(m.content);
               return (
-                <Link
-                  to={card.route || `/page/${card.slug}`}
-                  className="inbox-page-card"
-                >
+                <Link to={card.route || `/page/${card.slug}`} className="inbox-page-card">
                   <div className="inbox-page-card__icon">
                     <FileText size={20} />
                   </div>
                   <div className="inbox-page-card__body">
-                    <span className="inbox-page-card__label">
-                      New page created
-                    </span>
-                    <span className="inbox-page-card__title">
-                      {card.title || card.slug}
-                    </span>
+                    <span className="inbox-page-card__label">New page created</span>
+                    <span className="inbox-page-card__title">{card.title || card.slug}</span>
                     {card.description && (
-                      <span className="inbox-page-card__desc">
-                        {card.description}
-                      </span>
+                      <span className="inbox-page-card__desc">{card.description}</span>
                     )}
-                    <span className="inbox-page-card__link">
-                      Open your page
-                    </span>
+                    <span className="inbox-page-card__link">Open your page</span>
                   </div>
                 </Link>
               );
@@ -1593,23 +1465,16 @@ function MessageBubble({
             try {
               const card = JSON.parse(m.content);
               return (
-                <Link
-                  to={`/orders/${card.order_id}`}
-                  className="inbox-page-card"
-                >
+                <Link to={`/orders/${card.order_id}`} className="inbox-page-card">
                   <div className="inbox-page-card__icon">
                     <FileText size={20} />
                   </div>
                   <div className="inbox-page-card__body">
-                    <span className="inbox-page-card__label">
-                      Order Confirmed
-                    </span>
-                    <span className="inbox-page-card__title">
-                      Order #{card.order_id}
-                    </span>
+                    <span className="inbox-page-card__label">Order Confirmed</span>
+                    <span className="inbox-page-card__title">Order #{card.order_id}</span>
                     <span className="inbox-page-card__desc">
-                      {card.item_count} item{card.item_count !== 1 ? "s" : ""} ·
-                      ${(card.total_price / 100).toFixed(2)}
+                      {card.item_count} item{card.item_count !== 1 ? "s" : ""} · $
+                      {(card.total_price / 100).toFixed(2)}
                     </span>
                     <span className="inbox-page-card__link">View order</span>
                   </div>
@@ -1631,10 +1496,7 @@ function MessageBubble({
                 cancelled: "Order Cancelled",
               };
               return (
-                <Link
-                  to={`/store/orders/${card.order_id}`}
-                  className="inbox-page-card"
-                >
+                <Link to={`/store/orders/${card.order_id}`} className="inbox-page-card">
                   <div className="inbox-page-card__icon">
                     <FileText size={20} />
                   </div>
@@ -1644,8 +1506,7 @@ function MessageBubble({
                       {statusLabel[card.status] ?? `Status: ${card.status}`}
                     </span>
                     <span className="inbox-page-card__desc">
-                      Order #{card.order_id} · $
-                      {(card.total_price / 100).toFixed(2)}
+                      Order #{card.order_id} · ${(card.total_price / 100).toFixed(2)}
                     </span>
                     <span className="inbox-page-card__link">View order</span>
                   </div>
@@ -1656,11 +1517,7 @@ function MessageBubble({
             }
           })()}
         {m.content && (!m.message_type || m.message_type === "text") && (
-          <p
-            className="inbox-msg-content"
-            onClick={handleTextClick}
-            style={{ cursor: "pointer" }}
-          >
+          <p className="inbox-msg-content" onClick={handleTextClick} style={{ cursor: "pointer" }}>
             {m.content}
           </p>
         )}
@@ -1670,10 +1527,7 @@ function MessageBubble({
           m.content !== m.attachment_name && (
             <p className="inbox-msg-content inbox-msg-caption">{m.content}</p>
           )}
-        <span
-          className="inbox-msg-time"
-          title={formatFullDateTime(m.created_at)}
-        >
+        <span className="inbox-msg-time" title={formatFullDateTime(m.created_at)}>
           {formatLocalTime(m.created_at)}
         </span>
       </div>

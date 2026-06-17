@@ -58,10 +58,7 @@ function parseConfig(config: string): FactTableConfig {
   }
 }
 
-function updateConfig(
-  config: string,
-  updates: Partial<FactTableConfig>,
-): string {
+function updateConfig(config: string, updates: Partial<FactTableConfig>): string {
   try {
     const parsed = JSON.parse(config || "{}");
     return JSON.stringify({ ...parsed, ...updates });
@@ -88,15 +85,12 @@ const isAuthError = (message: string) =>
 
 async function evaluateDataSource(
   datasourceId: number,
-  envData?: string,
+  envData?: string
 ): Promise<{ rows: RawRow[]; cachedAt: Date; cacheTTL: number }> {
-  const execRes = await apiRequest<ExecuteResult>(
-    `/config/datasources/${datasourceId}/execute`,
-    {
-      method: "POST",
-      body: JSON.stringify({ env_data: envData ?? "" }),
-    },
-  );
+  const execRes = await apiRequest<ExecuteResult>(`/config/datasources/${datasourceId}/execute`, {
+    method: "POST",
+    body: JSON.stringify({ env_data: envData ?? "" }),
+  });
   if (execRes.error) {
     throw new Error(execRes.error);
   }
@@ -110,12 +104,7 @@ async function evaluateDataSource(
   };
 }
 
-export const DerivedSectionBlock = ({
-  section,
-  canEdit,
-  onUpdate,
-  onDelete,
-}: Props) => {
+export const DerivedSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const layout = getSectionLayout(section.config);
   const cfg = parseConfig(section.config);
 
@@ -128,9 +117,7 @@ export const DerivedSectionBlock = ({
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [dsCacheTTL, setDsCacheTTL] = useState(0);
   const [loadingDS, setLoadingDS] = useState(true);
-  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>(
-    [],
-  );
+  const [componentsList, setComponentsList] = useState<ComponentDefinition[]>([]);
   const [loadingComponents, setLoadingComponents] = useState(true);
   const datasourceSelectId = `derived-datasource-${section.id}`;
   const rowKeySelectId = `derived-row-key-${section.id}`;
@@ -139,14 +126,14 @@ export const DerivedSectionBlock = ({
   // Load available data sources
   useEffect(() => {
     apiRequest<DataSource[]>("/config/datasources")
-      .then((list) => setDataSources(list ?? []))
+      .then(list => setDataSources(list ?? []))
       .catch(console.error)
       .finally(() => setLoadingDS(false));
   }, []);
 
   useEffect(() => {
     apiRequest<ComponentDefinition[]>("/config/components")
-      .then((list) => setComponentsList(list ?? []))
+      .then(list => setComponentsList(list ?? []))
       .catch(console.error)
       .finally(() => setLoadingComponents(false));
   }, []);
@@ -164,9 +151,7 @@ export const DerivedSectionBlock = ({
     setCompileCached(null);
     setLastRunAt(null);
     try {
-      const { rows, cachedAt, cacheTTL } = await evaluateDataSource(
-        cfg.datasource_id,
-      );
+      const { rows, cachedAt, cacheTTL } = await evaluateDataSource(cfg.datasource_id);
       setRawRows(rows);
       setCompileCached(true);
       setLastRunAt(cachedAt);
@@ -178,9 +163,7 @@ export const DerivedSectionBlock = ({
       setAuthError(auth);
       setEvalError(auth ? null : msg);
       setRawRows([]);
-      toast.error(
-        `Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`,
-      );
+      toast.error(`Evaluation failed${auth ? ": authentication required" : `: ${msg}`}`);
     } finally {
       setEvaluating(false);
     }
@@ -204,15 +187,9 @@ export const DerivedSectionBlock = ({
       cfg.column_map,
       section.id,
       cfg.row_overrides,
-      cfg.row_key_column,
+      cfg.row_key_column
     );
-  }, [
-    rawRows,
-    cfg.column_map,
-    cfg.row_overrides,
-    cfg.row_key_column,
-    section.id,
-  ]);
+  }, [rawRows, cfg.column_map, cfg.row_overrides, cfg.row_key_column, section.id]);
 
   // Config updaters
   const handleDatasourceChange = (dsId: number) => {
@@ -246,7 +223,7 @@ export const DerivedSectionBlock = ({
   };
 
   const handleComponentChange = (componentType: string) => {
-    const component = componentsList.find((c) => c.type === componentType);
+    const component = componentsList.find(c => c.type === componentType);
     onUpdate({
       ...section,
       config: updateConfig(section.config, {
@@ -265,12 +242,12 @@ export const DerivedSectionBlock = ({
   };
 
   const selectedDS = useMemo(
-    () => dataSources.find((d) => d.id === cfg.datasource_id),
-    [dataSources, cfg.datasource_id],
+    () => dataSources.find(d => d.id === cfg.datasource_id),
+    [dataSources, cfg.datasource_id]
   );
   const selectedComponent = useMemo(
-    () => componentsList.find((c) => c.type === cfg.component_type),
-    [componentsList, cfg.component_type],
+    () => componentsList.find(c => c.type === cfg.component_type),
+    [componentsList, cfg.component_type]
   );
 
   return (
@@ -280,28 +257,28 @@ export const DerivedSectionBlock = ({
           onDelete={() => onDelete(section.id)}
           label="Derived Section"
           layout={layout}
-          onLayoutChange={(l) =>
+          onLayoutChange={l =>
             onUpdate({
               ...section,
               config: setSectionLayout(section.config, l),
             })
           }
           margins={getSectionMargins(section.config)}
-          onMarginsChange={(m) =>
+          onMarginsChange={m =>
             onUpdate({
               ...section,
               config: setSectionMargins(section.config, m),
             })
           }
           animation={getSectionAnimation(section.config)}
-          onAnimationChange={(a) =>
+          onAnimationChange={a =>
             onUpdate({
               ...section,
               config: setSectionAnimation(section.config, a),
             })
           }
           animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={(i) =>
+          onAnimationIntensityChange={i =>
             onUpdate({
               ...section,
               config: setSectionAnimationIntensity(section.config, i),
@@ -326,10 +303,7 @@ export const DerivedSectionBlock = ({
       {/* Controls bar */}
       {canEdit && (
         <div className="derived-section-controls">
-          <label
-            className="derived-section-control"
-            htmlFor={datasourceSelectId}
-          >
+          <label className="derived-section-control" htmlFor={datasourceSelectId}>
             <span>Data Source</span>
             {loadingDS ? (
               <span>Loading…</span>
@@ -337,11 +311,11 @@ export const DerivedSectionBlock = ({
               <Select
                 id={datasourceSelectId}
                 value={cfg.datasource_id ?? ""}
-                onChange={(e) => handleDatasourceChange(Number(e.target.value))}
+                onChange={e => handleDatasourceChange(Number(e.target.value))}
                 size="sm"
               >
                 <option value="">— Select a data source —</option>
-                {dataSources.map((ds) => (
+                {dataSources.map(ds => (
                   <option key={ds.id} value={ds.id}>
                     {ds.name}
                   </option>
@@ -356,11 +330,11 @@ export const DerivedSectionBlock = ({
               <Select
                 id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
-                onChange={(e) => handleRowKeyColumnChange(e.target.value)}
+                onChange={e => handleRowKeyColumnChange(e.target.value)}
                 size="sm"
               >
                 <option value="">— index —</option>
-                {availableColumns.map((col) => (
+                {availableColumns.map(col => (
                   <option key={col} value={col}>
                     {col}
                   </option>
@@ -372,9 +346,9 @@ export const DerivedSectionBlock = ({
           {selectedDS && (
             <span className="derived-section-ds-info">
               <Zap size={14} /> {selectedDS.name}
-              <Link 
-                to={`/admin/datasources/${selectedDS.id}`} 
-                target="_blank" 
+              <Link
+                to={`/admin/datasources/${selectedDS.id}`}
+                target="_blank"
                 title="Edit Data Source"
                 className="derived-section-ds-link"
               >
@@ -384,10 +358,7 @@ export const DerivedSectionBlock = ({
           )}
 
           {availableColumns.length > 0 && (
-            <label
-              className="derived-section-control"
-              htmlFor={componentSelectId}
-            >
+            <label className="derived-section-control" htmlFor={componentSelectId}>
               <span>Component</span>
               {loadingComponents ? (
                 <span>Loading…</span>
@@ -395,13 +366,13 @@ export const DerivedSectionBlock = ({
                 <Select
                   id={componentSelectId}
                   value={cfg.component_type ?? ""}
-                  onChange={(e) => handleComponentChange(e.target.value)}
+                  onChange={e => handleComponentChange(e.target.value)}
                   size="sm"
                 >
                   <option value="">— Designed cards —</option>
                   {componentsList
-                    .filter((component) => component.repeatable)
-                    .map((component) => (
+                    .filter(component => component.repeatable)
+                    .map(component => (
                       <option key={component.type} value={component.type}>
                         {component.label}
                       </option>
@@ -467,14 +438,13 @@ export const DerivedSectionBlock = ({
             <Clock size={11} />
             <span>Updated {formatTimeAgo(lastRunAt)}</span>
             {dsCacheTTL > 0 && (
-              <span className="ds-last-updated__cache-badge">
-                {cacheTTLLabel(dsCacheTTL)}
-              </span>
+              <span className="ds-last-updated__cache-badge">{cacheTTLLabel(dsCacheTTL)}</span>
             )}
           </div>
         )}
 
-        {(selectedComponent?.type === "compound.mediascraper" || cfg.component_group?.items.some((c) => c.component_type === "compound.mediascraper")) && (
+        {(selectedComponent?.type === "compound.mediascraper" ||
+          cfg.component_group?.items.some(c => c.component_type === "compound.mediascraper")) && (
           <ActiveJobsBadge canEdit={canEdit} />
         )}
 
@@ -504,7 +474,16 @@ export const DerivedSectionBlock = ({
         )}
 
         {!authError && cfg.component_group && rawRows.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: cfg.component_group.gap, marginTop: "16px", alignItems: "flex-start", position: "relative" }}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: cfg.component_group.gap,
+              marginTop: "16px",
+              alignItems: "flex-start",
+              position: "relative",
+            }}
+          >
             {rawRows.map((row, i) => (
               <ComponentGroupRenderer
                 key={i}
@@ -524,15 +503,11 @@ export const DerivedSectionBlock = ({
         )}
 
         {/* Empty result (after evaluation) */}
-        {!evaluating &&
-          !authError &&
-          !evalError &&
-          cfg.datasource_id &&
-          rawRows.length === 0 && (
-            <div className="derived-section-empty">
-              <p>Data source returned no items.</p>
-            </div>
-          )}
+        {!evaluating && !authError && !evalError && cfg.datasource_id && rawRows.length === 0 && (
+          <div className="derived-section-empty">
+            <p>Data source returned no items.</p>
+          </div>
+        )}
 
         {/* Has rows but no column map configured */}
         {!evaluating &&
@@ -544,10 +519,7 @@ export const DerivedSectionBlock = ({
           !selectedComponent &&
           !cfg.component_group && (
             <div className="derived-section-empty">
-              <p>
-                Configure the column mapping above to map datasource rows to
-                card fields.
-              </p>
+              <p>Configure the column mapping above to map datasource rows to card fields.</p>
             </div>
           )}
       </div>

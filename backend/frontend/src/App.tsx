@@ -1,11 +1,7 @@
 import { Suspense } from "react";
 import { BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
-import {
-  publicRoutesFunc,
-  protectedRoutesFunc,
-  guestRoutesFunc,
-} from "./pages/routing";
+import { publicRoutesFunc, protectedRoutesFunc, guestRoutesFunc } from "./pages/routing";
 import { Layout } from "./pages/Layout";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import ErrorBoundary from "./ErrorBoundary";

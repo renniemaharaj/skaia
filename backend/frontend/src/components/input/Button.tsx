@@ -13,8 +13,7 @@ export type ButtonVariant =
 
 export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual variant. Defaults to a compact neutral application action. */
   variant?: ButtonVariant;
   /** Let an existing class fully own visual styling. */
@@ -57,7 +56,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       type = "button",
       ...rest
     },
-    ref,
+    ref
   ) => {
     const classes = unstyled
       ? className
@@ -83,21 +82,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...rest}
       >
         {loading && <span className="sk-btn__spinner" aria-hidden="true" />}
-        {!loading && iconLeft && (
-          <span className="sk-btn__icon">{iconLeft}</span>
-        )}
+        {!loading && iconLeft && <span className="sk-btn__icon">{iconLeft}</span>}
         {children &&
           (iconLeft || iconRight || loading ? (
             <span className="sk-btn__label">{children}</span>
           ) : (
             children
           ))}
-        {!loading && iconRight && (
-          <span className="sk-btn__icon">{iconRight}</span>
-        )}
+        {!loading && iconRight && <span className="sk-btn__icon">{iconRight}</span>}
       </button>
     );
-  },
+  }
 );
 
 Button.displayName = "Button";

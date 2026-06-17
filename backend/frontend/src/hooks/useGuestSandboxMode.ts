@@ -8,9 +8,6 @@ import { guestSandboxAtom } from "../atoms/guestSandbox";
  * This uses shared atom state instead of DOM observation to reduce frontend
  * load and keep sandbox mode consistent across components.
  */
-export function useGuestSandboxMode(): [
-  boolean,
-  Dispatch<SetStateAction<boolean>>,
-] {
+export function useGuestSandboxMode(): [boolean, Dispatch<SetStateAction<boolean>>] {
   return useAtom(guestSandboxAtom);
 }

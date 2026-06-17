@@ -34,10 +34,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   if (initials) {
     return (
-      <span
-        className={`${sharedClasses} user-avatar-placeholder`}
-        style={baseStyle}
-      >
+      <span className={`${sharedClasses} user-avatar-placeholder`} style={baseStyle}>
         {initials}
       </span>
     );

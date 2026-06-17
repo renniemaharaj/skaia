@@ -3,19 +3,19 @@
 import { vi } from "vitest";
 
 const localStorageMock: Storage = {
-  getItem: vi.fn((key) => {
+  getItem: vi.fn(key => {
     return (localStorageMock as any)._store[key] || null;
   }),
   setItem: vi.fn((key, value) => {
     (localStorageMock as any)._store[key] = value.toString();
   }),
-  removeItem: vi.fn((key) => {
+  removeItem: vi.fn(key => {
     delete (localStorageMock as any)._store[key];
   }),
   clear: vi.fn(() => {
     (localStorageMock as any)._store = {};
   }),
-  key: vi.fn((index) => {
+  key: vi.fn(index => {
     const keys = Object.keys((localStorageMock as any)._store);
     return keys[index] || null;
   }),

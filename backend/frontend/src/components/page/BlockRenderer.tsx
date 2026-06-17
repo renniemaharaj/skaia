@@ -16,14 +16,7 @@ import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { Plus } from "lucide-react";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getSectionLayout,
   getSectionMargins,
@@ -137,7 +130,7 @@ const SectionBlock = memo(function SectionBlock({
           setInView(false);
         }
       },
-      { threshold: 0.15 },
+      { threshold: 0.15 }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -146,17 +139,11 @@ const SectionBlock = memo(function SectionBlock({
   const sectionStyle: React.CSSProperties = {
     ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
     ...(margins.marginRight ? { marginRight: `${margins.marginRight}px` } : {}),
-    ...(margins.marginBottom
-      ? { marginBottom: `${margins.marginBottom}px` }
-      : {}),
+    ...(margins.marginBottom ? { marginBottom: `${margins.marginBottom}px` } : {}),
     ...(margins.marginLeft ? { marginLeft: `${margins.marginLeft}px` } : {}),
     ...(margins.paddingTop ? { paddingTop: `${margins.paddingTop}px` } : {}),
-    ...(margins.paddingRight
-      ? { paddingRight: `${margins.paddingRight}px` }
-      : {}),
-    ...(margins.paddingBottom
-      ? { paddingBottom: `${margins.paddingBottom}px` }
-      : {}),
+    ...(margins.paddingRight ? { paddingRight: `${margins.paddingRight}px` } : {}),
+    ...(margins.paddingBottom ? { paddingBottom: `${margins.paddingBottom}px` } : {}),
     ...(margins.paddingLeft ? { paddingLeft: `${margins.paddingLeft}px` } : {}),
     ...(bgColor ? { backgroundColor: bgColor } : {}),
   };
@@ -172,7 +159,7 @@ const SectionBlock = memo(function SectionBlock({
       canMoveDown: !isLast,
       lastEditedBy: section.last_edited_by,
     }),
-    [section.id, isFirst, isLast, onMove, section.last_edited_by],
+    [section.id, isFirst, isLast, onMove, section.last_edited_by]
   );
 
   return (
@@ -225,9 +212,7 @@ export const BlockRenderer = memo(function BlockRenderer({
     setActiveAddIndex(null);
   };
 
-  const orderedSections = [...sections].sort(
-    (a, b) => a.display_order - b.display_order,
-  );
+  const orderedSections = [...sections].sort((a, b) => a.display_order - b.display_order);
 
   // Stable move handler - uses refs so the callback identity never changes.
   const sectionsRef = useRef(orderedSections);
@@ -235,21 +220,18 @@ export const BlockRenderer = memo(function BlockRenderer({
   const onMoveSectionRef = useRef(onMoveSection);
   onMoveSectionRef.current = onMoveSection;
 
-  const handleMove = useCallback(
-    (sectionId: number, direction: "up" | "down") => {
-      const secs = sectionsRef.current;
-      const idx = secs.findIndex((s) => s.id === sectionId);
-      const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (neighborIdx < 0 || neighborIdx >= secs.length) return;
-      onMoveSectionRef.current(sectionId, secs[neighborIdx].id);
-    },
-    [],
-  );
+  const handleMove = useCallback((sectionId: number, direction: "up" | "down") => {
+    const secs = sectionsRef.current;
+    const idx = secs.findIndex(s => s.id === sectionId);
+    const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (neighborIdx < 0 || neighborIdx >= secs.length) return;
+    onMoveSectionRef.current(sectionId, secs[neighborIdx].id);
+  }, []);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
 
   const toggleGroup = useCallback((groupId: string) => {
-    setOpenGroups((prev) => {
+    setOpenGroups(prev => {
       const next = new Set(prev);
       if (next.has(groupId)) {
         next.delete(groupId);
@@ -264,18 +246,14 @@ export const BlockRenderer = memo(function BlockRenderer({
     <div className="pb-add-section" key={`add-section-${insertIndex}`}>
       <button
         className="pb-add-section-btn"
-        onClick={() =>
-          setActiveAddIndex((prev) =>
-            prev === insertIndex ? null : insertIndex,
-          )
-        }
+        onClick={() => setActiveAddIndex(prev => (prev === insertIndex ? null : insertIndex))}
       >
         <Plus size={18} /> Add Section
       </button>
 
       {activeAddIndex === insertIndex && (
         <div className="pb-add-section-menu">
-          {SECTION_TYPE_GROUPS.map((group) => (
+          {SECTION_TYPE_GROUPS.map(group => (
             <div className="pb-add-section-group" key={group.id}>
               <button
                 type="button"
@@ -283,13 +261,9 @@ export const BlockRenderer = memo(function BlockRenderer({
                 onClick={() => toggleGroup(group.id)}
               >
                 <div>
-                  <div className="pb-add-section-group-label">
-                    {group.label}
-                  </div>
+                  <div className="pb-add-section-group-label">{group.label}</div>
                   {group.description && (
-                    <div className="pb-add-section-group-desc">
-                      {group.description}
-                    </div>
+                    <div className="pb-add-section-group-desc">{group.description}</div>
                   )}
                 </div>
                 <span className="pb-add-section-group-toggle">
@@ -299,7 +273,7 @@ export const BlockRenderer = memo(function BlockRenderer({
 
               {openGroups.has(group.id) && (
                 <div className="pb-add-section-group-items">
-                  {group.types.map((type) => (
+                  {group.types.map(type => (
                     <button
                       key={type}
                       className="pb-add-section-menu-item"

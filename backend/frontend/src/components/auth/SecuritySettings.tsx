@@ -65,14 +65,11 @@ export default function SecuritySettings({
   // If managing another user, show a warning and allow privileged actions
   // Admin/Power User Controls
   // If managing another user, show a warning and allow privileged actions
-  const [adminSetupData, setAdminSetupData] =
-    useState<TOTPSetupResponse | null>(null);
+  const [adminSetupData, setAdminSetupData] = useState<TOTPSetupResponse | null>(null);
   const [adminSetupCode, setAdminSetupCode] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
-  const [adminBackupCodes, setAdminBackupCodes] = useState<string[] | null>(
-    null,
-  );
+  const [adminBackupCodes, setAdminBackupCodes] = useState<string[] | null>(null);
 
   const handleAdminStartSetup = async () => {
     setAdminLoading(true);
@@ -95,13 +92,8 @@ export default function SecuritySettings({
     setAdminLoading(true);
     setAdminError(null);
     try {
-      if (!managedUserId || !adminSetupData)
-        throw new Error("Missing user or setup data");
-      const res = await adminEnableTOTP(
-        managedUserId,
-        adminSetupData.secret,
-        adminSetupCode,
-      );
+      if (!managedUserId || !adminSetupData) throw new Error("Missing user or setup data");
+      const res = await adminEnableTOTP(managedUserId, adminSetupData.secret, adminSetupCode);
       setAdminBackupCodes(res.backup_codes);
       setAdminSetupData(null);
       setAdminSetupCode("");
@@ -123,9 +115,7 @@ export default function SecuritySettings({
       toast.success("2FA disabled for user");
       onUpdate?.();
     } catch (err) {
-      setAdminError(
-        err instanceof Error ? err.message : "Failed to disable 2FA",
-      );
+      setAdminError(err instanceof Error ? err.message : "Failed to disable 2FA");
     } finally {
       setAdminLoading(false);
     }
@@ -140,9 +130,7 @@ export default function SecuritySettings({
       setAdminBackupCodes(res.backup_codes);
       toast.success("New backup codes generated for user");
     } catch (err) {
-      setAdminError(
-        err instanceof Error ? err.message : "Failed to generate backup codes",
-      );
+      setAdminError(err instanceof Error ? err.message : "Failed to generate backup codes");
     } finally {
       setAdminLoading(false);
     }
@@ -179,15 +167,13 @@ export default function SecuritySettings({
         <div className="sec-panel">
           <div
             className="sec-panel__overlay"
-            onClick={(e) =>
-              e.target === e.currentTarget && setAdminBackupCodes(null)
-            }
+            onClick={e => e.target === e.currentTarget && setAdminBackupCodes(null)}
           >
             <div className="sec-panel__dialog">
               <h3>Backup Codes for {managedUsername}</h3>
               <div className="sec-panel__warning">
-                Save these codes in a safe place. Each code can only be used
-                once. Share these securely with the user if you generated them.
+                Save these codes in a safe place. Each code can only be used once. Share these
+                securely with the user if you generated them.
               </div>
               <div className="sec-panel__backup-codes">
                 {adminBackupCodes.map((code, i) => (
@@ -234,22 +220,18 @@ export default function SecuritySettings({
         <div className="sec-panel">
           <div
             className="sec-panel__overlay"
-            onClick={(e) =>
-              e.target === e.currentTarget && setAdminSetupData(null)
-            }
+            onClick={e => e.target === e.currentTarget && setAdminSetupData(null)}
           >
             <div className="sec-panel__dialog">
               <h3>Set Up 2FA for {managedUsername}</h3>
               <p>
-                Scan the QR code below with an authenticator app, then enter the
-                6-digit code to verify.
+                Scan the QR code below with an authenticator app, then enter the 6-digit code to
+                verify.
               </p>
               <div className="sec-panel__qr">
                 <img src={qrUrl} alt="TOTP QR Code" width={200} height={200} />
               </div>
-              <p style={{ fontSize: "0.75rem" }}>
-                Or enter this secret manually:
-              </p>
+              <p style={{ fontSize: "0.75rem" }}>Or enter this secret manually:</p>
               <div className="sec-panel__secret">{adminSetupData.secret}</div>
               {adminError && (
                 <div className="sec-panel__error">
@@ -264,9 +246,7 @@ export default function SecuritySettings({
                 maxLength={6}
                 placeholder="000000"
                 value={adminSetupCode}
-                onChange={(e) =>
-                  setAdminSetupCode(e.target.value.replace(/\D/g, ""))
-                }
+                onChange={e => setAdminSetupCode(e.target.value.replace(/\D/g, ""))}
                 autoFocus
               />
               <div className="sec-panel__actions">
@@ -318,8 +298,8 @@ export default function SecuritySettings({
             )}
           </div>
           <p className="sec-panel__section-desc">
-            Manage 2FA for <b>{managedUsername}</b>. You may enable, disable, or
-            reset 2FA and backup codes for this account.
+            Manage 2FA for <b>{managedUsername}</b>. You may enable, disable, or reset 2FA and
+            backup codes for this account.
           </p>
           <div className="sec-panel__actions">
             {totpEnabled ? (
@@ -352,9 +332,7 @@ export default function SecuritySettings({
             <Button
               className="sec-panel__btn"
               variant="primary"
-              onClick={() =>
-                toast.info("TODO: Setup email verification (admin)")
-              }
+              onClick={() => toast.info("TODO: Setup email verification (admin)")}
             >
               Setup Email Verification
             </Button>
@@ -375,11 +353,7 @@ export default function SecuritySettings({
       await resendVerificationEmail();
       toast.success("Verification email sent — check your inbox");
     } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Failed to send verification email",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to send verification email");
     } finally {
       setVerifyLoading(false);
     }
@@ -500,14 +474,13 @@ export default function SecuritySettings({
       <div className="sec-panel">
         <div
           className="sec-panel__overlay"
-          onClick={(e) => e.target === e.currentTarget && setBackupCodes(null)}
+          onClick={e => e.target === e.currentTarget && setBackupCodes(null)}
         >
           <div className="sec-panel__dialog">
             <h3>Save Your Backup Codes</h3>
             <div className="sec-panel__warning">
-              Save these codes in a safe place. Each code can only be used once.
-              If you lose your authenticator app, these codes are the only way
-              to access your account.
+              Save these codes in a safe place. Each code can only be used once. If you lose your
+              authenticator app, these codes are the only way to access your account.
             </div>
 
             <div className="sec-panel__backup-codes">
@@ -557,23 +530,20 @@ export default function SecuritySettings({
       <div className="sec-panel">
         <div
           className="sec-panel__overlay"
-          onClick={(e) => e.target === e.currentTarget && setSetupData(null)}
+          onClick={e => e.target === e.currentTarget && setSetupData(null)}
         >
           <div className="sec-panel__dialog">
             <h3>Set Up Two-Factor Authentication</h3>
             <p>
-              Scan the QR code below with your authenticator app (Google
-              Authenticator, Authy, etc.), then enter the 6-digit code to
-              verify.
+              Scan the QR code below with your authenticator app (Google Authenticator, Authy,
+              etc.), then enter the 6-digit code to verify.
             </p>
 
             <div className="sec-panel__qr">
               <img src={qrUrl} alt="TOTP QR Code" width={200} height={200} />
             </div>
 
-            <p style={{ fontSize: "0.75rem" }}>
-              Or enter this secret manually:
-            </p>
+            <p style={{ fontSize: "0.75rem" }}>Or enter this secret manually:</p>
             <div className="sec-panel__secret">{setupData.secret}</div>
 
             {error && (
@@ -590,7 +560,7 @@ export default function SecuritySettings({
               maxLength={6}
               placeholder="000000"
               value={setupCode}
-              onChange={(e) => setSetupCode(e.target.value.replace(/\D/g, ""))}
+              onChange={e => setSetupCode(e.target.value.replace(/\D/g, ""))}
               autoFocus
             />
 
@@ -641,16 +611,13 @@ export default function SecuritySettings({
               Verified
             </span>
           ) : (
-            <span className="sec-panel__badge sec-panel__badge--warning">
-              Not Verified
-            </span>
+            <span className="sec-panel__badge sec-panel__badge--warning">Not Verified</span>
           )}
         </div>
         {!emailVerified && (
           <>
             <p className="sec-panel__section-desc">
-              Verify your email address to secure your account and enable
-              password recovery.
+              Verify your email address to secure your account and enable password recovery.
             </p>
             <Button
               className="sec-panel__btn"
@@ -724,45 +691,80 @@ export default function SecuritySettings({
           <p className="sec-panel__section-desc">
             Update your password to keep your account secure.
           </p>
-          <form onSubmit={handlePasswordSubmit} style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "1rem", marginTop: "1rem" }}>
+          <form
+            onSubmit={handlePasswordSubmit}
+            style={{
+              maxWidth: "400px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1rem",
+              marginTop: "1rem",
+            }}
+          >
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="old-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>Old Password</label>
+              <label
+                htmlFor="old-password"
+                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
+              >
+                Old Password
+              </label>
               <input
                 id="old-password"
                 type="password"
                 className="sec-panel__input"
                 value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
+                onChange={e => setOldPassword(e.target.value)}
                 disabled={pwLoading}
                 required
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="new-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>New Password</label>
+              <label
+                htmlFor="new-password"
+                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
+              >
+                New Password
+              </label>
               <input
                 id="new-password"
                 type="password"
                 className="sec-panel__input"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 disabled={pwLoading}
                 required
               />
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label htmlFor="confirm-password" style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}>Confirm New Password</label>
+              <label
+                htmlFor="confirm-password"
+                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
+              >
+                Confirm New Password
+              </label>
               <input
                 id="confirm-password"
                 type="password"
                 className="sec-panel__input"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
                 disabled={pwLoading}
                 required
               />
             </div>
-            {pwError && <div className="sec-panel__error"><AlertCircle size={14} /><span>{pwError}</span></div>}
-            <Button type="submit" className="sec-panel__btn" variant="primary" loading={pwLoading} style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}>
+            {pwError && (
+              <div className="sec-panel__error">
+                <AlertCircle size={14} />
+                <span>{pwError}</span>
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="sec-panel__btn"
+              variant="primary"
+              loading={pwLoading}
+              style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
+            >
               Update Password
             </Button>
           </form>

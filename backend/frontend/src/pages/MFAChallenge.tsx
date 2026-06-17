@@ -11,17 +11,11 @@ interface MFAChallengeProps {
   onAuthSuccess?: (token: string, data?: AuthResponse) => void;
 }
 
-const MFAChallenge = ({
-  totpToken,
-  onBack,
-  onAuthSuccess,
-}: MFAChallengeProps) => {
+const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) => {
   const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,7 +26,7 @@ const MFAChallenge = ({
         const data = await loginTOTP(
           totpToken,
           useBackupCode ? undefined : totpCode,
-          useBackupCode ? totpCode : undefined,
+          useBackupCode ? totpCode : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess(data.access_token, data);
@@ -40,7 +34,7 @@ const MFAChallenge = ({
       } else {
         await verifyMFAChallenge(
           useBackupCode ? undefined : totpCode,
-          useBackupCode ? totpCode : undefined,
+          useBackupCode ? totpCode : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess("");
@@ -58,10 +52,7 @@ const MFAChallenge = ({
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <ShieldCheck
-              size={40}
-              style={{ color: "var(--primary-color)", marginBottom: 8 }}
-            />
+            <ShieldCheck size={40} style={{ color: "var(--primary-color)", marginBottom: 8 }} />
             <h1>Two-Factor Authentication</h1>
             <p>
               {useBackupCode
@@ -92,7 +83,7 @@ const MFAChallenge = ({
                   placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
                   maxLength={useBackupCode ? 9 : 6}
                   value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value)}
+                  onChange={e => setTotpCode(e.target.value)}
                   required
                   disabled={loading}
                   autoFocus
@@ -132,12 +123,7 @@ const MFAChallenge = ({
               </button>
             </p>
             <p style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                className="auth-toggle-btn"
-                onClick={onBack}
-                disabled={loading}
-              >
+              <button type="button" className="auth-toggle-btn" onClick={onBack} disabled={loading}>
                 Back to login
               </button>
             </p>

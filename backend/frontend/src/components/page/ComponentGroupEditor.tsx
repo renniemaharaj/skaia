@@ -8,11 +8,7 @@
  */
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, GripVertical } from "lucide-react";
-import type {
-  ComponentDefinition,
-  ComponentGroup,
-  ComponentGroupItem,
-} from "./types";
+import type { ComponentDefinition, ComponentGroup, ComponentGroupItem } from "./types";
 import { ComponentBindMapper } from "./ComponentBindMapper";
 import { ComponentRenderer } from "./ComponentRenderer";
 import { CardDesigner } from "./CardDesigner";
@@ -43,23 +39,18 @@ export function ComponentGroupEditor({
   onChange,
 }: ComponentGroupEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<"components" | "styles">(
-    "components",
-  );
+  const [activeTab, setActiveTab] = useState<"components" | "styles">("components");
   const [resizing, setResizing] = useState<{
     itemId: string;
     startX: number;
     startWidth: number;
   } | null>(null);
 
-  const sorted = useMemo(
-    () => [...group.items].sort((a, b) => a.order - b.order),
-    [group.items],
-  );
+  const sorted = useMemo(() => [...group.items].sort((a, b) => a.order - b.order), [group.items]);
 
   const update = useCallback(
     (items: ComponentGroupItem[]) => onChange({ ...group, items }),
-    [group, onChange],
+    [group, onChange]
   );
 
   const addComponent = () => {
@@ -75,16 +66,15 @@ export function ComponentGroupEditor({
     update([...group.items, item]);
   };
 
-  const removeComponent = (id: string) =>
-    update(group.items.filter((i) => i.id !== id));
+  const removeComponent = (id: string) => update(group.items.filter(i => i.id !== id));
 
   const updateItem = (id: string, patch: Partial<ComponentGroupItem>) =>
-    update(group.items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    update(group.items.map(i => (i.id === id ? { ...i, ...patch } : i)));
 
   /*  resize via mouse  */
   const startResize = (itemId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    const item = group.items.find((i) => i.id === itemId);
+    const item = group.items.find(i => i.id === itemId);
     if (!item) return;
     setResizing({ itemId, startX: e.clientX, startWidth: item.width });
 
@@ -129,25 +119,20 @@ export function ComponentGroupEditor({
           {/*  item list  */}
           <div className="cge__header">
             <span className="cge__title">Component Group</span>
-            <Button
-              unstyled
-              type="button"
-              className="cge__add-btn"
-              onClick={addComponent}
-            >
+            <Button unstyled type="button" className="cge__add-btn" onClick={addComponent}>
               <Plus size={13} /> Add Component
             </Button>
           </div>
 
           <div className="cge__items">
-            {sorted.map((item) => {
+            {sorted.map(item => {
               return (
                 <div key={item.id} className="cge__item">
                   <GripVertical size={14} className="cge__item-grip" />
                   <Select
                     className="cge__item-select"
                     value={item.component_type}
-                    onChange={(e) =>
+                    onChange={e =>
                       updateItem(item.id, {
                         component_type: e.target.value,
                         bindings: {},
@@ -155,7 +140,7 @@ export function ComponentGroupEditor({
                     }
                     size="sm"
                   >
-                    {components.map((c) => (
+                    {components.map(c => (
                       <option key={c.type} value={c.type}>
                         {c.label}
                       </option>
@@ -167,12 +152,9 @@ export function ComponentGroupEditor({
                       min={10}
                       max={100}
                       value={item.width}
-                      onChange={(e) =>
+                      onChange={e =>
                         updateItem(item.id, {
-                          width: Math.max(
-                            10,
-                            Math.min(100, Number(e.target.value)),
-                          ),
+                          width: Math.max(10, Math.min(100, Number(e.target.value))),
                         })
                       }
                     />
@@ -201,9 +183,7 @@ export function ComponentGroupEditor({
                 min={0}
                 max={48}
                 value={group.gap}
-                onChange={(e) =>
-                  onChange({ ...group, gap: Number(e.target.value) })
-                }
+                onChange={e => onChange({ ...group, gap: Number(e.target.value) })}
               />
               <span>px</span>
             </label>
@@ -215,17 +195,15 @@ export function ComponentGroupEditor({
                 max={1600}
                 step={50}
                 value={group.max_width}
-                onChange={(e) =>
-                  onChange({ ...group, max_width: Number(e.target.value) })
-                }
+                onChange={e => onChange({ ...group, max_width: Number(e.target.value) })}
               />
               <span>px</span>
             </label>
           </div>
 
           {/*  per-component bind mappers  */}
-          {sorted.map((item) => {
-            const comp = components.find((c) => c.type === item.component_type);
+          {sorted.map(item => {
+            const comp = components.find(c => c.type === item.component_type);
             if (!comp) return null;
             return (
               <ComponentBindMapper
@@ -233,7 +211,7 @@ export function ComponentGroupEditor({
                 availableColumns={availableColumns}
                 component={comp}
                 bindings={item.bindings}
-                onChange={(b) => updateItem(item.id, { bindings: b })}
+                onChange={b => updateItem(item.id, { bindings: b })}
               />
             );
           })}
@@ -243,7 +221,7 @@ export function ComponentGroupEditor({
       {activeTab === "styles" && (
         <CardDesigner
           template={group.wrapper ?? DEFAULT_CARD_TEMPLATE}
-          onChange={(template) => onChange({ ...group, wrapper: template })}
+          onChange={template => onChange({ ...group, wrapper: template })}
         />
       )}
 
@@ -260,10 +238,8 @@ export function ComponentGroupEditor({
                 gap: group.gap,
               }}
             >
-              {sorted.map((item) => {
-                const comp = components.find(
-                  (c) => c.type === item.component_type,
-                );
+              {sorted.map(item => {
+                const comp = components.find(c => c.type === item.component_type);
                 if (!comp) return null;
                 return (
                   <div
@@ -271,14 +247,10 @@ export function ComponentGroupEditor({
                     className={`cge__preview-item${resizing?.itemId === item.id ? " cge__preview-item--resizing" : ""}`}
                     style={{ width: `${item.width}%` }}
                   >
-                    <ComponentRenderer
-                      component={comp}
-                      bindings={item.bindings}
-                      row={firstRow}
-                    />
+                    <ComponentRenderer component={comp} bindings={item.bindings} row={firstRow} />
                     <div
                       className="cge__resize-handle"
-                      onMouseDown={(e) => startResize(item.id, e)}
+                      onMouseDown={e => startResize(item.id, e)}
                       title="Drag to resize"
                     />
                   </div>
@@ -305,24 +277,13 @@ export function ComponentGroupRenderer({
   const sorted = [...group.items].sort((a, b) => a.order - b.order);
   return (
     <DesignedCardWrapper template={group.wrapper}>
-      <div
-        className="cge__preview"
-        style={{ maxWidth: group.max_width, gap: group.gap }}
-      >
-        {sorted.map((item) => {
-          const comp = components.find((c) => c.type === item.component_type);
+      <div className="cge__preview" style={{ maxWidth: group.max_width, gap: group.gap }}>
+        {sorted.map(item => {
+          const comp = components.find(c => c.type === item.component_type);
           if (!comp) return null;
           return (
-            <div
-              key={item.id}
-              style={{ width: `${item.width}%` }}
-              className="cge__preview-item"
-            >
-              <ComponentRenderer
-                component={comp}
-                bindings={item.bindings}
-                row={row}
-              />
+            <div key={item.id} style={{ width: `${item.width}%` }} className="cge__preview-item">
+              <ComponentRenderer component={comp} bindings={item.bindings} row={row} />
             </div>
           );
         })}

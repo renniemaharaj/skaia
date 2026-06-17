@@ -4,11 +4,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(
-    135deg,
-    var(--bg-color) 0%,
-    var(--bg-secondary) 100%
-  );
+  background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%);
 }
 
 .auth-container {
@@ -165,11 +161,7 @@
 
 .auth-button {
   padding: 12px 24px;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    var(--skaia-green-primary) 100%
-  );
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--skaia-green-primary) 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -185,8 +177,7 @@
 
 .auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px
-    color-mix(in srgb, var(--primary-color) 30%, transparent);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
 .auth-button:disabled {

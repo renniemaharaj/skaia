@@ -8,11 +8,7 @@ interface BalanceSheetCardProps {
   totalDebits: number;
 }
 
-export const BalanceSheetCard = ({
-  balance,
-  totalCredits,
-  totalDebits,
-}: BalanceSheetCardProps) => (
+export const BalanceSheetCard = ({ balance, totalCredits, totalDebits }: BalanceSheetCardProps) => (
   <GlassCard>
     <h3
       style={{

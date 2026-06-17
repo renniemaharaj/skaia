@@ -25,10 +25,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Banned or suspended users can only access the root route
-  if (
-    currentUser?.is_suspended ||
-    (currentUser?.roles ?? []).includes("banned")
-  ) {
+  if (currentUser?.is_suspended || (currentUser?.roles ?? []).includes("banned")) {
     return <Navigate to="/" replace />;
   }
 

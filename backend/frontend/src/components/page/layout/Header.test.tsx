@@ -66,7 +66,7 @@ function renderHeader(
     cartCount?: number;
     isDarkMode?: boolean;
     route?: string;
-  } = {},
+  } = {}
 ) {
   const store = makeStore({
     authenticated: opts.authenticated,
@@ -87,7 +87,7 @@ function renderHeader(
           />
         </ThemeProvider>
       </Router>
-    </Provider>,
+    </Provider>
   );
 
   return { ...utils, store };
@@ -111,9 +111,7 @@ describe("Header Component", () => {
     it("renders sign-in button when not authenticated", () => {
       renderHeader();
 
-      expect(
-        screen.getByRole("button", { name: /sign in/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /sign in/i })).toBeInTheDocument();
     });
 
     it("does not render user menu when not authenticated", () => {
@@ -142,9 +140,7 @@ describe("Header Component", () => {
     it("does not render sign-in button when authenticated", () => {
       renderHeader({ authenticated: true });
 
-      expect(
-        screen.queryByRole("button", { name: /sign in/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /sign in/i })).not.toBeInTheDocument();
     });
 
     it("falls back to username when display_name is empty", () => {
@@ -283,9 +279,7 @@ describe("Header Component", () => {
     it("displays logo image", () => {
       renderHeader();
 
-      const logoImage = screen.getByAltText(
-        /Cueballcraft Skaiacraft/i,
-      ) as HTMLImageElement;
+      const logoImage = screen.getByAltText(/Cueballcraft Skaiacraft/i) as HTMLImageElement;
       expect(logoImage).toBeInTheDocument();
       expect(logoImage.src).toContain("logo.png");
     });

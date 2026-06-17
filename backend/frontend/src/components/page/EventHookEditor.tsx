@@ -16,12 +16,10 @@ interface EventHookEditorProps {
 export function EventHookEditor({ hooks, onChange }: EventHookEditorProps) {
   const [expanded, setExpanded] = useState<Set<ComponentEvent>>(new Set());
 
-  const hookMap = new Map<ComponentEvent, EventHook>(
-    hooks.map((h) => [h.event, h]),
-  );
+  const hookMap = new Map<ComponentEvent, EventHook>(hooks.map(h => [h.event, h]));
 
   const toggle = (ev: ComponentEvent) => {
-    setExpanded((prev) => {
+    setExpanded(prev => {
       const next = new Set(prev);
       if (next.has(ev)) next.delete(ev);
       else next.add(ev);
@@ -30,44 +28,31 @@ export function EventHookEditor({ hooks, onChange }: EventHookEditorProps) {
   };
 
   const updateCode = (ev: ComponentEvent, code: string) => {
-    const existing = hooks.filter((h) => h.event !== ev);
+    const existing = hooks.filter(h => h.event !== ev);
     if (code.trim()) {
       existing.push({ event: ev, code });
     }
     onChange(existing);
   };
 
-  const activeCount = hooks.filter((h) => h.code.trim()).length;
+  const activeCount = hooks.filter(h => h.code.trim()).length;
 
   return (
     <div className="ehe">
       <div className="ehe__header">
         <Zap size={14} />
         <span className="ehe__title">Event Hooks</span>
-        {activeCount > 0 && (
-          <span className="ehe__badge">{activeCount}</span>
-        )}
+        {activeCount > 0 && <span className="ehe__badge">{activeCount}</span>}
       </div>
       <div className="ehe__list">
-        {COMPONENT_EVENTS.map((ev) => {
+        {COMPONENT_EVENTS.map(ev => {
           const isOpen = expanded.has(ev);
           const hook = hookMap.get(ev);
           const hasCode = !!hook?.code.trim();
           return (
-            <div
-              key={ev}
-              className={`ehe__event${hasCode ? " ehe__event--active" : ""}`}
-            >
-              <button
-                type="button"
-                className="ehe__event-toggle"
-                onClick={() => toggle(ev)}
-              >
-                {isOpen ? (
-                  <ChevronDown size={13} />
-                ) : (
-                  <ChevronRight size={13} />
-                )}
+            <div key={ev} className={`ehe__event${hasCode ? " ehe__event--active" : ""}`}>
+              <button type="button" className="ehe__event-toggle" onClick={() => toggle(ev)}>
+                {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 <span className="ehe__event-name">{ev}</span>
                 {hasCode && <span className="ehe__event-dot" />}
               </button>
@@ -78,7 +63,7 @@ export function EventHookEditor({ hooks, onChange }: EventHookEditorProps) {
                     rows={6}
                     placeholder={`// TypeScript handler for ${ev}\n// Available: row, bindings, event`}
                     value={hook?.code ?? ""}
-                    onChange={(e) => updateCode(ev, e.target.value)}
+                    onChange={e => updateCode(ev, e.target.value)}
                     spellCheck={false}
                   />
                 </div>

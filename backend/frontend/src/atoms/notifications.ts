@@ -28,6 +28,6 @@ export interface AppNotification {
 export const notificationsAtom = atom<AppNotification[]>([]);
 
 /** Count of unread notifications. */
-export const unreadNotifCountAtom = atom((get) =>
-  get(notificationsAtom).filter((n) => !n.is_read).length,
+export const unreadNotifCountAtom = atom(
+  get => get(notificationsAtom).filter(n => !n.is_read).length
 );

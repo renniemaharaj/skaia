@@ -10,14 +10,23 @@ export function MediaScraper() {
 
   useEffect(() => {
     const handleResult = (e: Event) => {
-      const customEvent = e as CustomEvent<{ url: string; result?: { images: string[], last_scanned: string }; error?: string }>;
+      const customEvent = e as CustomEvent<{
+        url: string;
+        result?: { images: string[]; last_scanned: string };
+        error?: string;
+      }>;
       const data = customEvent.detail;
       if (data.url === url && job?.status === "scraping") {
         if (data.error) {
           setJob({ url, status: "error", error: data.error });
           toast.error(`Scrape failed: ${data.error}`);
         } else if (data.result && data.result.images && data.result.images.length > 0) {
-          setJob({ url, status: "done", images: data.result.images, lastScanned: data.result.last_scanned });
+          setJob({
+            url,
+            status: "done",
+            images: data.result.images,
+            lastScanned: data.result.last_scanned,
+          });
           toast.success(`Scraped ${data.result.images.length} images`);
         } else {
           setJob({ url, status: "done", images: [], lastScanned: data.result?.last_scanned });
@@ -25,7 +34,7 @@ export function MediaScraper() {
         }
       }
     };
-    
+
     const handleStarted = (e: Event) => {
       const customEvent = e as CustomEvent<{ url: string }>;
       const data = customEvent.detail;
@@ -33,7 +42,7 @@ export function MediaScraper() {
         setJob({ url, status: "scraping" });
       }
     };
-    
+
     const handlePending = (e: Event) => {
       const customEvent = e as CustomEvent<{ url: string }>;
       const data = customEvent.detail;
@@ -44,7 +53,7 @@ export function MediaScraper() {
         // and provides a natural update
       }
     };
-    
+
     window.addEventListener("mediascraper:result", handleResult);
     window.addEventListener("mediascraper:started", handleStarted);
     window.addEventListener("mediascraper:pending", handlePending);
@@ -62,9 +71,12 @@ export function MediaScraper() {
     }
     setJob({ url, status: "pending" });
     try {
-      const res = await apiRequest<{images?: string[], last_scanned?: string, status?: string}>(`/mediascraper/scrape?url=${encodeURIComponent(url)}`, {
-        method: "GET"
-      });
+      const res = await apiRequest<{ images?: string[]; last_scanned?: string; status?: string }>(
+        `/mediascraper/scrape?url=${encodeURIComponent(url)}`,
+        {
+          method: "GET",
+        }
+      );
       // If it returned instantly from cache
       if (res && res.images) {
         if (res.images.length > 0) {
@@ -93,23 +105,23 @@ export function MediaScraper() {
     <div className="media-scraper-container">
       <h2>Media Scraper</h2>
       <div className="media-scraper-input-group">
-        <input 
-          type="text" 
-          value={url} 
-          onChange={(e) => setUrl(e.target.value)} 
+        <input
+          type="text"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
           placeholder="Enter website URL..."
           className="media-scraper-input"
-          onKeyDown={(e) => e.key === 'Enter' && handleScrape()}
+          onKeyDown={e => e.key === "Enter" && handleScrape()}
         />
-        <button 
-          onClick={handleScrape} 
+        <button
+          onClick={handleScrape}
           disabled={job?.status === "scraping"}
           className="media-scraper-button"
         >
           {job?.status === "scraping" ? "Scraping..." : "Scrape"}
         </button>
       </div>
-      
+
       {job && (
         <div className="media-scraper-results">
           <MediaViewer job={job} />

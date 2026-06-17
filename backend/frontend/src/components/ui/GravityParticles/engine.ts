@@ -125,14 +125,7 @@ export const BOUNDING_BOX_DAMPING = 0.75;
 export const CURSOR_REPULSION_DIST = 100;
 export const MAX_TRAIL_LENGTH = 12;
 
-export const defaultColors = [
-  "#5b9e8e",
-  "#ff0055",
-  "#ffe600",
-  "#00ff66",
-  "#a78bfa",
-  "#f97316",
-];
+export const defaultColors = ["#5b9e8e", "#ff0055", "#ffe600", "#00ff66", "#a78bfa", "#f97316"];
 
 export const defaultSettings: PhysicsSettings = {
   gravityConstant: 0.5,
@@ -170,7 +163,7 @@ export const hexToRgbStr = (hex: string): string => {
   if (hex.length === 3)
     hex = hex
       .split("")
-      .map((c) => c + c)
+      .map(c => c + c)
       .join("");
   const int = parseInt(hex, 16);
   return `${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}`;
@@ -181,18 +174,13 @@ const hex2rgb = (hex: string): [number, number, number] => {
   if (hex.length === 3)
     hex = hex
       .split("")
-      .map((c) => c + c)
+      .map(c => c + c)
       .join("");
   const int = parseInt(hex, 16);
   return [(int >> 16) & 255, (int >> 8) & 255, int & 255];
 };
 
-export const blendColors = (
-  c1: string,
-  c2: string,
-  m1: number,
-  m2: number,
-): string => {
+export const blendColors = (c1: string, c2: string, m1: number, m2: number): string => {
   const [r1, g1, b1] = hex2rgb(c1);
   const [r2, g2, b2] = hex2rgb(c2);
   const total = m1 + m2;
@@ -219,7 +207,7 @@ export const spawnParticle = (
   mass: number,
   nextId: { current: number },
   color?: string,
-  particlesAreAlive?: boolean,
+  particlesAreAlive?: boolean
 ): Particle => {
   const p: Particle = {
     id: nextId.current++,
@@ -228,8 +216,7 @@ export const spawnParticle = (
     vx: (Math.random() - 0.5) * 2,
     vy: (Math.random() - 0.5) * 2,
     mass,
-    color:
-      color ?? defaultColors[Math.floor(Math.random() * defaultColors.length)],
+    color: color ?? defaultColors[Math.floor(Math.random() * defaultColors.length)],
     mergeCooldown: 0,
     heat: 0,
     trail: [],
@@ -283,7 +270,7 @@ const computeLocalSystem = (
   parts: Particle[],
   toRemove: Set<number>,
   radius: number,
-  G: number,
+  G: number
 ): SystemInfo | null => {
   let cx = 0;
   let cy = 0;
@@ -324,7 +311,7 @@ const scanPressure = (
   attractors: AttractorParticle[],
   toRemove: Set<number>,
   numRays: number,
-  sightRadius: number,
+  sightRadius: number
 ): number[] => {
   const pressure = new Array<number>(numRays).fill(0);
   const step = (Math.PI * 2) / numRays;
@@ -356,7 +343,7 @@ const pickDestination = (
   p: Particle,
   pressure: number[],
   numRays: number,
-  sightRadius: number,
+  sightRadius: number
 ): { x: number; y: number } => {
   const step = (Math.PI * 2) / numRays;
   const al = p.antisocialLevel ?? 0.5;
@@ -391,7 +378,7 @@ const pickDestination = (
     }
   } else {
     // Ambivalent => weighted-random toward emptier rays
-    const weights = biased.map((v) => 1 / (v + 0.001));
+    const weights = biased.map(v => 1 / (v + 0.001));
     const total = weights.reduce((a, b) => a + b, 0);
     let r = Math.random() * total;
     for (let i = 0; i < numRays; i++) {
@@ -414,24 +401,20 @@ const computeTargetRing = (
   p: Particle,
   systemParticles: Particle[],
   ringSpacing: number,
-  collapseGuardRadius: number,
+  collapseGuardRadius: number
 ): number => {
   const al = p.antisocialLevel ?? 0.5;
   const arrivalOrder = p.systemArrivalOrder ?? _arrivalCounter;
 
-  const masses = systemParticles.map((q) => q.mass);
+  const masses = systemParticles.map(q => q.mass);
   const minMass = Math.min(...masses, p.mass);
   const maxMass = Math.max(...masses, p.mass);
-  const massNorm =
-    maxMass > minMass ? (p.mass - minMass) / (maxMass - minMass) : 0.5;
+  const massNorm = maxMass > minMass ? (p.mass - minMass) / (maxMass - minMass) : 0.5;
 
-  const orders = systemParticles
-    .map((q) => q.systemArrivalOrder ?? 0)
-    .concat(arrivalOrder);
+  const orders = systemParticles.map(q => q.systemArrivalOrder ?? 0).concat(arrivalOrder);
   const minOrder = Math.min(...orders);
   const maxOrder = Math.max(...orders);
-  const orderNorm =
-    maxOrder > minOrder ? (arrivalOrder - minOrder) / (maxOrder - minOrder) : 0;
+  const orderNorm = maxOrder > minOrder ? (arrivalOrder - minOrder) / (maxOrder - minOrder) : 0;
 
   // Score => ring index: heavy=inner, antisocial=outer, early=inner
   const score = (1 - massNorm) * 0.35 + al * 0.45 + orderNorm * 0.2;
@@ -461,7 +444,7 @@ const computeRingForce = (
   gravAccel: number,
   ringSpringK: number,
   ringSpacing: number,
-  collapseGuardRadius: number,
+  collapseGuardRadius: number
 ): { rfx: number; rfy: number } => {
   const rdx = p.x - cx;
   const rdy = p.y - cy;
@@ -505,17 +488,12 @@ const computeRingForce = (
     if (other.id === p.id || toRemove.has(other.id)) continue;
     if (!other.inSystem || other.targetOrbitalRadius == null) continue;
     // Only same-ring neighbours
-    if (
-      Math.abs((other.targetOrbitalRadius ?? 0) - targetR) >
-      ringSpacing * 0.5
-    )
-      continue;
+    if (Math.abs((other.targetOrbitalRadius ?? 0) - targetR) > ringSpacing * 0.5) continue;
     const odx = p.x - other.x;
     const ody = p.y - other.y;
     const od = Math.sqrt(odx * odx + ody * ody) || 0.001;
     if (od < repelZone) {
-      const repulse =
-        ((repelZone - od) / repelZone) * ringSpringK * p.mass * 2.0;
+      const repulse = ((repelZone - od) / repelZone) * ringSpringK * p.mass * 2.0;
       rfx += (odx / od) * repulse;
       rfy += (ody / od) * repulse;
     }
@@ -541,7 +519,7 @@ const computeEscapeForce = (
   cy: number,
   gravAccel: number,
   al: number,
-  desiredAngle: number,
+  desiredAngle: number
 ): { efx: number; efy: number } => {
   const rdx = p.x - cx;
   const rdy = p.y - cy;
@@ -576,7 +554,7 @@ const computeAvoidanceForce = (
   toRemove: Set<number>,
   horizon: number,
   halfAngle: number,
-  antisocialLevel: number,
+  antisocialLevel: number
 ): { bfx: number; bfy: number; lfx: number; lfy: number } => {
   const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
   if (speed < 0.5) return { bfx: 0, bfy: 0, lfx: 0, lfy: 0 };
@@ -600,9 +578,7 @@ const computeAvoidanceForce = (
     const forward = dx * cosH + dy * sinH;
     if (forward < 0) continue;
 
-    const angle = Math.abs(
-      Math.atan2(Math.abs(dx * sinH - dy * cosH), Math.abs(forward)),
-    );
+    const angle = Math.abs(Math.atan2(Math.abs(dx * sinH - dy * cosH), Math.abs(forward)));
     if (angle > halfAngle) continue;
 
     const combinedR = getRadius(p.mass) + getRadius(other.mass) + 4;
@@ -685,7 +661,7 @@ export const stepPhysics = (
   width: number,
   height: number,
   nextId: { current: number },
-  attractors: AttractorParticle[] = [],
+  attractors: AttractorParticle[] = []
 ): { nextParts: Particle[]; newExplosions: Explosion[] } => {
   const {
     gravityConstant: G,
@@ -726,10 +702,7 @@ export const stepPhysics = (
   const clusterMap = buildClusterMap(parts);
 
   // Explode helper
-  const explodeParticle = (
-    p: Particle,
-    shockCenter?: { x: number; y: number },
-  ) => {
+  const explodeParticle = (p: Particle, shockCenter?: { x: number; y: number }) => {
     newExplosions.push({
       x: p.x,
       y: p.y,
@@ -750,7 +723,7 @@ export const stepPhysics = (
         Math.max(1, (p.mass / numFragments) * 0.9),
         nextId,
         p.color,
-        particlesAreAlive,
+        particlesAreAlive
       );
       frag.vx = p.vx + Math.cos(angle) * speed;
       frag.vy = p.vy + Math.sin(angle) * speed;
@@ -817,9 +790,7 @@ export const stepPhysics = (
 
           const allowMerge = settings.rendererType === "default";
           const isOrbitalDecay =
-            allowMerge &&
-            approachSpeed < mergeThreshold &&
-            Math.random() < orbitalDecayChance;
+            allowMerge && approachSpeed < mergeThreshold && Math.random() < orbitalDecayChance;
 
           if (allowMerge && approachSpeed >= Math.max(3.5, mergeThreshold)) {
             if (!toRemove.has(p1.id) && !toRemove.has(p2.id)) {
@@ -858,11 +829,9 @@ export const stepPhysics = (
           }
 
           if (velAlongNormal < 0) {
-            const massRatio =
-              Math.min(p1.mass, p2.mass) / Math.max(p1.mass, p2.mass);
+            const massRatio = Math.min(p1.mass, p2.mass) / Math.max(p1.mass, p2.mass);
             const e = Math.max(0.05, bounceRestitution * Math.sqrt(massRatio));
-            const j_impulse =
-              (-(1 + e) * velAlongNormal) / (1 / p1.mass + 1 / p2.mass);
+            const j_impulse = (-(1 + e) * velAlongNormal) / (1 / p1.mass + 1 / p2.mass);
             p1.vx -= (j_impulse * nx) / p1.mass;
             p1.vy -= (j_impulse * ny) / p1.mass;
             p2.vx += (j_impulse * nx) / p2.mass;
@@ -893,13 +862,7 @@ export const stepPhysics = (
       }
 
       // System gravity
-      const { fx: sfx, fy: sfy } = applySystemGravity(
-        p1,
-        clusterMap,
-        parts,
-        G,
-        toRemove,
-      );
+      const { fx: sfx, fy: sfy } = applySystemGravity(p1, clusterMap, parts, G, toRemove);
       fx += sfx;
       fy += sfy;
 
@@ -958,13 +921,7 @@ export const stepPhysics = (
 
         if (p1.thinkCooldown! <= 0) {
           // Q1: "Where am I?"
-          const localSystem = computeLocalSystem(
-            p1,
-            parts,
-            toRemove,
-            sightRadius * 0.7,
-            G,
-          );
+          const localSystem = computeLocalSystem(p1, parts, toRemove, sightRadius * 0.7, G);
           const wasInSystem = p1.inSystem;
           p1.inSystem = localSystem !== null;
 
@@ -975,7 +932,7 @@ export const stepPhysics = (
             if (!wasInSystem) {
               // Just entered - assign ring slot
               p1.systemArrivalOrder = _arrivalCounter++;
-              const systemParts = parts.filter((q) => {
+              const systemParts = parts.filter(q => {
                 if (q.id === p1.id || toRemove.has(q.id)) return false;
                 const dx = q.x - p1.x;
                 const dy = q.y - p1.y;
@@ -985,7 +942,7 @@ export const stepPhysics = (
                 p1,
                 systemParts,
                 ringSpacing,
-                collapseGuardRadius,
+                collapseGuardRadius
               );
             }
 
@@ -995,19 +952,12 @@ export const stepPhysics = (
               // How trapped are we? Compare current speed vs escape velocity estimate
               const escapeVelSq =
                 (2 * G * localSystem.totalMass) /
-                Math.max(
-                  Math.sqrt(
-                    (localSystem.cx - p1.x) ** 2 + (localSystem.cy - p1.y) ** 2,
-                  ),
-                  1,
-                );
+                Math.max(Math.sqrt((localSystem.cx - p1.x) ** 2 + (localSystem.cy - p1.y) ** 2), 1);
               const speedSq = p1.vx * p1.vx + p1.vy * p1.vy;
               const trappedFraction = 1 - Math.min(1, speedSq / escapeVelSq);
 
               // The more trapped and the more antisocial, the longer the burn
-              const burnDuration = Math.floor(
-                trappedFraction * al * thinkInterval * 1.5,
-              );
+              const burnDuration = Math.floor(trappedFraction * al * thinkInterval * 1.5);
               if (burnDuration > 0) {
                 p1.escapeBurnTicks = burnDuration;
               }
@@ -1037,29 +987,16 @@ export const stepPhysics = (
                 attractors,
                 toRemove,
                 sightRays,
-                sightRadius,
+                sightRadius
               );
               const totalPressure = pressure.reduce((a, b) => a + b, 0);
               const densityThreshold = 0.5;
               const tooMuch = totalPressure > densityThreshold && al > 0.55;
-              const tooFew =
-                totalPressure < densityThreshold * 0.1 && al < 0.35;
+              const tooFew = totalPressure < densityThreshold * 0.1 && al < 0.35;
 
               if (tooMuch || tooFew) {
-                const p2 = scanPressure(
-                  p1,
-                  parts,
-                  attractors,
-                  toRemove,
-                  sightRays,
-                  sightRadius,
-                );
-                p1.destination = pickDestination(
-                  p1,
-                  p2,
-                  sightRays,
-                  sightRadius,
-                );
+                const p2 = scanPressure(p1, parts, attractors, toRemove, sightRays, sightRadius);
+                p1.destination = pickDestination(p1, p2, sightRays, sightRadius);
               } else {
                 p1.destination = null; // content to linger
               }
@@ -1071,45 +1008,23 @@ export const stepPhysics = (
                 attractors,
                 toRemove,
                 sightRays,
-                sightRadius,
+                sightRadius
               );
-              p1.destination = pickDestination(
-                p1,
-                escapePressure,
-                sightRays,
-                sightRadius,
-              );
+              p1.destination = pickDestination(p1, escapePressure, sightRays, sightRadius);
             }
           }
 
           // Q3: "Where can I go?"
           if (!p1.destination) {
-            const pressure = scanPressure(
-              p1,
-              parts,
-              attractors,
-              toRemove,
-              sightRays,
-              sightRadius,
-            );
-            p1.destination = pickDestination(
-              p1,
-              pressure,
-              sightRays,
-              sightRadius,
-            );
+            const pressure = scanPressure(p1, parts, attractors, toRemove, sightRays, sightRadius);
+            p1.destination = pickDestination(p1, pressure, sightRays, sightRadius);
           }
 
           if (p1.destination) {
-            p1.desiredAngle = Math.atan2(
-              p1.destination.y - p1.y,
-              p1.destination.x - p1.x,
-            );
+            p1.desiredAngle = Math.atan2(p1.destination.y - p1.y, p1.destination.x - p1.x);
           }
 
-          const jitter = Math.floor(
-            (Math.random() - 0.5) * thinkInterval * 0.6,
-          );
+          const jitter = Math.floor((Math.random() - 0.5) * thinkInterval * 0.6);
           p1.thinkCooldown = Math.max(20, thinkInterval + jitter);
         }
 
@@ -1124,7 +1039,7 @@ export const stepPhysics = (
             p1.systemCoM.y,
             p1.bindingEnergy ?? 0.1,
             al,
-            p1.desiredAngle ?? 0,
+            p1.desiredAngle ?? 0
           );
           fx += efx;
           fy += efy;
@@ -1147,12 +1062,7 @@ export const stepPhysics = (
 
         // 3. Ring stabilisation - only for social/neutral particles in a system
         //    Antisocial particles trying to escape don't stabilise - they're leaving
-        if (
-          p1.inSystem &&
-          p1.targetOrbitalRadius != null &&
-          p1.systemCoM &&
-          al < 0.65
-        ) {
+        if (p1.inSystem && p1.targetOrbitalRadius != null && p1.systemCoM && al < 0.65) {
           const { rfx, rfy } = computeRingForce(
             p1,
             parts,
@@ -1162,16 +1072,11 @@ export const stepPhysics = (
             p1.bindingEnergy ?? 0.1,
             ringSpringK,
             ringSpacing,
-            collapseGuardRadius,
+            collapseGuardRadius
           );
           fx += rfx;
           fy += rfy;
-        } else if (
-          p1.inSystem &&
-          p1.systemCoM &&
-          al >= 0.65 &&
-          (p1.escapeBurnTicks ?? 0) === 0
-        ) {
+        } else if (p1.inSystem && p1.systemCoM && al >= 0.65 && (p1.escapeBurnTicks ?? 0) === 0) {
           // Antisocial particle not actively burning - still apply collapse guard
           // so it doesn't get crushed while waiting for next think cycle
           const rdx = p1.x - p1.systemCoM.x;
@@ -1194,7 +1099,7 @@ export const stepPhysics = (
             toRemove,
             avoidanceHorizon,
             avoidanceHalfAngle,
-            al,
+            al
           );
           fx += bfx + lfx;
           fy += bfy + lfy;
@@ -1265,7 +1170,7 @@ export const stepPhysics = (
             FRAGMENT_MASS,
             nextId,
             p1.color,
-            particlesAreAlive,
+            particlesAreAlive
           );
           frag.vx = Math.cos(angle) * burstSpeed;
           frag.vy = Math.sin(angle) * burstSpeed;
