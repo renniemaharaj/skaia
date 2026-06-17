@@ -63,7 +63,7 @@
   min-width: 0;
 }
 
-.cge__item-select .sk-select__native {
+.cge__item-select .sk-select__trigger {
   padding: 5px 1.75rem 5px 8px;
   border-radius: 6px;
   border: 1px solid var(--border-color);

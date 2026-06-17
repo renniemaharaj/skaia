@@ -1,8 +1,9 @@
 import { Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
+import Select, { type SelectOption } from "../../input/Select";
 import { formatCents } from "../../../utils/money";
+import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
-import { SavedCheckoutCard } from "./SavedCheckoutCard";
 
 export type WalletCard = {
   id: string;
@@ -26,7 +27,6 @@ interface CheckoutPanelProps {
   paymentMethod: string;
   referralCode: string;
   rememberBilling: boolean;
-  savedCheckoutInfo: string[] | null;
   userCards: WalletCard[];
   onBillingInfoChange: (value: string) => void;
   onCheckout: () => void;
@@ -40,7 +40,6 @@ interface CheckoutPanelProps {
   onPaymentMethodChange: (value: string) => void;
   onReferralCodeChange: (value: string) => void;
   onRememberBillingChange: (value: boolean) => void;
-  onUseSavedCheckout: () => void;
 }
 
 export function CheckoutPanel({
@@ -59,7 +58,6 @@ export function CheckoutPanel({
   paymentMethod,
   referralCode,
   rememberBilling,
-  savedCheckoutInfo,
   userCards,
   onBillingInfoChange,
   onCheckout,
@@ -73,11 +71,24 @@ export function CheckoutPanel({
   onPaymentMethodChange,
   onReferralCodeChange,
   onRememberBillingChange,
-  onUseSavedCheckout,
 }: CheckoutPanelProps) {
+  const paymentOptions: SelectOption[] = [
+    { value: "delivery_cash", label: "Payment on Delivery (Cash)" },
+    ...(isAuthenticated
+      ? [{ value: "wallet", label: "Store Wallet Balance" }]
+      : []),
+    ...(isAuthenticated
+      ? userCards.map((card) => ({
+          value: `card_${card.id}`,
+          label: `${card.card_name} (ending in ${card.card_number.slice(-4)}) - Disabled`,
+          disabled: true,
+        }))
+      : []),
+  ];
+
   return (
     <div className="cart-summary cart-checkout-panel">
-      <div className="cart-checkout-card cart-checkout-card--details">
+      <div className="cart-checkout-card cart-glass-tile cart-checkout-card--details">
         <h3>Checkout</h3>
 
         {!isAuthenticated && (
@@ -102,13 +113,6 @@ export function CheckoutPanel({
           </div>
         )}
 
-        {isAuthenticated && rememberBilling && (
-          <SavedCheckoutCard
-            details={savedCheckoutInfo}
-            onUseSavedCheckout={onUseSavedCheckout}
-          />
-        )}
-
         <DeliveryLocationPicker
           deliveryApplicable={deliveryApplicable}
           deliveryDate={deliveryDate}
@@ -126,58 +130,30 @@ export function CheckoutPanel({
           onGuestPhoneChange={onGuestPhoneChange}
           onReferralCodeChange={onReferralCodeChange}
         />
-
-        {isAuthenticated && paymentMethod === "delivery_cash" && (
-          <div className="cart-summary-section cart-summary-section--last">
-            <h4>Billing</h4>
-            <label className="cart-checkbox-label">
-              <input
-                type="checkbox"
-                checked={rememberBilling}
-                onChange={(event) =>
-                  onRememberBillingChange(event.target.checked)
-                }
-              />
-              Remember billing information
-            </label>
-            {rememberBilling && (
-              <label className="cart-field cart-field--spaced">
-                <span className="cart-field-label">Billing note</span>
-                <textarea
-                  className="cart-textarea"
-                  placeholder="Name, note for driver, or billing details"
-                  value={billingInfo}
-                  onChange={(event) => onBillingInfoChange(event.target.value)}
-                />
-              </label>
-            )}
-          </div>
-        )}
       </div>
 
-      <div className="cart-checkout-card cart-checkout-card--payment">
+      {isAuthenticated && paymentMethod === "delivery_cash" && (
+        <BillingInfoCard
+          billingInfo={billingInfo}
+          rememberBilling={rememberBilling}
+          onBillingInfoChange={onBillingInfoChange}
+          onRememberBillingChange={onRememberBillingChange}
+        />
+      )}
+
+      <div className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
         <div className="cart-summary-section cart-summary-section--last">
           <h4>Payment</h4>
-          <label className="cart-field">
-            <span className="cart-field-label">Payment method</span>
-            <select
+          <div className="cart-field">
+            <Select
               className="cart-select"
+              label="Payment method"
               value={paymentMethod}
+              options={paymentOptions}
               onChange={(event) => onPaymentMethodChange(event.target.value)}
-            >
-              <option value="delivery_cash">Payment on Delivery (Cash)</option>
-              {isAuthenticated && (
-                <option value="wallet">Store Wallet Balance</option>
-              )}
-              {isAuthenticated &&
-                userCards.map((card) => (
-                  <option key={card.id} value={`card_${card.id}`} disabled>
-                    {card.card_name} (ending in {card.card_number.slice(-4)}) -
-                    Disabled
-                  </option>
-                ))}
-            </select>
-          </label>
+              block
+            />
+          </div>
         </div>
 
         <hr className="cart-divider" />

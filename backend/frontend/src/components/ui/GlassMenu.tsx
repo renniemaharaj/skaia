@@ -34,14 +34,20 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
       }
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
     // Use capture phase to handle clicks outside reliably before propagation
     document.addEventListener("mousedown", handleClickOutside, {
       capture: true,
     });
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside, {
         capture: true,
       });
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
 
@@ -70,11 +76,12 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
   };
 
   return createPortal(
-    <div className="glass-menu-wrap" style={style} ref={menuRef}>
+    <div className="glass-menu-wrap" style={style} ref={menuRef} role="menu">
       {history.length > 0 && (
         <button
           type="button"
           className="glass-menu-op"
+          role="menuitem"
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -98,6 +105,8 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           key={getOptionKey(opt)}
           className={`glass-menu-op${opt.disabled ? " glass-menu-op--disabled" : ""}`}
           disabled={opt.disabled}
+          role="menuitem"
+          aria-disabled={opt.disabled || undefined}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();

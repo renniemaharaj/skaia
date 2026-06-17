@@ -147,7 +147,7 @@
   min-height: 0;
 }
 
-.column-mapper-slot-value .sk-select__native {
+.column-mapper-slot-value .sk-select__trigger {
   width: 100%;
   padding: 4px 1.75rem 4px 8px;
   background-image: none;

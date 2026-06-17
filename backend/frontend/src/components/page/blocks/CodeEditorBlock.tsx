@@ -23,6 +23,7 @@ import {
 import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import { Copy, Download, FileCode } from "lucide-react";
 import { toast } from "sonner";
+import Select from "../../input/Select";
 
 /** Lazy-load the project's Monaco wrapper (inherits theme) and ViewThread for md/html. */
 const MonacoEditor = lazy(() => import("../../monaco/Editor"));
@@ -279,19 +280,17 @@ export const CodeEditorBlock = ({
       {/* Controls bar - visible only when editing */}
       {canEdit && editing && (
         <div className="code-editor-controls">
-          <label className="code-editor-control">
-            <span>Language</span>
-            <select
+          <div className="code-editor-control">
+            <Select
+              label="Language"
               value={localLanguage}
+              options={DEFAULT_LANGUAGES.map((lang) => ({
+                value: lang,
+                label: lang,
+              }))}
               onChange={(e) => handleLanguageChange(e.target.value)}
-            >
-              {DEFAULT_LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+          </div>
 
           <label className="code-editor-control">
             <span>Filename</span>

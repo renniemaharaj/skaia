@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { apiRequest } from "../../utils/api";
+import Select from "../input/Select";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import CountUp from "../ui/CountUp/CountUp";
@@ -357,17 +358,15 @@ export default function ResourceAnalytics({
                 <>
                   <div className="ra-chart-header">
                     <span>Views Over Time</span>
-                    <select
+                    <Select
                       className="ra-range-select"
-                      value={days}
+                      value={String(days)}
+                      options={RANGE_OPTIONS.map((opt) => ({
+                        value: String(opt.value),
+                        label: opt.label,
+                      }))}
                       onChange={(e) => setDays(Number(e.target.value))}
-                    >
-                      {RANGE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div className="ra-chart-wrap">

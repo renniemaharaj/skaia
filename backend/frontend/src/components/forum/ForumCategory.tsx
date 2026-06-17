@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiRequest } from "../../utils/api";
 import { useAtomValue } from "jotai";
 import { hasPermissionAtom } from "../../atoms/auth";
+import Select from "../input/Select";
 
 interface Category {
   id: string;
@@ -42,22 +43,22 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
 
   return (
     <div className="form-group">
-      <label htmlFor="category">Category *</label>
-        <select
+        <Select
           id="category"
           className="form-input"
+          label="Category *"
           value={value || ""}
+          options={[
+            { value: "", label: "Select a category" },
+            ...categories.map((cat) => ({
+              value: cat.id,
+              label: `${cat.name}${cat.is_locked ? " (locked)" : ""}`,
+              disabled: cat.is_locked && !canEditCategory,
+            })),
+          ]}
           onChange={(e) => onChange?.(e.target.value)}
           disabled={loading}
-        >
-          <option value="">Select a category</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id} disabled={cat.is_locked && !canEditCategory}>
-              {cat.name}
-              {cat.is_locked ? " (locked)" : ""}
-            </option>
-          ))}
-        </select>
+        />
     </div>
   );
 };

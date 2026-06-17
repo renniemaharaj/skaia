@@ -5,6 +5,7 @@ import {
   defaultSettings,
   type PhysicsSettings,
 } from "../../ui/GravityParticles/engine";
+import Select from "../../input/Select";
 
 const Section = ({
   title,
@@ -39,7 +40,7 @@ const PhysicsControls = () => {
     <div className="pp-physics-controls">
       <Section title="Renderer" defaultOpen>
         <div className="pp-physics-control">
-          <label
+          <div
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -48,8 +49,13 @@ const PhysicsControls = () => {
             }}
           >
             <span>Style</span>
-            <select
+            <Select
               value={settings.rendererType}
+              options={[
+                { value: "default", label: "Default Gravity" },
+                { value: "center-anchored", label: "Center Anchored System" },
+                { value: "text", label: "Text Swarm (Not Ready)", disabled: true },
+              ]}
               onChange={(e) =>
                 updateSetting(
                   "rendererType",
@@ -57,14 +63,9 @@ const PhysicsControls = () => {
                 )
               }
               className="pp-physics-select"
-            >
-              <option value="default">Default Gravity</option>
-              <option value="center-anchored">Center Anchored System</option>
-              <option value="text" disabled>
-                Text Swarm (Not Ready)
-              </option>
-            </select>
-          </label>
+              aria-label="Style"
+            />
+          </div>
         </div>
 
         {settings.rendererType === "text" && (
@@ -267,7 +268,7 @@ const PhysicsControls = () => {
         </div>
 
         <div className="pp-physics-control">
-          <label
+          <div
             style={{
               display: "flex",
               justifyContent: "space-between",
@@ -275,8 +276,13 @@ const PhysicsControls = () => {
             }}
           >
             <span>Cursor Mode</span>
-            <select
+            <Select
               value={settings.cursorMode}
+              options={[
+                { value: "mixed", label: "Mixed (Pull/Repel)" },
+                { value: "gravity", label: "Gravity (Pull)" },
+                { value: "repel", label: "Repel" },
+              ]}
               onChange={(e) =>
                 updateSetting(
                   "cursorMode",
@@ -284,12 +290,9 @@ const PhysicsControls = () => {
                 )
               }
               className="pp-physics-select"
-            >
-              <option value="mixed">Mixed (Pull/Repel)</option>
-              <option value="gravity">Gravity (Pull)</option>
-              <option value="repel">Repel</option>
-            </select>
-          </label>
+              aria-label="Cursor Mode"
+            />
+          </div>
         </div>
 
         <div className="pp-physics-control pp-physics-checkbox">

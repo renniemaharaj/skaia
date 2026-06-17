@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, Routes, Route, useLocation, Navigate, useParams } from "react-router-dom";
+import {
+  Link,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+  useParams,
+} from "react-router-dom";
 import { useAtomValue } from "jotai";
 import SecuritySettings from "../../auth/SecuritySettings";
 import ProfileSettings from "./ProfileSettings";
@@ -16,7 +23,10 @@ export default function SettingsPage() {
   const effectiveUserId = userId || currentUser?.id?.toString();
   const canManage = hasPermission("user.manage-others");
 
-  const { user, setUser, loading, error } = useUserData(effectiveUserId, canManage);
+  const { user, setUser, loading, error } = useUserData(
+    effectiveUserId,
+    canManage,
+  );
 
   const [totpEnabled, setTotpEnabled] = useState<boolean>(false);
   const [totpReload, setTotpReload] = useState(0);
@@ -51,7 +61,9 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="page-shell">
-        <div style={{ padding: "2rem", textAlign: "center" }}>Loading settings...</div>
+        <div style={{ padding: "2rem", textAlign: "center" }}>
+          Loading settings...
+        </div>
       </div>
     );
   }
@@ -59,14 +71,20 @@ export default function SettingsPage() {
   if (error || !user) {
     return (
       <div className="page-shell">
-        <div style={{ padding: "2rem", textAlign: "center", color: "var(--error-color)" }}>
+        <div
+          style={{
+            padding: "2rem",
+            textAlign: "center",
+            color: "var(--error-color)",
+          }}
+        >
           {error || "User not found"}
         </div>
       </div>
     );
   }
 
-  const basePath = `/settin../${user.id}`;
+  const basePath = userId ? `/settings/users/${user.id}` : "/settings";
 
   return (
     <div className="page-shell">
@@ -75,27 +93,44 @@ export default function SettingsPage() {
           <div>
             <h1 className="page-title">User Settings</h1>
             <p className="page-subtitle">
-              Manage settings and preferences for {isOwnProfile ? "your account" : user.username}.
+              Manage settings and preferences for{" "}
+              {isOwnProfile ? "your account" : user.username}.
             </p>
           </div>
         </div>
       </header>
 
-      <div className="settings-grid grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "2rem", alignItems: "start" }}>
+      <div
+        className="settings-grid grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+          gap: "2rem",
+          alignItems: "start",
+        }}
+      >
         <aside style={{ gridColumn: "1 / -1" }} className="settings-sidebar">
           <div className="ui-panel" style={{ padding: "1rem" }}>
             <nav style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
               <Link
                 to={`${basePath}/profile`}
                 className={`btn ${location.pathname.includes("/profile") ? "btn-primary" : "btn-ghost"}`}
-                style={{ flex: "1 1 auto", justifyContent: "center", fontSize: "0.95rem" }}
+                style={{
+                  flex: "1 1 auto",
+                  justifyContent: "center",
+                  fontSize: "0.95rem",
+                }}
               >
                 Profile
               </Link>
               <Link
                 to={`${basePath}/security`}
                 className={`btn ${location.pathname.includes("/security") ? "btn-primary" : "btn-ghost"}`}
-                style={{ flex: "1 1 auto", justifyContent: "center", fontSize: "0.95rem" }}
+                style={{
+                  flex: "1 1 auto",
+                  justifyContent: "center",
+                  fontSize: "0.95rem",
+                }}
               >
                 Security
               </Link>
@@ -103,19 +138,38 @@ export default function SettingsPage() {
           </div>
         </aside>
 
-        <main className="ui-panel settings-main" style={{ gridColumn: "1 / -1", padding: "2rem", minHeight: "400px" }}>
+        <main
+          className="ui-panel settings-main"
+          style={{ gridColumn: "1 / -1", padding: "2rem", minHeight: "400px" }}
+        >
           <Routes>
-            <Route path="profile" element={<ProfileSettings user={user} isOwnProfile={isOwnProfile} setUser={setUser} />} />
-            <Route path="security" element={
-              <SecuritySettings
-                emailVerified={user.email_verified ?? false}
-                totpEnabled={totpEnabled}
-                onUpdate={() => setTotpReload((n) => n + 1)}
-                canManage={canManage && !isOwnProfile}
-                managedUserId={canManage && !isOwnProfile ? String(user.id) : undefined}
-                managedUsername={canManage && !isOwnProfile ? user.username : undefined}
-              />
-            } />
+            <Route
+              path="profile"
+              element={
+                <ProfileSettings
+                  user={user}
+                  isOwnProfile={isOwnProfile}
+                  setUser={setUser}
+                />
+              }
+            />
+            <Route
+              path="security"
+              element={
+                <SecuritySettings
+                  emailVerified={user.email_verified ?? false}
+                  totpEnabled={totpEnabled}
+                  onUpdate={() => setTotpReload((n) => n + 1)}
+                  canManage={canManage && !isOwnProfile}
+                  managedUserId={
+                    canManage && !isOwnProfile ? String(user.id) : undefined
+                  }
+                  managedUsername={
+                    canManage && !isOwnProfile ? user.username : undefined
+                  }
+                />
+              }
+            />
             <Route path="*" element={<Navigate to="profile" replace />} />
           </Routes>
         </main>

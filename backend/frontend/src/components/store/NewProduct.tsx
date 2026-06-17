@@ -4,6 +4,7 @@ import { apiRequest } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { productCategoriesAtom } from "../../atoms/store";
+import Select from "../input/Select";
 import "../forum/NewThread.css";
 import "../forum/IconButton.css";
 
@@ -143,20 +144,18 @@ export const NewProduct = () => {
         )}
 
         <div className="form-group">
-          <label className="form-label">Category *</label>
-          <select
+          <Select
             className="form-input"
+            label="Category *"
             value={formData.category_id}
+            options={categories.map((c) => ({
+              value: c.id,
+              label: c.name,
+            }))}
             onChange={(e) =>
               setFormData((p) => ({ ...p, category_id: e.target.value }))
             }
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="form-group">
@@ -289,37 +288,40 @@ export const NewProduct = () => {
           </p>
           {specialActions.map((action, idx) => (
             <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
-              <select 
+              <Select
                 className="form-input" 
                 style={{ flex: 1 }}
                 value={action.type} 
+                options={[
+                  { value: "role", label: "Assign Role" },
+                  { value: "credit", label: "Give Store Credit (cents)" },
+                ]}
                 onChange={e => {
                     const newActions = [...specialActions];
                     newActions[idx].type = e.target.value;
                     newActions[idx].value = "";
                     setSpecialActions(newActions);
                 }}
-              >
-                <option value="role">Assign Role</option>
-                <option value="credit">Give Store Credit (cents)</option>
-              </select>
+              />
               
               {action.type === "role" ? (
-                  <select 
+                  <Select
                     className="form-input" 
                     style={{ flex: 2 }}
                     value={action.value} 
+                    options={[
+                      { value: "", label: "Select Role..." },
+                      ...availableRoles.map(r => ({
+                        value: r.name,
+                        label: r.name,
+                      })),
+                    ]}
                     onChange={e => {
                         const newActions = [...specialActions];
                         newActions[idx].value = e.target.value;
                         setSpecialActions(newActions);
                     }}
-                  >
-                    <option value="">Select Role...</option>
-                    {availableRoles.map(r => (
-                        <option key={r.id} value={r.name}>{r.name}</option>
-                    ))}
-                  </select>
+                  />
               ) : (
                   <input 
                     type="number" 

@@ -16,6 +16,26 @@
   width: 100%;
 }
 
+.sk-select.form-input,
+.sk-select.input {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+}
+
+.sk-select.form-input .sk-select__trigger,
+.sk-select.input .sk-select__trigger {
+  width: 100%;
+  padding: 12px 2.5rem 12px 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
 /* Label ------------------------------------------------------------------- */
 .sk-select__label {
   font-size: 0.875rem;
@@ -33,6 +53,13 @@
 
 /* Native <select> --------------------------------------------------------- */
 .sk-select__native {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sk-select__trigger {
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
@@ -44,28 +71,38 @@
   border-radius: var(--radius-md);
   font-family: var(--font-sans);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
     background-color 0.2s ease;
-  /* Reset the global margin-bottom from index.css for selects inside this primitive */
-  margin-bottom: 0;
+  margin: 0;
   padding-right: 2.25rem; /* room for the arrow */
 }
 
-html[data-theme="dark"] .sk-select__native {
+html[data-theme="dark"] .sk-select__trigger {
   background-image: none;
 }
 
-.sk-select__native:focus {
+.sk-select__trigger:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: var(--focus-ring);
 }
 
-.sk-select__native:disabled {
+.sk-select__trigger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.sk-select__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Arrow icon -------------------------------------------------------------- */
@@ -82,7 +119,7 @@ html[data-theme="dark"] .sk-select__native {
 }
 
 /* Sizes ------------------------------------------------------------------- */
-.sk-select--sm .sk-select__native {
+.sk-select--sm .sk-select__trigger {
   padding: 0.35rem 2rem 0.35rem 0.6rem;
   font-size: 0.82rem;
   border-radius: var(--radius-sm);
@@ -92,12 +129,12 @@ html[data-theme="dark"] .sk-select__native {
   right: 0.5rem;
 }
 
-.sk-select--md .sk-select__native {
+.sk-select--md .sk-select__trigger {
   padding: 0.55rem 2.25rem 0.55rem 0.75rem;
   font-size: 0.93rem;
 }
 
-.sk-select--lg .sk-select__native {
+.sk-select--lg .sk-select__trigger {
   padding: 0.75rem 2.5rem 0.75rem 1rem;
   font-size: 1.05rem;
 }
@@ -109,32 +146,32 @@ html[data-theme="dark"] .sk-select__native {
 /* Variants ---------------------------------------------------------------- */
 
 /* Standard: solid background with border */
-.sk-select--standard .sk-select__native {
+.sk-select--standard .sk-select__trigger {
   background: var(--bg-secondary);
 }
 
 /* Minimal: transparent background, subtler appearance */
-.sk-select--minimal .sk-select__native {
+.sk-select--minimal .sk-select__trigger {
   background: transparent;
   border-color: transparent;
 }
 
-.sk-select--minimal .sk-select__native:hover {
+.sk-select--minimal .sk-select__trigger:hover {
   background: var(--bg-secondary);
   border-color: var(--border-color);
 }
 
-.sk-select--minimal .sk-select__native:focus {
+.sk-select--minimal .sk-select__trigger:focus {
   background: var(--bg-secondary);
   border-color: var(--primary-color);
 }
 
 /* Error state ------------------------------------------------------------- */
-.sk-select--error .sk-select__native {
+.sk-select--error .sk-select__trigger {
   border-color: var(--error-color);
 }
 
-.sk-select--error .sk-select__native:focus {
+.sk-select--error .sk-select__trigger:focus {
   box-shadow: 0 0 0 3px var(--error-bg);
 }
 

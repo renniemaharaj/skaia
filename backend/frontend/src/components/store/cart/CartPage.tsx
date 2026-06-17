@@ -19,6 +19,13 @@ import OrderSubmittedView from "../OrderStatusView";
 import { StorePageShell } from "../StorePageShell";
 import "../../../styles/Cart.css";
 
+type SavedCheckoutInfo = {
+  billingInfo: string;
+  deliveryLocation: string;
+  guestPhone: string;
+  extraInfo: string;
+};
+
 export const CartPage = () => {
   const [cartItems, setCartItems] = useAtom(storeCartItemsAtom);
   const products = useAtomValue(productsAtom);
@@ -32,7 +39,7 @@ export const CartPage = () => {
   const [paymentMethod, setPaymentMethod] = useState("delivery_cash");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-  const [deliveryApplicable, setDeliveryApplicable] = useState(true);
+  const [deliveryApplicable, setDeliveryApplicable] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
@@ -41,11 +48,13 @@ export const CartPage = () => {
   const [billingInfo, setBillingInfo] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [userCards, setUserCards] = useState<WalletCard[]>([]);
+  const [savedCheckoutBrief, setSavedCheckoutBrief] =
+    useState<SavedCheckoutInfo | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
       apiRequest<{ cards?: WalletCard[] }>("/store/wallet/cards")
-        .then(data => {
+        .then((data) => {
           setUserCards(data.cards || []);
         })
         .catch(() => {});
@@ -53,36 +62,54 @@ export const CartPage = () => {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setSavedCheckoutBrief(null);
+      return;
+    }
+
     if (isAuthenticated) {
       // Load combined saved checkout info if present (preferred), fallback to old keys
       const savedJson = localStorage.getItem("checkoutSaved");
       if (savedJson) {
         try {
           const v = JSON.parse(savedJson);
-          if (v.billingInfo) setBillingInfo(v.billingInfo);
-          if (v.deliveryLocation) setDeliveryLocation(v.deliveryLocation);
-          if (v.guestPhone) setGuestPhone(v.guestPhone);
-          if (v.extraInfo) setExtraInfo(v.extraInfo);
+          const saved = {
+            billingInfo: v.billingInfo || "",
+            deliveryLocation: v.deliveryLocation || "",
+            guestPhone: v.guestPhone || "",
+            extraInfo: v.extraInfo || "",
+          };
+          setSavedCheckoutBrief(saved);
+          if (saved.billingInfo) setBillingInfo(saved.billingInfo);
+          if (saved.deliveryLocation)
+            setDeliveryLocation(saved.deliveryLocation);
+          if (saved.guestPhone) setGuestPhone(saved.guestPhone);
+          if (saved.extraInfo) setExtraInfo(saved.extraInfo);
           setRememberBilling(true);
         } catch {}
       } else {
         const savedBilling = localStorage.getItem("billingInfo");
         if (savedBilling) {
-          setBillingInfo(savedBilling);
+          const saved = {
+            billingInfo: savedBilling,
+            deliveryLocation: localStorage.getItem("deliveryLocation") || "",
+            guestPhone: localStorage.getItem("guestPhone") || "",
+            extraInfo: localStorage.getItem("extraInfo") || "",
+          };
+          setSavedCheckoutBrief(saved);
+          setBillingInfo(saved.billingInfo);
           setRememberBilling(true);
-          const savedLocation = localStorage.getItem("deliveryLocation");
-          if (savedLocation) setDeliveryLocation(savedLocation);
-          const savedPhone = localStorage.getItem("guestPhone");
-          if (savedPhone) setGuestPhone(savedPhone);
-          const savedExtraInfo = localStorage.getItem("extraInfo");
-          if (savedExtraInfo) setExtraInfo(savedExtraInfo);
+          if (saved.deliveryLocation)
+            setDeliveryLocation(saved.deliveryLocation);
+          if (saved.guestPhone) setGuestPhone(saved.guestPhone);
+          if (saved.extraInfo) setExtraInfo(saved.extraInfo);
         }
       }
     }
   }, [isAuthenticated]);
 
   const handleRemove = async (productId: string) => {
-    setCartItems(prev => prev.filter(i => i.product_id !== productId));
+    setCartItems((prev) => prev.filter((i) => i.product_id !== productId));
     if (isAuthenticated) {
       try {
         await apiRequest("/store/cart/remove", {
@@ -105,8 +132,10 @@ export const CartPage = () => {
   const handleQuantityChange = async (productId: string, raw: string) => {
     const qty = Number.parseInt(raw, 10);
     if (!Number.isNaN(qty) && qty > 0) {
-      setCartItems(prev =>
-        prev.map(i => (i.product_id === productId ? { ...i, quantity: qty } : i))
+      setCartItems((prev) =>
+        prev.map((i) =>
+          i.product_id === productId ? { ...i, quantity: qty } : i,
+        ),
       );
       if (isAuthenticated) {
         try {
@@ -118,7 +147,11 @@ export const CartPage = () => {
             }),
           });
         } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Could not update cart quantity.");
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Could not update cart quantity.",
+          );
         }
       }
     }
@@ -174,8 +207,10 @@ export const CartPage = () => {
             saved_at: new Date().toISOString(),
           };
           localStorage.setItem("checkoutSaved", JSON.stringify(saved));
+          setSavedCheckoutBrief(saved);
         } else {
           localStorage.removeItem("checkoutSaved");
+          setSavedCheckoutBrief(null);
         }
       }
 
@@ -184,20 +219,21 @@ export const CartPage = () => {
       setSuccessOrder(data.order);
       setCartItems([]);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Checkout failed. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const savedCheckoutInfo = useMemo(() => {
-    if (!billingInfo && !guestPhone && !deliveryLocation) return null;
-    return [
-      billingInfo || "No billing note saved",
-      guestPhone || "No phone saved",
-      deliveryLocation || "No location saved",
-    ];
-  }, [billingInfo, deliveryLocation, guestPhone]);
+  const hasSavedCheckoutBrief = useMemo(() => {
+    if (!savedCheckoutBrief) return false;
+    const { billingInfo, deliveryLocation, guestPhone } = savedCheckoutBrief;
+    return Boolean(billingInfo || guestPhone || deliveryLocation);
+  }, [savedCheckoutBrief]);
 
   const deliveryMarkerPosition = useMemo<[number, number] | null>(() => {
     const [latRaw, lngRaw] = deliveryLocation.split(",");
@@ -207,22 +243,68 @@ export const CartPage = () => {
   }, [deliveryLocation]);
 
   const handleUseSavedCheckout = () => {
-    const savedJson = localStorage.getItem("checkoutSaved");
-    if (savedJson) {
-      try {
-        const v = JSON.parse(savedJson);
-        if (v.billingInfo) setBillingInfo(v.billingInfo);
-        if (v.deliveryLocation) setDeliveryLocation(v.deliveryLocation);
-        if (v.guestPhone) setGuestPhone(v.guestPhone);
-        if (v.extraInfo) setExtraInfo(v.extraInfo);
-      } catch {}
+    if (savedCheckoutBrief) {
+      setBillingInfo(savedCheckoutBrief.billingInfo);
+      setDeliveryLocation(savedCheckoutBrief.deliveryLocation);
+      setGuestPhone(savedCheckoutBrief.guestPhone);
+      setExtraInfo(savedCheckoutBrief.extraInfo);
+    } else {
+      const savedJson = localStorage.getItem("checkoutSaved");
+      if (savedJson) {
+        try {
+          const v = JSON.parse(savedJson);
+          if (v.billingInfo) setBillingInfo(v.billingInfo);
+          if (v.deliveryLocation) setDeliveryLocation(v.deliveryLocation);
+          if (v.guestPhone) setGuestPhone(v.guestPhone);
+          if (v.extraInfo) setExtraInfo(v.extraInfo);
+        } catch {}
+      } else {
+        const savedBilling = localStorage.getItem("billingInfo");
+        if (savedBilling) setBillingInfo(savedBilling);
+        const savedLocation = localStorage.getItem("deliveryLocation");
+        if (savedLocation) setDeliveryLocation(savedLocation);
+        const savedPhone = localStorage.getItem("guestPhone");
+        if (savedPhone) setGuestPhone(savedPhone);
+        const savedExtraInfo = localStorage.getItem("extraInfo");
+        if (savedExtraInfo) setExtraInfo(savedExtraInfo);
+      }
     }
+    setRememberBilling(true);
   };
+
+  const savedCheckoutMeta =
+    isAuthenticated && savedCheckoutBrief && hasSavedCheckoutBrief ? (
+      <>
+        <span className="cart-shell-meta-item">
+          <span className="cart-shell-meta-label">Saved</span>
+          <strong>{savedCheckoutBrief.billingInfo || "Billing note"}</strong>
+        </span>
+        <span className="cart-shell-meta-item">
+          <span className="cart-shell-meta-label">Phone</span>
+          <strong>{savedCheckoutBrief.guestPhone || "Not set"}</strong>
+        </span>
+        <span className="cart-shell-meta-item cart-shell-meta-item--location">
+          <span className="cart-shell-meta-label">Location</span>
+          <strong>{savedCheckoutBrief.deliveryLocation || "Not set"}</strong>
+        </span>
+        <button
+          type="button"
+          className="btn btn-ghost cart-shell-apply-btn"
+          onClick={handleUseSavedCheckout}
+        >
+          Apply
+        </button>
+      </>
+    ) : null;
 
   /* ── Success screen ── */
   if (successOrder) {
     return (
-      <OrderSubmittedView order={successOrder} cartItems={successCartItems} onBackLink="/store" />
+      <OrderSubmittedView
+        order={successOrder}
+        cartItems={successCartItems}
+        onBackLink="/store"
+      />
     );
   }
 
@@ -237,7 +319,11 @@ export const CartPage = () => {
 
   /* ── Main cart ── */
   return (
-    <StorePageShell className="cart-page-container" backTo="/store">
+    <StorePageShell
+      className="cart-page-container"
+      backTo="/store"
+      meta={savedCheckoutMeta}
+    >
       <CartHeader />
 
       <div className="cart-content">
@@ -266,7 +352,6 @@ export const CartPage = () => {
           paymentMethod={paymentMethod}
           referralCode={referralCode}
           rememberBilling={rememberBilling}
-          savedCheckoutInfo={savedCheckoutInfo}
           userCards={userCards}
           onBillingInfoChange={setBillingInfo}
           onCheckout={handleCheckout}
@@ -280,7 +365,6 @@ export const CartPage = () => {
           onPaymentMethodChange={setPaymentMethod}
           onReferralCodeChange={setReferralCode}
           onRememberBillingChange={setRememberBilling}
-          onUseSavedCheckout={handleUseSavedCheckout}
         />
       </div>
     </StorePageShell>

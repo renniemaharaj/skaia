@@ -337,7 +337,7 @@
   min-width: 140px;
 }
 
-.page-admin-select .sk-select__native {
+.page-admin-select .sk-select__trigger {
   padding: 0.35rem 0.65rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;

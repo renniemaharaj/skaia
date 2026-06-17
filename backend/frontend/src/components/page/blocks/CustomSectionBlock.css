@@ -24,7 +24,7 @@
   min-width: 200px;
 }
 
-.custom-section-control .sk-select__native {
+.custom-section-control .sk-select__trigger {
   padding: 0.45rem 2rem 0.45rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;

@@ -1,7 +1,13 @@
 import "./Select.css";
 import { ChevronDown } from "lucide-react";
-import type * as React from "react";
-import { forwardRef } from "react";
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { GlassMenu, type GlassMenuOption } from "../ui/GlassMenu";
 
 export type SelectVariant = "standard" | "minimal";
 export type SelectSize = "sm" | "md" | "lg";
@@ -48,10 +54,26 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       className,
       children,
       id,
+      style,
+      value,
+      defaultValue,
+      onChange,
       ...rest
     },
     ref,
   ) => {
+    const nativeSelectRef = useRef<HTMLSelectElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const [menuPosition, setMenuPosition] = useState<{
+      x: number;
+      y: number;
+    } | null>(null);
+    const [uncontrolledValue, setUncontrolledValue] = useState(() =>
+      defaultValue !== undefined ? String(defaultValue) : "",
+    );
+
+    useImperativeHandle(ref, () => nativeSelectRef.current as HTMLSelectElement);
+
     const wrapperClasses = [
       "sk-select",
       `sk-select--${variant}`,
@@ -65,9 +87,67 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       .join(" ");
 
     const selectId = id || (label ? `sk-select-${label.replace(/\s+/g, "-").toLowerCase()}` : undefined);
+    const nativeSelectId = selectId ? `${selectId}-native` : undefined;
+    const optionItems = useMemo<SelectOption[]>(() => {
+      if (options) return options;
+
+      return React.Children.toArray(children).flatMap((child) => {
+        if (!React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child)) {
+          return [];
+        }
+        if (child.type !== "option") return [];
+
+        return {
+          value: String(child.props.value ?? ""),
+          label:
+            typeof child.props.children === "string"
+              ? child.props.children
+              : String(child.props.children ?? child.props.value ?? ""),
+          disabled: child.props.disabled,
+        };
+      });
+    }, [children, options]);
+    const fallbackValue =
+      optionItems.find((opt) => !opt.disabled)?.value ?? optionItems[0]?.value ?? "";
+    const selectedValue =
+      value !== undefined ? String(value) : String(uncontrolledValue || fallbackValue);
+    const selectedOption = optionItems.find((opt) => opt.value === selectedValue);
+    const selectedLabel = selectedOption?.label || "Select";
+    const menuOptions = useMemo<GlassMenuOption[]>(
+      () =>
+        optionItems.map((opt) => ({
+          key: opt.value,
+          title: opt.label,
+          disabled: opt.disabled,
+          onClick: () => {
+            if (opt.disabled) return;
+            if (value === undefined) setUncontrolledValue(opt.value);
+            const select = nativeSelectRef.current;
+            if (select) {
+              select.value = opt.value;
+              onChange?.({
+                target: select,
+                currentTarget: select,
+              } as React.ChangeEvent<HTMLSelectElement>);
+            }
+          },
+        })),
+      [onChange, optionItems, value],
+    );
+
+    const openMenu = () => {
+      if (disabled) return;
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPosition({
+        x: rect.left + window.scrollX,
+        y: rect.bottom + window.scrollY + 6,
+      });
+    };
+    const ariaLabel = rest["aria-label"];
 
     return (
-      <div className={wrapperClasses}>
+      <div className={wrapperClasses} style={style}>
         {label && (
           <label className="sk-select__label" htmlFor={selectId}>
             {label}
@@ -75,11 +155,18 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         )}
         <div className="sk-select__wrapper">
           <select
-            ref={ref}
-            id={selectId}
+            ref={nativeSelectRef}
+            id={nativeSelectId}
             className="sk-select__native"
             disabled={disabled}
             aria-invalid={!!error || undefined}
+            aria-hidden="true"
+            tabIndex={-1}
+            value={selectedValue}
+            onChange={(event) => {
+              if (value === undefined) setUncontrolledValue(event.target.value);
+              onChange?.(event);
+            }}
             {...rest}
           >
             {options
@@ -94,7 +181,36 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 ))
               : children}
           </select>
-          <ChevronDown className="sk-select__arrow" size={16} aria-hidden="true" />
+          <button
+            ref={triggerRef}
+            id={selectId}
+            type="button"
+            className="sk-select__trigger"
+            disabled={disabled}
+            aria-haspopup="menu"
+            aria-expanded={!!menuPosition}
+            aria-invalid={!!error || undefined}
+            aria-labelledby={label ? selectId : undefined}
+            aria-label={ariaLabel}
+            onClick={openMenu}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openMenu();
+              }
+            }}
+          >
+            <span className="sk-select__value">{selectedLabel}</span>
+            <ChevronDown className="sk-select__arrow" size={16} aria-hidden="true" />
+          </button>
+          {menuPosition && (
+            <GlassMenu
+              x={menuPosition.x}
+              y={menuPosition.y}
+              options={menuOptions}
+              onClose={() => setMenuPosition(null)}
+            />
+          )}
         </div>
         {error && <p className="sk-select__error">{error}</p>}
       </div>

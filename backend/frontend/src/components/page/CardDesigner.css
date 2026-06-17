@@ -540,7 +540,7 @@
 }
 
 .cd-ctrl input[type="number"]:focus,
-.cd-ctrl .sk-select__native:focus {
+.cd-ctrl .sk-select__trigger:focus {
   background: color-mix(in srgb, var(--primary-color) 6%, var(--bg-color));
 }
 
@@ -555,7 +555,7 @@
   background: transparent;
 }
 
-.cd-ctrl .sk-select__native {
+.cd-ctrl .sk-select__trigger {
   height: 26px;
   padding: 0 22px 0 4px;
   font-size: 0.7rem;

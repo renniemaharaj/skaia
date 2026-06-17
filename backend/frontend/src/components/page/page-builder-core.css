@@ -756,7 +756,7 @@
   min-height: 0;
 }
 
-.section-animation-control .sk-select__native {
+.section-animation-control .sk-select__trigger {
   height: 28px;
   line-height: 28px;
   padding: 0 1.75rem 0 10px;

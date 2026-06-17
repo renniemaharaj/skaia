@@ -675,7 +675,12 @@
 }
 
 .pp-physics-select {
+  width: 170px;
+}
+
+.pp-physics-select .sk-select__trigger {
   padding: 4px 8px;
+  padding-right: 2rem;
   background-color: var(--bg-tertiary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
@@ -688,7 +693,7 @@
   color-scheme: dark light;
 }
 
-.pp-physics-select:focus {
+.pp-physics-select .sk-select__trigger:focus {
   border-color: var(--primary-color);
 }
 

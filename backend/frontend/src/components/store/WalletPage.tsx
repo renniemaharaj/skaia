@@ -20,6 +20,7 @@ import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import { getServerNow } from "../../utils/serverTime";
 import "./Store.css";
 import { SecondaryCard } from "../cards/GlassCard";
+import Select from "../input/Select";
 import { StorePageShell } from "./StorePageShell";
 import "./WalletPage.css";
 
@@ -397,36 +398,38 @@ export const WalletPage = () => {
                     />
 
                     <div style={{ display: "flex", gap: "1rem" }}>
-                      <select
+                      <Select
                         className="input-group input"
                         style={{ flex: 1 }}
                         value={cardForm.card_type}
+                        options={[
+                          { value: "visa", label: "Visa" },
+                          { value: "mastercard", label: "Mastercard" },
+                          { value: "amex", label: "Amex" },
+                          { value: "discover", label: "Discover" },
+                        ]}
                         onChange={(e) =>
                           setCardForm({
                             ...cardForm,
                             card_type: e.target.value,
                           })
                         }
-                      >
-                        <option value="visa">Visa</option>
-                        <option value="mastercard">Mastercard</option>
-                        <option value="amex">Amex</option>
-                        <option value="discover">Discover</option>
-                      </select>
-                      <select
+                      />
+                      <Select
                         className="input-group input"
                         style={{ flex: 1 }}
                         value={cardForm.is_credit ? "true" : "false"}
+                        options={[
+                          { value: "false", label: "Debit" },
+                          { value: "true", label: "Credit" },
+                        ]}
                         onChange={(e) =>
                           setCardForm({
                             ...cardForm,
                             is_credit: e.target.value === "true",
                           })
                         }
-                      >
-                        <option value="false">Debit</option>
-                        <option value="true">Credit</option>
-                      </select>
+                      />
                     </div>
 
                     <input
