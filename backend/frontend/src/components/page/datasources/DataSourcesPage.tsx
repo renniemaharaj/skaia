@@ -116,15 +116,14 @@ export default function DataSourcesPage() {
  }
  subtitle="Manage TypeScript data sources for automated page sections"
  headerActions={
- <>
  <button
- className="btn btn-primary ds-page__create-btn"
+ type="button"
+ className="btn btn-ghost ds-page__create-btn"
  onClick={() => navigate("/datasources/new")}
  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
  >
  <Plus size={16} /> New Data Source
  </button>
- </>
  }
  searchPlaceholder="Search data sources…"
  searchValue={search}
@@ -151,6 +150,7 @@ export default function DataSourcesPage() {
  <h3>No data sources yet</h3>
  <p>Create your first data source to power automated page sections.</p>
  <button
+ type="button"
  className="btn btn-primary"
  onClick={() => navigate("/datasources/new")}
  style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
@@ -172,6 +172,7 @@ export default function DataSourcesPage() {
  <h3 className="ds-card__title">{ds.name}</h3>
  </div>
  <button
+ type="button"
  className="action-btn danger ds-card__danger-btn"
  onClick={(e) => handleDelete(e, ds.id)}
  title="Delete"
@@ -239,6 +240,7 @@ export default function DataSourcesPage() {
  cell: (ds) => (
  <div className="table-view__row-actions">
  <button
+ type="button"
  className="action-btn danger"
  onClick={(e) => handleDelete(e, ds.id)}
  title="Delete"

@@ -600,7 +600,7 @@ export const OrdersPage = () => {
                   {editingReferenceCodeId && (
                     <button
                       type="button"
-                      className="btn btn-secondary"
+                      className="btn btn-ghost"
                       onClick={resetReferenceForm}
                     >
                       Cancel

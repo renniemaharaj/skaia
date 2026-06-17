@@ -329,7 +329,7 @@ export default function CustomPages() {
  <>
  {canClaim && (
  <button
- className="btn btn-primary cp-new-page-btn"
+ className="btn btn-ghost cp-new-page-btn"
  onClick={handleClaimPage}
  disabled={claiming}
  >

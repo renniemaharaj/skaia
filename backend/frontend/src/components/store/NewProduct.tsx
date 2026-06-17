@@ -281,16 +281,15 @@ export const NewProduct = () => {
           </label>
         </div>
 
-        <div className="form-group" style={{ marginTop: "1rem", borderTop: "1px solid var(--border-color)", paddingTop: "1rem" }}>
+        <div className="form-group store-special-actions">
           <label className="form-label">Special Actions on Purchase</label>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem", marginTop: "-0.25rem" }}>
+          <p className="store-special-actions__help">
             Add digital assets or perks to give users when they buy this product.
           </p>
           {specialActions.map((action, idx) => (
-            <div key={idx} style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+            <div key={idx} className="store-special-action-row">
               <Select
-                className="form-input" 
-                style={{ flex: 1 }}
+                className="form-input"
                 value={action.type} 
                 options={[
                   { value: "role", label: "Assign Role" },
@@ -306,8 +305,7 @@ export const NewProduct = () => {
               
               {action.type === "role" ? (
                   <Select
-                    className="form-input" 
-                    style={{ flex: 2 }}
+                    className="form-input"
                     value={action.value} 
                     options={[
                       { value: "", label: "Select Role..." },
@@ -326,7 +324,6 @@ export const NewProduct = () => {
                   <input 
                     type="number" 
                     className="form-input" 
-                    style={{ flex: 2 }}
                     placeholder="Amount in cents"
                     value={action.value} 
                     onChange={e => {
@@ -348,7 +345,7 @@ export const NewProduct = () => {
           ))}
           <button 
             type="button" 
-            className="btn btn-secondary" 
+            className="btn btn-ghost btn-sm" 
             style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
             onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
           >

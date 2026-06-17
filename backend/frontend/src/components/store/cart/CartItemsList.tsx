@@ -65,7 +65,7 @@ export function CartItemsList({
           Clear Cart
         </button>
         {items.length < 4 && (
-          <Link to="/store" className="btn btn-secondary">
+          <Link to="/store" className="btn btn-ghost">
             Continue Shopping
           </Link>
         )}

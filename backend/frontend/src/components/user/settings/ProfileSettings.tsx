@@ -163,7 +163,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h4 style={{ margin: 0 }}>Cosmetics &amp; Skins</h4>
               <Button 
-                variant="secondary" 
+                variant="action" 
                 size="sm" 
                 onClick={() => {
                   setEditBackgroundImageUrl("");

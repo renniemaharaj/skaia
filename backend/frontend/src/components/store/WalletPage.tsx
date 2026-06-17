@@ -319,7 +319,7 @@ export const WalletPage = () => {
               </h1>
               <div style={{ display: "flex", justifyContent: "center" }}>
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-ghost"
                   style={{
                     padding: "0.4rem 1.5rem",
                     fontSize: "1rem",
@@ -508,7 +508,7 @@ export const WalletPage = () => {
                       </button>
                       <button
                         type="button"
-                        className="btn btn-secondary"
+                        className="btn btn-ghost"
                         style={{ flex: 1 }}
                         onClick={() => setShowCardForm(false)}
                         disabled={loading}

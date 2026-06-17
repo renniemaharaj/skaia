@@ -310,14 +310,62 @@
 }
 
 .btn-admin-icon:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.1);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .btn-admin-icon.btn-danger:hover {
   background: var(--error-color);
   color: white;
+}
+
+.store-special-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.store-special-actions__help {
+  margin: -0.25rem 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.store-special-action-row {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1fr) minmax(14rem, 2fr) auto;
+  align-items: start;
+  gap: 0.625rem;
+  margin-bottom: 0.625rem;
+}
+
+.store-special-action-row .form-input {
+  margin-bottom: 0;
+}
+
+.store-special-action-row .sk-select.form-input {
+  margin-bottom: 0;
+}
+
+.store-special-action-row .btn-admin-icon {
+  width: 42px;
+  height: 42px;
+}
+
+@media (max-width: 640px) {
+  .store-special-action-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .store-special-action-row > :first-child,
+  .store-special-action-row > :nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .store-special-action-row .btn-admin-icon {
+    justify-self: start;
+  }
 }
 
 .btn-admin-action {

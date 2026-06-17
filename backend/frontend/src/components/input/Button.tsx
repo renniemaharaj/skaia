@@ -3,6 +3,7 @@ import type * as React from "react";
 import { forwardRef } from "react";
 
 export type ButtonVariant =
+  | "action"
   | "primary"
   | "secondary"
   | "ghost"
@@ -14,7 +15,7 @@ export type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Visual variant. */
+  /** Visual variant. Defaults to a compact neutral application action. */
   variant?: ButtonVariant;
   /** Let an existing class fully own visual styling. */
   unstyled?: boolean;
@@ -36,13 +37,13 @@ export interface ButtonProps
  * Generic Button primitive.
  *
  * Replaces raw `<button>` elements throughout the app with a typed,
- * consistently-styled component that maps to the existing `.btn` design-token
- * system defined in `index.css`.
+ * consistently-styled component. Primary/secondary variants should be reserved
+ * for submits and major form actions; routine application controls use action.
  */
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
-      variant = "primary",
+      variant = "action",
       unstyled = false,
       size = "md",
       block = false,

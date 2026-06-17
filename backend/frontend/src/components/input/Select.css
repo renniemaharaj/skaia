@@ -23,6 +23,7 @@
   border: 0;
   border-radius: 0;
   color: inherit;
+  margin-bottom: 12px;
 }
 
 .sk-select.form-input .sk-select__trigger,

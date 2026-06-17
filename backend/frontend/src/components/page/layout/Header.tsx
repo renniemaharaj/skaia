@@ -286,7 +286,7 @@ export const Header: React.FC<HeaderProps> = ({
  ) : (
  <div className="auth-buttons">
  <button
- className="btn btn-secondary"
+ className="btn btn-ghost"
  onClick={() => {
  navigate("/login", { state: { from: location } });
  setMenuOpen(false);
@@ -487,7 +487,7 @@ function HeaderUserMenu({
  className="user-link-header"
  />
  <button
- className="btn btn-secondary"
+ className="btn btn-ghost"
  onClick={handleLogout}
  title="Logout"
  >

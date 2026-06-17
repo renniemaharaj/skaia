@@ -199,7 +199,8 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
 
                 <div className="upo-actions">
                   <button
-                    className="btn btn-primary upo-action-btn"
+                    type="button"
+                    className="btn btn-ghost upo-action-btn"
                     onClick={() => navigate(`/users/${userId}`)}
                   >
                     View Profile

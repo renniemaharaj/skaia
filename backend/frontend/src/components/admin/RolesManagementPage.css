@@ -1,9 +1,11 @@
-/* Container */
-.rmp-container {
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+.rmp-shell {
+  max-width: 1120px;
+}
+
+.rmp-shell__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .rmp-state {
@@ -18,29 +20,6 @@
 .rmp-state--error {
   color: var(--error-color);
   font-weight: 500;
-}
-
-/* Header */
-.rmp-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.rmp-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.25rem;
-}
-
-.rmp-subtitle {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  margin: 0;
-  max-width: 520px;
 }
 
 .rmp-create-btn {
@@ -368,11 +347,6 @@
 
 /* Responsive */
 @media (max-width: 600px) {
-  .rmp-header {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
   .rmp-form-row {
     flex-direction: column;
   }

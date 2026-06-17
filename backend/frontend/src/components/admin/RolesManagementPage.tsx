@@ -1,8 +1,10 @@
 import { customConfirm } from "../ui/Prompt";
 import { useEffect, useState } from "react";
+import { useSetAtom } from "jotai";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../utils/api";
+import { layoutModeAtom } from "../../atoms/layoutMode";
 import type { Permission, Role, ProfileUser } from "../user/types";
 import PersonPicker from "../ui/PersonPicker";
 import UserAvatar from "../user/UserAvatar";
@@ -11,6 +13,7 @@ import type { User } from "../../atoms/auth";
 import "./RolesManagementPage.css";
 import Button from "../input/Button";
 import Checkbox from "../input/Checkbox";
+import { SideRouteShell } from "../layout/SideRouteShell";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];
@@ -20,6 +23,7 @@ interface RoleWithPerms extends Role {
 }
 
 export default function RolesManagementPage() {
+  const setLayoutMode = useSetAtom(layoutModeAtom);
   const [roles, setRoles] = useState<RoleWithPerms[]>([]);
   const [allPerms, setAllPerms] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +50,11 @@ export default function RolesManagementPage() {
 
   // Per-role permission toggling
   const [permToggling, setPermToggling] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setLayoutMode("application");
+    return () => setLayoutMode("web");
+  }, [setLayoutMode]);
 
   useEffect(() => {
     const load = async () => {
@@ -345,32 +354,38 @@ export default function RolesManagementPage() {
   );
 
   if (loading)
-    return <div className="rmp-container rmp-state">Loading roles…</div>;
+    return (
+      <SideRouteShell title="Roles" backTo="/" backLabel="Exit">
+        <div className="rmp-state">Loading roles...</div>
+      </SideRouteShell>
+    );
   if (error)
     return (
-      <div className="rmp-container rmp-state rmp-state--error">{error}</div>
+      <SideRouteShell title="Roles" backTo="/" backLabel="Exit">
+        <div className="rmp-state rmp-state--error">{error}</div>
+      </SideRouteShell>
     );
 
   return (
-    <div className="rmp-container">
-      <div className="rmp-header">
-        <div>
-          <h1 className="rmp-title">Roles</h1>
-          <p className="rmp-subtitle">
-            Manage roles and their permissions. Power level determines hierarchy
-            — a user can only manage others with a lower power level.
-          </p>
-        </div>
+    <SideRouteShell
+      title="Roles"
+      subtitle="Manage roles and their permissions. Power level determines hierarchy - a user can only manage others with a lower power level."
+      backTo="/"
+      backLabel="Exit"
+      className="rmp-shell"
+      contentClassName="rmp-shell__content"
+      actions={
         <Button
-          variant="primary"
+          variant="ghost"
+          size="sm"
           className="rmp-create-btn"
           onClick={() => setShowCreate((v) => !v)}
           iconLeft={<Plus size={16} />}
         >
           New Role
         </Button>
-      </div>
-
+      }
+    >
       {showCreate && (
         <div className="card rmp-create-card">
           <h3 className="rmp-section-heading">Create Role</h3>
@@ -406,7 +421,7 @@ export default function RolesManagementPage() {
                   onChange={(e) => setCreateThemeColor(e.target.value)}
                 />
                 <Button
-                  variant="secondary"
+                  variant="action"
                   size="sm"
                   onClick={() => setCreateThemeColor("")}
                   style={{ padding: "4px 8px", fontSize: "12px" }}
@@ -436,7 +451,7 @@ export default function RolesManagementPage() {
             />
           </div>
           <div className="rmp-form-actions">
-            <Button variant="secondary" onClick={() => setShowCreate(false)}>
+            <Button variant="action" onClick={() => setShowCreate(false)}>
               Cancel
             </Button>
             <Button
@@ -487,7 +502,7 @@ export default function RolesManagementPage() {
                 <div className="rmp-role-actions">
                   {isEditing ? (
                     <Button
-                      variant="secondary"
+                      variant="action"
                       size="sm"
                       className="rmp-action-btn"
                       onClick={cancelEdit}
@@ -496,7 +511,7 @@ export default function RolesManagementPage() {
                   ) : (
                     <>
                       <Button
-                        variant="secondary"
+                        variant="action"
                         size="sm"
                         className="rmp-action-btn"
                         onClick={() => startEdit(role)}
@@ -598,7 +613,7 @@ export default function RolesManagementPage() {
                               }
                             />
                             <Button
-                              variant="secondary"
+                              variant="action"
                               size="sm"
                               onClick={() => setEditThemeColor("")}
                               style={{ padding: "4px 8px", fontSize: "12px" }}
@@ -926,6 +941,6 @@ export default function RolesManagementPage() {
           );
         })}
       </div>
-    </div>
+    </SideRouteShell>
   );
 }

@@ -234,7 +234,7 @@ const ViewThreadPage = () => {
         </p>
         <button
           onClick={() => navigate("/forum")}
-          className="btn btn-primary view-thread-state-btn"
+          className="btn btn-ghost view-thread-state-btn"
         >
           Back to Forum
         </button>

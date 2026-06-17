@@ -55,6 +55,22 @@
 
 /* Variants ---------------------------------------------------------------- */
 
+/* Action */
+.sk-btn--action {
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.sk-btn--action:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  border-color: color-mix(in srgb, var(--text-primary) 18%, var(--border-color));
+}
+
+.sk-btn--action:active:not(:disabled) {
+  background: var(--bg-tertiary);
+}
+
 /* Primary */
 .sk-btn--primary {
   background-color: var(--primary-color);
@@ -78,12 +94,12 @@
 .sk-btn--secondary {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  border: 2px solid var(--primary-color);
+  border-color: var(--border-color);
 }
 
 .sk-btn--secondary:hover:not(:disabled) {
   background-color: var(--bg-tertiary);
-  border-color: var(--primary-dark);
+  border-color: color-mix(in srgb, var(--primary-color) 48%, var(--border-color));
 }
 
 /* Ghost */
@@ -95,7 +111,7 @@
 
 .sk-btn--ghost:hover:not(:disabled) {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
 }
 
 /* Outline */

@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertCircle, Home, ArrowLeft } from "lucide-react";
 import "./ErrorPage.css";
@@ -46,13 +46,21 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
 
         <div className="ui-actions ui-actions--center ui-actions--stack-sm">
           {showBackButton && (
-            <button className="btn btn-secondary" onClick={handleBack}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleBack}
+            >
               <ArrowLeft size={16} />
               Go Back
             </button>
           )}
           {showHomeButton && (
-            <button className="btn btn-primary" onClick={handleHome}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleHome}
+            >
               <Home size={16} />
               Return Home
             </button>

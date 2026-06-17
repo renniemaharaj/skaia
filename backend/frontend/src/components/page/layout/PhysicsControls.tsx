@@ -382,7 +382,7 @@ const PhysicsControls = () => {
       <button
         type="button"
         onClick={resetToDefaults}
-        className="btn btn-secondary btn-sm"
+        className="btn btn-ghost btn-sm"
         style={{ marginTop: "auto" }}
       >
         Reset to Defaults

@@ -514,11 +514,12 @@ div#root {
 .btn-secondary {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  border: 2px solid var(--primary-color);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
   background-color: var(--bg-tertiary);
+  border-color: color-mix(in srgb, var(--primary-color) 48%, var(--border-color));
 }
 
 .btn-ghost {
@@ -529,7 +530,7 @@ div#root {
 
 .btn-ghost:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
 }
 
 .btn-danger {
@@ -939,8 +940,8 @@ button:focus-visible {
  * The bare `button` selector above sets padding: 0.6em 1.2em for text buttons.
 /* --- Action Utility Icon Buttons --- */
 .action-btn {
-  background: none;
-  border: none;
+  background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
+  border: 1px solid transparent;
   padding: 4px 6px;
   cursor: pointer;
   display: flex;
@@ -953,7 +954,8 @@ button:focus-visible {
 }
 
 .action-btn:hover {
-  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 
 .action-btn.edit-btn:hover {
@@ -966,13 +968,14 @@ button:focus-visible {
 }
 
 .action-btn.active {
-  background: var(--primary-color);
-  color: var(--text-primary);
+  background: color-mix(in srgb, var(--success-color) 14%, var(--bg-secondary));
+  color: var(--success-color);
+  border-color: color-mix(in srgb, var(--success-color) 32%, transparent);
 }
 .action-btn.active:hover {
-  background: var(--primary-color);
-  color: var(--text-primary);
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--success-color) 18%, var(--bg-secondary));
+  color: var(--success-color);
+  opacity: 1;
 }
 
 /* DEFCON Telemetry Tile */

@@ -138,7 +138,7 @@ export const PromptContainer = () => {
               <button
                 type="button"
                 onClick={handleClose}
-                className="btn btn-primary"
+                className="btn btn-ghost"
               >
                 Close
               </button>
@@ -147,7 +147,7 @@ export const PromptContainer = () => {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="btn btn-secondary"
+                  className="btn btn-ghost"
                 >
                   Cancel
                 </button>
