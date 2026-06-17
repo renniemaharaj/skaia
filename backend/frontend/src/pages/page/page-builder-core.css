@@ -748,20 +748,31 @@
   gap: 4px;
 }
 
-.section-animation-control select {
+.section-animation-control .sk-select {
+  min-width: 0;
+}
+
+.section-animation-control .sk-select__wrapper {
+  min-height: 0;
+}
+
+.section-animation-control .sk-select__native {
   height: 28px;
-  margin-top: 0.77rem;
   line-height: 28px;
-  padding: 0 10px;
+  padding: 0 1.75rem 0 10px;
   font-size: 0.7rem;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg-secondary);
+  background-image: none;
   color: var(--text-primary);
   box-sizing: border-box;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+}
+
+.section-animation-control .sk-select__arrow {
+  right: 0.5rem;
+  width: 14px;
+  height: 14px;
 }
 
 /* Section animation classes (scroll-triggered) */

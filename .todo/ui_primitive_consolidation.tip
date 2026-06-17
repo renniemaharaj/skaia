@@ -25,6 +25,15 @@
   - Finding: migrated custom-class buttons were rendered through `Button` without preserving visual ownership, so the primitive default `primary` styling could alter compact/action/source button appearances.
   - Fix: added `unstyled` support to `Button` and applied it to migrated custom-class button call sites in the touched datasource/page-builder/card-designer/mapper surfaces.
   - Verification: targeted PCRE2 grep confirms no migrated custom-class `Button` in the touched files lacks `unstyled`; `mise exec node@24.16.0 -- npm run build` passes.
+- [x] 2026-06-17: Correctness/auditor pass unified the custom page-builder datasource/component picker controls.
+  - Finding: `ComponentGroupEditor`, `DerivedSectionBlock`, `CustomSectionBlock`, and `DataSourcesBlock` were still duplicating raw button/select controls around the registered component picker and datasource/custom-section selection paths.
+  - Fix: migrated `ComponentGroupEditor` tabs/add/remove/component select to `Button`/`Select`; migrated derived/custom section datasource/custom-section, row-key, and component selectors to `Select`; migrated refresh and datasource-management actions to `Button` with `unstyled` where existing class CSS owns visuals.
+  - CSS bridge updates now target `.sk-select__native` for component group, derived section, and custom section controls, with explicit right padding and `background-image: none` to avoid duplicate arrows.
+  - Verification: targeted grep confirms no raw `<button>`, `<select>`, or checkbox controls remain in `ComponentGroupEditor`, `DerivedSectionBlock`, `CustomSectionBlock`, or `DataSourcesBlock`; `mise exec node@24.16.0 -- npm run build` passes.
+- [x] 2026-06-17: Migrated section animation controls in `EditControls`.
+  - `SectionAnimationControl` now uses `Select` for animation style and `Button unstyled` for compact intensity buttons.
+  - `page-builder-core.css` now styles `.section-animation-control .sk-select__native` with explicit padding and `background-image: none`.
+  - Verification: `mise exec node@24.16.0 -- npm run build` passes.
 - [ ] Continue Phase 4: Broaden token/inline-style audit beyond the touched builder/editor files, including global `index.css` checkbox rules and remaining page-builder/layout block inline styles.
 
 <--/------->

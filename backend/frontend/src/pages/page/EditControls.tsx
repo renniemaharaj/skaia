@@ -27,6 +27,8 @@ import { useRef, useContext, useEffect, useState, createContext } from "react";
 import { debounce } from "lodash";
 import { usePageBuilderContext } from "./PageBuilderContext";
 import { toast } from "sonner";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 
 export type SectionLayout = "center" | "left" | "right" | "wide";
 
@@ -557,21 +559,23 @@ export const SectionAnimationControl = ({
   onIntensityChange?: (i: AnimationIntensity) => void;
 }) => (
   <div className="section-animation-control">
-    <select
+    <Select
       value={animation}
       onChange={(e) => onChange(e.target.value as SectionAnimation)}
       title="Section animation"
+      size="sm"
     >
       {SECTION_ANIMATIONS.map((a) => (
         <option key={a} value={a}>
           {a === "none" ? "No animation" : a.replace(/-/g, " ")}
         </option>
       ))}
-    </select>
+    </Select>
     {animation !== "none" && onIntensityChange && (
       <div className="section-intensity-control">
         {ANIMATION_INTENSITIES.map((i) => (
-          <button
+          <Button
+            unstyled
             key={i}
             type="button"
             className={`section-intensity-btn${intensity === i ? " active" : ""}`}
@@ -579,7 +583,7 @@ export const SectionAnimationControl = ({
             title={`${i.charAt(0).toUpperCase() + i.slice(1)} intensity`}
           >
             {i === "subtle" ? "S" : i === "normal" ? "M" : "L"}
-          </button>
+          </Button>
         ))}
       </div>
     )}

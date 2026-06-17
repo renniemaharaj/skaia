@@ -20,26 +20,35 @@
   font-weight: 600;
 }
 
-.custom-section-control select {
-  padding: 0.45rem 0.75rem;
+.custom-section-control .sk-select {
+  min-width: 200px;
+}
+
+.custom-section-control .sk-select__native {
+  padding: 0.45rem 2rem 0.45rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.85rem;
   background: var(--bg-secondary);
+  background-image: none;
   color: inherit;
-  min-width: 200px;
 }
 
 .custom-section-cs-info {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 0.45rem 0.75rem;
   background: var(--bg-tertiary);
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--primary-color);
+}
+
+.custom-section-cs-link {
+  color: var(--accent-color);
+  display: flex;
 }
 
 .custom-section-error {

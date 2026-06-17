@@ -43,6 +43,8 @@ import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGrid } from "../ComponentRenderer";
 import { ActiveJobsBadge } from "../../../components/mediascraper/ActiveJobsBadge";
 import { ComponentGroupRenderer } from "../ComponentGroupEditor";
+import Button from "../../../components/input/Button";
+import Select from "../../../components/input/Select";
 
 interface Props {
   section: PageSection;
@@ -494,7 +496,8 @@ export const CustomSectionBlock = ({
             })
           }
           extra={
-            <button
+            <Button
+              unstyled
               type="button"
               className="pb-section-toolbar-btn"
               onClick={runEvaluation}
@@ -503,7 +506,7 @@ export const CustomSectionBlock = ({
             >
               <RefreshCw size={14} className={evaluating ? "spin" : ""} />
               {evaluating ? " Running…" : " Refresh"}
-            </button>
+            </Button>
           }
         />
       )}
@@ -519,10 +522,11 @@ export const CustomSectionBlock = ({
             {loadingList ? (
               <span>Loading…</span>
             ) : (
-              <select
+              <Select
                 id={customSectionSelectId}
                 value={cfg.custom_section_id ?? ""}
                 onChange={(e) => handleCSChange(Number(e.target.value))}
+                size="sm"
               >
                 <option value="">— Select a saved section —</option>
                 {customSections.map((cs) => (
@@ -530,17 +534,18 @@ export const CustomSectionBlock = ({
                     {cs.name} ({cs.section_type})
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </label>
 
           {availableColumns.length > 0 && !isLegacyTable && (
             <label className="custom-section-control" htmlFor={rowKeySelectId}>
               <span>Row Key</span>
-              <select
+              <Select
                 id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
                 onChange={(e) => handleRowKeyColumnChange(e.target.value)}
+                size="sm"
               >
                 <option value="">— index —</option>
                 {availableColumns.map((col) => (
@@ -548,18 +553,18 @@ export const CustomSectionBlock = ({
                     {col}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
 
           {selectedCS && (
-            <span className="custom-section-cs-info" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <span className="custom-section-cs-info">
               <Zap size={14} /> {selectedCS.name}
               <Link 
                 to={`/admin/datasources/${selectedCS.datasource_id}`} 
                 target="_blank" 
                 title="Edit Data Source"
-                style={{ color: "var(--accent-color)", display: "flex" }}
+                className="custom-section-cs-link"
               >
                 <ExternalLink size={14} />
               </Link>
@@ -575,10 +580,11 @@ export const CustomSectionBlock = ({
               {loadingComponents ? (
                 <span>Loading…</span>
               ) : (
-                <select
+                <Select
                   id={componentSelectId}
                   value={effectiveComponentType ?? ""}
                   onChange={(e) => handleComponentChange(e.target.value)}
+                  size="sm"
                 >
                   <option value="">— Saved layout —</option>
                   {componentsList
@@ -588,7 +594,7 @@ export const CustomSectionBlock = ({
                         {component.label}
                       </option>
                     ))}
-                </select>
+                </Select>
               )}
             </label>
           )}

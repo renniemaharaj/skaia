@@ -37,6 +37,8 @@ import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGrid } from "../ComponentRenderer";
 import { ActiveJobsBadge } from "../../../components/mediascraper/ActiveJobsBadge";
 import { ComponentGroupRenderer } from "../ComponentGroupEditor";
+import Button from "../../../components/input/Button";
+import Select from "../../../components/input/Select";
 
 interface Props {
   section: PageSection;
@@ -306,7 +308,8 @@ export const DerivedSectionBlock = ({
             })
           }
           extra={
-            <button
+            <Button
+              unstyled
               type="button"
               className="pb-section-toolbar-btn"
               onClick={runEvaluation}
@@ -315,7 +318,7 @@ export const DerivedSectionBlock = ({
             >
               <RefreshCw size={14} className={evaluating ? "spin" : ""} />
               {evaluating ? " Running…" : " Refresh"}
-            </button>
+            </Button>
           }
         />
       )}
@@ -331,10 +334,11 @@ export const DerivedSectionBlock = ({
             {loadingDS ? (
               <span>Loading…</span>
             ) : (
-              <select
+              <Select
                 id={datasourceSelectId}
                 value={cfg.datasource_id ?? ""}
                 onChange={(e) => handleDatasourceChange(Number(e.target.value))}
+                size="sm"
               >
                 <option value="">— Select a data source —</option>
                 {dataSources.map((ds) => (
@@ -342,17 +346,18 @@ export const DerivedSectionBlock = ({
                     {ds.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </label>
 
           {availableColumns.length > 0 && (
             <label className="derived-section-control" htmlFor={rowKeySelectId}>
               <span>Row Key</span>
-              <select
+              <Select
                 id={rowKeySelectId}
                 value={cfg.row_key_column ?? ""}
                 onChange={(e) => handleRowKeyColumnChange(e.target.value)}
+                size="sm"
               >
                 <option value="">— index —</option>
                 {availableColumns.map((col) => (
@@ -360,18 +365,18 @@ export const DerivedSectionBlock = ({
                     {col}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           )}
 
           {selectedDS && (
-            <span className="derived-section-ds-info" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <span className="derived-section-ds-info">
               <Zap size={14} /> {selectedDS.name}
               <Link 
                 to={`/admin/datasources/${selectedDS.id}`} 
                 target="_blank" 
                 title="Edit Data Source"
-                style={{ color: "var(--accent-color)", display: "flex" }}
+                className="derived-section-ds-link"
               >
                 <ExternalLink size={14} />
               </Link>
@@ -387,10 +392,11 @@ export const DerivedSectionBlock = ({
               {loadingComponents ? (
                 <span>Loading…</span>
               ) : (
-                <select
+                <Select
                   id={componentSelectId}
                   value={cfg.component_type ?? ""}
                   onChange={(e) => handleComponentChange(e.target.value)}
+                  size="sm"
                 >
                   <option value="">— Designed cards —</option>
                   {componentsList
@@ -400,7 +406,7 @@ export const DerivedSectionBlock = ({
                         {component.label}
                       </option>
                     ))}
-                </select>
+                </Select>
               )}
             </label>
           )}

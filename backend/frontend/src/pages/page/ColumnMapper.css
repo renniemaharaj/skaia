@@ -149,9 +149,16 @@
 
 .column-mapper-slot-value .sk-select__native {
   width: 100%;
-  padding: 4px 8px;
+  padding: 4px 1.75rem 4px 8px;
+  background-image: none;
   font-size: 0.8rem;
   font-family: var(--font-mono);
+}
+
+.column-mapper-slot-value .sk-select__arrow {
+  right: 0.45rem;
+  width: 14px;
+  height: 14px;
 }
 
 .column-mapper-slot-clear {

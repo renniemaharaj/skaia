@@ -19,6 +19,7 @@ import {
 import { apiRequest } from "../../../utils/api";
 import { Plus, Pencil, Trash2, Database, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import Button from "../../../components/input/Button";
 
 const TabbedEditor = lazy(
   () => import("../../../components/page/TabbedEditor"),
@@ -238,9 +239,9 @@ export const DataSourcesBlock = ({
           )}
         </h2>
         {canEdit && !editingDS && (
-          <button className="data-sources-add-btn" onClick={startNew}>
+          <Button unstyled className="data-sources-add-btn" onClick={startNew}>
             <Plus size={16} /> New Data Source
-          </button>
+          </Button>
         )}
       </div>
 
@@ -287,16 +288,17 @@ export const DataSourcesBlock = ({
             </Suspense>
           </div>
           <div className="data-sources-editor-actions">
-            <button
+            <Button
+              unstyled
               className="data-sources-save-btn"
               onClick={handleSave}
               disabled={saving}
             >
               {saving ? "Saving…" : editingDS.id > 0 ? "Update" : "Create"}
-            </button>
-            <button className="data-sources-cancel-btn" onClick={cancelEdit}>
+            </Button>
+            <Button unstyled className="data-sources-cancel-btn" onClick={cancelEdit}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -337,7 +339,8 @@ export const DataSourcesBlock = ({
                     </td>
                     {canEdit && (
                       <td className="data-sources-actions">
-                        <button
+                        <Button
+                          unstyled
                           className="data-sources-action-btn"
                           onClick={() => startEdit(ds)}
                           title="Edit"
@@ -346,8 +349,9 @@ export const DataSourcesBlock = ({
                             size={14}
                             className="data-sources-action-icon"
                           />
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          unstyled
                           className="data-sources-action-btn data-sources-action-danger"
                           onClick={() => handleDelete(ds.id)}
                           title="Delete"
@@ -356,7 +360,7 @@ export const DataSourcesBlock = ({
                             size={14}
                             className="data-sources-action-icon"
                           />
-                        </button>
+                        </Button>
                       </td>
                     )}
                   </tr>

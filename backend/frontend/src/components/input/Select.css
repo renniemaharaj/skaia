@@ -36,7 +36,9 @@
   width: 100%;
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
   background: var(--bg-secondary);
+  background-image: none;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -49,6 +51,10 @@
   /* Reset the global margin-bottom from index.css for selects inside this primitive */
   margin-bottom: 0;
   padding-right: 2.25rem; /* room for the arrow */
+}
+
+html[data-theme="dark"] .sk-select__native {
+  background-image: none;
 }
 
 .sk-select__native:focus {

@@ -18,6 +18,8 @@ import { ComponentRenderer } from "./ComponentRenderer";
 import { CardDesigner } from "./CardDesigner";
 import { DEFAULT_CARD_TEMPLATE } from "./types";
 import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
+import Button from "../../components/input/Button";
+import Select from "../../components/input/Select";
 import "./ComponentGroupEditor.css";
 
 interface ComponentGroupEditorProps {
@@ -106,18 +108,20 @@ export function ComponentGroupEditor({
   return (
     <div className="cge">
       <div className="cge__tabs">
-        <button
+        <Button
+          unstyled
           className={`cge__tab ${activeTab === "components" ? "cge__tab--active" : ""}`}
           onClick={() => setActiveTab("components")}
         >
           Components
-        </button>
-        <button
+        </Button>
+        <Button
+          unstyled
           className={`cge__tab ${activeTab === "styles" ? "cge__tab--active" : ""}`}
           onClick={() => setActiveTab("styles")}
         >
           Styles
-        </button>
+        </Button>
       </div>
 
       {activeTab === "components" && (
@@ -125,13 +129,14 @@ export function ComponentGroupEditor({
           {/*  item list  */}
           <div className="cge__header">
             <span className="cge__title">Component Group</span>
-            <button
+            <Button
+              unstyled
               type="button"
               className="cge__add-btn"
               onClick={addComponent}
             >
               <Plus size={13} /> Add Component
-            </button>
+            </Button>
           </div>
 
           <div className="cge__items">
@@ -139,7 +144,7 @@ export function ComponentGroupEditor({
               return (
                 <div key={item.id} className="cge__item">
                   <GripVertical size={14} className="cge__item-grip" />
-                  <select
+                  <Select
                     className="cge__item-select"
                     value={item.component_type}
                     onChange={(e) =>
@@ -148,13 +153,14 @@ export function ComponentGroupEditor({
                         bindings: {},
                       })
                     }
+                    size="sm"
                   >
                     {components.map((c) => (
                       <option key={c.type} value={c.type}>
                         {c.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                   <label className="cge__item-width">
                     <input
                       type="number"
@@ -172,14 +178,15 @@ export function ComponentGroupEditor({
                     />
                     <span>%</span>
                   </label>
-                  <button
+                  <Button
+                    unstyled
                     type="button"
                     className="cge__item-remove"
                     onClick={() => removeComponent(item.id)}
                     title="Remove"
                   >
                     <Trash2 size={13} />
-                  </button>
+                  </Button>
                 </div>
               );
             })}
