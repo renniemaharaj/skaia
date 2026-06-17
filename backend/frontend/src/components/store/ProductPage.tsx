@@ -14,7 +14,6 @@ import CommentSection from "../../components/comments/CommentSection";
 import StarRating from "../../components/ui/StarRating";
 import {
   ShoppingCart,
-  ArrowLeft,
   Package,
   Share2,
   Edit2,
@@ -27,6 +26,7 @@ import { createPortal } from "react-dom";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { StorePageShell } from "./StorePageShell";
 
 interface ProductReview {
   id: string | number;
@@ -201,14 +201,7 @@ export const ProductPage = () => {
 
   if (loadingProduct) {
     return (
-      <div className="product-page-container">
-        <div className="product-page-back">
-          <div
-            className="skeleton skeleton-heading"
-            style={{ width: 120, height: 20 }}
-          />
-        </div>
-
+      <StorePageShell className="product-page-container" backTo="/store">
         <div className="product-page-layout">
           <div className="product-page-hero">
             <div className="product-page-image-container">
@@ -332,24 +325,22 @@ export const ProductPage = () => {
             </div>
           </div>
         </div>
-      </div>
+      </StorePageShell>
     );
   }
 
   if (!product) {
-    return <div className="product-page-not-found">Product not found</div>;
+    return (
+      <StorePageShell className="product-page-container" backTo="/store">
+        <div className="product-page-not-found">Product not found</div>
+      </StorePageShell>
+    );
   }
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
 
   return (
-    <div className="product-page-container">
-      <div className="product-page-back">
-        <Link to="/store" className="btn">
-          <ArrowLeft size={14} /> Back to Store
-        </Link>
-      </div>
-
+    <StorePageShell className="product-page-container" backTo="/store">
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
         <ContentFlatCard className="product-page-hero">
@@ -582,6 +573,6 @@ export const ProductPage = () => {
           </div>,
           document.body,
         )}
-    </div>
+    </StorePageShell>
   );
 };

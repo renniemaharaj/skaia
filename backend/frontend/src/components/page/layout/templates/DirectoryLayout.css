@@ -2,6 +2,8 @@
   max-width: 100%;
   margin: 0 auto;
   padding: 40px 0;
+  --directory-content-max-width: 1400px;
+  --directory-inline-padding: 40px;
 }
 
 .directory-layout__header {
@@ -9,9 +11,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  max-width: 1400px;
+  max-width: var(--directory-content-max-width);
   margin: 0 auto 18px;
-  padding: 0 40px;
+  padding: 0 var(--directory-inline-padding);
 }
 
 .directory-layout__header-left {
@@ -45,9 +47,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  max-width: 1400px;
+  max-width: var(--directory-content-max-width);
   margin: 0 auto 24px;
-  padding: 0 40px;
+  padding: 0 var(--directory-inline-padding);
   flex-wrap: wrap;
 }
 
@@ -71,6 +73,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
+  background: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
 }
 
 .directory-view-btn {
@@ -96,37 +99,48 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
-  max-width: 1400px;
+  max-width: var(--directory-content-max-width);
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 0 var(--directory-inline-padding);
 }
 
 .directory-layout__list {
   width: 100%;
-  max-width: 1400px;
+  max-width: var(--directory-content-max-width);
   margin: 0 auto;
-  padding: 0 40px;
-  border-radius: 12px;
-  overflow: hidden;
+  padding: 0 var(--directory-inline-padding);
+}
+
+.directory-layout__list--custom {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .directory-layout__list-header {
   /* Provide styling in the parent component or default if needed */
 }
 
+.directory-layout__empty-container {
+  max-width: var(--directory-content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--directory-inline-padding);
+}
+
 @media (max-width: 880px) {
   .directory-layout {
     padding: 20px 0;
+    --directory-inline-padding: 16px;
   }
 
   .directory-layout__header,
   .directory-layout__toolbar,
   .directory-layout__grid {
-    padding: 0 16px;
+    padding: 0 var(--directory-inline-padding);
   }
 
   .directory-layout__list {
-    padding: 0;
+    padding: 0 var(--directory-inline-padding);
     border-radius: 0;
   }
 

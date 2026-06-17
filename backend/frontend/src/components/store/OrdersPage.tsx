@@ -32,6 +32,7 @@ import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
+import { StorePageShell } from "./StorePageShell";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
 import "leaflet/dist/leaflet.css";
@@ -524,15 +525,16 @@ export const OrdersPage = () => {
   if (!isAuthenticated) return null;
 
   return (
-    <>
+    <StorePageShell className="store-orders-shell" backTo="/store">
       <DirectoryLayout
+        className="orders-directory"
         title="Store Orders"
         subtitle="Manage your past and current orders."
         items={orders}
         viewMode="list"
         renderGridCard={() => null}
         customListContent={
-          <div className="directory-layout__list">
+          <>
             {isStoreAdmin && (
               <section className="reference-codes-panel">
                 <h3>{referenceSectionTitle}</h3>
@@ -636,7 +638,7 @@ export const OrdersPage = () => {
                 />
               )}
             </div>
-          </div>
+          </>
         }
       />
 
@@ -755,7 +757,7 @@ export const OrdersPage = () => {
           </>,
           document.body,
         )}
-    </>
+    </StorePageShell>
   );
 };
 

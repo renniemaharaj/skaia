@@ -396,17 +396,15 @@ export const Forum: React.FC = () => {
         viewMode={viewMode}
         onViewModeChange={toggleView}
         customListContent={
-          <div className="directory-layout__list">
-            <CategoryThreadsFeed
-              threads={listThreads}
-              isLoading={threadsLoading}
-              loading={threadsFetchingOlder}
-              feedRef={feedRef}
-              sentinelRef={sentinelRef}
-              handleScroll={handleScroll}
-              emptyMessage="No threads found."
-            />
-          </div>
+          <CategoryThreadsFeed
+            threads={listThreads}
+            isLoading={threadsLoading}
+            loading={threadsFetchingOlder}
+            feedRef={feedRef}
+            sentinelRef={sentinelRef}
+            handleScroll={handleScroll}
+            emptyMessage="No threads found."
+          />
         }
         prependGridCard={isAuthenticated ? (
           <div className="card card--interactive new-thread-card feature-card">

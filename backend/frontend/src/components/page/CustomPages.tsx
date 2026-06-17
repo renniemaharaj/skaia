@@ -477,6 +477,7 @@ export default function CustomPages() {
  ),
  },
  ]}
+ tableRowKey={(page) => page.id}
  renderGridCard={(page) => (
  <SpotlightCard key={page.id} className="card card--interactive" style={{ display: 'flex', padding: 0, margin: 0 }} spotlightColor="rgba(var(--primary-color-rgb), 0.15)">
  <Link

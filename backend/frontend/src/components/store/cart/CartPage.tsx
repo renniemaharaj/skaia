@@ -16,6 +16,7 @@ import { CartItemsList } from "./CartItemsList";
 import { CheckoutPanel, type WalletCard } from "./CheckoutPanel";
 import { EmptyCart } from "./EmptyCart";
 import OrderSubmittedView from "../OrderStatusView";
+import { StorePageShell } from "../StorePageShell";
 import "../../../styles/Cart.css";
 
 export const CartPage = () => {
@@ -227,12 +228,16 @@ export const CartPage = () => {
 
   /* ── Empty cart ── */
   if (cartItems.length === 0) {
-    return <EmptyCart />;
+    return (
+      <StorePageShell backTo="/store">
+        <EmptyCart />
+      </StorePageShell>
+    );
   }
 
   /* ── Main cart ── */
   return (
-    <div className="cart-page-container">
+    <StorePageShell className="cart-page-container" backTo="/store">
       <CartHeader />
 
       <div className="cart-content">
@@ -278,6 +283,6 @@ export const CartPage = () => {
           onUseSavedCheckout={handleUseSavedCheckout}
         />
       </div>
-    </div>
+    </StorePageShell>
   );
 };

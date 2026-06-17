@@ -247,6 +247,7 @@ export default function DataSourcesPage() {
  ),
  },
  ]}
+ tableRowKey={(ds) => ds.id}
  renderRowWrapper={(ds, _, props, cells) => (
  <Link
  key={ds.id}
