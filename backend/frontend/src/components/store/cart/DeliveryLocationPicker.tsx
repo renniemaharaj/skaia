@@ -26,6 +26,7 @@ function LocationPickerEvents({ setDeliveryLocation }: LocationPickerEventsProps
 }
 
 interface DeliveryLocationPickerProps {
+  deliveryApplicable: boolean;
   deliveryDate: string;
   deliveryLocation: string;
   deliveryMarkerPosition: [number, number] | null;
@@ -33,6 +34,7 @@ interface DeliveryLocationPickerProps {
   extraInfo: string;
   guestPhone: string;
   referralCode: string;
+  onDeliveryApplicableChange: (value: boolean) => void;
   onDeliveryDateChange: (value: string) => void;
   onDeliveryLocationChange: (value: string) => void;
   onDeliveryTimeChange: (value: string) => void;
@@ -42,6 +44,7 @@ interface DeliveryLocationPickerProps {
 }
 
 export function DeliveryLocationPicker({
+  deliveryApplicable,
   deliveryDate,
   deliveryLocation,
   deliveryMarkerPosition,
@@ -49,6 +52,7 @@ export function DeliveryLocationPicker({
   extraInfo,
   guestPhone,
   referralCode,
+  onDeliveryApplicableChange,
   onDeliveryDateChange,
   onDeliveryLocationChange,
   onDeliveryTimeChange,
@@ -58,7 +62,7 @@ export function DeliveryLocationPicker({
 }: DeliveryLocationPickerProps) {
   return (
     <div className="cart-summary-section">
-      <h4>Delivery</h4>
+      <h4>Order Contact</h4>
       <label className="cart-field">
         <span className="cart-field-label">Contact phone</span>
         <div className="input-group">
@@ -74,60 +78,73 @@ export function DeliveryLocationPicker({
         </div>
       </label>
 
-      <div className="cart-map-container">
-        <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: "100%", width: "100%" }}>
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          />
-          <LocationPickerEvents setDeliveryLocation={onDeliveryLocationChange} />
-          {deliveryMarkerPosition && <Marker position={deliveryMarkerPosition} />}
-        </MapContainer>
-      </div>
-
-      <label className="cart-field">
-        <span className="cart-field-label">Delivery location</span>
-        <div className="input-group">
-          <MapPin size={15} />
-          <input
-            type="text"
-            placeholder="Click map or enter coordinates"
-            value={deliveryLocation}
-            onChange={event => onDeliveryLocationChange(event.target.value)}
-          />
-        </div>
-      </label>
-
-      <div className="cart-datetime-row">
-        <label className="cart-field">
-          <span className="cart-field-label">Delivery date</span>
-          <input
-            type="date"
-            value={deliveryDate}
-            onChange={event => onDeliveryDateChange(event.target.value)}
-            title="Delivery Date"
-          />
-        </label>
-        <label className="cart-field">
-          <span className="cart-field-label">Delivery time</span>
-          <input
-            type="time"
-            value={deliveryTime}
-            onChange={event => onDeliveryTimeChange(event.target.value)}
-            title="Delivery Time"
-          />
-        </label>
-      </div>
-
-      <label className="cart-field">
-        <span className="cart-field-label">Delivery notes</span>
-        <textarea
-          className="cart-textarea"
-          placeholder="Gate code, driver instructions, or drop-off details"
-          value={extraInfo}
-          onChange={event => onExtraInfoChange(event.target.value)}
+      <label className="cart-checkbox-label">
+        <input
+          type="checkbox"
+          checked={deliveryApplicable}
+          onChange={event => onDeliveryApplicableChange(event.target.checked)}
         />
+        This order needs delivery
       </label>
+
+      {deliveryApplicable && (
+        <div className="cart-delivery-fields">
+          <div className="cart-map-container">
+            <MapContainer center={[51.505, -0.09]} zoom={13} style={{ height: "100%", width: "100%" }}>
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <LocationPickerEvents setDeliveryLocation={onDeliveryLocationChange} />
+              {deliveryMarkerPosition && <Marker position={deliveryMarkerPosition} />}
+            </MapContainer>
+          </div>
+
+          <label className="cart-field">
+            <span className="cart-field-label">Delivery location</span>
+            <div className="input-group">
+              <MapPin size={15} />
+              <input
+                type="text"
+                placeholder="Click map or enter coordinates"
+                value={deliveryLocation}
+                onChange={event => onDeliveryLocationChange(event.target.value)}
+              />
+            </div>
+          </label>
+
+          <div className="cart-datetime-row">
+            <label className="cart-field">
+              <span className="cart-field-label">Delivery date</span>
+              <input
+                type="date"
+                value={deliveryDate}
+                onChange={event => onDeliveryDateChange(event.target.value)}
+                title="Delivery Date"
+              />
+            </label>
+            <label className="cart-field">
+              <span className="cart-field-label">Delivery time</span>
+              <input
+                type="time"
+                value={deliveryTime}
+                onChange={event => onDeliveryTimeChange(event.target.value)}
+                title="Delivery Time"
+              />
+            </label>
+          </div>
+
+          <label className="cart-field">
+            <span className="cart-field-label">Delivery notes</span>
+            <textarea
+              className="cart-textarea"
+              placeholder="Gate code, driver instructions, or drop-off details"
+              value={extraInfo}
+              onChange={event => onExtraInfoChange(event.target.value)}
+            />
+          </label>
+        </div>
+      )}
 
       <label className="cart-field cart-referral-field">
         <span className="cart-field-label">Referral code</span>

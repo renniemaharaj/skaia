@@ -31,6 +31,7 @@ export const CartPage = () => {
   const [paymentMethod, setPaymentMethod] = useState("delivery_cash");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [deliveryApplicable, setDeliveryApplicable] = useState(true);
   const [deliveryLocation, setDeliveryLocation] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
@@ -133,7 +134,7 @@ export const CartPage = () => {
       toast.error("Contact phone number is required.");
       return;
     }
-    if (!deliveryLocation) {
+    if (deliveryApplicable && !deliveryLocation) {
       toast.error("Delivery location is required.");
       return;
     }
@@ -152,10 +153,10 @@ export const CartPage = () => {
           is_guest: !isAuthenticated,
           guest_email: guestEmail,
           guest_phone: guestPhone,
-          delivery_location: deliveryLocation,
-          delivery_date: deliveryDate,
-          delivery_time: deliveryTime,
-          extra_info: extraInfo,
+          delivery_location: deliveryApplicable ? deliveryLocation : "",
+          delivery_date: deliveryApplicable ? deliveryDate : "",
+          delivery_time: deliveryApplicable ? deliveryTime : "",
+          extra_info: deliveryApplicable ? extraInfo : "",
           billing_info: billingInfo,
           referral_code: referralCode,
         }),
@@ -166,9 +167,9 @@ export const CartPage = () => {
         if (rememberBilling) {
           const saved = {
             billingInfo,
-            deliveryLocation,
+            deliveryLocation: deliveryApplicable ? deliveryLocation : "",
             guestPhone,
-            extraInfo,
+            extraInfo: deliveryApplicable ? extraInfo : "",
             saved_at: new Date().toISOString(),
           };
           localStorage.setItem("checkoutSaved", JSON.stringify(saved));
@@ -247,6 +248,7 @@ export const CartPage = () => {
         <CheckoutPanel
           billingInfo={billingInfo}
           cartTotal={cartTotal}
+          deliveryApplicable={deliveryApplicable}
           deliveryDate={deliveryDate}
           deliveryLocation={deliveryLocation}
           deliveryMarkerPosition={deliveryMarkerPosition}
@@ -263,6 +265,7 @@ export const CartPage = () => {
           userCards={userCards}
           onBillingInfoChange={setBillingInfo}
           onCheckout={handleCheckout}
+          onDeliveryApplicableChange={setDeliveryApplicable}
           onDeliveryDateChange={setDeliveryDate}
           onDeliveryLocationChange={setDeliveryLocation}
           onDeliveryTimeChange={setDeliveryTime}

@@ -13,6 +13,7 @@ export type WalletCard = {
 interface CheckoutPanelProps {
   billingInfo: string;
   cartTotal: number;
+  deliveryApplicable: boolean;
   deliveryDate: string;
   deliveryLocation: string;
   deliveryMarkerPosition: [number, number] | null;
@@ -29,6 +30,7 @@ interface CheckoutPanelProps {
   userCards: WalletCard[];
   onBillingInfoChange: (value: string) => void;
   onCheckout: () => void;
+  onDeliveryApplicableChange: (value: boolean) => void;
   onDeliveryDateChange: (value: string) => void;
   onDeliveryLocationChange: (value: string) => void;
   onDeliveryTimeChange: (value: string) => void;
@@ -44,6 +46,7 @@ interface CheckoutPanelProps {
 export function CheckoutPanel({
   billingInfo,
   cartTotal,
+  deliveryApplicable,
   deliveryDate,
   deliveryLocation,
   deliveryMarkerPosition,
@@ -60,6 +63,7 @@ export function CheckoutPanel({
   userCards,
   onBillingInfoChange,
   onCheckout,
+  onDeliveryApplicableChange,
   onDeliveryDateChange,
   onDeliveryLocationChange,
   onDeliveryTimeChange,
@@ -105,6 +109,7 @@ export function CheckoutPanel({
       )}
 
       <DeliveryLocationPicker
+        deliveryApplicable={deliveryApplicable}
         deliveryDate={deliveryDate}
         deliveryLocation={deliveryLocation}
         deliveryMarkerPosition={deliveryMarkerPosition}
@@ -112,6 +117,7 @@ export function CheckoutPanel({
         extraInfo={extraInfo}
         guestPhone={guestPhone}
         referralCode={referralCode}
+        onDeliveryApplicableChange={onDeliveryApplicableChange}
         onDeliveryDateChange={onDeliveryDateChange}
         onDeliveryLocationChange={onDeliveryLocationChange}
         onDeliveryTimeChange={onDeliveryTimeChange}

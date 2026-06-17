@@ -362,6 +362,10 @@
   margin-top: 0.75rem;
 }
 
+.cart-delivery-fields {
+  margin-top: 1rem;
+}
+
 /* ── Map container ── */
 .cart-map-container {
   height: 220px;
