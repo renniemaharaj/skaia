@@ -182,6 +182,14 @@ func (s *Service) GetUserOrders(userID int64, limit, offset int) ([]*models.Orde
 	return s.orders.GetByUser(userID, limit, offset)
 }
 
+func (s *Service) GetProductOwnerOrders(ownerID int64, limit, offset int) ([]*models.Order, error) {
+	return s.orders.GetByProductOwner(ownerID, limit, offset)
+}
+
+func (s *Service) OrderContainsProductOwnedBy(orderID, ownerID int64) (bool, error) {
+	return s.orders.ContainsProductOwnedBy(orderID, ownerID)
+}
+
 func (s *Service) GetGuestOrder(id int64, email, phone string) (*models.Order, error) {
 	return s.orders.GetGuestOrder(id, email, phone)
 }

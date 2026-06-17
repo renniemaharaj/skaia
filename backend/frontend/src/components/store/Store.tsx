@@ -74,11 +74,20 @@ export const Store: React.FC = () => {
 
   // Permissions
   const canCreateProduct =
-    currentUser?.permissions?.includes("store.product-new") || guestSandboxMode;
-  const canEditProduct =
+    currentUser?.permissions?.includes("store.product-new") ||
+    currentUser?.permissions?.includes("store.product-seller") ||
+    guestSandboxMode;
+  const hasGlobalProductEdit =
     currentUser?.permissions?.includes("store.product-edit") || guestSandboxMode;
-  const canDeleteProduct =
+  const hasGlobalProductDelete =
     currentUser?.permissions?.includes("store.product-delete") || guestSandboxMode;
+  const isSeller = currentUser?.permissions?.includes("store.product-seller");
+  const ownsProduct = (product: Product) =>
+    !!currentUser && !!product.owner_id && String(product.owner_id) === String(currentUser.id);
+  const canEditProduct = (product: Product) =>
+    hasGlobalProductEdit || (!!isSeller && ownsProduct(product));
+  const canDeleteProduct = (product: Product) =>
+    hasGlobalProductDelete || (!!isSeller && ownsProduct(product));
   const canManageCategories =
     currentUser?.permissions?.includes("store.manageCategories") || guestSandboxMode;
   const canCreateCategory = canManageCategories || guestSandboxMode;

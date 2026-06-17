@@ -326,25 +326,45 @@ func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, p)
 }
 
+func (h *Handler) canCreateOwnedProduct(userID int64) bool {
+	ok, _ := h.authz.HasPermission(userID, "store.product-new")
+	if ok {
+		return true
+	}
+	ok, _ = h.authz.HasPermission(userID, "store.product-seller")
+	return ok
+}
+
+func (h *Handler) canManageProduct(userID int64, p *models.Product, globalPermission string) bool {
+	ok, _ := h.authz.HasPermission(userID, globalPermission)
+	if ok {
+		return true
+	}
+	seller, _ := h.authz.HasPermission(userID, "store.product-seller")
+	return seller && p.OwnerID != nil && *p.OwnerID == userID
+}
+
 func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if !utils.CheckPerm(w, h.authz, userID, "store.product-new") {
+	if !h.canCreateOwnedProduct(userID) {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 	var req struct {
-		CategoryID     int64   `json:"category_id"`
-		Name           string  `json:"name"`
-		Description    string  `json:"description"`
-		Price          float64 `json:"price"`
-		ImageURL       string  `json:"image_url"`
-		Stock          int     `json:"stock"`
-		StockUnlimited bool    `json:"stock_unlimited"`
-		IsActive       bool    `json:"is_active"`
-		SpecialActions string  `json:"special_actions"`
+		CategoryID     int64                 `json:"category_id"`
+		Name           string                `json:"name"`
+		Description    string                `json:"description"`
+		Price          float64               `json:"price"`
+		ImageURL       string                `json:"image_url"`
+		Media          []models.ProductMedia `json:"media"`
+		Stock          int                   `json:"stock"`
+		StockUnlimited bool                  `json:"stock_unlimited"`
+		IsActive       bool                  `json:"is_active"`
+		SpecialActions string                `json:"special_actions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -362,10 +382,12 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := h.svc.CreateProduct(&models.Product{
 		CategoryID:     req.CategoryID,
+		OwnerID:        &userID,
 		Name:           req.Name,
 		Description:    req.Description,
 		Price:          price,
 		ImageURL:       req.ImageURL,
+		Media:          req.Media,
 		Stock:          req.Stock,
 		StockUnlimited: req.StockUnlimited,
 		IsActive:       req.IsActive,
@@ -398,9 +420,6 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if !utils.CheckPerm(w, h.authz, userID, "store.product-edit") {
-		return
-	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
@@ -411,16 +430,21 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusNotFound, "product not found")
 		return
 	}
+	if !h.canManageProduct(userID, existing, "store.product-edit") {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
 	var req struct {
-		CategoryID     *int64   `json:"category_id"`
-		Name           *string  `json:"name"`
-		Description    *string  `json:"description"`
-		Price          *float64 `json:"price"`
-		ImageURL       *string  `json:"image_url"`
-		Stock          *int     `json:"stock"`
-		StockUnlimited *bool    `json:"stock_unlimited"`
-		IsActive       *bool    `json:"is_active"`
-		SpecialActions *string  `json:"special_actions"`
+		CategoryID     *int64                 `json:"category_id"`
+		Name           *string                `json:"name"`
+		Description    *string                `json:"description"`
+		Price          *float64               `json:"price"`
+		ImageURL       *string                `json:"image_url"`
+		Media          *[]models.ProductMedia `json:"media"`
+		Stock          *int                   `json:"stock"`
+		StockUnlimited *bool                  `json:"stock_unlimited"`
+		IsActive       *bool                  `json:"is_active"`
+		SpecialActions *string                `json:"special_actions"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
@@ -450,6 +474,12 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.ImageURL != nil {
 		existing.ImageURL = *req.ImageURL
+	}
+	if req.Media != nil {
+		existing.Media = *req.Media
+		if len(existing.Media) > 0 {
+			existing.ImageURL = existing.Media[0].URL
+		}
 	}
 	if req.Stock != nil {
 		existing.Stock = *req.Stock
@@ -494,12 +524,18 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if !utils.CheckPerm(w, h.authz, userID, "store.product-delete") {
-		return
-	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
+		return
+	}
+	existing, err := h.svc.GetProduct(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "product not found")
+		return
+	}
+	if !h.canManageProduct(userID, existing, "store.product-delete") {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
 	if err := h.svc.DeleteProduct(id); err != nil {
@@ -964,6 +1000,7 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	canSell, _ := h.authz.HasPermission(userID, "store.product-seller")
 	var orders []*models.Order
 	var err error
 
@@ -972,6 +1009,8 @@ func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 		orders, err = h.svc.GetUserOrders(targetUserID, limit, offset)
 	} else if canManage && r.URL.Query().Get("all") == "true" {
 		orders, err = h.svc.ListAllOrders(limit, offset)
+	} else if canSell {
+		orders, err = h.svc.GetProductOwnerOrders(userID, limit, offset)
 	} else {
 		orders, err = h.svc.GetUserOrders(userID, limit, offset)
 	}
@@ -1013,7 +1052,8 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	// Only allow user to see their own orders unless admin
 	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
-	if (order.UserID == nil || *order.UserID != userID) && !canManage {
+	ownsProduct, _ := h.svc.OrderContainsProductOwnedBy(order.ID, userID)
+	if (order.UserID == nil || *order.UserID != userID) && !canManage && !ownsProduct {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
@@ -1033,9 +1073,6 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if !utils.CheckPerm(w, h.authz, userID, "store.manageOrders") {
-		return
-	}
 	id, err := h.parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
@@ -1050,6 +1087,15 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	// load current order so we can detect transitions (e.g., to completed)
 	beforeOrder, _ := h.svc.GetOrder(id)
+	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	ownsProduct := false
+	if beforeOrder != nil {
+		ownsProduct, _ = h.svc.OrderContainsProductOwnedBy(beforeOrder.ID, userID)
+	}
+	if !canManage && !ownsProduct {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
 
 	order, err := h.svc.UpdateOrderStatus(id, req.Status)
 	if err != nil {

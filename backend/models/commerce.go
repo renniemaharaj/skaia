@@ -13,19 +13,34 @@ type StoreCategory struct {
 
 // Product represents a product in the store. Prices are in cents.
 type Product struct {
-	ID             int64     `json:"id"`
-	CategoryID     int64     `json:"category_id"`
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	Price          int64     `json:"price"`
-	ImageURL       string    `json:"image_url"`
-	Stock          int       `json:"stock"`
-	OriginalPrice  *int64    `json:"original_price,omitempty"`
-	StockUnlimited bool      `json:"stock_unlimited"`
-	IsActive       bool      `json:"is_active"`
-	SpecialActions string    `json:"special_actions,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID              int64          `json:"id"`
+	CategoryID      int64          `json:"category_id"`
+	OwnerID         *int64         `json:"owner_id,omitempty"`
+	Owner           *UserSummary   `json:"owner,omitempty"`
+	Name            string         `json:"name"`
+	Description     string         `json:"description"`
+	Price           int64          `json:"price"`
+	ImageURL        string         `json:"image_url"`
+	Media           []ProductMedia `json:"media,omitempty"`
+	Stock           int            `json:"stock"`
+	OriginalPrice   *int64         `json:"original_price,omitempty"`
+	StockUnlimited  bool           `json:"stock_unlimited"`
+	IsActive        bool           `json:"is_active"`
+	SpecialActions  string         `json:"special_actions,omitempty"`
+	RecentPurchases int            `json:"recent_purchases"`
+	CurrentOrders   int            `json:"current_orders"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+// ProductMedia represents a marketing asset attached to a store product.
+type ProductMedia struct {
+	URL       string    `json:"url"`
+	Filename  string    `json:"filename"`
+	MimeType  string    `json:"mime_type"`
+	Type      string    `json:"type"`
+	Size      int64     `json:"size"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // CartItem represents an item in a user's cart.

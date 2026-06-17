@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Package, Edit2, Trash2 } from "lucide-react";
+import { Clock, Package, Edit2, Trash2, ShoppingBag, TrendingUp, User } from "lucide-react";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import StarRating from "../ui/StarRating";
 import { formatCents } from "../../utils/money";
@@ -26,6 +26,10 @@ export const InlineProduct = ({
   onImagePreview,
 }: StoreInlineProductProps) => {
   const { averageRating, reviewCount } = useProductRatings(product.id);
+  const updatedDate = new Date(product.updated_at).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 
   return (
     <ContentFlatCard className="product-card">
@@ -92,6 +96,25 @@ export const InlineProduct = ({
               ? product.description
               : `${product.description.slice(0, 120)}...`}
           </p>
+
+          <div className="product-card-meta">
+            <span title="Product owner">
+              <User size={13} />
+              {product.owner?.display_name || "Store"}
+            </span>
+            <span title="Last updated">
+              <Clock size={13} />
+              {updatedDate}
+            </span>
+            <span title="Recent purchases">
+              <ShoppingBag size={13} />
+              {product.recent_purchases ?? 0}
+            </span>
+            <span title="Current orders">
+              <TrendingUp size={13} />
+              {product.current_orders ?? 0}
+            </span>
+          </div>
 
           {!product.stock_unlimited && (
             <div className="product-page-stock">

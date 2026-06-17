@@ -3,8 +3,9 @@ import { createPortal } from "react-dom";
 import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { centsToDollars } from "../../utils/money";
-import type { Product, StoreCategory } from "../../atoms/store";
+import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import Select from "../input/Select";
+import { ProductMediaTable } from "./ProductMediaTable";
 
 interface EditProductDialogProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
     stock: String(product.stock),
     stock_unlimited: product.stock_unlimited ?? false,
     image_url: product.image_url ?? "",
+    media: (product.media ?? []) as ProductMedia[],
     is_active: product.is_active,
   });
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +57,19 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
       stock: String(product.stock),
       stock_unlimited: product.stock_unlimited ?? false,
       image_url: product.image_url ?? "",
+      media:
+        product.media && product.media.length > 0
+          ? product.media
+          : product.image_url
+            ? [{
+                url: product.image_url,
+                filename: product.image_url.split("/").pop() || product.name,
+                mime_type: "",
+                type: "image",
+                size: 0,
+                created_at: product.created_at,
+              }]
+            : [],
       is_active: product.is_active,
     });
 
@@ -89,7 +104,8 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           price,
           stock: Number(formData.stock),
           stock_unlimited: formData.stock_unlimited,
-          image_url: formData.image_url,
+          image_url: formData.media[0]?.url ?? formData.image_url,
+          media: formData.media,
           is_active: formData.is_active,
           special_actions: JSON.stringify(
             specialActions.filter((a) => a.value !== ""),
@@ -315,13 +331,16 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Image URL</label>
-            <input
-              className="form-input"
-              type="text"
-              value={formData.image_url}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, image_url: e.target.value }))
+            <label className="form-label">Marketing Media</label>
+            <ProductMediaTable
+              media={formData.media}
+              editable
+              onChange={(media) =>
+                setFormData((p) => ({
+                  ...p,
+                  media,
+                  image_url: media[0]?.url ?? "",
+                }))
               }
             />
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import { toast } from "sonner";
 import {
@@ -18,15 +18,21 @@ import {
   Share2,
   Edit2,
   ChevronRight,
+  Clock,
+  User,
+  TrendingUp,
+  ShoppingBag,
+  LayoutGrid,
 } from "lucide-react";
 import { EditProductDialog } from "../../components/store/EditProductDialog";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { layoutModeAtom } from "../../atoms/layoutMode";
-import { createPortal } from "react-dom";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { StorePageShell } from "./StorePageShell";
+import { ProductMediaTable } from "./ProductMediaTable";
+import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 
 interface ProductReview {
   id: string | number;
@@ -40,8 +46,75 @@ interface ProductReview {
   can_delete?: boolean;
 }
 
+const getProductMedia = (product: Product) =>
+  product.media && product.media.length > 0
+    ? product.media
+    : product.image_url
+      ? [
+          {
+            url: product.image_url,
+            filename: product.image_url.split("/").pop() || product.name,
+            mime_type: "",
+            type: "image",
+            size: 0,
+            created_at: product.created_at,
+          },
+        ]
+      : [];
+
+interface ProductTwoUpCardProps {
+  product: Product;
+  onPreview: (index: number) => void;
+  onAddToCart: (product: Product) => void;
+  addingToCart: boolean;
+}
+
+function ProductTwoUpCard({
+  product,
+  onPreview,
+  onAddToCart,
+  addingToCart,
+}: ProductTwoUpCardProps) {
+  const media = getProductMedia(product);
+  const isSoldOut = !product.stock_unlimited && product.stock <= 0;
+
+  return (
+    <ContentFlatCard className="product-two-up-card">
+      <div className={`product-two-up-media${!media[0] ? " fallback" : ""}`}>
+        {media[0] ? (
+          <img src={media[0].url} alt={product.name} onClick={() => onPreview(0)} />
+        ) : (
+          <Package size={40} />
+        )}
+      </div>
+      <div className="product-two-up-body">
+        <div className="product-two-up-heading">
+          <h2>{product.name}</h2>
+          <span>{formatCents(product.price)}</span>
+        </div>
+        <p>{product.description}</p>
+        <div className="product-page-meta-grid">
+          <span><User size={14} /> {product.owner?.display_name || "Store"}</span>
+          <span><ShoppingBag size={14} /> {product.recent_purchases ?? 0} purchases</span>
+          <span><TrendingUp size={14} /> {product.current_orders ?? 0} current orders</span>
+          <span><Clock size={14} /> {new Date(product.updated_at).toLocaleDateString()}</span>
+        </div>
+        <button
+          className="btn-add-to-cart"
+          onClick={() => onAddToCart(product)}
+          disabled={!product.is_active || isSoldOut || addingToCart}
+        >
+          <ShoppingCart size={14} />
+          {addingToCart ? "Adding..." : isSoldOut ? "Sold Out" : "Add to Cart"}
+        </button>
+      </div>
+    </ContentFlatCard>
+  );
+}
+
 export const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const allProducts = useAtomValue(productsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -50,19 +123,23 @@ export const ProductPage = () => {
   const setLayoutMode = useSetAtom(layoutModeAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
 
-  const canEditProduct =
-    currentUser?.permissions?.includes("store.product-edit") ||
-    guestSandboxMode;
-
   const [product, setProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(true);
+  const isTwoUpLayout = searchParams.get("layout") === "two-up";
+
+  const canEditProduct =
+    currentUser?.permissions?.includes("store.product-edit") ||
+    (currentUser?.permissions?.includes("store.product-seller") &&
+      product?.owner_id &&
+      String(product.owner_id) === String(currentUser.id)) ||
+    guestSandboxMode;
 
   useEffect(() => {
     setLayoutMode("application");
@@ -152,22 +229,21 @@ export const ProductPage = () => {
     }
   };
 
-  const handleAddToCart = async () => {
-    if (!product) return;
+  const addProductToCart = async (targetProduct: Product) => {
     setAddingToCart(true);
     try {
       await apiRequest("/store/cart/add", {
         method: "POST",
-        body: JSON.stringify({ product_id: product.id, quantity: 1 }),
+        body: JSON.stringify({ product_id: targetProduct.id, quantity: 1 }),
       });
 
       setCartItems((prev) => {
         const exists = prev.find(
-          (i) => i.product?.id === product.id || i.product_id === product.id,
+          (i) => i.product?.id === targetProduct.id || i.product_id === targetProduct.id,
         );
         if (exists) {
           return prev.map((i) =>
-            i.product?.id === product.id || i.product_id === product.id
+            i.product?.id === targetProduct.id || i.product_id === targetProduct.id
               ? { ...i, quantity: i.quantity + 1 }
               : i,
           );
@@ -177,10 +253,10 @@ export const ProductPage = () => {
           {
             id: `temp-${Date.now()}`,
             user_id: currentUser?.id ?? "0",
-            product_id: product.id,
+            product_id: targetProduct.id,
             quantity: 1,
             added_at: new Date().toISOString(),
-            product: product,
+            product: targetProduct,
           },
         ];
       });
@@ -191,6 +267,11 @@ export const ProductPage = () => {
     } finally {
       setAddingToCart(false);
     }
+  };
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    await addProductToCart(product);
   };
 
   const averageRating = useMemo(() => {
@@ -338,6 +419,97 @@ export const ProductPage = () => {
   }
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
+  const media = getProductMedia(product);
+  const pairedProduct =
+    similarProducts[0] ??
+    allProducts.find((p) => String(p.id) !== String(product.id) && p.category_id === product.category_id) ??
+    allProducts.find((p) => String(p.id) !== String(product.id));
+  const setTwoUpLayout = (next: boolean) => {
+    const params = new URLSearchParams(searchParams);
+    if (next) params.set("layout", "two-up");
+    else params.delete("layout");
+    setSearchParams(params);
+  };
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+  if (isTwoUpLayout) {
+    const pairedMedia = pairedProduct ? getProductMedia(pairedProduct) : [];
+    const previewItems = [...media, ...pairedMedia];
+    const pairedOffset = media.length;
+
+    return (
+      <StorePageShell className="product-page-container" backTo="/store">
+        <div className="product-two-up-shell">
+          <div className="product-two-up-toolbar">
+            <button className="action-btn edit-btn" title="Full product view" onClick={() => setTwoUpLayout(false)}>
+              <LayoutGrid size={15} />
+            </button>
+            <button className="action-btn edit-btn" title="Share product" onClick={handleShare}>
+              <Share2 size={15} />
+            </button>
+            {canEditProduct && (
+              <button className="action-btn edit-btn" title="Edit product" onClick={() => setEditingProduct(product)}>
+                <Edit2 size={15} />
+              </button>
+            )}
+          </div>
+          <div className="product-two-up-grid">
+            <ProductTwoUpCard
+              product={product}
+              onPreview={setSelectedMediaIndex}
+              onAddToCart={addProductToCart}
+              addingToCart={addingToCart}
+            />
+            {pairedProduct ? (
+              <ProductTwoUpCard
+                product={pairedProduct}
+                onPreview={(index) => setSelectedMediaIndex(pairedOffset + index)}
+                onAddToCart={addProductToCart}
+                addingToCart={addingToCart}
+              />
+            ) : (
+              <ContentFlatCard className="product-two-up-card product-two-up-empty">
+                <Package size={40} />
+              </ContentFlatCard>
+            )}
+          </div>
+        </div>
+
+        {editingProduct && (
+          <EditProductDialog
+            isOpen={!!editingProduct}
+            product={editingProduct}
+            categories={categories}
+            onClose={() => setEditingProduct(null)}
+            onSuccess={() => {
+              setLoadingProduct(true);
+              apiRequest<Product>(`/store/products/${id}`)
+                .then((p) => {
+                  if (p) setProduct(p);
+                })
+                .finally(() => setLoadingProduct(false));
+            }}
+          />
+        )}
+
+        {selectedMediaIndex !== null && (
+          <MediaPreviewLightbox
+            items={previewItems}
+            index={selectedMediaIndex}
+            onIndexChange={setSelectedMediaIndex}
+            onClose={() => setSelectedMediaIndex(null)}
+          />
+        )}
+      </StorePageShell>
+    );
+  }
 
   return (
     <StorePageShell className="product-page-container" backTo="/store">
@@ -347,15 +519,15 @@ export const ProductPage = () => {
           <div
             className={`product-page-image-container${!product.image_url ? " fallback" : ""}`}
           >
-            {product.image_url ? (
+            {media[0] ? (
               <img
-                src={product.image_url}
+                src={media[0].url}
                 alt={product.name}
                 className="product-page-image"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setSelectedImage(product.image_url ?? null);
+                  setSelectedMediaIndex(0);
                 }}
               />
             ) : (
@@ -390,6 +562,14 @@ export const ProductPage = () => {
 
             <p className="product-page-description">{product.description}</p>
 
+            <div className="product-page-meta-grid">
+              <span><User size={14} /> {product.owner?.display_name || "Store"}</span>
+              <span><Clock size={14} /> Created {formatDateTime(product.created_at)}</span>
+              <span><Clock size={14} /> Updated {formatDateTime(product.updated_at)}</span>
+              <span><ShoppingBag size={14} /> {product.recent_purchases ?? 0} recent purchases</span>
+              <span><TrendingUp size={14} /> {product.current_orders ?? 0} current orders</span>
+            </div>
+
             <div className="product-page-stock">
               {product.stock_unlimited
                 ? "In Stock"
@@ -397,6 +577,14 @@ export const ProductPage = () => {
             </div>
 
             <div className="product-page-actions-row">
+              <button
+                className="action-btn edit-btn"
+                title="Two-up product view"
+                onClick={() => setTwoUpLayout(true)}
+              >
+                <LayoutGrid size={15} />
+              </button>
+
               <button
                 className="action-btn edit-btn"
                 title="Share product"
@@ -429,6 +617,11 @@ export const ProductPage = () => {
               </button>
             </div>
           </div>
+        </ContentFlatCard>
+
+        <ContentFlatCard className="product-page-media-section">
+          <div className="product-page-section-label">Product Media</div>
+          <ProductMediaTable media={media} />
         </ContentFlatCard>
 
         {/* ── Bottom: similar products + reviews ── */}
@@ -530,49 +723,14 @@ export const ProductPage = () => {
         />
       )}
 
-      {/* Lightbox */}
-      {selectedImage &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className="up-upload-lightbox"
-            onClick={() => setSelectedImage(null)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--overlay-dark-heavy)",
-            }}
-          >
-            <div
-              className="up-upload-lightbox-content"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: "90vw",
-                maxHeight: "90vh",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <img
-                src={selectedImage}
-                alt="Preview"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  objectFit: "contain",
-                }}
-              />
-            </div>
-          </div>,
-          document.body,
-        )}
+      {selectedMediaIndex !== null && (
+        <MediaPreviewLightbox
+          items={media}
+          index={selectedMediaIndex}
+          onIndexChange={setSelectedMediaIndex}
+          onClose={() => setSelectedMediaIndex(null)}
+        />
+      )}
     </StorePageShell>
   );
 };

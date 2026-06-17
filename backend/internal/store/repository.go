@@ -3,9 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
@@ -100,23 +102,120 @@ func NewProductRepository(db database.Executor) ProductRepository {
 	return &sqlProductRepository{db: db}
 }
 
+const productSelectFields = `
+	p.id, p.category_id, p.owner_id,
+	p.name, p.description, p.price, COALESCE(p.image_url, ''),
+	p.stock, p.original_price, p.stock_unlimited, p.is_active,
+	COALESCE(p.special_actions, '[]'::jsonb)::text,
+	COALESCE(p.media, '[]'::jsonb)::text,
+	p.created_at, p.updated_at,
+	COALESCE(owner.id, 0), COALESCE(owner.display_name, ''), COALESCE(owner.avatar_url, ''),
+	COALESCE((
+		SELECT SUM(oi.quantity)::int
+		FROM order_items oi
+		JOIN orders o ON o.id = oi.order_id
+		WHERE oi.product_id = p.id AND o.status IN ('accepted', 'paid', 'completed')
+	), 0),
+	COALESCE((
+		SELECT SUM(oi.quantity)::int
+		FROM order_items oi
+		JOIN orders o ON o.id = oi.order_id
+		WHERE oi.product_id = p.id AND o.status NOT IN ('completed', 'failed', 'cancelled')
+	), 0)`
+
 func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
-	p := &models.Product{}
-	err := r.db.QueryRow(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
-		 FROM products WHERE id = $1`, id,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
-	if errors.Is(err, sql.ErrNoRows) {
+	rows, err := r.db.Query(
+		`SELECT `+productSelectFields+`
+		 FROM products p
+		 LEFT JOIN users owner ON owner.id = p.owner_id
+		 WHERE p.id = $1`, id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	products, err := scanProducts(rows)
+	if err != nil {
+		return nil, err
+	}
+	if len(products) == 0 {
 		return nil, errors.New("product not found")
 	}
-	return p, err
+	return products[0], nil
+}
+
+func productMediaJSON(media []models.ProductMedia) string {
+	if media == nil {
+		media = []models.ProductMedia{}
+	}
+	b, err := json.Marshal(media)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
+
+func normalizeProductMedia(p *models.Product) {
+	if p.Media == nil {
+		p.Media = []models.ProductMedia{}
+	}
+	if p.ImageURL == "" && len(p.Media) > 0 {
+		p.ImageURL = p.Media[0].URL
+	}
+	for i := range p.Media {
+		if p.Media[i].Type == "" {
+			if p.Media[i].MimeType != "" && len(p.Media[i].MimeType) >= 6 && p.Media[i].MimeType[:6] == "video/" {
+				p.Media[i].Type = "video"
+			} else {
+				p.Media[i].Type = "image"
+			}
+		}
+		if p.Media[i].CreatedAt.IsZero() {
+			p.Media[i].CreatedAt = time.Now().UTC()
+		}
+	}
+}
+
+func scanProductRow(rows *sql.Rows, p *models.Product) error {
+	var mediaJSON string
+	var ownerID sql.NullInt64
+	var ownerSummaryID int64
+	var ownerDisplayName, ownerAvatarURL string
+	err := rows.Scan(
+		&p.ID, &p.CategoryID, &ownerID,
+		&p.Name, &p.Description, &p.Price, &p.ImageURL,
+		&p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive,
+		&p.SpecialActions, &mediaJSON,
+		&p.CreatedAt, &p.UpdatedAt,
+		&ownerSummaryID, &ownerDisplayName, &ownerAvatarURL,
+		&p.RecentPurchases, &p.CurrentOrders,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	if ownerID.Valid {
+		p.OwnerID = &ownerID.Int64
+		if ownerSummaryID > 0 {
+			p.Owner = &models.UserSummary{ID: ownerSummaryID, DisplayName: ownerDisplayName, AvatarURL: ownerAvatarURL}
+		}
+	}
+	if mediaJSON != "" {
+		_ = json.Unmarshal([]byte(mediaJSON), &p.Media)
+	}
+	normalizeProductMedia(p)
+	return nil
 }
 
 func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
-		 FROM products WHERE category_id = $1 AND is_active = true
-		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+		`SELECT `+productSelectFields+`
+		 FROM products p
+		 LEFT JOIN users owner ON owner.id = p.owner_id
+		 WHERE p.category_id = $1 AND p.is_active = true
+		 ORDER BY p.created_at DESC LIMIT $2 OFFSET $3`,
 		categoryID, limit, offset,
 	)
 	if err != nil {
@@ -127,23 +226,31 @@ func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int
 }
 
 func (r *sqlProductRepository) Create(p *models.Product) (*models.Product, error) {
+	normalizeProductMedia(p)
 	err := r.db.QueryRow(
-		`INSERT INTO products (category_id, name, description, price, image_url, stock, stock_unlimited, is_active, special_actions)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.StockUnlimited, p.IsActive, p.SpecialActions,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
-	return p, err
+		`INSERT INTO products (category_id, owner_id, name, description, price, image_url, media, stock, stock_unlimited, is_active, special_actions)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
+		 RETURNING id`,
+		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.StockUnlimited, p.IsActive, p.SpecialActions,
+	).Scan(&p.ID)
+	if err != nil {
+		return p, err
+	}
+	return r.GetByID(p.ID)
 }
 
 func (r *sqlProductRepository) Update(p *models.Product) (*models.Product, error) {
+	normalizeProductMedia(p)
 	err := r.db.QueryRow(
-		`UPDATE products SET category_id=$1, name=$2, description=$3, price=$4, image_url=$5, stock=$6, original_price=$7, stock_unlimited=$8, is_active=$9, special_actions=$10, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$11
-		 RETURNING id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at`,
-		p.CategoryID, p.Name, p.Description, p.Price, p.ImageURL, p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.SpecialActions, p.ID,
-	).Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt)
-	return p, err
+		`UPDATE products SET category_id=$1, owner_id=$2, name=$3, description=$4, price=$5, image_url=$6, media=$7::jsonb, stock=$8, original_price=$9, stock_unlimited=$10, is_active=$11, special_actions=$12, updated_at=CURRENT_TIMESTAMP
+		 WHERE id=$13
+		 RETURNING id`,
+		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.SpecialActions, p.ID,
+	).Scan(&p.ID)
+	if err != nil {
+		return p, err
+	}
+	return r.GetByID(p.ID)
 }
 
 func (r *sqlProductRepository) Delete(id int64) error {
@@ -157,8 +264,10 @@ func (r *sqlProductRepository) Delete(id int64) error {
 
 func (r *sqlProductRepository) List(limit, offset int) ([]*models.Product, error) {
 	rows, err := r.db.Query(
-		`SELECT id, category_id, name, description, price, image_url, stock, original_price, stock_unlimited, is_active, COALESCE(special_actions, '[]'::jsonb), created_at, updated_at
-		 FROM products ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+		`SELECT `+productSelectFields+`
+		 FROM products p
+		 LEFT JOIN users owner ON owner.id = p.owner_id
+		 ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
 	if err != nil {
@@ -172,7 +281,7 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 	var products []*models.Product
 	for rows.Next() {
 		p := &models.Product{}
-		if err := rows.Scan(&p.ID, &p.CategoryID, &p.Name, &p.Description, &p.Price, &p.ImageURL, &p.Stock, &p.OriginalPrice, &p.StockUnlimited, &p.IsActive, &p.SpecialActions, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := scanProductRow(rows, p); err != nil {
 			return nil, err
 		}
 		products = append(products, p)
@@ -383,6 +492,49 @@ func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*mode
 		_ = r.loadItems(orders...)
 	}
 	return orders, rows.Err()
+}
+
+func (r *sqlOrderRepository) GetByProductOwner(ownerID int64, limit, offset int) ([]*models.Order, error) {
+	rows, err := r.db.Query(
+		`SELECT DISTINCT o.id, o.user_id, o.is_guest, o.guest_email, o.guest_phone, o.delivery_location, o.delivery_date, o.delivery_time, o.extra_info, o.billing_info, o.total_price, o.status, COALESCE(o.referral_code, ''), o.created_at, o.updated_at
+		 FROM orders o
+		 JOIN order_items oi ON oi.order_id = o.id
+		 JOIN products p ON p.id = oi.product_id
+		 WHERE p.owner_id = $1
+		 ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`,
+		ownerID, limit, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []*models.Order
+	for rows.Next() {
+		o := &models.Order{}
+		if err := rows.Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	if rows.Err() == nil {
+		_ = r.loadItems(orders...)
+	}
+	return orders, rows.Err()
+}
+
+func (r *sqlOrderRepository) ContainsProductOwnedBy(orderID, ownerID int64) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS (
+			SELECT 1
+			FROM order_items oi
+			JOIN products p ON p.id = oi.product_id
+			WHERE oi.order_id = $1 AND p.owner_id = $2
+		)`,
+		orderID, ownerID,
+	).Scan(&exists)
+	return exists, err
 }
 
 func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, error) {

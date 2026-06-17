@@ -4,6 +4,12 @@ import { centsToDollars } from "../utils/money";
 
 export interface Product {
   id: string;
+  owner_id?: string;
+  owner?: {
+    id: string;
+    display_name: string;
+    avatar_url: string;
+  };
   name: string;
   description: string;
   price: number;
@@ -12,10 +18,22 @@ export interface Product {
   stock_unlimited: boolean;
   category_id: string;
   image_url?: string;
+  media?: ProductMedia[];
   is_active: boolean;
   special_actions?: string;
+  recent_purchases?: number;
+  current_orders?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductMedia {
+  url: string;
+  filename: string;
+  mime_type: string;
+  type: "image" | "video" | string;
+  size: number;
+  created_at: string;
 }
 
 export interface StoreCategory {

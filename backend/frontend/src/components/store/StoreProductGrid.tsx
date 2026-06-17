@@ -16,8 +16,8 @@ interface StoreProductGridProps {
   loading: boolean;
   products: Product[];
   canCreateProduct: boolean;
-  canEditProduct: boolean;
-  canDeleteProduct: boolean;
+  canEditProduct: (product: Product) => boolean;
+  canDeleteProduct: (product: Product) => boolean;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onAddToCart: (product: Product) => void;
@@ -70,8 +70,8 @@ export function StoreProductGrid({
           <InlineProduct
             key={product.id}
             product={product}
-            canEdit={canEditProduct}
-            canDelete={canDeleteProduct}
+            canEdit={canEditProduct(product)}
+            canDelete={canDeleteProduct(product)}
             onEdit={onEditProduct}
             onDelete={onDeleteProduct}
             onAddToCart={onAddToCart}

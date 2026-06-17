@@ -129,6 +129,26 @@
   flex-shrink: 0;
 }
 
+.product-page-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.product-page-meta-grid span {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.product-page-meta-grid svg {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+}
+
 .product-page-actions-row {
   display: flex;
   align-items: center;
@@ -174,9 +194,118 @@
   align-items: start;
 }
 
+.product-page-media-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.product-two-up-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.product-two-up-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.product-two-up-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.product-two-up-card {
+  display: grid;
+  grid-template-rows: minmax(220px, 42vh) 1fr;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.product-two-up-media {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.product-two-up-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.product-two-up-media.fallback {
+  color: var(--text-tertiary);
+}
+
+.product-two-up-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  min-width: 0;
+}
+
+.product-two-up-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.product-two-up-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.product-two-up-heading span {
+  flex: 0 0 auto;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.product-two-up-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.product-two-up-body .btn-add-to-cart {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.product-two-up-empty {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  color: var(--text-tertiary);
+}
+
 @media (max-width: 768px) {
   .product-page-bottom {
     grid-template-columns: 1fr;
+  }
+
+  .product-page-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-two-up-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-two-up-card {
+    grid-template-rows: minmax(180px, 36vh) 1fr;
   }
 }
 

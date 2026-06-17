@@ -1,6 +1,5 @@
 import { customConfirm } from "../ui/Prompt";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useAtomValue, useSetAtom } from "jotai";
 import {
  ImageIcon,
@@ -10,7 +9,6 @@ import {
  Film,
  FileIcon,
  AlertCircle,
- X,
  Download,
  LayoutGrid,
  List,
@@ -23,6 +21,7 @@ import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
 import { uploader, showUploadManagerAtom } from "../../atoms/uploadAtom";
 import { TableView } from "../ui/TableView/TableView";
+import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 
 import "../page/layout/templates/DirectoryLayout.css";
 
@@ -768,65 +767,16 @@ const UserUploads = ({ userId, displayName, hideHeader, externalViewMode, extern
  )}
 
  {/* Lightbox preview */}
- {selectedUpload && (isImage(selectedUpload) || isVideo(selectedUpload)) && typeof document !== "undefined" && createPortal(
- <div
- className="up-upload-lightbox"
- onClick={() => setSelectedUpload(null)}
- >
- <div
- className="up-upload-lightbox-content"
- onClick={(e) => e.stopPropagation()}
- >
- {isImage(selectedUpload) ? (
- <img src={selectedUpload.url} alt={selectedUpload.filename} />
- ) : (
- <video src={selectedUpload.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '80vh', backgroundColor: '#000' }} />
- )}
- <div className="up-upload-lightbox-bar">
- <span className="up-upload-lightbox-name">
- {selectedUpload.filename}
- </span>
- <div className="thread-actions">
- <button
- className="action-btn view-btn"
- title="Download"
- onClick={() => handleDownload(selectedUpload)}
- >
- <Download size={14} />
- </button>
- <button
- className="action-btn copy-btn"
- title="Copy URL"
- onClick={() => handleCopyUrl(selectedUpload.url)}
- >
- {copiedUrl === selectedUpload.url ? (
- <Check size={14} />
- ) : (
- <Copy size={14} />
- )}
- </button>
- {canDelete && (
- <button
- className="action-btn danger"
- title="Delete"
- disabled={deletingSet.has(selectedUpload.url)}
- onClick={() => handleDelete(selectedUpload.url)}
- >
- <Trash2 size={14} />
- </button>
- )}
- <button
- className="action-btn view-btn"
- title="Close"
- onClick={() => setSelectedUpload(null)}
- >
- <X size={14} />
- </button>
- </div>
- </div>
- </div>
- </div>,
- document.body
+ {selectedUpload && (isImage(selectedUpload) || isVideo(selectedUpload)) && (
+ <MediaPreviewLightbox
+ items={filteredUploads.filter((u) => isImage(u) || isVideo(u))}
+ index={Math.max(0, filteredUploads.filter((u) => isImage(u) || isVideo(u)).findIndex((u) => u.url === selectedUpload.url))}
+ onIndexChange={(nextIndex) => {
+ const items = filteredUploads.filter((u) => isImage(u) || isVideo(u));
+ setSelectedUpload(items[nextIndex] ?? null);
+ }}
+ onClose={() => setSelectedUpload(null)}
+ />
  )}
  </div>
  );

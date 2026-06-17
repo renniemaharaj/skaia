@@ -3,8 +3,9 @@ import { X, Check, Loader } from "lucide-react";
 import { apiRequest } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
-import { productCategoriesAtom } from "../../atoms/store";
+import { productCategoriesAtom, type ProductMedia } from "../../atoms/store";
 import Select from "../input/Select";
+import { ProductMediaTable } from "./ProductMediaTable";
 import "../forum/NewThread.css";
 import "../forum/IconButton.css";
 
@@ -20,6 +21,7 @@ export const NewProduct = () => {
     stock: "0",
     stock_unlimited: false,
     image_url: "",
+    media: [] as ProductMedia[],
     is_active: true,
   });
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +79,8 @@ export const NewProduct = () => {
           price,
           stock: Number(formData.stock),
           stock_unlimited: formData.stock_unlimited,
-          image_url: formData.image_url,
+          image_url: formData.media[0]?.url ?? formData.image_url,
+          media: formData.media,
           is_active: formData.is_active,
           special_actions: JSON.stringify(specialActions.filter(a => a.value !== "")),
         }),
@@ -248,14 +251,16 @@ export const NewProduct = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Image URL</label>
-          <input
-            className="form-input"
-            type="text"
-            placeholder="https://example.com/image.png"
-            value={formData.image_url}
-            onChange={(e) =>
-              setFormData((p) => ({ ...p, image_url: e.target.value }))
+          <label className="form-label">Marketing Media</label>
+          <ProductMediaTable
+            media={formData.media}
+            editable
+            onChange={(media) =>
+              setFormData((p) => ({
+                ...p,
+                media,
+                image_url: media[0]?.url ?? "",
+              }))
             }
           />
         </div>

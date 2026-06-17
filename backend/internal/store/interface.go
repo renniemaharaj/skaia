@@ -41,6 +41,8 @@ type OrderRepository interface {
 	Create(order *models.Order, items []*models.OrderItem) (*models.Order, error)
 	GetByID(id int64) (*models.Order, error)
 	GetByUser(userID int64, limit, offset int) ([]*models.Order, error)
+	GetByProductOwner(ownerID int64, limit, offset int) ([]*models.Order, error)
+	ContainsProductOwnedBy(orderID, ownerID int64) (bool, error)
 	GetGuestOrder(id int64, email, phone string) (*models.Order, error)
 	ListAll(limit, offset int) ([]*models.Order, error)
 	AcceptWithStockCheck(id int64) (*models.Order, error)

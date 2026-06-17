@@ -143,10 +143,12 @@ CREATE TABLE IF NOT EXISTS store_categories (
 CREATE TABLE IF NOT EXISTS products (
     id              BIGSERIAL PRIMARY KEY,
     category_id     BIGINT    NOT NULL REFERENCES store_categories(id) ON DELETE CASCADE,
+    owner_id        BIGINT    REFERENCES users(id) ON DELETE SET NULL,
     name            VARCHAR(255) NOT NULL,
     description     TEXT,
     price           BIGINT    NOT NULL,
     image_url       TEXT,
+    media           JSONB     DEFAULT '[]'::jsonb,
     stock           INT       DEFAULT 0,
     original_price  BIGINT,
     stock_unlimited BOOLEAN   DEFAULT false,
@@ -155,6 +157,7 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_owner_id ON products(owner_id);
 
 CREATE TABLE IF NOT EXISTS cart_items (
     id         BIGSERIAL PRIMARY KEY,
