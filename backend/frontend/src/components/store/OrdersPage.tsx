@@ -8,6 +8,7 @@ import {
   Pencil,
   RotateCcw,
   Trash2,
+  X,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -238,6 +239,11 @@ export const OrdersPage = () => {
   const handleReferenceUserSelect = (user: User) => {
     setSelectedReferenceUser(user);
     setReferenceForm((prev) => ({ ...prev, user_id: String(user.id) }));
+  };
+
+  const clearReferenceUser = () => {
+    setSelectedReferenceUser(null);
+    setReferenceForm((prev) => ({ ...prev, user_id: "" }));
   };
 
   const renderOrderStatus = (order: Order) => (
@@ -543,7 +549,7 @@ export const OrdersPage = () => {
                   className="reference-code-form"
                 >
                   <input
-                    className="form-input"
+                    className="form-input reference-code-input reference-code-input--code"
                     placeholder="Code"
                     value={referenceForm.code}
                     onChange={(event) =>
@@ -554,19 +560,17 @@ export const OrdersPage = () => {
                     }
                   />
                   <div className="reference-code-person">
-                    <span className="reference-code-person__label">
-                      {referenceUserLabel}
-                    </span>
                     <PersonPicker
                       placeholder="Assign user..."
                       excludeSelf={false}
                       autoFocus={false}
                       resultsVariant="glass-menu"
+                      clearQueryOnSelect={true}
                       onSelect={handleReferenceUserSelect}
                     />
                   </div>
                   <input
-                    className="form-input"
+                    className="form-input reference-code-input reference-code-input--amount"
                     inputMode="numeric"
                     placeholder="Incentive cents"
                     value={referenceForm.incentive_amount}
@@ -602,6 +606,82 @@ export const OrdersPage = () => {
                       Cancel
                     </button>
                   )}
+                  <div
+                    className={`reference-code-selected-user ${
+                      selectedReferenceUser || referenceForm.user_id
+                        ? "reference-code-selected-user--filled"
+                        : "reference-code-selected-user--empty"
+                    }`}
+                  >
+                    {selectedReferenceUser ? (
+                      <UserProfileOverlay
+                        userId={selectedReferenceUser.id}
+                        fallbackName={
+                          selectedReferenceUser.display_name ||
+                          selectedReferenceUser.username
+                        }
+                        fallbackAvatar={
+                          selectedReferenceUser.avatar_url || undefined
+                        }
+                        disableClick={true}
+                      >
+                        <UserAvatar
+                          src={selectedReferenceUser.avatar_url || undefined}
+                          alt={
+                            selectedReferenceUser.display_name ||
+                            selectedReferenceUser.username
+                          }
+                          size={24}
+                          initials={(
+                            selectedReferenceUser.display_name ||
+                            selectedReferenceUser.username
+                          )?.[0]?.toUpperCase()}
+                        />
+                      </UserProfileOverlay>
+                    ) : referenceForm.user_id ? (
+                      <UserAvatar
+                        src={undefined}
+                        alt={referenceUserLabel}
+                        size={24}
+                        initials="#"
+                      />
+                    ) : (
+                      <span
+                        className="reference-code-selected-user__avatar-placeholder"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="reference-code-selected-user__content">
+                      <span className="reference-code-selected-user__name">
+                        {selectedReferenceUser || referenceForm.user_id
+                          ? referenceUserLabel
+                          : "No user selected"}
+                      </span>
+                      {selectedReferenceUser ? (
+                        <span className="reference-code-selected-user__username">
+                          @{selectedReferenceUser.username}
+                        </span>
+                      ) : referenceForm.user_id ? (
+                        <span className="reference-code-selected-user__username">
+                          Selected by ID
+                        </span>
+                      ) : (
+                        <span className="reference-code-selected-user__username">
+                          Pick a user from search
+                        </span>
+                      )}
+                    </span>
+                    {(selectedReferenceUser || referenceForm.user_id) && (
+                      <button
+                        type="button"
+                        className="reference-code-selected-user__clear"
+                        onClick={clearReferenceUser}
+                        title="Clear selected user"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
                 </form>
                 <TableView
                   data={referenceCodes}

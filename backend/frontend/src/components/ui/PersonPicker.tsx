@@ -26,6 +26,8 @@ interface PersonPickerProps {
   onClose?: () => void;
   /** How search results are presented. Defaults to the inline list. */
   resultsVariant?: "inline" | "glass-menu";
+  /** Clear the search field after selecting a user. */
+  clearQueryOnSelect?: boolean;
 }
 
 const PAGE_SIZE = 50;
@@ -40,6 +42,7 @@ export default function PersonPicker({
   autoFocus = true,
   onClose,
   resultsVariant = "inline",
+  clearQueryOnSelect = false,
 }: PersonPickerProps) {
   const currentUser = useAtomValue(currentUserAtom);
   const [query, setQuery] = useState("");
@@ -164,6 +167,18 @@ export default function PersonPicker({
     }
   }, [loadMore]);
 
+  const handleSelect = useCallback(
+    (user: User) => {
+      onSelect(user);
+      if (!clearQueryOnSelect) return;
+      setQuery("");
+      setResults([]);
+      setOffset(0);
+      setHasMore(false);
+    },
+    [clearQueryOnSelect, onSelect],
+  );
+
   const glassMenuOptions = useMemo<GlassMenuOption[]>(() => {
     if (loading) {
       return [{ title: "Searching...", disabled: true }];
@@ -183,9 +198,9 @@ export default function PersonPicker({
           initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
         />
       ),
-      onClick: () => onSelect(user),
+      onClick: () => handleSelect(user),
     }));
-  }, [loading, results, onSelect]);
+  }, [loading, results, handleSelect]);
 
   return (
     <div
@@ -256,7 +271,7 @@ export default function PersonPicker({
               type="button"
               key={user.id}
               className="person-picker__row"
-              onClick={() => onSelect(user)}
+              onClick={() => handleSelect(user)}
             >
               <span className="person-picker__avatar">
                 <UserProfileOverlay

@@ -75,6 +75,10 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
         <button
           type="button"
           className="glass-menu-op"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onClick={goBack}
           style={{
             borderBottom: "1px solid var(--color-border)",
@@ -94,6 +98,10 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
           key={getOptionKey(opt)}
           className={`glass-menu-op${opt.disabled ? " glass-menu-op--disabled" : ""}`}
           disabled={opt.disabled}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onClick={(e) => {
             e.stopPropagation();
             const subOptions = opt.subOptions;
