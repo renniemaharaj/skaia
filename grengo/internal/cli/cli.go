@@ -1,5 +1,7 @@
 package cli
 
+import "strconv"
+
 type commandEntry struct {
 	names []string
 	run   func(args []string, c Commands)
@@ -32,6 +34,7 @@ func commandRegistry() []commandEntry {
 		{names: []string{"stop"}, run: runStop},
 		{names: []string{"remove", "rm"}, run: runRemove},
 		{names: []string{"build"}, run: runBuild},
+		{names: []string{"rebuilt", "rebuild"}, run: runRebuild},
 		{names: []string{"dev"}, run: runDev},
 		{names: []string{"compose"}, run: runCompose},
 		{names: []string{"nginx"}, run: runNginx},
@@ -57,4 +60,232 @@ func matchesCommand(name string, aliases []string) bool {
 		}
 	}
 	return false
+}
+
+func runNew(rest []string, c Commands) {
+	c.New(rest)
+}
+
+func runList(_ []string, c Commands) {
+	c.List()
+}
+
+func runEnable(rest []string, c Commands) {
+	c.Enable(requireArg(rest, "enable <name>", c))
+}
+
+func runDisable(rest []string, c Commands) {
+	c.Disable(requireArg(rest, "disable <name>", c))
+}
+
+func runStart(rest []string, c Commands) {
+	c.Start(requireArg(rest, "start <name>", c))
+}
+
+func runStop(rest []string, c Commands) {
+	c.Stop(requireArg(rest, "stop <name>", c))
+}
+
+func runRemove(rest []string, c Commands) {
+	c.Remove(requireArg(rest, "remove <name>", c))
+}
+
+func runBuild(_ []string, c Commands) {
+	c.Build()
+}
+
+func runRebuild(rest []string, c Commands) {
+	sub := requireArg(rest, "rebuilt frontend [<name>|all]", c)
+	switch sub {
+	case "frontend":
+		target := "all"
+		if len(rest) > 1 {
+			target = rest[1]
+		}
+		if len(rest) > 2 {
+			c.Die("Usage: grengo rebuilt frontend [<name>|all]")
+		}
+		c.RebuildFrontend(target)
+	default:
+		c.Die("Unknown rebuilt subcommand: %s", sub)
+	}
+}
+
+func runDev(_ []string, c Commands) {
+	c.Dev()
+}
+
+func runCompose(rest []string, c Commands) {
+	sub := requireArg(rest, "compose <up|down>", c)
+	switch sub {
+	case "up":
+		follow := false
+		build := false
+		for i := 1; i < len(rest); i++ {
+			switch rest[i] {
+			case "--follow", "--no-detach":
+				follow = true
+			case "--build":
+				build = true
+			case "-d", "--detach":
+				follow = false
+			default:
+				c.Die("Unknown compose up option: %s", rest[i])
+			}
+		}
+		c.ComposeUp(follow, build)
+	case "down":
+		c.ComposeDown()
+	default:
+		c.Die("Unknown compose subcommand: %s", sub)
+	}
+}
+
+func runNginx(rest []string, c Commands) {
+	sub := requireArg(rest, "nginx <reload>", c)
+	if sub != "reload" {
+		c.Die("Unknown nginx subcommand: %s", sub)
+	}
+	c.NginxReload()
+}
+
+func runDB(rest []string, c Commands) {
+	sub := requireArg(rest, "db <init>", c)
+	if sub != "init" {
+		c.Die("Unknown db subcommand: %s", sub)
+	}
+	c.DBInit(requireArg(rest[1:], "db init <name>", c))
+}
+
+func runMigrate(rest []string, c Commands) {
+	target := requireArg(rest, "migrate <name|all> [--rebuild]", c)
+	rebuild := false
+	for _, arg := range rest[1:] {
+		if arg == "--rebuild" {
+			rebuild = true
+		}
+	}
+	if target == "all" {
+		c.MigrateAll(rebuild)
+		return
+	}
+	c.Migrate(target, rebuild)
+}
+
+func runLogs(rest []string, c Commands) {
+	name := requireArg(rest, "logs <name> [-f]", c)
+	c.Logs(name, rest[1:])
+}
+
+func runUpdate(rest []string, c Commands) {
+	sub := requireArg(rest, "update <name|all>", c)
+	if sub == "all" {
+		c.UpdateAll()
+		return
+	}
+	c.UpdateClient(sub)
+}
+
+func runExport(rest []string, c Commands) {
+	name := requireArg(rest, "export <name> [-o <file.tar.gz>]", c)
+	c.ExportClient(name, outputFlag(rest[1:]))
+}
+
+func runImport(rest []string, c Commands) {
+	archivePath := requireArg(rest, "import <file.tar.gz> [--name <n>] [--port <p>]", c)
+	var newName, newPort string
+	for i := 1; i < len(rest); i++ {
+		switch rest[i] {
+		case "--name":
+			if i+1 < len(rest) {
+				i++
+				newName = rest[i]
+			}
+		case "--port":
+			if i+1 < len(rest) {
+				i++
+				newPort = rest[i]
+			}
+		}
+	}
+	c.ImportClient(archivePath, newName, newPort)
+}
+
+func runExportNode(rest []string, c Commands) {
+	c.ExportNode(outputFlag(rest))
+}
+
+func runWipe(rest []string, c Commands) {
+	sub := requireArg(rest, "wipe <all>", c)
+	if sub != "all" {
+		c.Die("Unknown wipe subcommand: %s", sub)
+	}
+	c.WipeAll()
+}
+
+func runImportNode(rest []string, c Commands) {
+	c.ImportNode(requireArg(rest, "import-node <file.tar.gz>", c))
+}
+
+func runAPI(rest []string, c Commands) {
+	sub := requireArg(rest, "api <start|stop|status>", c)
+	switch sub {
+	case "start":
+		port := c.DefaultAPIPort
+		for i := 1; i < len(rest); i++ {
+			if rest[i] == "--port" && i+1 < len(rest) {
+				i++
+				p, err := strconv.Atoi(rest[i])
+				if err != nil {
+					c.Die("Invalid port: %s", rest[i])
+				}
+				port = p
+			}
+		}
+		c.APIStart(port)
+	case "stop":
+		c.APIStop()
+	case "status":
+		c.APIStatus()
+	default:
+		c.Die("Unknown api subcommand: %s", sub)
+	}
+}
+
+func runPasscode(rest []string, c Commands) {
+	sub := requireArg(rest, "passcode <set|verify|clear|status>", c)
+	switch sub {
+	case "set":
+		c.PasscodeSet(rest[1:])
+	case "verify":
+		c.PasscodeVerify(rest[1:])
+	case "clear":
+		c.PasscodeClear()
+	case "status":
+		c.PasscodeStatus()
+	default:
+		c.Die("Unknown passcode subcommand: %s", sub)
+	}
+}
+
+func runHelp(_ []string, _ Commands) {
+	Usage()
+}
+
+func requireArg(args []string, usage string, c Commands) string {
+	if len(args) == 0 {
+		c.Die("Usage: grengo %s", usage)
+	}
+	return args[0]
+}
+
+func outputFlag(args []string) string {
+	var outFile string
+	for i := 0; i < len(args); i++ {
+		if (args[i] == "-o" || args[i] == "--output") && i+1 < len(args) {
+			i++
+			outFile = args[i]
+		}
+	}
+	return outFile
 }

@@ -23,13 +23,17 @@ Status: IN_PROGRESS
 - Moved all former root command/service/API implementation files into `grengo/internal/app`; `grengo/` now has only `main.go` and `router.go`.
 - Added `grengo/router.go` so route registration, `/health`, and passcode middleware remain in the root main package while using handler callbacks from `internal/app`.
 - Added `app.CLICommands()` and `app.ConfigureAPIHandler()` so root wiring stays explicit and internal app logic remains tucked away.
+- Added `grengo rebuilt frontend [<name>|all]` / `grengo rebuild frontend [<name>|all]` to run the frontend build once and hot-copy `dist` into running backend containers without restarting them.
 
 # Verification
 - `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .` from `grengo/` passes.
 - `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go test ./...` from `grengo/` passes.
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go run . help` from `grengo/` shows the new `rebuilt frontend` command.
+- `mise exec node@24.16.0 -- npm run build` from `backend/frontend/` passes.
 
 # Notes
 - A plain `go build .` attempted to use the sandboxed `~/.cache/go-build` and failed with a read-only cache error, so verification used writable Go cache/temp directories under `/tmp`.
 - Existing unrelated deletions remain in the worktree: `.todo/grengo_cli_improvements` and `.todo/grengo_cli_improvements.tip`.
 - `go build .` creates an untracked `grengo/grengo` binary; cleanup was not approved previously, so follow-up build verification now uses `-o /tmp/grengo-check`.
 - `backend/internal/grengo/handler.go` is modified in the worktree but was not changed as part of this refactor pass.
+- Plain `npm run build` currently fails in this workspace because the `mise` npm shim has no project Node version selected; verification used the installed `node@24.16.0` through `mise exec`.

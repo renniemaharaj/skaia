@@ -15,6 +15,12 @@ type clientInfo struct {
 	Domains []string
 }
 
+// cmdNginxReload regenerates the nginx config and hot-reloads it.
+func cmdNginxReload() {
+	generateNginxConfig()
+	reloadNginxIfRunning()
+}
+
 // expandDomains adds www. variants for production domains (not localhost or IPs).
 func expandDomains(domains []string) []string {
 	seen := map[string]bool{}

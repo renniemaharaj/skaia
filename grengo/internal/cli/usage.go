@@ -14,6 +14,7 @@ Commands:
   remove <name>                              Remove a client (with confirmation)
   update <name|all>                          Update FEATURES_ENABLED in client(s) .env with selected features
   build                                      Build / rebuild the backend Docker image
+  rebuilt frontend [<name>|all]              Build frontend and hot-ship dist to running backend(s)
   dev                                        Start dev environment (infra, API, and vite dev server)
   compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything
@@ -44,6 +45,7 @@ Examples:
   grengo compose up
   grengo disable writers
   grengo compose down
+  grengo rebuilt frontend all
   grengo export mysite
   grengo import grengo-client-mysite-20260319-120000.tar.gz --name mysite-copy
   grengo export-node -o full-backup.tar.gz
