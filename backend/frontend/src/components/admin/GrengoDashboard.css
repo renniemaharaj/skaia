@@ -359,8 +359,6 @@
 
 .grengo-stat-overview {
   grid-column: 1 / -1;
-  background: var(--bg-color);
-  border-color: var(--primary-color);
 }
 
 .stat-card-header {
@@ -673,10 +671,6 @@
   gap: 0.75rem 1.5rem;
   padding: 0.85rem 1rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow);
   font-size: 0.82rem;
 }
 
@@ -703,10 +697,6 @@
 /* Compose Controls */
 
 .grengo-compose {
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow);
   padding: 1rem;
   margin-bottom: 1.25rem;
 }

@@ -1,13 +1,34 @@
 import { customConfirm, customAlert } from "../ui/Prompt";
-import { Download, Trash2, Play, Square, Settings, UploadCloud, DownloadCloud, Server, ShieldOff, ShieldAlert, RefreshCw, FileEdit, Plus, Archive, Database, Activity } from "lucide-react";
+import {
+  Download,
+  Trash2,
+  Play,
+  Square,
+  Settings,
+  UploadCloud,
+  DownloadCloud,
+  Server,
+  ShieldOff,
+  ShieldAlert,
+  RefreshCw,
+  FileEdit,
+  Plus,
+  Archive,
+  Database,
+  Activity,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import "./GrengoDashboard.css";
 import Select from "../input/Select";
-import { useWebSocketSync, sendGrengoJobAction } from "../../hooks/useWebSocketSync";
+import {
+  useWebSocketSync,
+  sendGrengoJobAction,
+} from "../../hooks/useWebSocketSync";
 import { uploader } from "../../atoms/uploadAtom";
+import { GlassCard, PrimaryCard, SecondaryCard } from "../cards/GlassCard";
 
 // Types
 
@@ -153,7 +174,9 @@ export default function GrengoDashboard() {
   const [envError, setEnvError] = useState("");
 
   // Exports
-  const [exports, setExports] = useState<{name: string, size: number, created_at: string}[]>([]);
+  const [exports, setExports] = useState<
+    { name: string; size: number; created_at: string }[]
+  >([]);
   const [fetchingExports, setFetchingExports] = useState(false);
 
   // Jobs
@@ -252,8 +275,15 @@ export default function GrengoDashboard() {
   const fetchExports = useCallback(async () => {
     setFetchingExports(true);
     try {
-      const data = await grengoRequest<{name: string, size: number, created_at: string}[]>("/exports");
-      setExports(Array.isArray(data) ? data.sort((a, b) => b.name.localeCompare(a.name)) : []);
+      const data =
+        await grengoRequest<
+          { name: string; size: number; created_at: string }[]
+        >("/exports");
+      setExports(
+        Array.isArray(data)
+          ? data.sort((a, b) => b.name.localeCompare(a.name))
+          : [],
+      );
     } catch {
       // ignore
     } finally {
@@ -272,9 +302,9 @@ export default function GrengoDashboard() {
       const data = await grengoRequest<any[]>("/jobs");
       if (Array.isArray(data)) {
         const jobsMap: Record<string, any> = {};
-        data.forEach(job => {
+        data.forEach((job) => {
           if (job.status === "running") {
-             jobsMap[job.id] = job;
+            jobsMap[job.id] = job;
           }
         });
         setActiveJobs(jobsMap);
@@ -289,7 +319,7 @@ export default function GrengoDashboard() {
       fetchJobs();
       const handleJobUpdate = (e: Event) => {
         const job = (e as CustomEvent).detail;
-        setActiveJobs(prev => {
+        setActiveJobs((prev) => {
           const next = { ...prev };
           if (job.status === "running") {
             next[job.id] = job;
@@ -298,13 +328,19 @@ export default function GrengoDashboard() {
           }
           return next;
         });
-        
-        if (job.status === "completed" && (job.type === "export-site" || job.type === "export-node" || job.type === "delete-export")) {
+
+        if (
+          job.status === "completed" &&
+          (job.type === "export-site" ||
+            job.type === "export-node" ||
+            job.type === "delete-export")
+        ) {
           fetchExports();
         }
       };
       window.addEventListener("grengo:job_update", handleJobUpdate);
-      return () => window.removeEventListener("grengo:job_update", handleJobUpdate);
+      return () =>
+        window.removeEventListener("grengo:job_update", handleJobUpdate);
     }
   }, [sessionValid, fetchJobs]);
 
@@ -339,7 +375,10 @@ export default function GrengoDashboard() {
 
       return () => {
         window.removeEventListener("grengo:stats_update", handleStatsUpdate);
-        window.removeEventListener("grengo:hardware_update", handleHardwareUpdate);
+        window.removeEventListener(
+          "grengo:hardware_update",
+          handleHardwareUpdate,
+        );
       };
     }
   }, [sessionValid, fetchStats]);
@@ -363,7 +402,11 @@ export default function GrengoDashboard() {
         setStorage(detail ?? null);
       };
       window.addEventListener("grengo:storage_update", handleStorageUpdate);
-      return () => window.removeEventListener("grengo:storage_update", handleStorageUpdate);
+      return () =>
+        window.removeEventListener(
+          "grengo:storage_update",
+          handleStorageUpdate,
+        );
     }
   }, [sessionValid, fetchStorage]);
 
@@ -389,7 +432,12 @@ export default function GrengoDashboard() {
     setComposeOutput("");
     try {
       const waitPromise = triggerAndWaitForJob("global-cmd");
-      sendGrengoJobAction("global-cmd", undefined, "compose", build ? ["up", "--build", "-d"] : ["up", "-d"]);
+      sendGrengoJobAction(
+        "global-cmd",
+        undefined,
+        "compose",
+        build ? ["up", "--build", "-d"] : ["up", "-d"],
+      );
       await waitPromise;
       setComposeOutput(
         build ? "compose up --build completed" : "compose up completed",
@@ -423,7 +471,12 @@ export default function GrengoDashboard() {
     setMigrateOutput((prev) => ({ ...prev, [name]: "" }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", name, "migrate", rebuild ? ["--rebuild"] : undefined);
+      sendGrengoJobAction(
+        "site-cmd",
+        name,
+        "migrate",
+        rebuild ? ["--rebuild"] : undefined,
+      );
       await waitPromise;
       setMigrateOutput((prev) => ({
         ...prev,
@@ -444,7 +497,12 @@ export default function GrengoDashboard() {
     setMigrateAllOutput("");
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", "all", "migrate", rebuild ? ["--rebuild"] : undefined);
+      sendGrengoJobAction(
+        "site-cmd",
+        "all",
+        "migrate",
+        rebuild ? ["--rebuild"] : undefined,
+      );
       await waitPromise;
       setMigrateAllOutput("All migrations completed successfully");
     } catch (e: unknown) {
@@ -462,7 +520,6 @@ export default function GrengoDashboard() {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
 
-
       const handleUpdate = (e: Event) => {
         const customEvent = e as CustomEvent;
         const job = customEvent.detail;
@@ -476,8 +533,6 @@ export default function GrengoDashboard() {
         } else if (job.id !== trackedJobId) {
           return;
         }
-
-
 
         if (job.status === "failed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
@@ -499,7 +554,6 @@ export default function GrengoDashboard() {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
 
-
       const handleUpdate = async (e: Event) => {
         const customEvent = e as CustomEvent;
         const job = customEvent.detail;
@@ -514,8 +568,6 @@ export default function GrengoDashboard() {
           return;
         }
 
-
-
         if (job.status === "failed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
           reject(new Error(job.error || "Job failed"));
@@ -524,11 +576,13 @@ export default function GrengoDashboard() {
 
         if (job.status === "completed") {
           window.removeEventListener("grengo:job_update", handleUpdate);
-          
+
           // Job is complete, fetch the updated list of exports
-          fetchExports().then(() => {
-            resolve();
-          }).catch(reject);
+          fetchExports()
+            .then(() => {
+              resolve();
+            })
+            .catch(reject);
         }
       };
 
@@ -570,7 +624,12 @@ export default function GrengoDashboard() {
   };
 
   const handleDelete = async (name: string) => {
-    if (!await customConfirm(`Permanently delete site "${name}" and all its data?`)) return;
+    if (
+      !(await customConfirm(
+        `Permanently delete site "${name}" and all its data?`,
+      ))
+    )
+      return;
     setBusy((prev) => ({ ...prev, [name]: true }));
     try {
       const waitPromise = triggerAndWaitForJob("site-cmd");
@@ -583,8 +642,6 @@ export default function GrengoDashboard() {
       setBusy((prev) => ({ ...prev, [name]: false }));
     }
   };
-
-
 
   const handleExport = async (name: string) => {
     setBusy((prev) => ({ ...prev, [name]: true }));
@@ -664,263 +721,320 @@ export default function GrengoDashboard() {
         <div className="grengo-layout-left">
           {sysInfo && <SysInfoBar sysInfo={sysInfo} />}
 
-      <div className="grengo-lock-bar">
-        <button className="action-btn" onClick={handleLock}>
-          End Session
-        </button>
-      </div>
+          <div className="grengo-lock-bar">
+            <button className="action-btn" onClick={handleLock}>
+              End Session
+            </button>
+          </div>
 
-      {/* Toolbar */}
-      <div className="grengo-toolbar">
-        <button
-          className="action-btn"
-          onClick={() => {
-            setShowCreate(!showCreate);
-            setShowImport(false);
-            setShowImportNode(false);
-          }}
-        >
-          <Plus size={14} /> {showCreate ? "Cancel" : "New Site"}
-        </button>
-        <button
-          className="action-btn"
-          onClick={() => {
-            setShowImport(!showImport);
-            setShowCreate(false);
-            setShowImportNode(false);
-          }}
-        >
-          <DownloadCloud size={14} /> {showImport ? "Cancel" : "Import Site"}
-        </button>
-        <span className="toolbar-separator" />
-        <button
-          className="action-btn"
-          onClick={handleExportNode}
-          disabled={nodeExportBusy || Object.values(activeJobs).some(j => j.type === 'export-node')}
-        >
-          <Archive size={14} /> Export Node
-        </button>
-        <button
-          className="action-btn"
-          onClick={() => {
-            setShowImportNode(!showImportNode);
-            setShowCreate(false);
-            setShowImport(false);
-          }}
-        >
-          <Database size={14} /> {showImportNode ? "Cancel" : "Import Node"}
-        </button>
-        <span className="toolbar-separator" />
-        <button
-          className="action-btn"
-          onClick={() => {
-            fetchSites();
-            fetchStats();
-            fetchStorage();
-            fetchSysInfo();
-          }}
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? "spin" : ""} /> {loading ? "Refreshing..." : "Refresh All"}
-        </button>
-        <div className="active-jobs-status" style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", fontSize: "0.85rem", color: "var(--color-primary)" }}>
-          {Object.values(activeJobs).map((job: any) => (
-             job.message ? (
-               <span key={job.id} className="job-message" style={{ animation: "pulse 2s infinite" }}>
-                 {job.message.replace(/\x1B\[[0-9;]*[mK]/g, '')}
-               </span>
-             ) : null
-          ))}
-        </div>
-      </div>
+          {/* Toolbar */}
+          <div className="grengo-toolbar">
+            <button
+              className="action-btn"
+              onClick={() => {
+                setShowCreate(!showCreate);
+                setShowImport(false);
+                setShowImportNode(false);
+              }}
+            >
+              <Plus size={14} /> {showCreate ? "Cancel" : "New Site"}
+            </button>
+            <button
+              className="action-btn"
+              onClick={() => {
+                setShowImport(!showImport);
+                setShowCreate(false);
+                setShowImportNode(false);
+              }}
+            >
+              <DownloadCloud size={14} />{" "}
+              {showImport ? "Cancel" : "Import Site"}
+            </button>
+            <span className="toolbar-separator" />
+            <button
+              className="action-btn"
+              onClick={handleExportNode}
+              disabled={
+                nodeExportBusy ||
+                Object.values(activeJobs).some((j) => j.type === "export-node")
+              }
+            >
+              <Archive size={14} /> Export Node
+            </button>
+            <button
+              className="action-btn"
+              onClick={() => {
+                setShowImportNode(!showImportNode);
+                setShowCreate(false);
+                setShowImport(false);
+              }}
+            >
+              <Database size={14} /> {showImportNode ? "Cancel" : "Import Node"}
+            </button>
+            <span className="toolbar-separator" />
+            <button
+              className="action-btn"
+              onClick={() => {
+                fetchSites();
+                fetchStats();
+                fetchStorage();
+                fetchSysInfo();
+              }}
+              disabled={loading}
+            >
+              <RefreshCw size={14} className={loading ? "spin" : ""} />{" "}
+              {loading ? "Refreshing..." : "Refresh All"}
+            </button>
+            <div
+              className="active-jobs-status"
+              style={{
+                marginLeft: "auto",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                fontSize: "0.85rem",
+                color: "var(--color-primary)",
+              }}
+            >
+              {Object.values(activeJobs).map((job: any) =>
+                job.message ? (
+                  <span
+                    key={job.id}
+                    className="job-message"
+                    style={{ animation: "pulse 2s infinite" }}
+                  >
+                    {job.message.replace(/\x1B\[[0-9;]*[mK]/g, "")}
+                  </span>
+                ) : null,
+              )}
+            </div>
+          </div>
 
-      {/* Compose Controls */}
-      <div className="grengo-compose">
-        <h3>Compose</h3>
-        <div className="compose-actions">
-          <button
-            className="action-btn"
-            onClick={() => handleComposeUp(true)}
-            disabled={composeBusy}
+          {/* Compose Controls */}
+          <PrimaryCard className="grengo-compose" flat radius="flat">
+            <h3>Compose</h3>
+            <div className="compose-actions">
+              <button
+                className="action-btn"
+                onClick={() => handleComposeUp(true)}
+                disabled={composeBusy}
+              >
+                <Activity size={14} /> Up --build
+              </button>
+              <button
+                className="action-btn"
+                onClick={() => handleComposeUp(false)}
+                disabled={composeBusy}
+              >
+                <Play size={14} /> Up
+              </button>
+              <button
+                className="action-btn danger"
+                onClick={handleComposeDown}
+                disabled={composeBusy}
+              >
+                <Square size={14} /> Down
+              </button>
+              <span className="toolbar-separator" />
+              <button
+                className="action-btn"
+                onClick={() => handleMigrateAll(false)}
+                disabled={migrateAllBusy}
+              >
+                <RefreshCw size={14} className={migrateAllBusy ? "spin" : ""} />{" "}
+                {migrateAllBusy ? "Migrating..." : "Migrate All"}
+              </button>
+            </div>
+            {composeOutput && (
+              <pre className="compose-output">{composeOutput}</pre>
+            )}
+            {migrateAllOutput && (
+              <pre className="compose-output">{migrateAllOutput}</pre>
+            )}
+          </PrimaryCard>
+
+          {/* Create form */}
+          {showCreate && (
+            <CreateSiteForm
+              triggerAndWaitForJob={triggerAndWaitForJob}
+              onCreated={() => {
+                setShowCreate(false);
+                fetchSites();
+              }}
+            />
+          )}
+
+          {/* Import form */}
+          {showImport && (
+            <ImportSiteForm
+              apiBase={apiBase}
+              triggerAndWaitForJob={triggerAndWaitForJob}
+              onImported={() => {
+                setShowImport(false);
+                fetchSites();
+              }}
+            />
+          )}
+
+          {/* Import Node form */}
+          {showImportNode && (
+            <ImportNodeForm
+              apiBase={apiBase}
+              triggerAndWaitForJob={triggerAndWaitForJob}
+              onImported={() => {
+                setShowImportNode(false);
+                fetchSites();
+              }}
+            />
+          )}
+
+          {/* Exports Table */}
+          <div
+            className="grengo-exports"
+            style={{
+              marginBottom: "2rem",
+              borderBottom: "1px solid #ccc",
+              paddingBottom: "2rem",
+            }}
           >
-            <Activity size={14} /> Up --build
-          </button>
-          <button
-            className="action-btn"
-            onClick={() => handleComposeUp(false)}
-            disabled={composeBusy}
-          >
-            <Play size={14} /> Up
-          </button>
-          <button
-            className="action-btn danger"
-            onClick={handleComposeDown}
-            disabled={composeBusy}
-          >
-            <Square size={14} /> Down
-          </button>
-          <span className="toolbar-separator" />
-          <button
-            className="action-btn"
-            onClick={() => handleMigrateAll(false)}
-            disabled={migrateAllBusy}
-          >
-            <RefreshCw size={14} className={migrateAllBusy ? "spin" : ""} /> {migrateAllBusy ? "Migrating..." : "Migrate All"}
-          </button>
-        </div>
-        {composeOutput && <pre className="compose-output">{composeOutput}</pre>}
-        {migrateAllOutput && (
-          <pre className="compose-output">{migrateAllOutput}</pre>
-        )}
-      </div>
+            <h3>Available Exports</h3>
+            {fetchingExports ? (
+              <p>Loading exports...</p>
+            ) : exports.length === 0 ? (
+              <p>No exports available.</p>
+            ) : (
+              <table className="grengo-table">
+                <thead>
+                  <tr>
+                    <th>Filename</th>
+                    <th>Size</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exports.map((exp) => (
+                    <tr key={exp.name}>
+                      <td>{exp.name}</td>
+                      <td>{(exp.size / 1024 / 1024).toFixed(2)} MB</td>
+                      <td>{new Date(exp.created_at).toLocaleString()}</td>
+                      <td>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "0.5rem",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <button
+                            className="action-btn"
+                            title="Download"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              let token =
+                                localStorage.getItem("auth.accessToken");
+                              if (
+                                token &&
+                                token.startsWith('"') &&
+                                token.endsWith('"')
+                              )
+                                token = token.slice(1, -1);
+                              const url =
+                                `/api${apiBase}/exports/${exp.name}/download` +
+                                (token ? `?token=${token}` : "");
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = exp.name; // Force download behavior
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                            }}
+                          >
+                            <Download size={14} />
+                          </button>
+                          <button
+                            className="action-btn danger"
+                            title="Delete"
+                            disabled={Object.values(activeJobs).some(
+                              (j) =>
+                                j.type === "delete-export" &&
+                                j.target === exp.name,
+                            )}
+                            onClick={async () => {
+                              const confirmed = await customConfirm(
+                                `Delete ${exp.name}?`,
+                              );
+                              if (!confirmed) return;
+                              try {
+                                await grengoRequest(`/exports/${exp.name}`, {
+                                  method: "DELETE",
+                                });
+                              } catch (e: any) {
+                                customAlert(e.message || "Failed to delete");
+                              }
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-      {/* Create form */}
-      {showCreate && (
-        <CreateSiteForm
-          triggerAndWaitForJob={triggerAndWaitForJob}
-          onCreated={() => {
-            setShowCreate(false);
-            fetchSites();
-          }}
-        />
-      )}
+          {/* Error */}
+          {error && (
+            <div className="error" style={{ marginBottom: "1rem" }}>
+              {error}
+            </div>
+          )}
 
-      {/* Import form */}
-      {showImport && (
-        <ImportSiteForm
-          apiBase={apiBase}
-          triggerAndWaitForJob={triggerAndWaitForJob}
-          onImported={() => {
-            setShowImport(false);
-            fetchSites();
-          }}
-        />
-      )}
+          <SiteTable
+            sites={sites}
+            storage={storage}
+            loading={loading}
+            busy={busy}
+            activeJobs={activeJobs}
+            migrateBusy={migrateBusy}
+            migrateOutput={migrateOutput}
+            onSiteAction={siteAction}
+            onMigrate={handleMigrate}
+            onEnvEdit={openEnvEditor}
+            onExport={handleExport}
+            onDelete={handleDelete}
+          />
 
-      {/* Import Node form */}
-      {showImportNode && (
-        <ImportNodeForm
-          apiBase={apiBase}
-          triggerAndWaitForJob={triggerAndWaitForJob}
-          onImported={() => {
-            setShowImportNode(false);
-            fetchSites();
-          }}
-        />
-      )}
+          {/* Env Editor */}
+          {envSite && (
+            <EnvEditorPanel
+              envSite={envSite}
+              envContent={envContent}
+              envDirty={envDirty}
+              envLoading={envLoading}
+              envSaving={envSaving}
+              envError={envError}
+              onSave={saveEnv}
+              onClose={closeEnvEditor}
+              onDraftChange={setEnvDraft}
+            />
+          )}
 
-      {/* Exports Table */}
-      <div className="grengo-exports" style={{ marginBottom: "2rem", borderBottom: "1px solid #ccc", paddingBottom: "2rem" }}>
-        <h3>Available Exports</h3>
-        {fetchingExports ? (
-          <p>Loading exports...</p>
-        ) : exports.length === 0 ? (
-          <p>No exports available.</p>
-        ) : (
-          <table className="grengo-table">
-            <thead>
-              <tr>
-                <th>Filename</th>
-                <th>Size</th>
-                <th>Created At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exports.map((exp) => (
-                <tr key={exp.name}>
-                  <td>{exp.name}</td>
-                  <td>{(exp.size / 1024 / 1024).toFixed(2)} MB</td>
-                  <td>{new Date(exp.created_at).toLocaleString()}</td>
-                  <td>
-                    <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", alignItems: "center" }}>
-                      <button
-                        className="action-btn"
-                        title="Download"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          let token = localStorage.getItem("auth.accessToken");
-                          if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
-                          const url = `/api${apiBase}/exports/${exp.name}/download` + (token ? `?token=${token}` : "");
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = exp.name; // Force download behavior
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                        }}
-                      >
-                        <Download size={14} />
-                      </button>
-                      <button
-                        className="action-btn danger"
-                        title="Delete"
-                        disabled={Object.values(activeJobs).some(j => j.type === 'delete-export' && j.target === exp.name)}
-                        onClick={async () => {
-                          const confirmed = await customConfirm(`Delete ${exp.name}?`);
-                          if (!confirmed) return;
-                          try {
-                            await grengoRequest(`/exports/${exp.name}`, { method: "DELETE" });
-                          } catch (e: any) {
-                            customAlert(e.message || "Failed to delete");
-                          }
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="error" style={{ marginBottom: "1rem" }}>
-          {error}
-        </div>
-      )}
-
-      <SiteTable
-        sites={sites}
-        storage={storage}
-        loading={loading}
-        busy={busy}
-        activeJobs={activeJobs}
-        migrateBusy={migrateBusy}
-        migrateOutput={migrateOutput}
-        onSiteAction={siteAction}
-        onMigrate={handleMigrate}
-        onEnvEdit={openEnvEditor}
-        onExport={handleExport}
-        onDelete={handleDelete}
-      />
-
-      {/* Env Editor */}
-      {envSite && (
-        <EnvEditorPanel
-          envSite={envSite}
-          envContent={envContent}
-          envDirty={envDirty}
-          envLoading={envLoading}
-          envSaving={envSaving}
-          envError={envError}
-          onSave={saveEnv}
-          onClose={closeEnvEditor}
-          onDraftChange={setEnvDraft}
-        />
-      )}
-
-      <ContainerStatsPanel stats={stats} />
+          <ContainerStatsPanel stats={stats} />
         </div>
         <div className="grengo-layout-right">
+          {storage && (
+            <StoragePanel storage={storage} hardwareInfo={hardwareInfo} />
+          )}
 
-      {storage && <StoragePanel storage={storage} hardwareInfo={hardwareInfo} />}
-
-      <PerformanceMetrics stats={stats} statsLoading={statsLoading} hardwareInfo={hardwareInfo} />
+          <PerformanceMetrics
+            stats={stats}
+            statsLoading={statsLoading}
+            hardwareInfo={hardwareInfo}
+          />
         </div>
       </div>
     </div>
@@ -928,20 +1042,30 @@ export default function GrengoDashboard() {
 }
 
 // Gauge Component
-function Gauge({ percent, label, subtext }: { percent: number, label: string, subtext?: string }) {
+function Gauge({
+  percent,
+  label,
+  subtext,
+}: {
+  percent: number;
+  label: string;
+  subtext?: string;
+}) {
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const pct = Math.max(0, Math.min(100, percent));
   const offset = circumference - (pct / 100) * circumference;
-  const colorClass = pct >= 80 ? 'danger' : pct >= 50 ? 'warning' : 'ok';
-  
+  const colorClass = pct >= 80 ? "danger" : pct >= 50 ? "warning" : "ok";
+
   return (
     <div className="gauge-container">
       <svg className="gauge-svg" viewBox="0 0 100 100">
         <circle className="gauge-bg" cx="50" cy="50" r={radius} />
-        <circle 
+        <circle
           className={`gauge-fill ${colorClass}`}
-          cx="50" cy="50" r={radius}
+          cx="50"
+          cy="50"
+          r={radius}
           strokeDasharray={circumference}
           strokeDashoffset={offset}
         />
@@ -956,7 +1080,7 @@ function Gauge({ percent, label, subtext }: { percent: number, label: string, su
 
 function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
   return (
-    <div className="grengo-sysinfo">
+    <PrimaryCard className="grengo-sysinfo" flat radius="flat">
       <div className="sysinfo-item">
         <span className="sysinfo-label">Server Time</span>
         <span className="sysinfo-value">
@@ -989,7 +1113,7 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
           <span className="sysinfo-value">{sysInfo.load_avg}</span>
         </div>
       )}
-    </div>
+    </PrimaryCard>
   );
 }
 
@@ -1099,7 +1223,14 @@ function SiteTable({
                 </td>
                 <td className="domains">{site.domains.join(", ")}</td>
                 <td className="actions">
-                  <div style={{ display: "flex", gap: "0.25rem", justifyContent: "center", flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.25rem",
+                      justifyContent: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
                     {site.status === "running" ? (
                       <button
                         className="action-btn"
@@ -1159,11 +1290,16 @@ function SiteTable({
                     )}
                     <button
                       className="action-btn"
-                      title={migrateBusy[site.name] ? "Migrating..." : "Migrate"}
+                      title={
+                        migrateBusy[site.name] ? "Migrating..." : "Migrate"
+                      }
                       onClick={() => onMigrate(site.name)}
                       disabled={busy[site.name] || migrateBusy[site.name]}
                     >
-                      <RefreshCw size={14} className={migrateBusy[site.name] ? "spin" : ""} />
+                      <RefreshCw
+                        size={14}
+                        className={migrateBusy[site.name] ? "spin" : ""}
+                      />
                     </button>
                     <button
                       className="action-btn"
@@ -1175,9 +1311,23 @@ function SiteTable({
                     </button>
                     <button
                       className="action-btn"
-                      title={busy[site.name] || Object.values(activeJobs).some((j: any) => j.type === 'export-site' && j.target === site.name) ? "Exporting..." : "Export"}
+                      title={
+                        busy[site.name] ||
+                        Object.values(activeJobs).some(
+                          (j: any) =>
+                            j.type === "export-site" && j.target === site.name,
+                        )
+                          ? "Exporting..."
+                          : "Export"
+                      }
                       onClick={() => onExport(site.name)}
-                      disabled={busy[site.name] || Object.values(activeJobs).some((j: any) => j.type === 'export-site' && j.target === site.name)}
+                      disabled={
+                        busy[site.name] ||
+                        Object.values(activeJobs).some(
+                          (j: any) =>
+                            j.type === "export-site" && j.target === site.name,
+                        )
+                      }
                     >
                       <DownloadCloud size={14} />
                     </button>
@@ -1266,76 +1416,141 @@ function EnvEditorPanel({
 
 // StoragePanel
 
-function StoragePanel({ storage, hardwareInfo }: { storage: StorageInfo; hardwareInfo: HardwareInfo | null }) {
+function StoragePanel({
+  storage,
+  hardwareInfo,
+}: {
+  storage: StorageInfo;
+  hardwareInfo: HardwareInfo | null;
+}) {
   let diskUsedPct = 0;
   if (hardwareInfo && hardwareInfo.dynamic.disk_total > 0) {
-    const used = hardwareInfo.dynamic.disk_total - hardwareInfo.dynamic.disk_free;
+    const used =
+      hardwareInfo.dynamic.disk_total - hardwareInfo.dynamic.disk_free;
     diskUsedPct = (used / hardwareInfo.dynamic.disk_total) * 100;
   }
 
   return (
-    <div className="grengo-performance-section" style={{ marginBottom: '2rem' }}>
+    <div
+      className="grengo-performance-section"
+      style={{ marginBottom: "2rem" }}
+    >
       <div className="grengo-hardware">
         <h3>Storage Dashboard</h3>
         <div className="grengo-stats-cards">
           {/* Tenant Upload Storage */}
-          <div className="card grengo-stat-card">
+          <SecondaryCard>
             <div className="stat-card-header">
               <strong>Tenant Upload Provisioning</strong>
             </div>
-            <Gauge percent={storage.total_percent} label={`${storage.total_percent.toFixed(1)}%`} subtext="Provisioned" />
-            <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+            <Gauge
+              percent={storage.total_percent}
+              label={`${storage.total_percent.toFixed(1)}%`}
+              subtext="Provisioned"
+            />
+            <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
               <div className="stat-item">
                 <span className="stat-label">Total Assigned</span>
-                <span className="stat-value">{storage.total_used_human} / {storage.total_limit_human}</span>
+                <span className="stat-value">
+                  {storage.total_used_human} / {storage.total_limit_human}
+                </span>
               </div>
             </div>
             {storage.sites && storage.sites.length > 0 && (
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+              <div
+                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
+              >
                 <strong>Per Client:</strong>
                 {storage.sites.map((s) => (
-                  <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <div
+                    key={s.name}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "4px",
+                    }}
+                  >
                     <span>{s.name}</span>
                     <span>{s.used_human}</span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </SecondaryCard>
 
           {/* Physical Disk */}
           {hardwareInfo && (
-            <div className="card grengo-stat-card">
+            <GlassCard className="grengo-stat-card">
               <div className="stat-card-header">
                 <strong>Physical Disk Usage (Host)</strong>
               </div>
-              <Gauge percent={diskUsedPct} label={`${diskUsedPct.toFixed(1)}%`} subtext="Disk Used" />
-              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+              <Gauge
+                percent={diskUsedPct}
+                label={`${diskUsedPct.toFixed(1)}%`}
+                subtext="Disk Used"
+              />
+              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
                 <div className="stat-item">
                   <span className="stat-label">Total Disk</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_total / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.dynamic.disk_total /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Free Space</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_free / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.dynamic.disk_free /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
               </div>
-              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
                 <div className="stat-item">
                   <span className="stat-label">Total Read</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_reads / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.dynamic.disk_reads /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Total Write</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.disk_writes / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.dynamic.disk_writes /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
               </div>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
-                {hardwareInfo.static.storage_drives?.map((drive: string, i: number) => (
-                  <div key={i}>{drive}</div>
-                ))}
+              <div
+                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
+              >
+                {hardwareInfo.static.storage_drives?.map(
+                  (drive: string, i: number) => (
+                    <div key={i}>{drive}</div>
+                  ),
+                )}
               </div>
-            </div>
+            </GlassCard>
           )}
         </div>
       </div>
@@ -1364,77 +1579,136 @@ function PerformanceMetrics({
   let avgTemp = 0;
 
   if (hardwareInfo) {
-    avgCpu = hardwareInfo.dynamic.core_percents?.length ? hardwareInfo.dynamic.core_percents.reduce((a, b) => a + b, 0) / hardwareInfo.dynamic.core_percents.length : 0;
-    memPct = hardwareInfo.static.memory_total > 0 ? (hardwareInfo.dynamic.memory_used / hardwareInfo.static.memory_total) * 100 : 0;
+    avgCpu = hardwareInfo.dynamic.core_percents?.length
+      ? hardwareInfo.dynamic.core_percents.reduce((a, b) => a + b, 0) /
+        hardwareInfo.dynamic.core_percents.length
+      : 0;
+    memPct =
+      hardwareInfo.static.memory_total > 0
+        ? (hardwareInfo.dynamic.memory_used /
+            hardwareInfo.static.memory_total) *
+          100
+        : 0;
     const temps = hardwareInfo.dynamic.temps || [];
-    avgTemp = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : 0;
+    avgTemp = temps.length
+      ? temps.reduce((a, b) => a + b, 0) / temps.length
+      : 0;
   }
 
   return (
     <div className="grengo-performance-section">
       {hardwareInfo && (
-        <div className="grengo-hardware" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+        <div
+          className="grengo-hardware"
+          style={{ marginTop: "2rem", marginBottom: "2rem" }}
+        >
           <h3>Hardware & Thermals</h3>
           <div className="grengo-stats-cards">
             {/* CPU Cores */}
-            <div className="card grengo-stat-card">
+            <GlassCard className="grengo-stat-card">
               <div className="stat-card-header">
-                <strong>CPU Load ({hardwareInfo.static.total_cores} Cores)</strong>
+                <strong>
+                  CPU Load ({hardwareInfo.static.total_cores} Cores)
+                </strong>
               </div>
-              <Gauge percent={avgCpu} label={`${avgCpu.toFixed(1)}%`} subtext="Avg CPU" />
-              <div className="stat-card-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', marginTop: '1rem' }}>
-                {hardwareInfo.dynamic.core_percents?.map((pct: number, i: number) => (
-                  <div className="stat-item" key={i}>
-                    <span className="stat-label">Core {i}</span>
-                    <span className="stat-value">{pct.toFixed(1)}%</span>
-                  </div>
-                ))}
+              <Gauge
+                percent={avgCpu}
+                label={`${avgCpu.toFixed(1)}%`}
+                subtext="Avg CPU"
+              />
+              <div
+                className="stat-card-grid"
+                style={{
+                  gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))",
+                  marginTop: "1rem",
+                }}
+              >
+                {hardwareInfo.dynamic.core_percents?.map(
+                  (pct: number, i: number) => (
+                    <div className="stat-item" key={i}>
+                      <span className="stat-label">Core {i}</span>
+                      <span className="stat-value">{pct.toFixed(1)}%</span>
+                    </div>
+                  ),
+                )}
               </div>
-            </div>
+            </GlassCard>
 
             {/* RAM & Memory */}
-            <div className="card grengo-stat-card">
+            <GlassCard className="grengo-stat-card">
               <div className="stat-card-header">
                 <strong>Physical Memory</strong>
               </div>
-              <Gauge percent={memPct} label={`${memPct.toFixed(1)}%`} subtext="Memory" />
-              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
+              <Gauge
+                percent={memPct}
+                label={`${memPct.toFixed(1)}%`}
+                subtext="Memory"
+              />
+              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
                 <div className="stat-item">
                   <span className="stat-label">Total RAM</span>
-                  <span className="stat-value">{(hardwareInfo.static.memory_total / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.static.memory_total /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
                 <div className="stat-item">
                   <span className="stat-label">Used RAM</span>
-                  <span className="stat-value">{(hardwareInfo.dynamic.memory_used / 1024 / 1024 / 1024).toFixed(2)} GB</span>
+                  <span className="stat-value">
+                    {(
+                      hardwareInfo.dynamic.memory_used /
+                      1024 /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    GB
+                  </span>
                 </div>
               </div>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
-                {hardwareInfo.static.memory_sticks?.map((stick: string, i: number) => (
-                  <div key={i}>{stick}</div>
-                ))}
+              <div
+                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
+              >
+                {hardwareInfo.static.memory_sticks?.map(
+                  (stick: string, i: number) => (
+                    <div key={i}>{stick}</div>
+                  ),
+                )}
               </div>
-            </div>
+            </GlassCard>
 
             {/* Thermals & GPUs */}
-            <div className="card grengo-stat-card">
+            <GlassCard className="grengo-stat-card">
               <div className="stat-card-header">
                 <strong>Thermals & Graphics</strong>
               </div>
-              <Gauge percent={Math.min(avgTemp, 100)} label={`${avgTemp.toFixed(1)}°C`} subtext="Avg Temp" />
-              <div className="stat-card-grid" style={{ marginTop: '1rem' }}>
-                {hardwareInfo.dynamic.temps?.slice(0, 4).map((temp: number, i: number) => (
-                  <div className="stat-item" key={i}>
-                    <span className="stat-label">Sensor {i+1}</span>
-                    <span className="stat-value">{temp.toFixed(1)}°C</span>
-                  </div>
-                ))}
+              <Gauge
+                percent={Math.min(avgTemp, 100)}
+                label={`${avgTemp.toFixed(1)}°C`}
+                subtext="Avg Temp"
+              />
+              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+                {hardwareInfo.dynamic.temps
+                  ?.slice(0, 4)
+                  .map((temp: number, i: number) => (
+                    <div className="stat-item" key={i}>
+                      <span className="stat-label">Sensor {i + 1}</span>
+                      <span className="stat-value">{temp.toFixed(1)}°C</span>
+                    </div>
+                  ))}
               </div>
-              <div style={{ marginTop: '10px', fontSize: '12px', color: '#888' }}>
+              <div
+                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
+              >
                 {hardwareInfo.static.gpus?.map((gpu: string, i: number) => (
                   <div key={i}>{gpu}</div>
                 ))}
               </div>
-            </div>
+            </GlassCard>
           </div>
         </div>
       )}
@@ -1447,12 +1721,15 @@ function PerformanceMetrics({
 function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
   if (stats.length === 0) return null;
   return (
-    <div className="grengo-stats" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
+    <SecondaryCard
+      className="grengo-stats"
+      style={{ marginTop: "2rem", marginBottom: "2rem" }}
+    >
       <h3>Container Stats</h3>
       <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
         {stats.map((s) => (
-          <div className="card grengo-stat-card" key={s.name}>
+          <GlassCard key={s.name}>
             <div className="stat-card-header">
               <strong>{s.name}</strong>
             </div>
@@ -1492,10 +1769,10 @@ function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
                 <span className="stat-value">{s.pids}</span>
               </div>
             </div>
-          </div>
+          </GlassCard>
         ))}
       </div>
-    </div>
+    </SecondaryCard>
   );
 }
 
@@ -1530,7 +1807,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   };
 
   return (
-    <div className="card grengo-stat-card grengo-stat-overview">
+    <GlassCard className="grengo-stat-card grengo-stat-overview">
       <div className="stat-card-header">
         <strong>Totals</strong>
         <span className="stat-count">{stats.length} containers</span>
@@ -1549,7 +1826,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
           <span className="stat-value">{totalPIDs}</span>
         </div>
       </div>
-    </div>
+    </GlassCard>
   );
 }
 
@@ -1727,7 +2004,8 @@ function ImportSiteForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+      if (token && token.startsWith('"') && token.endsWith('"'))
+        token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import`, {
         method: "POST",
         headers: {
@@ -1818,9 +2096,9 @@ function ImportNodeForm({
   const handleImport = async () => {
     if (!file) return;
     if (
-      !await customConfirm(
+      !(await customConfirm(
         "Import a full node archive? This will add all clients from the archive.",
-      )
+      ))
     )
       return;
     setImporting(true);
@@ -1832,7 +2110,8 @@ function ImportNodeForm({
       }
 
       let token = localStorage.getItem("auth.accessToken");
-      if (token && token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+      if (token && token.startsWith('"') && token.endsWith('"'))
+        token = token.slice(1, -1);
       const res = await fetch(`/api${apiBase}/import-node`, {
         method: "POST",
         headers: {

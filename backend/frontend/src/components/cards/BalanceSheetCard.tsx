@@ -43,8 +43,7 @@ export const BalanceSheetCard = ({
           gap: "6px",
         }}
       >
-        <ArrowDownRight size={16} color="var(--color-success)" />{" "}
-        Total Credits
+        <ArrowDownRight size={16} color="var(--color-success)" /> Total Credits
       </span>
       <span style={{ color: "var(--color-success)", fontWeight: "bold" }}>
         + {formatCents(totalCredits)}
@@ -68,8 +67,7 @@ export const BalanceSheetCard = ({
           gap: "6px",
         }}
       >
-        <ArrowUpRight size={16} color="var(--text-primary)" /> Total
-        Debits
+        <ArrowUpRight size={16} color="var(--text-primary)" /> Total Debits
       </span>
       <span style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
         - {formatCents(totalDebits)}

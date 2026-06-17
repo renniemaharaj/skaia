@@ -617,6 +617,10 @@ div#root {
   box-shadow: none;
 }
 
+.card--flat-tile {
+  box-shadow: none;
+}
+
 .card__header,
 .card__body,
 .card__footer {
