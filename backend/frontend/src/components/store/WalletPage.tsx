@@ -20,6 +20,7 @@ import { layoutModeAtom } from "../../atoms/layoutMode";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import "../../components/store/Store.css";
+import { SecondaryCard } from "../cards/GlassCard";
 
 interface Transaction {
   id: number;
@@ -315,7 +316,7 @@ export const WalletPage = () => {
             </div>
 
             {/* User Cards Tile */}
-            <div className="card card--store" style={{ padding: "1.5rem" }}>
+            <SecondaryCard style={{ padding: "1.5rem" }}>
               <div
                 style={{
                   display: "flex",
@@ -659,7 +660,7 @@ export const WalletPage = () => {
                   )}
                 </div>
               )}
-            </div>
+            </SecondaryCard>
           </div>
 
           {/* Right Side: Transactions & Balance Sheet */}
