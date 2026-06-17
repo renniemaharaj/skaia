@@ -58,7 +58,7 @@
 /* ── Two-column layout ── */
 .cart-content {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(26rem, 39rem);
+  grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 40rem);
   gap: 2rem;
   align-items: start;
 }
@@ -302,7 +302,8 @@
   border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: 0 10px 32px
+    color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 .cart-checkout-card--details,
