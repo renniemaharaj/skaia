@@ -124,14 +124,28 @@ func (h *Handler) resolveRecoveryRequest(w http.ResponseWriter, r *http.Request,
 	}
 
 	status := "rejected"
+	action := "reject"
 	if accept {
 		status = "accepted"
+		action = "accept"
+	}
+	if err := h.svc.RequireRecoveryResolutionChallenge(r.Context(), actorID, requestID, action); err != nil {
+		switch {
+		case errors.Is(err, ErrRecoveryChallengeMethodRequired):
+			utils.WriteError(w, http.StatusForbidden, err.Error())
+		case errors.Is(err, ErrRecoveryChallengeRequired):
+			utils.WriteError(w, http.StatusUnauthorized, err.Error())
+		default:
+			utils.WriteError(w, http.StatusInternalServerError, "failed to prepare MFA challenge")
+		}
+		return
 	}
 	req, err = h.svc.ResolveRecoveryRequest(r.Context(), requestID, status)
 	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, "recovery request not found")
 		return
 	}
+	h.svc.ConsumeRecoveryResolutionChallenge(actorID, requestID, action)
 
 	if !accept {
 		h.dispatcher.Dispatch(ievents.Job{

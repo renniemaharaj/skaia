@@ -154,7 +154,9 @@ func main() {
 	dsCompileCache := ids.NewCompileCacheWithClient(rdb)
 	dsExecuteCache := ids.NewExecuteCacheWithClient(rdb)
 	dsCompileDispatcher := ids.NewCompileDispatcher(dsCompileCache, dispatcher)
+	dsExecuteDispatcher := ids.NewExecuteDispatcher(dsExecuteCache, dispatcher)
 	dsCompileDispatcher.Start()
+	dsExecuteDispatcher.Start()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -163,7 +165,7 @@ func main() {
 
 	ratelimit.InitCloudflare()
 
-	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher)
+	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher, dsExecuteDispatcher)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -192,8 +194,9 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced shutdown: %v", err)
 	}
-	dispatcher.Stop()
 	dsCompileDispatcher.Stop()
+	dsExecuteDispatcher.Stop()
+	dispatcher.Stop()
 	log.Println("server stopped")
 }
 
@@ -277,7 +280,7 @@ func removeArmedFile(armedDir, clientID string) error {
 	return os.Remove(filePath)
 }
 
-func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher) http.Handler {
+func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher, dsExecuteDispatcher *ids.ExecuteDispatcher) http.Handler {
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
@@ -664,7 +667,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		dsRepo := ids.NewRepository(db)
 		dsSvc := ids.NewService(dsRepo)
-		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher, dsExecuteCache)
+		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher, dsExecuteCache, dsExecuteDispatcher)
 		dsHandler.Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, imw.CompileRateLimitByIP(), imw.CompileRateLimitByClient())
 
 		csRepo := ics.NewRepository(db)

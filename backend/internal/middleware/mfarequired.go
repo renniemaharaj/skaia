@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/skaia/backend/internal/auth"
@@ -33,7 +34,9 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Bypass certain routes
-			if r.URL.Path == "/api/auth/logout" || r.URL.Path == "/api/auth/refresh" {
+			if r.URL.Path == "/api/auth/logout" ||
+				r.URL.Path == "/api/auth/refresh" ||
+				strings.HasPrefix(r.URL.Path, "/api/auth/admin/recovery-requests/") {
 				next.ServeHTTP(w, r)
 				return
 			}

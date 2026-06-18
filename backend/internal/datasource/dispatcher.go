@@ -1,13 +1,12 @@
 package datasource
 
 import (
-	"log"
-	"os"
-	"strconv"
-	"sync"
-	"sync/atomic"
+	"context"
+	"encoding/json"
+	"time"
 
 	"github.com/skaia/backend/internal/events"
+	"github.com/skaia/backend/internal/jobs"
 )
 
 const (
@@ -16,15 +15,7 @@ const (
 )
 
 func compilerEnvIntDefault(key string, def int) int {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil || n <= 0 {
-		return def
-	}
-	return n
+	return jobs.EnvIntDefault(key, def)
 }
 
 // CompileJob is a compile request on the conveyor.
@@ -34,85 +25,54 @@ type CompileJob struct {
 	Files        map[string]string
 	UserID       int64
 	IP           string
-	ResultCh     chan compileResult
-}
-
-type compileResult struct {
-	Result *CompileResult
-	Err    error
 }
 
 // CompileDispatcher manages a separate compiler conveyor belt.
 type CompileDispatcher struct {
-	jobs    chan CompileJob
+	manager *jobs.Manager[CompileJob, CompileResult]
 	cache   *CompileCache
 	events  *events.Dispatcher
-	workers int
-	wg      sync.WaitGroup
-	done    atomic.Bool
 }
 
 // NewCompileDispatcher creates a dispatcher for compiler jobs.
 func NewCompileDispatcher(cache *CompileCache, eventsDispatcher *events.Dispatcher) *CompileDispatcher {
 	workers := compilerEnvIntDefault(compilerWorkersEnv, 2)
 	bufSize := compilerEnvIntDefault(compilerBufferEnv, 64)
-	return &CompileDispatcher{
-		jobs:    make(chan CompileJob, bufSize),
-		cache:   cache,
-		events:  eventsDispatcher,
-		workers: workers,
-	}
+	d := &CompileDispatcher{cache: cache, events: eventsDispatcher}
+	d.manager = jobs.NewManager(jobs.Config{
+		Kind:    "datasource.compile",
+		Workers: workers,
+		Buffer:  bufSize,
+		TTL:     10 * time.Minute,
+	}, d.processJob)
+	return d
 }
 
 // Start launches compiler workers.
 func (d *CompileDispatcher) Start() {
-	for i := 0; i < d.workers; i++ {
-		d.wg.Add(1)
-		go d.worker(i)
-	}
-	log.Printf("datasource: compile dispatcher started — workers=%d buffer=%d", d.workers, cap(d.jobs))
+	d.manager.Start()
 }
 
 // Stop closes the compiler conveyor and waits for workers.
 func (d *CompileDispatcher) Stop() {
-	d.done.Store(true)
-	close(d.jobs)
-	d.wg.Wait()
-	log.Println("datasource: compile dispatcher stopped")
+	d.manager.Stop()
 }
 
-// Dispatch enqueues a compile job. Returns false if the buffer is full.
-func (d *CompileDispatcher) Dispatch(job CompileJob) bool {
-	if d.done.Load() {
-		return false
-	}
-	select {
-	case d.jobs <- job:
-		return true
-	default:
-		log.Printf("datasource: compile buffer full, dropping request for datasource %d", job.DataSourceID)
-		return false
-	}
+// Dispatch enqueues a compile job and returns a channel for the result.
+func (d *CompileDispatcher) Dispatch(job CompileJob) (<-chan jobs.Result[CompileResult], bool) {
+	_, resultCh, ok := d.manager.DispatchWithResult(job.UserID, job)
+	return resultCh, ok
 }
 
-func (d *CompileDispatcher) worker(id int) {
-	defer d.wg.Done()
-	for job := range d.jobs {
-		d.processJob(job)
-	}
-}
-
-func (d *CompileDispatcher) processJob(job CompileJob) {
+func (d *CompileDispatcher) processJob(ctx context.Context, job CompileJob) (CompileResult, error) {
+	_ = ctx
 	files := job.Files
 	if len(files) == 0 && job.Source != "" {
 		files = map[string]string{"main.ts": job.Source}
 	}
 	res, err := CompileTypeScript(files)
 	if err == nil && d.cache != nil {
-		d.cache.Set(job.Source, res)
-	}
-	if job.ResultCh != nil {
-		job.ResultCh <- compileResult{Result: res, Err: err}
+		d.cache.Set(compileSourceKey(job.Source, files), res)
 	}
 	if d.events != nil {
 		d.events.Dispatch(events.Job{
@@ -127,6 +87,10 @@ func (d *CompileDispatcher) processJob(job CompileJob) {
 			IP: job.IP,
 		})
 	}
+	if err != nil {
+		return CompileResult{}, err
+	}
+	return *res, nil
 }
 
 func errorMessage(err error) string {
@@ -134,4 +98,103 @@ func errorMessage(err error) string {
 		return ""
 	}
 	return err.Error()
+}
+
+type ExecuteJob struct {
+	DataSourceID int64
+	Files        map[string]string
+	Env          map[string]string
+	CacheTTL     int
+	UseCache     bool
+	UserID       int64
+	IP           string
+}
+
+// ExecuteDispatcher manages server-side datasource execution jobs.
+type ExecuteDispatcher struct {
+	manager *jobs.Manager[ExecuteJob, CachedExecuteResult]
+	cache   *ExecuteCache
+	events  *events.Dispatcher
+}
+
+// NewExecuteDispatcher creates a managed worker pool for expensive executions.
+func NewExecuteDispatcher(cache *ExecuteCache, eventsDispatcher *events.Dispatcher) *ExecuteDispatcher {
+	workers := jobs.EnvIntDefault("DATASOURCE_EXECUTE_WORKERS", 2)
+	bufSize := jobs.EnvIntDefault("DATASOURCE_EXECUTE_BUFFER", 64)
+	d := &ExecuteDispatcher{cache: cache, events: eventsDispatcher}
+	d.manager = jobs.NewManager(jobs.Config{
+		Kind:    "datasource.execute",
+		Workers: workers,
+		Buffer:  bufSize,
+		TTL:     30 * time.Minute,
+	}, d.processJob)
+	return d
+}
+
+func (d *ExecuteDispatcher) Start() {
+	d.manager.Start()
+}
+
+func (d *ExecuteDispatcher) Stop() {
+	d.manager.Stop()
+}
+
+func (d *ExecuteDispatcher) Dispatch(job ExecuteJob) (jobs.Snapshot[CachedExecuteResult], bool) {
+	return d.manager.Dispatch(job.UserID, job)
+}
+
+func (d *ExecuteDispatcher) DispatchWithResult(job ExecuteJob) (jobs.Snapshot[CachedExecuteResult], <-chan jobs.Result[CachedExecuteResult], bool) {
+	return d.manager.DispatchWithResult(job.UserID, job)
+}
+
+func (d *ExecuteDispatcher) Get(id string) (jobs.Snapshot[CachedExecuteResult], bool) {
+	return d.manager.Get(id)
+}
+
+func (d *ExecuteDispatcher) processJob(ctx context.Context, job ExecuteJob) (CachedExecuteResult, error) {
+	_ = ctx
+	result, err := ExecuteTypeScript(job.Files, job.Env)
+	if err != nil {
+		d.recordExecuteEvent(job, false, err)
+		return CachedExecuteResult{}, err
+	}
+
+	resp := CachedExecuteResult{
+		ExecuteResult: *result,
+		CachedAt:      time.Now().UTC(),
+		CacheTTL:      job.CacheTTL,
+	}
+	if job.UseCache && job.CacheTTL > 0 && d.cache != nil && result.Error == "" {
+		d.cache.Set(job.DataSourceID, result, time.Duration(job.CacheTTL)*time.Second)
+	}
+	d.recordExecuteEvent(job, result.Error == "", nil)
+	return resp, nil
+}
+
+func (d *ExecuteDispatcher) recordExecuteEvent(job ExecuteJob, success bool, err error) {
+	if d.events == nil {
+		return
+	}
+	d.events.Dispatch(events.Job{
+		UserID:     job.UserID,
+		Activity:   "datasource.executed",
+		Resource:   "datasource",
+		ResourceID: job.DataSourceID,
+		Meta: map[string]interface{}{
+			"success": success,
+			"error":   errorMessage(err),
+		},
+		IP: job.IP,
+	})
+}
+
+func compileSourceKey(source string, files map[string]string) string {
+	if len(files) == 0 {
+		return source
+	}
+	b, err := json.Marshal(files)
+	if err != nil {
+		return source
+	}
+	return string(b)
 }

@@ -285,9 +285,17 @@ var ErrRecoveryRequestRateLimited = errors.New("please wait before requesting ac
 var ErrRecoveryRequestNotFound = errors.New("recovery request not found")
 var ErrRecoveryRequestExpired = errors.New("recovery request expired")
 var ErrRecoveryRequestAlreadyPending = errors.New("you already have a recovery request pending")
+var ErrRecoveryChallengeRequired = errors.New("MFA Required")
+var ErrRecoveryChallengeMethodRequired = errors.New("TOTP must be enabled to resolve recovery requests")
 
 const recoveryRequestTTL = 30 * time.Minute
 const recoveryRequestCooldown = 2 * time.Minute
+const recoveryChallengeTTL = 10 * time.Minute
+
+type recoveryChallengeJob struct {
+	Key      string
+	ExpireAt time.Time
+}
 
 type UserService interface {
 	GetByID(id int64) (*models.User, error)
@@ -297,19 +305,21 @@ type UserService interface {
 }
 
 type Service struct {
-	repo             Repository
-	userService      UserService
-	recoveryMu       sync.Mutex
-	recoveryRequests map[string]*models.RecoveryRequest
-	recoveryLastSeen map[string]time.Time
+	repo               Repository
+	userService        UserService
+	recoveryMu         sync.Mutex
+	recoveryRequests   map[string]*models.RecoveryRequest
+	recoveryLastSeen   map[string]time.Time
+	recoveryChallenges map[int64]recoveryChallengeJob
 }
 
 func NewService(r Repository, userService UserService) *Service {
 	return &Service{
-		repo:             r,
-		userService:      userService,
-		recoveryRequests: make(map[string]*models.RecoveryRequest),
-		recoveryLastSeen: make(map[string]time.Time),
+		repo:               r,
+		userService:        userService,
+		recoveryRequests:   make(map[string]*models.RecoveryRequest),
+		recoveryLastSeen:   make(map[string]time.Time),
+		recoveryChallenges: make(map[int64]recoveryChallengeJob),
 	}
 }
 
@@ -326,6 +336,11 @@ func (s *Service) cleanupRecoveryRequestsLocked(now time.Time) {
 	for key, seen := range s.recoveryLastSeen {
 		if now.Sub(seen) > recoveryRequestTTL {
 			delete(s.recoveryLastSeen, key)
+		}
+	}
+	for userID, challenge := range s.recoveryChallenges {
+		if !now.Before(challenge.ExpireAt) {
+			delete(s.recoveryChallenges, userID)
 		}
 	}
 }
@@ -475,6 +490,55 @@ func (s *Service) ExpireRecoveryRequestsByGuestSession(ctx context.Context, gues
 		delete(s.recoveryRequests, id)
 	}
 	return expired
+}
+
+func recoveryChallengeKey(requestID, action string) string {
+	return strings.TrimSpace(action) + ":" + strings.TrimSpace(requestID)
+}
+
+func (s *Service) RequireRecoveryResolutionChallenge(ctx context.Context, actorID int64, requestID, action string) error {
+	_, enabled, err := s.GetTOTPEnabled(ctx, actorID)
+	if err != nil {
+		return err
+	}
+	if !enabled {
+		return ErrRecoveryChallengeMethodRequired
+	}
+
+	key := recoveryChallengeKey(requestID, action)
+	now := time.Now()
+	s.recoveryMu.Lock()
+	s.cleanupRecoveryRequestsLocked(now)
+	challenge, hasChallenge := s.recoveryChallenges[actorID]
+	s.recoveryMu.Unlock()
+
+	mfaStatus, err := s.GetMFARequired(ctx, actorID)
+	if err != nil {
+		return err
+	}
+	if hasChallenge && challenge.Key == key && now.Before(challenge.ExpireAt) && !mfaStatus.Required {
+		return nil
+	}
+
+	if err := s.SetMFARequired(ctx, actorID, true); err != nil {
+		return err
+	}
+	s.recoveryMu.Lock()
+	s.recoveryChallenges[actorID] = recoveryChallengeJob{
+		Key:      key,
+		ExpireAt: now.Add(recoveryChallengeTTL),
+	}
+	s.recoveryMu.Unlock()
+	return ErrRecoveryChallengeRequired
+}
+
+func (s *Service) ConsumeRecoveryResolutionChallenge(actorID int64, requestID, action string) {
+	key := recoveryChallengeKey(requestID, action)
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+	if challenge, ok := s.recoveryChallenges[actorID]; ok && challenge.Key == key {
+		delete(s.recoveryChallenges, actorID)
+	}
 }
 
 // RegisterCredential creates a new credential for a user.

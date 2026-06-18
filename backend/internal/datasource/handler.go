@@ -35,11 +35,12 @@ type Handler struct {
 	compileCache      *CompileCache
 	compileDispatcher *CompileDispatcher
 	executeCache      *ExecuteCache
+	executeDispatcher *ExecuteDispatcher
 }
 
 // NewHandler creates a datasource Handler.
-func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache, compileDispatcher *CompileDispatcher, executeCache *ExecuteCache) *Handler {
-	return &Handler{svc: svc, userSvc: userSvc, compileCache: compileCache, compileDispatcher: compileDispatcher, executeCache: executeCache}
+func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache, compileDispatcher *CompileDispatcher, executeCache *ExecuteCache, executeDispatcher *ExecuteDispatcher) *Handler {
+	return &Handler{svc: svc, userSvc: userSvc, compileCache: compileCache, compileDispatcher: compileDispatcher, executeCache: executeCache, executeDispatcher: executeDispatcher}
 }
 
 // enrich attaches creator info to a datasource.
@@ -71,6 +72,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, optio
 
 		// Server-side execute with env vars.
 		r.With(optionalJWT, compileIPLimit, compileClientLimit).Post("/{id}/execute", h.executeDataSourceByID)
+		r.With(optionalJWT).Get("/{id}/execute/jobs/{jobID}", h.getExecuteJob)
 
 		// Environment variables per datasource.
 		r.With(optionalJWT).Get("/{id}/env", h.getEnvData)
@@ -220,14 +222,37 @@ func (h *Handler) compileTypeScript(w http.ResponseWriter, r *http.Request) {
 		files = map[string]string{"main.ts": body.Code}
 	}
 
-	result, err := CompileTypeScript(files)
-	if err != nil {
-		log.Printf("datasource.compile: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
+	if h.compileDispatcher == nil {
+		utils.WriteError(w, http.StatusServiceUnavailable, "compiler queue is unavailable")
 		return
 	}
-	result.Cached = false
-	utils.WriteJSON(w, http.StatusOK, result)
+	job := CompileJob{
+		Source: compileSourceKey(body.Code, files),
+		Files:  files,
+		IP:     events.ClientIP(r),
+	}
+	if uid, ok := utils.UserIDFromCtx(r); ok {
+		job.UserID = uid
+	}
+	resultCh, ok := h.compileDispatcher.Dispatch(job)
+	if !ok {
+		utils.WriteError(w, http.StatusServiceUnavailable, "compiler queue is busy")
+		return
+	}
+
+	select {
+	case res := <-resultCh:
+		if res.Err != nil {
+			log.Printf("datasource.compile: %v", res.Err)
+			utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
+			return
+		}
+		result := res.Value
+		result.Cached = false
+		utils.WriteJSON(w, http.StatusOK, &result)
+	case <-time.After(15 * time.Second):
+		utils.WriteError(w, http.StatusGatewayTimeout, "compiler timed out")
+	}
 }
 
 func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) {
@@ -248,40 +273,45 @@ func (h *Handler) compileDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	files := filesFromDS(ds)
+	sourceKey := compileSourceKey(ds.Code, files)
 	if h.compileCache != nil {
-		if cached, ok := h.compileCache.Get(ds.Code); ok {
+		if cached, ok := h.compileCache.Get(sourceKey); ok {
 			utils.WriteJSON(w, http.StatusOK, cached)
 			return
 		}
 	}
 
 	// Use files if available, fall back to legacy code.
-	files := filesFromDS(ds)
-
 	job := CompileJob{
 		DataSourceID: id,
 		Source:       ds.Code,
 		Files:        files,
 		IP:           events.ClientIP(r),
-		ResultCh:     make(chan compileResult, 1),
 	}
 	if uid, ok := utils.UserIDFromCtx(r); ok {
 		job.UserID = uid
 	}
 
-	if h.compileDispatcher == nil || !h.compileDispatcher.Dispatch(job) {
+	if h.compileDispatcher == nil {
+		utils.WriteError(w, http.StatusServiceUnavailable, "compiler queue is unavailable")
+		return
+	}
+	resultCh, ok := h.compileDispatcher.Dispatch(job)
+	if !ok {
 		utils.WriteError(w, http.StatusServiceUnavailable, "compiler queue is busy")
 		return
 	}
 
 	select {
-	case res := <-job.ResultCh:
+	case res := <-resultCh:
 		if res.Err != nil {
 			log.Printf("datasource.compile: %v", res.Err)
 			utils.WriteError(w, http.StatusInternalServerError, "compilation failed")
 			return
 		}
-		utils.WriteJSON(w, http.StatusOK, res.Result)
+		result := res.Value
+		utils.WriteJSON(w, http.StatusOK, &result)
 	case <-time.After(15 * time.Second):
 		utils.WriteError(w, http.StatusGatewayTimeout, "compiler timed out")
 	}
@@ -308,19 +338,21 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Serve from cache if the datasource has a TTL and the result is cached.
-	if ds.CacheTTL > 0 && h.executeCache != nil {
-		if cached, ok := h.executeCache.Get(id); ok {
-			utils.WriteJSON(w, http.StatusOK, cached)
-			return
-		}
-	}
-
 	// Check for client-supplied env_data (editor context); fall back to DB.
 	var body struct {
 		EnvData string `json:"env_data"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body) // intentionally ignoring errors (empty body is fine)
+
+	useSharedCache := body.EnvData == ""
+	// Serve from cache only for DB-backed env executions. Client-supplied env
+	// data can represent private editor state and must not poison shared cache.
+	if useSharedCache && ds.CacheTTL > 0 && h.executeCache != nil {
+		if cached, ok := h.executeCache.Get(id); ok {
+			utils.WriteJSON(w, http.StatusOK, cached)
+			return
+		}
+	}
 
 	env := map[string]string{}
 	if body.EnvData != "" {
@@ -330,26 +362,65 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 	}
 
 	files := filesFromDS(ds)
+	job := ExecuteJob{
+		DataSourceID: id,
+		Files:        files,
+		Env:          env,
+		CacheTTL:     ds.CacheTTL,
+		UseCache:     useSharedCache,
+		IP:           events.ClientIP(r),
+	}
+	if uid, ok := utils.UserIDFromCtx(r); ok {
+		job.UserID = uid
+	}
 
-	result, err := ExecuteTypeScript(files, env)
-	if err != nil {
-		log.Printf("datasource.execute: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "execution failed")
+	if h.executeDispatcher == nil {
+		utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is unavailable")
 		return
 	}
 
-	// Cache the result if TTL is configured and execution succeeded.
-	if ds.CacheTTL > 0 && h.executeCache != nil && result.Error == "" {
-		h.executeCache.Set(id, result, time.Duration(ds.CacheTTL)*time.Second)
+	if wantsAsync(r) {
+		snap, ok := h.executeDispatcher.Dispatch(job)
+		if !ok {
+			utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is busy")
+			return
+		}
+		w.Header().Set("Location", "/api/config/datasources/"+strconv.FormatInt(id, 10)+"/execute/jobs/"+snap.ID)
+		utils.WriteJSON(w, http.StatusAccepted, snap)
+		return
 	}
 
-	// Return with cached_at = now for fresh executions
-	resp := CachedExecuteResult{
-		ExecuteResult: *result,
-		CachedAt:      time.Now(),
-		CacheTTL:      ds.CacheTTL,
+	_, resultCh, ok := h.executeDispatcher.DispatchWithResult(job)
+	if !ok {
+		utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is busy")
+		return
 	}
-	utils.WriteJSON(w, http.StatusOK, resp)
+	select {
+	case res := <-resultCh:
+		if res.Err != nil {
+			log.Printf("datasource.execute: %v", res.Err)
+			utils.WriteError(w, http.StatusInternalServerError, "execution failed")
+			return
+		}
+		result := res.Value
+		utils.WriteJSON(w, http.StatusOK, &result)
+	case <-time.After(20 * time.Second):
+		utils.WriteError(w, http.StatusGatewayTimeout, "execution timed out")
+	}
+}
+
+func (h *Handler) getExecuteJob(w http.ResponseWriter, r *http.Request) {
+	if h.executeDispatcher == nil {
+		utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is unavailable")
+		return
+	}
+	jobID := chi.URLParam(r, "jobID")
+	snap, ok := h.executeDispatcher.Get(jobID)
+	if !ok {
+		utils.WriteError(w, http.StatusNotFound, "job not found")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, snap)
 }
 
 // Environment variables per datasource
@@ -478,4 +549,8 @@ func filesFromDS(ds *models.DataSource) map[string]string {
 		return map[string]string{"main.ts": ds.Code}
 	}
 	return map[string]string{}
+}
+
+func wantsAsync(r *http.Request) bool {
+	return r.URL.Query().Get("async") == "true" || r.Header.Get("Prefer") == "respond-async"
 }
