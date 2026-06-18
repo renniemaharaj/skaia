@@ -48,8 +48,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  top: 0;
-  position: sticky;
 }
 
 .forum-category-card:hover {
@@ -346,10 +344,6 @@
     margin-bottom: 0 !important;
   }
 
-  .forum-category-card .thread-item:nth-child(n + 4) {
-    display: none;
-  }
-
   .forum-category-card .thread-title-wrapper {
     margin-bottom: 0;
   }
@@ -361,11 +355,6 @@
     line-height: 1.25;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
-  }
-
-  .forum-category-card .thread-actions,
-  .forum-category-card .thread-meta {
-    display: none;
   }
 
   .forum-category-card .threads-see-more {

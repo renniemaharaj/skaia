@@ -40,7 +40,7 @@ export const Forum: React.FC = () => {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const effectiveViewMode = isCompactForum ? "list" : viewMode;
+  const effectiveViewMode = isCompactForum ? "grid" : viewMode;
 
   const toggleView = (mode: "grid" | "list") => {
     setViewMode(mode);
