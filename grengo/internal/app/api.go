@@ -188,6 +188,7 @@ type APIHandlers struct {
 	WebSocket      http.HandlerFunc
 	VerifyPasscode http.HandlerFunc
 	PasscodeStatus http.HandlerFunc
+	WebhookGithub  http.HandlerFunc
 }
 
 func Handlers() APIHandlers {
@@ -216,6 +217,7 @@ func Handlers() APIHandlers {
 		WebSocket:      apiWebSocket,
 		VerifyPasscode: apiVerifyPasscode,
 		PasscodeStatus: apiPasscodeStatus,
+		WebhookGithub:  apiWebhookGithub,
 	}
 }
 

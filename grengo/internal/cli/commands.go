@@ -13,6 +13,7 @@ type Commands struct {
 	Remove          func(string)
 	Build           func()
 	RebuildFrontend func(string)
+	ShipFrontend    func()
 	Dev             func()
 	ComposeUp       func(follow bool, build bool)
 	ComposeDown     func()

@@ -35,6 +35,7 @@ func newAPIRouter(handlers app.APIHandlers) *http.ServeMux {
 	mux.HandleFunc("GET /ws", handlers.WebSocket)
 	mux.HandleFunc("POST /verify-passcode", handlers.VerifyPasscode)
 	mux.HandleFunc("GET /passcode/status", handlers.PasscodeStatus)
+	mux.HandleFunc("POST /webhook/github", handlers.WebhookGithub)
 	return mux
 }
 
@@ -49,6 +50,7 @@ func apiPasscodeMiddleware(next http.Handler) http.Handler {
 		"/passcode/status": true,
 		"/ws":              true,
 		"/storage":         true,
+		"/webhook/github":  true,
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

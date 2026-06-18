@@ -15,6 +15,7 @@ func CLICommands() cli.Commands {
 		Remove:          cmdRemove,
 		Build:           cmdBuild,
 		RebuildFrontend: cmdRebuildFrontend,
+		ShipFrontend:    cmdShipFrontend,
 		Dev:             cmdDev,
 		ComposeUp:       cmdComposeUp,
 		ComposeDown:     cmdComposeDown,

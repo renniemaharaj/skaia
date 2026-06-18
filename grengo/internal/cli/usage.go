@@ -15,6 +15,7 @@ Commands:
   update <name|all>                          Update FEATURES_ENABLED in client(s) .env with selected features
   build                                      Build / rebuild the backend Docker image
   rebuilt frontend [<name>|all]              Build frontend and hot-ship dist to running backend(s)
+  ship frontend                              Auto-stash, pull, pop, and rebuilt frontend all
   dev                                        Start dev environment (infra, API, and vite dev server)
   compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything

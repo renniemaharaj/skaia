@@ -35,6 +35,7 @@ func commandRegistry() []commandEntry {
 		{names: []string{"remove", "rm"}, run: runRemove},
 		{names: []string{"build"}, run: runBuild},
 		{names: []string{"rebuilt", "rebuild"}, run: runRebuild},
+		{names: []string{"ship"}, run: runShip},
 		{names: []string{"dev"}, run: runDev},
 		{names: []string{"compose"}, run: runCompose},
 		{names: []string{"nginx"}, run: runNginx},
@@ -108,6 +109,15 @@ func runRebuild(rest []string, c Commands) {
 		c.RebuildFrontend(target)
 	default:
 		c.Die("Unknown rebuilt subcommand: %s", sub)
+	}
+}
+
+func runShip(rest []string, c Commands) {
+	sub := requireArg(rest, "ship frontend", c)
+	if sub == "frontend" {
+		c.ShipFrontend()
+	} else {
+		c.Die("Unknown ship subcommand: %s", sub)
 	}
 }
 
