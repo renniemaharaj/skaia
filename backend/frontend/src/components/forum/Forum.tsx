@@ -676,7 +676,9 @@ export const Forum: React.FC = () => {
                     {forum.is_locked && (
                       <Lock size={14} className="category-lock-icon" />
                     )}
-                    {forum.name}
+                    {forum.name.length > 20
+                      ? forum.name.slice(0, 15) + "..."
+                      : forum.name}
                   </h3>
                 )}
                 <div
