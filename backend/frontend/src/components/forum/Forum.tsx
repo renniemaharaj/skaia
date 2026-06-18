@@ -219,8 +219,12 @@ export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
   const [hoveredSection, setHoveredSection] = useState<"discussion" | "category" | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isCompactForum, setIsCompactForum] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 880px)").matches
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const effectiveViewMode = isCompactForum ? "list" : viewMode;
 
   const toggleView = (mode: "grid" | "list") => {
     setViewMode(mode);
@@ -245,6 +249,16 @@ export const Forum: React.FC = () => {
   const { subscribe } = useWebSocketSync();
 
   const [guestSandboxMode] = useGuestSandboxMode();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia("(max-width: 880px)");
+    const updateCompactForum = () => setIsCompactForum(mediaQuery.matches);
+    updateCompactForum();
+    mediaQuery.addEventListener("change", updateCompactForum);
+    return () => mediaQuery.removeEventListener("change", updateCompactForum);
+  }, []);
 
   // Load forums from API
   const loadForums = useCallback(
@@ -417,7 +431,9 @@ export const Forum: React.FC = () => {
         className="forum-container"
         title="Forums"
         subtitle="Browse categories, join discussions, and share your thoughts with the community."
-        searchPlaceholder={viewMode === "grid" ? "Search categories..." : "Search threads..."}
+        searchPlaceholder={
+          effectiveViewMode === "grid" ? "Search categories..." : "Search threads..."
+        }
         searchValue={searchQuery}
         onSearchChange={val => {
           setSearchQuery(val);
@@ -443,8 +459,8 @@ export const Forum: React.FC = () => {
               }))
             : forums
         }
-        viewMode={viewMode}
-        onViewModeChange={toggleView}
+        viewMode={effectiveViewMode}
+        onViewModeChange={isCompactForum ? undefined : toggleView}
         customListContent={
           <CategoryThreadsFeed
             threads={listThreads}

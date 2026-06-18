@@ -75,7 +75,8 @@
 
 @media (max-width: 720px) {
   .store-page-shell {
-    padding: 1.25rem 1rem;
+    max-width: none;
+    padding: 1rem min(1rem, 4vw);
   }
 
   .store-page-shell__bar {

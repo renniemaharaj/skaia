@@ -273,8 +273,25 @@
 }
 
 @media (max-width: 480px) {
+  .auth-page {
+    align-items: stretch;
+    min-height: 100svh;
+    padding: 0;
+  }
+
+  .auth-container {
+    max-width: none;
+  }
+
   .auth-card {
-    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    padding: 28px min(1rem, 4vw);
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
   }
 
   .auth-header h1 {

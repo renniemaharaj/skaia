@@ -51,6 +51,7 @@ const ThreadsFeed = ({
         <div className="threads-feed-empty">{emptyMessage}</div>
       ) : (
         <TableView
+          className="threads-feed-table"
           data={threads}
           chrome="embedded"
           rowKey={t => t.id}
@@ -58,10 +59,10 @@ const ThreadsFeed = ({
             {
               header: "Thread",
               width: "minmax(300px, 4fr)",
-              className: "table-view__cell--bold",
+              className: "table-view__cell--bold threads-feed-thread-cell",
               cell: t => (
-                <div style={{ display: "flex", flexDirection: "column", minWidth: 0, gap: "4px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div className="threads-feed-thread">
+                  <div className="threads-feed-thread-title-row">
                     {t.is_pinned && (
                       <span className="threads-feed-pinned-badge" title="Pinned">
                         <svg
@@ -86,22 +87,9 @@ const ThreadsFeed = ({
                         <Share2 size={12} />
                       </span>
                     )}
-                    <span
-                      style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    >
-                      {t.title}
-                    </span>
+                    <span className="threads-feed-thread-title">{t.title}</span>
                   </div>
-                  <div
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--text-secondary)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      fontWeight: "normal",
-                    }}
-                  >
+                  <div className="threads-feed-thread-excerpt">
                     {t.content.replace(/<[^>]*>/g, "").slice(0, 130)}
                     {t.content.length > 130 ? "…" : ""}
                   </div>
@@ -113,6 +101,7 @@ const ThreadsFeed = ({
                   {
                     header: "Author",
                     width: "minmax(150px, 1.5fr)",
+                    className: "threads-feed-author-cell",
                     cell: (t: FeedThread) => (
                       <div
                         onClick={e => e.preventDefault()}
@@ -151,7 +140,7 @@ const ThreadsFeed = ({
             {
               header: "Stats",
               width: "minmax(180px, 2fr)",
-              className: "table-view__cell--muted",
+              className: "table-view__cell--muted threads-feed-stats-cell",
               cell: t => (
                 <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
@@ -169,7 +158,7 @@ const ThreadsFeed = ({
             {
               header: "Date",
               width: "minmax(120px, 1fr)",
-              className: "table-view__cell--muted",
+              className: "table-view__cell--muted threads-feed-date-cell",
               cell: t => formatDate(t.created_at),
             },
           ]}

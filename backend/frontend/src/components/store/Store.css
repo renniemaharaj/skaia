@@ -406,10 +406,40 @@
   height: 260px;
 }
 
-@media (max-width: 760px) {
-  .products-grid--wide {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.store-products-empty.ui-empty {
+  display: flex;
+  min-height: 0;
+  width: fit-content;
+  max-width: min(100%, 32rem);
+  flex-direction: row;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 auto;
+  padding: 0.85rem 1rem;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 8px;
+}
+
+.store-products-empty.ui-empty svg {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+}
+
+.store-products-empty.ui-empty h3,
+.store-products-empty.ui-empty p {
+  margin: 0;
+}
+
+.store-products-empty.ui-empty h3 {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.store-products-empty.ui-empty p {
+  font-size: 0.84rem;
 }
 
 .product-card {
@@ -621,8 +651,64 @@
 }
 
 @media (max-width: 760px) {
+  .products-section {
+    margin-left: calc(-1 * min(1rem, 4vw));
+    margin-right: calc(-1 * min(1rem, 4vw));
+  }
+
+  .products-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    justify-content: stretch;
+  }
+
+  .products-grid--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-card {
+    max-width: none;
+    margin: 0;
+    border-right-width: 1px;
+    border-left-width: 1px;
+    border-radius: 0;
+  }
+
+  .product-card:hover {
+    transform: none;
+  }
+
+  .product-image,
+  .products-grid--wide .product-image {
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    height: clamp(240px, 68vw, 420px);
+  }
+
   .product-image .product-card-meta {
     display: none;
+  }
+
+  .product-content {
+    padding: 18px clamp(18px, 5vw, 24px);
+  }
+
+  .store-products-empty.ui-empty {
+    width: auto;
+    margin: 0 clamp(18px, 5vw, 24px);
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .store-products-empty.ui-empty {
+    display: grid;
+    grid-template-columns: auto 1fr;
+  }
+
+  .store-products-empty.ui-empty p {
+    grid-column: 2;
   }
 }
 

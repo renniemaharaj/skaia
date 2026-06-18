@@ -1,4 +1,4 @@
-import { Package } from "lucide-react";
+import { SearchX, Store as StoreIcon } from "lucide-react";
 import type { Product } from "../../atoms/store";
 import { SkeletonCard } from "../ui/SkeletonCard";
 import { InlineProduct } from "./InlineProduct";
@@ -51,15 +51,17 @@ export function StoreProductGrid({
   }
 
   if (products.length === 0) {
+    const EmptyIcon = canCreateProduct ? StoreIcon : SearchX;
+
     return (
       <div className="products-section">
-        <div className="ui-empty empty-state">
-          <Package size={48} />
-          <h3>No items available</h3>
+        <div className="ui-empty store-products-empty">
+          <EmptyIcon size={20} />
+          <h3>No products</h3>
           <p>
             {canCreateProduct
-              ? "Create your first product with the button above."
-              : "Check back later for new products!"}
+              ? "Create one from the store controls."
+              : "Try another category or check back later."}
           </p>
         </div>
       </div>

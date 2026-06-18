@@ -311,6 +311,25 @@
 
   .forum-category-card {
     width: 100%;
+    min-height: 360px;
+    height: auto;
+  }
+
+  .forum-category-description {
+    -webkit-line-clamp: 3;
+  }
+
+  .thread-actions {
+    opacity: 1;
+  }
+
+  .thread-meta {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .thread-author-stat {
+    display: none;
   }
 
   .modal {
