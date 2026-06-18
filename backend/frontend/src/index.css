@@ -765,9 +765,6 @@ div#root {
   line-height: 1.45;
 }
 
-.compact-form-card input,
-.compact-form-card textarea,
-.compact-form-card select,
 .compact-form-card .form-input {
   padding: 0.75rem;
 }
