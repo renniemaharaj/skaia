@@ -103,6 +103,7 @@ export const ProductPage = () => {
   const [addingToCart, setAddingToCart] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const canEditProduct =
     currentUser?.permissions?.includes("store.product-edit") ||
@@ -262,6 +263,17 @@ export const ProductPage = () => {
     return sum / reviews.length;
   }, [reviews]);
 
+  const media = product ? getProductMediaItems(product) : [];
+  const canCycleMedia = media.length > 1;
+
+  useEffect(() => {
+    if (hasInteracted || !canCycleMedia || media.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveMediaIndex(index => (index + 1) % media.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [hasInteracted, canCycleMedia, media.length]);
+
   if (loadingProduct) {
     return (
       <StorePageShell className="product-page-container" backTo="/store">
@@ -359,20 +371,22 @@ export const ProductPage = () => {
   }
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
-  const media = getProductMediaItems(product);
   const productCategoryName = categories.find(cat => cat.id === product.category_id)?.name;
   const safeActiveMediaIndex =
     media.length > 0 ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1) : 0;
   const activeMedia = media[safeActiveMediaIndex];
   const activeMediaIsVideo =
     activeMedia?.mime_type?.startsWith("video/") || activeMedia?.type === "video";
-  const canCycleMedia = media.length > 1;
+  
   const previousMedia = () => {
+    setHasInteracted(true);
     setActiveMediaIndex(index => (index - 1 + media.length) % media.length);
   };
   const nextMedia = () => {
+    setHasInteracted(true);
     setActiveMediaIndex(index => (index + 1) % media.length);
   };
+
   const formatDateTime = (value: string) =>
     new Date(value).toLocaleString(undefined, {
       month: "short",
@@ -395,6 +409,7 @@ export const ProductPage = () => {
                 onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
+                  setHasInteracted(true);
                   setPreviewMediaIndex(safeActiveMediaIndex);
                 }}
               >
