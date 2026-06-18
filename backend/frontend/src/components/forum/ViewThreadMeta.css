@@ -192,6 +192,11 @@
   .vtm-actions {
     align-items: stretch;
   }
+
+  .vtm-info {
+    flex: none;
+    width: 100%;
+  }
 }
 
 .vtm-icon-avatar {
