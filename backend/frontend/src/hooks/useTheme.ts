@@ -26,18 +26,25 @@ const useTheme = () => {
     const override = detectOverride();
     if (override) {
       setTheme(override);
+      document.documentElement.setAttribute("data-theme", override);
     } else {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      setTheme(mediaQuery.matches ? "dark" : "light");
+      const isDark = mediaQuery.matches;
+      setTheme(isDark ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
     }
   }, []);
 
   useEffect(() => {
+    updateThemeState();
+
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const handleMediaChange = (e: MediaQueryListEvent) => {
       if (!detectOverride()) {
-        setTheme(e.matches ? "dark" : "light");
+        const newTheme = e.matches ? "dark" : "light";
+        setTheme(newTheme);
+        document.documentElement.setAttribute("data-theme", newTheme);
       }
     };
 

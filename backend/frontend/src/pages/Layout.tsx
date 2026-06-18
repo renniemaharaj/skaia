@@ -35,6 +35,7 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
+import { useThemeContext } from "../hooks/theme/useThemeContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -77,13 +78,8 @@ function getStoredRateLimitDefcon(): RateLimitDefconInfo | undefined {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      return savedTheme === "dark";
-    }
-    return false;
-  });
+  const { theme, specifyTheme } = useThemeContext();
+  const isDarkMode = theme === "dark";
   const [layoutMode, setLayoutMode] = useAtom(layoutModeAtom);
 
   // Sync client clock against the server once so relative-time calculations
@@ -211,11 +207,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const contextUser = useAtomValue(contextUserAtom);
 
   const { isPending } = useTransitionNavigation();
-  // Set theme on mount
-  useEffect(() => {
-    const theme = isDarkMode ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [isDarkMode]);
 
   // Validate session on mount - clear stale tokens if session is invalid
   useEffect(() => {
@@ -595,7 +586,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Header
         cartCount={cartCount}
         isDarkMode={isDarkMode}
-        onDarkModeToggle={setIsDarkMode}
+        onDarkModeToggle={(dark) => specifyTheme(dark ? "dark" : "light")}
         layoutMode={effectiveLayoutMode as "application" | "web"}
         onToggleLayoutMode={() =>
           setLayoutMode(layoutMode === "application" ? "web" : "application")
