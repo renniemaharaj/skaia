@@ -73,6 +73,19 @@ func NewAuthUser(user *User, totpEnabled bool) *AuthUser {
 	return &AuthUser{User: *user, TOTPEnabled: totpEnabled}
 }
 
+// RecoveryRequest is an in-memory admin-reviewed account recovery request.
+type RecoveryRequest struct {
+	ID             string    `json:"id"`
+	Email          string    `json:"email"`
+	UserID         int64     `json:"user_id"`
+	Username       string    `json:"username"`
+	DisplayName    string    `json:"display_name"`
+	Status         string    `json:"status"`
+	GuestSessionID string    `json:"guest_session_id,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	ExpiresAt      time.Time `json:"expires_at"`
+}
+
 // EmailVerificationToken is used to verify a user's email address.
 type EmailVerificationToken struct {
 	ID        int64     `json:"id"`
@@ -91,8 +104,6 @@ type PasswordResetToken struct {
 	Used      bool      `json:"used"`
 	CreatedAt time.Time `json:"created_at"`
 }
-
-
 
 type MFAChallengeStatus struct {
 	UserID    int64     `json:"user_id"`

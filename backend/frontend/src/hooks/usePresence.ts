@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { currentUserAtom, socketAtom } from "../atoms/auth";
 import { playerMutedAtom } from "../atoms/media";
+import { getGuestSessionId } from "../utils/guestSession";
 
 /**
  * Sends a presence announcement to the server whenever the route changes or
@@ -38,6 +39,7 @@ export const usePresence = (enabled = true) => {
           user_name: user?.display_name || user?.username || "",
           avatar: user?.avatar_url ?? "",
           is_muted: muteRef.current,
+          guest_session_id: user ? "" : getGuestSessionId(),
         },
       })
     );

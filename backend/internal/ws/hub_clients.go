@@ -1,6 +1,9 @@
 package ws
 
-import "log"
+import (
+	"log"
+	"time"
+)
 
 // handleRegister assigns a ClientID and session to the new client, then adds
 // it to the hub's client map. Sessions are shared buckets used for chat,
@@ -49,6 +52,7 @@ func (h *Hub) handleRegister(client *Client) {
 	h.sessionMu.Unlock()
 
 	log.Printf("ws: joined  %s (session %d)", clientLabel(client), client.SessionID)
+	h.sendJoinLeaveChat(client, "join")
 }
 
 // handleUnregister releases a client's session slot, removes it from all
@@ -73,9 +77,9 @@ func (h *Hub) handleUnregister(client *Client) {
 	h.sessionMu.Unlock()
 
 	h.mu.Lock()
-	defer h.mu.Unlock()
 
 	if _, ok := h.clients[client]; !ok {
+		h.mu.Unlock()
 		return
 	}
 
@@ -101,7 +105,46 @@ func (h *Hub) handleUnregister(client *Client) {
 		}
 		delete(h.clientSubs, client)
 	}
+	h.mu.Unlock()
+
 	log.Printf("ws: left    %s", clientLabel(client))
+	if client.UserID == 0 && client.GuestSessionID != "" && h.OnGuestSessionClosed != nil {
+		go h.OnGuestSessionClosed(client.GuestSessionID)
+	}
+	h.sendJoinLeaveChat(client, "leave")
+}
+
+func (h *Hub) sendJoinLeaveChat(client *Client, kind string) {
+	if client.SessionID == 0 {
+		return
+	}
+	isGuest := client.UserID == 0
+	userID := client.UserID
+	name := client.UserName
+	if isGuest {
+		userID = -client.ClientID
+		if name == "" {
+			name = "Guest"
+		}
+	} else if name == "" {
+		name = "User"
+	}
+	action := "joined"
+	if kind == "leave" {
+		action = "left"
+	}
+	h.SendGlobalChat(GlobalChatMessage{
+		UserID:         userID,
+		UserName:       name,
+		Avatar:         client.Avatar,
+		Roles:          client.Roles,
+		Content:        name + " has " + action,
+		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
+		IsGuest:        isGuest,
+		Kind:           kind,
+		GuestSessionID: client.GuestSessionID,
+		SessionID:      client.SessionID,
+	})
 }
 
 func (h *Hub) handleSubscribe(sub ResourceSubscription) {

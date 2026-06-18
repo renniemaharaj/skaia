@@ -19,12 +19,14 @@ type Client struct {
 	ClientID    int64 // unique per connection, assigned by Hub at registration
 	UserID      int64
 	Permissions []string
+	Roles       []string
 	SessionID   int64 // session bucket for chat, presence & cursor fan-out
 	// Presence fields - written under Hub.mu.Lock via presenceUpdates.
-	Route    string
-	UserName string
-	Avatar   string
-	IsMuted  bool
+	Route          string
+	UserName       string
+	Avatar         string
+	IsMuted        bool
+	GuestSessionID string
 	// Per-client rate limiters - used only from ReadPump (single goroutine).
 	chatLimit      rateBucket
 	cursorLimit    rateBucket
@@ -219,10 +221,11 @@ func (c *Client) handleUnsubscribe(msg Message) {
 // handlePresence forwards a presence announcement to the hub for processing.
 func (c *Client) handlePresence(msg Message) {
 	type presencePayload struct {
-		Route    string `json:"route"`
-		UserName string `json:"user_name"`
-		Avatar   string `json:"avatar"`
-		IsMuted  bool   `json:"is_muted"`
+		Route          string `json:"route"`
+		UserName       string `json:"user_name"`
+		Avatar         string `json:"avatar"`
+		IsMuted        bool   `json:"is_muted"`
+		GuestSessionID string `json:"guest_session_id"`
 	}
 
 	var p presencePayload
@@ -230,7 +233,7 @@ func (c *Client) handlePresence(msg Message) {
 		return
 	}
 	select {
-	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar, IsMuted: p.IsMuted}:
+	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar, IsMuted: p.IsMuted, GuestSessionID: p.GuestSessionID}:
 	default:
 	}
 }
@@ -341,13 +344,16 @@ func (c *Client) handleGlobalChat(msg Message) {
 
 	now := time.Now()
 	c.Hub.SendGlobalChat(GlobalChatMessage{
-		UserID:    userID,
-		UserName:  name,
-		Avatar:    c.Avatar,
-		Content:   p.Content,
-		CreatedAt: now.UTC().Format(time.RFC3339),
-		IsGuest:   isGuest,
-		SessionID: c.SessionID,
+		UserID:         userID,
+		UserName:       name,
+		Avatar:         c.Avatar,
+		Roles:          c.Roles,
+		Content:        p.Content,
+		CreatedAt:      now.UTC().Format(time.RFC3339),
+		IsGuest:        isGuest,
+		Kind:           "message",
+		GuestSessionID: c.GuestSessionID,
+		SessionID:      c.SessionID,
 	})
 }
 

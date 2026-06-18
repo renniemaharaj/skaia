@@ -1,53 +1,182 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/models"
 )
 
 func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email string `json:"email"`
+		Email          string `json:"email"`
+		GuestSessionID string `json:"guest_session_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
 		utils.WriteError(w, http.StatusBadRequest, "email required")
 		return
 	}
 
-	if h.email == nil || !h.email.Configured() {
-		log.Println("user.Handler.forgotPassword: email not configured")
-		utils.WriteError(w, http.StatusServiceUnavailable, "email service not configured — contact an administrator to reset your password")
-		return
-	}
-
-	// Always return success to avoid email enumeration.
-	defer utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"status": "if the email exists, a reset link has been sent",
-	})
-
-	user, err := h.svc.GetByEmail(r.Context(), req.Email)
+	recoveryReq, alreadyPending, err := h.svc.CreateRecoveryRequest(r.Context(), req.Email, ievents.ClientIP(r), req.GuestSessionID)
 	if err != nil {
-		return // user not found - silent
-	}
-
-	token, err := h.svc.CreatePasswordResetToken(r.Context(), user.ID)
-	if err != nil {
-		log.Printf("user.Handler.forgotPassword: create token: %v", err)
-		return
-	}
-
-	go func(uname, uemail, tok string) {
-		html := iemail.PasswordResetHTML(uname, tok)
-		if err := h.email.Send(uemail, "Reset Your Password", html); err != nil {
-			log.Printf("user.Handler.forgotPassword: send email to %s: %v", uemail, err)
+		if errors.Is(err, ErrRecoveryRequestRateLimited) {
+			utils.WriteError(w, http.StatusTooManyRequests, err.Error())
+			return
 		}
-	}(user.Username, user.Email, token)
+		if errors.Is(err, ErrRecoveryRequestAlreadyPending) {
+			utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+				"status":  "already_pending",
+				"message": err.Error(),
+				"request": recoveryReq,
+			})
+			return
+		}
+		log.Printf("user.Handler.forgotPassword: create recovery request: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to request account recovery")
+		return
+	}
+	if recoveryReq != nil && !alreadyPending {
+		h.broadcastRecoveryRequest("created", recoveryReq)
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+			"status":  "created",
+			"message": "Your recovery request is pending administrator review.",
+			"request": recoveryReq,
+		})
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"status": "if the email exists, an administrator can review the recovery request",
+	})
+}
+
+func (h *Handler) ExpireRecoveryRequestsForGuestSession(guestSessionID string) {
+	expired := h.svc.ExpireRecoveryRequestsByGuestSession(context.Background(), guestSessionID)
+	for _, req := range expired {
+		h.broadcastRecoveryRequest("expired", req)
+	}
+}
+
+func (h *Handler) broadcastRecoveryRequest(action string, data interface{}) {
+	if h.hub == nil {
+		return
+	}
+	h.hub.BroadcastRecoveryRequest(data, action)
+}
+
+func (h *Handler) ListRecoveryRequests(w http.ResponseWriter, r *http.Request) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, h.svc.ListRecoveryRequests(r.Context()))
+}
+
+func (h *Handler) AcceptRecoveryRequest(w http.ResponseWriter, r *http.Request) {
+	h.resolveRecoveryRequest(w, r, true)
+}
+
+func (h *Handler) RejectRecoveryRequest(w http.ResponseWriter, r *http.Request) {
+	h.resolveRecoveryRequest(w, r, false)
+}
+
+func (h *Handler) resolveRecoveryRequest(w http.ResponseWriter, r *http.Request, accept bool) {
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if ok, _ := h.svc.HasPermission(r.Context(), actorID, "user.manage-others"); !ok {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	requestID := chi.URLParam(r, "requestID")
+	req, err := h.svc.GetRecoveryRequest(r.Context(), requestID)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrRecoveryRequestExpired):
+			utils.WriteError(w, http.StatusGone, "recovery request expired")
+		case errors.Is(err, ErrRecoveryRequestNotFound):
+			utils.WriteError(w, http.StatusNotFound, "recovery request not found")
+		default:
+			utils.WriteError(w, http.StatusInternalServerError, "failed to resolve recovery request")
+		}
+		return
+	}
+
+	if !h.userSvc.CheckManagePowerLevel(w, actorID, req.UserID) {
+		return
+	}
+
+	status := "rejected"
+	if accept {
+		status = "accepted"
+	}
+	req, err = h.svc.ResolveRecoveryRequest(r.Context(), requestID, status)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "recovery request not found")
+		return
+	}
+
+	if !accept {
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:     actorID,
+			Activity:   ievents.ActUserUpdated,
+			Resource:   ievents.ResUser,
+			ResourceID: req.UserID,
+			IP:         ievents.ClientIP(r),
+			Meta:       map[string]interface{}{"recovery_request": "rejected", "email": req.Email},
+		})
+		h.broadcastRecoveryRequest("rejected", req)
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "rejected"})
+		return
+	}
+
+	user, accessToken, refreshToken, err := h.svc.Impersonate(r.Context(), req.UserID)
+	if err != nil {
+		log.Printf("auth.Handler.acceptRecoveryRequest: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to open recovery session")
+		return
+	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     actorID,
+		Activity:   ievents.ActUserLoggedIn,
+		Resource:   ievents.ResUser,
+		ResourceID: req.UserID,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"recovery_request": "accepted", "email": req.Email},
+	})
+	delivered := false
+	if h.hub != nil {
+		delivered = h.hub.PushRecoveryAcceptedToGuestSession(req.GuestSessionID, map[string]interface{}{
+			"request": req,
+			"auth": models.AuthResponse{
+				AccessToken:  accessToken,
+				RefreshToken: refreshToken,
+				User:         h.newAuthUser(r.Context(), user),
+			},
+		})
+	}
+	h.broadcastRecoveryRequest("accepted", req)
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"status":    "accepted",
+		"delivered": delivered,
+	})
 }
 
 func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {

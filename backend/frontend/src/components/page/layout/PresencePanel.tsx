@@ -23,6 +23,7 @@ import { type OnlineUser, onlineUsersAtom, pendingTpUserAtom } from "../../../at
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../input/Input";
+import UserInlineCard from "../../user/UserInlineCard";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./PresencePanel.css";
@@ -404,17 +405,34 @@ const PresencePanel = () => {
   const ChatBubble = ({ msg }: { msg: GlobalChatMessage }) => {
     const isMe = !msg.is_guest && String(msg.user_id) === String(currentUser?.id);
     const time = formatLocalTime(msg.created_at);
-    const nameEl = msg.is_guest ? (
-      <span className="pp-chat-author pp-chat-author--guest">Guest</span>
-    ) : (
-      <Link to={`/users/${msg.user_id}`} className="pp-chat-author">
-        {msg.user_name || `#${msg.user_id}`}
-      </Link>
+    const isSystemEvent = msg.kind === "join" || msg.kind === "leave";
+    const userCard = (
+      <UserInlineCard
+        userId={msg.is_guest ? undefined : msg.user_id}
+        name={msg.is_guest ? msg.user_name || "Guest" : msg.user_name || `#${msg.user_id}`}
+        avatar={msg.avatar || undefined}
+        roles={msg.roles}
+        isGuest={msg.is_guest}
+        compact
+      />
     );
+
+    if (isSystemEvent) {
+      return (
+        <div className="pp-chat-system">
+          {userCard}
+          <span className="pp-chat-system__text">
+            has {msg.kind === "join" ? "joined" : "left"}
+          </span>
+          <span className="pp-chat-system__time">{time}</span>
+        </div>
+      );
+    }
+
     return (
       <div className={`pp-chat-bubble${isMe ? " pp-chat-bubble--me" : ""}`}>
         <div className="pp-chat-meta">
-          {nameEl}
+          {userCard}
           <span className="pp-chat-time">{time}</span>
         </div>
         <p className="pp-chat-content">{msg.content}</p>

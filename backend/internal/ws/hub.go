@@ -52,11 +52,12 @@ func loadHubConfig() HubConfig {
 
 // ClientPresence carries a presence announcement from a client, processed in Run.
 type ClientPresence struct {
-	Client   *Client
-	Route    string
-	UserName string
-	Avatar   string
-	IsMuted  bool
+	Client         *Client
+	Route          string
+	UserName       string
+	Avatar         string
+	IsMuted        bool
+	GuestSessionID string
 }
 
 // CursorBroadcast carries a cursor position from a client to be relayed to others on the same route.
@@ -140,7 +141,8 @@ type Hub struct {
 	MentionProcessor func(content string, senderID int64, message string, route string)
 
 	// GrengoActionHandler, when set, is called when a client sends a grengo action.
-	GrengoActionHandler func(action []byte)
+	GrengoActionHandler  func(action []byte)
+	OnGuestSessionClosed func(guestSessionID string)
 
 	// channels
 	clients         map[*Client]bool
@@ -311,6 +313,7 @@ func (h *Hub) Run() {
 				cp.Client.UserName = cp.UserName
 				cp.Client.Avatar = cp.Avatar
 				cp.Client.IsMuted = cp.IsMuted
+				cp.Client.GuestSessionID = cp.GuestSessionID
 				h.mu.Unlock()
 				h.markPresenceDirty()
 				h.sendMediaSyncToClient(cp.Client)
@@ -444,6 +447,29 @@ func (h *Hub) SendToUser(userID int64, msg *Message) {
 			}
 		}
 	}
+}
+
+// SendToGuestSession delivers a targeted message to all guest connections
+// carrying the supplied browser-local guest session id.
+func (h *Hub) SendToGuestSession(guestSessionID string, msg *Message) bool {
+	if guestSessionID == "" {
+		return false
+	}
+	delivered := false
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.clients {
+		if client.UserID != 0 || client.GuestSessionID != guestSessionID {
+			continue
+		}
+		select {
+		case client.Send <- msg:
+			delivered = true
+		default:
+			log.Printf("ws: send buffer full for guest session %s", guestSessionID)
+		}
+	}
+	return delivered
 }
 
 // RegisterClient registers a client with the hub.

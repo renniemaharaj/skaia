@@ -13,6 +13,15 @@
   max-width: 420px;
 }
 
+.auth-container--wide {
+  max-width: 860px;
+}
+
+.auth-container--wide .auth-card {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
 .auth-bg-decoration {
   position: absolute;
   inset: 0;
@@ -272,6 +281,145 @@
   opacity: 0.6;
 }
 
+.recovery-own-request {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.recovery-own-request span:last-child {
+  color: var(--text-secondary);
+}
+
+.recovery-requests-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  box-shadow: var(--shadow-hover);
+}
+
+.recovery-requests-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 12px;
+}
+
+.recovery-requests-panel h2 {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.recovery-requests-panel p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.recovery-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, var(--text-secondary));
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.recovery-action-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--text-primary);
+}
+
+.recovery-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.recovery-action-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+.recovery-action-btn--accept {
+  color: var(--success-color);
+  border-color: color-mix(in srgb, var(--success-color) 38%, var(--border-color));
+  background: color-mix(in srgb, var(--success-color) 14%, var(--bg-secondary));
+}
+
+.recovery-action-btn--reject {
+  color: var(--error-color);
+  border-color: color-mix(in srgb, var(--error-color) 34%, var(--border-color));
+  background: color-mix(in srgb, var(--error-color) 12%, var(--bg-secondary));
+}
+
+.recovery-action-btn svg {
+  display: block;
+  flex: 0 0 auto;
+  stroke-width: 2.25;
+}
+
+.recovery-action-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.recovery-account-cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.recovery-account-cell span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recovery-account-cell span:first-child {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.recovery-account-cell span:last-child {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.recovery-empty-state {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 @media (max-width: 480px) {
   .auth-page {
     align-items: stretch;
@@ -280,6 +428,10 @@
   }
 
   .auth-container {
+    max-width: none;
+  }
+
+  .auth-container--wide .auth-card {
     max-width: none;
   }
 
@@ -292,6 +444,11 @@
     border-left: 0;
     border-right: 0;
     border-radius: 0;
+  }
+
+  .recovery-requests-panel {
+    margin-top: 12px;
+    padding: 12px;
   }
 
   .auth-header h1 {

@@ -1,0 +1,83 @@
+.user-inline-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+}
+
+.user-inline-card--compact {
+  padding: 0.2rem 0.3rem;
+}
+
+.user-inline-card--guest {
+  color: var(--text-secondary);
+}
+
+.user-inline-card__avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.user-inline-card__online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--bg-secondary);
+  border-radius: 50%;
+  background: var(--success-color);
+}
+
+.user-inline-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.user-inline-card__name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-inline-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.user-inline-card__status {
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+.user-inline-card__roles {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.user-inline-card__role {
+  max-width: 6rem;
+  overflow: hidden;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

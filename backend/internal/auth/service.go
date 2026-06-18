@@ -5,9 +5,13 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/base32"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/pquerna/otp/totp"
 	"github.com/skaia/backend/models"
@@ -15,8 +19,6 @@ import (
 
 	ijwt "github.com/skaia/backend/internal/jwt"
 )
-
-
 
 // Register registers a new user and returns user, access token, and refresh token.
 func (s *Service) Register(ctx context.Context, req *models.RegisterRequest) (*models.User, string, string, error) {
@@ -65,6 +67,24 @@ func (s *Service) Login(ctx context.Context, email, password string) (*models.Us
 		return nil, "", err
 	}
 	return user, accessToken, nil
+}
+
+// Impersonate issues tokens for targetUserID after the HTTP layer has
+// completed authorization checks for the acting administrator.
+func (s *Service) Impersonate(ctx context.Context, targetUserID int64) (*models.User, string, string, error) {
+	user, err := s.userService.GetByID(targetUserID)
+	if err != nil {
+		return nil, "", "", errors.New("user not found")
+	}
+	accessToken, err := s.generateAccessToken(ctx, user)
+	if err != nil {
+		return nil, "", "", err
+	}
+	refreshToken, err := s.generateRefreshToken(ctx, user)
+	if err != nil {
+		return nil, "", "", err
+	}
+	return user, accessToken, refreshToken, nil
 }
 
 // VerifyTOTP verifies a TOTP code for a user.
@@ -261,6 +281,13 @@ func (s *Service) AdminGenerateBackupCodes(ctx context.Context, userID int64) ([
 
 var ErrInvalidPassword = errors.New("invalid password")
 var ErrInvalidTOTPCode = errors.New("invalid TOTP code")
+var ErrRecoveryRequestRateLimited = errors.New("please wait before requesting account recovery again")
+var ErrRecoveryRequestNotFound = errors.New("recovery request not found")
+var ErrRecoveryRequestExpired = errors.New("recovery request expired")
+var ErrRecoveryRequestAlreadyPending = errors.New("you already have a recovery request pending")
+
+const recoveryRequestTTL = 30 * time.Minute
+const recoveryRequestCooldown = 2 * time.Minute
 
 type UserService interface {
 	GetByID(id int64) (*models.User, error)
@@ -270,12 +297,184 @@ type UserService interface {
 }
 
 type Service struct {
-	repo        Repository
-	userService UserService
+	repo             Repository
+	userService      UserService
+	recoveryMu       sync.Mutex
+	recoveryRequests map[string]*models.RecoveryRequest
+	recoveryLastSeen map[string]time.Time
 }
 
 func NewService(r Repository, userService UserService) *Service {
-	return &Service{repo: r, userService: userService}
+	return &Service{
+		repo:             r,
+		userService:      userService,
+		recoveryRequests: make(map[string]*models.RecoveryRequest),
+		recoveryLastSeen: make(map[string]time.Time),
+	}
+}
+
+func recoveryRateKey(kind, value string) string {
+	return kind + ":" + strings.ToLower(strings.TrimSpace(value))
+}
+
+func (s *Service) cleanupRecoveryRequestsLocked(now time.Time) {
+	for id, req := range s.recoveryRequests {
+		if !now.Before(req.ExpiresAt) || req.Status != "pending" {
+			delete(s.recoveryRequests, id)
+		}
+	}
+	for key, seen := range s.recoveryLastSeen {
+		if now.Sub(seen) > recoveryRequestTTL {
+			delete(s.recoveryLastSeen, key)
+		}
+	}
+}
+
+func newRecoveryRequestID() string {
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf)
+}
+
+// CreateRecoveryRequest records a short-lived recovery request for an existing
+// account. Missing accounts are silently ignored by callers to avoid public
+// account enumeration while still applying rate limits.
+func (s *Service) CreateRecoveryRequest(ctx context.Context, email, ip, guestSessionID string) (*models.RecoveryRequest, bool, error) {
+	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
+	if normalizedEmail == "" {
+		return nil, false, errors.New("email required")
+	}
+
+	now := time.Now()
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+	s.cleanupRecoveryRequestsLocked(now)
+
+	user, err := s.userService.GetByEmail(normalizedEmail)
+	if err != nil {
+		for _, key := range []string{
+			recoveryRateKey("email", normalizedEmail),
+			recoveryRateKey("ip", ip),
+		} {
+			if seen, ok := s.recoveryLastSeen[key]; ok && now.Sub(seen) < recoveryRequestCooldown {
+				return nil, false, ErrRecoveryRequestRateLimited
+			}
+			s.recoveryLastSeen[key] = now
+		}
+		return nil, false, nil
+	}
+
+	for _, req := range s.recoveryRequests {
+		if req.UserID == user.ID && req.Status == "pending" {
+			copyReq := *req
+			return &copyReq, true, ErrRecoveryRequestAlreadyPending
+		}
+	}
+
+	for _, key := range []string{
+		recoveryRateKey("email", normalizedEmail),
+		recoveryRateKey("ip", ip),
+	} {
+		if seen, ok := s.recoveryLastSeen[key]; ok && now.Sub(seen) < recoveryRequestCooldown {
+			return nil, false, ErrRecoveryRequestRateLimited
+		}
+		s.recoveryLastSeen[key] = now
+	}
+
+	id := newRecoveryRequestID()
+	req := &models.RecoveryRequest{
+		ID:             id,
+		Email:          normalizedEmail,
+		UserID:         user.ID,
+		Username:       user.Username,
+		DisplayName:    user.DisplayName,
+		Status:         "pending",
+		GuestSessionID: strings.TrimSpace(guestSessionID),
+		CreatedAt:      now,
+		ExpiresAt:      now.Add(recoveryRequestTTL),
+	}
+	s.recoveryRequests[id] = req
+	copyReq := *req
+	return &copyReq, false, nil
+}
+
+func (s *Service) ListRecoveryRequests(ctx context.Context) []*models.RecoveryRequest {
+	now := time.Now()
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+	s.cleanupRecoveryRequestsLocked(now)
+
+	requests := make([]*models.RecoveryRequest, 0, len(s.recoveryRequests))
+	for _, req := range s.recoveryRequests {
+		copyReq := *req
+		requests = append(requests, &copyReq)
+	}
+	sort.Slice(requests, func(i, j int) bool {
+		return requests[i].CreatedAt.After(requests[j].CreatedAt)
+	})
+	return requests
+}
+
+func (s *Service) GetRecoveryRequest(ctx context.Context, requestID string) (*models.RecoveryRequest, error) {
+	now := time.Now()
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+	s.cleanupRecoveryRequestsLocked(now)
+
+	req, ok := s.recoveryRequests[requestID]
+	if !ok {
+		return nil, ErrRecoveryRequestNotFound
+	}
+	if !now.Before(req.ExpiresAt) {
+		delete(s.recoveryRequests, requestID)
+		return nil, ErrRecoveryRequestExpired
+	}
+	copyReq := *req
+	return &copyReq, nil
+}
+
+func (s *Service) ResolveRecoveryRequest(ctx context.Context, requestID, status string) (*models.RecoveryRequest, error) {
+	now := time.Now()
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+	s.cleanupRecoveryRequestsLocked(now)
+
+	req, ok := s.recoveryRequests[requestID]
+	if !ok {
+		return nil, ErrRecoveryRequestNotFound
+	}
+	if !now.Before(req.ExpiresAt) {
+		delete(s.recoveryRequests, requestID)
+		return nil, ErrRecoveryRequestExpired
+	}
+	req.Status = status
+	copyReq := *req
+	delete(s.recoveryRequests, requestID)
+	return &copyReq, nil
+}
+
+func (s *Service) ExpireRecoveryRequestsByGuestSession(ctx context.Context, guestSessionID string) []*models.RecoveryRequest {
+	guestSessionID = strings.TrimSpace(guestSessionID)
+	if guestSessionID == "" {
+		return nil
+	}
+
+	s.recoveryMu.Lock()
+	defer s.recoveryMu.Unlock()
+
+	expired := make([]*models.RecoveryRequest, 0)
+	for id, req := range s.recoveryRequests {
+		if req.GuestSessionID != guestSessionID || req.Status != "pending" {
+			continue
+		}
+		req.Status = "expired"
+		copyReq := *req
+		expired = append(expired, &copyReq)
+		delete(s.recoveryRequests, id)
+	}
+	return expired
 }
 
 // RegisterCredential creates a new credential for a user.

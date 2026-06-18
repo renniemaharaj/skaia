@@ -34,11 +34,13 @@ func (h *Hub) doPresenceBroadcast() {
 			presenceID = client.UserID
 		}
 		pu := PresenceUser{
-			UserID:   presenceID,
-			UserName: client.UserName,
-			Avatar:   client.Avatar,
-			Route:    client.Route,
-			IsMuted:  client.IsMuted,
+			UserID:         presenceID,
+			UserName:       client.UserName,
+			Avatar:         client.Avatar,
+			Route:          client.Route,
+			IsMuted:        client.IsMuted,
+			Roles:          client.Roles,
+			GuestSessionID: client.GuestSessionID,
 		}
 		existing, exists := sd.seen[presenceID]
 		if !exists || (pu.UserName != "" && existing.UserName == "") {

@@ -10,73 +10,80 @@ import (
 type MessageType string
 
 const (
-	StoreSync            MessageType = "store:sync"
-	StoreUpdate          MessageType = "store:update"
-	ForumSync            MessageType = "forum:sync"
-	ForumUpdate          MessageType = "forum:update"
-	UserUpdate           MessageType = "user:update"
-	UserJoin             MessageType = "user:join"
-	UserLeave            MessageType = "user:leave"
-	Subscribe            MessageType = "subscribe"
-	Unsubscribe          MessageType = "unsubscribe"
-	Ping                 MessageType = "ping"
-	Presence             MessageType = "presence"               // client => server: announce route
-	PresenceSync         MessageType = "presence:update"        // server => client: online list
-	Tp                   MessageType = "tp"                     // client => server => target: teleport request
-	GlobalChat           MessageType = "global:chat"            // bidirectional: send / receive global chat
-	GlobalChatHistory    MessageType = "global:chat:history"    // server => client on connect: recent history
-	InboxUpdate          MessageType = "inbox:update"           // server => subscribed clients: conversation changed
-	InboxMsg             MessageType = "inbox:message"          // server => recipient: unread badge ping
-	NotificationMsg      MessageType = "notification"           // server => client: incoming user notification
-	NotificationUpdate   MessageType = "notification:update"    // server => client: notification read/deleted
-	NotificationSync     MessageType = "notification:sync"      // server => client on connect: notification bootstrap
-	CartUpdate           MessageType = "cart:update"            // server => client: user's cart changed
-	OrderUpdate          MessageType = "order:update"           // server => client: order created/updated/deleted
-	ConfigUpdate         MessageType = "config:update"          // server => all: branding/seo/footer/landing changed
-	PageUpdate           MessageType = "page:update"            // server => all: CMS page created/updated/deleted
-	Cursor               MessageType = "cursor:update"          // client => server => same-route clients: cursor position
-	EventsUpdate         MessageType = "events:update"          // server => admin clients: new audit event
-	VoiceControl         MessageType = "voice:control"          // client => server => client: admin voice chat controls
-	MediaAdd             MessageType = "media:add"              // client => server: add youtube video
-	MediaRemove          MessageType = "media:remove"           // client => server: remove queue item
-	MediaAction          MessageType = "media:action"           // client => server: pause/resume queue
-	MediaEnded           MessageType = "media:ended"            // client => server: current video ended
-	MediaTransitionStart MessageType = "media:transition:start" // client => server: start transition mixing
-	MediaTransition      MessageType = "media:transition"       // client => server: manual transition
-	MediaHistoryClear    MessageType = "media:history:clear"    // client => server: clear route history
-	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
-	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
-	MediaScraperJobs     MessageType = "mediascraper:jobs"      // server => all: update active jobs count
-	GrengoJobUpdate      MessageType = "grengo:job_update"      // server => client: async job update
-	GrengoJobAction      MessageType = "grengo:action"          // client => server => grengo: trigger export
-	GrengoStatsUpdate    MessageType = "grengo:stats_update"    // server => client: live stats stream
-	GrengoStorageUpdate  MessageType = "grengo:storage_update"  // server => client: live storage stream
-	GrengoHardwareUpdate MessageType = "grengo:hardware_update" // server => client: live hardware stream
-	MediaScraperResult   MessageType = "mediascraper:result"    // server => all: job completion
-	MediaScraperStarted  MessageType = "mediascraper:started"   // server => all: job started processing
-	MediaScraperPending  MessageType = "mediascraper:pending"   // server => all: job cleared and back to pending
-	ErrorMessage         MessageType = "error"
+	StoreSync               MessageType = "store:sync"
+	StoreUpdate             MessageType = "store:update"
+	ForumSync               MessageType = "forum:sync"
+	ForumUpdate             MessageType = "forum:update"
+	UserUpdate              MessageType = "user:update"
+	UserJoin                MessageType = "user:join"
+	UserLeave               MessageType = "user:leave"
+	Subscribe               MessageType = "subscribe"
+	Unsubscribe             MessageType = "unsubscribe"
+	Ping                    MessageType = "ping"
+	Presence                MessageType = "presence"                  // client => server: announce route
+	PresenceSync            MessageType = "presence:update"           // server => client: online list
+	Tp                      MessageType = "tp"                        // client => server => target: teleport request
+	GlobalChat              MessageType = "global:chat"               // bidirectional: send / receive global chat
+	GlobalChatHistory       MessageType = "global:chat:history"       // server => client on connect: recent history
+	InboxUpdate             MessageType = "inbox:update"              // server => subscribed clients: conversation changed
+	InboxMsg                MessageType = "inbox:message"             // server => recipient: unread badge ping
+	NotificationMsg         MessageType = "notification"              // server => client: incoming user notification
+	NotificationUpdate      MessageType = "notification:update"       // server => client: notification read/deleted
+	NotificationSync        MessageType = "notification:sync"         // server => client on connect: notification bootstrap
+	CartUpdate              MessageType = "cart:update"               // server => client: user's cart changed
+	OrderUpdate             MessageType = "order:update"              // server => client: order created/updated/deleted
+	RecoveryRequestUpdate   MessageType = "recovery_request:update"   // server => admins: account recovery request changed
+	RecoveryRequestAccepted MessageType = "recovery_request:accepted" // server => requester: account recovery approved
+	ConfigUpdate            MessageType = "config:update"             // server => all: branding/seo/footer/landing changed
+	PageUpdate              MessageType = "page:update"               // server => all: CMS page created/updated/deleted
+	Cursor                  MessageType = "cursor:update"             // client => server => same-route clients: cursor position
+	EventsUpdate            MessageType = "events:update"             // server => admin clients: new audit event
+	VoiceControl            MessageType = "voice:control"             // client => server => client: admin voice chat controls
+	MediaAdd                MessageType = "media:add"                 // client => server: add youtube video
+	MediaRemove             MessageType = "media:remove"              // client => server: remove queue item
+	MediaAction             MessageType = "media:action"              // client => server: pause/resume queue
+	MediaEnded              MessageType = "media:ended"               // client => server: current video ended
+	MediaTransitionStart    MessageType = "media:transition:start"    // client => server: start transition mixing
+	MediaTransition         MessageType = "media:transition"          // client => server: manual transition
+	MediaHistoryClear       MessageType = "media:history:clear"       // client => server: clear route history
+	MediaSync               MessageType = "media:sync"                // server => client: full queue sync
+	MediaSfx                MessageType = "media:sfx"                 // client => server => room: play sound effect
+	MediaScraperJobs        MessageType = "mediascraper:jobs"         // server => all: update active jobs count
+	GrengoJobUpdate         MessageType = "grengo:job_update"         // server => client: async job update
+	GrengoJobAction         MessageType = "grengo:action"             // client => server => grengo: trigger export
+	GrengoStatsUpdate       MessageType = "grengo:stats_update"       // server => client: live stats stream
+	GrengoStorageUpdate     MessageType = "grengo:storage_update"     // server => client: live storage stream
+	GrengoHardwareUpdate    MessageType = "grengo:hardware_update"    // server => client: live hardware stream
+	MediaScraperResult      MessageType = "mediascraper:result"       // server => all: job completion
+	MediaScraperStarted     MessageType = "mediascraper:started"      // server => all: job started processing
+	MediaScraperPending     MessageType = "mediascraper:pending"      // server => all: job cleared and back to pending
+	ErrorMessage            MessageType = "error"
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.
 type PresenceUser struct {
-	UserID   int64  `json:"user_id"`
-	UserName string `json:"user_name"`
-	Avatar   string `json:"avatar"`
-	Route    string `json:"route"`
-	IsMuted  bool   `json:"is_muted"`
+	UserID         int64    `json:"user_id"`
+	UserName       string   `json:"user_name"`
+	Avatar         string   `json:"avatar"`
+	Route          string   `json:"route"`
+	IsMuted        bool     `json:"is_muted"`
+	Roles          []string `json:"roles,omitempty"`
+	GuestSessionID string   `json:"guest_session_id,omitempty"`
 }
 
 // GlobalChatMessage is a single message in the session chat channel.
 type GlobalChatMessage struct {
-	ID        int64  `json:"id"`
-	UserID    int64  `json:"user_id"`
-	UserName  string `json:"user_name"`
-	Avatar    string `json:"avatar"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"created_at"`
-	IsGuest   bool   `json:"is_guest"`
-	SessionID int64  `json:"-"` // internal routing - not serialised to clients
+	ID             int64    `json:"id"`
+	UserID         int64    `json:"user_id"`
+	UserName       string   `json:"user_name"`
+	Avatar         string   `json:"avatar"`
+	Roles          []string `json:"roles,omitempty"`
+	Content        string   `json:"content"`
+	CreatedAt      string   `json:"created_at"`
+	IsGuest        bool     `json:"is_guest"`
+	Kind           string   `json:"kind,omitempty"`
+	GuestSessionID string   `json:"guest_session_id,omitempty"`
+	SessionID      int64    `json:"-"` // internal routing - not serialised to clients
 }
 
 // Message represents a WebSocket message.

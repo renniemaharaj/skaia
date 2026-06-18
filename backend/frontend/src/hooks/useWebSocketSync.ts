@@ -970,6 +970,31 @@ export const useWebSocketSync = () => {
             }
           }
 
+          if (message.type === "recovery_request:update") {
+            window.dispatchEvent(
+              new CustomEvent("recovery_request:update", {
+                detail: payload,
+              })
+            );
+          }
+
+          if (message.type === "recovery_request:accepted") {
+            const auth = (payload as any)?.data?.auth;
+            if (auth?.access_token && auth?.user) {
+              setAccessToken(auth.access_token);
+              if (auth.refresh_token) {
+                setRefreshToken(auth.refresh_token);
+              }
+              setCurrentUser(auth.user);
+              toast.success("Your recovery request was accepted");
+              window.dispatchEvent(
+                new CustomEvent("recovery_request:accepted", {
+                  detail: payload,
+                })
+              );
+            }
+          }
+
           // Notifications
           if (message.type === "notification") {
             const notif = payload as AppNotification;

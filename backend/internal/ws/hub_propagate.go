@@ -75,6 +75,22 @@ func (h *Hub) BroadcastOrderToPermission(permission string, data interface{}, ac
 	h.BroadcastToPermission(permission, &Message{Type: OrderUpdate, Payload: payload})
 }
 
+func (h *Hub) BroadcastRecoveryRequest(data interface{}, action string) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.BroadcastToPermission("user.manage-others", &Message{Type: RecoveryRequestUpdate, Payload: payload})
+}
+
+func (h *Hub) PushRecoveryAcceptedToGuestSession(guestSessionID string, data interface{}) bool {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "accepted",
+		"data":   data,
+	})
+	return h.SendToGuestSession(guestSessionID, &Message{Type: RecoveryRequestAccepted, Payload: payload})
+}
+
 // BroadcastConfig sends a site-configuration change to every connected client.
 func (h *Hub) BroadcastConfig(action string, data interface{}) {
 	payload, _ := json.Marshal(map[string]interface{}{

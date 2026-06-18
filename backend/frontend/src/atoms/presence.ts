@@ -4,8 +4,10 @@ export interface OnlineUser {
   user_id: number;
   user_name: string;
   avatar: string;
+  roles?: string[];
   route: string;
   is_muted?: boolean;
+  guest_session_id?: string;
 }
 
 export interface CursorPosition {

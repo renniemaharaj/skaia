@@ -72,6 +72,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	var userID int64
 	var userName string
 	var permissions []string
+	var roles []string
 
 	tokenStr := r.URL.Query().Get("token")
 	if tokenStr == "" {
@@ -85,6 +86,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 			userID = claims.UserID
 			userName = claims.Username
 			permissions = claims.Permissions
+			roles = claims.Roles
 		}
 	}
 
@@ -112,6 +114,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		UserID:         userID,
 		UserName:       userName,
 		Permissions:    permissions,
+		Roles:          roles,
 		chatLimit:      newRateBucket(chatRate, chatBurst),
 		cursorLimit:    newRateBucket(30, 30),
 		presenceLimit:  newRateBucket(5, 5),

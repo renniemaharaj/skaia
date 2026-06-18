@@ -114,6 +114,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (!userId || user || (fallbackName && fallbackAvatar && fallbackRoles)) return;
+    void fetchUserData();
+  }, [fallbackAvatar, fallbackName, fallbackRoles, user, userId]);
+
   // Compute visual details based on fetched user OR fallbacks
   const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";
   const avatarUrl = user?.avatar_url || fallbackAvatar;
