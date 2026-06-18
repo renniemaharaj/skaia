@@ -620,6 +620,12 @@
   }
 }
 
+@media (max-width: 760px) {
+  .product-image .product-card-meta {
+    display: none;
+  }
+}
+
 .product-footer {
   display: flex;
   justify-content: space-between;
