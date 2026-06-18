@@ -18,6 +18,45 @@ interface UserProfileOverlayProps {
   children: React.ReactNode;
 }
 
+let overlayRoleCache: Role[] | null = null;
+let overlayRoleRequest: Promise<Role[]> | null = null;
+const overlayUserCache = new Map<string, ProfileUser>();
+const overlayUserRequests = new Map<string, Promise<ProfileUser>>();
+
+const loadOverlayRoles = () => {
+  if (overlayRoleCache) return Promise.resolve(overlayRoleCache);
+  if (!overlayRoleRequest) {
+    overlayRoleRequest = apiRequest<Role[]>("/users/roles")
+      .then(data => {
+        overlayRoleCache = Array.isArray(data) ? data : [];
+        return overlayRoleCache;
+      })
+      .catch(() => [])
+      .finally(() => {
+        overlayRoleRequest = null;
+      });
+  }
+  return overlayRoleRequest;
+};
+
+const loadOverlayUser = (userId: string | number) => {
+  const key = String(userId);
+  const cached = overlayUserCache.get(key);
+  if (cached) return Promise.resolve(cached);
+  const existing = overlayUserRequests.get(key);
+  if (existing) return existing;
+  const request = apiRequest<ProfileUser>(`/users/${key}`)
+    .then(data => {
+      overlayUserCache.set(key, data);
+      return data;
+    })
+    .finally(() => {
+      overlayUserRequests.delete(key);
+    });
+  overlayUserRequests.set(key, request);
+  return request;
+};
+
 const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   userId,
   fallbackName,
@@ -101,11 +140,12 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
     if (user || loading) return;
     setLoading(true);
     try {
+      const shouldFetchUser = !(fallbackName && fallbackRoles);
       const [fetchedUser, fetchedRoles] = await Promise.all([
-        apiRequest<ProfileUser>(`/users/${userId}`),
-        apiRequest<Role[]>("/users/roles").catch(() => []),
+        shouldFetchUser ? loadOverlayUser(userId) : Promise.resolve(null),
+        loadOverlayRoles(),
       ]);
-      setUser(fetchedUser);
+      if (fetchedUser) setUser(fetchedUser);
       setAllRoles(fetchedRoles ?? []);
     } catch (e) {
       console.error("Failed to fetch user data for overlay", e);
@@ -115,9 +155,9 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   };
 
   useEffect(() => {
-    if (!userId || user || (fallbackName && fallbackAvatar && fallbackRoles)) return;
+    if (!userId || user || (fallbackName && fallbackRoles)) return;
     void fetchUserData();
-  }, [fallbackAvatar, fallbackName, fallbackRoles, user, userId]);
+  }, [fallbackName, fallbackRoles, user, userId]);
 
   // Compute visual details based on fetched user OR fallbacks
   const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";

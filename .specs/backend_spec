@@ -65,6 +65,7 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/store` | `internal/store` | catalog, cart, checkout, orders, wallet, reviews, subscriptions |
 | `/api/inbox` | `internal/inbox` | conversations, group participants, messages, blocks |
 | `/api/notifications` | `internal/notification` | list/read/delete/unread count |
+| `/api/defcon` | `main.go` + `ratelimit` | admin telemetry and runtime reset |
 | `/api/config` | `internal/config`, datasource, customsection | public config reads, protected config writes |
 | `/api/pages` | `internal/page` | public page reads, protected page/page-admin writes |
 | `/api/upload` | `internal/upload` | image/video/file/banner/chunked uploads |
@@ -118,6 +119,9 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - Store order mutations also propagate `order:update` to the `order:{id}`
   resource subscription so open order detail/cards update across tabs in real
   time.
+- DEFCON reset clears jail/history/counter pressure but must preserve trusted
+  citizens; verified priority access should grant a short user bypass and promote
+  the current IP to trusted.
 - Order item fulfillment is vendor-scoped: product owners may update only their
   own line items' `vendor_status`/`vendor_note`, stock reservation/release follows
   those lines only, and the parent order status is an aggregate such as

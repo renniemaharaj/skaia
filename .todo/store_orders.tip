@@ -30,5 +30,9 @@
 - [x] Verified realtime/filter polish with `mise exec node@24.16.0 -- npx biome lint src/components/store/Store.tsx src/components/store/Store.css src/components/store/OrderStatusView.tsx src/components/store/cart/EmptyCart.tsx src/styles/Cart.css` from `backend/frontend`.
 - [x] `mise exec node@24.16.0 -- npx biome lint src/components/inbox/InboxPage.tsx src/components/page/layout/PresencePanel.tsx ...` still reports pre-existing whole-file lint debt (`any`, missing button types, `forEach`, etc.); TypeScript/build verification passed.
 - [x] Verified realtime/filter polish with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 DEFCON tab polish: added compact reset control, admin-only `/defcon/reset`, synchronous telemetry refresh, and telemetry broadcast.
+- [x] Verified DEFCON reset with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend` and `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 DEFCON/rich-user hotfix: DEFCON reset now preserves trusted citizens and promotes the resetting admin IP; priority bypass endpoint now verifies MFA and grants bypass/trusted access directly; rich user cards/profile overlays dedupe in-flight `/users/{id}` and `/users/roles` requests.
+- [x] Verified DEFCON/rich-user hotfix with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend` and `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
 
 <--/------->

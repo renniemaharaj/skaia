@@ -82,6 +82,35 @@ func JailedCount(ctx context.Context, rdb *redis.Client) (int64, error) {
 	return count, nil
 }
 
+// ResetDEFCON clears volatile DEFCON rate-limit pressure without demoting
+// trusted citizens. Use this from admin reset controls.
+func ResetDEFCON(ctx context.Context, rdb *redis.Client) error {
+	var cursor uint64
+	patterns := []string{"ip:jailed:*", "ip:history:*", "ip:counter:*"}
+
+	for _, pattern := range patterns {
+		cursor = 0
+		for {
+			keys, nextCursor, err := rdb.Scan(ctx, cursor, pattern, 250).Result()
+			if err != nil {
+				return fmt.Errorf("scan %s: %w", pattern, err)
+			}
+			if len(keys) > 0 {
+				if err := rdb.Del(ctx, keys...).Err(); err != nil {
+					return fmt.Errorf("delete %s: %w", pattern, err)
+				}
+			}
+			cursor = nextCursor
+			if cursor == 0 {
+				break
+			}
+		}
+	}
+
+	TriggerUpdate()
+	return nil
+}
+
 //
 // Tier 2 — Trusted citizens
 //
@@ -117,6 +146,11 @@ func PromoteToTrusted(ctx context.Context, rdb *redis.Client, ip string) error {
 		return fmt.Errorf("promote pipeline: %w", err)
 	}
 	return nil
+}
+
+// GrantUserBypass lets a verified power user bypass an active jail briefly.
+func GrantUserBypass(ctx context.Context, rdb *redis.Client, userID int64) error {
+	return rdb.Set(ctx, fmt.Sprintf("jail_bypass:%d", userID), "1", config.RateLimit.BypassTTL).Err()
 }
 
 //

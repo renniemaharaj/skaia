@@ -21,6 +21,41 @@ interface UserInlineCardProps {
 }
 
 let roleCatalogCache: RoleLike[] | null = null;
+let roleCatalogRequest: Promise<RoleLike[]> | null = null;
+const inlineUserCache = new Map<string, ProfileUser>();
+const inlineUserRequests = new Map<string, Promise<ProfileUser>>();
+
+const loadRoleCatalog = () => {
+  if (roleCatalogCache) return Promise.resolve(roleCatalogCache);
+  if (!roleCatalogRequest) {
+    roleCatalogRequest = apiRequest<RoleLike[]>("/users/roles")
+      .then(data => {
+        roleCatalogCache = Array.isArray(data) ? data : [];
+        return roleCatalogCache;
+      })
+      .finally(() => {
+        roleCatalogRequest = null;
+      });
+  }
+  return roleCatalogRequest;
+};
+
+const loadInlineUser = (userId: string) => {
+  const cached = inlineUserCache.get(userId);
+  if (cached) return Promise.resolve(cached);
+  const existing = inlineUserRequests.get(userId);
+  if (existing) return existing;
+  const request = apiRequest<ProfileUser>(`/users/${userId}`)
+    .then(data => {
+      inlineUserCache.set(userId, data);
+      return data;
+    })
+    .finally(() => {
+      inlineUserRequests.delete(userId);
+    });
+  inlineUserRequests.set(userId, request);
+  return request;
+};
 
 export default function UserInlineCard({
   userId,
@@ -36,9 +71,9 @@ export default function UserInlineCard({
   const normalizedUserId = userId === undefined ? "" : String(userId);
 
   useEffect(() => {
-    if (isGuest || !normalizedUserId || user || (name && avatar && roles)) return;
+    if (isGuest || !normalizedUserId || user || (name && roles)) return;
     let cancelled = false;
-    apiRequest<ProfileUser>(`/users/${normalizedUserId}`)
+    loadInlineUser(normalizedUserId)
       .then(data => {
         if (!cancelled) setUser(data);
       })
@@ -69,10 +104,9 @@ export default function UserInlineCard({
   useEffect(() => {
     if (roleCatalog || displayRoles.length === 0) return;
     let cancelled = false;
-    apiRequest<RoleLike[]>("/users/roles")
+    loadRoleCatalog()
       .then(data => {
         if (!Array.isArray(data) || cancelled) return;
-        roleCatalogCache = data;
         setRoleCatalog(data);
       })
       .catch(() => {});

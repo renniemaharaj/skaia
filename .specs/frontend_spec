@@ -70,11 +70,15 @@ WebSocket consumers, or page-builder UX.
   vendor's own line items.
 - Rich inline users in global messages should render all available roles using
   the role catalog colors when only role names are embedded in the message user.
+  Inline user cards and profile overlays must share in-flight user/role catalog
+  requests so dense chat/message views do not stampede `/users/roles`.
 - System inbox messages containing JSON payloads, especially order cards, render
   as compact inline interactive cards that route to the canonical destination
   such as `/store/orders/{id}` and do not echo raw JSON as a caption.
 - Global chat join/leave rows use compact colored arrow icons: green right arrow
   for join and red left arrow for leave.
+- Presence DEFCON tab includes a compact reset control that clears runtime
+  DEFCON state and refreshes telemetry for admins.
 
 ## CSS Token Contract
 

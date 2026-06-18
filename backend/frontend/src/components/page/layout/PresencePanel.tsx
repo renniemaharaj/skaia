@@ -11,6 +11,7 @@ import {
   MessageCircle,
   Mic,
   Navigation,
+  RotateCcw,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -53,6 +54,7 @@ const PresencePanel = () => {
     "members"
   );
   const [defconInfo, setDefconInfo] = useState<any>(null);
+  const [defconResetting, setDefconResetting] = useState(false);
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
@@ -133,6 +135,25 @@ const PresencePanel = () => {
   const elsewhere = onlineUsers.filter(u => u.route !== location.pathname);
 
   const total = onlineUsers.length;
+
+  const resetDefcon = useCallback(async () => {
+    if (defconResetting) return;
+    setDefconResetting(true);
+    try {
+      const resp = await apiRequest<{ stats?: any }>("/defcon/reset", { method: "POST" });
+      if (resp?.stats) {
+        setDefconInfo(resp.stats);
+      } else {
+        const fresh = await apiRequest("/defcon/telemetry");
+        setDefconInfo(fresh);
+      }
+      toast.success("DEFCON reset");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset DEFCON");
+    } finally {
+      setDefconResetting(false);
+    }
+  }, [defconResetting]);
 
   // Row actions
   // Add future actions here - they appear on hover in declaration order.
@@ -627,18 +648,19 @@ const PresencePanel = () => {
                 textAlign: "left",
               }}
             >
-              <div
-                style={{
-                  marginBottom: "1rem",
-                  fontWeight: 700,
-                  color: "var(--text-primary, #fff)",
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                  borderBottom: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
-                  paddingBottom: "0.5rem",
-                }}
-              >
-                [ DEFCON THREAT TELEMETRY ]
+              <div className="defcon-telemetry-header">
+                <span>[ DEFCON THREAT TELEMETRY ]</span>
+                <button
+                  type="button"
+                  className={`defcon-reset-toggle${defconResetting ? " defcon-reset-toggle--active" : ""}`}
+                  onClick={resetDefcon}
+                  disabled={defconResetting}
+                  title="Reset DEFCON telemetry"
+                  aria-label="Reset DEFCON telemetry"
+                >
+                  <RotateCcw size={12} />
+                  <span>{defconResetting ? "Resetting" : "Reset"}</span>
+                </button>
               </div>
               <div
                 style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}

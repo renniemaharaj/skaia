@@ -473,6 +473,34 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			json.NewEncoder(w).Encode(stats)
 		})
 
+		api.Post("/defcon/reset", func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := utils.UserIDFromCtx(r)
+			if !ok {
+				utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			allowed, _ := userSvc.HasPermission(userID, "admin.general")
+			if !allowed {
+				utils.WriteError(w, http.StatusForbidden, "forbidden")
+				return
+			}
+			if err := ratelimit.ResetDEFCON(r.Context(), rdb); err != nil {
+				utils.WriteError(w, http.StatusInternalServerError, "failed to reset DEFCON telemetry")
+				return
+			}
+			_ = ratelimit.PromoteToTrusted(r.Context(), rdb, defconmw.RealIP(r))
+			stats, _ := ratelimit.RefreshTelemetry(r.Context(), rdb)
+			if stats != nil {
+				b, _ := json.Marshal(stats)
+				hub.BroadcastToPermission("admin.general", &ws.Message{
+					Type:    "defcon:telemetry",
+					Payload: b,
+				})
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{"status": "ok", "stats": stats})
+		})
+
 		go ratelimit.WatchTelemetry(context.Background(), rdb, func(stats ratelimit.TelemetryStats) {
 			b, _ := json.Marshal(stats)
 			hub.BroadcastToPermission("admin.general", &ws.Message{
@@ -482,6 +510,29 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		})
 
 		api.Post("/auth/bypass-rate-limit", func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := utils.UserIDFromCtx(r)
+			if !ok {
+				utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+				return
+			}
+			powerLevel, err := userSvc.GetUserMaxPowerLevel(userID)
+			if err != nil || powerLevel <= 10 {
+				utils.WriteError(w, http.StatusForbidden, "priority access unavailable")
+				return
+			}
+			_, enabled, err := globalAuthSvc.GetTOTPEnabled(r.Context(), userID)
+			if err != nil || !enabled {
+				utils.WriteError(w, http.StatusForbidden, "priority access requires MFA")
+				return
+			}
+			totpCode := r.Header.Get("X-TOTP-Code")
+			valid, _ := globalAuthSvc.VerifyTOTP(r.Context(), userID, totpCode)
+			if !valid {
+				utils.WriteError(w, http.StatusForbidden, "invalid priority access code")
+				return
+			}
+			_ = ratelimit.GrantUserBypass(r.Context(), rdb, userID)
+			_ = ratelimit.PromoteToTrusted(r.Context(), rdb, defconmw.RealIP(r))
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Rate limit bypass verified", Status: "ok"})
 		})

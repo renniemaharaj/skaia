@@ -235,6 +235,11 @@ func realIP(r *http.Request) string {
 	return host
 }
 
+// RealIP exposes DEFCON's client IP extraction to admin/control endpoints.
+func RealIP(r *http.Request) string {
+	return realIP(r)
+}
+
 // writeTooManyRequests writes a 429 response with standard rate-limit headers.
 func writeTooManyRequests(ctx context.Context, rdb *redis.Client, w http.ResponseWriter, retryAfter time.Duration, challenge bool) {
 	seconds := int(retryAfter.Seconds())

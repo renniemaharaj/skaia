@@ -101,3 +101,15 @@ func GetLatestStats() *TelemetryStats {
 	defer statsMu.RUnlock()
 	return latestStats
 }
+
+// RefreshTelemetry fetches and stores telemetry immediately.
+func RefreshTelemetry(ctx context.Context, rdb *redis.Client) (*TelemetryStats, error) {
+	stats, err := fetchStats(ctx, rdb)
+	if err != nil {
+		return nil, err
+	}
+	statsMu.Lock()
+	latestStats = &stats
+	statsMu.Unlock()
+	return &stats, nil
+}
