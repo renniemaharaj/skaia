@@ -136,6 +136,18 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
     }, 300); // 300ms grace period before hiding
   };
 
+  const openProfile = () => {
+    if (!disableClick) {
+      navigate(`/users/${userId}`);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (disableClick || (e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault();
+    openProfile();
+  };
+
   const fetchUserData = async () => {
     if (user || loading) return;
     setLoading(true);
@@ -153,11 +165,6 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!userId || user || (fallbackName && fallbackRoles)) return;
-    void fetchUserData();
-  }, [fallbackName, fallbackRoles, user, userId]);
 
   // Compute visual details based on fetched user OR fallbacks
   const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";
@@ -182,8 +189,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
         if (disableClick) return;
         e.stopPropagation();
         e.preventDefault();
-        navigate(`/users/${userId}`);
+        openProfile();
       }}
+      onKeyDown={handleKeyDown}
+      role={!disableClick ? "link" : undefined}
+      tabIndex={!disableClick ? 0 : undefined}
       style={!disableClick ? { cursor: "pointer" } : undefined}
     >
       {children}
@@ -197,6 +207,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
           >
             <SpotlightCard
               className="upo-card"

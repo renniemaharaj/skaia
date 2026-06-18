@@ -12,7 +12,7 @@ import { cursorPositionsAtom, pendingTpRouteAtom, pendingTpUserAtom } from "../a
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
-import { apiRequest } from "../utils/api";
+import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import "./Layout.css";
 import { Toaster, toast } from "sonner";
 import { physicsSettingsAtom } from "../atoms/physics";
@@ -67,7 +67,7 @@ function getStoredRateLimitChallenge(): string | undefined {
 }
 
 const RATE_LIMIT_DEFCON_KEY = "pb_rate_limit_defcon";
-function getStoredRateLimitDefcon(): any {
+function getStoredRateLimitDefcon(): RateLimitDefconInfo | undefined {
   try {
     const data = sessionStorage.getItem(RATE_LIMIT_DEFCON_KEY);
     return data ? JSON.parse(data) : undefined;
@@ -104,13 +104,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(
     getStoredRateLimitChallenge()
   );
-  const [rateLimitDefcon, setRateLimitDefcon] = useState<any>(getStoredRateLimitDefcon());
+  const [rateLimitDefcon, setRateLimitDefcon] = useState<RateLimitDefconInfo | undefined>(
+    getStoredRateLimitDefcon()
+  );
   const [mfaRequired, setMfaRequired] = useState(false);
 
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
       const detail = (
-        event as CustomEvent<{ retryAfter?: number; challenge?: string; defconInfo?: any }>
+        event as CustomEvent<{
+          retryAfter?: number;
+          challenge?: string;
+          defconInfo?: RateLimitDefconInfo;
+        }>
       ).detail;
       const seconds = detail.retryAfter ?? 60;
 
@@ -120,10 +126,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         try {
           sessionStorage.setItem(RATE_LIMIT_CHALLENGE_KEY, detail.challenge);
         } catch {}
+      } else {
+        try {
+          sessionStorage.removeItem(RATE_LIMIT_CHALLENGE_KEY);
+        } catch {}
       }
       if (detail.defconInfo) {
         try {
           sessionStorage.setItem(RATE_LIMIT_DEFCON_KEY, JSON.stringify(detail.defconInfo));
+        } catch {}
+      } else {
+        try {
+          sessionStorage.removeItem(RATE_LIMIT_DEFCON_KEY);
         } catch {}
       }
 

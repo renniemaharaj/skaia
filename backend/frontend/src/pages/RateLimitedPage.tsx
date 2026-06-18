@@ -1,7 +1,7 @@
 import { Loader, Lock, ShieldCheck } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { apiRequest } from "../utils/api";
+import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import ErrorPage from "./ErrorPage";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
@@ -10,7 +10,7 @@ import "./RateLimitedPage.css";
 interface RateLimitedPageProps {
   retrySeconds?: number;
   challenge?: string;
-  defconInfo?: any;
+  defconInfo?: RateLimitDefconInfo;
   onCleared?: () => void;
 }
 
@@ -20,7 +20,8 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
   defconInfo,
   onCleared,
 }) => {
-  const [showOverride, setShowOverride] = useState(challenge === "totp");
+  const canRequestPriorityAccess = challenge === "totp";
+  const [showOverride, setShowOverride] = useState(canRequestPriorityAccess);
   const [totpCode, setTotpCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(retrySeconds || 0);
@@ -92,13 +93,17 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
         }}
       />
 
-      {!showOverride && (
-        <button onClick={() => setShowOverride(true)} className="rate-limited-override-btn">
+      {canRequestPriorityAccess && !showOverride && (
+        <button
+          type="button"
+          onClick={() => setShowOverride(true)}
+          className="rate-limited-override-btn"
+        >
           <Lock size={12} /> Priority Access
         </button>
       )}
 
-      {showOverride && (
+      {canRequestPriorityAccess && showOverride && (
         <form onSubmit={handleTotpSubmit} className="rate-limited-form">
           <div className="form-group" style={{ marginBottom: "0.5rem", textAlign: "left" }}>
             <label htmlFor="totp_code" style={{ fontSize: "0.8rem", opacity: 0.8 }}>

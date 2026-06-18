@@ -34,5 +34,7 @@
 - [x] Verified DEFCON reset with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend` and `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
 - [x] 2026-06-18 DEFCON/rich-user hotfix: DEFCON reset now preserves trusted citizens and promotes the resetting admin IP; priority bypass endpoint now verifies MFA and grants bypass/trusted access directly; rich user cards/profile overlays dedupe in-flight `/users/{id}` and `/users/roles` requests.
 - [x] Verified DEFCON/rich-user hotfix with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend` and `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 production audit correction: Priority Access UI now appears only when the backend returns `challenge:"totp"`, stale challenge/telemetry session state is cleared on non-eligible 429s, retry timers consume JSON `retry_after`, and profile overlays no longer eager-fetch every mounted user card.
+- [x] Verified audit correction with `mise exec node@24.16.0 -- npx vitest run src/pages/RateLimitedPage.test.tsx`, `mise exec node@24.16.0 -- npx tsc -b --pretty false`, focused `biome lint` (warnings only), `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend`, and the same Go test from `grengo`.
 
 <--/------->

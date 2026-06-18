@@ -5,11 +5,19 @@ import { apiBaseUrlAtom } from "../atoms/config";
 
 const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
 
+export interface RateLimitDefconInfo {
+  ips_jailed?: number;
+  distinct_ips_tracked?: number;
+  citizens?: number;
+  limiter_state?: number | string;
+}
+
 export interface ApiError {
   error: string;
   message?: string;
   challenge?: string;
-  defcon_info?: any;
+  defcon_info?: RateLimitDefconInfo;
+  retry_after?: number;
 }
 
 export interface ApiResponse<T> {
@@ -153,6 +161,9 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
       if (!Number.isNaN(retry)) {
         retryAfter = retry;
       }
+    }
+    if (retryAfter === undefined && typeof errorData?.retry_after === "number") {
+      retryAfter = errorData.retry_after;
     }
 
     if (response.status === 429) {
