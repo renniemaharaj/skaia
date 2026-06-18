@@ -653,7 +653,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware, commentSlowMode)
-		istore.NewHandler(storeSvc, hub, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
+		istore.NewHandler(storeSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware, imw.OptionalJWTAuthMiddleware)
 
 		uploadHandler := iupload.NewHandler(hub)
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)

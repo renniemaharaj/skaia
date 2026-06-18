@@ -76,7 +76,9 @@
   font-size: 0.9rem;
   cursor: pointer;
   position: relative;
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
   white-space: nowrap;
   border-radius: 6px;
 }
@@ -151,6 +153,8 @@
   display: grid;
   grid-template-columns:
     minmax(15rem, 1.4fr)
+    minmax(13rem, 1fr)
+    auto
     minmax(8.25rem, 0.7fr)
     minmax(8.25rem, 0.7fr)
     minmax(15rem, 1fr)
@@ -166,6 +170,99 @@
   height: 2.25rem;
   min-height: 2.25rem;
   background: color-mix(in srgb, var(--bg-color) 36%, var(--bg-secondary));
+}
+
+.store-owner-filter {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.store-owner-filter .person-picker__input-wrap {
+  box-sizing: border-box;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.65rem;
+  background: color-mix(in srgb, var(--bg-color) 28%, var(--bg-secondary));
+}
+
+.store-owner-chip {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  display: inline-flex;
+  max-width: min(70%, 10rem);
+  height: 1.75rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.25rem 0 0.4rem;
+  border: 1px solid
+    color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 74%, transparent);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transform: translateY(-50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.store-owner-chip > span:not(.user-avatar) {
+  min-width: 0;
+}
+
+.store-owner-chip button {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.store-owner-chip button:hover {
+  background: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+  color: var(--text-primary);
+}
+
+.store-you-toggle {
+  box-sizing: border-box;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-color) 28%, var(--bg-secondary));
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.store-you-toggle:hover,
+.store-you-toggle.active {
+  border-color: color-mix(
+    in srgb,
+    var(--primary-color) 42%,
+    var(--border-color)
+  );
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
+  color: var(--text-primary);
 }
 
 .store-filter-select .sk-select__trigger {
@@ -268,7 +365,9 @@
   color: var(--text-secondary);
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .store-view-button:hover {
@@ -288,11 +387,11 @@
 
 @media (max-width: 1024px) {
   .store-filter-panel {
-    grid-template-columns: minmax(14rem, 1fr) 10rem 10rem;
+    grid-template-columns: minmax(14rem, 1fr) minmax(13rem, 1fr) 4.25rem;
   }
 
   .store-price-filter {
-    grid-column: span 2;
+    grid-column: span 3;
   }
 
   .store-clear-filters,
@@ -364,7 +463,8 @@
     position: sticky;
     right: 0;
     background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
-    box-shadow: -12px 0 18px color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    box-shadow: -12px 0 18px
+      color-mix(in srgb, var(--bg-secondary) 80%, transparent);
   }
 }
 
@@ -599,7 +699,9 @@
   transform: translateY(-4px);
   pointer-events: none;
   backdrop-filter: blur(10px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 
 .product-card:hover .product-card-meta,
@@ -743,7 +845,8 @@
 .btn-add-to-cart:hover {
   background-color: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color) 35%, transparent);
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--primary-color) 35%, transparent);
 }
 
 .btn-add-to-cart:disabled {
@@ -887,6 +990,46 @@
 
 .store-orders-button {
   margin-left: 8px;
+}
+
+.store-balance-badge,
+.store-orders-badge {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  right: 0.3rem;
+  top: -0.4rem;
+  line-height: 1;
+}
+
+.store-balance-badge {
+  border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 80%, transparent);
+  color: var(--text-secondary);
+}
+
+.store-balance-badge--positive {
+  border-color: color-mix(in srgb, var(--success-color) 42%, transparent);
+  background: color-mix(in srgb, var(--success-color) 12%, transparent);
+  color: var(--success-color);
+}
+
+.store-balance-badge--negative {
+  border-color: color-mix(in srgb, var(--error-color) 42%, transparent);
+  background: color-mix(in srgb, var(--error-color) 12%, transparent);
+  color: var(--error-color);
+}
+
+.store-orders-badge {
+  background: var(--error-color);
+  color: white;
 }
 
 @media (max-width: 768px) {

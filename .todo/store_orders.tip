@@ -15,5 +15,10 @@
 - [x] 2026-06-16 refactor cleanup: removed dead/commented cart button code, reduced inline style fragments, typed saved card data, and simplified delivery marker parsing.
 - [x] Verified with `mise exec node@24.16.0 -- npx biome lint src/pages/cart/index.tsx src/styles/Cart.css src/components/store/Store.tsx src/components/store/Store.css` from `backend/frontend`.
 - [x] Verified with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 store polish: added product-owner filtering with glass `PersonPicker`, `You` owner toggle, dynamic wallet balance and pending-order badges, restored readonly location map preview from order coordinates, and added seller order notifications plus system inbox messages.
+- [x] Updated `.specs/realtime_wss_spec`, `.specs/backend_spec`, and `.specs/frontend_spec` for order update/notification and store filter badge contracts.
+- [x] Verified with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend`.
+- [x] Verified with `mise exec node@24.16.0 -- npx biome lint src/components/store/Store.tsx src/components/store/StoreCategoryBar.tsx src/components/store/Store.css src/components/store/OrdersPage.tsx src/components/store/OrdersPage.css src/atoms/notifications.ts` from `backend/frontend`.
+- [x] Verified with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
 
 <--/------->

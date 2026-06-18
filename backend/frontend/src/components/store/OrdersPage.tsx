@@ -259,6 +259,40 @@ export const OrdersPage = () => {
     );
   };
 
+  const showLocationMap = (
+    event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>,
+    loc: string
+  ) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMapPopover({
+      loc,
+      x: rect.left,
+      y: rect.bottom + 8,
+    });
+  };
+
+  const renderOrderLocation = (order: Order) => {
+    if (!order.delivery_location) {
+      return <span className="table-view__cell--muted">None</span>;
+    }
+    return (
+      <button
+        type="button"
+        className="orders-location-link"
+        onMouseEnter={event => showLocationMap(event, order.delivery_location || "")}
+        onFocus={event => showLocationMap(event, order.delivery_location || "")}
+        onClick={event => {
+          event.stopPropagation();
+          showLocationMap(event, order.delivery_location || "");
+        }}
+        title="Preview delivery map"
+      >
+        <MapPin size={14} />
+        <span>{order.delivery_location}</span>
+      </button>
+    );
+  };
+
   const renderOrderActions = (order: Order) => (
     <div className="order-actions">
       {order.status === "pending" && (
@@ -394,6 +428,11 @@ export const OrdersPage = () => {
       header: "Total",
       width: "minmax(100px, 0.8fr)",
       cell: order => formatCents(order.total_price || 0),
+    },
+    {
+      header: "Location",
+      width: "minmax(140px, 1fr)",
+      cell: renderOrderLocation,
     },
     {
       header: "Status",

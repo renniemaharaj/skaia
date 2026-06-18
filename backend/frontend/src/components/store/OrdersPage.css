@@ -207,6 +207,36 @@
   font-size: 0.9rem;
 }
 
+.orders-location-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  height: 1.8rem;
+  padding: 0 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.orders-location-link:hover,
+.orders-location-link:focus-visible {
+  border-color: color-mix(in srgb, var(--primary-color) 42%, var(--border-color));
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--bg-secondary));
+  outline: none;
+}
+
+.orders-location-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .guest-avatar {
   width: 32px;
   height: 32px;

@@ -20,13 +20,19 @@ import (
 type Handler struct {
 	svc        *Service
 	hub        *ws.Hub
+	notifSvc   NotificationSender
 	authz      utils.Authorizer
 	dispatcher *ievents.Dispatcher
 }
 
+// NotificationSender is the notification service surface used by the store.
+type NotificationSender interface {
+	Send(userID int64, notifType, message, route string) (*models.Notification, error)
+}
+
 // NewHandler creates a Handler.
-func NewHandler(svc *Service, hub *ws.Hub, authz utils.Authorizer, dispatcher *ievents.Dispatcher) *Handler {
-	return &Handler{svc: svc, hub: hub, authz: authz, dispatcher: dispatcher}
+func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotificationSender, authz utils.Authorizer, dispatcher *ievents.Dispatcher) *Handler {
+	return &Handler{svc: svc, hub: hub, notifSvc: notifSvc, authz: authz, dispatcher: dispatcher}
 }
 
 // Mount registers all store routes on r.
@@ -1341,6 +1347,10 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
+	if resp.Order != nil && resp.Order.UserID != nil {
+		go h.svc.SendOrderInboxMessage(*resp.Order.UserID, resp.Order, "order_created")
+	}
+
 	httpStatus := http.StatusCreated
 	if resp.Status == "failed" {
 		httpStatus = http.StatusPaymentRequired
@@ -1381,7 +1391,7 @@ func (h *Handler) notifyOrderDeleted(orderID int64, order *models.Order) {
 }
 
 func (h *Handler) notifyProductOwnersOfOrder(order *models.Order, action string) {
-	if h.hub == nil || order == nil {
+	if order == nil {
 		return
 	}
 	notified := map[int64]bool{}
@@ -1398,12 +1408,60 @@ func (h *Handler) notifyProductOwnersOfOrder(order *models.Order, action string)
 			continue
 		}
 		notified[ownerID] = true
+		sellerView := h.sellerOrderView(order, ownerID)
 		if action == "order_deleted" {
-			h.hub.PushOrderUpdate(ownerID, map[string]int64{"id": order.ID}, action)
+			if h.hub != nil {
+				h.hub.PushOrderUpdate(ownerID, map[string]int64{"id": order.ID}, action)
+			}
+			h.sendProductOwnerOrderMessages(ownerID, sellerView, action)
 			continue
 		}
-		h.hub.PushOrderUpdate(ownerID, h.sellerOrderView(order, ownerID), action)
+		if h.hub != nil {
+			h.hub.PushOrderUpdate(ownerID, sellerView, action)
+		}
+		h.sendProductOwnerOrderMessages(ownerID, sellerView, action)
 	}
+}
+
+func (h *Handler) sendProductOwnerOrderMessages(ownerID int64, order *models.Order, action string) {
+	if order == nil {
+		return
+	}
+	route := fmt.Sprintf("/store/orders/%d", order.ID)
+	message := fmt.Sprintf("Order #%d has updates for your products.", order.ID)
+	msgType := "order_status"
+	switch action {
+	case "order_created":
+		message = fmt.Sprintf("New order #%d includes your products (%s).", order.ID, formatOrderCents(order.TotalPrice))
+		msgType = "order_received"
+	case "order_deleted":
+		message = fmt.Sprintf("Order #%d was deleted.", order.ID)
+		msgType = "order_deleted"
+	case "order_updated":
+		message = fmt.Sprintf("Order #%d is now %s (%s).", order.ID, order.Status, formatOrderCents(order.TotalPrice))
+	}
+	if h.notifSvc != nil {
+		_, _ = h.notifSvc.Send(ownerID, models.NotifStoreOrder, message, route)
+	}
+	if h.svc != nil && h.svc.inboxSender != nil {
+		cardJSON, _ := json.Marshal(map[string]interface{}{
+			"order_id":    order.ID,
+			"status":      order.Status,
+			"total_price": order.TotalPrice,
+			"items":       order.Items,
+			"route":       route,
+		})
+		_ = h.svc.inboxSender.SendSystemMessage(ownerID, string(cardJSON), msgType)
+	}
+}
+
+func formatOrderCents(cents int64) string {
+	sign := ""
+	if cents < 0 {
+		sign = "-"
+		cents = -cents
+	}
+	return fmt.Sprintf("%s$%d.%02d", sign, cents/100, cents%100)
 }
 
 func (h *Handler) notifyOrderProductsChanged(order *models.Order) {

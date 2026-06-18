@@ -112,6 +112,9 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
   orders can auto-complete after successful payment.
 - Store catalog mutations broadcast `store:update`; cart and checkout outcomes
   push directly to the buyer.
+- Store order mutations push `order:update` to buyers, store managers, and
+  product owners; product owners also receive `store_order` notifications and
+  system inbox messages with seller-scoped order details.
 
 ## Persistence Contracts
 

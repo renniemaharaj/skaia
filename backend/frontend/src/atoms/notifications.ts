@@ -12,7 +12,8 @@ export type NotificationType =
   | "unsuspended"
   | "banned"
   | "direct_message"
-  | "mentioned";
+  | "mentioned"
+  | "store_order";
 
 export interface AppNotification {
   id: string;

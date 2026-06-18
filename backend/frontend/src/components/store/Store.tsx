@@ -3,8 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "./ProductPage.css";
 import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
+import type { User } from "../../atoms/auth";
 import {
   type CartItem,
+  type Order,
   type Product,
   type StoreCategory,
   productCategoriesAtom,
@@ -31,6 +33,8 @@ export interface StoreFilterState {
   minPrice: string;
   maxPrice: string;
   minRating: string;
+  ownerUserId: string;
+  ownerLabel: string;
   sort: StoreSortMode;
 }
 
@@ -45,6 +49,8 @@ const DEFAULT_STORE_FILTERS: StoreFilterState = {
   minPrice: "",
   maxPrice: "",
   minRating: "0",
+  ownerUserId: "",
+  ownerLabel: "",
   sort: "newest",
 };
 
@@ -63,6 +69,8 @@ export const Store: React.FC = () => {
   const [viewMode, setViewMode] = useState<StoreViewMode>("grid");
   const [filters, setFilters] = useState<StoreFilterState>(DEFAULT_STORE_FILTERS);
   const [productRatings, setProductRatings] = useState<Record<string, ProductRatingSummary>>({});
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categoryQuery = searchParams.get("category");
@@ -106,6 +114,18 @@ export const Store: React.FC = () => {
     [categories]
   );
 
+  const productOwners = useMemo(() => {
+    const owners = new Map<string, NonNullable<Product["owner"]>>();
+    for (const product of products) {
+      if (product.owner_id && product.owner) {
+        owners.set(String(product.owner_id), product.owner);
+      }
+    }
+    return Array.from(owners.values()).sort((a, b) =>
+      (a.display_name || "").localeCompare(b.display_name || "")
+    );
+  }, [products]);
+
   const visibleProducts = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
     const selectedCategoryIds = new Set(filters.categoryIds);
@@ -117,6 +137,9 @@ export const Store: React.FC = () => {
       .filter(product => {
         if (!product.is_active) return false;
         if (selectedCategoryIds.size > 0 && !selectedCategoryIds.has(product.category_id)) {
+          return false;
+        }
+        if (filters.ownerUserId && String(product.owner_id || "") !== filters.ownerUserId) {
           return false;
         }
         if (minPrice !== null && product.price < minPrice) return false;
@@ -173,6 +196,29 @@ export const Store: React.FC = () => {
 
   const handleClearFilters = () => {
     setFilters(DEFAULT_STORE_FILTERS);
+  };
+
+  const handleSelectOwner = (user: User) => {
+    setFilters(prev => ({
+      ...prev,
+      ownerUserId: String(user.id),
+      ownerLabel: user.display_name || user.username || `User ${user.id}`,
+    }));
+  };
+
+  const handleToggleOwnProducts = () => {
+    if (!currentUser) return;
+    setFilters(prev => {
+      const ownID = String(currentUser.id);
+      if (prev.ownerUserId === ownID) {
+        return { ...prev, ownerUserId: "", ownerLabel: "" };
+      }
+      return {
+        ...prev,
+        ownerUserId: ownID,
+        ownerLabel: currentUser.display_name || currentUser.username || "You",
+      };
+    });
   };
 
   const handleChangeViewMode = (nextViewMode: StoreViewMode) => {
@@ -248,6 +294,29 @@ export const Store: React.FC = () => {
     }
   }, [isAuthenticated, setCartItems]);
 
+  const loadStoreBadges = useCallback(async () => {
+    if (!isAuthenticated) {
+      setWalletBalance(null);
+      setPendingOrderCount(0);
+      return;
+    }
+    try {
+      const [wallet, orders] = await Promise.all([
+        apiRequest<{ balance?: number }>("/store/wallet"),
+        apiRequest<Order[]>("/store/orders?limit=100"),
+      ]);
+      setWalletBalance(typeof wallet?.balance === "number" ? wallet.balance : 0);
+      const pending = Array.isArray(orders)
+        ? orders.filter(order => !["completed", "failed", "cancelled"].includes(order.status))
+            .length
+        : 0;
+      setPendingOrderCount(pending);
+    } catch {
+      setWalletBalance(null);
+      setPendingOrderCount(0);
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     loadCatalog();
   }, [loadCatalog]);
@@ -255,6 +324,10 @@ export const Store: React.FC = () => {
   useEffect(() => {
     loadCart();
   }, [loadCart]);
+
+  useEffect(() => {
+    loadStoreBadges();
+  }, [loadStoreBadges]);
 
   // Re-fetch catalog and cart whenever the WebSocket reconnects.
   // This clears stale localStorage-persisted data after a server restart / DB wipe.
@@ -268,8 +341,9 @@ export const Store: React.FC = () => {
     if (socket) {
       loadCatalog();
       loadCart();
+      loadStoreBadges();
     }
-  }, [socket, loadCatalog, loadCart]);
+  }, [socket, loadCatalog, loadCart, loadStoreBadges]);
 
   // Cart actions
   const handleAddToCart = async (product: Product) => {
@@ -336,6 +410,10 @@ export const Store: React.FC = () => {
         categories={categories}
         filters={filters}
         resultCount={visibleProducts.length}
+        currentUser={currentUser}
+        ownerOptions={productOwners}
+        walletBalance={walletBalance}
+        pendingOrderCount={pendingOrderCount}
         canCreateCategory={canCreateCategory}
         canCreateProduct={canCreateProduct}
         canDeleteCategory={canDeleteCategory}
@@ -343,6 +421,8 @@ export const Store: React.FC = () => {
         viewMode={viewMode}
         onChangeFilters={setFilters}
         onChangeViewMode={handleChangeViewMode}
+        onSelectOwner={handleSelectOwner}
+        onToggleOwnProducts={handleToggleOwnProducts}
         onToggleCategory={handleToggleCategory}
         onClearFilters={handleClearFilters}
         onDeleteCategory={handleDeleteCategory}

@@ -47,6 +47,10 @@ WebSocket consumers, or page-builder UX.
 
 - `storeCartItemsAtom` persists in local storage as `store.cart`.
 - Product/category/catalog atoms persist as `store.products` and `store.categories`.
+- Store catalog filters include category, search, price, rating, sort, product
+  owner via glass-menu `PersonPicker`, and an authenticated `You` owner toggle.
+- Store chrome may show live wallet balance and pending-order badges fetched from
+  `/store/wallet` and `/store/orders`.
 - Cart page supports authenticated carts and guest checkout from local cart items.
 - Checkout payload includes `items`, `payment_method_id`, `currency`, guest contact,
   delivery fields, `billing_info`, and `referral_code`.

@@ -57,14 +57,15 @@ limit/error WS messages.
 | `error` | `{ message, action? }` | toast / stop processing |
 | `forum:update` | `{ action, id?, data? }` | forum atoms |
 | `store:update` | `{ action, data }` | products/categories/cart + checkout toast |
+| `order:update` | `{ action, data }` | buyer/admin/seller order atoms |
 | `user:update` | `{ action, data }` | current user, token, profile events |
 | `config:update` | `{ action, data }` | config atoms + page/config events |
 | `page:update` | `{ action, data }` | page custom events |
 | `inbox:update` | `{ action, data }` | inbox messages/conversations |
 | `inbox:message` | message summary | unread/sidebar ping |
 | `notification` | `AppNotification` | prepend + toast/sound |
-| `notification:sync` | `{ unread_count }` | unread count sync |
-| `notification:read` | `{ action, id? }` | read/delete mutations |
+| `notification:sync` | `{ notifications }` | recent notification bootstrap |
+| `notification:update` | `{ action, id? }` | read/delete mutations |
 | `presence:update` | `{ users }` | online users |
 | `cursor:update` | cursor payload | cursor positions |
 | `global:chat` | `GlobalChatMessage` | append chat |
@@ -88,6 +89,7 @@ limit/error WS messages.
 | `inbox_conversation:{id}` | conversation messages |
 | `store_product:{id}` | reserved/product detail |
 | `store_category:{id}` | reserved/category detail |
+| `order:{id}` | reserved/order detail |
 | `page:{slug}` | page content |
 
 ## Action Registry
@@ -96,10 +98,11 @@ limit/error WS messages.
 | --- | --- |
 | `forum:update` | `category_created`, `category_updated`, `category_deleted`, `category_threads_updated`, `thread_created`, `thread_updated`, `thread_deleted`, `thread_liked`, `thread_unliked`, `comment_created`, `comment_updated`, `comment_deleted`, `comment_liked`, `comment_unliked` |
 | `store:update` | `category_created`, `category_updated`, `category_deleted`, `product_created`, `product_updated`, `product_deleted`, `cart_updated`, `purchase_success`, `purchase_failure` |
+| `order:update` | `order_created`, `order_updated`, `order_deleted` |
 | `user:update` | `user_updated`, `permissions_changed`, upload/profile/MFA variants in payload |
 | `config:update` | `branding_updated`, `seo_updated`, `footer_updated`, `features_updated`, `landing_page_updated` |
 | `page:update` | `page_created`, `page_updated`, `page_deleted`, `landing_page_changed`, `landing_updated` |
-| `notification:read` | `read`, `deleted`, `all_read`, `all_deleted` |
+| `notification:update` | `notification_read`, `notification_deleted`, `notification_all_read`, `notification_all_deleted` |
 
 ## Atom Convergence
 
