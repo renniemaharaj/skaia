@@ -67,6 +67,11 @@
   border-top: none;
   border-radius: 0 0 12px 12px;
   box-shadow: 0 2px 8px var(--border-color);
+  overflow: visible !important;
+}
+
+.up-card::before {
+  border-radius: inherit;
 }
 
 .up-suspended-banner {
@@ -94,7 +99,7 @@
 
 .up-avatar-wrap {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   flex-shrink: 0;
   margin-top: -48px;
 }
