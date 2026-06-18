@@ -4,12 +4,21 @@ import type { ProductMedia } from "../../atoms/store";
 import { uploader } from "../../atoms/uploadAtom";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { TableView } from "../ui/TableView/TableView";
-import "./Store.css";
+import "./ProductMediaTable.css";
 
 interface ProductMediaTableProps {
   media: ProductMedia[];
   onChange?: (media: ProductMedia[]) => void;
   editable?: boolean;
+}
+
+interface UploadMediaResponse {
+  url?: string;
+  URL?: string;
+  filename?: string;
+  mime_type?: string;
+  type?: string;
+  size?: number;
 }
 
 const isVideo = (item: ProductMedia) =>
@@ -29,7 +38,7 @@ const formatDate = (date: string) =>
     year: "numeric",
   });
 
-const mediaFromUploadResponse = (res: any, file: File): ProductMedia => {
+const mediaFromUploadResponse = (res: UploadMediaResponse, file: File): ProductMedia => {
   const mimeType = res?.mime_type || res?.type || file.type || "";
   const mediaType = mimeType.startsWith("video/") ? "video" : "image";
   const url = res?.url || res?.URL || "";
@@ -136,7 +145,9 @@ export function ProductMediaTable({ media, onChange, editable = false }: Product
               <div className="product-media-table__file">
                 <div className="product-media-table__thumb">
                   {isVideo(item) ? (
-                    <video src={item.url} preload="metadata" />
+                    <video src={item.url} preload="metadata">
+                      <track kind="captions" />
+                    </video>
                   ) : (
                     <img src={item.url} alt={item.filename} loading="lazy" />
                   )}
@@ -172,7 +183,11 @@ export function ProductMediaTable({ media, onChange, editable = false }: Product
             header: "Actions",
             width: editable ? "92px" : "48px",
             cell: item => (
-              <div className="table-view__row-actions" onClick={e => e.stopPropagation()}>
+              <div
+                className="table-view__row-actions"
+                onClick={e => e.stopPropagation()}
+                onKeyDown={e => e.stopPropagation()}
+              >
                 <button
                   type="button"
                   className="action-btn copy-btn"

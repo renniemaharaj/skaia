@@ -244,7 +244,13 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
             )}
 
             <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
-              {isLogin ? "Log In" : "Create Account"}
+              {loading
+                ? isLogin
+                  ? "Logging in..."
+                  : "Creating account..."
+                : isLogin
+                  ? "Log In"
+                  : "Create Account"}
             </Button>
           </form>
 

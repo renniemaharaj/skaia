@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import "../ui/MediaPreviewLightbox.css";
 
 interface ImageLightboxProps {
   imageUrl: string | null;

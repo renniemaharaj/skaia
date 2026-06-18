@@ -1,7 +1,9 @@
 import {
   ChevronDown,
   ClipboardList,
+  Columns2,
   FilterX,
+  LayoutGrid,
   Plus,
   SlidersHorizontal,
   Trash2,
@@ -12,7 +14,7 @@ import type { StoreCategory } from "../../atoms/store";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import SearchField from "../ui/SearchField";
-import type { StoreFilterState } from "./Store";
+import type { StoreFilterState, StoreViewMode } from "./Store";
 
 interface StoreCategoryBarProps {
   categories: StoreCategory[];
@@ -22,7 +24,9 @@ interface StoreCategoryBarProps {
   canCreateProduct: boolean;
   canDeleteCategory: boolean;
   isAuthenticated: boolean;
+  viewMode: StoreViewMode;
   onChangeFilters: (filters: StoreFilterState) => void;
+  onChangeViewMode: (viewMode: StoreViewMode) => void;
   onToggleCategory: (categoryId: string) => void;
   onClearFilters: () => void;
   onDeleteCategory: (categoryId: string) => void;
@@ -37,7 +41,9 @@ export function StoreCategoryBar({
   canCreateProduct,
   canDeleteCategory,
   isAuthenticated,
+  viewMode,
   onChangeFilters,
+  onChangeViewMode,
   onToggleCategory,
   onClearFilters,
   onDeleteCategory,
@@ -257,6 +263,29 @@ export function StoreCategoryBar({
           >
             Clear
           </Button>
+
+          <div className="store-view-switch" aria-label="Product card view">
+            <button
+              type="button"
+              className={`store-view-button ${viewMode === "grid" ? "active" : ""}`}
+              onClick={() => onChangeViewMode("grid")}
+              title="Compact grid"
+              aria-label="Compact grid"
+              aria-pressed={viewMode === "grid"}
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              type="button"
+              className={`store-view-button ${viewMode === "wide" ? "active" : ""}`}
+              onClick={() => onChangeViewMode("wide")}
+              title="Wide two-column cards"
+              aria-label="Wide two-column cards"
+              aria-pressed={viewMode === "wide"}
+            >
+              <Columns2 size={15} />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -11,7 +11,6 @@ import { getServerNow } from "../../utils/serverTime";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import { useUserData } from "../user/useUserData";
-import "./Store.css";
 import { SecondaryCard } from "../cards/GlassCard";
 import Select from "../input/Select";
 import { StorePageShell } from "./StorePageShell";
@@ -36,6 +35,15 @@ interface UserCard {
   last4?: string;
   expiry_month: number;
   expiry_year: number;
+}
+
+interface WalletResponse {
+  balance?: number;
+  transactions?: Transaction[];
+}
+
+interface WalletCardsResponse {
+  cards?: UserCard[];
 }
 
 function cardLast4(card: UserCard) {
@@ -106,8 +114,8 @@ export const WalletPage = () => {
     setLoading(true);
     try {
       const [walletData, cardsData] = await Promise.all([
-        apiRequest(`/store/wallet${walletQueryString}`) as Promise<any>,
-        apiRequest(`/store/wallet/cards${walletQueryString}`) as Promise<any>,
+        apiRequest<WalletResponse>(`/store/wallet${walletQueryString}`),
+        apiRequest<WalletCardsResponse>(`/store/wallet/cards${walletQueryString}`),
       ]);
       setBalance(walletData.balance || 0);
       setTransactions(walletData.transactions || []);
@@ -296,6 +304,7 @@ export const WalletPage = () => {
             </h1>
             <div style={{ display: "flex", justifyContent: "center" }}>
               <button
+                type="button"
                 className="btn btn-ghost"
                 style={{
                   padding: "0.4rem 1.5rem",
@@ -330,7 +339,12 @@ export const WalletPage = () => {
               >
                 <CreditCard size={20} /> Payment Cards
               </h3>
-              <button className="btn-admin-icon" onClick={openAddCard} title="Add New Card">
+              <button
+                type="button"
+                className="btn-admin-icon"
+                onClick={openAddCard}
+                title="Add New Card"
+              >
                 <PlusCircle size={24} />
               </button>
             </div>
@@ -624,6 +638,7 @@ export const WalletPage = () => {
                       </div>
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button
+                          type="button"
                           className="btn-admin-icon"
                           onClick={() => openEditCard(card)}
                           title="Edit"
@@ -631,6 +646,7 @@ export const WalletPage = () => {
                           <Edit size={18} />
                         </button>
                         <button
+                          type="button"
                           className="btn-admin-icon"
                           onClick={() => handleDeleteCard(card.id)}
                           title="Delete"

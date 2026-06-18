@@ -2,6 +2,7 @@ import { Package } from "lucide-react";
 import type { Product } from "../../atoms/store";
 import { SkeletonCard } from "../ui/SkeletonCard";
 import { InlineProduct } from "./InlineProduct";
+import type { StoreViewMode } from "./Store";
 
 const PRODUCT_SKELETON_KEYS = [
   "product-skeleton-1",
@@ -18,10 +19,11 @@ interface StoreProductGridProps {
   canCreateProduct: boolean;
   canEditProduct: (product: Product) => boolean;
   canDeleteProduct: (product: Product) => boolean;
+  viewMode: StoreViewMode;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onAddToCart: (product: Product) => void;
-  onImagePreview: (imageUrl: string) => void;
+  onImagePreview: (product: Product, index?: number) => void;
 }
 
 export function StoreProductGrid({
@@ -30,6 +32,7 @@ export function StoreProductGrid({
   canCreateProduct,
   canEditProduct,
   canDeleteProduct,
+  viewMode,
   onEditProduct,
   onDeleteProduct,
   onAddToCart,
@@ -38,7 +41,7 @@ export function StoreProductGrid({
   if (loading) {
     return (
       <div className="products-section">
-        <div className="products-grid">
+        <div className={`products-grid products-grid--${viewMode}`}>
           {PRODUCT_SKELETON_KEYS.map(key => (
             <SkeletonCard key={key} />
           ))}
@@ -65,7 +68,7 @@ export function StoreProductGrid({
 
   return (
     <div className="products-section">
-      <div className="products-grid">
+      <div className={`products-grid products-grid--${viewMode}`}>
         {products.map(product => (
           <InlineProduct
             key={product.id}

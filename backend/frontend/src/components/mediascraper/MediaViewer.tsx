@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { TableView } from "../ui/TableView/TableView";
+import "../ui/MediaPreviewLightbox.css";
 import "./MediaScraper.css";
 
 export type ScrapeStatus = "pending" | "scraping" | "done" | "error";

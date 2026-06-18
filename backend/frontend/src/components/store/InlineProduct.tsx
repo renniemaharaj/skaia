@@ -5,6 +5,7 @@ import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import StarRating from "../ui/StarRating";
 import { useProductRatings } from "./ratings";
+import { getProductMediaItems } from "./storeMedia";
 
 interface StoreInlineProductProps {
   product: Product;
@@ -13,7 +14,7 @@ interface StoreInlineProductProps {
   onEdit?: (product: Product) => void;
   onDelete?: (id: string) => void;
   onAddToCart?: (product: Product) => void;
-  onImagePreview?: (url: string) => void;
+  onImagePreview?: (product: Product, index?: number) => void;
 }
 
 export const InlineProduct = ({
@@ -26,6 +27,9 @@ export const InlineProduct = ({
   onImagePreview,
 }: StoreInlineProductProps) => {
   const { averageRating, reviewCount } = useProductRatings(product.id);
+  const media = getProductMediaItems(product);
+  const cover = media[0];
+  const coverIsVideo = cover?.mime_type?.startsWith("video/") || cover?.type === "video";
   const updatedDate = new Date(product.updated_at).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -43,26 +47,25 @@ export const InlineProduct = ({
           flexGrow: 1,
         }}
       >
-        {product.image_url ? (
+        {cover ? (
           <div className="product-image">
-            <img
-              src={product.image_url}
-              alt={product.name}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                cursor: "pointer",
-              }}
+            <button
+              type="button"
+              className="product-image-preview-button"
               onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
-
-                if (onImagePreview) {
-                  onImagePreview(product.image_url!);
-                }
+                onImagePreview?.(product, 0);
               }}
-            />
+            >
+              {coverIsVideo ? (
+                <video src={cover.url} preload="metadata" muted playsInline>
+                  <track kind="captions" />
+                </video>
+              ) : (
+                <img src={cover.url} alt={product.name} />
+              )}
+            </button>
           </div>
         ) : (
           <div className="product-image">
@@ -132,6 +135,7 @@ export const InlineProduct = ({
             <div style={{ display: "flex", gap: "6px" }}>
               {canEdit && (
                 <button
+                  type="button"
                   className="action-btn edit-btn"
                   onClick={e => {
                     e.preventDefault();
@@ -145,6 +149,7 @@ export const InlineProduct = ({
 
               {canDelete && (
                 <button
+                  type="button"
                   className="action-btn danger"
                   onClick={e => {
                     e.preventDefault();
@@ -158,6 +163,7 @@ export const InlineProduct = ({
             </div>
 
             <button
+              type="button"
               className="btn-add-to-cart"
               onClick={e => {
                 e.preventDefault();

@@ -1,9 +1,9 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import {
+  ChevronLeft,
   ChevronRight,
   Clock,
   Edit2,
-  LayoutGrid,
   Package,
   Share2,
   ShoppingBag,
@@ -11,8 +11,8 @@ import {
   TrendingUp,
   User,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
@@ -33,6 +33,7 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { ProductMediaTable } from "./ProductMediaTable";
 import { StorePageShell } from "./StorePageShell";
+import { getProductMediaItems } from "./storeMedia";
 
 interface ProductReview {
   id: string | number;
@@ -46,83 +47,44 @@ interface ProductReview {
   can_delete?: boolean;
 }
 
-const getProductMedia = (product: Product) =>
-  product.media && product.media.length > 0
-    ? product.media
-    : product.image_url
-      ? [
-          {
-            url: product.image_url,
-            filename: product.image_url.split("/").pop() || product.name,
-            mime_type: "",
-            type: "image",
-            size: 0,
-            created_at: product.created_at,
-          },
-        ]
-      : [];
-
-interface ProductTwoUpCardProps {
-  product: Product;
-  onPreview: (index: number) => void;
-  onAddToCart: (product: Product) => void;
-  addingToCart: boolean;
+interface ProductReviewApiResponse {
+  id: string | number;
+  user_id?: string | number | null;
+  user?: {
+    id?: string | number | null;
+    display_name?: string | null;
+    avatar_url?: string | null;
+    username?: string | null;
+  } | null;
+  comment: string;
+  created_at: string;
+  rating?: number;
+  can_delete?: boolean;
 }
 
-function ProductTwoUpCard({
-  product,
-  onPreview,
-  onAddToCart,
-  addingToCart,
-}: ProductTwoUpCardProps) {
-  const media = getProductMedia(product);
-  const isSoldOut = !product.stock_unlimited && product.stock <= 0;
+const REVIEW_SKELETON_KEYS = [
+  "review-skeleton-1",
+  "review-skeleton-2",
+  "review-skeleton-3",
+  "review-skeleton-4",
+];
 
-  return (
-    <ContentFlatCard className="product-two-up-card">
-      <div className={`product-two-up-media${!media[0] ? " fallback" : ""}`}>
-        {media[0] ? (
-          <img src={media[0].url} alt={product.name} onClick={() => onPreview(0)} />
-        ) : (
-          <Package size={40} />
-        )}
-      </div>
-      <div className="product-two-up-body">
-        <div className="product-two-up-heading">
-          <h2>{product.name}</h2>
-          <span>{formatCents(product.price)}</span>
-        </div>
-        <p>{product.description}</p>
-        <div className="product-page-meta-grid">
-          <span>
-            <User size={14} /> {product.owner?.display_name || "Store"}
-          </span>
-          <span>
-            <ShoppingBag size={14} /> {product.recent_purchases ?? 0} purchases
-          </span>
-          <span>
-            <TrendingUp size={14} /> {product.current_orders ?? 0} current orders
-          </span>
-          <span>
-            <Clock size={14} /> {new Date(product.updated_at).toLocaleDateString()}
-          </span>
-        </div>
-        <button
-          className="btn-add-to-cart"
-          onClick={() => onAddToCart(product)}
-          disabled={!product.is_active || isSoldOut || addingToCart}
-        >
-          <ShoppingCart size={14} />
-          {addingToCart ? "Adding..." : isSoldOut ? "Sold Out" : "Add to Cart"}
-        </button>
-      </div>
-    </ContentFlatCard>
-  );
-}
+const SIMILAR_SKELETON_KEYS = [
+  "similar-skeleton-1",
+  "similar-skeleton-2",
+  "similar-skeleton-3",
+  "similar-skeleton-4",
+];
+
+const EMPTY_SIMILAR_SKELETON_KEYS = ["empty-similar-skeleton-1", "empty-similar-skeleton-2"];
+
+const RELATED_SKELETON_KEYS = ["related-skeleton-1", "related-skeleton-2", "related-skeleton-3"];
+
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error && err.message ? err.message : fallback;
 
 export const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [searchParams, setSearchParams] = useSearchParams();
   const allProducts = useAtomValue(productsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -133,14 +95,14 @@ export const ProductPage = () => {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
+  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [previewMediaIndex, setPreviewMediaIndex] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(true);
-  const isTwoUpLayout = searchParams.get("layout") === "two-up";
 
   const canEditProduct =
     currentUser?.permissions?.includes("store.product-edit") ||
@@ -153,6 +115,12 @@ export const ProductPage = () => {
     setLayoutMode("application");
     return () => setLayoutMode("web");
   }, [setLayoutMode]);
+
+  useEffect(() => {
+    if (!id) return;
+    setActiveMediaIndex(0);
+    setPreviewMediaIndex(null);
+  }, [id]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -190,10 +158,10 @@ export const ProductPage = () => {
       .finally(() => setSimilarLoading(false));
   }, [id]);
 
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
-      const data = await apiRequest<any[]>(`/store/products/${id}/reviews`);
+      const data = await apiRequest<ProductReviewApiResponse[]>(`/store/products/${id}/reviews`);
       const mappedReviews: ProductReview[] = (data || []).map(r => ({
         id: r.id,
         author_id: r.user?.id || r.user_id,
@@ -211,13 +179,13 @@ export const ProductPage = () => {
     } finally {
       setReviewsLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       void loadReviews();
     }
-  }, [id]);
+  }, [id, loadReviews]);
 
   const userHasReviewed = useMemo(() => {
     if (!currentUser) return false;
@@ -232,8 +200,8 @@ export const ProductPage = () => {
       });
       toast.success("Review submitted!");
       await loadReviews();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to submit review");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Failed to submit review"));
     }
   };
 
@@ -270,8 +238,8 @@ export const ProductPage = () => {
       });
 
       toast.success("Added to cart");
-    } catch (err: any) {
-      toast.error(err.message || "Could not add to cart");
+    } catch (err: unknown) {
+      toast.error(errorMessage(err, "Could not add to cart"));
     } finally {
       setAddingToCart(false);
     }
@@ -326,8 +294,8 @@ export const ProductPage = () => {
             <div>
               <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
               <div style={{ marginTop: 12 }}>
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                {REVIEW_SKELETON_KEYS.map((key, i) => (
+                  <div key={key} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
                     <div className="skeleton skeleton-circle" style={{ width: 44, height: 44 }} />
                     <div style={{ flex: 1 }}>
                       <div
@@ -347,8 +315,12 @@ export const ProductPage = () => {
             <div>
               <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
               <div style={{ marginTop: 12 }}>
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="skeleton-card" style={{ padding: 12, marginBottom: 12 }}>
+                {RELATED_SKELETON_KEYS.map(key => (
+                  <div
+                    key={key}
+                    className="skeleton-card"
+                    style={{ padding: 12, marginBottom: 12 }}
+                  >
                     <div style={{ display: "flex", gap: 12 }}>
                       <div className="skeleton skeleton-circle" style={{ width: 36, height: 36 }} />
                       <div style={{ flex: 1 }}>
@@ -381,18 +353,18 @@ export const ProductPage = () => {
   }
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
-  const media = getProductMedia(product);
-  const pairedProduct =
-    similarProducts[0] ??
-    allProducts.find(
-      p => String(p.id) !== String(product.id) && p.category_id === product.category_id
-    ) ??
-    allProducts.find(p => String(p.id) !== String(product.id));
-  const setTwoUpLayout = (next: boolean) => {
-    const params = new URLSearchParams(searchParams);
-    if (next) params.set("layout", "two-up");
-    else params.delete("layout");
-    setSearchParams(params);
+  const media = getProductMediaItems(product);
+  const safeActiveMediaIndex =
+    media.length > 0 ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1) : 0;
+  const activeMedia = media[safeActiveMediaIndex];
+  const activeMediaIsVideo =
+    activeMedia?.mime_type?.startsWith("video/") || activeMedia?.type === "video";
+  const canCycleMedia = media.length > 1;
+  const previousMedia = () => {
+    setActiveMediaIndex(index => (index - 1 + media.length) % media.length);
+  };
+  const nextMedia = () => {
+    setActiveMediaIndex(index => (index + 1) % media.length);
   };
   const formatDateTime = (value: string) =>
     new Date(value).toLocaleString(undefined, {
@@ -403,105 +375,70 @@ export const ProductPage = () => {
       minute: "2-digit",
     });
 
-  if (isTwoUpLayout) {
-    const pairedMedia = pairedProduct ? getProductMedia(pairedProduct) : [];
-    const previewItems = [...media, ...pairedMedia];
-    const pairedOffset = media.length;
-
-    return (
-      <StorePageShell className="product-page-container" backTo="/store">
-        <div className="product-two-up-shell">
-          <div className="product-two-up-toolbar">
-            <button
-              className="action-btn edit-btn"
-              title="Full product view"
-              onClick={() => setTwoUpLayout(false)}
-            >
-              <LayoutGrid size={15} />
-            </button>
-            <button className="action-btn edit-btn" title="Share product" onClick={handleShare}>
-              <Share2 size={15} />
-            </button>
-            {canEditProduct && (
-              <button
-                className="action-btn edit-btn"
-                title="Edit product"
-                onClick={() => setEditingProduct(product)}
-              >
-                <Edit2 size={15} />
-              </button>
-            )}
-          </div>
-          <div className="product-two-up-grid">
-            <ProductTwoUpCard
-              product={product}
-              onPreview={setSelectedMediaIndex}
-              onAddToCart={addProductToCart}
-              addingToCart={addingToCart}
-            />
-            {pairedProduct ? (
-              <ProductTwoUpCard
-                product={pairedProduct}
-                onPreview={index => setSelectedMediaIndex(pairedOffset + index)}
-                onAddToCart={addProductToCart}
-                addingToCart={addingToCart}
-              />
-            ) : (
-              <ContentFlatCard className="product-two-up-card product-two-up-empty">
-                <Package size={40} />
-              </ContentFlatCard>
-            )}
-          </div>
-        </div>
-
-        {editingProduct && (
-          <EditProductDialog
-            isOpen={!!editingProduct}
-            product={editingProduct}
-            categories={categories}
-            onClose={() => setEditingProduct(null)}
-            onSuccess={() => {
-              setLoadingProduct(true);
-              apiRequest<Product>(`/store/products/${id}`)
-                .then(p => {
-                  if (p) setProduct(p);
-                })
-                .finally(() => setLoadingProduct(false));
-            }}
-          />
-        )}
-
-        {selectedMediaIndex !== null && (
-          <MediaPreviewLightbox
-            items={previewItems}
-            index={selectedMediaIndex}
-            onIndexChange={setSelectedMediaIndex}
-            onClose={() => setSelectedMediaIndex(null)}
-          />
-        )}
-      </StorePageShell>
-    );
-  }
-
   return (
     <StorePageShell className="product-page-container" backTo="/store">
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
         <ContentFlatCard className="product-page-hero">
-          <div className={`product-page-image-container${!product.image_url ? " fallback" : ""}`}>
-            {media[0] ? (
-              <img
-                src={media[0].url}
-                alt={product.name}
-                className="product-page-image"
+          <div className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}>
+            {activeMedia ? (
+              <button
+                type="button"
+                className="product-page-image-button"
                 onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
-                  setSelectedMediaIndex(0);
+                  setPreviewMediaIndex(safeActiveMediaIndex);
                 }}
-              />
+              >
+                {activeMediaIsVideo ? (
+                  <video src={activeMedia.url} preload="metadata" muted playsInline>
+                    <track kind="captions" />
+                  </video>
+                ) : (
+                  <img src={activeMedia.url} alt={activeMedia.filename || product.name} />
+                )}
+              </button>
             ) : (
               <Package size={48} style={{ opacity: 0.25 }} />
+            )}
+            {canCycleMedia && (
+              <>
+                <button
+                  type="button"
+                  className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--prev"
+                  onClick={event => {
+                    event.stopPropagation();
+                    previousMedia();
+                  }}
+                  title="Previous media"
+                  aria-label="Previous media"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  type="button"
+                  className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--next"
+                  onClick={event => {
+                    event.stopPropagation();
+                    nextMedia();
+                  }}
+                  title="Next media"
+                  aria-label="Next media"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </>
+            )}
+            {activeMedia && (
+              <div className="up-upload-lightbox-bar product-page-media-bar">
+                <span className="up-upload-lightbox-name">{activeMedia.filename}</span>
+                <div className="thread-actions">
+                  <span className="up-upload-lightbox-count">
+                    {safeActiveMediaIndex + 1}/{media.length}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 
@@ -548,19 +485,17 @@ export const ProductPage = () => {
 
             <div className="product-page-actions-row">
               <button
+                type="button"
                 className="action-btn edit-btn"
-                title="Two-up product view"
-                onClick={() => setTwoUpLayout(true)}
+                title="Share product"
+                onClick={handleShare}
               >
-                <LayoutGrid size={15} />
-              </button>
-
-              <button className="action-btn edit-btn" title="Share product" onClick={handleShare}>
                 <Share2 size={15} />
               </button>
 
               {canEditProduct && (
                 <button
+                  type="button"
                   className="action-btn edit-btn"
                   title="Edit product"
                   onClick={() => setEditingProduct(product)}
@@ -570,6 +505,7 @@ export const ProductPage = () => {
               )}
 
               <button
+                type="button"
                 className="btn-add-to-cart"
                 onClick={handleAddToCart}
                 disabled={!product.is_active || isSoldOut || addingToCart}
@@ -593,8 +529,8 @@ export const ProductPage = () => {
             <div className="product-page-section-label">Similar Products</div>
             <div className="similar-product-list">
               {similarLoading
-                ? Array.from({ length: 4 }).map((_, i) => (
-                    <div className="similar-skeleton-item" key={i}>
+                ? SIMILAR_SKELETON_KEYS.map((key, i) => (
+                    <div className="similar-skeleton-item" key={key}>
                       <div className="similar-skeleton-thumb skeleton" />
                       <div className="similar-skeleton-lines">
                         <div
@@ -606,8 +542,8 @@ export const ProductPage = () => {
                     </div>
                   ))
                 : similarProducts.length === 0
-                  ? Array.from({ length: 2 }).map((_, i) => (
-                      <div className="similar-skeleton-item" key={`empty-${i}`}>
+                  ? EMPTY_SIMILAR_SKELETON_KEYS.map((key, i) => (
+                      <div className="similar-skeleton-item" key={key}>
                         <div className="similar-skeleton-thumb skeleton" />
                         <div className="similar-skeleton-lines">
                           <div
@@ -618,26 +554,36 @@ export const ProductPage = () => {
                         </div>
                       </div>
                     ))
-                  : similarProducts.map(sp => (
-                      <Link
-                        key={sp.id}
-                        to={`/store/products/${sp.id}`}
-                        className="similar-product-item"
-                      >
-                        <div className="similar-product-thumb">
-                          {sp.image_url ? (
-                            <img src={sp.image_url} alt={sp.name} />
-                          ) : (
-                            <Package size={18} />
-                          )}
-                        </div>
-                        <div className="similar-product-info">
-                          <span className="similar-product-name">{sp.name}</span>
-                          <span className="similar-product-price">{formatCents(sp.price)}</span>
-                        </div>
-                        <ChevronRight size={14} className="similar-product-arrow" />
-                      </Link>
-                    ))}
+                  : similarProducts.map(sp => {
+                      const similarCover = getProductMediaItems(sp)[0];
+                      const similarCoverIsVideo =
+                        similarCover?.mime_type?.startsWith("video/") ||
+                        similarCover?.type === "video";
+                      return (
+                        <Link
+                          key={sp.id}
+                          to={`/store/products/${sp.id}`}
+                          className="similar-product-item"
+                        >
+                          <div className="similar-product-thumb">
+                            {similarCover && similarCoverIsVideo ? (
+                              <video src={similarCover.url} preload="metadata" muted playsInline>
+                                <track kind="captions" />
+                              </video>
+                            ) : similarCover ? (
+                              <img src={similarCover.url} alt={sp.name} />
+                            ) : (
+                              <Package size={18} />
+                            )}
+                          </div>
+                          <div className="similar-product-info">
+                            <span className="similar-product-name">{sp.name}</span>
+                            <span className="similar-product-price">{formatCents(sp.price)}</span>
+                          </div>
+                          <ChevronRight size={14} className="similar-product-arrow" />
+                        </Link>
+                      );
+                    })}
             </div>
           </div>
 
@@ -678,12 +624,15 @@ export const ProductPage = () => {
         />
       )}
 
-      {selectedMediaIndex !== null && (
+      {previewMediaIndex !== null && (
         <MediaPreviewLightbox
           items={media}
-          index={selectedMediaIndex}
-          onIndexChange={setSelectedMediaIndex}
-          onClose={() => setSelectedMediaIndex(null)}
+          index={previewMediaIndex}
+          onIndexChange={index => {
+            setPreviewMediaIndex(index);
+            setActiveMediaIndex(index);
+          }}
+          onClose={() => setPreviewMediaIndex(null)}
         />
       )}
     </StorePageShell>

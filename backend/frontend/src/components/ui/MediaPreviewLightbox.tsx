@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createPortal } from "react-dom";
-import "../store/Store.css";
+import "./MediaPreviewLightbox.css";
 
 export interface PreviewMediaItem {
   url: string;
@@ -33,11 +33,26 @@ export function MediaPreviewLightbox({
   const next = () => onIndexChange((index + 1) % items.length);
 
   return createPortal(
-    <div className="up-upload-lightbox media-preview-lightbox" onClick={onClose}>
-      <div className="up-upload-lightbox-content" onClick={e => e.stopPropagation()}>
+    <dialog
+      open
+      className="up-upload-lightbox media-preview-lightbox"
+      onClick={onClose}
+      onKeyDown={event => {
+        if (event.key === "Escape") onClose();
+      }}
+      aria-modal="true"
+      tabIndex={-1}
+    >
+      <div
+        className="up-upload-lightbox-content"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
+      >
         <div className="media-preview-frame">
           {isVideo(item) ? (
-            <video src={item.url} controls autoPlay className="media-preview-object" />
+            <video src={item.url} controls autoPlay className="media-preview-object">
+              <track kind="captions" />
+            </video>
           ) : (
             <img src={item.url} alt={item.filename} className="media-preview-object" />
           )}
@@ -67,13 +82,16 @@ export function MediaPreviewLightbox({
         <div className="up-upload-lightbox-bar">
           <span className="up-upload-lightbox-name">{item.filename}</span>
           <div className="thread-actions">
-            <button className="action-btn view-btn" title="Close" onClick={onClose}>
+            <span className="up-upload-lightbox-count">
+              {index + 1}/{items.length}
+            </span>
+            <button type="button" className="action-btn view-btn" title="Close" onClick={onClose}>
               <X size={14} />
             </button>
           </div>
         </div>
       </div>
-    </div>,
+    </dialog>,
     document.body
   );
 }

@@ -17,11 +17,13 @@ import { apiRequest } from "../../utils/api";
 import { useNavigate } from "react-router-dom";
 import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
-import { ImageLightbox } from "./ImageLightbox";
+import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewLightbox";
 import { StoreCategoryBar } from "./StoreCategoryBar";
 import { StoreProductGrid } from "./StoreProductGrid";
+import { getProductMediaItems } from "./storeMedia";
 
 export type StoreSortMode = "newest" | "oldest" | "price-asc" | "price-desc" | "rating-desc";
+export type StoreViewMode = "grid" | "wide";
 
 export interface StoreFilterState {
   search: string;
@@ -54,7 +56,11 @@ const parsePriceFilter = (value: string) => {
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedMedia, setSelectedMedia] = useState<{
+    items: PreviewMediaItem[];
+    index: number;
+  } | null>(null);
+  const [viewMode, setViewMode] = useState<StoreViewMode>("grid");
   const [filters, setFilters] = useState<StoreFilterState>(DEFAULT_STORE_FILTERS);
   const [productRatings, setProductRatings] = useState<Record<string, ProductRatingSummary>>({});
   const navigate = useNavigate();
@@ -158,6 +164,19 @@ export const Store: React.FC = () => {
 
   const handleClearFilters = () => {
     setFilters(DEFAULT_STORE_FILTERS);
+  };
+
+  const handleChangeViewMode = (nextViewMode: StoreViewMode) => {
+    setViewMode(nextViewMode);
+  };
+
+  const handlePreviewProductMedia = (product: Product, index = 0) => {
+    const items = getProductMediaItems(product);
+    if (items.length === 0) return;
+    setSelectedMedia({
+      items,
+      index: Math.min(Math.max(index, 0), items.length - 1),
+    });
   };
 
   // Load catalog
@@ -312,7 +331,9 @@ export const Store: React.FC = () => {
         canCreateProduct={canCreateProduct}
         canDeleteCategory={canDeleteCategory}
         isAuthenticated={isAuthenticated}
+        viewMode={viewMode}
         onChangeFilters={setFilters}
+        onChangeViewMode={handleChangeViewMode}
         onToggleCategory={handleToggleCategory}
         onClearFilters={handleClearFilters}
         onDeleteCategory={handleDeleteCategory}
@@ -325,13 +346,21 @@ export const Store: React.FC = () => {
         canCreateProduct={canCreateProduct}
         canEditProduct={canEditProduct}
         canDeleteProduct={canDeleteProduct}
+        viewMode={viewMode}
         onEditProduct={setEditingProduct}
         onDeleteProduct={handleDeleteProduct}
         onAddToCart={handleAddToCart}
-        onImagePreview={setSelectedImage}
+        onImagePreview={handlePreviewProductMedia}
       />
 
-      <ImageLightbox imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
+      {selectedMedia && (
+        <MediaPreviewLightbox
+          items={selectedMedia.items}
+          index={selectedMedia.index}
+          onIndexChange={index => setSelectedMedia(prev => (prev ? { ...prev, index } : prev))}
+          onClose={() => setSelectedMedia(null)}
+        />
+      )}
 
       {editingProduct && (
         <EditProductDialog
