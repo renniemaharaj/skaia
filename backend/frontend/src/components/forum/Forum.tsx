@@ -93,8 +93,6 @@ const CategoryThreadsPreview = ({
             key={thread.id}
             className="thread-item"
             style={{
-              padding: "0.75rem",
-              marginBottom: "0.5rem",
               cursor: "pointer",
               flexShrink: 0,
             }}
