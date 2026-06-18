@@ -10,12 +10,18 @@
 }
 
 .grengo-session-dialog {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  margin: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 2rem;
   width: 100%;
   max-width: 380px;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
   box-shadow: var(--shadow);
 }
 
