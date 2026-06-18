@@ -17,6 +17,7 @@ import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom } from "../../../atoms/presence";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
+import Button from "../../input/Button";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import YouTubePlayer from "./YouTubePlayer";
@@ -884,24 +885,28 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             </div>
           </div>
 
-          <form className="vp-media-input" onSubmit={handleAddMedia}>
+          <form className="vp-media-input compact-form-card" onSubmit={handleAddMedia}>
             <input
               type="text"
               placeholder="Search or YouTube URL..."
+              aria-label="Search for media or paste a YouTube URL"
               value={inputUrl}
               onChange={e => setInputUrl(e.target.value)}
             />
-            <button
+            <Button
               type="submit"
-              className="btn btn-sm btn-primary vp-play-btn yt-animate-btn"
+              className="vp-play-btn yt-animate-btn"
+              variant="primary"
+              size="icon"
               disabled={!inputUrl || isSearching}
+              aria-label="Add media"
             >
               {isSearching ? (
                 <span style={{ fontSize: "10px" }}>...</span>
               ) : (
                 <Youtube size={16} className="yt-icon" />
               )}
-            </button>
+            </Button>
           </form>
 
           {searchResults.length > 0 && (

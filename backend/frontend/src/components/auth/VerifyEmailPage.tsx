@@ -31,48 +31,54 @@ export default function VerifyEmailPage() {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <div className="auth-card" style={{ textAlign: "center" }}>
-          {status === "loading" && (
-            <>
-              <Loader
-                size={40}
-                className="spinning"
-                style={{ color: "var(--primary-color)", marginBottom: 16 }}
-              />
-              <h2 style={{ margin: 0 }}>Verifying your email...</h2>
-            </>
-          )}
-          {status === "success" && (
-            <>
-              <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
-              <h2 style={{ margin: "0 0 12px" }}>{message}</h2>
-              <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-                You can now use all features of your account.
-              </p>
-              <Link
-                to="/login"
-                className="auth-button"
-                style={{ textDecoration: "none", display: "inline-flex" }}
-              >
-                Go to Login
-              </Link>
-            </>
-          )}
-          {status === "error" && (
-            <>
-              <AlertCircle size={40} style={{ color: "var(--error-color)", marginBottom: 16 }} />
-              <h2 style={{ margin: "0 0 12px" }}>Verification Failed</h2>
-              <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>{message}</p>
-              <Link
-                to="/login"
-                className="auth-button"
-                style={{ textDecoration: "none", display: "inline-flex" }}
-              >
-                Go to Login
-              </Link>
-            </>
-          )}
-        </div>
+        <section className="section auth-card" style={{ textAlign: "center" }}>
+          <div className="section__content">
+            {status === "loading" && (
+              <>
+                <Loader
+                  size={40}
+                  className="spinning"
+                  style={{ color: "var(--primary-color)", marginBottom: 16 }}
+                />
+                <h2 style={{ margin: 0 }}>Verifying your email...</h2>
+              </>
+            )}
+            {status === "success" && (
+              <>
+                <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
+                <h2 style={{ margin: "0 0 12px" }}>{message}</h2>
+                <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
+                  You can now use all features of your account.
+                </p>
+                <div className="form-actions" style={{ justifyContent: "center" }}>
+                  <Link
+                    to="/login"
+                    className="auth-button"
+                    style={{ textDecoration: "none", display: "inline-flex" }}
+                  >
+                    Go to Login
+                  </Link>
+                </div>
+              </>
+            )}
+            {status === "error" && (
+              <>
+                <AlertCircle size={40} style={{ color: "var(--error-color)", marginBottom: 16 }} />
+                <h2 style={{ margin: "0 0 12px" }}>Verification Failed</h2>
+                <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>{message}</p>
+                <div className="form-actions" style={{ justifyContent: "center" }}>
+                  <Link
+                    to="/login"
+                    className="auth-button"
+                    style={{ textDecoration: "none", display: "inline-flex" }}
+                  >
+                    Go to Login
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

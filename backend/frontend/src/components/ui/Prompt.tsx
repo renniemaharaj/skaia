@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Button from "../input/Button";
 
 export type PromptConfig = {
   message: string;
@@ -133,7 +134,7 @@ export const PromptContainer = () => {
             <X size={18} />
           </button>
         </div>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="compact-form-card">
           <div
             className="ui-dialog__body"
             style={{
@@ -143,18 +144,23 @@ export const PromptContainer = () => {
               paddingTop: "0.5rem",
             }}
           >
-            <p
-              style={{
-                margin: 0,
-                color: "var(--text-secondary)",
-                fontSize: "0.95rem",
-                lineHeight: 1.6,
-              }}
-            >
-              {config.message}
-            </p>
+            {!config.isConfirm && !config.isAlert ? (
+              <label htmlFor="prompt-value">{config.message}</label>
+            ) : (
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--text-secondary)",
+                  fontSize: "0.95rem",
+                  lineHeight: 1.6,
+                }}
+              >
+                {config.message}
+              </p>
+            )}
             {!config.isConfirm && !config.isAlert && (
               <input
+                id="prompt-value"
                 ref={inputRef}
                 type={config.type || "text"}
                 value={value}
@@ -166,17 +172,17 @@ export const PromptContainer = () => {
           </div>
           <div className="ui-dialog__footer" style={{ borderTop: "none", paddingTop: "0" }}>
             {config.isAlert ? (
-              <button type="button" onClick={handleClose} className="btn btn-ghost">
+              <Button type="button" onClick={handleClose} variant="ghost" size="sm">
                 Close
-              </button>
+              </Button>
             ) : (
               <>
-                <button type="button" onClick={handleClose} className="btn btn-ghost">
+                <Button type="button" onClick={handleClose} variant="ghost" size="sm">
                   Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
+                </Button>
+                <Button type="submit" variant="primary" size="sm">
                   Confirm
-                </button>
+                </Button>
               </>
             )}
           </div>

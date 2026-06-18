@@ -1,6 +1,7 @@
-import { Loader, Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import Button from "../components/input/Button";
 import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import ErrorPage from "./ErrorPage";
 import "../components/ui/FormGroup.css";
@@ -104,11 +105,12 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
       )}
 
       {canRequestPriorityAccess && showOverride && (
-        <form onSubmit={handleTotpSubmit} className="rate-limited-form">
+        <form onSubmit={handleTotpSubmit} className="rate-limited-form compact-form-card">
           <div className="form-group" style={{ marginBottom: "0.5rem", textAlign: "left" }}>
             <label htmlFor="totp_code" style={{ fontSize: "0.8rem", opacity: 0.8 }}>
               Priority Override Code
             </label>
+            <p className="form-help">Enter the six-digit administrator verification code.</p>
             <div className="input-wrapper">
               <ShieldCheck size={18} className="input-icon" />
               <input
@@ -127,21 +129,17 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
             </div>
           </div>
 
-          <button
+          <Button
             type="submit"
             className="auth-button"
-            disabled={isSubmitting || totpCode.length < 6}
+            variant="primary"
+            loading={isSubmitting}
+            disabled={totpCode.length < 6}
+            block
             style={{ marginTop: "0.5rem", padding: "0.6rem" }}
           >
-            {isSubmitting ? (
-              <>
-                <Loader size={16} className="spinning" />
-                Verifying...
-              </>
-            ) : (
-              "Authorize Bypass"
-            )}
-          </button>
+            Authorize Bypass
+          </Button>
         </form>
       )}
     </div>

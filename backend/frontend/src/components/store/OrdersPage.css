@@ -38,8 +38,19 @@
     minmax(10rem, 12rem) minmax(220px, 1fr) minmax(8rem, 9rem)
     auto auto auto;
   gap: 0.75rem;
-  align-items: center;
+  align-items: end;
   margin-bottom: 0.875rem;
+}
+
+.reference-code-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reference-code-active {
+  min-height: 34px;
 }
 
 .reference-code-person {

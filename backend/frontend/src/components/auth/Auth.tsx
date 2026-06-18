@@ -140,8 +140,8 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-header">
+        <section className="section auth-card">
+          <div className="section__header auth-header">
             <h1>{isLogin ? "Welcome Back" : "Join Us"}</h1>
             <p>
               {isLogin
@@ -150,138 +150,147 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
             </p>
           </div>
 
-          {error && (
-            <div className="auth-error">
-              <AlertCircle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
+          <div className="section__content">
+            {error && (
+              <div className="auth-error">
+                <AlertCircle size={20} />
+                <span>{error}</span>
+              </div>
+            )}
 
-          {success && (
-            <div className="auth-success">
-              <CheckCircle size={20} />
-              <span>{success}</span>
-            </div>
-          )}
+            {success && (
+              <div className="auth-success">
+                <CheckCircle size={20} />
+                <span>{success}</span>
+              </div>
+            )}
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            {!isLogin && (
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
+              {!isLogin && (
+                <div className="form-group">
+                  <label htmlFor="username">Username</label>
+                  <p className="form-help">This is how other members will identify you.</p>
+                  <div className="input-wrapper">
+                    <User size={20} className="input-icon" />
+                    <input
+                      id="username"
+                      type="text"
+                      name="username"
+                      placeholder="Choose a username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      required={!isLogin}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="form-group">
-                <label htmlFor="username">Username</label>
+                <label htmlFor="email">Account email</label>
                 <div className="input-wrapper">
-                  <User size={20} className="input-icon" />
+                  <Mail size={20} className="input-icon" />
                   <input
-                    id="username"
-                    type="text"
-                    name="username"
-                    placeholder="Choose a username"
-                    value={formData.username}
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    value={formData.email}
                     onChange={handleChange}
-                    required={!isLogin}
+                    required
                     disabled={loading}
                   />
                 </div>
               </div>
-            )}
 
-            <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <div className="input-wrapper">
-                <Mail size={20} className="input-icon" />
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="input-wrapper">
-                <Lock size={20} className="input-icon" />
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            {!isLogin && (
               <div className="form-group">
-                <label htmlFor="passwordConfirm">Confirm Password</label>
+                <label htmlFor="password">Password</label>
+                {!isLogin && (
+                  <p className="form-help">Use a unique password you do not use elsewhere.</p>
+                )}
                 <div className="input-wrapper">
                   <Lock size={20} className="input-icon" />
                   <input
-                    id="passwordConfirm"
+                    id="password"
                     type="password"
-                    name="passwordConfirm"
-                    placeholder="Confirm your password"
-                    value={formData.passwordConfirm}
+                    name="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
                     onChange={handleChange}
-                    required={!isLogin}
+                    required
                     disabled={loading}
                   />
                 </div>
               </div>
-            )}
 
-            {isLogin && (
-              <div className="auth-forgot">
-                <Link to="/forgot-password">Forgot your password?</Link>
+              {!isLogin && (
+                <div className="form-group">
+                  <label htmlFor="passwordConfirm">Confirm Password</label>
+                  <p className="form-help">Enter the same password again.</p>
+                  <div className="input-wrapper">
+                    <Lock size={20} className="input-icon" />
+                    <input
+                      id="passwordConfirm"
+                      type="password"
+                      name="passwordConfirm"
+                      placeholder="Confirm your password"
+                      value={formData.passwordConfirm}
+                      onChange={handleChange}
+                      required={!isLogin}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isLogin && (
+                <div className="auth-forgot">
+                  <Link to="/forgot-password">Forgot your password?</Link>
+                </div>
+              )}
+
+              <div className="form-actions">
+                <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
+                  {loading
+                    ? isLogin
+                      ? "Logging in..."
+                      : "Creating account..."
+                    : isLogin
+                      ? "Log In"
+                      : "Create Account"}
+                </Button>
               </div>
-            )}
+            </form>
 
-            <Button type="submit" className="auth-button" variant="primary" loading={loading} block>
-              {loading
-                ? isLogin
-                  ? "Logging in..."
-                  : "Creating account..."
-                : isLogin
-                  ? "Log In"
-                  : "Create Account"}
-            </Button>
-          </form>
+            <div className="auth-divider">
+              <span>or</span>
+            </div>
 
-          <div className="auth-divider">
-            <span>or</span>
+            <div className="auth-toggle">
+              <p>
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                <button
+                  type="button"
+                  className="auth-toggle-btn"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError(null);
+                    setSuccess(null);
+                    setFormData({
+                      username: "",
+                      email: "",
+                      password: "",
+                      passwordConfirm: "",
+                    });
+                  }}
+                  disabled={loading}
+                >
+                  {isLogin ? "Sign up" : "Log in"}
+                </button>
+              </p>
+            </div>
           </div>
-
-          <div className="auth-toggle">
-            <p>
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                className="auth-toggle-btn"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError(null);
-                  setSuccess(null);
-                  setFormData({
-                    username: "",
-                    email: "",
-                    password: "",
-                    passwordConfirm: "",
-                  });
-                }}
-                disabled={loading}
-              >
-                {isLogin ? "Sign up" : "Log in"}
-              </button>
-            </p>
-          </div>
-        </div>
+        </section>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

@@ -1,6 +1,7 @@
-import { AlertCircle, Loader, ShieldCheck } from "lucide-react";
+import { AlertCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
+import Button from "../components/input/Button";
 import { type AuthResponse, loginTOTP, verifyMFAChallenge } from "../utils/api";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
@@ -50,8 +51,8 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-header">
+        <section className="section auth-card">
+          <div className="section__header auth-header">
             <ShieldCheck size={40} style={{ color: "var(--primary-color)", marginBottom: 8 }} />
             <h1>Two-Factor Authentication</h1>
             <p>
@@ -61,73 +62,81 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
             </p>
           </div>
 
-          {error && (
-            <div className="auth-error">
-              <AlertCircle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="totp_code">
-                {useBackupCode ? "Backup Code" : "Verification Code"}
-              </label>
-              <div className="input-wrapper">
-                <ShieldCheck size={20} className="input-icon" />
-                <input
-                  id="totp_code"
-                  type="text"
-                  inputMode={useBackupCode ? "text" : "numeric"}
-                  autoComplete="one-time-code"
-                  placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
-                  maxLength={useBackupCode ? 9 : 6}
-                  value={totpCode}
-                  onChange={e => setTotpCode(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+          <div className="section__content">
+            {error && (
+              <div className="auth-error">
+                <AlertCircle size={20} />
+                <span>{error}</span>
               </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
+              <div className="form-group">
+                <label htmlFor="totp_code">
+                  {useBackupCode ? "Backup Code" : "Verification Code"}
+                </label>
+                <p className="form-help">
+                  {useBackupCode
+                    ? "Enter one of your unused recovery codes."
+                    : "Enter the six-digit code from your authenticator app."}
+                </p>
+                <div className="input-wrapper">
+                  <ShieldCheck size={20} className="input-icon" />
+                  <input
+                    id="totp_code"
+                    type="text"
+                    inputMode={useBackupCode ? "text" : "numeric"}
+                    autoComplete="one-time-code"
+                    placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
+                    maxLength={useBackupCode ? 9 : 6}
+                    value={totpCode}
+                    onChange={e => setTotpCode(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <Button
+                  type="submit"
+                  className="auth-button"
+                  variant="primary"
+                  loading={loading}
+                  block
+                >
+                  Verify
+                </Button>
+              </div>
+            </form>
+
+            <div className="auth-divider">
+              <span>or</span>
             </div>
 
-            <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader size={20} className="spinning" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify"
-              )}
-            </button>
-          </form>
-
-          <div className="auth-divider">
-            <span>or</span>
+            <div className="auth-toggle">
+              <p>
+                <button
+                  type="button"
+                  className="auth-toggle-btn"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTotpCode("");
+                    setError(null);
+                  }}
+                  disabled={loading}
+                >
+                  {useBackupCode ? "Use authenticator code" : "Use a backup code"}
+                </button>
+              </p>
+              <p style={{ marginTop: 8 }}>
+                <button type="button" className="auth-toggle-btn" onClick={onBack} disabled={loading}>
+                  Back to login
+                </button>
+              </p>
+            </div>
           </div>
-
-          <div className="auth-toggle">
-            <p>
-              <button
-                type="button"
-                className="auth-toggle-btn"
-                onClick={() => {
-                  setUseBackupCode(!useBackupCode);
-                  setTotpCode("");
-                  setError(null);
-                }}
-                disabled={loading}
-              >
-                {useBackupCode ? "Use authenticator code" : "Use a backup code"}
-              </button>
-            </p>
-            <p style={{ marginTop: 8 }}>
-              <button type="button" className="auth-toggle-btn" onClick={onBack} disabled={loading}>
-                Back to login
-              </button>
-            </p>
-          </div>
-        </div>
+        </section>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

@@ -104,6 +104,10 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
   `@media (prefers-color-scheme: dark)`.
 - Use shared shadows; add a token before introducing a new shadow.
 - Card-like containers use `.card`; section containers use `.section`.
+- Semantic and form-like containers use `.compact-form-card` for the shared transparent
+  flat-glass surface while retaining domain layout classes. Form groups keep comfortable
+  separation, labels explain their controls, major actions use `Button`, and icon-only
+  actions use the `action-btn`/typed button variants.
 - Icon-only buttons use `.thread-action-btn` plus size/variant modifiers.
 - `!important` is allowed only for third-party overrides, page-builder inline
   alignment overrides, intentional resets, or mobile grid collapse.

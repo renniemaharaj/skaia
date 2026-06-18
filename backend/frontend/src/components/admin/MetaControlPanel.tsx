@@ -90,56 +90,44 @@ export default function MetaControlPanel({
   return (
     <form
       onSubmit={handleSubmit}
-      style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+      className="modal-form compact-form-card"
     >
-      <h2 style={{ margin: 0, fontSize: "1.25rem" }}>
-        {category === "seo" ? "SEO Settings" : "Visual Settings"}
-      </h2>
+      <div className="section__header">
+        <h3 style={{ margin: 0 }}>
+          {category === "seo" ? "SEO Settings" : "Visual Settings"}
+        </h3>
+      </div>
 
       {category === "seo" && (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>Description</label>
+          <div className="form-group">
+            <label className="form-label" htmlFor="meta-description">Description</label>
             <textarea
+              id="meta-description"
               name="description"
+              className="form-input"
               value={form.description}
               onChange={handleInput}
               required
-              style={{
-                padding: "0.75rem",
-                border: "1px solid var(--border-color)",
-                borderRadius: "8px",
-                background: "var(--bg-color)",
-                color: "var(--text-primary)",
-                minHeight: "100px",
-                fontFamily: "inherit",
-              }}
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>OG Image</label>
+          <div className="form-group">
+            <label className="form-label" htmlFor="meta-og-image">OG Image</label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"
+                id="meta-og-image"
                 name="og_image"
+                className="form-input"
                 value={form.og_image}
                 onChange={handleInput}
                 placeholder="Image URL or upload below"
-                style={{
-                  flex: 1,
-                  padding: "0.75rem",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  background: "var(--bg-color)",
-                  color: "var(--text-primary)",
-                }}
+                style={{ flex: 1 }}
               />
               <button
+                type="button"
                 className="action-btn danger"
-                onClick={(e: any) => {
-                  e.preventDefault();
-                  handleReset("og_image");
-                }}
+                onClick={() => handleReset("og_image")}
                 title="Reset OG Image"
               >
                 <Trash2 size={14} />
@@ -158,7 +146,7 @@ export default function MetaControlPanel({
 
       {category === "visuals" && (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div className="form-group">
             <Select
               label="Particle Style"
               name="particle_style"
@@ -171,32 +159,25 @@ export default function MetaControlPanel({
               ]}
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="meta-dom-skin">
               DOM Skin Background Image
             </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"
+                id="meta-dom-skin"
                 name="dom_skin"
+                className="form-input"
                 value={form.dom_skin}
                 onChange={handleInput}
                 placeholder="Image URL or upload below (e.g. Minecraft texture)"
-                style={{
-                  flex: 1,
-                  padding: "0.75rem",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  background: "var(--bg-color)",
-                  color: "var(--text-primary)",
-                }}
+                style={{ flex: 1 }}
               />
               <button
+                type="button"
                 className="action-btn danger"
-                onClick={(e: any) => {
-                  e.preventDefault();
-                  handleReset("dom_skin");
-                }}
+                onClick={() => handleReset("dom_skin")}
                 title="Reset Background Image"
               >
                 <Trash2 size={14} />
@@ -210,32 +191,25 @@ export default function MetaControlPanel({
               style={{ marginTop: "0.5rem" }}
             />
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+          <div className="form-group">
+            <label className="form-label" htmlFor="meta-dom-video">
               DOM Skin Background Video
             </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"
+                id="meta-dom-video"
                 name="dom_video"
+                className="form-input"
                 value={form.dom_video}
                 onChange={handleInput}
                 placeholder="Video URL or upload below (e.g. mp4)"
-                style={{
-                  flex: 1,
-                  padding: "0.75rem",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  background: "var(--bg-color)",
-                  color: "var(--text-primary)",
-                }}
+                style={{ flex: 1 }}
               />
               <button
+                type="button"
                 className="action-btn danger"
-                onClick={(e: any) => {
-                  e.preventDefault();
-                  handleReset("dom_video");
-                }}
+                onClick={() => handleReset("dom_video")}
                 title="Reset Background Video"
               >
                 <Trash2 size={14} />
@@ -253,7 +227,7 @@ export default function MetaControlPanel({
       )}
 
       {error && <div style={{ color: "var(--error-color)", fontWeight: 600 }}>{error}</div>}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+      <div className="form-actions">
         <Button type="submit" variant="primary" loading={saving}>
           Save Changes
         </Button>

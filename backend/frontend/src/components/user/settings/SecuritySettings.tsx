@@ -56,6 +56,7 @@ export default function SecuritySettings() {
         <div className="section__content">
           <form
             onSubmit={handleSubmit}
+            className="compact-form-card"
             style={{ maxWidth: "400px", display: "flex", flexDirection: "column", gap: "1rem" }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>

@@ -2,7 +2,6 @@ import { useAtomValue } from "jotai";
 import {
   AlertCircle,
   CheckCircle,
-  Loader,
   Mail,
   ShieldCheck,
   Trash2,
@@ -18,6 +17,7 @@ import {
   type RecoveryRequest,
 } from "../../utils/api";
 import { getGuestSessionId } from "../../utils/guestSession";
+import Button from "../input/Button";
 import { type TableColumn, TableView } from "../ui/TableView/TableView";
 import "./Auth.css";
 import "../ui/FormGroup.css";
@@ -255,8 +255,8 @@ export default function ForgotPasswordPage() {
       <div
         className={`auth-container ${canManageUsers ? "auth-container--wide" : ""}`}
       >
-        <div className="auth-card">
-          <div className="auth-header">
+        <section className="section auth-card">
+          <div className="section__header auth-header">
             <h1>Recover Account</h1>
             <p>
               {sent
@@ -265,80 +265,84 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          {error && (
-            <div className="auth-error">
-              <AlertCircle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {sent ? (
-            <div className="auth-success">
-              <CheckCircle size={20} />
-              <span>
-                {ownRequestMessage ??
-                  "If an account with that email exists, your request has been queued for review."}
-              </span>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="auth-form">
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <div className="input-wrapper">
-                  <Mail size={20} className="input-icon" />
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
+          <div className="section__content">
+            {error && (
+              <div className="auth-error">
+                <AlertCircle size={20} />
+                <span>{error}</span>
               </div>
+            )}
 
-              <button type="submit" className="auth-button" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader size={20} className="spinning" />
-                    Requesting...
-                  </>
-                ) : (
-                  "Request Account Recovery"
-                )}
-              </button>
-            </form>
-          )}
+            {sent ? (
+              <div className="auth-success">
+                <CheckCircle size={20} />
+                <span>
+                  {ownRequestMessage ??
+                    "If an account with that email exists, your request has been queued for review."}
+                </span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="auth-form compact-form-card">
+                <div className="form-group">
+                  <label htmlFor="email">Account email</label>
+                  <p className="form-help">Use the email associated with the account.</p>
+                  <div className="input-wrapper">
+                    <Mail size={20} className="input-icon" />
+                    <input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
 
-          {ownRequest && (
-            <div className="recovery-own-request">
-              <span>
-                Requested {new Date(ownRequest.created_at).toLocaleString()}
-              </span>
-              <span>
-                Expires{" "}
-                {new Date(ownRequest.expires_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+                <div className="form-actions">
+                  <Button
+                    type="submit"
+                    className="auth-button"
+                    variant="primary"
+                    loading={loading}
+                    block
+                  >
+                    Request Account Recovery
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {ownRequest && (
+              <div className="recovery-own-request">
+                <span>
+                  Requested {new Date(ownRequest.created_at).toLocaleString()}
+                </span>
+                <span>
+                  Expires{" "}
+                  {new Date(ownRequest.expires_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            )}
+
+            <div className="auth-divider">
+              <span>or</span>
             </div>
-          )}
 
-          <div className="auth-divider">
-            <span>or</span>
+            <div className="auth-toggle">
+              <p>
+                Remember your password?
+                <Link to="/login" className="auth-toggle-btn">
+                  Log in
+                </Link>
+              </p>
+            </div>
           </div>
-
-          <div className="auth-toggle">
-            <p>
-              Remember your password?
-              <Link to="/login" className="auth-toggle-btn">
-                Log in
-              </Link>
-            </p>
-          </div>
-        </div>
+        </section>
 
         <ContentFlatCard style={{ marginTop: "2rem" }}>
           {canManageUsers && (

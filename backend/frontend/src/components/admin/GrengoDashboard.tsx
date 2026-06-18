@@ -1711,7 +1711,7 @@ function CreateSiteForm({
   };
 
   return (
-    <div className="card grengo-create-form">
+    <div className="grengo-create-form compact-form-card">
       <h3>Create New Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="form-grid">
@@ -1849,7 +1849,7 @@ function ImportSiteForm({
   };
 
   return (
-    <div className="card grengo-import-form">
+    <div className="grengo-import-form compact-form-card">
       <h3>Import Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="import-fields">
@@ -1940,7 +1940,7 @@ function ImportNodeForm({
   };
 
   return (
-    <div className="card grengo-import-form">
+    <div className="grengo-import-form compact-form-card">
       <h2>Import Node Archive</h2>
       <p
         style={{

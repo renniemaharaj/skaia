@@ -1,9 +1,10 @@
-import { Check, Loader, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { centsToDollars } from "../../utils/money";
+import Button from "../input/Button";
 import Select from "../input/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
 
@@ -169,44 +170,33 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
             </p>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button
+            <Button
               type="submit"
               form="edit-product-form"
-              disabled={loading || !formData.name.trim()}
-              style={{
-                background: "var(--primary-color)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                color: "white",
-              }}
+              variant="primary"
+              size="icon"
+              loading={loading}
+              disabled={!formData.name.trim()}
+              aria-label="Save product"
             >
-              {loading ? <Loader size={16} className="spin" /> : <Check size={16} />}
-            </button>
-            <button
+              <Check size={16} />
+            </Button>
+            <Button
               type="button"
               onClick={onClose}
-              style={{
-                background: "var(--bg-tertiary)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-              }}
+              variant="action"
+              size="icon"
+              aria-label="Close product editor"
             >
               <X size={16} />
-            </button>
+            </Button>
           </div>
         </div>
 
         <form
           id="edit-product-form"
           onSubmit={handleSubmit}
+          className="compact-form-card"
           style={{ display: "flex", flexDirection: "column", gap: "14px" }}
         >
           {error && (
@@ -395,24 +385,26 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                     }}
                   />
                 )}
-                <button
+                <Button
                   type="button"
-                  className="btn-admin-icon"
-                  style={{ color: "var(--color-danger)" }}
+                  variant="danger"
+                  size="icon"
                   onClick={() => setSpecialActions(specialActions.filter((_, i) => i !== idx))}
+                  aria-label="Remove special action"
                 >
                   <X size={18} />
-                </button>
+                </Button>
               </div>
             ))}
-            <button
+            <Button
               type="button"
-              className="btn btn-ghost btn-sm"
+              variant="ghost"
+              size="sm"
               style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
               onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
             >
               + Add Action
-            </button>
+            </Button>
           </div>
         </form>
       </div>

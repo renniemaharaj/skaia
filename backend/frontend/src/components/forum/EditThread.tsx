@@ -160,7 +160,7 @@ const EditThread = () => {
         </div>
       </div>
 
-      <div className="modal-form">
+      <div className="modal-form compact-form-card">
         {error && (
           <div
             style={{

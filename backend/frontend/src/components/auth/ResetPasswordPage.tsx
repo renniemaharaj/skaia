@@ -1,7 +1,8 @@
-import { AlertCircle, CheckCircle, Loader, Lock } from "lucide-react";
+import { AlertCircle, CheckCircle, Lock } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../../utils/api";
+import Button from "../input/Button";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 
@@ -48,20 +49,25 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-container">
-          <div className="auth-card" style={{ textAlign: "center" }}>
-            <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
-            <h2 style={{ margin: "0 0 12px" }}>Password Reset</h2>
-            <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-              Your password has been changed. You can now log in with your new password.
-            </p>
-            <button
-              className="auth-button"
-              onClick={() => navigate("/login")}
-              style={{ display: "inline-flex" }}
-            >
-              Go to Login
-            </button>
-          </div>
+          <section className="section auth-card" style={{ textAlign: "center" }}>
+            <div className="section__content">
+              <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
+              <h2 style={{ margin: "0 0 12px" }}>Password Reset</h2>
+              <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
+                Your password has been changed. You can now log in with your new password.
+              </p>
+              <div className="form-actions" style={{ justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="auth-button"
+                  onClick={() => navigate("/login")}
+                  style={{ display: "inline-flex" }}
+                >
+                  Go to Login
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     );
@@ -70,76 +76,81 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-header">
+        <section className="section auth-card">
+          <div className="section__header auth-header">
             <h1>Set New Password</h1>
             <p>Enter your new password below</p>
           </div>
 
-          {error && (
-            <div className="auth-error">
-              <AlertCircle size={20} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="password">New Password</label>
-              <div className="input-wrapper">
-                <Lock size={20} className="input-icon" />
-                <input
-                  id="password"
-                  type="password"
-                  placeholder="Enter new password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+          <div className="section__content">
+            {error && (
+              <div className="auth-error">
+                <AlertCircle size={20} />
+                <span>{error}</span>
               </div>
-            </div>
+            )}
 
-            <div className="form-group">
-              <label htmlFor="confirm">Confirm Password</label>
-              <div className="input-wrapper">
-                <Lock size={20} className="input-icon" />
-                <input
-                  id="confirm"
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
-                  required
-                  disabled={loading}
-                />
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
+              <div className="form-group">
+                <label htmlFor="password">New Password</label>
+                <p className="form-help">Choose a unique password you do not use elsewhere.</p>
+                <div className="input-wrapper">
+                  <Lock size={20} className="input-icon" />
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
               </div>
+
+              <div className="form-group">
+                <label htmlFor="confirm">Confirm Password</label>
+                <p className="form-help">Enter the new password again.</p>
+                <div className="input-wrapper">
+                  <Lock size={20} className="input-icon" />
+                  <input
+                    id="confirm"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <Button
+                  type="submit"
+                  className="auth-button"
+                  variant="primary"
+                  loading={loading}
+                  block
+                >
+                  Reset Password
+                </Button>
+              </div>
+            </form>
+
+            <div className="auth-divider">
+              <span>or</span>
             </div>
 
-            <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader size={20} className="spinning" />
-                  Resetting...
-                </>
-              ) : (
-                "Reset Password"
-              )}
-            </button>
-          </form>
-
-          <div className="auth-divider">
-            <span>or</span>
+            <div className="auth-toggle">
+              <p>
+                <Link to="/login" className="auth-toggle-btn">
+                  Back to Login
+                </Link>
+              </p>
+            </div>
           </div>
-
-          <div className="auth-toggle">
-            <p>
-              <Link to="/login" className="auth-toggle-btn">
-                Back to Login
-              </Link>
-            </p>
-          </div>
-        </div>
+        </section>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

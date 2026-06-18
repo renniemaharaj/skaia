@@ -83,12 +83,18 @@ const NewThread = () => {
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
           {/* Close */}
-          <button className="action-btn btn-close" onClick={() => navigate("/forum")} title="Close">
+          <button
+            type="button"
+            className="action-btn btn-close"
+            onClick={() => navigate("/forum")}
+            title="Close"
+          >
             <X size={20} />
           </button>
           <button
+            type="submit"
+            form="new-thread-form"
             className="action-btn btn-submit"
-            onClick={handleCreateThread}
             disabled={loading}
             title="Submit"
           >
@@ -97,7 +103,14 @@ const NewThread = () => {
         </div>
       </div>
 
-      <div className="modal-form">
+      <form
+        id="new-thread-form"
+        className="modal-form compact-form-card"
+        onSubmit={event => {
+          event.preventDefault();
+          void handleCreateThread();
+        }}
+      >
         {error && (
           <div
             style={{
@@ -114,7 +127,8 @@ const NewThread = () => {
         )}
 
         <div className="form-group">
-          <label htmlFor="title">Thread Title *</label>
+          <label htmlFor="title">Thread title</label>
+          <p className="form-help">Use a clear title that summarizes the discussion.</p>
           <input
             id="title"
             type="text"
@@ -130,10 +144,11 @@ const NewThread = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="content">Message *</label>
+          <label htmlFor="content">Message</label>
+          <p className="form-help">Add the context other members need to respond.</p>
           <Editor value={threadContent} onChange={setThreadContent} />
         </div>
-      </div>
+      </form>
     </div>
   );
 };

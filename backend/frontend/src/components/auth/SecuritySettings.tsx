@@ -691,6 +691,7 @@ export default function SecuritySettings({
           </p>
           <form
             onSubmit={handlePasswordSubmit}
+            className="compact-form-card"
             style={{
               maxWidth: "400px",
               display: "flex",

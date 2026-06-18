@@ -28,6 +28,7 @@ import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
+import Button from "../input/Button";
 import { StorePageShell } from "./StorePageShell";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
@@ -546,21 +547,29 @@ export const OrdersPage = () => {
             {isStoreAdmin && (
               <section className="reference-codes-panel">
                 <h3>{referenceSectionTitle}</h3>
-                <form onSubmit={submitReferenceCode} className="reference-code-form">
-                  <input
-                    className="form-input reference-code-input reference-code-input--code"
-                    placeholder="Code"
-                    value={referenceForm.code}
-                    onChange={event =>
-                      setReferenceForm(prev => ({
-                        ...prev,
-                        code: event.target.value,
-                      }))
-                    }
-                  />
-                  <div className="reference-code-person">
+                <form
+                  onSubmit={submitReferenceCode}
+                  className="reference-code-form compact-form-card"
+                >
+                  <div className="reference-code-field">
+                    <label htmlFor="reference-code">Reference code</label>
+                    <input
+                      id="reference-code"
+                      className="form-input reference-code-input reference-code-input--code"
+                      placeholder="e.g. SUMMER25"
+                      value={referenceForm.code}
+                      onChange={event =>
+                        setReferenceForm(prev => ({
+                          ...prev,
+                          code: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="reference-code-person reference-code-field">
+                    <span className="form-label">Assigned user</span>
                     <PersonPicker
-                      placeholder="Assign user..."
+                      placeholder="Search for a user..."
                       excludeSelf={false}
                       autoFocus={false}
                       resultsVariant="glass-menu"
@@ -568,19 +577,23 @@ export const OrdersPage = () => {
                       onSelect={handleReferenceUserSelect}
                     />
                   </div>
-                  <input
-                    className="form-input reference-code-input reference-code-input--amount"
-                    inputMode="numeric"
-                    placeholder="Incentive cents"
-                    value={referenceForm.incentive_amount}
-                    onChange={event =>
-                      setReferenceForm(prev => ({
-                        ...prev,
-                        incentive_amount: event.target.value,
-                      }))
-                    }
-                  />
-                  <label className="cart-checkbox-label" style={{ margin: 0 }}>
+                  <div className="reference-code-field">
+                    <label htmlFor="reference-incentive">Incentive</label>
+                    <input
+                      id="reference-incentive"
+                      className="form-input reference-code-input reference-code-input--amount"
+                      inputMode="numeric"
+                      placeholder="Amount in cents"
+                      value={referenceForm.incentive_amount}
+                      onChange={event =>
+                        setReferenceForm(prev => ({
+                          ...prev,
+                          incentive_amount: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <label className="cart-checkbox-label reference-code-active" style={{ margin: 0 }}>
                     <input
                       type="checkbox"
                       checked={referenceForm.is_active}
@@ -593,13 +606,13 @@ export const OrdersPage = () => {
                     />
                     Active
                   </label>
-                  <button type="submit" className="btn btn-primary">
+                  <Button type="submit" variant="primary" size="sm">
                     {saveReferenceLabel}
-                  </button>
+                  </Button>
                   {editingReferenceCodeId && (
-                    <button type="button" className="btn btn-ghost" onClick={resetReferenceForm}>
+                    <Button type="button" variant="ghost" size="sm" onClick={resetReferenceForm}>
                       Cancel
-                    </button>
+                    </Button>
                   )}
                   <div
                     className={`reference-code-selected-user ${
