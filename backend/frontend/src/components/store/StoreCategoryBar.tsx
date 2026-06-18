@@ -45,6 +45,15 @@ interface StoreCategoryBarProps {
   onNavigate: (path: string) => void;
 }
 
+const formatCompactCents = (cents: number) => {
+  const sign = cents < 0 ? "-" : "";
+  const dollars = Math.abs(cents) / 100;
+  if (dollars < 1000) return `${sign}${formatCents(Math.abs(cents))}`;
+  const thousands = dollars / 1000;
+  const value = thousands >= 10 ? Math.round(thousands).toString() : thousands.toFixed(1);
+  return `${sign}$${value.replace(/\.0$/, "")}k`;
+};
+
 export function StoreCategoryBar({
   categories,
   filters,
@@ -167,7 +176,7 @@ export function StoreCategoryBar({
                   {walletBalance !== null && (
                     <span className={`store-balance-badge${balanceClass}`}>
                       {walletBalance > 0 ? "+" : ""}
-                      {formatCents(walletBalance)}
+                      {formatCompactCents(walletBalance)}
                     </span>
                   )}
                 </Button>

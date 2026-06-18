@@ -49,9 +49,15 @@ WebSocket consumers, or page-builder UX.
 - Product/category/catalog atoms persist as `store.products` and `store.categories`.
 - Store catalog filters include category, search, price, rating, sort, product
   owner via glass-menu `PersonPicker`, and an authenticated `You` owner toggle.
+  Price bounds should tolerate inverted min/max input by treating the lower value
+  as the minimum.
 - Store chrome may show live wallet balance and pending-order badges fetched from
-  `/store/wallet` and `/store/orders`.
+  `/store/wallet` and `/store/orders`; wallet badges compact thousands as `$1.2k`
+  or `$12k`, pending counts include open vendor line status, and loaded user
+  orders should be subscribed to for live badge updates.
 - Cart page supports authenticated carts and guest checkout from local cart items.
+- Empty cart state uses the compact storefront empty-state treatment with
+  "No products added" copy, not a large CTA card.
 - Checkout payload includes `items`, `payment_method_id`, `currency`, guest contact,
   delivery fields, `billing_info`, and `referral_code`.
 - Saved checkout details live in local storage key `checkoutSaved`; do not save
@@ -59,6 +65,16 @@ WebSocket consumers, or page-builder UX.
 - Authenticated users may load wallet cards from `/store/wallet/cards` and pay with
   `card_{id}` or `wallet`.
 - Successful checkout clears local cart and shows the submitted order view.
+- Order status views surface per-vendor activity in the right summary column with
+  compact vendor totals, status, and accept/reject controls for the current
+  vendor's own line items.
+- Rich inline users in global messages should render all available roles using
+  the role catalog colors when only role names are embedded in the message user.
+- System inbox messages containing JSON payloads, especially order cards, render
+  as compact inline interactive cards that route to the canonical destination
+  such as `/store/orders/{id}` and do not echo raw JSON as a caption.
+- Global chat join/leave rows use compact colored arrow icons: green right arrow
+  for join and red left arrow for leave.
 
 ## CSS Token Contract
 

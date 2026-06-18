@@ -54,22 +54,23 @@ type CartItem struct {
 
 // Order represents a completed order. TotalPrice is in cents.
 type Order struct {
-	ID               int64        `json:"id"`
-	UserID           *int64       `json:"user_id,omitempty"`
-	IsGuest          bool         `json:"is_guest"`
-	GuestEmail       string       `json:"guest_email,omitempty"`
-	GuestPhone       string       `json:"guest_phone,omitempty"`
-	DeliveryLocation string       `json:"delivery_location,omitempty"`
-	DeliveryDate     *time.Time   `json:"delivery_date,omitempty"`
-	DeliveryTime     string       `json:"delivery_time,omitempty"`
-	ExtraInfo        string       `json:"extra_info,omitempty"`
-	BillingInfo      string       `json:"billing_info,omitempty"`
-	TotalPrice       int64        `json:"total_price"`
-	Status           string       `json:"status"`
-	ReferralCode     string       `json:"referral_code,omitempty"`
-	CreatedAt        time.Time    `json:"created_at"`
-	UpdatedAt        time.Time    `json:"updated_at"`
-	Items            []*OrderItem `json:"items,omitempty"`
+	ID               int64                `json:"id"`
+	UserID           *int64               `json:"user_id,omitempty"`
+	IsGuest          bool                 `json:"is_guest"`
+	GuestEmail       string               `json:"guest_email,omitempty"`
+	GuestPhone       string               `json:"guest_phone,omitempty"`
+	DeliveryLocation string               `json:"delivery_location,omitempty"`
+	DeliveryDate     *time.Time           `json:"delivery_date,omitempty"`
+	DeliveryTime     string               `json:"delivery_time,omitempty"`
+	ExtraInfo        string               `json:"extra_info,omitempty"`
+	BillingInfo      string               `json:"billing_info,omitempty"`
+	TotalPrice       int64                `json:"total_price"`
+	Status           string               `json:"status"`
+	ReferralCode     string               `json:"referral_code,omitempty"`
+	CreatedAt        time.Time            `json:"created_at"`
+	UpdatedAt        time.Time            `json:"updated_at"`
+	Items            []*OrderItem         `json:"items,omitempty"`
+	Vendors          []*OrderVendorStatus `json:"vendors,omitempty"`
 }
 
 // ReferenceCode maps a checkout code to the user who should receive the reward.
@@ -95,12 +96,27 @@ type ReferenceCodePayout struct {
 
 // OrderItem represents an item in an order. Price is in cents.
 type OrderItem struct {
-	ID        int64     `json:"id"`
-	OrderID   int64     `json:"order_id"`
-	ProductID int64     `json:"product_id"`
-	Quantity  int       `json:"quantity"`
-	Price     int64     `json:"price"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              int64        `json:"id"`
+	OrderID         int64        `json:"order_id"`
+	ProductID       int64        `json:"product_id"`
+	OwnerID         *int64       `json:"owner_id,omitempty"`
+	Owner           *UserSummary `json:"owner,omitempty"`
+	Quantity        int          `json:"quantity"`
+	Price           int64        `json:"price"`
+	VendorStatus    string       `json:"vendor_status"`
+	VendorNote      string       `json:"vendor_note,omitempty"`
+	VendorUpdatedAt *time.Time   `json:"vendor_updated_at,omitempty"`
+	CreatedAt       time.Time    `json:"created_at"`
+}
+
+// OrderVendorStatus summarizes one vendor's line items inside a single order.
+type OrderVendorStatus struct {
+	VendorID  int64        `json:"vendor_id"`
+	Vendor    *UserSummary `json:"vendor,omitempty"`
+	Status    string       `json:"status"`
+	Items     int          `json:"items"`
+	Total     int64        `json:"total"`
+	UpdatedAt *time.Time   `json:"updated_at,omitempty"`
 }
 
 // Payment tracks the payment-provider lifecycle for an order. Amount is in cents.

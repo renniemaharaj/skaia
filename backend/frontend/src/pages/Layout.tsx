@@ -278,6 +278,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         setMfaRequired(true);
         return;
       }
+      const shouldLogout =
+        !detail?.errorMessage ||
+        /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
+          detail.errorMessage
+        );
+      if (!shouldLogout) return;
       console.warn("Unauthorized access detected, clearing auth state", detail);
       setAccessToken(null);
       setRefreshToken(null);

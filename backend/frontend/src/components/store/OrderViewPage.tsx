@@ -49,6 +49,25 @@ const OrderViewPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id, isAuthenticated, setOrder, setOrders]);
 
+  const updateVendorStatus = async (orderId: string, status: string) => {
+    try {
+      const updated = await apiRequest<Order>(`/store/orders/${orderId}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+      setOrder(updated);
+      setOrders(prev => {
+        const exists = prev.some(o => String(o.id) === String(updated.id));
+        return exists
+          ? prev.map(o => (String(o.id) === String(updated.id) ? { ...o, ...updated } : o))
+          : [updated, ...prev];
+      });
+      toast.success(status === "accepted" ? "Your part was accepted" : "Your part was updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update order");
+    }
+  };
+
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
@@ -61,7 +80,13 @@ const OrderViewPage: React.FC = () => {
       </div>
     );
 
-  return <OrderSubmittedView order={order} onBackLink="/store/orders" />;
+  return (
+    <OrderSubmittedView
+      order={order}
+      onBackLink="/store/orders"
+      onVendorStatusChange={updateVendorStatus}
+    />
+  );
 };
 
 export default OrderViewPage;

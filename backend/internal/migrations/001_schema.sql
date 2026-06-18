@@ -186,9 +186,16 @@ CREATE TABLE IF NOT EXISTS order_items (
     product_id BIGINT NOT NULL REFERENCES products(id),
     quantity   INT    NOT NULL,
     price      BIGINT NOT NULL,
+    vendor_status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    vendor_note TEXT,
+    vendor_updated_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS vendor_status VARCHAR(50) NOT NULL DEFAULT 'pending';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS vendor_note TEXT;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS vendor_updated_at TIMESTAMP;
+CREATE INDEX IF NOT EXISTS idx_order_items_vendor_status ON order_items(vendor_status);
 
 CREATE TABLE IF NOT EXISTS payments (
     id             BIGSERIAL    PRIMARY KEY,

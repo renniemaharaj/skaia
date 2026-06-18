@@ -20,13 +20,13 @@ INSERT INTO permissions (name, category, description) VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO roles (name, description, power_level, theme_color) VALUES
-    ('store-seller', 'Can post and manage owned store products', 10, '#0f766e')
+    ('Vendor', 'Can post and manage owned store products', 10, '#0f766e')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
-WHERE r.name = 'store-seller'
+WHERE r.name IN ('Vendor', 'store-seller')
   AND p.name IN ('store.product-seller', 'store.product-new')
 ON CONFLICT DO NOTHING;
 

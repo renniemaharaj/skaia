@@ -58,9 +58,31 @@ export interface OrderItem {
   id: string;
   order_id: string;
   product_id: string;
+  owner_id?: string;
+  owner?: {
+    id: string;
+    display_name: string;
+    avatar_url: string;
+  };
   quantity: number;
   price: number;
+  vendor_status?: string;
+  vendor_note?: string;
+  vendor_updated_at?: string;
   created_at: string;
+}
+
+export interface OrderVendorStatus {
+  vendor_id: string;
+  vendor?: {
+    id: string;
+    display_name: string;
+    avatar_url: string;
+  };
+  status: string;
+  items: number;
+  total: number;
+  updated_at?: string;
 }
 
 export interface Order {
@@ -79,6 +101,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
+  vendors?: OrderVendorStatus[];
   payment?: Payment;
 }
 

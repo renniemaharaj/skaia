@@ -22,11 +22,12 @@ type Client struct {
 	Roles       []string
 	SessionID   int64 // session bucket for chat, presence & cursor fan-out
 	// Presence fields - written under Hub.mu.Lock via presenceUpdates.
-	Route          string
-	UserName       string
-	Avatar         string
-	IsMuted        bool
-	GuestSessionID string
+	Route            string
+	UserName         string
+	Avatar           string
+	IsMuted          bool
+	GuestSessionID   string
+	RecoveryAccepted bool
 	// Per-client rate limiters - used only from ReadPump (single goroutine).
 	chatLimit      rateBucket
 	cursorLimit    rateBucket

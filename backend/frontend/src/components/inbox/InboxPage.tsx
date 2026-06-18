@@ -1358,17 +1358,11 @@ function MessageBubble({
       onClick: () => toast.error("Reported message"),
     },
   ];
+  const richSystemCard = renderRichSystemCard(m);
+
   if (m.message_type === "system_group_created" || m.message_type === "system_group_update") {
     return (
-      <div
-        className="inbox-msg-system"
-        style={{
-          textAlign: "center",
-          margin: "1rem 0",
-          color: "var(--color-text-secondary)",
-          fontSize: "0.85rem",
-        }}
-      >
+      <div className="inbox-msg-system">
         <span>
           {m.message_type === "system_group_created" ? (
             <>
@@ -1460,62 +1454,7 @@ function MessageBubble({
               return <p className="inbox-msg-content">{m.content}</p>;
             }
           })()}
-        {m.message_type === "order_created" &&
-          (() => {
-            try {
-              const card = JSON.parse(m.content);
-              return (
-                <Link to={`/orders/${card.order_id}`} className="inbox-page-card">
-                  <div className="inbox-page-card__icon">
-                    <FileText size={20} />
-                  </div>
-                  <div className="inbox-page-card__body">
-                    <span className="inbox-page-card__label">Order Confirmed</span>
-                    <span className="inbox-page-card__title">Order #{card.order_id}</span>
-                    <span className="inbox-page-card__desc">
-                      {card.item_count} item{card.item_count !== 1 ? "s" : ""} · $
-                      {(card.total_price / 100).toFixed(2)}
-                    </span>
-                    <span className="inbox-page-card__link">View order</span>
-                  </div>
-                </Link>
-              );
-            } catch {
-              return <p className="inbox-msg-content">{m.content}</p>;
-            }
-          })()}
-
-        {m.message_type === "order_status" &&
-          (() => {
-            try {
-              const card = JSON.parse(m.content);
-              const statusLabel: Record<string, string> = {
-                pending: "Order Pending",
-                processing: "Order Processing",
-                completed: "Order Completed",
-                cancelled: "Order Cancelled",
-              };
-              return (
-                <Link to={`/store/orders/${card.order_id}`} className="inbox-page-card">
-                  <div className="inbox-page-card__icon">
-                    <FileText size={20} />
-                  </div>
-                  <div className="inbox-page-card__body">
-                    <span className="inbox-page-card__label">Order Update</span>
-                    <span className="inbox-page-card__title">
-                      {statusLabel[card.status] ?? `Status: ${card.status}`}
-                    </span>
-                    <span className="inbox-page-card__desc">
-                      Order #{card.order_id} · ${(card.total_price / 100).toFixed(2)}
-                    </span>
-                    <span className="inbox-page-card__link">View order</span>
-                  </div>
-                </Link>
-              );
-            } catch {
-              return <p className="inbox-msg-content">{m.content}</p>;
-            }
-          })()}
+        {richSystemCard}
         {m.content && (!m.message_type || m.message_type === "text") && (
           <p className="inbox-msg-content" onClick={handleTextClick} style={{ cursor: "pointer" }}>
             {m.content}
@@ -1524,6 +1463,8 @@ function MessageBubble({
         {m.content &&
           m.message_type &&
           m.message_type !== "text" &&
+          !richSystemCard &&
+          m.message_type !== "page_card" &&
           m.content !== m.attachment_name && (
             <p className="inbox-msg-content inbox-msg-caption">{m.content}</p>
           )}
@@ -1541,4 +1482,70 @@ function MessageBubble({
       )}
     </div>
   );
+}
+
+function renderRichSystemCard(m: InboxMessage) {
+  if (!m.message_type?.startsWith("order_")) return null;
+  const card = parseMessageJSON(m.content);
+  if (!card || !card.order_id) return null;
+  const orderID = String(card.order_id);
+  const status = String(card.status || "pending");
+  const statusLabel: Record<string, string> = {
+    pending: "Order Pending",
+    vendor_review: "Vendor Review",
+    accepted: "Order Accepted",
+    processing: "Order Processing",
+    completed: "Order Completed",
+    cancelled: "Order Cancelled",
+    rejected: "Order Rejected",
+    failed: "Order Failed",
+  };
+  const label: Record<string, string> = {
+    order_created: "Order Confirmed",
+    order_received: "Order Received",
+    order_status: "Order Update",
+    order_deleted: "Order Deleted",
+  };
+  const items = Array.isArray(card.items) ? card.items : [];
+  const itemCount = Number(card.item_count || items.length || 0);
+  const route = String(card.route || `/store/orders/${orderID}`);
+  const total = typeof card.total_price === "number" ? formatCompactDollars(card.total_price) : "";
+
+  return (
+    <Link to={route} className="inbox-page-card inbox-page-card--compact">
+      <div className="inbox-page-card__icon">
+        <FileText size={16} />
+      </div>
+      <div className="inbox-page-card__body">
+        <span className="inbox-page-card__label">{label[m.message_type] || "System"}</span>
+        <span className="inbox-page-card__title">
+          {statusLabel[status] ?? `Status: ${status}`} · #{orderID}
+        </span>
+        <span className="inbox-page-card__desc">
+          {[itemCount ? `${itemCount} item${itemCount === 1 ? "" : "s"}` : "", total]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+        <span className="inbox-page-card__link">View order</span>
+      </div>
+    </Link>
+  );
+}
+
+function parseMessageJSON(content: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(content);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatCompactDollars(cents: number) {
+  const sign = cents < 0 ? "-" : "";
+  const dollars = Math.abs(cents) / 100;
+  if (dollars < 1000) return `${sign}$${dollars.toFixed(2)}`;
+  const thousands = dollars / 1000;
+  const value = thousands >= 10 ? Math.round(thousands).toString() : thousands.toFixed(1);
+  return `${sign}$${value.replace(/\.0$/, "")}k`;
 }

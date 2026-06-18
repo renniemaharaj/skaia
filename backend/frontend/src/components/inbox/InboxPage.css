@@ -660,6 +660,25 @@
   margin-bottom: 4px;
 }
 
+.inbox-msg-system {
+  display: flex;
+  justify-content: center;
+  margin: 0.45rem 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.inbox-msg-system > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: min(100%, 34rem);
+  padding: 0.25rem 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+}
+
 /* Attachment rendering */
 .inbox-msg-image {
   max-width: 300px;
@@ -723,6 +742,13 @@
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
+.inbox-page-card--compact {
+  max-width: 280px;
+  gap: 0.55rem;
+  padding: 0.48rem 0.62rem;
+  border-radius: 8px;
+}
+
 .inbox-page-card:hover {
   border-color: var(--primary-color);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
@@ -740,6 +766,12 @@
   justify-content: center;
 }
 
+.inbox-page-card--compact .inbox-page-card__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 6px;
+}
+
 .inbox-page-card__body {
   display: flex;
   flex-direction: column;
@@ -748,7 +780,7 @@
 }
 
 .inbox-page-card__label {
-  font-size: 0.6875rem;
+  font-size: 0.66rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -756,7 +788,7 @@
 }
 
 .inbox-page-card__title {
-  font-size: 0.875rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
@@ -765,7 +797,7 @@
 }
 
 .inbox-page-card__desc {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -774,7 +806,7 @@
 }
 
 .inbox-page-card__link {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--primary-color);
   font-weight: 500;
   margin-top: 0.25rem;

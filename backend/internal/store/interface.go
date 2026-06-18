@@ -46,6 +46,7 @@ type OrderRepository interface {
 	GetGuestOrder(id int64, email, phone string) (*models.Order, error)
 	ListAll(limit, offset int) ([]*models.Order, error)
 	AcceptWithStockCheck(id int64) (*models.Order, error)
+	UpdateVendorStatus(id, ownerID int64, status, note string) (*models.Order, error)
 	UpdateStatus(id int64, status string) (*models.Order, error)
 	Delete(id int64) error
 }

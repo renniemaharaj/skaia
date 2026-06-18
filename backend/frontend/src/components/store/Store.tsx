@@ -11,6 +11,7 @@ import {
   type StoreCategory,
   productCategoriesAtom,
   productsAtom,
+  ordersAtom,
   storeCartItemsAtom,
 } from "../../atoms/store";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -59,6 +60,19 @@ const parsePriceFilter = (value: string) => {
   return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed * 100) : null;
 };
 
+const isOpenOrderStatus = (status?: string) =>
+  !["completed", "failed", "cancelled", "rejected"].includes(status || "pending");
+
+const hasPendingVendorWork = (order: Order) => {
+  if (Array.isArray(order.vendors) && order.vendors.length > 0) {
+    return order.vendors.some(vendor => isOpenOrderStatus(vendor.status));
+  }
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    return order.items.some(item => isOpenOrderStatus(item.vendor_status || order.status));
+  }
+  return isOpenOrderStatus(order.status);
+};
+
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -79,12 +93,14 @@ export const Store: React.FC = () => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const categories = useAtomValue(productCategoriesAtom);
   const products = useAtomValue(productsAtom);
+  const userOrders = useAtomValue(ordersAtom);
 
   const setProducts = useSetAtom(productsAtom);
   const setCategories = useSetAtom(productCategoriesAtom);
   const setCartItems = useSetAtom(storeCartItemsAtom);
+  const setOrders = useSetAtom(ordersAtom);
 
-  const { subscribe } = useWebSocketSync();
+  const { subscribe, unsubscribe } = useWebSocketSync();
 
   const [guestSandboxMode] = useGuestSandboxMode();
 
@@ -129,8 +145,11 @@ export const Store: React.FC = () => {
   const visibleProducts = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
     const selectedCategoryIds = new Set(filters.categoryIds);
-    const minPrice = parsePriceFilter(filters.minPrice);
-    const maxPrice = parsePriceFilter(filters.maxPrice);
+    let minPrice = parsePriceFilter(filters.minPrice);
+    let maxPrice = parsePriceFilter(filters.maxPrice);
+    if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+      [minPrice, maxPrice] = [maxPrice, minPrice];
+    }
     const minRating = Number.parseFloat(filters.minRating) || 0;
 
     return products
@@ -306,16 +325,33 @@ export const Store: React.FC = () => {
         apiRequest<Order[]>("/store/orders?limit=100"),
       ]);
       setWalletBalance(typeof wallet?.balance === "number" ? wallet.balance : 0);
-      const pending = Array.isArray(orders)
-        ? orders.filter(order => !["completed", "failed", "cancelled"].includes(order.status))
-            .length
-        : 0;
+      if (Array.isArray(orders)) {
+        setOrders(orders);
+      }
+      const pending = Array.isArray(orders) ? orders.filter(hasPendingVendorWork).length : 0;
       setPendingOrderCount(pending);
     } catch {
       setWalletBalance(null);
       setPendingOrderCount(0);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, setOrders]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setPendingOrderCount(userOrders.filter(hasPendingVendorWork).length);
+  }, [isAuthenticated, userOrders]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    for (const order of userOrders) {
+      subscribe("order", order.id);
+    }
+    return () => {
+      for (const order of userOrders) {
+        unsubscribe("order", order.id);
+      }
+    };
+  }, [isAuthenticated, subscribe, unsubscribe, userOrders]);
 
   useEffect(() => {
     loadCatalog();

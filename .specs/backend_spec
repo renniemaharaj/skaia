@@ -115,6 +115,16 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - Store order mutations push `order:update` to buyers, store managers, and
   product owners; product owners also receive `store_order` notifications and
   system inbox messages with seller-scoped order details.
+- Store order mutations also propagate `order:update` to the `order:{id}`
+  resource subscription so open order detail/cards update across tabs in real
+  time.
+- Order item fulfillment is vendor-scoped: product owners may update only their
+  own line items' `vendor_status`/`vendor_note`, stock reservation/release follows
+  those lines only, and the parent order status is an aggregate such as
+  `pending`, `vendor_review`, `accepted`, `rejected`, or `completed`.
+- The product-owner selling role is named `Vendor`; legacy `store-seller` data
+  should be migrated into it while preserving `store.product-seller` and
+  `store.product-new` permissions.
 
 ## Persistence Contracts
 

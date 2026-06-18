@@ -352,6 +352,26 @@
   background: color-mix(in srgb, var(--bg-tertiary) 66%, transparent);
 }
 
+.pp-chat-system__icon {
+  display: inline-flex;
+  width: 1.05rem;
+  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.pp-chat-system__icon--join {
+  color: var(--success-color);
+  background: color-mix(in srgb, var(--success-color) 14%, transparent);
+}
+
+.pp-chat-system__icon--leave {
+  color: var(--error-color);
+  background: color-mix(in srgb, var(--error-color) 14%, transparent);
+}
+
 .pp-chat-system__text {
   flex: 0 0 auto;
   color: var(--text-secondary);

@@ -1118,6 +1118,7 @@ func (h *Handler) sellerOrderView(order *models.Order, sellerID int64) *models.O
 	view.ReferralCode = ""
 	view.TotalPrice = 0
 	view.Items = []*models.OrderItem{}
+	view.Vendors = []*models.OrderVendorStatus{}
 	for _, item := range order.Items {
 		product, err := h.svc.GetProduct(item.ProductID)
 		if err != nil || product.OwnerID == nil || *product.OwnerID != sellerID {
@@ -1125,6 +1126,12 @@ func (h *Handler) sellerOrderView(order *models.Order, sellerID int64) *models.O
 		}
 		view.Items = append(view.Items, item)
 		view.TotalPrice += item.Price * int64(item.Quantity)
+	}
+	for _, vendor := range order.Vendors {
+		if vendor.VendorID == sellerID {
+			view.Vendors = []*models.OrderVendorStatus{vendor}
+			break
+		}
 	}
 	return &view
 }
@@ -1142,6 +1149,7 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		Status string `json:"status"`
+		Note   string `json:"note"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Status == "" {
 		utils.WriteError(w, http.StatusBadRequest, "status required")
@@ -1159,7 +1167,12 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.svc.UpdateOrderStatus(id, req.Status)
+	var order *models.Order
+	if ownsProduct && !canManage {
+		order, err = h.svc.UpdateOrderVendorStatus(id, userID, req.Status, req.Note)
+	} else {
+		order, err = h.svc.UpdateOrderStatus(id, req.Status)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "insufficient stock") {
 			utils.WriteError(w, http.StatusConflict, err.Error())
@@ -1170,7 +1183,7 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If transitioning to completed, execute special actions now (only once)
-	if req.Status == "completed" && beforeOrder != nil && beforeOrder.Status != "completed" {
+	if req.Status == "completed" && beforeOrder != nil && beforeOrder.Status != "completed" && (canManage || !ownsProduct) {
 		// Execute special actions for each order item (if any) and if order has a user
 		if order.UserID != nil {
 			userID := *order.UserID
@@ -1371,6 +1384,7 @@ func (h *Handler) notifyOrderChanged(order *models.Order, action string) {
 	if h.hub == nil || order == nil {
 		return
 	}
+	h.hub.PropagateOrder(order.ID, order, action)
 	if order.UserID != nil {
 		h.hub.PushOrderUpdate(*order.UserID, order, action)
 	}
@@ -1383,6 +1397,7 @@ func (h *Handler) notifyOrderDeleted(orderID int64, order *models.Order) {
 		return
 	}
 	payload := map[string]int64{"id": orderID}
+	h.hub.PropagateOrder(orderID, payload, "order_deleted")
 	if order != nil && order.UserID != nil {
 		h.hub.PushOrderUpdate(*order.UserID, payload, "order_deleted")
 	}

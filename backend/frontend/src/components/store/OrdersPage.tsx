@@ -474,7 +474,11 @@ export const OrdersPage = () => {
         </div>
         {isExpanded && (
           <div className="orders-expanded-row">
-            <OrderSubmittedView order={order} onBackLink="/store/orders" />
+            <OrderSubmittedView
+              order={order}
+              onBackLink="/store/orders"
+              onVendorStatusChange={updateOrderStatus}
+            />
           </div>
         )}
       </React.Fragment>

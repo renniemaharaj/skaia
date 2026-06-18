@@ -67,8 +67,10 @@
 .user-inline-card__roles {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.2rem;
   min-width: 0;
+  max-width: 14rem;
   overflow: hidden;
 }
 

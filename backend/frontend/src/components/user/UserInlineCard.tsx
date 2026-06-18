@@ -9,14 +9,18 @@ import UserProfileOverlay from "./UserProfileOverlay";
 import type { ProfileUser } from "./types";
 import "./UserInlineCard.css";
 
+type RoleLike = string | { name: string; theme_color?: string; glow_color?: string };
+
 interface UserInlineCardProps {
   userId?: string | number;
   name?: string;
   avatar?: string;
-  roles?: string[];
+  roles?: RoleLike[];
   isGuest?: boolean;
   compact?: boolean;
 }
+
+let roleCatalogCache: RoleLike[] | null = null;
 
 export default function UserInlineCard({
   userId,
@@ -28,6 +32,7 @@ export default function UserInlineCard({
 }: UserInlineCardProps) {
   const onlineUsers = useAtomValue(onlineUsersAtom);
   const [user, setUser] = useState<ProfileUser | null>(null);
+  const [roleCatalog, setRoleCatalog] = useState<RoleLike[] | null>(roleCatalogCache);
   const normalizedUserId = userId === undefined ? "" : String(userId);
 
   useEffect(() => {
@@ -51,7 +56,30 @@ export default function UserInlineCard({
   const displayName = user?.display_name || user?.username || name || (isGuest ? "Guest" : "User");
   const avatarUrl = user?.avatar_url || avatar;
   const displayRoles = user?.roles || roles || [];
+  const displayRoleDetails = useMemo(() => {
+    const catalog = roleCatalog ?? [];
+    return displayRoles.map(role => {
+      if (typeof role !== "string") return role;
+      const detail = catalog.find(item => typeof item !== "string" && item.name === role);
+      return detail || role;
+    });
+  }, [displayRoles, roleCatalog]);
   const initials = displayName[0]?.toUpperCase() || "?";
+
+  useEffect(() => {
+    if (roleCatalog || displayRoles.length === 0) return;
+    let cancelled = false;
+    apiRequest<RoleLike[]>("/users/roles")
+      .then(data => {
+        if (!Array.isArray(data) || cancelled) return;
+        roleCatalogCache = data;
+        setRoleCatalog(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [displayRoles.length, roleCatalog]);
 
   const card = (
     <ContentFlatCard
@@ -67,10 +95,14 @@ export default function UserInlineCard({
         <span className="user-inline-card__name">{displayName}</span>
         <span className="user-inline-card__meta">
           <span className="user-inline-card__status">{isOnline ? "Online" : "Offline"}</span>
-          {displayRoles.length > 0 && (
+          {displayRoleDetails.length > 0 && (
             <span className="user-inline-card__roles">
-              {displayRoles.slice(0, compact ? 1 : 2).map(role => (
-                <RoleBadge key={role} role={role} className="user-inline-card__role" />
+              {displayRoleDetails.map(role => (
+                <RoleBadge
+                  key={typeof role === "string" ? role : role.name}
+                  role={role}
+                  className="user-inline-card__role"
+                />
               ))}
             </span>
           )}
@@ -86,7 +118,7 @@ export default function UserInlineCard({
       userId={normalizedUserId}
       fallbackName={displayName}
       fallbackAvatar={avatarUrl}
-      fallbackRoles={displayRoles}
+      fallbackRoles={displayRoles.map(role => (typeof role === "string" ? role : role.name))}
     >
       {card}
     </UserProfileOverlay>

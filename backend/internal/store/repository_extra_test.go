@@ -359,6 +359,87 @@ func TestOrderRepository_AcceptWithStockCheck_DecrementsStockOnce(t *testing.T) 
 	assert.Equal(t, 1, updatedProd.Stock, "accepting an already accepted order must not decrement stock again")
 }
 
+func TestOrderRepository_UpdateVendorStatus_IsolatesVendorLinesAndStock(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	catRepo := store.NewCategoryRepository(db)
+	prodRepo := store.NewProductRepository(db)
+	orderRepo := store.NewOrderRepository(db)
+	buyerID := createStoreTestUser(t, db)
+	vendorAID := createStoreTestUser(t, db)
+	vendorBID := createStoreTestUser(t, db)
+	cat, _ := catRepo.Create(&models.StoreCategory{Name: testutil.UniqueStr("vendor_order_cat")})
+	prodA, err := prodRepo.Create(&models.Product{
+		CategoryID: cat.ID,
+		OwnerID:    &vendorAID,
+		Name:       testutil.UniqueStr("vendor_order_a"),
+		Price:      100,
+		Stock:      5,
+		IsActive:   true,
+	})
+	require.NoError(t, err)
+	prodB, err := prodRepo.Create(&models.Product{
+		CategoryID: cat.ID,
+		OwnerID:    &vendorBID,
+		Name:       testutil.UniqueStr("vendor_order_b"),
+		Price:      200,
+		Stock:      7,
+		IsActive:   true,
+	})
+	require.NoError(t, err)
+	order, err := orderRepo.Create(
+		&models.Order{UserID: &buyerID, TotalPrice: 400, Status: "pending"},
+		[]*models.OrderItem{
+			{ProductID: prodA.ID, Quantity: 2, Price: 100},
+			{ProductID: prodB.ID, Quantity: 1, Price: 200},
+		},
+	)
+	require.NoError(t, err)
+
+	updated, err := orderRepo.UpdateVendorStatus(order.ID, vendorAID, "accepted", "ready")
+	require.NoError(t, err)
+	assert.Equal(t, "vendor_review", updated.Status)
+	require.Len(t, updated.Vendors, 2)
+	assertVendorStatus(t, updated, vendorAID, "accepted")
+	assertVendorStatus(t, updated, vendorBID, "pending")
+	refetchedA, err := prodRepo.GetByID(prodA.ID)
+	require.NoError(t, err)
+	refetchedB, err := prodRepo.GetByID(prodB.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, refetchedA.Stock)
+	assert.Equal(t, 7, refetchedB.Stock)
+
+	updated, err = orderRepo.UpdateVendorStatus(order.ID, vendorBID, "rejected", "not available")
+	require.NoError(t, err)
+	assert.Equal(t, "vendor_review", updated.Status)
+	assertVendorStatus(t, updated, vendorAID, "accepted")
+	assertVendorStatus(t, updated, vendorBID, "rejected")
+	refetchedA, err = prodRepo.GetByID(prodA.ID)
+	require.NoError(t, err)
+	refetchedB, err = prodRepo.GetByID(prodB.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 3, refetchedA.Stock)
+	assert.Equal(t, 7, refetchedB.Stock)
+
+	updated, err = orderRepo.UpdateVendorStatus(order.ID, vendorAID, "rejected", "cannot fulfill")
+	require.NoError(t, err)
+	assert.Equal(t, "rejected", updated.Status)
+	assertVendorStatus(t, updated, vendorAID, "rejected")
+	refetchedA, err = prodRepo.GetByID(prodA.ID)
+	require.NoError(t, err)
+	assert.Equal(t, 5, refetchedA.Stock)
+}
+
+func assertVendorStatus(t *testing.T, order *models.Order, vendorID int64, status string) {
+	t.Helper()
+	for _, vendor := range order.Vendors {
+		if vendor.VendorID == vendorID {
+			assert.Equal(t, status, vendor.Status)
+			return
+		}
+	}
+	t.Fatalf("vendor %d not found in order %d", vendorID, order.ID)
+}
+
 func TestOrderRepository_AcceptWithStockCheck_RejectsInsufficientStock(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)

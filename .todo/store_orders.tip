@@ -20,5 +20,15 @@
 - [x] Verified with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend`.
 - [x] Verified with `mise exec node@24.16.0 -- npx biome lint src/components/store/Store.tsx src/components/store/StoreCategoryBar.tsx src/components/store/Store.css src/components/store/OrdersPage.tsx src/components/store/OrdersPage.css src/atoms/notifications.ts` from `backend/frontend`.
 - [x] Verified with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 follow-up: compacted wallet balance thousands, counted pending vendor line work, rendered all colored rich-user roles in global messages, added vendor-scoped order accept/reject with aggregate buyer tracking, consolidated `store-seller` into `Vendor`, and fixed recovery approval sessions from being cleared by generic unauthorized/guest teardown handling.
+- [x] Added repository coverage for vendor-scoped order status and stock isolation.
+- [x] Verified follow-up with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend`.
+- [x] Verified follow-up with `mise exec node@24.16.0 -- npx biome lint src/atoms/store.ts src/components/store/Store.tsx src/components/store/StoreCategoryBar.tsx src/components/store/OrderStatusView.tsx src/components/store/OrdersPage.tsx src/components/store/OrderViewPage.tsx src/components/user/UserInlineCard.tsx src/components/user/UserInlineCard.css src/styles/Cart.css src/pages/Layout.tsx` from `backend/frontend` (warnings remain in existing `Layout.tsx` rate-limit/dependency code).
+- [x] Verified follow-up with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
+- [x] 2026-06-18 realtime/filter polish: made store price min/max resilient to inverted bounds and flex-wrapped the filter panel, propagated order updates to `order:{id}` subscribers, subscribed rendered/user orders for live cards and badges, rendered order JSON inbox messages as compact route cards, replaced the empty-cart CTA card with a compact "No products added" state, and added colored join/leave arrows.
+- [x] Verified realtime/filter polish with `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend`.
+- [x] Verified realtime/filter polish with `mise exec node@24.16.0 -- npx biome lint src/components/store/Store.tsx src/components/store/Store.css src/components/store/OrderStatusView.tsx src/components/store/cart/EmptyCart.tsx src/styles/Cart.css` from `backend/frontend`.
+- [x] `mise exec node@24.16.0 -- npx biome lint src/components/inbox/InboxPage.tsx src/components/page/layout/PresencePanel.tsx ...` still reports pre-existing whole-file lint debt (`any`, missing button types, `forEach`, etc.); TypeScript/build verification passed.
+- [x] Verified realtime/filter polish with `mise exec node@24.16.0 -- npm run build` from `backend/frontend`.
 
 <--/------->

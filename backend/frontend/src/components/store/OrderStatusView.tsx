@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { Link } from "react-router-dom";
@@ -8,11 +8,13 @@ import { useAtomValue } from "jotai";
 import L from "leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, PackageCheck, XCircle } from "lucide-react";
 import { productsAtom } from "../../atoms/store";
 import type { CartItem, Order } from "../../atoms/store";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import UserAvatar from "../user/UserAvatar";
 
 import "../../styles/Cart.css";
 
@@ -20,23 +22,37 @@ type Props = {
   order: Order;
   cartItems?: CartItem[];
   onBackLink?: string;
+  onVendorStatusChange?: (orderId: string, status: string) => void;
 };
 
-const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) => {
+const OrderSubmittedView: React.FC<Props> = ({
+  order,
+  cartItems,
+  onBackLink,
+  onVendorStatusChange,
+}) => {
   const products = useAtomValue(productsAtom);
+  const { subscribe, unsubscribe } = useWebSocketSync();
+
+  useEffect(() => {
+    if (!order?.id) return;
+    subscribe("order", order.id);
+    return () => unsubscribe("order", order.id);
+  }, [order?.id, subscribe, unsubscribe]);
 
   // Ensure marker icon is configured for Leaflet
   try {
     const DefaultIcon = L.icon({
-      iconUrl: icon as any,
-      shadowUrl: iconShadow as any,
+      iconUrl: icon,
+      shadowUrl: iconShadow,
       iconAnchor: [12, 41],
     });
     // @ts-ignore
     L.Marker.prototype.options.icon = DefaultIcon;
   } catch (e) {}
 
-  const getProduct = (productId: string) => products.find(p => p.id === (productId as any));
+  const getProduct = (productId: string | number) =>
+    products.find(p => String(p.id) === String(productId));
 
   // If order.items exists, prefer them (they include price at time of purchase)
   const itemsToRender =
@@ -48,12 +64,12 @@ const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) =
     (cartItems || []).map(c => ({
       product_id: String(c.product_id),
       quantity: c.quantity,
-      price: getProduct(c.product_id as any)?.price ?? 0,
+      price: getProduct(c.product_id)?.price ?? 0,
     }));
 
   const status = order.status || "pending";
   // If payment exists and succeeded, treat as paid for the header display.
-  const paymentStatus = (order as any).payment?.status;
+  const paymentStatus = order.payment?.status;
   const effectiveStatus = paymentStatus === "succeeded" ? "paid" : status;
 
   let TitleIcon = Clock;
@@ -133,7 +149,7 @@ const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) =
           })}
         </div>
 
-        <div className="cart-summary">
+        <div className="cart-summary order-status-summary">
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
             <div
               style={{
@@ -186,6 +202,61 @@ const OrderSubmittedView: React.FC<Props> = ({ order, cartItems, onBackLink }) =
             <span>Total</span>
             <span>{formatCents(order.total_price || 0)}</span>
           </div>
+
+          {Array.isArray(order.vendors) && order.vendors.length > 0 && (
+            <div className="order-vendor-panel">
+              <div className="order-vendor-panel__header">
+                <span>Vendor Activity</span>
+                <strong>{order.vendors.length}</strong>
+              </div>
+              {order.vendors.map(vendor => {
+                const vendorName =
+                  vendor.vendor?.display_name || `Vendor #${vendor.vendor_id || "unknown"}`;
+                return (
+                  <div key={vendor.vendor_id} className="order-vendor-row">
+                    <div className="order-vendor-row__identity">
+                      <UserAvatar
+                        src={vendor.vendor?.avatar_url || undefined}
+                        alt={vendorName}
+                        size={28}
+                        initials={vendorName[0]?.toUpperCase()}
+                      />
+                      <span>
+                        <strong>{vendorName}</strong>
+                        <small>
+                          {vendor.items} item{vendor.items === 1 ? "" : "s"} ·{" "}
+                          {formatCents(vendor.total || 0)}
+                        </small>
+                      </span>
+                    </div>
+                    <span className={`order-vendor-status order-vendor-status--${vendor.status}`}>
+                      {vendor.status}
+                    </span>
+                    {onVendorStatusChange && !["completed", "cancelled", "failed"].includes(vendor.status) && (
+                      <div className="order-vendor-actions">
+                        <button
+                          type="button"
+                          className="order-vendor-action order-vendor-action--accept"
+                          onClick={() => onVendorStatusChange(order.id, "accepted")}
+                          title="Accept your part"
+                        >
+                          <PackageCheck size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className="order-vendor-action order-vendor-action--reject"
+                          onClick={() => onVendorStatusChange(order.id, "rejected")}
+                          title="Reject your part"
+                        >
+                          <XCircle size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -213,9 +284,9 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
 
   return (
     <>
-      <span
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
+        className="order-location-preview-trigger"
         onClick={() => {
           const p = parse(loc);
           if (p) {
@@ -223,30 +294,28 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
             setOpen(true);
           }
         }}
-        onKeyDown={e => {
-          if (e.key === "Enter") {
-            const p = parse(loc);
-            if (p) {
-              setCoords(p);
-              setOpen(true);
-            }
-          }
-        }}
         style={{
           cursor: parsed ? "pointer" : "default",
           color: parsed ? "var(--color-primary)" : "var(--text-secondary)",
           textDecoration: parsed ? "underline" : "none",
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          font: "inherit",
+          textAlign: "right",
         }}
       >
         {loc || "N/A"}
-      </span>
+      </button>
 
       {open &&
         coords &&
         typeof document !== "undefined" &&
         createPortal(
           <>
-            <div
+            <button
+              type="button"
+              aria-label="Close map preview"
               style={{
                 position: "fixed",
                 top: 0,
@@ -255,6 +324,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
                 bottom: 0,
                 zIndex: 9998,
                 background: "rgba(0,0,0,0.3)",
+                border: 0,
               }}
               onClick={() => setOpen(false)}
             />
@@ -275,7 +345,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
               }}
             >
               <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button className="btn-admin-icon" onClick={() => setOpen(false)}>
+                <button type="button" className="btn-admin-icon" onClick={() => setOpen(false)}>
                   ×
                 </button>
               </div>

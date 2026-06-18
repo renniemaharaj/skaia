@@ -396,7 +396,14 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 	// actually since this uses standard sql driver ? might work for sqlite,
 	// but $N is safer if they are using pg. The rest of the file uses $N.
 	// Let's rewrite the query building for $N
-	queryN := "SELECT id, order_id, product_id, quantity, price, created_at FROM order_items WHERE order_id IN ("
+	queryN := `SELECT oi.id, oi.order_id, oi.product_id, oi.quantity, oi.price,
+		COALESCE(oi.vendor_status, 'pending'), COALESCE(oi.vendor_note, ''), oi.vendor_updated_at,
+		oi.created_at,
+		p.owner_id, COALESCE(owner.id, 0), COALESCE(owner.display_name, ''), COALESCE(owner.avatar_url, '')
+		FROM order_items oi
+		LEFT JOIN products p ON p.id = oi.product_id
+		LEFT JOIN users owner ON owner.id = p.owner_id
+		WHERE oi.order_id IN (`
 	for i := range orders {
 		if i > 0 {
 			queryN += ", "
@@ -413,14 +420,89 @@ func (r *sqlOrderRepository) loadItems(orders ...*models.Order) error {
 
 	for rows.Next() {
 		item := &models.OrderItem{}
-		if err := rows.Scan(&item.ID, &item.OrderID, &item.ProductID, &item.Quantity, &item.Price, &item.CreatedAt); err != nil {
+		var ownerID sql.NullInt64
+		var vendorUpdatedAt sql.NullTime
+		var ownerSummaryID int64
+		var ownerDisplayName, ownerAvatarURL string
+		if err := rows.Scan(
+			&item.ID, &item.OrderID, &item.ProductID, &item.Quantity, &item.Price,
+			&item.VendorStatus, &item.VendorNote, &vendorUpdatedAt,
+			&item.CreatedAt,
+			&ownerID, &ownerSummaryID, &ownerDisplayName, &ownerAvatarURL,
+		); err != nil {
 			return err
+		}
+		if item.VendorStatus == "" {
+			item.VendorStatus = "pending"
+		}
+		if ownerID.Valid {
+			item.OwnerID = &ownerID.Int64
+			if ownerSummaryID > 0 {
+				item.Owner = &models.UserSummary{ID: ownerSummaryID, DisplayName: ownerDisplayName, AvatarURL: ownerAvatarURL}
+			}
+		}
+		if vendorUpdatedAt.Valid {
+			item.VendorUpdatedAt = &vendorUpdatedAt.Time
 		}
 		if o, ok := orderMap[item.OrderID]; ok {
 			o.Items = append(o.Items, item)
 		}
 	}
-	return rows.Err()
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, order := range orders {
+		order.Vendors = summarizeOrderVendors(order.Items)
+	}
+	return nil
+}
+
+func summarizeOrderVendors(items []*models.OrderItem) []*models.OrderVendorStatus {
+	vendorsByID := map[int64]*models.OrderVendorStatus{}
+	orderIDs := []int64{}
+	for _, item := range items {
+		if item.OwnerID == nil {
+			continue
+		}
+		ownerID := *item.OwnerID
+		vendor, ok := vendorsByID[ownerID]
+		if !ok {
+			vendor = &models.OrderVendorStatus{
+				VendorID: ownerID,
+				Vendor:   item.Owner,
+				Status:   "pending",
+			}
+			vendorsByID[ownerID] = vendor
+			orderIDs = append(orderIDs, ownerID)
+		}
+		vendor.Items += item.Quantity
+		vendor.Total += item.Price * int64(item.Quantity)
+		vendor.Status = combineVendorStatus(vendor.Status, item.VendorStatus)
+		if item.VendorUpdatedAt != nil && (vendor.UpdatedAt == nil || item.VendorUpdatedAt.After(*vendor.UpdatedAt)) {
+			vendor.UpdatedAt = item.VendorUpdatedAt
+		}
+	}
+	out := make([]*models.OrderVendorStatus, 0, len(orderIDs))
+	for _, ownerID := range orderIDs {
+		out = append(out, vendorsByID[ownerID])
+	}
+	return out
+}
+
+func combineVendorStatus(current, next string) string {
+	if current == "" || current == "pending" {
+		return next
+	}
+	if next == "" || next == current {
+		return current
+	}
+	if current == "rejected" || next == "rejected" {
+		return "mixed"
+	}
+	if current == "pending" || next == "pending" {
+		return "partial"
+	}
+	return "partial"
 }
 
 func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderItem) (*models.Order, error) {
@@ -451,7 +533,7 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 	if err != nil {
 		return nil, err
 	}
-	return order, nil
+	return r.GetByID(order.ID)
 }
 
 func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
@@ -600,6 +682,10 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
 			id,
 		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+		if err != nil {
+			return err
+		}
+		_, err = exec.Exec(`UPDATE order_items SET vendor_status='accepted', vendor_updated_at=CURRENT_TIMESTAMP WHERE order_id=$1 AND vendor_status <> 'accepted'`, id)
 		return err
 	})
 	if err != nil {
@@ -614,15 +700,178 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 
 func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Order, error) {
 	o := &models.Order{}
-	err := r.db.QueryRow(
-		`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2
-		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
-		status, id,
-	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(
+			`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2
+			 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
+			status, id,
+		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+		if err != nil {
+			return err
+		}
+		if status == "completed" || status == "cancelled" || status == "failed" || status == "rejected" {
+			_, err = exec.Exec(`UPDATE order_items SET vendor_status=$1, vendor_updated_at=CURRENT_TIMESTAMP WHERE order_id=$2`, status, id)
+		}
+		return err
+	})
 	if err == nil {
 		err = r.loadItems(o)
 	}
 	return o, err
+}
+
+func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note string) (*models.Order, error) {
+	if status != "accepted" && status != "rejected" && status != "completed" && status != "pending" {
+		return nil, fmt.Errorf("invalid vendor status")
+	}
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if _, err := exec.Exec(`SELECT id FROM orders WHERE id = $1 FOR UPDATE`, id); err != nil {
+			return err
+		}
+
+		rows, err := exec.Query(`
+			SELECT oi.id, oi.product_id, oi.quantity, COALESCE(oi.vendor_status, 'pending')
+			FROM order_items oi
+			JOIN products p ON p.id = oi.product_id
+			WHERE oi.order_id = $1 AND p.owner_id = $2
+			FOR UPDATE OF oi
+		`, id, ownerID)
+		if err != nil {
+			return err
+		}
+		type vendorItem struct {
+			id        int64
+			productID int64
+			quantity  int
+			status    string
+		}
+		items := []vendorItem{}
+		for rows.Next() {
+			var item vendorItem
+			if err := rows.Scan(&item.id, &item.productID, &item.quantity, &item.status); err != nil {
+				rows.Close()
+				return err
+			}
+			items = append(items, item)
+		}
+		if err := rows.Close(); err != nil {
+			return err
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		if len(items) == 0 {
+			return errors.New("vendor has no items in order")
+		}
+
+		if status == "accepted" {
+			for _, item := range items {
+				if item.status == "accepted" || item.status == "completed" {
+					continue
+				}
+				var productName string
+				err := exec.QueryRow(
+					`UPDATE products
+					 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
+					     updated_at = CURRENT_TIMESTAMP
+					 WHERE id = $1 AND (stock_unlimited = true OR stock >= $2)
+					 RETURNING name`,
+					item.productID, item.quantity,
+				).Scan(&productName)
+				if errors.Is(err, sql.ErrNoRows) {
+					var name string
+					_ = exec.QueryRow(`SELECT name FROM products WHERE id = $1`, item.productID).Scan(&name)
+					if name == "" {
+						name = fmt.Sprintf("%d", item.productID)
+					}
+					return fmt.Errorf("insufficient stock for product %q", name)
+				}
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if status == "rejected" || status == "pending" {
+			for _, item := range items {
+				if item.status != "accepted" {
+					continue
+				}
+				if _, err := exec.Exec(
+					`UPDATE products
+					 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock + $2 END,
+					     updated_at = CURRENT_TIMESTAMP
+					 WHERE id = $1`,
+					item.productID, item.quantity,
+				); err != nil {
+					return err
+				}
+			}
+		}
+
+		if _, err := exec.Exec(`
+			UPDATE order_items oi
+			SET vendor_status = $3,
+			    vendor_note = $4,
+			    vendor_updated_at = CURRENT_TIMESTAMP
+			FROM products p
+			WHERE oi.product_id = p.id
+			  AND oi.order_id = $1
+			  AND p.owner_id = $2
+		`, id, ownerID, status, note); err != nil {
+			return err
+		}
+
+		aggregateStatus, err := aggregateOrderStatus(exec, id)
+		if err != nil {
+			return err
+		}
+		_, err = exec.Exec(`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, aggregateStatus, id)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.GetByID(id)
+}
+
+func aggregateOrderStatus(exec database.Executor, orderID int64) (string, error) {
+	rows, err := exec.Query(`SELECT COALESCE(vendor_status, 'pending') FROM order_items WHERE order_id = $1`, orderID)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	total := 0
+	counts := map[string]int{}
+	for rows.Next() {
+		var status string
+		if err := rows.Scan(&status); err != nil {
+			return "", err
+		}
+		if status == "" {
+			status = "pending"
+		}
+		counts[status]++
+		total++
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	if total == 0 {
+		return "pending", nil
+	}
+	if counts["completed"] == total {
+		return "completed", nil
+	}
+	if counts["rejected"] == total {
+		return "rejected", nil
+	}
+	if counts["accepted"]+counts["completed"] == total {
+		return "accepted", nil
+	}
+	if counts["pending"] == total {
+		return "pending", nil
+	}
+	return "vendor_review", nil
 }
 
 func (r *sqlOrderRepository) GetGuestOrder(id int64, email, phone string) (*models.Order, error) {

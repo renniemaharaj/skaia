@@ -376,8 +376,8 @@ func (h *Hub) Broadcast(msg *Message) {
 
 // BroadcastToPermission sends a message to all clients holding the specified permission.
 func (h *Hub) BroadcastToPermission(permission string, msg *Message) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 
 	for client := range h.clients {
 		if !client.HasPermission(permission) {
@@ -464,6 +464,9 @@ func (h *Hub) SendToGuestSession(guestSessionID string, msg *Message) bool {
 		}
 		select {
 		case client.Send <- msg:
+			if msg.Type == RecoveryRequestAccepted {
+				client.RecoveryAccepted = true
+			}
 			delivered = true
 		default:
 			log.Printf("ws: send buffer full for guest session %s", guestSessionID)

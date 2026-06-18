@@ -150,22 +150,15 @@
 }
 
 .store-filter-panel {
-  display: grid;
-  grid-template-columns:
-    minmax(15rem, 1.4fr)
-    minmax(13rem, 1fr)
-    auto
-    minmax(8.25rem, 0.7fr)
-    minmax(8.25rem, 0.7fr)
-    minmax(15rem, 1fr)
-    auto
-    auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   min-width: 0;
 }
 
 .store-filter-search {
+  flex: 1 1 16rem;
   box-sizing: border-box;
   height: 2.25rem;
   min-height: 2.25rem;
@@ -173,6 +166,7 @@
 }
 
 .store-owner-filter {
+  flex: 1 1 13rem;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -236,6 +230,7 @@
 }
 
 .store-you-toggle {
+  flex: 0 0 auto;
   box-sizing: border-box;
   height: 2.25rem;
   min-height: 2.25rem;
@@ -272,7 +267,13 @@
   background: color-mix(in srgb, var(--bg-color) 28%, var(--bg-secondary));
 }
 
+.store-filter-select {
+  flex: 0 1 9rem;
+  min-width: 8.25rem;
+}
+
 .store-price-filter {
+  flex: 1 1 15rem;
   display: grid;
   grid-template-columns: auto minmax(4.75rem, 1fr) auto minmax(4.75rem, 1fr);
   align-items: center;
@@ -336,12 +337,14 @@
 }
 
 .store-clear-filters {
+  flex: 0 0 auto;
   box-sizing: border-box;
   height: 2.25rem;
   min-height: 2.25rem;
 }
 
 .store-view-switch {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -387,16 +390,12 @@
 
 @media (max-width: 1024px) {
   .store-filter-panel {
-    grid-template-columns: minmax(14rem, 1fr) minmax(13rem, 1fr) 4.25rem;
-  }
-
-  .store-price-filter {
-    grid-column: span 3;
+    align-items: stretch;
   }
 
   .store-clear-filters,
   .store-view-switch {
-    width: 100%;
+    flex: 1 1 8rem;
   }
 }
 
@@ -406,13 +405,12 @@
   }
 
   .store-filter-panel {
-    grid-template-columns: 1fr;
     display: none;
     padding-top: 0.15rem;
   }
 
   .store-filter-panel.expanded {
-    display: grid;
+    display: flex;
     animation: storeFilterPanelIn 0.18s ease-out;
   }
 
@@ -456,7 +454,7 @@
   }
 
   .store-price-filter {
-    grid-column: auto;
+    flex-basis: 100%;
   }
 
   .store-bar-actions {

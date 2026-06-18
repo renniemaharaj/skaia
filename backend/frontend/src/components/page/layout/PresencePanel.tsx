@@ -1,6 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import {
   Atom,
+  ArrowLeft,
+  ArrowRight,
   ChevronDown,
   ChevronUp,
   Gauge,
@@ -418,11 +420,15 @@ const PresencePanel = () => {
     );
 
     if (isSystemEvent) {
+      const Icon = msg.kind === "join" ? ArrowRight : ArrowLeft;
       return (
         <div className="pp-chat-system">
+          <span className={`pp-chat-system__icon pp-chat-system__icon--${msg.kind}`}>
+            <Icon size={13} />
+          </span>
           {userCard}
           <span className="pp-chat-system__text">
-            has {msg.kind === "join" ? "joined" : "left"}
+            {msg.kind === "join" ? "joined" : "left"}
           </span>
           <span className="pp-chat-system__time">{time}</span>
         </div>

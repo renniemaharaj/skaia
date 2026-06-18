@@ -81,6 +81,8 @@ func (s *Service) SendOrderInboxMessage(ownerID int64, order *models.Order, msgT
 		"order_id":    order.ID,
 		"status":      order.Status,
 		"total_price": order.TotalPrice,
+		"item_count":  len(order.Items),
+		"route":       fmt.Sprintf("/store/orders/%d", order.ID),
 	})
 	_ = s.inboxSender.SendSystemMessage(ownerID, string(cardJSON), msgType)
 }
@@ -248,6 +250,21 @@ func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, err
 	}
 	if status == "completed" && before != nil && before.Status != "completed" {
 		_ = s.AwardReferenceCodePayout(order)
+	}
+	return order, nil
+}
+
+func (s *Service) UpdateOrderVendorStatus(id, ownerID int64, status, note string) (*models.Order, error) {
+	order, err := s.orders.UpdateVendorStatus(id, ownerID, status, note)
+	if err != nil {
+		return nil, err
+	}
+	if s.cache != nil {
+		for _, item := range order.Items {
+			if item.OwnerID != nil && *item.OwnerID == ownerID {
+				s.cache.Invalidate(item.ProductID)
+			}
+		}
 	}
 	return order, nil
 }

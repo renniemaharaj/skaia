@@ -89,7 +89,7 @@ limit/error WS messages.
 | `inbox_conversation:{id}` | conversation messages |
 | `store_product:{id}` | reserved/product detail |
 | `store_category:{id}` | reserved/category detail |
-| `order:{id}` | reserved/order detail |
+| `order:{id}` | live order detail/cards for buyers, admins, and vendors |
 | `page:{slug}` | page content |
 
 ## Action Registry

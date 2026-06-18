@@ -44,6 +44,9 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
 - Auth middleware must never depend on frontend permission checks.
 - Sensitive auth failures should not leak which secret or factor was valid beyond
   the intended challenge flow.
+- Recovery approval flows that mint an auth session must not be undone by generic
+  frontend `auth:unauthorized` cleanup or guest WebSocket session teardown after
+  the accepted recovery event is delivered.
 
 ## Migration Contract
 
