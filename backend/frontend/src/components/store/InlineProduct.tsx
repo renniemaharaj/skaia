@@ -35,6 +35,27 @@ export const InlineProduct = ({
     day: "numeric",
   });
 
+  const stats = (
+    <div className="product-card-meta">
+      <span title="Product owner">
+        <User size={13} />
+        {product.owner?.display_name || "Store"}
+      </span>
+      <span title="Last updated">
+        <Clock size={13} />
+        {updatedDate}
+      </span>
+      <span title="Recent purchases">
+        <ShoppingBag size={13} />
+        {product.recent_purchases ?? 0}
+      </span>
+      <span title="Current orders">
+        <TrendingUp size={13} />
+        {product.current_orders ?? 0}
+      </span>
+    </div>
+  );
+
   return (
     <ContentFlatCard className="product-card">
       <Link
@@ -66,10 +87,12 @@ export const InlineProduct = ({
                 <img src={cover.url} alt={product.name} />
               )}
             </button>
+            {stats}
           </div>
         ) : (
           <div className="product-image">
             <Package size={48} />
+            {stats}
           </div>
         )}
 
@@ -96,25 +119,6 @@ export const InlineProduct = ({
               ? product.description
               : `${product.description.slice(0, 120)}...`}
           </p>
-
-          <div className="product-card-meta">
-            <span title="Product owner">
-              <User size={13} />
-              {product.owner?.display_name || "Store"}
-            </span>
-            <span title="Last updated">
-              <Clock size={13} />
-              {updatedDate}
-            </span>
-            <span title="Recent purchases">
-              <ShoppingBag size={13} />
-              {product.recent_purchases ?? 0}
-            </span>
-            <span title="Current orders">
-              <TrendingUp size={13} />
-              {product.current_orders ?? 0}
-            </span>
-          </div>
 
           {!product.stock_unlimited && (
             <div className="product-page-stock">
