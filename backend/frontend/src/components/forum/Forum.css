@@ -80,11 +80,7 @@
 
 /* New Thread Card */
 .new-thread-card {
-  background-color: color-mix(
-    in srgb,
-    var(--skaia-green-primary) 5%,
-    transparent
-  );
+  background-color: color-mix(in srgb, var(--skaia-green-primary) 5%, transparent);
   border: 2px dashed var(--skaia-green-primary);
   box-shadow: none;
   display: flex;
@@ -115,15 +111,9 @@
 
 .new-thread-card:hover {
   border-color: var(--skaia-green-primary);
-  background-color: color-mix(
-    in srgb,
-    var(--skaia-green-primary) 8%,
-    transparent
-  );
-  box-shadow:
-    0 8px 24px color-mix(in srgb, var(--skaia-green-primary) 25%, transparent),
-    inset 0 0 0 2px
-      color-mix(in srgb, var(--skaia-green-primary) 10%, transparent);
+  background-color: color-mix(in srgb, var(--skaia-green-primary) 8%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--skaia-green-primary) 25%, transparent), inset 0 0
+    0 2px color-mix(in srgb, var(--skaia-green-primary) 10%, transparent);
   transform: translateY(-6px);
 }
 
@@ -209,7 +199,11 @@
 .threads-see-more {
   text-align: center;
   padding: 8px 0 0;
+  border: 0;
+  background: transparent;
   font-size: 0.82rem;
+  font-family: inherit;
+  line-height: inherit;
   color: var(--primary-color);
   cursor: pointer;
   flex-shrink: 0;
@@ -348,7 +342,7 @@
   }
 
   .forum-category-card .thread-item {
-    padding: 1z0px 12px !important;
+    padding: 10px 12px !important;
     margin-bottom: 0 !important;
   }
 
