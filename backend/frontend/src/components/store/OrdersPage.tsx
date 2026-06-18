@@ -1,4 +1,4 @@
-import { useAtomValue } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import {
   CheckCircle,
   ChevronDown,
@@ -15,8 +15,9 @@ import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { hasPermissionAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
+import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import type { User } from "../../atoms/auth";
+import { ordersAtom } from "../../atoms/store";
 import type { Order, Payment, ReferenceCode } from "../../atoms/store";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
@@ -24,6 +25,7 @@ import PersonPicker from "../../components/ui/PersonPicker";
 import { type TableColumn, TableView } from "../../components/ui/TableView/TableView";
 import UserAvatar from "../../components/user/UserAvatar";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import { StorePageShell } from "./StorePageShell";
@@ -49,7 +51,7 @@ export const OrdersPage = () => {
   // products atom not needed here; Order view reads product info itself
   const navigate = useNavigate();
 
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useAtom(ordersAtom);
   const [referenceCodes, setReferenceCodes] = useState<ReferenceCode[]>([]);
   const [referenceForm, setReferenceForm] = useState({
     code: "",
@@ -67,11 +69,11 @@ export const OrdersPage = () => {
     x: number;
     y: number;
   } | null>(null);
-  const socket = useAtomValue(socketAtom);
+  const { subscribe, unsubscribe } = useWebSocketSync();
   const FOCUS_KEY = "orderFocusId";
 
   useEffect(() => {
-    if (!isAuthenticated && !loading) {
+    if (!isAuthenticated) {
       navigate("/store", { replace: true });
       return;
     }
@@ -106,29 +108,31 @@ export const OrdersPage = () => {
         if (order.payment) map[String(order.id)] = order.payment;
       }
       setPaymentsByOrder(map);
-
-      // subscribe to order updates
-      try {
-        const ws = socket;
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          for (const order of ordersArr) {
-            try {
-              ws.send(
-                JSON.stringify({
-                  type: "subscribe",
-                  payload: { resource_type: "order", resource_id: order.id },
-                })
-              );
-            } catch {}
-          }
-        }
-      } catch {}
     } catch (err) {
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    for (const order of orders) {
+      subscribe("order", order.id);
+    }
+    return () => {
+      for (const order of orders) {
+        unsubscribe("order", order.id);
+      }
+    };
+  }, [orders, subscribe, unsubscribe]);
+
+  useEffect(() => {
+    const map: Record<string, Payment> = {};
+    for (const order of orders) {
+      if (order.payment) map[String(order.id)] = order.payment;
+    }
+    setPaymentsByOrder(map);
+  }, [orders]);
 
   const fetchReferenceCodes = async () => {
     try {

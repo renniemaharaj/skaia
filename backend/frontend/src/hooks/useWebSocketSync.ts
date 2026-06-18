@@ -47,8 +47,11 @@ import { playChatSound, playMessageSound, playNotificationSound } from "../utils
 import {
   type CartItem,
   type CheckoutResponse,
+  type Order,
   type Product,
   type StoreCategory,
+  currentOrderAtom,
+  ordersAtom,
   productCategoriesAtom,
   productsAtom,
   storeCartItemsAtom,
@@ -141,6 +144,8 @@ export const useWebSocketSync = () => {
   const setProducts = useSetAtom(productsAtom);
   const setStoreCategories = useSetAtom(productCategoriesAtom);
   const setStoreCartItems = useSetAtom(storeCartItemsAtom);
+  const setOrders = useSetAtom(ordersAtom);
+  const setCurrentOrder = useSetAtom(currentOrderAtom);
 
   // Voice
   const setVoicePermissions = useSetAtom(voicePermissionsAtom);
@@ -175,7 +180,7 @@ export const useWebSocketSync = () => {
         setSocket(ws);
 
         // Re-subscribe to all tracked resources after (re)connect
-        subscriptionsRef.current.forEach(key => {
+        for (const key of subscriptionsRef.current) {
           const [resourceType, resourceId] = key.split(":");
           ws.send(
             JSON.stringify({
@@ -184,7 +189,7 @@ export const useWebSocketSync = () => {
             })
           );
           console.log(`[reconnect] Re-subscribed to ${key}`);
-        });
+        }
       };
 
       ws.onmessage = event => {
@@ -913,6 +918,18 @@ export const useWebSocketSync = () => {
               });
               // Clear local cart after backend confirms success
               setStoreCartItems([]);
+              if (resp?.order) {
+                const order = { ...resp.order, payment: resp.payment } as Order;
+                setOrders(prev => {
+                  const exists = prev.some(o => String(o.id) === String(order.id));
+                  return exists
+                    ? prev.map(o => (String(o.id) === String(order.id) ? { ...o, ...order } : o))
+                    : [order, ...prev];
+                });
+                setCurrentOrder(prev =>
+                  prev && String(prev.id) === String(order.id) ? { ...prev, ...order } : prev
+                );
+              }
             }
             if (action === "purchase_failure") {
               const resp = data as CheckoutResponse;
@@ -920,6 +937,36 @@ export const useWebSocketSync = () => {
                 description: resp?.message ?? "Please try again.",
                 duration: 8000,
               });
+            }
+          }
+
+          // Orders
+          if (message.type === "order:update") {
+            const { action, data } = payload as {
+              action: string;
+              data?: Order & { id?: string | number };
+            };
+            const orderId = data?.id;
+
+            if ((action === "order_created" || action === "order_updated") && data?.id) {
+              const nextOrder = data as Order;
+              setOrders(prev => {
+                const exists = prev.some(o => String(o.id) === String(nextOrder.id));
+                if (exists) {
+                  return prev.map(o =>
+                    String(o.id) === String(nextOrder.id) ? { ...o, ...nextOrder } : o
+                  );
+                }
+                return [nextOrder, ...prev];
+              });
+              setCurrentOrder(prev =>
+                prev && String(prev.id) === String(nextOrder.id) ? { ...prev, ...nextOrder } : prev
+              );
+            }
+
+            if (action === "order_deleted" && orderId) {
+              setOrders(prev => prev.filter(o => String(o.id) !== String(orderId)));
+              setCurrentOrder(prev => (prev && String(prev.id) === String(orderId) ? null : prev));
             }
           }
 
@@ -1117,6 +1164,8 @@ export const useWebSocketSync = () => {
     setProducts,
     setStoreCategories,
     setStoreCartItems,
+    setOrders,
+    setCurrentOrder,
     setCursorPositions,
     setActivityEvents,
     setBrandingWs,

@@ -26,6 +26,7 @@ import CommentSection from "../../components/comments/CommentSection";
 import { EditProductDialog } from "../../components/store/EditProductDialog";
 import StarRating from "../../components/ui/StarRating";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
+import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
@@ -76,8 +77,6 @@ const SIMILAR_SKELETON_KEYS = [
   "similar-skeleton-4",
 ];
 
-const EMPTY_SIMILAR_SKELETON_KEYS = ["empty-similar-skeleton-1", "empty-similar-skeleton-2"];
-
 const RELATED_SKELETON_KEYS = ["related-skeleton-1", "related-skeleton-2", "related-skeleton-3"];
 
 const errorMessage = (err: unknown, fallback: string) =>
@@ -92,6 +91,7 @@ export const ProductPage = () => {
   const categories = useAtomValue(productCategoriesAtom);
   const setLayoutMode = useSetAtom(layoutModeAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
+  const { subscribe, unsubscribe } = useWebSocketSync();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -121,6 +121,12 @@ export const ProductPage = () => {
     setActiveMediaIndex(0);
     setPreviewMediaIndex(null);
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    subscribe("store_product", id);
+    return () => unsubscribe("store_product", id);
+  }, [id, subscribe, unsubscribe]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -354,6 +360,7 @@ export const ProductPage = () => {
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
   const media = getProductMediaItems(product);
+  const productCategoryName = categories.find(cat => cat.id === product.category_id)?.name;
   const safeActiveMediaIndex =
     media.length > 0 ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1) : 0;
   const activeMedia = media[safeActiveMediaIndex];
@@ -526,64 +533,83 @@ export const ProductPage = () => {
         <div className="product-page-bottom">
           {/* Similar products */}
           <div className="product-page-similar">
-            <div className="product-page-section-label">Similar Products</div>
+            <div className="product-page-section-heading">
+              <div>
+                <div className="product-page-section-label">Similar Products</div>
+                {productCategoryName && (
+                  <p className="product-page-section-context">{productCategoryName}</p>
+                )}
+              </div>
+              {similarProducts.length > 0 && (
+                <Link
+                  className="product-page-section-link"
+                  to={`/store?category=${product.category_id}`}
+                >
+                  View category
+                </Link>
+              )}
+            </div>
             <div className="similar-product-list">
-              {similarLoading
-                ? SIMILAR_SKELETON_KEYS.map((key, i) => (
-                    <div className="similar-skeleton-item" key={key}>
-                      <div className="similar-skeleton-thumb skeleton" />
-                      <div className="similar-skeleton-lines">
-                        <div
-                          className="similar-skeleton-name skeleton"
-                          style={{ width: `${55 + (i % 3) * 15}%` }}
-                        />
-                        <div className="similar-skeleton-price skeleton" />
-                      </div>
+              {similarLoading ? (
+                SIMILAR_SKELETON_KEYS.map((key, i) => (
+                  <div className="similar-skeleton-item" key={key}>
+                    <div className="similar-skeleton-thumb skeleton" />
+                    <div className="similar-skeleton-lines">
+                      <div
+                        className="similar-skeleton-name skeleton"
+                        style={{ width: `${55 + (i % 3) * 15}%` }}
+                      />
+                      <div className="similar-skeleton-price skeleton" />
                     </div>
-                  ))
-                : similarProducts.length === 0
-                  ? EMPTY_SIMILAR_SKELETON_KEYS.map((key, i) => (
-                      <div className="similar-skeleton-item" key={key}>
-                        <div className="similar-skeleton-thumb skeleton" />
-                        <div className="similar-skeleton-lines">
-                          <div
-                            className="similar-skeleton-name skeleton"
-                            style={{ width: `${55 + (i % 2) * 20}%` }}
-                          />
-                          <div className="similar-skeleton-price skeleton" />
-                        </div>
+                  </div>
+                ))
+              ) : similarProducts.length === 0 ? (
+                <div className="similar-products-empty">
+                  <Package size={18} />
+                  <span>No other products in this category yet.</span>
+                </div>
+              ) : (
+                similarProducts.map(sp => {
+                  const similarCover = getProductMediaItems(sp)[0];
+                  const similarCoverIsVideo =
+                    similarCover?.mime_type?.startsWith("video/") || similarCover?.type === "video";
+                  const similarStockLabel = sp.stock_unlimited
+                    ? "In stock"
+                    : sp.stock > 0
+                      ? `${sp.stock} available`
+                      : "Sold out";
+                  return (
+                    <Link
+                      key={sp.id}
+                      to={`/store/product/${sp.id}`}
+                      className="similar-product-item"
+                    >
+                      <div className="similar-product-thumb">
+                        {similarCover && similarCoverIsVideo ? (
+                          <video src={similarCover.url} preload="metadata" muted playsInline>
+                            <track kind="captions" />
+                          </video>
+                        ) : similarCover ? (
+                          <img src={similarCover.url} alt={sp.name} />
+                        ) : (
+                          <Package size={18} />
+                        )}
                       </div>
-                    ))
-                  : similarProducts.map(sp => {
-                      const similarCover = getProductMediaItems(sp)[0];
-                      const similarCoverIsVideo =
-                        similarCover?.mime_type?.startsWith("video/") ||
-                        similarCover?.type === "video";
-                      return (
-                        <Link
-                          key={sp.id}
-                          to={`/store/products/${sp.id}`}
-                          className="similar-product-item"
-                        >
-                          <div className="similar-product-thumb">
-                            {similarCover && similarCoverIsVideo ? (
-                              <video src={similarCover.url} preload="metadata" muted playsInline>
-                                <track kind="captions" />
-                              </video>
-                            ) : similarCover ? (
-                              <img src={similarCover.url} alt={sp.name} />
-                            ) : (
-                              <Package size={18} />
-                            )}
-                          </div>
-                          <div className="similar-product-info">
-                            <span className="similar-product-name">{sp.name}</span>
-                            <span className="similar-product-price">{formatCents(sp.price)}</span>
-                          </div>
-                          <ChevronRight size={14} className="similar-product-arrow" />
-                        </Link>
-                      );
-                    })}
+                      <div className="similar-product-info">
+                        <span className="similar-product-name">{sp.name}</span>
+                        {sp.description && (
+                          <span className="similar-product-description">{sp.description}</span>
+                        )}
+                        <span className="similar-product-meta">
+                          <span className="similar-product-price">{formatCents(sp.price)}</span>
+                          <span>{similarStockLabel}</span>
+                        </span>
+                      </div>
+                      <ChevronRight size={14} className="similar-product-arrow" />
+                    </Link>
+                  );
+                })
+              )}
             </div>
           </div>
 

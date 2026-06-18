@@ -111,6 +111,31 @@ func (s *Service) ListProductsByCategory(categoryID int64, limit, offset int) ([
 	return s.products.GetByCategory(categoryID, limit, offset)
 }
 
+func (s *Service) ListSimilarProducts(productID int64, limit int) ([]*models.Product, error) {
+	if limit <= 0 {
+		limit = 4
+	}
+	p, err := s.GetProduct(productID)
+	if err != nil {
+		return nil, err
+	}
+	products, err := s.products.GetByCategory(p.CategoryID, limit+1, 0)
+	if err != nil {
+		return nil, err
+	}
+	similar := make([]*models.Product, 0, limit)
+	for _, candidate := range products {
+		if candidate.ID == productID {
+			continue
+		}
+		similar = append(similar, candidate)
+		if len(similar) == limit {
+			break
+		}
+	}
+	return similar, nil
+}
+
 func (s *Service) CreateProduct(p *models.Product) (*models.Product, error) {
 	return s.products.Create(p)
 }

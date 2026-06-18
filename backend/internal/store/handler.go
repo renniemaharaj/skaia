@@ -44,6 +44,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 
 		// Product routes
 		r.With(optJWT).Get("/products", h.listProducts)
+		r.With(optJWT).Get("/products/{id}/similar", h.listSimilarProducts)
 		r.With(optJWT).Get("/products/{id}", h.getProduct)
 		r.With(jwt).Post("/products", h.createProduct)
 		r.With(jwt).Put("/products/{id}", h.updateProduct)
@@ -324,6 +325,27 @@ func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, p)
+}
+
+func (h *Handler) listSimilarProducts(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid product ID")
+		return
+	}
+	limit := 4
+	if l, err := strconv.Atoi(r.URL.Query().Get("limit")); err == nil && l > 0 && l <= 12 {
+		limit = l
+	}
+	products, err := h.svc.ListSimilarProducts(id, limit)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "product not found")
+		return
+	}
+	if products == nil {
+		products = []*models.Product{}
+	}
+	utils.WriteJSON(w, http.StatusOK, products)
 }
 
 func (h *Handler) canCreateOwnedProduct(userID int64) bool {
@@ -977,6 +999,13 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		ResourceID: order.ID,
 		IP:         ievents.ClientIP(r),
 		Meta:       map[string]interface{}{"total": total, "items": len(items)},
+		Fn: func() {
+			if h.hub != nil {
+				h.notifyOrderChanged(order, "order_created")
+				h.notifyOrderProductsChanged(order)
+				h.hub.PushCartUpdate(userID, []*models.CartItem{})
+			}
+		},
 	})
 
 	if order.UserID != nil {
@@ -1175,6 +1204,12 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		ResourceID: id,
 		IP:         ievents.ClientIP(r),
 		Meta:       map[string]interface{}{"status": req.Status},
+		Fn: func() {
+			if h.hub != nil {
+				h.notifyOrderChanged(order, "order_updated")
+				h.notifyOrderProductsChanged(order)
+			}
+		},
 	})
 
 	if order.UserID != nil {
@@ -1197,10 +1232,24 @@ func (h *Handler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
 		return
 	}
+	order, _ := h.svc.GetOrder(id)
 	if err := h.svc.DeleteOrder(id); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete order")
 		return
 	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   ievents.ActOrderStatusUpdated,
+		Resource:   ievents.ResOrder,
+		ResourceID: id,
+		IP:         ievents.ClientIP(r),
+		Meta:       map[string]interface{}{"status": "deleted"},
+		Fn: func() {
+			if h.hub != nil {
+				h.notifyOrderDeleted(id, order)
+			}
+		},
+	})
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
 }
 
@@ -1267,7 +1316,7 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Notify only the purchasing user of the outcome via WebSocket
+	// Notify the purchaser of payment outcome, then fan out order/catalog changes.
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:   userID,
 		Activity: ievents.ActCheckout,
@@ -1281,6 +1330,13 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 					action = "purchase_failure"
 				}
 				h.hub.SendToUser(userID, buildStoreMsg(action, resp))
+				if resp.Order != nil {
+					h.notifyOrderChanged(resp.Order, "order_created")
+					h.notifyOrderProductsChanged(resp.Order)
+				}
+				if !req.IsGuest {
+					h.hub.PushCartUpdate(userID, []*models.CartItem{})
+				}
 			}
 		},
 	})
@@ -1299,6 +1355,74 @@ func buildStoreMsg(action string, data interface{}) *ws.Message {
 		"data":   data,
 	})
 	return &ws.Message{Type: ws.StoreUpdate, Payload: payload}
+}
+
+func (h *Handler) notifyOrderChanged(order *models.Order, action string) {
+	if h.hub == nil || order == nil {
+		return
+	}
+	if order.UserID != nil {
+		h.hub.PushOrderUpdate(*order.UserID, order, action)
+	}
+	h.hub.BroadcastOrderToPermission("store.manageOrders", order, action)
+	h.notifyProductOwnersOfOrder(order, action)
+}
+
+func (h *Handler) notifyOrderDeleted(orderID int64, order *models.Order) {
+	if h.hub == nil {
+		return
+	}
+	payload := map[string]int64{"id": orderID}
+	if order != nil && order.UserID != nil {
+		h.hub.PushOrderUpdate(*order.UserID, payload, "order_deleted")
+	}
+	h.hub.BroadcastOrderToPermission("store.manageOrders", payload, "order_deleted")
+	h.notifyProductOwnersOfOrder(order, "order_deleted")
+}
+
+func (h *Handler) notifyProductOwnersOfOrder(order *models.Order, action string) {
+	if h.hub == nil || order == nil {
+		return
+	}
+	notified := map[int64]bool{}
+	for _, item := range order.Items {
+		product, err := h.svc.GetProduct(item.ProductID)
+		if err != nil || product.OwnerID == nil {
+			continue
+		}
+		ownerID := *product.OwnerID
+		if notified[ownerID] || (order.UserID != nil && *order.UserID == ownerID) {
+			continue
+		}
+		if canManage, _ := h.authz.HasPermission(ownerID, "store.manageOrders"); canManage {
+			continue
+		}
+		notified[ownerID] = true
+		if action == "order_deleted" {
+			h.hub.PushOrderUpdate(ownerID, map[string]int64{"id": order.ID}, action)
+			continue
+		}
+		h.hub.PushOrderUpdate(ownerID, h.sellerOrderView(order, ownerID), action)
+	}
+}
+
+func (h *Handler) notifyOrderProductsChanged(order *models.Order) {
+	if h.hub == nil || order == nil {
+		return
+	}
+	notified := map[int64]bool{}
+	for _, item := range order.Items {
+		if notified[item.ProductID] {
+			continue
+		}
+		notified[item.ProductID] = true
+		if h.svc.cache != nil {
+			h.svc.cache.Invalidate(item.ProductID)
+		}
+		if product, err := h.svc.GetProduct(item.ProductID); err == nil {
+			h.hub.BroadcastStoreCatalog(product, "product_updated")
+		}
+	}
 }
 
 // Subscription plan handlers

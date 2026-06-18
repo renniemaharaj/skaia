@@ -79,6 +79,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
+  payment?: Payment;
 }
 
 export interface ReferenceCode {
@@ -116,6 +117,8 @@ export interface CheckoutResponse {
 
 export const productsAtom = atomWithStorage<Product[]>("store.products", []);
 export const productCategoriesAtom = atomWithStorage<StoreCategory[]>("store.categories", []);
+export const ordersAtom = atom<Order[]>([]);
+export const currentOrderAtom = atom<Order | null>(null);
 export const isLoadingStoreAtom = atom(false);
 export const selectedCategoryIdAtom = atom<string | null>(null);
 export const storeCartItemsAtom = atomWithStorage<CartItem[]>("store.cart", []);

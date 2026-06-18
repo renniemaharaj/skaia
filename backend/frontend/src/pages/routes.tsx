@@ -98,6 +98,12 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   },
   { path: "wallet/:sessionId", element: <WalletPage />, conditional: "store" },
   { path: "cart", element: <CartPage />, conditional: "store" },
+  { path: "store/orders", element: <OrdersPage />, conditional: "store" },
+  {
+    path: "store/orders/:id",
+    element: <OrderViewPage />,
+    conditional: "store",
+  },
   { path: "users", element: <UserDiscovery />, conditional: "users" },
   { path: "users/:userId", element: <UserDiscovery />, conditional: "users" },
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
@@ -115,12 +121,6 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "store", element: <StorePage />, conditional: "store" },
   { path: "store/product/:id", element: <ProductPage />, conditional: "store" },
-  { path: "store/orders", element: <OrdersPage />, conditional: "store" },
-  {
-    path: "store/orders/:id",
-    element: <OrderViewPage />,
-    conditional: "store",
-  },
   { path: "forum", element: <ForumPage />, conditional: "forum" },
   {
     path: "view-thread/:threadId",

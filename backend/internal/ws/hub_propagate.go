@@ -55,6 +55,26 @@ func (h *Hub) PushCartUpdate(userID int64, items interface{}) {
 	h.SendToUser(userID, &Message{Type: CartUpdate, Payload: payload})
 }
 
+func (h *Hub) PropagateOrder(orderID int64, data interface{}, action string) {
+	h.propagate("order", orderID, OrderUpdate, action, data)
+}
+
+func (h *Hub) PushOrderUpdate(userID int64, data interface{}, action string) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.SendToUser(userID, &Message{Type: OrderUpdate, Payload: payload})
+}
+
+func (h *Hub) BroadcastOrderToPermission(permission string, data interface{}, action string) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"data":   data,
+	})
+	h.BroadcastToPermission(permission, &Message{Type: OrderUpdate, Payload: payload})
+}
+
 // BroadcastConfig sends a site-configuration change to every connected client.
 func (h *Hub) BroadcastConfig(action string, data interface{}) {
 	payload, _ := json.Marshal(map[string]interface{}{

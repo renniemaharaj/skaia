@@ -31,6 +31,7 @@ const (
 	NotificationUpdate   MessageType = "notification:update"    // server => client: notification read/deleted
 	NotificationSync     MessageType = "notification:sync"      // server => client on connect: notification bootstrap
 	CartUpdate           MessageType = "cart:update"            // server => client: user's cart changed
+	OrderUpdate          MessageType = "order:update"           // server => client: order created/updated/deleted
 	ConfigUpdate         MessageType = "config:update"          // server => all: branding/seo/footer/landing changed
 	PageUpdate           MessageType = "page:update"            // server => all: CMS page created/updated/deleted
 	Cursor               MessageType = "cursor:update"          // client => server => same-route clients: cursor position
@@ -137,8 +138,8 @@ type MediaState struct {
 	Playlists       []MediaPlaylist `json:"playlists"`
 	IsPaused        bool            `json:"is_paused"`
 	CurrentPosition float64         `json:"current_position"`
-	UpdatedAt       string      `json:"updated_at"`
-	TransitioningID string      `json:"transitioning_item_id"`
+	UpdatedAt       string          `json:"updated_at"`
+	TransitioningID string          `json:"transitioning_item_id"`
 }
 
 // MediaClientAction represents an action requested by a client (add, remove, etc).

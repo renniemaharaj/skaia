@@ -14,7 +14,7 @@ import {
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
 import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewLightbox";
@@ -64,6 +64,8 @@ export const Store: React.FC = () => {
   const [filters, setFilters] = useState<StoreFilterState>(DEFAULT_STORE_FILTERS);
   const [productRatings, setProductRatings] = useState<Record<string, ProductRatingSummary>>({});
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const categoryQuery = searchParams.get("category");
 
   const currentUser = useAtomValue(currentUserAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -161,6 +163,13 @@ export const Store: React.FC = () => {
       return { ...prev, categoryIds: Array.from(selected) };
     });
   };
+
+  useEffect(() => {
+    if (!categoryQuery) return;
+    setFilters(prev =>
+      prev.categoryIds.includes(categoryQuery) ? prev : { ...prev, categoryIds: [categoryQuery] }
+    );
+  }, [categoryQuery]);
 
   const handleClearFilters = () => {
     setFilters(DEFAULT_STORE_FILTERS);
