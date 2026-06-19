@@ -172,7 +172,7 @@ proxy_cache_path /var/cache/nginx/uploads
 	}
 
 	// Server block
-	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 0;\n\n", strings.Join(serverNames, " "))
+	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 0;\n    proxy_intercept_errors on;\n\n", strings.Join(serverNames, " "))
 
 	// Load frontend shell index.html for fallback
 	indexPath := filepath.Join(ProjectRoot(), "backend", "frontend", "dist", "index.html")
