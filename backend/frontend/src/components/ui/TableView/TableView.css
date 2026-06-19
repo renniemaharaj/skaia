@@ -12,6 +12,12 @@
   max-height: none;
 }
 
+.table-view__toolbar {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border-color);
+  background: color-mix(in srgb, var(--bg-secondary) 52%, transparent);
+}
+
 .table-view__header {
   display: grid;
   gap: 0.75rem;
@@ -101,4 +107,8 @@
 .table-view__row-actions:focus-within {
   opacity: 1;
   pointer-events: auto;
+}
+
+.table-view__empty {
+  padding: 1rem;
 }

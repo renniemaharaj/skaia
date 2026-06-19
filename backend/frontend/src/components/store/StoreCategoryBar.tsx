@@ -2,32 +2,26 @@ import {
   ChevronDown,
   ClipboardList,
   Columns2,
-  FilterX,
   LayoutGrid,
   Plus,
   SlidersHorizontal,
   Trash2,
-  UserRound,
   Wallet,
-  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { User } from "../../atoms/auth";
 import type { StoreCategory } from "../../atoms/store";
+import { formatCents } from "../../utils/money";
 import Button from "../input/Button";
 import Select from "../input/Select";
-import PersonPicker from "../ui/PersonPicker";
-import SearchField from "../ui/SearchField";
-import UserAvatar from "../user/UserAvatar";
+import { FilterBar } from "../ui/FilterBar";
 import type { StoreFilterState, StoreViewMode } from "./Store";
-import { formatCents } from "../../utils/money";
 
 interface StoreCategoryBarProps {
   categories: StoreCategory[];
   filters: StoreFilterState;
   resultCount: number;
   currentUser: User | null;
-  ownerOptions: Array<{ id: string; display_name: string; avatar_url: string }>;
   walletBalance: number | null;
   pendingOrderCount: number;
   canCreateCategory: boolean;
@@ -37,7 +31,6 @@ interface StoreCategoryBarProps {
   viewMode: StoreViewMode;
   onChangeFilters: (filters: StoreFilterState) => void;
   onChangeViewMode: (viewMode: StoreViewMode) => void;
-  onSelectOwner: (user: User) => void;
   onToggleOwnProducts: () => void;
   onToggleCategory: (categoryId: string) => void;
   onClearFilters: () => void;
@@ -59,7 +52,6 @@ export function StoreCategoryBar({
   filters,
   resultCount,
   currentUser,
-  ownerOptions,
   walletBalance,
   pendingOrderCount,
   canCreateCategory,
@@ -69,7 +61,6 @@ export function StoreCategoryBar({
   viewMode,
   onChangeFilters,
   onChangeViewMode,
-  onSelectOwner,
   onToggleOwnProducts,
   onToggleCategory,
   onClearFilters,
@@ -88,8 +79,6 @@ export function StoreCategoryBar({
 
   const balanceClass =
     walletBalance === null ? "" : walletBalance < 0 ? " store-balance-badge--negative" : " store-balance-badge--positive";
-  const selectedOwner = ownerOptions.find(owner => String(owner.id) === filters.ownerUserId);
-
   const updateFilter = <K extends keyof StoreFilterState>(key: K, value: StoreFilterState[K]) => {
     onChangeFilters({ ...filters, [key]: value });
   };
@@ -135,7 +124,6 @@ export function StoreCategoryBar({
               )}
             </div>
           ))}
-          <span className="store-filter-count">{resultCount} shown</span>
           <div className="store-bar-actions">
             {canCreateCategory && (
               <Button
@@ -222,52 +210,17 @@ export function StoreCategoryBar({
           <span className="store-filter-mobile-count">{resultCount} shown</span>
         </div>
 
-        <div
+        <FilterBar
           id="store-filter-panel"
           className={`store-filter-panel ${filtersExpanded ? "expanded" : ""}`}
-          aria-label="Store filters"
+          ariaLabel="Store filters"
+          searchValue={filters.search}
+          onSearchChange={value => updateFilter("search", value)}
+          searchPlaceholder="Search products, categories, or sellers"
+          resultCount={`${resultCount} shown`}
+          hasActiveFilters={!!hasActiveFilters}
+          onClear={onClearFilters}
         >
-          <SearchField
-            className="store-filter-search"
-            value={filters.search}
-            onChange={value => updateFilter("search", value)}
-            placeholder="Search products"
-          />
-
-          <div className="store-owner-filter">
-            <PersonPicker
-              placeholder="Filter by user"
-              excludeSelf={false}
-              autoFocus={false}
-              resultsVariant="glass-menu"
-              clearQueryOnSelect
-              onSelect={onSelectOwner}
-            />
-            {filters.ownerUserId ? (
-              <span className="store-owner-chip">
-                {selectedOwner ? (
-                  <UserAvatar
-                    src={selectedOwner.avatar_url || undefined}
-                    alt={selectedOwner.display_name}
-                    size={18}
-                    initials={selectedOwner.display_name?.[0]?.toUpperCase()}
-                  />
-                ) : (
-                  <UserRound size={14} />
-                )}
-                {filters.ownerLabel || selectedOwner?.display_name || "Selected user"}
-                <button
-                  type="button"
-                  onClick={() => onChangeFilters({ ...filters, ownerUserId: "", ownerLabel: "" })}
-                  aria-label="Clear user filter"
-                  title="Clear user filter"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            ) : null}
-          </div>
-
           {currentUser && (
             <button
               type="button"
@@ -338,19 +291,6 @@ export function StoreCategoryBar({
             />
           </div>
 
-          <Button
-            size="sm"
-            variant="ghost"
-            className="store-clear-filters"
-            onClick={onClearFilters}
-            disabled={!hasActiveFilters}
-            title="Clear filters"
-            aria-label="Clear filters"
-            iconLeft={<FilterX size={15} />}
-          >
-            Clear
-          </Button>
-
           <div className="store-view-switch" aria-label="Product card view">
             <button
               type="button"
@@ -373,7 +313,7 @@ export function StoreCategoryBar({
               <Columns2 size={15} />
             </button>
           </div>
-        </div>
+        </FilterBar>
       </div>
     </div>
   );

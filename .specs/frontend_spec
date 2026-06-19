@@ -47,10 +47,13 @@ WebSocket consumers, or page-builder UX.
 
 - `storeCartItemsAtom` persists in local storage as `store.cart`.
 - Product/category/catalog atoms persist as `store.products` and `store.categories`.
-- Store catalog filters include category, search, price, rating, sort, product
-  owner via glass-menu `PersonPicker`, and an authenticated `You` owner toggle.
+- Store catalog filters include category, unified product/category/seller search,
+  price, rating, sort, and an authenticated `You` owner toggle.
   Price bounds should tolerate inverted min/max input by treating the lower value
   as the minimum.
+- Store catalog and order filters use the reusable `FilterBar`; dense order filters
+  render through the `TableView` toolbar and cover search, order/payment status,
+  and date/total sorting without replacing the live `ordersAtom` source.
 - Store chrome may show live wallet balance and pending-order badges fetched from
   `/store/wallet` and `/store/orders`; wallet badges compact thousands as `$1.2k`
   or `$12k`, pending counts include open vendor line status, and loaded user

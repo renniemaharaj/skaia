@@ -10,7 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
@@ -21,14 +21,17 @@ import { ordersAtom } from "../../atoms/store";
 import type { Order, Payment, ReferenceCode } from "../../atoms/store";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
+import { FilterBar } from "../../components/ui/FilterBar";
 import PersonPicker from "../../components/ui/PersonPicker";
 import { type TableColumn, TableView } from "../../components/ui/TableView/TableView";
 import UserAvatar from "../../components/user/UserAvatar";
+import UserInlineCard from "../../components/user/UserInlineCard";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import Button from "../input/Button";
+import Select from "../input/Select";
 import { StorePageShell } from "./StorePageShell";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
@@ -45,6 +48,15 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 type OrderWithPayment = Order & { payment?: Payment };
+
+type OrderSortMode = "newest" | "oldest" | "total-desc" | "total-asc";
+
+const DEFAULT_ORDER_FILTERS = {
+  search: "",
+  status: "all",
+  payment: "all",
+  sort: "newest" as OrderSortMode,
+};
 
 export const OrdersPage = () => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -63,6 +75,7 @@ export const OrdersPage = () => {
   const [editingReferenceCodeId, setEditingReferenceCodeId] = useState<string | null>(null);
   const [selectedReferenceUser, setSelectedReferenceUser] = useState<User | null>(null);
   const [paymentsByOrder, setPaymentsByOrder] = useState<Record<string, Payment>>({});
+  const [orderFilters, setOrderFilters] = useState(DEFAULT_ORDER_FILTERS);
   const [loading, setLoading] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [mapPopover, setMapPopover] = useState<{
@@ -242,22 +255,10 @@ export const OrdersPage = () => {
 
   const renderOrderUser = (order: Order) => {
     if (order.is_guest) {
-      return (
-        <div className="orders-user-cell">
-          <div className="guest-avatar">G</div>
-          <span>Guest</span>
-        </div>
-      );
+      return <UserInlineCard isGuest compact name={order.guest_email || "Guest"} />;
     }
     if (!order.user_id) return <span>Unknown</span>;
-    return (
-      <UserProfileOverlay userId={order.user_id}>
-        <div className="orders-user-cell">
-          <UserAvatar src={undefined} initials={`U${order.user_id}`} size={32} />
-          <span>User #{order.user_id}</span>
-        </div>
-      </UserProfileOverlay>
-    );
+    return <UserInlineCard userId={order.user_id} compact />;
   };
 
   const showLocationMap = (
@@ -344,7 +345,7 @@ export const OrdersPage = () => {
     {
       header: "User",
       width: "minmax(140px, 1fr)",
-      cell: code => `User #${code.user_id}`,
+      cell: code => <UserInlineCard userId={code.user_id} compact />,
     },
     {
       header: "Incentive",
@@ -496,6 +497,114 @@ export const OrdersPage = () => {
 
   const saveReferenceLabel = editingReferenceCodeId ? "Save" : "Create";
 
+  const hasActiveOrderFilters =
+    orderFilters.search.trim() !== "" ||
+    orderFilters.status !== "all" ||
+    orderFilters.payment !== "all" ||
+    orderFilters.sort !== "newest";
+
+  const visibleOrders = useMemo(() => {
+    const search = orderFilters.search.trim().toLowerCase();
+    return orders
+      .filter(order => {
+        if (orderFilters.status !== "all" && order.status !== orderFilters.status) return false;
+
+        const paymentStatus = paymentsByOrder[order.id]?.status || "unpaid";
+        if (orderFilters.payment !== "all" && paymentStatus !== orderFilters.payment) return false;
+
+        if (!search) return true;
+        return [
+          order.id,
+          order.user_id,
+          order.guest_email,
+          order.guest_phone,
+          order.delivery_location,
+          order.status,
+          paymentStatus,
+        ].some(value => String(value || "").toLowerCase().includes(search));
+      })
+      .sort((a, b) => {
+        switch (orderFilters.sort) {
+          case "oldest":
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          case "total-desc":
+            return b.total_price - a.total_price;
+          case "total-asc":
+            return a.total_price - b.total_price;
+          case "newest":
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+      });
+  }, [orderFilters, orders, paymentsByOrder]);
+
+  const orderFilterBar = (
+    <FilterBar
+      compact
+      className="orders-filter-bar"
+      ariaLabel="Order filters"
+      searchValue={orderFilters.search}
+      onSearchChange={search => setOrderFilters(current => ({ ...current, search }))}
+      searchPlaceholder="Search orders, users, or locations"
+      resultCount={`${visibleOrders.length} of ${orders.length}`}
+      hasActiveFilters={hasActiveOrderFilters}
+      onClear={() => setOrderFilters(DEFAULT_ORDER_FILTERS)}
+    >
+      <Select
+        size="sm"
+        className="orders-filter-select"
+        aria-label="Order status"
+        value={orderFilters.status}
+        onChange={event =>
+          setOrderFilters(current => ({ ...current, status: event.target.value }))
+        }
+        options={[
+          { value: "all", label: "Any status" },
+          { value: "pending", label: "Pending" },
+          { value: "accepted", label: "Accepted" },
+          { value: "completed", label: "Completed" },
+          { value: "failed", label: "Failed" },
+          { value: "cancelled", label: "Cancelled" },
+          { value: "rejected", label: "Rejected" },
+        ]}
+      />
+      <Select
+        size="sm"
+        className="orders-filter-select"
+        aria-label="Payment status"
+        value={orderFilters.payment}
+        onChange={event =>
+          setOrderFilters(current => ({ ...current, payment: event.target.value }))
+        }
+        options={[
+          { value: "all", label: "Any payment" },
+          { value: "succeeded", label: "Paid" },
+          { value: "pending", label: "Payment pending" },
+          { value: "failed", label: "Payment failed" },
+          { value: "cancelled", label: "Payment cancelled" },
+          { value: "unpaid", label: "Unpaid" },
+        ]}
+      />
+      <Select
+        size="sm"
+        className="orders-filter-select"
+        aria-label="Sort orders"
+        value={orderFilters.sort}
+        onChange={event =>
+          setOrderFilters(current => ({
+            ...current,
+            sort: event.target.value as OrderSortMode,
+          }))
+        }
+        options={[
+          { value: "newest", label: "Newest" },
+          { value: "oldest", label: "Oldest" },
+          { value: "total-desc", label: "Total high" },
+          { value: "total-asc", label: "Total low" },
+        ]}
+      />
+    </FilterBar>
+  );
+
   const updateOrderStatus = async (id: string, status: string) => {
     try {
       await apiRequest(`/store/orders/${id}/status`, {
@@ -606,7 +715,7 @@ export const OrdersPage = () => {
                     />
                     Active
                   </label>
-                  <Button type="submit" variant="primary" size="sm">
+                  <Button type="submit" variant="action" size="sm">
                     {saveReferenceLabel}
                   </Button>
                   {editingReferenceCodeId && (
@@ -689,24 +798,21 @@ export const OrdersPage = () => {
             )}
             <div>
               {loading && <Loader className="spin" />}
-              {!loading && orders.length === 0 && (
-                <p
-                  style={{
-                    padding: "2rem 0",
-                    textAlign: "center",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  No orders found.
-                </p>
-              )}
-              {!loading && orders.length > 0 && (
+              {!loading && (
                 <TableView
-                  data={orders}
+                  data={visibleOrders}
                   columns={orderColumns}
                   rowKey={order => order.id}
                   renderRowWrapper={renderOrderRow}
+                  toolbar={orderFilterBar}
                   maxHeight={680}
+                  emptyState={
+                    <p className="orders-empty-state">
+                      {hasActiveOrderFilters
+                        ? "No orders match these filters."
+                        : "No orders found."}
+                    </p>
+                  }
                 />
               )}
             </div>

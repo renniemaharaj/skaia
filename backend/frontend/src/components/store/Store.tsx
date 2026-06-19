@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import "./ProductPage.css";
 import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
-import type { User } from "../../atoms/auth";
 import {
   type CartItem,
   type Order,
@@ -130,18 +129,6 @@ export const Store: React.FC = () => {
     [categories]
   );
 
-  const productOwners = useMemo(() => {
-    const owners = new Map<string, NonNullable<Product["owner"]>>();
-    for (const product of products) {
-      if (product.owner_id && product.owner) {
-        owners.set(String(product.owner_id), product.owner);
-      }
-    }
-    return Array.from(owners.values()).sort((a, b) =>
-      (a.display_name || "").localeCompare(b.display_name || "")
-    );
-  }, [products]);
-
   const visibleProducts = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
     const selectedCategoryIds = new Set(filters.categoryIds);
@@ -169,10 +156,14 @@ export const Store: React.FC = () => {
 
         if (!search) return true;
 
-        const categoryName = categoryNameById.get(product.category_id)?.toLowerCase() ?? "";
-        return [product.name, product.description, categoryName].some(value =>
-          value.toLowerCase().includes(search)
-        );
+        const categoryName = categoryNameById.get(product.category_id) ?? "";
+        return [
+          product.name,
+          product.description,
+          categoryName,
+          product.owner?.display_name,
+          product.owner_id,
+        ].some(value => String(value || "").toLowerCase().includes(search));
       })
       .sort((a, b) => {
         switch (filters.sort) {
@@ -215,14 +206,6 @@ export const Store: React.FC = () => {
 
   const handleClearFilters = () => {
     setFilters(DEFAULT_STORE_FILTERS);
-  };
-
-  const handleSelectOwner = (user: User) => {
-    setFilters(prev => ({
-      ...prev,
-      ownerUserId: String(user.id),
-      ownerLabel: user.display_name || user.username || `User ${user.id}`,
-    }));
   };
 
   const handleToggleOwnProducts = () => {
@@ -447,7 +430,6 @@ export const Store: React.FC = () => {
         filters={filters}
         resultCount={visibleProducts.length}
         currentUser={currentUser}
-        ownerOptions={productOwners}
         walletBalance={walletBalance}
         pendingOrderCount={pendingOrderCount}
         canCreateCategory={canCreateCategory}
@@ -457,7 +439,6 @@ export const Store: React.FC = () => {
         viewMode={viewMode}
         onChangeFilters={setFilters}
         onChangeViewMode={handleChangeViewMode}
-        onSelectOwner={handleSelectOwner}
         onToggleOwnProducts={handleToggleOwnProducts}
         onToggleCategory={handleToggleCategory}
         onClearFilters={handleClearFilters}

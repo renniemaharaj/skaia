@@ -8,7 +8,7 @@ const mockFetch = vi.fn();
 
 describe("Auth Component", () => {
   beforeEach(() => {
-    mockFetch.mockClear();
+    mockFetch.mockReset();
     localStorage.clear();
     vi.stubGlobal("fetch", mockFetch);
   });

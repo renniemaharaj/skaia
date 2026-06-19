@@ -322,6 +322,28 @@
   border-radius: 8px;
 }
 
+.orders-filter-bar .filter-bar__controls {
+  flex: 0 1 auto;
+}
+
+.orders-filter-select {
+  width: 8.75rem;
+  min-width: 7.5rem;
+}
+
+.orders-filter-select .sk-select__trigger {
+  box-sizing: border-box;
+  height: 2rem;
+  min-height: 2rem;
+}
+
+.table-view__empty .orders-empty-state {
+  margin: 0;
+  padding: 0.5rem;
+  border: 0;
+  text-align: center;
+}
+
 @media (max-width: 880px) {
   .reference-codes-panel {
     padding: 0 16px;
@@ -330,4 +352,13 @@
   .reference-code-form {
     grid-template-columns: 1fr;
   }
+
+  .orders-filter-select {
+    flex: 1 1 8rem;
+    width: auto;
+  }
+}
+
+.order-row-hover {
+  cursor: pointer;
 }
