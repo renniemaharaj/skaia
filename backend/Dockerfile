@@ -34,24 +34,23 @@ RUN apk --no-cache add ca-certificates su-exec nodejs chromium && \
 
 WORKDIR /app
 
-COPY --from=builder /app .
+COPY --from=builder /app/backend /app/backend
+COPY --from=builder /app/frontend/dist /app/frontend/dist
+COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
 
 # make sure the compiled binary can be executed
 RUN chmod +x /app/backend
 
-# Copy the built frontend output so the server can serve it with patched head.
-COPY --from=builder /app/frontend/dist /app/frontend/dist
-
-RUN mkdir -p /app/uploads && chown -R appuser:appuser /app
+RUN mkdir -p /app/uploads /app/armed && chown -R appuser:appuser /app/uploads /app/armed
 
 # Entrypoint runs as root to fix bind-mount ownership, then drops to appuser.
 COPY <<'EOF' /app/entrypoint.sh
 #!/bin/sh
 set -e
-# Fix ownership of the uploads directory when a host bind-mount arrives
+# Fix ownership of the uploads and armed directories when a host bind-mount arrives
 # as root-owned (common with Docker bind mounts on Linux).
-chown -R appuser:appuser /app 2>/dev/null || true
 chown -R appuser:appuser /app/uploads 2>/dev/null || true
+chown -R appuser:appuser /app/armed 2>/dev/null || true
 # execute the compiled backend binary
 exec su-exec appuser /app/backend
 EOF
