@@ -9,13 +9,13 @@ Commands:
   list                                       List all clients
   enable <name>                              Enable a client
   disable <name>                             Disable a client
-  start <name>                               Start a client backend
-  stop <name>                                Stop a client backend
+  start [<name>]                             Start all node services (or a specific client)
+  stop [<name>]                              Stop all node services (or a specific client)
+  restart [<name>]                           Restart all node services (or a specific client)
   remove <name>                              Remove a client (with confirmation)
   update <name|all>                          Update FEATURES_ENABLED in client(s) .env with selected features
   build                                      Build / rebuild the backend Docker image
-  rebuilt frontend [<name>|all]              Build frontend and hot-ship dist to running backend(s)
-  ship frontend                              Auto-stash, pull, pop, and rebuilt frontend all
+  ship frontend                              Auto-stash, pull, pop, and rebuild frontend
   dev                                        Start dev environment (infra, API, and vite dev server)
   compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
   compose down                               Stop everything
@@ -45,8 +45,8 @@ Examples:
   grengo new skaiacraft --domain skaiacraft.com --domain localhost
   grengo compose up
   grengo disable writers
-  grengo compose down
-  grengo rebuilt frontend all
+  grengo start
+  grengo stop
   grengo export mysite
   grengo import grengo-client-mysite-20260319-120000.tar.gz --name mysite-copy
   grengo export-node -o full-backup.tar.gz

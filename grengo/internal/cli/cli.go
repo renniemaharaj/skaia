@@ -32,9 +32,9 @@ func commandRegistry() []commandEntry {
 		{names: []string{"disable"}, run: runDisable},
 		{names: []string{"start"}, run: runStart},
 		{names: []string{"stop"}, run: runStop},
+		{names: []string{"restart"}, run: runRestart},
 		{names: []string{"remove", "rm"}, run: runRemove},
 		{names: []string{"build"}, run: runBuild},
-		{names: []string{"rebuilt", "rebuild"}, run: runRebuild},
 		{names: []string{"ship"}, run: runShip},
 		{names: []string{"dev"}, run: runDev},
 		{names: []string{"compose"}, run: runCompose},
@@ -80,11 +80,29 @@ func runDisable(rest []string, c Commands) {
 }
 
 func runStart(rest []string, c Commands) {
-	c.Start(requireArg(rest, "start <name>", c))
+	if len(rest) == 0 {
+		c.GlobalStart()
+		return
+	}
+	c.Start(rest[0])
 }
 
 func runStop(rest []string, c Commands) {
-	c.Stop(requireArg(rest, "stop <name>", c))
+	if len(rest) == 0 {
+		c.GlobalStop()
+		return
+	}
+	c.Stop(rest[0])
+}
+
+func runRestart(rest []string, c Commands) {
+	if len(rest) == 0 {
+		c.GlobalRestart()
+		return
+	}
+	name := rest[0]
+	c.Stop(name)
+	c.Start(name)
 }
 
 func runRemove(rest []string, c Commands) {
@@ -95,22 +113,7 @@ func runBuild(_ []string, c Commands) {
 	c.Build()
 }
 
-func runRebuild(rest []string, c Commands) {
-	sub := requireArg(rest, "rebuilt frontend [<name>|all]", c)
-	switch sub {
-	case "frontend":
-		target := "all"
-		if len(rest) > 1 {
-			target = rest[1]
-		}
-		if len(rest) > 2 {
-			c.Die("Usage: grengo rebuilt frontend [<name>|all]")
-		}
-		c.RebuildFrontend(target)
-	default:
-		c.Die("Unknown rebuilt subcommand: %s", sub)
-	}
-}
+
 
 func runShip(rest []string, c Commands) {
 	sub := requireArg(rest, "ship frontend", c)
