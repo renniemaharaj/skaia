@@ -18,10 +18,28 @@ const ErrorFallback = ({ error }: FallbackProps) => {
 
   useEffect(() => {
     if (isNetworkOrChunkError) {
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 10000);
-      return () => clearTimeout(timer);
+      const pingServer = () => {
+        const wsUrl = window.location.protocol === "https:" 
+          ? `wss://${window.location.host}/ws` 
+          : `ws://${window.location.host}/ws`;
+          
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+          // Backend is back online!
+          ws.close();
+          window.location.reload();
+        };
+        
+        ws.onerror = () => {
+          // Still down, close and let the interval try again
+          ws.close();
+        };
+      };
+
+      pingServer(); // Try immediately
+      const interval = setInterval(pingServer, 2000);
+      return () => clearInterval(interval);
     }
   }, [isNetworkOrChunkError]);
 
@@ -30,8 +48,7 @@ const ErrorFallback = ({ error }: FallbackProps) => {
       <ErrorPage
         errorCode={503}
         errorTitle="Updating System..."
-        errorMessage="We'll be right back shortly!"
-        details="The application is currently restarting. This page will automatically refresh in 10 seconds."
+        errorMessage="The application is currently restarting. This page will automatically refresh as soon as it's ready."
         showBackButton={false}
         showHomeButton={false}
       />

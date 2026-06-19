@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowLeft, Home } from "lucide-react";
+import { AlertCircle, ArrowLeft, Home, ServerCog } from "lucide-react";
 import type React from "react";
 import { useNavigate } from "react-router-dom";
 import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
@@ -34,10 +34,14 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
     <div className="error-page">
       <ContentStandOutCard className="error-page-content">
         <div className="error-icon">
-          <AlertCircle size={64} />
+          {errorCode === 503 ? (
+            <ServerCog size={64} className="animate-pulse" />
+          ) : (
+            <AlertCircle size={64} />
+          )}
         </div>
 
-        <div className="error-code">{errorCode}</div>
+        {errorCode !== 503 && <div className="error-code">{errorCode}</div>}
 
         <h1 className="error-title">{errorTitle}</h1>
 
