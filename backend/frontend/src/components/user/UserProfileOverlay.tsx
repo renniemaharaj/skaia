@@ -7,7 +7,7 @@ import {
 	loadUserProfile,
 	subscribeUserProfile,
 } from "../../utils/userRequests";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
 import type { ProfileUser, Role } from "./types";
@@ -200,7 +200,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
 						onClick={(e) => e.stopPropagation()}
 						onKeyDown={(e) => e.stopPropagation()}
           >
-						<ContentFlatCard
+						<ContentStandOutCard
               className="upo-card"
 							spotlightColor={
 								themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
@@ -273,7 +273,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                   </button>
                 </div>
               </div>
-						</ContentFlatCard>
+						</ContentStandOutCard>
           </div>,
 					document.body,
         )}
