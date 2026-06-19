@@ -213,9 +213,9 @@
 }
 
 .store-price-filter {
-  flex: 1 1 11.25rem;
+  flex: 0 1 auto;
   display: grid;
-  grid-template-columns: auto minmax(3.5rem, 1fr) auto minmax(3.5rem, 1fr);
+  grid-template-columns: auto auto auto auto;
   align-items: center;
   gap: 0.45rem;
   box-sizing: border-box;
@@ -240,7 +240,8 @@
 
 .store-filter-input {
   box-sizing: border-box;
-  min-width: 0;
+  min-width: 2.5rem;
+  max-width: 3.8rem;
   width: 100%;
   height: 1.5rem;
   padding: 0 0.15rem;
