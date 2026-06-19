@@ -203,8 +203,9 @@ proxy_cache_path /var/cache/nginx/uploads
 	}
 
 	// Fallback replacement to prevent 502 from Cloudflare
-	b.WriteString("    error_page 502 503 504 =503 @fallback;\n")
-	b.WriteString("    location @fallback {\n")
+	b.WriteString("    error_page 502 503 504 =503 /fallback-503;\n")
+	b.WriteString("    location = /fallback-503 {\n")
+	b.WriteString("        internal;\n")
 	b.WriteString("        default_type text/html;\n")
 	b.WriteString("        return 503 \"" + fallbackHTML + "\";\n")
 	b.WriteString("    }\n\n")
