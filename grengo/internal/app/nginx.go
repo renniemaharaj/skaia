@@ -173,6 +173,35 @@ proxy_cache_path /var/cache/nginx/uploads
 	// Server block
 	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 0;\n\n", strings.Join(serverNames, " "))
 
+	// Load frontend shell index.html for fallback
+	indexPath := filepath.Join(ProjectRoot(), "backend", "frontend", "dist", "index.html")
+	indexBytes, err := os.ReadFile(indexPath)
+	var fallbackHTML string
+	if err == nil {
+		fallbackHTML = string(indexBytes)
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%TITLE_PLACEHOLDER%", "<title>Starting...</title>")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%META_DESCRIPTION_PLACEHOLDER%", "<meta name=\"description\" content=\"Service is currently restarting. Please wait a moment.\">")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%OG_IMAGE_PLACEHOLDER%", "")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%FAVICON_PLACEHOLDER%", "<link rel=\"icon\" href=\"/logo.png\">")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "</head>", "  <meta http-equiv=\"refresh\" content=\"2\">\n</head>")
+		
+		// Escape for nginx double-quoted string
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\\", "\\\\")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\"", "\\\"")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "$", "\\$")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\r", "")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\n", "\\n")
+	} else {
+		fallbackHTML = "<!DOCTYPE html><html><head><title>Starting...</title><meta http-equiv=\\\"refresh\\\" content=\\\"2\\\"></head><body><h2>System is starting...</h2><p>Please wait a moment while the system boots.</p></body></html>"
+	}
+
+	// Fallback replacement to prevent 502 from Cloudflare
+	b.WriteString("    error_page 502 503 504 @fallback;\n")
+	b.WriteString("    location @fallback {\n")
+	b.WriteString("        default_type text/html;\n")
+	b.WriteString("        return 503 \"" + fallbackHTML + "\";\n")
+	b.WriteString("    }\n\n")
+
 	// Security headers
 	b.WriteString(`    # Security headers
     add_header X-Frame-Options        "SAMEORIGIN" always;
