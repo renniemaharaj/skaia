@@ -1,0 +1,32 @@
+# Blue-Green Deployments
+
+## Context
+The application currently deploys new frontend and backend changes using the `grengo` CLI, which builds and restarts services via Docker Compose. While the React frontend gracefully handles backend restarts, we want to achieve true zero-downtime cutovers using a Blue-Green deployment model. The current infrastructure with `grengo` generated Nginx configs is ideally suited for this.
+
+## Goal
+- Implement a three-command API (`cli blue-green`, `cli blue-green accept`, `cli blue-green reject`) to safely deploy, monitor, and finalize zero-downtime releases.
+- Run parallel backend containers (`backend-blue` and `backend-green`) behind Nginx, maintaining a single shared database.
+
+## Non-Goals
+- Spinning up parallel isolated databases or Redis instances.
+- Complex Kubernetes-style load balancing logic.
+- Automated mutative `git revert` commands during rollbacks (we will rely on Docker tags instead).
+
+## Steps
+1. Update `docker-compose.yml` to define dual `backend-blue` (port 8081) and `backend-green` (port 8082) services.
+2. Update the Docker build pipeline to tag images with specific git commit hashes instead of just `latest`.
+3. Create a CLI state management system (e.g. `.deployment_state.json`) to track the `active_color` and `standby_color`.
+4. Update `nginx.go` to dynamically point `$backend_upstream` to the `active_color` port and execute `docker exec skaia-nginx nginx -s reload` instead of `docker compose restart`.
+5. Implement `cli blue-green` to spin up the standby container, poll its health, monitor logs for errors/crashes over a watch window, and trigger the Nginx hot-reload.
+6. Implement `cli blue-green accept` to finalize the deployment, stop the old container, and execute destructive database migrations.
+7. Implement `cli blue-green reject` to instantly hot-reload Nginx back to the stable container and spin down the failing container.
+
+## Verification
+- Verify that `nginx -s reload` flawlessly flips traffic without dropping WebSockets on the active connection.
+- Verify `cli blue-green reject` properly rolls back Nginx routing immediately upon detection of container crashes.
+- Verify destructive database migrations are securely delayed until the `accept` command is invoked.
+
+## References
+- `.specs/PROTOCOL.md`
+- `grengo/internal/app/nginx.go`
+- `docker-compose.yml`

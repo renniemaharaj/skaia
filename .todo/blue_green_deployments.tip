@@ -1,0 +1,16 @@
+<--/------->
+
+## blue_green_deployments
+
+### Current Progress
+- **Phase 1: Infrastructure & Tagging Updates** — ⬜ Not started
+- **Phase 2: CLI State Management** — ⬜ Not started
+- **Phase 3: Nginx Hot-Reloading Config** — ⬜ Not started
+- **Phase 4: Core CLI Deploy/Accept/Reject Workflow** — ⬜ Not started
+
+### Next Steps
+- [ ] Duplicate the backend service into `backend-blue` and `backend-green` in `docker-compose.yml`.
+- [ ] Implement image tagging dynamically via git commit hash.
+- [ ] Update `grengo` to support reading/writing the `.deployment_state.json` file.
+
+<--/------->
