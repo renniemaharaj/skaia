@@ -139,6 +139,14 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 ## Invariants
 
+- High-fanout rich-user mounts use `apiRequestLazy`. It deduplicates unresolved
+  keys, collects unique IDs in a short window, caps batches, resolves callers
+  individually, and deletes entries on settlement; it must not become a
+  resolved-value cache.
+- Rich-user results publish to every mounted card/overlay for that user. Chat or
+  JWT names are fallbacks only; failures retry once and broken avatar URLs may
+  trigger one guarded refresh per mounted consumer.
+
 - Do not create a second global WebSocket connection.
 - Do not poll for data that has a WS projection.
 - Do not duplicate token definitions in component CSS.

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skaia/backend/config"
 )
 
 var (
@@ -15,10 +16,29 @@ var (
 )
 
 type TelemetryStats struct {
-	Jailed       int64 `json:"ips_jailed"`
-	Tracked      int   `json:"distinct_ips_tracked"`
-	Citizens     int   `json:"citizens"`
-	LimiterState int   `json:"limiter_state"`
+	Jailed       int64  `json:"ips_jailed"`
+	Tracked      int    `json:"distinct_ips_tracked"`
+	Citizens     int    `json:"citizens"`
+	LimiterState int    `json:"limiter_state"`
+	ThreatLevel  string `json:"threat_level"`
+}
+
+func threatLevel(allowance int) string {
+	cfg := config.RateLimit
+	if allowance <= cfg.MinFloorPerMin {
+		return "critical"
+	}
+	ratio := float64(allowance) / float64(cfg.BaseLimitPerMin)
+	switch {
+	case ratio >= 0.90:
+		return "low"
+	case ratio >= 0.75:
+		return "guarded"
+	case ratio >= 0.50:
+		return "elevated"
+	default:
+		return "high"
+	}
 }
 
 // WatchTelemetry starts a background worker that updates telemetry and notifies via a callback.
@@ -93,6 +113,7 @@ func fetchStats(ctx context.Context, rdb *redis.Client) (TelemetryStats, error) 
 		Tracked:      len(distinctIPs),
 		Citizens:     citizens,
 		LimiterState: allowance,
+		ThreatLevel:  threatLevel(allowance),
 	}, nil
 }
 

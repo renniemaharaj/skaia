@@ -2,6 +2,7 @@ import { getDefaultStore } from "jotai";
 import { toast } from "sonner";
 import type { User } from "../atoms/auth";
 import { apiBaseUrlAtom } from "../atoms/config";
+import { createRequestBatcher } from "./requestBatcher";
 
 const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
 
@@ -37,6 +38,14 @@ export interface MFAChallengeContext {
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
+}
+
+export interface LazyApiRequestOptions<K, V, R> {
+  buildBody: (keys: K[]) => unknown;
+  selectItems: (response: R) => V[];
+  keyOf: (item: V) => K;
+  windowMs?: number;
+  maxBatchSize?: number;
 }
 
 export interface AuthResponse {
@@ -292,6 +301,29 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     // Return null for empty responses
     return null as T;
   }
+}
+
+/**
+ * Creates a keyed lazy API call. Calls made within the collection window share
+ * one bounded request; each key retains an individual promise and no resolved
+ * value is cached.
+ */
+export function apiRequestLazy<K, V, R>(
+  endpoint: string,
+  { buildBody, selectItems, keyOf, windowMs, maxBatchSize }: LazyApiRequestOptions<K, V, R>
+): (key: K) => Promise<V> {
+  const batcher = createRequestBatcher<K, V>({
+    windowMs,
+    maxBatchSize,
+    loadBatch: async keys => {
+      const response = await apiRequest<R>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(buildBody(keys)),
+      });
+      return new Map(selectItems(response).map(item => [keyOf(item), item]));
+    },
+  });
+  return batcher.load;
 }
 
 /**

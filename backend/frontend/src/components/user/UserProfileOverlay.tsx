@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
+import { loadUserProfile, subscribeUserProfile } from "../../utils/userRequests";
 import SpotlightCard from "../ui/SpotlightCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
@@ -20,8 +21,6 @@ interface UserProfileOverlayProps {
 
 let overlayRoleCache: Role[] | null = null;
 let overlayRoleRequest: Promise<Role[]> | null = null;
-const overlayUserCache = new Map<string, ProfileUser>();
-const overlayUserRequests = new Map<string, Promise<ProfileUser>>();
 
 const loadOverlayRoles = () => {
   if (overlayRoleCache) return Promise.resolve(overlayRoleCache);
@@ -39,24 +38,6 @@ const loadOverlayRoles = () => {
   return overlayRoleRequest;
 };
 
-const loadOverlayUser = (userId: string | number) => {
-  const key = String(userId);
-  const cached = overlayUserCache.get(key);
-  if (cached) return Promise.resolve(cached);
-  const existing = overlayUserRequests.get(key);
-  if (existing) return existing;
-  const request = apiRequest<ProfileUser>(`/users/${key}`)
-    .then(data => {
-      overlayUserCache.set(key, data);
-      return data;
-    })
-    .finally(() => {
-      overlayUserRequests.delete(key);
-    });
-  overlayUserRequests.set(key, request);
-  return request;
-};
-
 const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   userId,
   fallbackName,
@@ -70,6 +51,8 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
+  const retriedAvatarURLs = useRef(new Set<string>());
+  const resolvedUser = user && String(user.id) === String(userId) ? user : null;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,6 +100,8 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
     }
   }, [showOverlay]);
 
+  useEffect(() => subscribeUserProfile(userId, setUser), [userId]);
+
   const handleMouseEnter = () => {
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
@@ -149,15 +134,14 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   };
 
   const fetchUserData = async () => {
-    if (user || loading) return;
+    if (resolvedUser || loading) return;
     setLoading(true);
     try {
-      const shouldFetchUser = !(fallbackName && fallbackRoles);
       const [fetchedUser, fetchedRoles] = await Promise.all([
-        shouldFetchUser ? loadOverlayUser(userId) : Promise.resolve(null),
+        loadUserProfile(userId),
         loadOverlayRoles(),
       ]);
-      if (fetchedUser) setUser(fetchedUser);
+      setUser(fetchedUser);
       setAllRoles(fetchedRoles ?? []);
     } catch (e) {
       console.error("Failed to fetch user data for overlay", e);
@@ -167,10 +151,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
   };
 
   // Compute visual details based on fetched user OR fallbacks
-  const displayName = user?.display_name || user?.username || fallbackName || "Unknown User";
-  const avatarUrl = user?.avatar_url || fallbackAvatar;
-  const bannerUrl = user?.banner_url || "/banner_7783x7783.png";
-  const roles = user?.roles || fallbackRoles || [];
+  const displayName =
+    resolvedUser?.display_name || resolvedUser?.username || fallbackName || "Unknown User";
+  const avatarUrl = resolvedUser?.avatar_url || fallbackAvatar;
+  const bannerUrl = resolvedUser?.banner_url || "/banner_7783x7783.png";
+  const roles = resolvedUser?.roles || fallbackRoles || [];
 
   const rolesWithDetails = allRoles
     .filter(r => roles.includes(r.name))
@@ -224,6 +209,11 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                     alt={displayName}
                     size={64}
                     initials={displayName[0]?.toUpperCase()}
+                    onImageError={() => {
+                      if (!avatarUrl || retriedAvatarURLs.current.has(avatarUrl)) return;
+                      retriedAvatarURLs.current.add(avatarUrl);
+                      void loadUserProfile(userId).catch(() => {});
+                    }}
                     style={
                       glowColor
                         ? {
@@ -237,7 +227,9 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
 
                 <div className="upo-info">
                   <h3 className="upo-display-name">{displayName}</h3>
-                  {user?.username && <p className="upo-username">@{user.username}</p>}
+                  {resolvedUser?.username && (
+                    <p className="upo-username">@{resolvedUser.username}</p>
+                  )}
 
                   <div
                     className="upo-roles"
@@ -254,7 +246,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                     })}
                   </div>
 
-                  {user?.bio && <p className="upo-bio">{user.bio}</p>}
+                  {resolvedUser?.bio && <p className="upo-bio">{resolvedUser.bio}</p>}
                 </div>
 
                 <div className="upo-actions">

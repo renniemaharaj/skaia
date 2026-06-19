@@ -37,7 +37,9 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   font-size: 0.82rem;
 }
 .pp-tab:focus,
@@ -56,6 +58,47 @@
   color: var(--primary-color);
   background: var(--bg-tertiary);
 }
+
+.defcon-threat--low {
+  --defcon-threat-color: var(--success-color);
+}
+
+.defcon-threat--guarded {
+  --defcon-threat-color: color-mix(
+    in srgb,
+    var(--success-color) 45%,
+    var(--warning-color)
+  );
+}
+
+.defcon-threat--elevated {
+  --defcon-threat-color: var(--warning-color);
+}
+
+.defcon-threat--high {
+  --defcon-threat-color: color-mix(
+    in srgb,
+    var(--warning-color) 45%,
+    var(--error-color)
+  );
+}
+
+.defcon-threat--critical {
+  --defcon-threat-color: var(--error-color);
+}
+
+.pp-tab--defcon[class*="defcon-threat--"] {
+  color: var(--defcon-threat-color);
+}
+
+.pp-tab--defcon[class*="defcon-threat--"]:hover,
+.pp-tab--defcon[class*="defcon-threat--"].pp-tab--active {
+  background: color-mix(
+    in srgb,
+    var(--defcon-threat-color) 14%,
+    var(--bg-tertiary)
+  );
+}
 /* Chat tab pulsing indicator when there are unread messages */
 .pp-tab--has-unread {
   background: color-mix(in srgb, var(--primary-color) 18%, var(--bg-secondary));
@@ -72,7 +115,9 @@
   background: var(--bg-secondary);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 .pp-chevron:hover {
   color: var(--primary-color);
@@ -94,7 +139,9 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition:
+    max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
   opacity: 0;
 }
 .pp-body.pp-open {
@@ -199,7 +246,8 @@
 
 @keyframes ppPulse {
   0% {
-    box-shadow: 0 0 0 0px color-mix(in srgb, var(--success-color) 80%, transparent);
+    box-shadow: 0 0 0 0px
+      color-mix(in srgb, var(--success-color) 80%, transparent);
   }
   100% {
     box-shadow: 0 0 0 5px transparent;
@@ -262,7 +310,9 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
 }
 .pp-action-btn:hover {
   background: var(--bg-color);
@@ -387,6 +437,7 @@
 
 .defcon-telemetry-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
@@ -399,6 +450,28 @@
   text-transform: uppercase;
 }
 
+.defcon-telemetry-tile[class*="defcon-threat--"] {
+  padding-left: 1rem;
+  border-color: color-mix(
+    in srgb,
+    var(--defcon-threat-color) 55%,
+    var(--border-color)
+  );
+  box-shadow: inset 3px 0 0 var(--defcon-threat-color);
+}
+
+.defcon-threat-label {
+  margin-left: auto;
+  padding: 0.12rem 0.38rem;
+  border: 1px solid
+    color-mix(in srgb, var(--defcon-threat-color) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--defcon-threat-color) 12%, transparent);
+  color: var(--defcon-threat-color);
+  font-size: 0.58rem;
+  line-height: 1.2;
+}
+
 .defcon-reset-toggle {
   display: inline-flex;
   height: 1.55rem;
@@ -406,7 +479,8 @@
   justify-content: center;
   gap: 0.25rem;
   padding: 0 0.45rem;
-  border: 1px solid color-mix(in srgb, var(--error-color) 42%, var(--border-color));
+  border: 1px solid
+    color-mix(in srgb, var(--error-color) 42%, var(--border-color));
   border-radius: 999px;
   background: color-mix(in srgb, var(--error-color) 9%, transparent);
   color: var(--error-color);
@@ -462,7 +536,9 @@
   background: var(--bg-color);
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   width: 100%;
 }
 
@@ -506,7 +582,9 @@
   color: var(--bg-color);
   cursor: pointer;
   font-size: 1rem;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.1s ease;
 }
 .pp-chat-send:hover:not(:disabled) {
   opacity: 0.9;

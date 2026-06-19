@@ -46,6 +46,16 @@ interface PresenceRowAction {
   handler: (u: OnlineUser) => void;
 }
 
+type DefconThreatLevel = "low" | "guarded" | "elevated" | "high" | "critical";
+
+interface DefconInfo {
+  ips_jailed: number;
+  distinct_ips_tracked: number;
+  citizens: number;
+  limiter_state: number;
+  threat_level: DefconThreatLevel;
+}
+
 const PresencePanel = () => {
   const [expanded, setExpanded] = useState(
     !(typeof window !== "undefined" && window.innerWidth <= 720)
@@ -53,7 +63,7 @@ const PresencePanel = () => {
   const [activeTab, setActiveTab] = useState<"members" | "chat" | "voice" | "physics" | "defcon">(
     "members"
   );
-  const [defconInfo, setDefconInfo] = useState<any>(null);
+  const [defconInfo, setDefconInfo] = useState<DefconInfo | null>(null);
   const [defconResetting, setDefconResetting] = useState(false);
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
@@ -99,7 +109,7 @@ const PresencePanel = () => {
       }
 
       // Fetch initial cached state
-      apiRequest("/defcon/telemetry").then(setDefconInfo).catch(console.error);
+      apiRequest<DefconInfo>("/defcon/telemetry").then(setDefconInfo).catch(console.error);
 
       return () => {
         if (socket) {
@@ -140,11 +150,11 @@ const PresencePanel = () => {
     if (defconResetting) return;
     setDefconResetting(true);
     try {
-      const resp = await apiRequest<{ stats?: any }>("/defcon/reset", { method: "POST" });
+      const resp = await apiRequest<{ stats?: DefconInfo }>("/defcon/reset", { method: "POST" });
       if (resp?.stats) {
         setDefconInfo(resp.stats);
       } else {
-        const fresh = await apiRequest("/defcon/telemetry");
+        const fresh = await apiRequest<DefconInfo>("/defcon/telemetry");
         setDefconInfo(fresh);
       }
       toast.success("DEFCON reset");
@@ -353,9 +363,11 @@ const PresencePanel = () => {
           e.preventDefault();
           e.stopPropagation();
         }}
+        onKeyDown={e => e.stopPropagation()}
       >
         {visibleActions.map(action => (
           <button
+            type="button"
             key={action.key}
             className={`pp-action-btn pp-action-btn--${action.key}`}
             title={action.title}
@@ -448,9 +460,6 @@ const PresencePanel = () => {
             <Icon size={13} />
           </span>
           {userCard}
-          <span className="pp-chat-system__text">
-            {msg.kind === "join" ? "joined" : "left"}
-          </span>
           <span className="pp-chat-system__time">{time}</span>
         </div>
       );
@@ -483,6 +492,7 @@ const PresencePanel = () => {
       <div className="pp-controls">
         <div className="pp-tabs">
           <button
+            type="button"
             className={`pp-tab${activeTab === "members" ? " pp-tab--active" : ""}`}
             onClick={() => setActiveTab("members")}
             title="Online members"
@@ -491,6 +501,7 @@ const PresencePanel = () => {
             <span className="pp-count">{total}</span>
           </button>
           <button
+            type="button"
             className={`pp-tab${activeTab === "chat" ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== "chat" ? " pp-tab--has-unread" : ""}`}
             onClick={() => {
               setActiveTab("chat");
@@ -504,6 +515,7 @@ const PresencePanel = () => {
             )}
           </button>
           <button
+            type="button"
             className={`pp-tab${activeTab === "voice" ? " pp-tab--active" : ""}`}
             onClick={() => {
               setHasOpenedVoice(true);
@@ -515,6 +527,7 @@ const PresencePanel = () => {
           </button>
           {seo?.particle_style === "gravity" && (
             <button
+              type="button"
               className={`pp-tab${activeTab === "physics" ? " pp-tab--active" : ""}`}
               onClick={() => setActiveTab("physics")}
               title="Physics Engine Controls"
@@ -524,9 +537,10 @@ const PresencePanel = () => {
           )}
           {hasPermission("admin.general") && (
             <button
-              className={`pp-tab${activeTab === "defcon" ? " pp-tab--active" : ""}`}
+              type="button"
+              className={`pp-tab pp-tab--defcon${defconInfo?.threat_level ? ` defcon-threat--${defconInfo.threat_level}` : ""}${activeTab === "defcon" ? " pp-tab--active" : ""}`}
               onClick={() => setActiveTab("defcon")}
-              title="DEFCON Telemetry"
+              title={`DEFCON Telemetry${defconInfo ? `: ${defconInfo.threat_level}` : ""}`}
             >
               <ShieldCheck size={13} strokeWidth={2.5} />
             </button>
@@ -550,6 +564,7 @@ const PresencePanel = () => {
           </button>
         )}
         <button
+          type="button"
           className="pp-chevron"
           onClick={() => setExpanded(v => !v)}
           title={expanded ? "Collapse" : "Expand"}
@@ -641,7 +656,7 @@ const PresencePanel = () => {
         >
           {activeTab === "defcon" && defconInfo && (
             <div
-              className="defcon-telemetry-tile"
+              className={`defcon-telemetry-tile defcon-threat--${defconInfo.threat_level}`}
               style={{
                 fontSize: "0.85rem",
                 fontFamily: "var(--font-mono, monospace)",
@@ -649,10 +664,14 @@ const PresencePanel = () => {
               }}
             >
               <div className="defcon-telemetry-header">
-                <span>[ DEFCON THREAT TELEMETRY ]</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flex: "1 1 100%" }}>
+                  <span>[ DEFCON THREAT TELEMETRY ]</span>
+                  <span className="defcon-threat-label" style={{ marginLeft: 0 }}>{defconInfo.threat_level}</span>
+                </div>
                 <button
                   type="button"
                   className={`defcon-reset-toggle${defconResetting ? " defcon-reset-toggle--active" : ""}`}
+                  style={{ flex: "1 1 100%", justifyContent: "center" }}
                   onClick={resetDefcon}
                   disabled={defconResetting}
                   title="Reset DEFCON telemetry"

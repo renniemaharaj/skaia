@@ -1,7 +1,8 @@
 import { useAtomValue } from "jotai";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { onlineUsersAtom } from "../../atoms/presence";
 import { apiRequest } from "../../utils/api";
+import { loadUserProfile, subscribeUserProfile } from "../../utils/userRequests";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
@@ -22,8 +23,6 @@ interface UserInlineCardProps {
 
 let roleCatalogCache: RoleLike[] | null = null;
 let roleCatalogRequest: Promise<RoleLike[]> | null = null;
-const inlineUserCache = new Map<string, ProfileUser>();
-const inlineUserRequests = new Map<string, Promise<ProfileUser>>();
 
 const loadRoleCatalog = () => {
   if (roleCatalogCache) return Promise.resolve(roleCatalogCache);
@@ -40,23 +39,6 @@ const loadRoleCatalog = () => {
   return roleCatalogRequest;
 };
 
-const loadInlineUser = (userId: string) => {
-  const cached = inlineUserCache.get(userId);
-  if (cached) return Promise.resolve(cached);
-  const existing = inlineUserRequests.get(userId);
-  if (existing) return existing;
-  const request = apiRequest<ProfileUser>(`/users/${userId}`)
-    .then(data => {
-      inlineUserCache.set(userId, data);
-      return data;
-    })
-    .finally(() => {
-      inlineUserRequests.delete(userId);
-    });
-  inlineUserRequests.set(userId, request);
-  return request;
-};
-
 export default function UserInlineCard({
   userId,
   name,
@@ -68,12 +50,14 @@ export default function UserInlineCard({
   const onlineUsers = useAtomValue(onlineUsersAtom);
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [roleCatalog, setRoleCatalog] = useState<RoleLike[] | null>(roleCatalogCache);
+  const retriedAvatarURLs = useRef(new Set<string>());
   const normalizedUserId = userId === undefined ? "" : String(userId);
+  const resolvedUser = user && String(user.id) === normalizedUserId ? user : null;
 
   useEffect(() => {
-    if (isGuest || !normalizedUserId || user || (name && roles)) return;
+    if (isGuest || !normalizedUserId || resolvedUser) return;
     let cancelled = false;
-    loadInlineUser(normalizedUserId)
+    loadUserProfile(normalizedUserId)
       .then(data => {
         if (!cancelled) setUser(data);
       })
@@ -81,16 +65,22 @@ export default function UserInlineCard({
     return () => {
       cancelled = true;
     };
-  }, [avatar, isGuest, name, normalizedUserId, roles, user]);
+  }, [isGuest, normalizedUserId, resolvedUser]);
+
+  useEffect(() => {
+    if (isGuest || !normalizedUserId) return;
+    return subscribeUserProfile(normalizedUserId, setUser);
+  }, [isGuest, normalizedUserId]);
 
   const isOnline = useMemo(() => {
     if (isGuest || !normalizedUserId) return true;
     return onlineUsers.some(u => String(u.user_id) === normalizedUserId);
   }, [isGuest, normalizedUserId, onlineUsers]);
 
-  const displayName = user?.display_name || user?.username || name || (isGuest ? "Guest" : "User");
-  const avatarUrl = user?.avatar_url || avatar;
-  const displayRoles = user?.roles || roles || [];
+  const displayName =
+    resolvedUser?.display_name || resolvedUser?.username || name || (isGuest ? "Guest" : "User");
+  const avatarUrl = resolvedUser?.avatar_url || avatar;
+  const displayRoles = resolvedUser?.roles || roles || [];
   const displayRoleDetails = useMemo(() => {
     const catalog = roleCatalog ?? [];
     return displayRoles.map(role => {
@@ -122,7 +112,17 @@ export default function UserInlineCard({
       }`}
     >
       <span className="user-inline-card__avatar-wrap">
-        <UserAvatar src={avatarUrl} alt={displayName} size={compact ? 24 : 30} initials={initials} />
+        <UserAvatar
+          src={avatarUrl}
+          alt={displayName}
+          size={compact ? 24 : 30}
+          initials={initials}
+          onImageError={() => {
+            if (!avatarUrl || retriedAvatarURLs.current.has(avatarUrl)) return;
+            retriedAvatarURLs.current.add(avatarUrl);
+            void loadUserProfile(normalizedUserId).catch(() => {});
+          }}
+        />
         {isOnline && <span className="user-inline-card__online-dot" />}
       </span>
       <span className="user-inline-card__body">

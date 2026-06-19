@@ -2,6 +2,7 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
@@ -57,6 +58,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 	// Users
 	r.Route("/users", func(r chi.Router) {
 		// Public (guest-safe) reads
+		r.With(optJWT).Post("/batch", h.getUsersBatch)
 		r.With(optJWT).Get("/{id}", h.getUser)
 		r.Get("/roles", h.getRoles)
 
@@ -136,6 +138,62 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, user)
+}
+
+const maxUserBatchSize = 50
+
+var (
+	errInvalidUserBatchID = errors.New("user ids must be positive")
+	errUserBatchTooLarge  = errors.New("too many user ids")
+)
+
+func normalizeUserBatchIDs(input []int64) ([]int64, error) {
+	ids := make([]int64, 0, len(input))
+	seen := make(map[int64]struct{}, len(input))
+	for _, id := range input {
+		if id <= 0 {
+			return nil, errInvalidUserBatchID
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+		if len(ids) > maxUserBatchSize {
+			return nil, errUserBatchTooLarge
+		}
+	}
+	return ids, nil
+}
+
+func (h *Handler) getUsersBatch(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	var req struct {
+		IDs []int64 `json:"ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	ids, err := normalizeUserBatchIDs(req.IDs)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(ids) == 0 {
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"users": []*models.User{}})
+		return
+	}
+	users := make([]*models.User, 0, len(ids))
+	for _, id := range ids {
+		user, err := h.svc.GetByID(id)
+		if err != nil {
+			continue
+		}
+		users = append(users, user)
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"users": users})
 }
 
 func (h *Handler) getProfile(w http.ResponseWriter, r *http.Request) {

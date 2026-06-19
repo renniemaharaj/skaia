@@ -1,5 +1,6 @@
 import { UserCog2Icon } from "lucide-react";
 import type React from "react";
+import { useState } from "react";
 import "./UserAvatar.css";
 
 interface UserAvatarProps {
@@ -9,6 +10,7 @@ interface UserAvatarProps {
   className?: string;
   initials?: string;
   style?: React.CSSProperties;
+  onImageError?: React.ReactEventHandler<HTMLImageElement>;
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({
@@ -18,7 +20,9 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   className = "",
   initials,
   style,
+  onImageError,
 }) => {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const sharedClasses = `user-avatar ${className}`.trim();
   const baseStyle: React.CSSProperties = {
     width: `${size}px`,
@@ -28,8 +32,19 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     ...style,
   };
 
-  if (src) {
-    return <img src={src} alt={alt} className={sharedClasses} style={baseStyle} />;
+  if (src && failedSrc !== src) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        className={sharedClasses}
+        style={baseStyle}
+        onError={event => {
+          setFailedSrc(src);
+          onImageError?.(event);
+        }}
+      />
+    );
   }
 
   if (initials) {

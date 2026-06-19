@@ -122,6 +122,9 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - DEFCON reset clears jail/history/counter pressure but must preserve trusted
   citizens; verified priority access should grant a short user bypass and promote
   the current IP to trusted.
+- DEFCON telemetry classifies the adaptive allowance as `low`, `guarded`,
+  `elevated`, `high`, or `critical`; clients use this server-owned threat level
+  for status colors rather than duplicating limiter thresholds.
 - Order item fulfillment is vendor-scoped: product owners may update only their
   own line items' `vendor_status`/`vendor_note`, stock reservation/release follows
   those lines only, and the parent order status is an aggregate such as
@@ -129,6 +132,13 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - The product-owner selling role is named `Vendor`; legacy `store-seller` data
   should be migrated into it while preserving `store.product-seller` and
   `store.product-new` permissions.
+
+## User Read Contracts
+
+- `POST /api/users/batch` is a guest-safe bounded read for high-fanout rich-user
+  UI. It accepts at most 50 unique positive IDs and returns the users found.
+- The batch route reduces HTTP fan-out; individual profile routes remain the
+  authoritative fresh-read path for full profile screens.
 
 ## Persistence Contracts
 
