@@ -11,6 +11,7 @@ pgadmin_data/
 .env.local
 .env.*.local
 !backend/.env
+nginx/
 scratch/
 
 # Grengo state
