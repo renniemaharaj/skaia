@@ -791,7 +791,7 @@
   }
 
   .product-content {
-    padding: 18px clamp(18px, 5vw, 24px);
+    padding: 18px clamp(18px, 5vw, 2rem);
   }
 
   .store-products-empty.ui-empty {

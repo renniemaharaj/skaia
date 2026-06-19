@@ -261,6 +261,7 @@ const CursorOverlay = () => {
                   size={24}
                   initials={cursor.user_name?.[0]?.toUpperCase()}
                   className="cursor-avatar-img"
+                  style={{ width: "100%", height: "100%", border: "none" }}
                 />
               </div>
             </UserProfileOverlay>
