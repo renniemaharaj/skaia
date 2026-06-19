@@ -128,14 +128,15 @@
   display: flex;
   gap: 0.6rem;
   padding: 0.55rem 0.65rem;
-  border-radius: 0.6rem;
-  background: var(--bg-color);
+	border-radius: 0;
+	background: transparent;
+	border-bottom: 1px solid var(--border-color);
   transition: background 0.12s ease;
   flex-shrink: 0;
 }
 
 .comment-section .comment-card:hover {
-  background: var(--bg-hover);
+	background: transparent;
 }
 
 .comment-section .comment-avatar img,

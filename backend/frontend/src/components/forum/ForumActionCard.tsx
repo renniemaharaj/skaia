@@ -1,17 +1,23 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 interface ForumActionCardProps {
   canCreateCategory: boolean;
   navigate: NavigateFunction;
 }
 
-export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCardProps) {
-  const [hoveredSection, setHoveredSection] = useState<"discussion" | "category" | null>(null);
+export function ForumActionCard({
+	canCreateCategory,
+	navigate,
+}: ForumActionCardProps) {
+	const [hoveredSection, setHoveredSection] = useState<
+		"discussion" | "category" | null
+	>(null);
 
   return (
-    <div className="card card--interactive new-thread-card feature-card">
+		<ContentFlatCard className="new-thread-card feature-card">
       <div className="new-thread-content">
         <div style={{ display: "flex", gap: "12px", width: "100%" }}>
           <button
@@ -27,8 +33,12 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
               alignItems: "center",
               gap: "8px",
               transition: "transform 0.2s ease, color 0.2s ease",
-              transform: hoveredSection === "discussion" ? "scale(1.05)" : "scale(1)",
-              color: hoveredSection === "discussion" ? "var(--primary-color)" : "inherit",
+							transform:
+								hoveredSection === "discussion" ? "scale(1.05)" : "scale(1)",
+							color:
+								hoveredSection === "discussion"
+									? "var(--primary-color)"
+									: "inherit",
               border: 0,
               background: "transparent",
               font: "inherit",
@@ -44,7 +54,7 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
           {canCreateCategory && (
             <button
               type="button"
-              onClick={e => {
+							onClick={(e) => {
                 e.stopPropagation();
                 navigate("/forum/new-category");
               }}
@@ -78,7 +88,10 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
                 style={{
                   opacity: hoveredSection === "category" ? 1 : 0.6,
                   transition: "opacity 0.2s ease, transform 0.2s ease",
-                  transform: hoveredSection === "category" ? "rotate(180deg)" : "rotate(0deg)",
+									transform:
+										hoveredSection === "category"
+											? "rotate(180deg)"
+											: "rotate(0deg)",
                 }}
               />
               <span
@@ -94,6 +107,6 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
           )}
         </div>
       </div>
-    </div>
+		</ContentFlatCard>
   );
 }

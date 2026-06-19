@@ -10,9 +10,10 @@ interface ContentFlatCardProps {
 }
 
 const contentFlatCardStyle: CSSProperties = {
-  padding: 0,
+	padding: "var(--content-flat-card-padding, var(--card-padding, 0.625rem))",
   background: "transparent",
-  borderColor: "transparent",
+	borderColor:
+		"var(--content-flat-card-border-color, var(--card-border, transparent))",
   boxShadow: "none",
 };
 

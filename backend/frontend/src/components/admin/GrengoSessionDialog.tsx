@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
 import "./GrengoSessionDialog.css";
@@ -14,7 +15,8 @@ import "./GrengoSessionDialog.css";
  * Render this once at the app root (inside Router).
  */
 export default function GrengoSessionDialog() {
-  const { showDialog, loading, error, armed, createSession, closeDialog } = useGrengoShortcut();
+	const { showDialog, loading, error, armed, createSession, closeDialog } =
+		useGrengoShortcut();
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const p1InputRef = useRef<HTMLInputElement>(null);
@@ -60,12 +62,15 @@ export default function GrengoSessionDialog() {
   if (showMaintenance) {
     return createPortal(
       <div className="grengo-maintenance-overlay">
-        <div className="grengo-maintenance-card">
+				<ContentFlatCard className="grengo-maintenance-card">
           <h2>Under Maintenance</h2>
-          <p>This site is currently undergoing maintenance. Please check back shortly.</p>
-        </div>
+					<p>
+						This site is currently undergoing maintenance. Please check back
+						shortly.
+					</p>
+				</ContentFlatCard>
       </div>,
-      document.body
+			document.body,
     );
   }
 
@@ -81,12 +86,14 @@ export default function GrengoSessionDialog() {
       <dialog
         open
         className="grengo-session-dialog"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.stopPropagation()}
+				onClick={(e) => e.stopPropagation()}
+				onKeyDown={(e) => e.stopPropagation()}
         aria-labelledby="grengo-session-title"
       >
         <h3 id="grengo-session-title">Grengo Access</h3>
-        <p>Enter your server passcode to open a temporary management session.</p>
+				<p>
+					Enter your server passcode to open a temporary management session.
+				</p>
 
         {error && <div className="grengo-session-error">{error}</div>}
 
@@ -96,7 +103,7 @@ export default function GrengoSessionDialog() {
             ref={p1InputRef}
             type="password"
             value={p1}
-            onChange={e => setP1(e.target.value)}
+						onChange={(e) => setP1(e.target.value)}
             disabled={loading}
           />
         </label>
@@ -106,8 +113,8 @@ export default function GrengoSessionDialog() {
           <input
             type="password"
             value={p2}
-            onChange={e => setP2(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+						onChange={(e) => setP2(e.target.value)}
+						onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             disabled={loading}
           />
         </label>
@@ -121,12 +128,17 @@ export default function GrengoSessionDialog() {
           >
             {loading ? "Verifying…" : "Open Session"}
           </button>
-          <button type="button" className="btn" onClick={handleClose} disabled={loading}>
+					<button
+						type="button"
+						className="btn"
+						onClick={handleClose}
+						disabled={loading}
+					>
             Cancel
           </button>
         </div>
       </dialog>
     </div>,
-    document.body
+		document.body,
   );
 }

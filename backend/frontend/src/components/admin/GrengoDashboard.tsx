@@ -29,7 +29,6 @@ import {
   sendGrengoJobAction,
   useWebSocketSync,
 } from "../../hooks/useWebSocketSync";
-import { GlassCard, PrimaryCard, SecondaryCard } from "../cards/GlassCard";
 import Select from "../input/Select";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 
@@ -498,7 +497,8 @@ export default function GrengoDashboard() {
 
   useEffect(() => {
     if (wasAtBottomRef.current && consoleOutputRef.current) {
-      consoleOutputRef.current.scrollTop = consoleOutputRef.current.scrollHeight;
+			consoleOutputRef.current.scrollTop =
+				consoleOutputRef.current.scrollHeight;
     }
   }, [consoleOutputLines, isConsoleOpen]);
 
@@ -768,9 +768,9 @@ export default function GrengoDashboard() {
 
   if (sessionValid === null) {
     return (
-      <div className="card grengo-gate">
+			<ContentFlatCard className="grengo-gate grengo-flat-card">
         <p>Validating session…</p>
-      </div>
+			</ContentFlatCard>
     );
   }
 
@@ -874,7 +874,7 @@ export default function GrengoDashboard() {
           </div>
 
           {/* Compose Controls */}
-          <PrimaryCard className="grengo-compose" flat radius="flat">
+					<ContentFlatCard className="grengo-compose grengo-flat-card">
             <h3>Compose</h3>
             <div className="compose-actions">
               <button
@@ -921,7 +921,7 @@ export default function GrengoDashboard() {
             {migrateAllOutput && (
               <pre className="compose-output">{migrateAllOutput}</pre>
             )}
-          </PrimaryCard>
+					</ContentFlatCard>
 
           {/* Create form */}
           {showCreate && (
@@ -959,14 +959,7 @@ export default function GrengoDashboard() {
           )}
 
           {/* Exports Table */}
-          <div
-            className="grengo-exports"
-            style={{
-              marginBottom: "2rem",
-              borderBottom: "1px solid #ccc",
-              paddingBottom: "2rem",
-            }}
-          >
+					<ContentFlatCard className="grengo-exports grengo-flat-card">
             <h3>Available Exports</h3>
             {fetchingExports ? (
               <p>Loading exports...</p>
@@ -1048,7 +1041,7 @@ export default function GrengoDashboard() {
                 </tbody>
               </table>
             )}
-          </div>
+					</ContentFlatCard>
 
           {/* Error */}
           {error && (
@@ -1104,7 +1097,7 @@ export default function GrengoDashboard() {
 
       {/* Console */}
       <ContentFlatCard
-        className="grengo-console content-flat-card"
+				className="grengo-console grengo-flat-card"
         style={{
           position: "fixed",
           bottom: 0,
@@ -1113,7 +1106,6 @@ export default function GrengoDashboard() {
           width: "100%",
           maxWidth: "900px",
           zIndex: 1000,
-          background: "var(--bg-secondary)",
           // border: "1px solid var(--border-color)",
           borderBottom: "none",
           borderTopLeftRadius: "var(--radius-lg)",
@@ -1123,7 +1115,8 @@ export default function GrengoDashboard() {
           // boxShadow: "0 -4px 20px rgba(0,0,0,0.5)",
         }}
       >
-        <div
+				<button
+					type="button"
           className="section__header"
           style={{
             marginBottom: 0,
@@ -1132,8 +1125,13 @@ export default function GrengoDashboard() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+						width: "100%",
+						border: 0,
+						background: "transparent",
           }}
           onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+					aria-expanded={isConsoleOpen}
+					aria-controls="grengo-console-body"
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Terminal size={18} style={{ color: "var(--accent-color)" }} />
@@ -1147,10 +1145,11 @@ export default function GrengoDashboard() {
               grengo-cli
             </h3>
           </div>
-        </div>
+				</button>
 
         {isConsoleOpen && (
           <div
+						id="grengo-console-body"
             style={{
               // padding: "0 16px 16px 16px",
               display: "flex",
@@ -1250,7 +1249,12 @@ function Gauge({
 
   return (
     <div className="gauge-container">
-      <svg className="gauge-svg" viewBox="0 0 100 100">
+			<svg
+				className="gauge-svg"
+				viewBox="0 0 100 100"
+				aria-hidden="true"
+				focusable="false"
+			>
         <circle className="gauge-bg" cx="50" cy="50" r={radius} />
         <circle
           className={`gauge-fill ${colorClass}`}
@@ -1271,7 +1275,7 @@ function Gauge({
 
 function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
   return (
-    <PrimaryCard className="grengo-sysinfo" flat radius="flat">
+		<ContentFlatCard className="grengo-sysinfo grengo-flat-card">
       <div className="sysinfo-item">
         <span className="sysinfo-label">Server Time</span>
         <span className="sysinfo-value">
@@ -1304,7 +1308,7 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
           <span className="sysinfo-value">{sysInfo.load_avg}</span>
         </div>
       )}
-    </PrimaryCard>
+		</ContentFlatCard>
   );
 }
 
@@ -1345,7 +1349,7 @@ function SiteTable({
     );
   }
   return (
-    <div className="card grengo-table-wrap">
+		<ContentFlatCard className="grengo-table-wrap grengo-flat-card">
       <table className="grengo-table">
         <thead>
           <tr>
@@ -1542,7 +1546,7 @@ function SiteTable({
           })}
         </tbody>
       </table>
-    </div>
+		</ContentFlatCard>
   );
 }
 
@@ -1570,7 +1574,7 @@ function EnvEditorPanel({
   onDraftChange: (v: string) => void;
 }) {
   return (
-    <div className="grengo-env-editor">
+		<ContentFlatCard className="grengo-env-editor grengo-flat-card">
       <div className="grengo-env-header">
         <h3>.env — {envSite}</h3>
         <div className="grengo-env-actions">
@@ -1601,7 +1605,7 @@ function EnvEditorPanel({
           editable
         />
       )}
-    </div>
+		</ContentFlatCard>
   );
 }
 
@@ -1622,15 +1626,12 @@ function StoragePanel({
   }
 
   return (
-    <div
-      className="grengo-performance-section"
-      style={{ marginBottom: "2rem" }}
-    >
+		<div className="grengo-performance-section">
       <div className="grengo-hardware">
         <h3>Storage Dashboard</h3>
         <div className="grengo-stats-cards">
           {/* Tenant Upload Storage */}
-          <SecondaryCard>
+					<ContentFlatCard className="grengo-stat-card grengo-flat-card">
             <div className="stat-card-header">
               <strong>Tenant Upload Provisioning</strong>
             </div>
@@ -1639,7 +1640,7 @@ function StoragePanel({
               label={`${storage.total_percent.toFixed(1)}%`}
               subtext="Provisioned"
             />
-            <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+						<div className="stat-card-grid stat-card-grid--spaced">
               <div className="stat-item">
                 <span className="stat-label">Total Assigned</span>
                 <span className="stat-value">
@@ -1648,9 +1649,7 @@ function StoragePanel({
               </div>
             </div>
             {storage.sites && storage.sites.length > 0 && (
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+							<div className="stat-card-details">
                 <strong>Per Client:</strong>
                 {storage.sites.map((s) => (
                   <div
@@ -1667,11 +1666,11 @@ function StoragePanel({
                 ))}
               </div>
             )}
-          </SecondaryCard>
+					</ContentFlatCard>
 
           {/* Physical Disk */}
           {hardwareInfo && (
-            <GlassCard className="grengo-stat-card">
+						<ContentFlatCard className="grengo-stat-card grengo-flat-card">
               <div className="stat-card-header">
                 <strong>Physical Disk Usage (Host)</strong>
               </div>
@@ -1680,7 +1679,7 @@ function StoragePanel({
                 label={`${diskUsedPct.toFixed(1)}%`}
                 subtext="Disk Used"
               />
-              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+							<div className="stat-card-grid stat-card-grid--spaced">
                 <div className="stat-item">
                   <span className="stat-label">Total Disk</span>
                   <span className="stat-value">
@@ -1706,7 +1705,7 @@ function StoragePanel({
                   </span>
                 </div>
               </div>
-              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+							<div className="stat-card-grid stat-card-grid--spaced">
                 <div className="stat-item">
                   <span className="stat-label">Total Read</span>
                   <span className="stat-value">
@@ -1732,16 +1731,14 @@ function StoragePanel({
                   </span>
                 </div>
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+							<div className="stat-card-details">
                 {hardwareInfo.static.storage_drives?.map(
                   (drive: string, i: number) => (
                     <div key={i}>{drive}</div>
                   ),
                 )}
               </div>
-            </GlassCard>
+						</ContentFlatCard>
           )}
         </div>
       </div>
@@ -1796,7 +1793,7 @@ function PerformanceMetrics({
           <h3>Hardware & Thermals</h3>
           <div className="grengo-stats-cards">
             {/* CPU Cores */}
-            <GlassCard className="grengo-stat-card">
+						<ContentFlatCard className="grengo-stat-card grengo-flat-card">
               <div className="stat-card-header">
                 <strong>
                   CPU Load ({hardwareInfo.static.total_cores} Cores)
@@ -1808,10 +1805,9 @@ function PerformanceMetrics({
                 subtext="Avg CPU"
               />
               <div
-                className="stat-card-grid"
+								className="stat-card-grid stat-card-grid--spaced"
                 style={{
                   gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))",
-                  marginTop: "1rem",
                 }}
               >
                 {hardwareInfo.dynamic.core_percents?.map(
@@ -1823,10 +1819,10 @@ function PerformanceMetrics({
                   ),
                 )}
               </div>
-            </GlassCard>
+						</ContentFlatCard>
 
             {/* RAM & Memory */}
-            <GlassCard className="grengo-stat-card">
+						<ContentFlatCard className="grengo-stat-card grengo-flat-card">
               <div className="stat-card-header">
                 <strong>Physical Memory</strong>
               </div>
@@ -1835,7 +1831,7 @@ function PerformanceMetrics({
                 label={`${memPct.toFixed(1)}%`}
                 subtext="Memory"
               />
-              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+							<div className="stat-card-grid stat-card-grid--spaced">
                 <div className="stat-item">
                   <span className="stat-label">Total RAM</span>
                   <span className="stat-value">
@@ -1861,19 +1857,17 @@ function PerformanceMetrics({
                   </span>
                 </div>
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+							<div className="stat-card-details">
                 {hardwareInfo.static.memory_sticks?.map(
                   (stick: string, i: number) => (
                     <div key={i}>{stick}</div>
                   ),
                 )}
               </div>
-            </GlassCard>
+						</ContentFlatCard>
 
             {/* Thermals & GPUs */}
-            <GlassCard className="grengo-stat-card">
+						<ContentFlatCard className="grengo-stat-card grengo-flat-card">
               <div className="stat-card-header">
                 <strong>Thermals & Graphics</strong>
               </div>
@@ -1882,7 +1876,7 @@ function PerformanceMetrics({
                 label={`${avgTemp.toFixed(1)}°C`}
                 subtext="Avg Temp"
               />
-              <div className="stat-card-grid" style={{ marginTop: "1rem" }}>
+							<div className="stat-card-grid stat-card-grid--spaced">
                 {hardwareInfo.dynamic.temps
                   ?.slice(0, 4)
                   .map((temp: number, i: number) => (
@@ -1892,14 +1886,12 @@ function PerformanceMetrics({
                     </div>
                   ))}
               </div>
-              <div
-                style={{ marginTop: "10px", fontSize: "12px", color: "#888" }}
-              >
+							<div className="stat-card-details">
                 {hardwareInfo.static.gpus?.map((gpu: string, i: number) => (
                   <div key={i}>{gpu}</div>
                 ))}
               </div>
-            </GlassCard>
+						</ContentFlatCard>
           </div>
         </div>
       )}
@@ -1912,15 +1904,15 @@ function PerformanceMetrics({
 function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
   if (stats.length === 0) return null;
   return (
-    <SecondaryCard
-      className="grengo-stats"
-      style={{ marginTop: "2rem", marginBottom: "2rem" }}
-    >
+		<ContentFlatCard className="grengo-stats grengo-container-stats grengo-flat-card">
       <h3>Container Stats</h3>
       <div className="grengo-stats-cards">
         <StatsOverview stats={stats} />
         {stats.map((s) => (
-          <GlassCard key={s.name}>
+					<ContentFlatCard
+						key={s.name}
+						className="grengo-stat-card grengo-flat-card"
+					>
             <div className="stat-card-header">
               <strong>{s.name}</strong>
             </div>
@@ -1960,10 +1952,10 @@ function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
                 <span className="stat-value">{s.pids}</span>
               </div>
             </div>
-          </GlassCard>
+					</ContentFlatCard>
         ))}
       </div>
-    </SecondaryCard>
+		</ContentFlatCard>
   );
 }
 
@@ -1998,7 +1990,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   };
 
   return (
-    <GlassCard className="grengo-stat-card grengo-stat-overview">
+		<ContentFlatCard className="grengo-stat-card grengo-stat-overview grengo-flat-card">
       <div className="stat-card-header">
         <strong>Totals</strong>
         <span className="stat-count">{stats.length} containers</span>
@@ -2017,7 +2009,7 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
           <span className="stat-value">{totalPIDs}</span>
         </div>
       </div>
-    </GlassCard>
+		</ContentFlatCard>
   );
 }
 
@@ -2076,7 +2068,7 @@ function CreateSiteForm({
   };
 
   return (
-    <div className="grengo-create-form compact-form-card">
+		<ContentFlatCard className="grengo-create-form compact-form-card grengo-flat-card">
       <h3>Create New Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="form-grid">
@@ -2162,7 +2154,7 @@ function CreateSiteForm({
           <Plus size={14} /> {saving ? "Creating..." : "Create Site"}
         </button>
       </div>
-    </div>
+		</ContentFlatCard>
   );
 }
 
@@ -2226,7 +2218,7 @@ function ImportSiteForm({
   };
 
   return (
-    <div className="grengo-import-form compact-form-card">
+		<ContentFlatCard className="grengo-import-form compact-form-card grengo-flat-card">
       <h3>Import Site</h3>
       {error && <div className="error">{error}</div>}
       <div className="import-fields">
@@ -2264,7 +2256,7 @@ function ImportSiteForm({
           <UploadCloud size={14} /> {importing ? "Importing..." : "Import"}
         </button>
       </div>
-    </div>
+		</ContentFlatCard>
   );
 }
 
@@ -2330,7 +2322,7 @@ function ImportNodeForm({
   };
 
   return (
-    <div className="grengo-import-form compact-form-card">
+		<ContentFlatCard className="grengo-import-form compact-form-card grengo-flat-card">
       <h2>Import Node Archive</h2>
       <p
         style={{
@@ -2362,6 +2354,6 @@ function ImportNodeForm({
           <UploadCloud size={14} /> {importing ? "Importing..." : "Import Node"}
         </button>
       </div>
-    </div>
+		</ContentFlatCard>
   );
 }

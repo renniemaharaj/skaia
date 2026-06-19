@@ -6,6 +6,7 @@ import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import type { User } from "../../atoms/auth";
 import type { PageUser } from "../../hooks/usePageData";
 import { apiRequest } from "../../utils/api";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import PersonPicker from "../ui/PersonPicker";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
@@ -27,7 +28,8 @@ export default function PageOwnershipPanel({
   const hasPermission = useAtomValue(hasPermissionAtom);
   const isAdmin = hasPermission("home.manage");
   const currentUser = useAtomValue(currentUserAtom);
-  const isOwner = owner && currentUser && Number(owner.id) === Number(currentUser.id);
+	const isOwner =
+		owner && currentUser && Number(owner.id) === Number(currentUser.id);
 
   const [showOwnerPicker, setShowOwnerPicker] = useState(false);
   const [showEditorPicker, setShowEditorPicker] = useState(false);
@@ -42,7 +44,9 @@ export default function PageOwnershipPanel({
         method: "PUT",
         body: JSON.stringify({ user_id: Number(user.id) }),
       });
-      toast.success(`Ownership assigned to ${user.display_name || user.username}`);
+			toast.success(
+				`Ownership assigned to ${user.display_name || user.username}`,
+			);
       setShowOwnerPicker(false);
       onUpdate();
     } catch {
@@ -86,10 +90,13 @@ export default function PageOwnershipPanel({
     }
   };
 
-  const editorExcludeIds = [...(owner ? [owner.id] : []), ...editors.map(e => e.id)];
+	const editorExcludeIds = [
+		...(owner ? [owner.id] : []),
+		...editors.map((e) => e.id),
+	];
 
   return (
-    <div className="page-ownership card card--compact">
+		<ContentFlatCard className="page-ownership card--compact">
       {/* Owner section */}
       <div className="page-ownership__section">
         <div className="page-ownership__header">
@@ -108,11 +115,14 @@ export default function PageOwnershipPanel({
                   src={owner.avatar_url || undefined}
                   alt={owner.display_name || owner.username}
                   size={24}
-                  initials={(owner.display_name || owner.username)?.[0]?.toUpperCase()}
+									initials={(owner.display_name ||
+										owner.username)?.[0]?.toUpperCase()}
                 />
               </UserProfileOverlay>
             </span>
-            <span className="page-ownership__name">{owner.display_name || owner.username}</span>
+						<span className="page-ownership__name">
+							{owner.display_name || owner.username}
+						</span>
             {canManage && (
               <div className="page-ownership__actions">
                 {(isAdmin || isOwner) && (
@@ -137,7 +147,10 @@ export default function PageOwnershipPanel({
             )}
           </div>
         ) : canManage ? (
-          <button className="page-ownership__add-btn" onClick={() => setShowOwnerPicker(true)}>
+					<button
+						className="page-ownership__add-btn"
+						onClick={() => setShowOwnerPicker(true)}
+					>
             <UserPlus size={14} />
             <span>Assign owner</span>
           </button>
@@ -171,7 +184,7 @@ export default function PageOwnershipPanel({
         </div>
         {editors.length > 0 ? (
           <div className="page-ownership__list">
-            {editors.map(editor => (
+						{editors.map((editor) => (
               <div key={editor.id} className="page-ownership__user">
                 <span className="page-ownership__avatar">
                   <UserProfileOverlay
@@ -183,7 +196,8 @@ export default function PageOwnershipPanel({
                       src={editor.avatar_url || undefined}
                       alt={editor.display_name || editor.username}
                       size={24}
-                      initials={(editor.display_name || editor.username)?.[0]?.toUpperCase()}
+											initials={(editor.display_name ||
+												editor.username)?.[0]?.toUpperCase()}
                     />
                   </UserProfileOverlay>
                 </span>
@@ -215,6 +229,6 @@ export default function PageOwnershipPanel({
           />
         )}
       </div>
-    </div>
+		</ContentFlatCard>
   );
 }

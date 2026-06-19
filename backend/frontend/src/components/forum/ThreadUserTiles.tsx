@@ -2,6 +2,7 @@ import { Eye, Heart, Loader2, Users } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiRequest } from "../../utils/api";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import type { ProfileUser } from "../user/types";
@@ -14,7 +15,10 @@ interface UserTileProps {
 
 const PAGE_SIZE = 20;
 
-export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => {
+export const ThreadUserTiles: React.FC<UserTileProps> = ({
+	threadId,
+	type,
+}) => {
   const [users, setUsers] = useState<ProfileUser[]>([]);
   const [, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -26,14 +30,14 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
     setLoading(true);
     try {
       const data = await apiRequest<ProfileUser[]>(
-        `/forum/threads/${threadId}/${type}?limit=${PAGE_SIZE}&offset=${pageNum * PAGE_SIZE}`
+				`/forum/threads/${threadId}/${type}?limit=${PAGE_SIZE}&offset=${pageNum * PAGE_SIZE}`,
       );
 
       const newUsers = data || [];
       if (pageNum === 0) {
         setUsers(newUsers);
       } else {
-        setUsers(prev => [...prev, ...newUsers]);
+				setUsers((prev) => [...prev, ...newUsers]);
       }
 
       if (newUsers.length < PAGE_SIZE) {
@@ -58,9 +62,9 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
     (node: HTMLDivElement) => {
       if (loading) return;
       if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver(entries => {
+			observer.current = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && hasMore) {
-          setPage(prev => {
+					setPage((prev) => {
             const next = prev + 1;
             fetchUsers(next);
             return next;
@@ -69,18 +73,23 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
       });
       if (node) observer.current.observe(node);
     },
-    [loading, hasMore]
+		[loading, hasMore],
   );
 
   if (users.length === 0 && !loading) {
     return null; // Don't show the tile if empty
   }
 
-  const title = type === "likers" ? "Liked by" : type === "viewers" ? "Viewed by" : "Contributors";
+	const title =
+		type === "likers"
+			? "Liked by"
+			: type === "viewers"
+				? "Viewed by"
+				: "Contributors";
   const Icon = type === "likers" ? Heart : type === "viewers" ? Eye : Users;
 
   return (
-    <div className="card thread-user-tile">
+		<ContentFlatCard className="thread-user-tile">
       <div className="tut-header">
         <Icon size={16} />
         <h3>{title}</h3>
@@ -103,7 +112,9 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
                   src={user.avatar_url}
                   alt={user.display_name || user.username}
                   size={32}
-                  initials={(user.display_name || user.username || "?")[0]?.toUpperCase()}
+									initials={(user.display_name ||
+										user.username ||
+										"?")[0]?.toUpperCase()}
                 />
               </UserProfileOverlay>
             </div>
@@ -115,6 +126,6 @@ export const ThreadUserTiles: React.FC<UserTileProps> = ({ threadId, type }) => 
           </div>
         )}
       </div>
-    </div>
+		</ContentFlatCard>
   );
 };

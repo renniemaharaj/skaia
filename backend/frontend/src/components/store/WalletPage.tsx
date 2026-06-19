@@ -1,5 +1,12 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { CreditCard, DollarSign, Edit, LayoutDashboard, PlusCircle, Trash } from "lucide-react";
+import {
+	CreditCard,
+	DollarSign,
+	Edit,
+	LayoutDashboard,
+	PlusCircle,
+	Trash,
+} from "lucide-react";
 import React, { useCallback, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,7 +18,7 @@ import { getServerNow } from "../../utils/serverTime";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import { useUserData } from "../user/useUserData";
-import { SecondaryCard } from "../cards/GlassCard";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { StorePageShell } from "./StorePageShell";
@@ -59,11 +66,17 @@ export const WalletPage = () => {
   const canManageStore = hasPermission("store.manageOrders");
   const hasViewer = Boolean(currentUser?.id);
   const isViewingOtherWallet = Boolean(
-    targetUserId && hasViewer && String(targetUserId) !== String(currentUser?.id)
+		targetUserId &&
+			hasViewer &&
+			String(targetUserId) !== String(currentUser?.id),
+	);
+	const requestedOtherWallet = Boolean(
+		targetUserId && (!hasViewer || isViewingOtherWallet),
   );
-  const requestedOtherWallet = Boolean(targetUserId && (!hasViewer || isViewingOtherWallet));
   const canViewTargetWallet = !requestedOtherWallet || canManageStore;
-  const effectiveUserId = canViewTargetWallet ? targetUserId || currentUser?.id : currentUser?.id;
+	const effectiveUserId = canViewTargetWallet
+		? targetUserId || currentUser?.id
+		: currentUser?.id;
   const walletQueryString =
     canManageStore && isViewingOtherWallet && targetUserId
       ? `?user_id=${encodeURIComponent(targetUserId)}`
@@ -77,7 +90,9 @@ export const WalletPage = () => {
   const [loading, setLoading] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
   const [editingCard, setEditingCard] = useState<UserCard | null>(null);
-  const [serverTime, setServerTime] = useState<Date>(() => new Date(getServerNow()));
+	const [serverTime, setServerTime] = useState<Date>(
+		() => new Date(getServerNow()),
+	);
 
   const [cardForm, setCardForm] = useState({
     card_name: "",
@@ -100,7 +115,10 @@ export const WalletPage = () => {
   const hasFetched = React.useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setServerTime(new Date(getServerNow())), 1000);
+		const timer = setInterval(
+			() => setServerTime(new Date(getServerNow())),
+			1000,
+		);
     return () => clearInterval(timer);
   }, []);
 
@@ -116,7 +134,9 @@ export const WalletPage = () => {
     try {
       const [walletData, cardsData] = await Promise.all([
         apiRequest<WalletResponse>(`/store/wallet${walletQueryString}`),
-        apiRequest<WalletCardsResponse>(`/store/wallet/cards${walletQueryString}`),
+				apiRequest<WalletCardsResponse>(
+					`/store/wallet/cards${walletQueryString}`,
+				),
       ]);
       setBalance(walletData.balance || 0);
       setTransactions(walletData.transactions || []);
@@ -139,10 +159,13 @@ export const WalletPage = () => {
     setLoading(true);
     try {
       if (editingCard) {
-        await apiRequest(`/store/wallet/cards/${editingCard.id}${walletQueryString}`, {
+				await apiRequest(
+					`/store/wallet/cards/${editingCard.id}${walletQueryString}`,
+					{
           method: "PUT",
           body: JSON.stringify(cardForm),
-        });
+					},
+				);
         toast.success("Card updated successfully!");
       } else {
         await apiRequest(`/store/wallet/cards${walletQueryString}`, {
@@ -208,13 +231,14 @@ export const WalletPage = () => {
   };
 
   const totalCredits = transactions
-    .filter(t => t.type === "credit")
+		.filter((t) => t.type === "credit")
     .reduce((acc, t) => acc + t.amount, 0);
   const totalDebits = transactions
-    .filter(t => t.type === "debit")
+		.filter((t) => t.type === "debit")
     .reduce((acc, t) => acc + t.amount, 0);
 
-  const walletOwnerName = walletOwner?.display_name || walletOwner?.username || "Current user";
+	const walletOwnerName =
+		walletOwner?.display_name || walletOwner?.username || "Current user";
   const serverDate = serverTime.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -254,9 +278,10 @@ export const WalletPage = () => {
         backLabel="Exit Session"
         meta={shellMeta}
       >
-        <SecondaryCard className="wallet-page__notice">
-          You need store management permission to view another user's wallet session.
-        </SecondaryCard>
+				<ContentFlatCard className="wallet-page__notice">
+					You need store management permission to view another user's wallet
+					session.
+				</ContentFlatCard>
       </StorePageShell>
     );
   }
@@ -282,9 +307,14 @@ export const WalletPage = () => {
         }}
       >
         {/* Left Side: Balance & Cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+				<div
+					style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+				>
           {/* Balance Tile */}
-          <div className="card card--store" style={{ padding: "1.5rem", textAlign: "center" }}>
+					<ContentFlatCard
+						className="card--store"
+						style={{ textAlign: "center" }}
+					>
             <p
               style={{
                 color: "var(--text-secondary)",
@@ -314,13 +344,14 @@ export const WalletPage = () => {
                 }}
                 disabled
               >
-                <DollarSign size={18} style={{ marginRight: "8px" }} /> Add Funds
+								<DollarSign size={18} style={{ marginRight: "8px" }} /> Add
+								Funds
               </button>
             </div>
-          </div>
+					</ContentFlatCard>
 
           {/* User Cards Tile */}
-          <SecondaryCard style={{ padding: "1.5rem" }}>
+					<ContentFlatCard>
             <div
               style={{
                 display: "flex",
@@ -351,21 +382,22 @@ export const WalletPage = () => {
             </div>
 
             {showCardForm ? (
-              <form
-                onSubmit={handleSaveCard}
-                className="compact-form-card"
-              >
+							<form onSubmit={handleSaveCard} className="compact-form-card">
                 <div style={{ display: "grid", gap: "1rem" }}>
                   <div className="form-group">
                     <label htmlFor="wallet-card-name">Card name</label>
-                    <p className="form-help">A private label such as Personal Visa.</p>
+										<p className="form-help">
+											A private label such as Personal Visa.
+										</p>
                     <input
                       id="wallet-card-name"
                       className="input-group input"
                       type="text"
                       placeholder="Personal Visa"
                       value={cardForm.card_name}
-                      onChange={e => setCardForm({ ...cardForm, card_name: e.target.value })}
+											onChange={(e) =>
+												setCardForm({ ...cardForm, card_name: e.target.value })
+											}
                       required
                     />
                   </div>
@@ -377,7 +409,7 @@ export const WalletPage = () => {
                       type="text"
                       placeholder="Optional note"
                       value={cardForm.card_description}
-                      onChange={e =>
+											onChange={(e) =>
                         setCardForm({
                           ...cardForm,
                           card_description: e.target.value,
@@ -398,7 +430,7 @@ export const WalletPage = () => {
                         { value: "amex", label: "Amex" },
                         { value: "discover", label: "Discover" },
                       ]}
-                      onChange={e =>
+											onChange={(e) =>
                         setCardForm({
                           ...cardForm,
                           card_type: e.target.value,
@@ -414,7 +446,7 @@ export const WalletPage = () => {
                         { value: "false", label: "Debit" },
                         { value: "true", label: "Credit" },
                       ]}
-                      onChange={e =>
+											onChange={(e) =>
                         setCardForm({
                           ...cardForm,
                           is_credit: e.target.value === "true",
@@ -425,16 +457,24 @@ export const WalletPage = () => {
 
                   <div className="form-group">
                     <label htmlFor="wallet-card-number">Card number</label>
-                    {editingCard && <p className="form-help">Leave blank to keep the saved number.</p>}
+										{editingCard && (
+											<p className="form-help">
+												Leave blank to keep the saved number.
+											</p>
+										)}
                     <input
                       id="wallet-card-number"
                       className="input-group input"
                       type="text"
                       inputMode="numeric"
                       autoComplete="cc-number"
-                      placeholder={editingCard ? "Optional replacement number" : "Card number"}
+											placeholder={
+												editingCard
+													? "Optional replacement number"
+													: "Card number"
+											}
                       value={cardForm.card_number}
-                      onChange={e =>
+											onChange={(e) =>
                         setCardForm({
                           ...cardForm,
                           card_number: e.target.value,
@@ -454,7 +494,7 @@ export const WalletPage = () => {
                         max="12"
                         placeholder="MM"
                         value={cardForm.expiry_month}
-                        onChange={e =>
+												onChange={(e) =>
                           setCardForm({
                             ...cardForm,
                             expiry_month: Number.parseInt(e.target.value) || 1,
@@ -473,10 +513,11 @@ export const WalletPage = () => {
                         max="2050"
                         placeholder="YYYY"
                         value={cardForm.expiry_year}
-                        onChange={e =>
+												onChange={(e) =>
                           setCardForm({
                             ...cardForm,
-                            expiry_year: Number.parseInt(e.target.value) || 2024,
+														expiry_year:
+															Number.parseInt(e.target.value) || 2024,
                           })
                         }
                         required
@@ -492,7 +533,9 @@ export const WalletPage = () => {
                         autoComplete="cc-csc"
                         placeholder={editingCard ? "Optional" : "CVV"}
                         value={cardForm.cvv}
-                        onChange={e => setCardForm({ ...cardForm, cvv: e.target.value })}
+												onChange={(e) =>
+													setCardForm({ ...cardForm, cvv: e.target.value })
+												}
                         required={!editingCard}
                       />
                     </div>
@@ -537,7 +580,7 @@ export const WalletPage = () => {
                       pointerEvents: "none",
                     }}
                   >
-                    {[1, 2].map(i => (
+										{[1, 2].map((i) => (
                       <div
                         key={`skel-card-${i}`}
                         style={{
@@ -589,7 +632,7 @@ export const WalletPage = () => {
                     ))}
                   </div>
                 ) : (
-                  cards.map(card => (
+									cards.map((card) => (
                     <div
                       key={card.id}
                       style={{
@@ -611,7 +654,9 @@ export const WalletPage = () => {
                             marginBottom: "4px",
                           }}
                         >
-                          <span style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+													<span
+														style={{ fontWeight: "bold", fontSize: "1.1rem" }}
+													>
                             {card.card_name}
                           </span>
                           <span
@@ -624,7 +669,8 @@ export const WalletPage = () => {
                               textTransform: "uppercase",
                             }}
                           >
-                            {card.card_type} {card.is_credit ? "Credit" : "Debit"}
+														{card.card_type}{" "}
+														{card.is_credit ? "Credit" : "Debit"}
                           </span>
                         </div>
                         <p
@@ -679,11 +725,13 @@ export const WalletPage = () => {
                 )}
               </div>
             )}
-          </SecondaryCard>
+					</ContentFlatCard>
         </div>
 
         {/* Right Side: Transactions & Balance Sheet */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+				<div
+					style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
+				>
           <BalanceSheetCard
             balance={balance}
             totalCredits={totalCredits}

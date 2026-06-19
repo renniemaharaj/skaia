@@ -19,6 +19,7 @@ import { currentThreadAtom, threadPermissionsAtom } from "../../../atoms/forum";
 import { useWebSocketSync } from "../../../hooks/useWebSocketSync";
 import { apiRequest } from "../../../utils/api";
 import ResourceAnalytics from "../../analytics/ResourceAnalytics";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import VoicePanel from "../../page/layout/VoicePanel";
 import type { Role } from "../../user/types";
 import RecentThreadsTile from "../RecentThreadsTile";
@@ -58,7 +59,9 @@ const ViewThreadPage = () => {
   const [authorColor, setAuthorColor] = useState<string | null>(null);
   const [readingMode, setReadingMode] = useState(false);
 
-  const [isMobile, setIsMobile] = useState(window.matchMedia("(max-width: 880px)").matches);
+	const [isMobile, setIsMobile] = useState(
+		window.matchMedia("(max-width: 880px)").matches,
+	);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 880px)");
@@ -79,7 +82,9 @@ const ViewThreadPage = () => {
 
       try {
         setLoading(true);
-        const response = await apiRequest<typeof currentThread>(`/forum/threads/${threadId}`);
+				const response = await apiRequest<typeof currentThread>(
+					`/forum/threads/${threadId}`,
+				);
         if (response) {
           setCurrentThread(response);
           // Subscribe to thread updates
@@ -112,7 +117,7 @@ const ViewThreadPage = () => {
         if (roles) {
           const userRoles = currentThread.user_roles || [];
           const matchedRoles = roles
-            .filter(r => userRoles.includes(r.name))
+						.filter((r) => userRoles.includes(r.name))
             .sort((a, b) => b.power_level - a.power_level);
           if (matchedRoles.length > 0 && matchedRoles[0].theme_color) {
             setAuthorColor(matchedRoles[0].theme_color);
@@ -144,14 +149,16 @@ const ViewThreadPage = () => {
     if (!threadId || !currentThread || !currentUser) return;
 
     const wasLiked = currentThread.is_liked;
-    setCurrentThread(prev =>
+		setCurrentThread((prev) =>
       prev
         ? {
             ...prev,
             is_liked: !wasLiked,
-            likes: wasLiked ? Math.max(0, (prev.likes || 0) - 1) : (prev.likes || 0) + 1,
+						likes: wasLiked
+							? Math.max(0, (prev.likes || 0) - 1)
+							: (prev.likes || 0) + 1,
           }
-        : prev
+				: prev,
     );
 
     try {
@@ -166,14 +173,16 @@ const ViewThreadPage = () => {
       }
     } catch (error) {
       console.error("Error toggling thread like:", error);
-      setCurrentThread(prev =>
+			setCurrentThread((prev) =>
         prev
           ? {
               ...prev,
               is_liked: wasLiked,
-              likes: wasLiked ? (prev.likes || 0) + 1 : Math.max(0, (prev.likes || 0) - 1),
+							likes: wasLiked
+								? (prev.likes || 0) + 1
+								: Math.max(0, (prev.likes || 0) - 1),
             }
-          : prev
+					: prev,
       );
     }
   };
@@ -186,7 +195,9 @@ const ViewThreadPage = () => {
         method: "PUT",
         body: JSON.stringify({ is_locked: newLocked }),
       });
-      setCurrentThread(prev => (prev ? { ...prev, is_locked: newLocked } : prev));
+			setCurrentThread((prev) =>
+				prev ? { ...prev, is_locked: newLocked } : prev,
+			);
     } catch (err) {
       console.error("Lock toggle failed", err);
     }
@@ -195,10 +206,13 @@ const ViewThreadPage = () => {
   const handleShareThread = async () => {
     if (!threadId || !currentThread) return;
     try {
-      const shared = await apiRequest<{ id: string }>(`/forum/threads/${threadId}/share`, {
+			const shared = await apiRequest<{ id: string }>(
+				`/forum/threads/${threadId}/share`,
+				{
         method: "POST",
         body: JSON.stringify({ content: currentThread.content }),
-      });
+				},
+			);
       if (shared?.id) {
         navigate(`/view-thread/${shared.id}`);
       }
@@ -209,27 +223,30 @@ const ViewThreadPage = () => {
 
   if (loading) {
     return (
-      <div className="card view-thread-state-card">
+			<ContentFlatCard className="view-thread-state-card">
         <p>Loading thread...</p>
-      </div>
+			</ContentFlatCard>
     );
   }
 
   if (error || !currentThread) {
     return (
-      <div className="card view-thread-state-card">
+			<ContentFlatCard className="view-thread-state-card">
         <p className="view-thread-state-text">{error || "Thread not found"}</p>
-        <button onClick={() => navigate("/forum")} className="btn btn-ghost view-thread-state-btn">
+				<button
+					onClick={() => navigate("/forum")}
+					className="btn btn-ghost view-thread-state-btn"
+				>
           Back to Forum
         </button>
-      </div>
+			</ContentFlatCard>
     );
   }
 
   return (
     <div
       className={isMobile ? "mobile-view-thread-page" : "view-thread-wrapper"}
-      onClick={e => e.stopPropagation()}
+			onClick={(e) => e.stopPropagation()}
     >
       <div className="view-thread-container">
         {/* <Hero height="350px" /> */}
@@ -247,7 +264,9 @@ const ViewThreadPage = () => {
                     type="button"
                   >
                     <ThumbsUp size={14} />
-                    {currentThread?.likes ? <span>{currentThread.likes}</span> : null}
+										{currentThread?.likes ? (
+											<span>{currentThread.likes}</span>
+										) : null}
                   </button>
                 )}
 
@@ -255,7 +274,9 @@ const ViewThreadPage = () => {
                 <button
                   className={`action-btn ${readingMode ? "active" : ""}`}
                   onClick={() => setReadingMode(!readingMode)}
-                  title={readingMode ? "Disable Reading Mode" : "Enable Reading Mode"}
+									title={
+										readingMode ? "Disable Reading Mode" : "Enable Reading Mode"
+									}
                 >
                   <BookOpen size={16} />
                 </button>
@@ -277,23 +298,37 @@ const ViewThreadPage = () => {
                   <button
                     className={`action-btn lock-btn${currentThread?.is_locked ? " locked" : ""}`}
                     onClick={handleLockThread}
-                    title={currentThread?.is_locked ? "Unlock thread" : "Lock thread"}
+										title={
+											currentThread?.is_locked ? "Unlock thread" : "Lock thread"
+										}
                     type="button"
                   >
-                    {currentThread?.is_locked ? <Unlock size={14} /> : <Lock size={14} />}
+										{currentThread?.is_locked ? (
+											<Unlock size={14} />
+										) : (
+											<Lock size={14} />
+										)}
                   </button>
                 )}
 
                 {/* Edit - derived from live user permissions atom */}
                 {canEdit && (
-                  <button className="action-btn edit-btn" onClick={handleEdit} title="Edit">
+									<button
+										className="action-btn edit-btn"
+										onClick={handleEdit}
+										title="Edit"
+									>
                     <Pencil size={14} />
                   </button>
                 )}
 
                 {/* Delete - derived from live user permissions atom */}
                 {canDelete && (
-                  <button className="action-btn danger" onClick={handleDelete} title="Delete">
+									<button
+										className="action-btn danger"
+										onClick={handleDelete}
+										title="Delete"
+									>
                     <Trash2 size={14} />
                   </button>
                 )}
@@ -330,11 +365,14 @@ const ViewThreadPage = () => {
         {currentThread.is_shared && currentThread.original_thread && (
           <div
             className="reshared-banner"
-            onClick={() => navigate(`/view-thread/${currentThread.original_thread_id}`)}
+						onClick={() =>
+							navigate(`/view-thread/${currentThread.original_thread_id}`)
+						}
           >
             <Share2 size={14} />
             <span>
-              Reshared from <strong>{currentThread.original_thread.title}</strong> by{" "}
+							Reshared from{" "}
+							<strong>{currentThread.original_thread.title}</strong> by{" "}
               {currentThread.original_thread.user_name ?? "unknown"}
             </span>
           </div>
@@ -376,8 +414,8 @@ const ViewThreadPage = () => {
               />
               <ThreadUserTiles threadId={threadId!} type="likers" />
               <ThreadUserTiles threadId={threadId!} type="viewers" />
-              <div
-                className="card view-thread-sidebar-comments"
+							<ContentFlatCard
+								className="view-thread-sidebar-comments"
                 style={{
                   padding: 0,
                   marginTop: "0.5rem",
@@ -386,7 +424,7 @@ const ViewThreadPage = () => {
                 }}
               >
                 <ViewThreadComments threadId={threadId} />
-              </div>
+							</ContentFlatCard>
             </aside>
           )}
         </div>

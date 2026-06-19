@@ -36,11 +36,14 @@
 
 .upo-card {
   width: 320px;
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+	background-color: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+	box-shadow: none;
+	backdrop-filter: blur(18px);
+	-webkit-backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
 }

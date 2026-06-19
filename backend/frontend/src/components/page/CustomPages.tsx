@@ -12,7 +12,13 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+	type MouseEvent,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
@@ -20,10 +26,10 @@ import { usePageData } from "../../hooks/usePageData";
 import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { apiRequest } from "../../utils/api";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import ResourceAnalytics from "../analytics/ResourceAnalytics";
 import { customConfirm } from "../ui/Prompt";
-import SpotlightCard from "../ui/SpotlightCard";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { BlockRenderer } from "./BlockRenderer";
@@ -62,29 +68,37 @@ export default function CustomPages() {
   const [allocation, setAllocation] = useState<Allocation | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [renamingPage, setRenamingPage] = useState<PageBuilderDoc | null>(null);
-  const [duplicatingPage, setDuplicatingPage] = useState<PageBuilderDoc | null>(null);
+	const [duplicatingPage, setDuplicatingPage] = useState<PageBuilderDoc | null>(
+		null,
+	);
   const [renameTitle, setRenameTitle] = useState("");
   const [renameSlug, setRenameSlug] = useState("");
   const [dupSlug, setDupSlug] = useState("");
   const [dupTitle, setDupTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [analyticsPage, setAnalyticsPage] = useState<PageBuilderDoc | null>(null);
+	const [analyticsPage, setAnalyticsPage] = useState<PageBuilderDoc | null>(
+		null,
+	);
   // Homepage setting logic (shared hook)
   const { handleSetHomepage, settingHomepageId } = useSetHomepage(
     landingPageSlug,
-    setLandingPageSlug
+		setLandingPageSlug,
   );
 
   // Permission logic for homepage management
   const hasPermission = usePageData().isAdmin; // home.manage permission
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    return (localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid";
+		return (
+			(localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
+		);
   });
 
   useEffect(() => {
-    apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>("/pages/browse")
-      .then(data => {
+		apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
+			"/pages/browse",
+		)
+			.then((data) => {
         setPages(data?.pages ?? []);
         setLandingPageSlug(data?.landing_page_slug ?? "");
       })
@@ -94,8 +108,10 @@ export default function CustomPages() {
 
   useEffect(() => {
     const handler = () => {
-      apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>("/pages/browse")
-        .then(data => {
+			apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
+				"/pages/browse",
+			)
+				.then((data) => {
           setPages(data?.pages ?? []);
           setLandingPageSlug(data?.landing_page_slug ?? "");
         })
@@ -112,7 +128,7 @@ export default function CustomPages() {
   useEffect(() => {
     if (!currentUser) return;
     apiRequest<Allocation>("/pages/my-allocation")
-      .then(data => setAllocation(data))
+			.then((data) => setAllocation(data))
       .catch(() => {});
   }, [currentUser]);
 
@@ -131,27 +147,33 @@ export default function CustomPages() {
     }
   }, [navigate]);
 
-  const openRename = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
+	const openRename = useCallback(
+		(e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
     e.preventDefault();
     e.stopPropagation();
     setRenameTitle(page.title || page.slug);
     setRenameSlug(page.slug);
     setRenamingPage(page);
-  }, []);
+		},
+		[],
+	);
 
   const handleRename = useCallback(async () => {
     if (!renamingPage || !renameTitle.trim()) return;
     setRenaming(true);
     try {
-      const updated = await apiRequest<PageBuilderDoc>(`/pages/${renamingPage.id}`, {
+			const updated = await apiRequest<PageBuilderDoc>(
+				`/pages/${renamingPage.id}`,
+				{
         method: "PUT",
         body: JSON.stringify({
           ...renamingPage,
           title: renameTitle.trim(),
           slug: renameSlug.trim() || renamingPage.slug,
         }),
-      });
-      setPages(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+				},
+			);
+			setPages((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       toast.success("Page renamed");
       setRenamingPage(null);
     } catch {
@@ -161,28 +183,34 @@ export default function CustomPages() {
     }
   }, [renamingPage, renameTitle, renameSlug]);
 
-  const openDuplicate = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
+	const openDuplicate = useCallback(
+		(e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
     e.preventDefault();
     e.stopPropagation();
     setDupSlug(`${page.slug}-copy`);
     setDupTitle(`${page.title || page.slug} (Copy)`);
     setDuplicatingPage(page);
-  }, []);
+		},
+		[],
+	);
 
   const handleDuplicate = useCallback(async () => {
     if (!duplicatingPage || !dupSlug.trim()) return;
     setDuplicating(true);
     try {
-      const created = await apiRequest<PageBuilderDoc>(`/pages/${duplicatingPage.id}/duplicate`, {
+			const created = await apiRequest<PageBuilderDoc>(
+				`/pages/${duplicatingPage.id}/duplicate`,
+				{
         method: "POST",
         body: JSON.stringify({
           slug: dupSlug.trim(),
           title: dupTitle.trim() || dupSlug.trim(),
         }),
-      });
-      setPages(prev => [...prev, created]);
+				},
+			);
+			setPages((prev) => [...prev, created]);
       apiRequest<Allocation>("/pages/my-allocation")
-        .then(data => setAllocation(data))
+				.then((data) => setAllocation(data))
         .catch(() => {});
       toast.success("Page duplicated");
       setDuplicatingPage(null);
@@ -203,10 +231,10 @@ export default function CustomPages() {
     if (!search.trim()) return pages;
     const q = search.toLowerCase();
     return pages.filter(
-      p =>
+			(p) =>
         (p.title ?? "").toLowerCase().includes(q) ||
         (p.slug ?? "").toLowerCase().includes(q) ||
-        (p.description ?? "").toLowerCase().includes(q)
+				(p.description ?? "").toLowerCase().includes(q),
     );
   }, [pages, search]);
 
@@ -229,13 +257,18 @@ export default function CustomPages() {
             initials={(user.display_name || user.username)?.[0]?.toUpperCase()}
           />
         </span>
-        <span className="cp-user-chip__name">{user.display_name || user.username}</span>
+				<span className="cp-user-chip__name">
+					{user.display_name || user.username}
+				</span>
       </span>
     </UserProfileOverlay>
   );
 
   const PageThumb = ({ page }: { page: PageBuilderDoc }) => {
-    const sections = useMemo(() => parsePageSections(page.content), [page.content]);
+		const sections = useMemo(
+			() => parsePageSections(page.content),
+			[page.content],
+		);
 
     return (
       <div className="cp-card__thumb" data-custom-page-preview>
@@ -275,10 +308,10 @@ export default function CustomPages() {
         await apiRequest(`/pages/${page.id}`, {
           method: "DELETE",
         });
-        setPages(prev => prev.filter(p => p.id !== page.id));
+				setPages((prev) => prev.filter((p) => p.id !== page.id));
         // Refresh allocation count after deletion
         apiRequest<Allocation>("/pages/my-allocation")
-          .then(data => setAllocation(data))
+					.then((data) => setAllocation(data))
           .catch(() => {});
         toast.success("Page deleted");
       } catch {
@@ -287,7 +320,7 @@ export default function CustomPages() {
         setDeletingPageId(null);
       }
     },
-    []
+		[],
   );
 
   return (
@@ -320,7 +353,8 @@ export default function CustomPages() {
         onSearchChange={setSearch}
         metrics={[
           <span key="count" className="custom-pages__count">
-            <strong>{filtered.length}</strong> {filtered.length === 1 ? "Page" : "Pages"} total
+						<strong>{filtered.length}</strong>{" "}
+						{filtered.length === 1 ? "Page" : "Pages"} total
             {search && ` matching "${search}"`}
           </span>,
         ]}
@@ -347,19 +381,28 @@ export default function CustomPages() {
             header: "Page",
             width: "minmax(200px, 2fr)",
             className: "table-view__cell--bold",
-            cell: page => (
+						cell: (page) => (
               <>
                 <span className="cp-list__name">{page.title || page.slug}</span>
                 {page.slug === landingPageSlug && (
-                  <span className="cp-card__badge cp-card__badge--inline">Landing Page</span>
+									<span className="cp-card__badge cp-card__badge--inline">
+										Landing Page
+									</span>
                 )}
                 {page.can_delete && hasPermission && (
                   <button
                     type="button"
                     className={`action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
-                    title={page.slug === landingPageSlug ? "Current homepage" : "Set as homepage"}
-                    disabled={page.slug === landingPageSlug || settingHomepageId === page.id}
-                    onClick={e => {
+										title={
+											page.slug === landingPageSlug
+												? "Current homepage"
+												: "Set as homepage"
+										}
+										disabled={
+											page.slug === landingPageSlug ||
+											settingHomepageId === page.id
+										}
+										onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleSetHomepage(page);
@@ -386,12 +429,12 @@ export default function CustomPages() {
             header: "Description",
             width: "minmax(250px, 3fr)",
             className: "table-view__cell--muted",
-            cell: page => page.description || "—",
+						cell: (page) => page.description || "—",
           },
           {
             header: "Owner",
             width: "minmax(150px, 1.5fr)",
-            cell: page =>
+						cell: (page) =>
               page.owner ? (
                 <UserChip user={page.owner} />
               ) : (
@@ -402,19 +445,19 @@ export default function CustomPages() {
             header: "Updated",
             width: "minmax(120px, 1fr)",
             className: "table-view__cell--muted",
-            cell: page => relativeTimeAgo(page.updated_at),
+						cell: (page) => relativeTimeAgo(page.updated_at),
           },
           {
             header: "Action",
             width: "120px",
             className: "table-view__cell--actions",
-            cell: page => (
+						cell: (page) => (
               <div className="table-view__row-actions">
                 {page.can_delete && (
                   <button
                     type="button"
                     className="action-btn"
-                    onClick={e => openRename(e, page)}
+										onClick={(e) => openRename(e, page)}
                     title="Rename page"
                   >
                     <Pencil size={14} />
@@ -423,7 +466,7 @@ export default function CustomPages() {
                 <button
                   type="button"
                   className="action-btn"
-                  onClick={e => openDuplicate(e, page)}
+									onClick={(e) => openDuplicate(e, page)}
                   title="Duplicate page"
                 >
                   <Copy size={14} />
@@ -432,7 +475,7 @@ export default function CustomPages() {
                   <button
                     type="button"
                     className="action-btn"
-                    onClick={e => {
+										onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       setAnalyticsPage(page);
@@ -446,7 +489,7 @@ export default function CustomPages() {
                   <button
                     type="button"
                     className="action-btn danger"
-                    onClick={event => handleDeletePage(event, page)}
+										onClick={(event) => handleDeletePage(event, page)}
                     disabled={deletingPageId === page.id}
                     title="Delete page"
                   >
@@ -459,9 +502,9 @@ export default function CustomPages() {
             ),
           },
         ]}
-        tableRowKey={page => page.id}
-        renderGridCard={page => (
-          <SpotlightCard
+				tableRowKey={(page) => page.id}
+				renderGridCard={(page) => (
+					<ContentFlatCard
             key={page.id}
             className="card card--interactive"
             style={{ display: "flex", padding: 0, margin: 0 }}
@@ -487,7 +530,7 @@ export default function CustomPages() {
                     <button
                       type="button"
                       className="action-btn cp-action-btn"
-                      onClick={e => openRename(e, page)}
+											onClick={(e) => openRename(e, page)}
                       title="Rename page"
                     >
                       <Pencil size={14} />
@@ -496,7 +539,7 @@ export default function CustomPages() {
                   <button
                     type="button"
                     className="action-btn cp-action-btn"
-                    onClick={e => openDuplicate(e, page)}
+										onClick={(e) => openDuplicate(e, page)}
                     title="Duplicate page"
                   >
                     <Copy size={14} />
@@ -505,7 +548,7 @@ export default function CustomPages() {
                     <button
                       type="button"
                       className="action-btn cp-action-btn"
-                      onClick={e => {
+											onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         setAnalyticsPage(page);
@@ -519,7 +562,7 @@ export default function CustomPages() {
                     <button
                       type="button"
                       className="action-btn danger cp-danger-btn"
-                      onClick={event => handleDeletePage(event, page)}
+											onClick={(event) => handleDeletePage(event, page)}
                       disabled={deletingPageId === page.id}
                       title="Delete page"
                     >
@@ -530,7 +573,9 @@ export default function CustomPages() {
                 </div>
               </div>
 
-              {page.description && <p className="cp-card__desc">{page.description}</p>}
+							{page.description && (
+								<p className="cp-card__desc">{page.description}</p>
+							)}
 
               <PageThumb page={page} />
 
@@ -545,16 +590,20 @@ export default function CustomPages() {
                   <div className="cp-card__meta-row">
                     <Users size={12} />
                     <span className="cp-card__editors">
-                      {page.editors.slice(0, 3).map(e => (
+											{page.editors.slice(0, 3).map((e) => (
                         <UserChip key={e.id} user={e} />
                       ))}
                       {page.editors.length > 3 && (
-                        <span className="cp-card__more">+{page.editors.length - 3}</span>
+												<span className="cp-card__more">
+													+{page.editors.length - 3}
+												</span>
                       )}
                     </span>
                   </div>
                 )}
-                <span className="cp-card__time">Updated {relativeTimeAgo(page.updated_at)}</span>
+								<span className="cp-card__time">
+									Updated {relativeTimeAgo(page.updated_at)}
+								</span>
               </div>
 
               {page.slug === landingPageSlug && (
@@ -564,9 +613,16 @@ export default function CustomPages() {
                 <button
                   type="button"
                   className={`action-btn cp-action-btn${page.slug === landingPageSlug ? " is-active" : ""}`}
-                  title={page.slug === landingPageSlug ? "Current homepage" : "Set as homepage"}
-                  disabled={page.slug === landingPageSlug || settingHomepageId === page.id}
-                  onClick={e => {
+									title={
+										page.slug === landingPageSlug
+											? "Current homepage"
+											: "Set as homepage"
+									}
+									disabled={
+										page.slug === landingPageSlug ||
+										settingHomepageId === page.id
+									}
+									onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleSetHomepage(page);
@@ -587,7 +643,7 @@ export default function CustomPages() {
                 </span>
               )}
             </Link>
-          </SpotlightCard>
+					</ContentFlatCard>
         )}
         renderRowWrapper={(page, _, props, cells) => (
           <Link
@@ -602,7 +658,7 @@ export default function CustomPages() {
 
       {renamingPage && (
         <div className="cp-modal-overlay" onClick={() => setRenamingPage(null)}>
-          <div className="cp-modal" onClick={e => e.stopPropagation()}>
+					<div className="cp-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="cp-modal__title">Rename page</h3>
             <label className="cp-modal__label">
               Title
@@ -610,8 +666,8 @@ export default function CustomPages() {
                 type="text"
                 className="cp-modal__input"
                 value={renameTitle}
-                onChange={e => setRenameTitle(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleRename()}
+								onChange={(e) => setRenameTitle(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleRename()}
               />
             </label>
             <label className="cp-modal__label">
@@ -620,8 +676,8 @@ export default function CustomPages() {
                 type="text"
                 className="cp-modal__input"
                 value={renameSlug}
-                onChange={e => setRenameSlug(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleRename()}
+								onChange={(e) => setRenameSlug(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleRename()}
               />
             </label>
             <div className="cp-modal__actions">
@@ -645,8 +701,11 @@ export default function CustomPages() {
       )}
 
       {duplicatingPage && (
-        <div className="cp-modal-overlay" onClick={() => setDuplicatingPage(null)}>
-          <div className="cp-modal" onClick={e => e.stopPropagation()}>
+				<div
+					className="cp-modal-overlay"
+					onClick={() => setDuplicatingPage(null)}
+				>
+					<div className="cp-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="cp-modal__title">Duplicate page</h3>
             <label className="cp-modal__label">
               New slug
@@ -654,8 +713,8 @@ export default function CustomPages() {
                 type="text"
                 className="cp-modal__input"
                 value={dupSlug}
-                onChange={e => setDupSlug(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleDuplicate()}
+								onChange={(e) => setDupSlug(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleDuplicate()}
               />
             </label>
             <label className="cp-modal__label">
@@ -664,8 +723,8 @@ export default function CustomPages() {
                 type="text"
                 className="cp-modal__input"
                 value={dupTitle}
-                onChange={e => setDupTitle(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleDuplicate()}
+								onChange={(e) => setDupTitle(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleDuplicate()}
               />
             </label>
             <div className="cp-modal__actions">

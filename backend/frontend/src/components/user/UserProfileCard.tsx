@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import SpotlightCard from "../ui/SpotlightCard";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
 import type { ProfileUser, Role } from "./types";
@@ -68,7 +68,7 @@ const UserProfileCard = ({
 
   const userRoles = user.roles ?? [];
   const rolesWithDetails = allRoles
-    .filter(r => userRoles.includes(r.name))
+		.filter((r) => userRoles.includes(r.name))
     .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const glowColor = topRole?.glow_color;
@@ -93,7 +93,11 @@ const UserProfileCard = ({
           className="up-banner-img"
         />
         {canEdit && (
-          <button className="up-banner-edit-btn" title="Edit profile" onClick={onEditOpen}>
+					<button
+						className="up-banner-edit-btn"
+						title="Edit profile"
+						onClick={onEditOpen}
+					>
             <Camera size={16} />
             Edit Banner
           </button>
@@ -101,9 +105,11 @@ const UserProfileCard = ({
       </div>
 
       {/* Profile card */}
-      <SpotlightCard
+			<ContentFlatCard
         className="up-card"
-        spotlightColor={glowColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"}
+				spotlightColor={
+					glowColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
+				}
         style={cardStyle}
       >
         {user.is_suspended && (
@@ -111,7 +117,9 @@ const UserProfileCard = ({
             <ShieldOff size={16} />
             <span>This account is suspended</span>
             {user.suspended_reason && (
-              <span className="up-suspended-reason">: {user.suspended_reason}</span>
+							<span className="up-suspended-reason">
+								: {user.suspended_reason}
+							</span>
             )}
           </div>
         )}
@@ -122,7 +130,9 @@ const UserProfileCard = ({
               src={displayAvatar || undefined}
               alt={user.display_name || user.username || "User"}
               size={100}
-              initials={(user.display_name || user.username || "?")[0]?.toUpperCase()}
+							initials={(user.display_name ||
+								user.username ||
+								"?")[0]?.toUpperCase()}
               className="up-avatar"
               style={
                 glowColor
@@ -136,15 +146,24 @@ const UserProfileCard = ({
           </div>
 
           <div className="up-header-info">
-            <h1 className="up-display-name">{user.display_name || user.username}</h1>
+						<h1 className="up-display-name">
+							{user.display_name || user.username}
+						</h1>
             <p className="up-username">@{user.username}</p>
-            {user.email && canSuspend && <p className="up-email">{user.email}</p>}
+						{user.email && canSuspend && (
+							<p className="up-email">{user.email}</p>
+						)}
             <div
               className="up-roles"
-              style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.4rem" }}
+							style={{
+								display: "flex",
+								gap: "0.4rem",
+								flexWrap: "wrap",
+								marginTop: "0.4rem",
+							}}
             >
-              {(user.roles ?? []).map(r => {
-                const roleDetails = allRoles.find(ar => ar.name === r);
+							{(user.roles ?? []).map((r) => {
+								const roleDetails = allRoles.find((ar) => ar.name === r);
                 return <RoleBadge key={r} role={roleDetails || r} />;
               })}
             </div>
@@ -169,7 +188,7 @@ const UserProfileCard = ({
               <div className="up-more-wrap" ref={moreRef}>
                 <button
                   className={`up-btn up-btn-secondary${moreOpen ? " active" : ""}`}
-                  onClick={() => setMoreOpen(v => !v)}
+									onClick={() => setMoreOpen((v) => !v)}
                   title="More actions"
                 >
                   <MoreHorizontal size={14} />
@@ -227,9 +246,11 @@ const UserProfileCard = ({
         )}
 
         <div className="up-meta">
-          <span className="up-meta-item">Member since {formatDate(user.created_at)}</span>
+					<span className="up-meta-item">
+						Member since {formatDate(user.created_at)}
+					</span>
         </div>
-      </SpotlightCard>
+			</ContentFlatCard>
     </>
   );
 };

@@ -205,7 +205,8 @@
   background: color-mix(in srgb, var(--bg-secondary) 72%, transparent) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+	box-shadow: 0 10px 32px
+		color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
 }
 
 .cart-item-image {
@@ -358,22 +359,23 @@
 
 .cart-checkout-card {
   width: 100%;
-  padding: 1.5rem;
-  border-radius: var(--radius-xl);
+	padding: 0.625rem;
+	border-radius: 0;
 }
 
 .cart-glass-tile {
-  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent);
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	box-shadow: none;
 }
 
 .cart-checkout-card--details,
 .cart-billing-card,
 .cart-checkout-card--payment {
-  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+	background: transparent;
 }
 
 .cart-summary h3 {

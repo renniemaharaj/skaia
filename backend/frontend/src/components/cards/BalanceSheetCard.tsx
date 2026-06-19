@@ -1,6 +1,6 @@
 import { Activity, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { formatCents } from "../../utils/money";
-import { GlassCard } from "./GlassCard";
+import { ContentFlatCard } from "./ContentFlatCard";
 
 interface BalanceSheetCardProps {
   balance: number;
@@ -8,8 +8,12 @@ interface BalanceSheetCardProps {
   totalDebits: number;
 }
 
-export const BalanceSheetCard = ({ balance, totalCredits, totalDebits }: BalanceSheetCardProps) => (
-  <GlassCard>
+export const BalanceSheetCard = ({
+	balance,
+	totalCredits,
+	totalDebits,
+}: BalanceSheetCardProps) => (
+	<ContentFlatCard>
     <h3
       style={{
         margin: "0 0 1.25rem 0",
@@ -86,5 +90,5 @@ export const BalanceSheetCard = ({ balance, totalCredits, totalDebits }: Balance
         {formatCents(balance)}
       </span>
     </div>
-  </GlassCard>
+	</ContentFlatCard>
 );

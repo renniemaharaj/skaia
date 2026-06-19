@@ -17,16 +17,16 @@
   --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
 
   /* Shared card and panel tokens */
-  --card-bg: var(--bg-secondary);
+	--card-bg: transparent;
   --card-border: var(--border-color);
-  --card-radius: 16px;
-  --card-padding: 1.5rem;
-  --card-shadow: var(--shadow);
-  --card-shadow-hover: var(--shadow-hover);
-  --card-hover-bg: rgba(255, 255, 255, 0.9);
-  --section-bg: var(--bg-tertiary);
-  --section-gap: 1.5rem;
-  --section-padding: 1.5rem;
+	--card-radius: 0;
+	--card-padding: 0.625rem;
+	--card-shadow: none;
+	--card-shadow-hover: none;
+	--card-hover-bg: transparent;
+	--section-bg: transparent;
+	--section-gap: 0.625rem;
+	--section-padding: 0.625rem;
   --panel-border: var(--border-color);
   --panel-heading-color: var(--text-primary);
 
@@ -59,8 +59,7 @@
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
   /* Typography & Modern Layout Tokens */
-  --font-sans:
-    "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
+	--font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -69,12 +68,12 @@
   --radius-xl: 16px;
   --radius-full: 9999px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px
+		rgba(0, 0, 0, 0.06);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px
+		rgba(0, 0, 0, 0.05);
+	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px
+		rgba(0, 0, 0, 0.04);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #3b82f6;
@@ -114,16 +113,16 @@ html[data-theme="dark"] {
   --shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.4);
 
   /* Shared card and panel tokens */
-  --card-bg: var(--bg-secondary);
+	--card-bg: transparent;
   --card-border: var(--border-color);
-  --card-radius: 16px;
-  --card-padding: 1.5rem;
-  --card-shadow: var(--shadow);
-  --card-shadow-hover: var(--shadow-hover);
-  --card-hover-bg: rgba(255, 255, 255, 0.04);
-  --section-bg: var(--bg-secondary);
-  --section-gap: 1.5rem;
-  --section-padding: 1.5rem;
+	--card-radius: 0;
+	--card-padding: 0.625rem;
+	--card-shadow: none;
+	--card-shadow-hover: none;
+	--card-hover-bg: transparent;
+	--section-bg: transparent;
+	--section-gap: 0.625rem;
+	--section-padding: 0.625rem;
   --panel-border: var(--border-color);
   --panel-heading-color: var(--text-primary);
 
@@ -156,16 +155,15 @@ html[data-theme="dark"] {
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
 
   /* Typography & Modern Layout Tokens */
-  --font-sans:
-    "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
+	--font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-md:
-    0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  --shadow-lg:
-    0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
-  --shadow-xl:
-    0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px
+		rgba(0, 0, 0, 0.2);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px
+		rgba(0, 0, 0, 0.25);
+	--shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px
+		rgba(0, 0, 0, 0.3);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #60a5fa;
@@ -201,9 +199,7 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   letter-spacing: -0.01em;
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+	transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 html,
@@ -492,11 +488,12 @@ div#root {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 10px 20px;
+	gap: 0.25rem;
+	min-height: 28px;
+	padding: 4px 8px;
   border: none;
   border-radius: var(--radius-md);
-  font-size: 0.95rem;
+	font-size: 0.78rem;
   font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
@@ -504,15 +501,15 @@ div#root {
 }
 
 .btn-sm {
-  padding: 8px 14px;
-  font-size: 0.85rem;
+	padding: 3px 6px;
+	font-size: 0.72rem;
   letter-spacing: 0.03em;
 }
 
 .btn-lg {
-  padding: 16px 32px;
-  font-size: 1.1rem;
-  gap: 12px;
+	padding: 6px 12px;
+	font-size: 0.88rem;
+	gap: 0.35rem;
 }
 
 .btn-block {
@@ -614,14 +611,12 @@ div#root {
 .card {
   display: block;
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
+	border: 0;
+	border-bottom: 1px solid var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--card-padding);
   box-shadow: var(--card-shadow);
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease,
+	transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease,
     transform 0.2s ease;
 }
 
@@ -633,12 +628,12 @@ div#root {
 .card:hover {
   box-shadow: var(--card-shadow-hover);
   background: var(--card-hover-bg);
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
+	border-color: var(--card-border);
+	transform: none;
 }
 
 .card--outlined {
-  background: var(--card-bg);
+	background: transparent;
   border-color: var(--card-border);
   box-shadow: none;
 }
@@ -655,7 +650,9 @@ div#root {
 
 .content-flat-card {
   background: transparent;
-  border-color: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--card-border);
+	border-radius: 0;
   box-shadow: none;
 }
 
@@ -684,7 +681,7 @@ div#root {
 }
 
 .card--section {
-  background: var(--section-bg);
+	background: transparent;
 }
 
 .card--forum {
@@ -703,7 +700,8 @@ div#root {
 .section {
   display: block;
   background: var(--section-bg);
-  border: 1px solid var(--panel-border);
+	border: 0;
+	border-bottom: 1px solid var(--panel-border);
   border-radius: var(--card-radius);
   padding: var(--section-padding);
   gap: var(--section-gap);
@@ -733,13 +731,14 @@ div#root {
 
 /* Flat glass form surface shared by page, panel, and dialog forms. */
 .compact-form-card {
-  padding: 1rem;
+	padding: 0.625rem;
   background: transparent;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-lg);
+	border: 0;
+	border-bottom: 1px solid var(--card-border);
+	border-radius: 0;
   box-shadow: none;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }
 
 .compact-form-card .form-group {
@@ -1028,10 +1027,18 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+	gap: 0.25rem;
   border-radius: 4px;
   transition: all 0.2s ease;
   color: var(--text-secondary);
+}
+
+@media (pointer: coarse) {
+	.btn,
+	.sk-btn,
+	.action-btn {
+		min-height: 44px;
+	}
 }
 
 .action-btn:hover {

@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+import { ContentFlatCard } from "./ContentFlatCard";
 
 interface BaseCardProps {
   children: ReactNode;
@@ -12,16 +13,9 @@ interface CardProps extends BaseCardProps {
   flat?: boolean;
 }
 
-const glassCardStyle: CSSProperties = {
-  padding: "1.5rem",
-  background: "transparent",
-  border: "1px solid var(--border-color)",
-  borderRadius: "12px",
-};
-
 const radiusStyle = (radius: CardProps["radius"]): CSSProperties => {
-  if (radius === "flat") return { borderRadius: "8px" };
-  return { borderRadius: "var(--card-radius)" };
+	if (radius === "flat") return { borderRadius: 0 };
+	return {};
 };
 
 const variantClass = (variant: CardProps["variant"], flat?: boolean) => {
@@ -39,22 +33,26 @@ export const Card = ({
   flat = false,
   radius = "project",
 }: CardProps) => (
-  <div
+	<ContentFlatCard
     className={`${variantClass(variant, flat)}${className ? ` ${className}` : ""}`}
     style={{ ...radiusStyle(radius), ...style }}
   >
     {children}
-  </div>
+	</ContentFlatCard>
 );
 
 type VariantCardProps = CardProps;
 
-export const PrimaryCard = (props: VariantCardProps) => <Card {...props} variant="primary" />;
+export const PrimaryCard = (props: VariantCardProps) => (
+	<Card {...props} variant="primary" />
+);
 
-export const SecondaryCard = (props: VariantCardProps) => <Card {...props} variant="secondary" />;
+export const SecondaryCard = (props: VariantCardProps) => (
+	<Card {...props} variant="secondary" />
+);
 
 export const GlassCard = ({ children, className, style }: BaseCardProps) => (
-  <div className={className} style={{ ...glassCardStyle, ...style }}>
+	<ContentFlatCard className={className} style={style}>
     {children}
-  </div>
+	</ContentFlatCard>
 );

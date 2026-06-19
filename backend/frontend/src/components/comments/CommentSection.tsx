@@ -5,7 +5,7 @@ import { formatDate } from "../../utils/serverTime";
 import Editor from "../forum/Editor";
 import ViewThread from "../forum/ViewThread";
 import ComposerInput from "../input/Input";
-import SpotlightCard from "../ui/SpotlightCard";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import StarRating from "../ui/StarRating";
 import RoleBadge from "../user/RoleBadge";
 import UserAvatar from "../user/UserAvatar";
@@ -92,12 +92,12 @@ const CommentSection = ({
   const [selectedRating, setSelectedRating] = useState<number>(0);
 
   useEffect(() => {
-    apiRequest<Role[]>("/users/roles").then(r => setAllRoles(r || []));
+		apiRequest<Role[]>("/users/roles").then((r) => setAllRoles(r || []));
   }, []);
 
   const headerCount = useMemo(
     () => (showCount ? `(${comments.length})` : ""),
-    [comments.length, showCount]
+		[comments.length, showCount],
   );
 
   return (
@@ -126,18 +126,28 @@ const CommentSection = ({
         </div>
       </div>
 
-      <div className="comments-feed" ref={commentsFeedRef} onScroll={onCommentsScroll}>
+			<div
+				className="comments-feed"
+				ref={commentsFeedRef}
+				onScroll={onCommentsScroll}
+			>
         <div ref={topSentinelRef} className="comments-feed-sentinel" />
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={`skeleton-${i}`} className="comment-card">
+						<ContentFlatCard key={`skeleton-${i}`} className="comment-card">
               <div className="comment-avatar">
-                <div className="skeleton skeleton-circle" style={{ width: 30, height: 30 }} />
+								<div
+									className="skeleton skeleton-circle"
+									style={{ width: 30, height: 30 }}
+								/>
               </div>
 
               <div className="comment-body">
                 <div className="comment-meta">
-                  <div className="skeleton skeleton-text" style={{ width: 120, height: 14 }} />
+									<div
+										className="skeleton skeleton-text"
+										style={{ width: 120, height: 14 }}
+									/>
                   <div
                     className="skeleton skeleton-text"
                     style={{ width: 60, height: 12, marginLeft: 8 }}
@@ -148,20 +158,26 @@ const CommentSection = ({
                   className="skeleton skeleton-text"
                   style={{ width: "70%", height: 12, marginTop: 8 }}
                 />
-                <div className="skeleton skeleton-text" style={{ width: "90%", height: 12 }} />
-              </div>
+								<div
+									className="skeleton skeleton-text"
+									style={{ width: "90%", height: 12 }}
+								/>
             </div>
+						</ContentFlatCard>
           ))
         ) : !hasComments ? (
           <div className="comments-feed-empty">{noCommentsText}</div>
         ) : (
-          comments.map(comment => {
-            const authorDisplay = comment.author_name || comment.author_username || "Unknown";
+					comments.map((comment) => {
+						const authorDisplay =
+							comment.author_name || comment.author_username || "Unknown";
             return (
-              <SpotlightCard
+							<ContentFlatCard
                 key={comment.id}
                 className={`comment-card${
-                  String(comment.id) === String(highlightedCommentId) ? " new-comment" : ""
+									String(comment.id) === String(highlightedCommentId)
+										? " new-comment"
+										: ""
                 }`}
                 spotlightColor="rgba(255,255,255,0.1)"
               >
@@ -199,7 +215,9 @@ const CommentSection = ({
                         className="comment-author-link"
                       />
                     ) : (
-                      <span className="comment-author-link">{authorDisplay}</span>
+											<span className="comment-author-link">
+												{authorDisplay}
+											</span>
                     )}
                     <div
                       className="comment-roles"
@@ -212,8 +230,10 @@ const CommentSection = ({
                     >
                       {comment.author_roles &&
                         comment.author_roles.length > 0 &&
-                        comment.author_roles.map(r => {
-                          const roleDetails = allRoles.find(ar => ar.name === r);
+												comment.author_roles.map((r) => {
+													const roleDetails = allRoles.find(
+														(ar) => ar.name === r,
+													);
                           return (
                             <RoleBadge
                               key={r}
@@ -226,8 +246,12 @@ const CommentSection = ({
                           );
                         })}
                     </div>
-                    <span className="comment-date">{formatDate(comment.created_at)}</span>
-                    {comment.is_edited && <span className="comment-edited">(edited)</span>}
+										<span className="comment-date">
+											{formatDate(comment.created_at)}
+										</span>
+										{comment.is_edited && (
+											<span className="comment-edited">(edited)</span>
+										)}
                   </div>
 
                   {comment.rating && (
@@ -252,8 +276,13 @@ const CommentSection = ({
                         title={comment.is_liked ? "Unlike" : "Like"}
                         type="button"
                       >
-                        <ThumbsUp size={14} fill={comment.is_liked ? "currentColor" : "none"} />
-                        {comment.likes && comment.likes > 0 && <span>{comment.likes}</span>}
+												<ThumbsUp
+													size={14}
+													fill={comment.is_liked ? "currentColor" : "none"}
+												/>
+												{comment.likes && comment.likes > 0 && (
+													<span>{comment.likes}</span>
+												)}
                       </button>
                     )}
                     {onDelete && comment.can_delete && (
@@ -268,7 +297,7 @@ const CommentSection = ({
                     )}
                   </div>
                 </div>
-              </SpotlightCard>
+							</ContentFlatCard>
             );
           })
         )}
@@ -289,7 +318,9 @@ const CommentSection = ({
                 gap: "0.5rem",
               }}
             >
-              <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+							<span
+								style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}
+							>
                 Your Rating:
               </span>
               <StarRating
@@ -303,7 +334,11 @@ const CommentSection = ({
           {useRichText ? (
             isEditorVisible ? (
               <div className="comment-editor-wrapper">
-                <Editor value={richTextContent} onChange={setRichTextContent} minHeight="80px" />
+								<Editor
+									value={richTextContent}
+									onChange={setRichTextContent}
+									minHeight="80px"
+								/>
                 <div
                   style={{
                     display: "flex",
@@ -340,11 +375,16 @@ const CommentSection = ({
                     disabled={
                       disabled ||
                       (enableRatings && selectedRating === 0) ||
-                      (!enableRatings && (!richTextContent.trim() || richTextContent === "<p></p>"))
+											(!enableRatings &&
+												(!richTextContent.trim() ||
+													richTextContent === "<p></p>"))
                     }
                     onClick={async () => {
                       if (disabled) return;
-                      await onSubmit(richTextContent, enableRatings ? selectedRating : undefined);
+											await onSubmit(
+												richTextContent,
+												enableRatings ? selectedRating : undefined,
+											);
                       setRichTextContent("");
                       setSelectedRating(0);
                       setIsEditorVisible(false);
@@ -359,7 +399,8 @@ const CommentSection = ({
                 className="comment-composer-placeholder"
                 onClick={() => setIsEditorVisible(true)}
               >
-                <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>+</span> Make a reply
+								<span style={{ fontSize: "1.2rem", lineHeight: 1 }}>+</span>{" "}
+								Make a reply
               </div>
             )
           ) : (
@@ -371,15 +412,20 @@ const CommentSection = ({
               }}
             >
               <ComposerInput
-                handleSend={async text => {
+								handleSend={async (text) => {
                   if (disabled) return;
                   if (enableRatings && selectedRating === 0) return;
-                  await onSubmit(text, enableRatings ? selectedRating : undefined);
+									await onSubmit(
+										text,
+										enableRatings ? selectedRating : undefined,
+									);
                   setSelectedRating(0);
                 }}
                 disabled={disabled || (enableRatings && selectedRating === 0)}
                 placeholder={
-                  enableRatings && selectedRating === 0 ? "Select a rating first..." : placeholder
+									enableRatings && selectedRating === 0
+										? "Select a rating first..."
+										: placeholder
                 }
                 minRows={1}
                 maxRows={5}

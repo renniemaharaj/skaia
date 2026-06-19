@@ -1,6 +1,7 @@
 import { Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCents } from "../../../utils/money";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import Select, { type SelectOption } from "../../input/Select";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
@@ -75,9 +76,11 @@ export function CheckoutPanel({
 }: CheckoutPanelProps) {
   const paymentOptions: SelectOption[] = [
     { value: "delivery_cash", label: "Payment on Delivery (Cash)" },
-    ...(isAuthenticated ? [{ value: "wallet", label: "Store Wallet Balance" }] : []),
     ...(isAuthenticated
-      ? userCards.map(card => ({
+			? [{ value: "wallet", label: "Store Wallet Balance" }]
+			: []),
+		...(isAuthenticated
+			? userCards.map((card) => ({
           value: `card_${card.id}`,
           label: `${card.card_name} (ending in ${card.last4 || card.card_number?.slice(-4) || "XXXX"}) - Disabled`,
           disabled: true,
@@ -87,7 +90,7 @@ export function CheckoutPanel({
 
   return (
     <div className="cart-summary cart-checkout-panel">
-      <div className="cart-checkout-card cart-glass-tile cart-checkout-card--details">
+			<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--details">
         <h3>Checkout</h3>
 
         {!isAuthenticated && (
@@ -101,12 +104,13 @@ export function CheckoutPanel({
                   type="email"
                   placeholder="you@example.com"
                   value={guestEmail}
-                  onChange={event => onGuestEmailChange(event.target.value)}
+									onChange={(event) => onGuestEmailChange(event.target.value)}
                 />
               </div>
             </label>
             <p className="cart-help-text">
-              <Link to="/login">Sign in</Link> to save your details and earn rewards.
+							<Link to="/login">Sign in</Link> to save your details and earn
+							rewards.
             </p>
           </div>
         )}
@@ -128,7 +132,7 @@ export function CheckoutPanel({
           onGuestPhoneChange={onGuestPhoneChange}
           onReferralCodeChange={onReferralCodeChange}
         />
-      </div>
+			</ContentFlatCard>
 
       {isAuthenticated && paymentMethod === "delivery_cash" && (
         <BillingInfoCard
@@ -139,7 +143,7 @@ export function CheckoutPanel({
         />
       )}
 
-      <div className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
+			<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
         <div className="cart-summary-section cart-summary-section--last">
           <h4>Payment</h4>
           <div className="cart-field">
@@ -148,7 +152,7 @@ export function CheckoutPanel({
               label="Payment method"
               value={paymentMethod}
               options={paymentOptions}
-              onChange={event => onPaymentMethodChange(event.target.value)}
+							onChange={(event) => onPaymentMethodChange(event.target.value)}
               block
             />
           </div>
@@ -176,7 +180,7 @@ export function CheckoutPanel({
             "Submit Order"
           )}
         </button>
-      </div>
+			</ContentFlatCard>
     </div>
   );
 }

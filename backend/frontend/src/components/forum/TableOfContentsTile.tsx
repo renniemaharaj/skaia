@@ -2,6 +2,7 @@ import type React from "react";
 import { useMemo } from "react";
 import "./TableOfContentsTile.css";
 import { List } from "lucide-react";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 interface TOCItem {
   id: string;
@@ -13,7 +14,9 @@ interface TableOfContentsTileProps {
   htmlContent: string;
 }
 
-const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }) => {
+const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
+	htmlContent,
+}) => {
   const tocItems = useMemo(() => {
     if (!htmlContent) return [];
 
@@ -48,7 +51,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
 
   if (tocItems.length === 0) {
     return (
-      <div className="card toc-tile">
+			<ContentFlatCard className="toc-tile">
         <div className="toc-header">
           <List size={16} />
           <h3>Table of Contents</h3>
@@ -68,7 +71,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
             Use h tags hierarchically to populate this tile
           </div>
         </div>
-      </div>
+			</ContentFlatCard>
     );
   }
 
@@ -87,10 +90,15 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
     if (!el) {
       // Fallback: try to find heading by text
       const headings = Array.from(
-        document.querySelectorAll(".renderer-editor h1, .renderer-editor h2, .renderer-editor h3")
+				document.querySelectorAll(
+					".renderer-editor h1, .renderer-editor h2, .renderer-editor h3",
+				),
       );
-      const targetText = tocItems.find(item => item.id === id)?.text;
-      el = (headings.find(h => h.textContent === targetText) as HTMLElement | undefined) || null;
+			const targetText = tocItems.find((item) => item.id === id)?.text;
+			el =
+				(headings.find((h) => h.textContent === targetText) as
+					| HTMLElement
+					| undefined) || null;
     }
 
     if (el) {
@@ -99,7 +107,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
   };
 
   return (
-    <div className="card toc-tile">
+		<ContentFlatCard className="toc-tile">
       <div className="toc-header">
         <List size={16} />
         <h3>Table of Contents</h3>
@@ -134,7 +142,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
           </div>
         )}
       </div>
-    </div>
+		</ContentFlatCard>
   );
 };
 

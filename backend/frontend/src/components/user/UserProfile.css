@@ -62,11 +62,11 @@
   position: relative;
   z-index: 1;
   margin: 0 24px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 2px 8px var(--border-color);
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
+	box-shadow: none;
   overflow: visible !important;
 }
 
@@ -427,17 +427,18 @@
 
 .up-thread-card {
   display: block;
-  padding: 16px 20px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+	padding: 0.5rem 0.625rem;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
   text-decoration: none;
   color: inherit;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .up-thread-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-hover);
+	border-color: var(--border-color);
+	box-shadow: none;
 }
 .up-thread-title {
   font-size: 15px;
@@ -494,7 +495,8 @@
 .up-manage-notice {
   padding: 10px 24px;
   background: color-mix(in srgb, var(--warning-color) 10%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--warning-color) 25%, transparent);
+	border-bottom: 1px solid
+		color-mix(in srgb, var(--warning-color) 25%, transparent);
   font-size: 13px;
   color: var(--warning-color);
   font-weight: 500;
@@ -645,19 +647,21 @@
 }
 
 .up-upload-card {
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s, opacity 0.2s;
 }
 .up-upload-card:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
+	border-color: var(--border-color);
+	box-shadow: none;
 }
 .up-upload-selected {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+	box-shadow: 0 0 0 2px
+		color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 .up-upload-deleting {
   opacity: 0.4;
@@ -972,7 +976,8 @@
 .up-field input:focus,
 .up-field textarea:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 18%, transparent);
+	box-shadow: 0 0 0 3px
+		color-mix(in srgb, var(--primary-color) 18%, transparent);
 }
 
 .up-img-preview {

@@ -9,6 +9,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { hasPermissionAtom } from "../../atoms/auth";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import {
   acceptRecoveryRequest,
   forgotPassword,
@@ -21,7 +22,6 @@ import Button from "../input/Button";
 import { type TableColumn, TableView } from "../ui/TableView/TableView";
 import "./Auth.css";
 import "../ui/FormGroup.css";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -255,7 +255,7 @@ export default function ForgotPasswordPage() {
       <div
         className={`auth-container ${canManageUsers ? "auth-container--wide" : ""}`}
       >
-        <section className="section auth-card">
+				<ContentFlatCard className="auth-card">
           <div className="section__header auth-header">
             <h1>Recover Account</h1>
             <p>
@@ -282,10 +282,15 @@ export default function ForgotPasswordPage() {
                 </span>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="auth-form compact-form-card">
+							<form
+								onSubmit={handleSubmit}
+								className="auth-form compact-form-card"
+							>
                 <div className="form-group">
                   <label htmlFor="email">Account email</label>
-                  <p className="form-help">Use the email associated with the account.</p>
+									<p className="form-help">
+										Use the email associated with the account.
+									</p>
                   <div className="input-wrapper">
                     <Mail size={20} className="input-icon" />
                     <input
@@ -342,7 +347,7 @@ export default function ForgotPasswordPage() {
               </p>
             </div>
           </div>
-        </section>
+				</ContentFlatCard>
 
         <ContentFlatCard style={{ marginTop: "2rem" }}>
           {canManageUsers && (

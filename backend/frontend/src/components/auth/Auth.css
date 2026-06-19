@@ -63,16 +63,17 @@
   position: relative;
   z-index: 1;
   background: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 48px 32px;
-  box-shadow: var(--shadow-hover);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+	border: 0;
+	border-bottom: 1px solid var(--border-color);
+	border-radius: 0;
+	padding: 0.625rem;
+	box-shadow: none;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
 }
 
 .auth-card--challenge {
-  padding: 24px;
+	padding: 0.625rem;
 }
 
 .auth-card--challenge .auth-header {
@@ -420,10 +421,7 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .recovery-action-btn:hover:not(:disabled) {
