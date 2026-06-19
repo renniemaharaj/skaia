@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -176,6 +177,12 @@ proxy_cache_path /var/cache/nginx/uploads
 	// Load frontend shell index.html for fallback
 	indexPath := filepath.Join(ProjectRoot(), "backend", "frontend", "dist", "index.html")
 	indexBytes, err := os.ReadFile(indexPath)
+	if err != nil {
+		// If running in production where source isn't checked out, extract it from the docker image
+		cmd := exec.Command("docker", "run", "--rm", "--entrypoint", "cat", Image(), "/app/frontend/dist/index.html")
+		indexBytes, err = cmd.Output()
+	}
+
 	var fallbackHTML string
 	if err == nil {
 		fallbackHTML = string(indexBytes)
@@ -192,7 +199,7 @@ proxy_cache_path /var/cache/nginx/uploads
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\r", "")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\n", "\\n")
 	} else {
-		fallbackHTML = "<!DOCTYPE html><html><head><title>Starting...</title><meta http-equiv=\\\"refresh\\\" content=\\\"2\\\"></head><body><h2>System is starting...</h2><p>Please wait a moment while the system boots.</p></body></html>"
+		fallbackHTML = "<!DOCTYPE html><html><head><title>Starting...</title><meta http-equiv=\\\"refresh\\\" content=\\\"2\\\"></head><body><h2>System is starting...</h2><p>Please wait a moment while the system boots.</p><!-- padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit padding to bypass cloudflare limit --></body></html>"
 	}
 
 	// Fallback replacement to prevent 502 from Cloudflare
