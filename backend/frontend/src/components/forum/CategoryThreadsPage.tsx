@@ -9,7 +9,7 @@ import { forumCategoriesAtom } from "../../atoms/forum";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 import { apiRequest } from "../../utils/api";
-import SearchField from "../ui/SearchField";
+import { FilterBar } from "../ui/FilterBar";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "./Forum";
 
@@ -153,37 +153,39 @@ const CategoryThreadsPage = () => {
             className="forum-header-actions"
             style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}
           >
-            <SearchField
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search threads..."
+            <FilterBar
+              compact
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchPlaceholder="Search threads..."
               className="forum-search-field"
-            />
-            {canEditCategories && category && (
-              <button
-                className={`action-btn lock-btn${category.is_locked ? " locked" : ""}`}
-                onClick={handleToggleCategoryLock}
-                title={category.is_locked ? "Unlock category" : "Lock category"}
-              >
-                {category.is_locked ? <Unlock size={16} /> : <Lock size={16} />}
-              </button>
-            )}
-            {canDeleteCategory && category && (
-              <button
-                className="action-btn danger"
-                onClick={handleDeleteCategory}
-                title="Delete category"
-              >
-                <Trash2 size={16} />
-              </button>
-            )}
-            <button
-              className="action-btn btn-close"
-              onClick={() => navigate("/forum")}
-              title="Back to Forum"
             >
-              <X size={20} />
-            </button>
+              {canEditCategories && category && (
+                <button
+                  className={`action-btn lock-btn${category.is_locked ? " locked" : ""}`}
+                  onClick={handleToggleCategoryLock}
+                  title={category.is_locked ? "Unlock category" : "Lock category"}
+                >
+                  {category.is_locked ? <Unlock size={16} /> : <Lock size={16} />}
+                </button>
+              )}
+              {canDeleteCategory && category && (
+                <button
+                  className="action-btn danger"
+                  onClick={handleDeleteCategory}
+                  title="Delete category"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+              <button
+                className="action-btn btn-close"
+                onClick={() => navigate("/forum")}
+                title="Back to Forum"
+              >
+                <X size={20} />
+              </button>
+            </FilterBar>
           </div>
         </div>
 

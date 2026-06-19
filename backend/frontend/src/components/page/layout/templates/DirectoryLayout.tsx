@@ -1,6 +1,6 @@
 import { LayoutGrid, List } from "lucide-react";
 import type { ReactNode } from "react";
-import SearchField from "../../../ui/SearchField";
+import { FilterBar } from "../../../ui/FilterBar";
 import { type TableColumn, TableView } from "../../../ui/TableView/TableView";
 import "./DirectoryLayout.css";
 
@@ -85,50 +85,50 @@ export function DirectoryLayout<T>({
           <h1 className="directory-layout__title">{title}</h1>
           {subtitle && <p className="directory-layout__subtitle">{subtitle}</p>}
         </div>
-        {(headerActions || onViewModeChange) && (
-          <div className="directory-layout__header-actions">
-            {headerActions}
-            {onViewModeChange && (
-              <div className="directory-layout__view-toggle">
-                <button
-                  className={`directory-view-btn ${viewMode === "grid" ? "active" : ""}`}
-                  onClick={() => onViewModeChange("grid")}
-                  title="Grid view"
-                >
-                  <LayoutGrid size={16} />
-                </button>
-                <button
-                  className={`directory-view-btn ${viewMode === "list" ? "active" : ""}`}
-                  onClick={() => onViewModeChange("list")}
-                  title="List view"
-                >
-                  <List size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {(!!onSearchChange || (metrics && metrics.length > 0)) && (
-        <div className="directory-layout__toolbar">
-          {onSearchChange && searchValue !== undefined && (
-            <SearchField
-              value={searchValue}
-              onChange={onSearchChange}
-              placeholder={searchPlaceholder}
-              className="directory-layout__search"
-            />
-          )}
-          {metrics && metrics.length > 0 && (
-            <div className="directory-layout__metrics">
-              {metrics.map((metric, i) => (
-                <span key={i} className="directory-layout__metric">
-                  {metric}
-                </span>
-              ))}
-            </div>
-          )}
+      {(!!onSearchChange || (metrics && metrics.length > 0) || headerActions || onViewModeChange) && (
+        <div className="directory-layout__toolbar-container">
+          <FilterBar
+            compact
+            searchValue={searchValue}
+            onSearchChange={onSearchChange}
+            searchPlaceholder={searchPlaceholder}
+            className="directory-layout__toolbar"
+          >
+            {metrics && metrics.length > 0 && (
+              <div className="directory-layout__metrics">
+                {metrics.map((metric, i) => (
+                  <span key={i} className="directory-layout__metric">
+                    {metric}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(headerActions || onViewModeChange) && (
+              <div className="directory-layout__header-actions">
+                {headerActions}
+                {onViewModeChange && (
+                  <div className="directory-layout__view-toggle">
+                    <button
+                      className={`directory-view-btn ${viewMode === "grid" ? "active" : ""}`}
+                      onClick={() => onViewModeChange("grid")}
+                      title="Grid view"
+                    >
+                      <LayoutGrid size={16} />
+                    </button>
+                    <button
+                      className={`directory-view-btn ${viewMode === "list" ? "active" : ""}`}
+                      onClick={() => onViewModeChange("list")}
+                      title="List view"
+                    >
+                      <List size={16} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </FilterBar>
         </div>
       )}
 
