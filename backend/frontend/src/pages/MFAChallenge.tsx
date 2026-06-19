@@ -1,4 +1,4 @@
-import { AlertCircle, ShieldCheck } from "lucide-react";
+import { AlertCircle, ShieldCheck, Fingerprint } from "lucide-react";
 import { useState } from "react";
 
 import Button from "../components/input/Button";
@@ -107,6 +107,7 @@ const MFAChallenge = ({
 
           <div className="section__content">
             <output className="mfa-reason" aria-label="Challenge reason">
+              <Fingerprint size={24} className="mfa-reason-icon" aria-hidden="true" style={{ marginBottom: "8px", opacity: 0.8 }} />
               <span>Why now</span>
               <strong>{reason.label}</strong>
               <p>{reason.detail}</p>

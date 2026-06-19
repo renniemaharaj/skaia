@@ -41,7 +41,8 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 			// Bypass certain routes
 			if r.URL.Path == "/api/auth/logout" ||
 				r.URL.Path == "/api/auth/refresh" ||
-				strings.HasPrefix(r.URL.Path, "/api/auth/admin/recovery-requests/") {
+				strings.HasPrefix(r.URL.Path, "/api/auth/admin/recovery-requests/") ||
+				strings.HasPrefix(r.URL.Path, "/api/grengo/s/") {
 				next.ServeHTTP(w, r)
 				return
 			}

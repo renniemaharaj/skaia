@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"time"
 
 	"github.com/skaia/grengo/internal/services"
@@ -118,6 +119,44 @@ func startGlobalCommand(command string, extraArgs []string) string {
 			return
 		}
 		j.Status = "completed"
+		broadcastJobStatus(j)
+	}()
+	return jobID
+}
+
+func startGenericCommand(command string, args []string) string {
+	jobID := fmt.Sprintf("job-exec-%d", time.Now().UnixNano())
+	j := &jobStatus{
+		ID:        jobID,
+		Type:      "exec",
+		Target:    command,
+		Status:    "running",
+		CreatedAt: time.Now(),
+	}
+	jobsMu.Lock()
+	jobs[jobID] = j
+	broadcastJobStatus(j)
+	jobsMu.Unlock()
+
+	go func() {
+		cmd := exec.Command(command, args...)
+		cmd.Dir = ProjectRoot()
+		out, err := cmd.CombinedOutput()
+		
+		jobsMu.Lock()
+		defer jobsMu.Unlock()
+
+		if err != nil {
+			j.Status = "failed"
+			j.Error = string(out)
+			if j.Error == "" {
+				j.Error = err.Error()
+			}
+			broadcastJobStatus(j)
+			return
+		}
+		j.Status = "completed"
+		j.Error = string(out) // We use Error field to pass the stdout output back
 		broadcastJobStatus(j)
 	}()
 	return jobID

@@ -80,6 +80,10 @@ func apiWebSocket(w http.ResponseWriter, r *http.Request) {
 				if req.Command != "" {
 					startGlobalCommand(req.Command, req.Args)
 				}
+			} else if req.Action == "exec" {
+				if req.Command != "" {
+					startGenericCommand(req.Command, req.Args)
+				}
 			}
 		}
 	}
