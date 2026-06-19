@@ -118,7 +118,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("user.Handler.login: generate totp challenge token: %v", err)
 			// Fallback: allow login if backup codes exist
-			codes, codeErr := h.svc.repo.GetBackupCodes(context.Background(), user.ID)
+			codes, codeErr := h.svc.GetBackupCodes(r.Context(), user.ID)
 			if codeErr == nil && len(codes) > 0 {
 				log.Printf("user.Handler.login: fallback to backup codes for user %d", user.ID)
 				utils.WriteJSON(w, http.StatusOK, models.AuthResponse{

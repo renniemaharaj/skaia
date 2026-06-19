@@ -18,7 +18,7 @@ func NewHandler(authHandler *auth.Handler) *Handler {
 
 // RegisterRoutes mounts the /auth routes on r.
 // Mount registers all user-domain routes onto r.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.Route("/auth", func(r chi.Router) {
 		r.With(mw.AuthLimitMiddleware()).Post("/register", h.authHandler.Register)
 		r.With(mw.AuthLimitMiddleware()).Post("/login", h.authHandler.Login)

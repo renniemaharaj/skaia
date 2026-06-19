@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/user"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/ratelimit"
 )
 
@@ -216,28 +216,14 @@ func tryTOTPPromotion(r *http.Request, userSvc *user.Service, authSvc *auth.Serv
 }
 
 // realIP extracts the true client IP from the request.
+// Delegates to utils.RealIP for consistent behaviour across the codebase.
 func realIP(r *http.Request) string {
-	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
-		return ip
-	}
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		for i := 0; i < len(ip); i++ {
-			if ip[i] == ',' {
-				return ip[:i]
-			}
-		}
-		return ip
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
+	return utils.RealIP(r)
 }
 
 // RealIP exposes DEFCON's client IP extraction to admin/control endpoints.
 func RealIP(r *http.Request) string {
-	return realIP(r)
+	return utils.RealIP(r)
 }
 
 // writeTooManyRequests writes a 429 response with standard rate-limit headers.

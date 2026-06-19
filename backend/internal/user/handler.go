@@ -54,12 +54,12 @@ func NewHandler(svc *Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, inbox
 }
 
 // Mount registers all user-domain routes onto r.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	// Users
 	r.Route("/users", func(r chi.Router) {
 		// Public (guest-safe) reads
-		r.With(optJWT).Post("/batch", h.getUsersBatch)
-		r.With(optJWT).Get("/{id}", h.getUser)
+		r.Post("/batch", h.getUsersBatch)
+		r.Get("/{id}", h.getUser)
 		r.Get("/roles", h.getRoles)
 
 		// Authenticated

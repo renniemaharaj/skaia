@@ -61,21 +61,21 @@ func (h *Handler) enrich(ds *models.DataSource) DataSourceResponse {
 }
 
 // Mount registers data-source routes under /config/datasources.
-func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, optionalJWT func(http.Handler) http.Handler, compileIPLimit func(http.Handler) http.Handler, compileClientLimit func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, compileIPLimit func(http.Handler) http.Handler, compileClientLimit func(http.Handler) http.Handler) {
 	r.Route("/config/datasources", func(r chi.Router) {
 		// Public reads
 		r.Get("/", h.listDataSources)
 		r.Get("/{id}", h.getDataSource)
 
 		// Guests may request compiled output for a datasource by id.
-		r.With(optionalJWT, compileIPLimit, compileClientLimit).Get("/{id}/compile", h.compileDataSourceByID)
+		r.With(compileIPLimit, compileClientLimit).Get("/{id}/compile", h.compileDataSourceByID)
 
 		// Server-side execute with env vars.
-		r.With(optionalJWT, compileIPLimit, compileClientLimit).Post("/{id}/execute", h.executeDataSourceByID)
-		r.With(optionalJWT).Get("/{id}/execute/jobs/{jobID}", h.getExecuteJob)
+		r.With(compileIPLimit, compileClientLimit).Post("/{id}/execute", h.executeDataSourceByID)
+		r.Get("/{id}/execute/jobs/{jobID}", h.getExecuteJob)
 
 		// Environment variables per datasource.
-		r.With(optionalJWT).Get("/{id}/env", h.getEnvData)
+		r.Get("/{id}/env", h.getEnvData)
 
 		// Protected writes and raw compile.
 		r.Group(func(r chi.Router) {

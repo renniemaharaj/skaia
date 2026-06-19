@@ -36,26 +36,26 @@ func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotificationSender, authz ut
 }
 
 // Mount registers all store routes on r.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.Route("/store", func(r chi.Router) {
 		// Category routes
-		r.With(optJWT).Get("/categories", h.listCategories)
-		r.With(optJWT).Get("/categories/{id}", h.getCategory)
+		r.Get("/categories", h.listCategories)
+		r.Get("/categories/{id}", h.getCategory)
 		r.With(jwt).Post("/categories", h.createCategory)
 		r.With(jwt).Put("/categories/{id}", h.updateCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
 		// Category-scoped product listing
-		r.With(optJWT).Get("/categories/{id}/products", h.listCategoryProducts)
+		r.Get("/categories/{id}/products", h.listCategoryProducts)
 
 		// Product routes
-		r.With(optJWT).Get("/products", h.listProducts)
-		r.With(optJWT).Get("/products/{id}/similar", h.listSimilarProducts)
-		r.With(optJWT).Get("/products/{id}", h.getProduct)
+		r.Get("/products", h.listProducts)
+		r.Get("/products/{id}/similar", h.listSimilarProducts)
+		r.Get("/products/{id}", h.getProduct)
 		r.With(jwt).Post("/products", h.createProduct)
 		r.With(jwt).Put("/products/{id}", h.updateProduct)
 		r.With(jwt).Delete("/products/{id}", h.deleteProduct)
-		r.With(optJWT).Get("/products/{id}/reviews", h.getProductReviews)
+		r.Get("/products/{id}/reviews", h.getProductReviews)
 		r.With(jwt).Post("/products/{id}/reviews", h.createProductReview)
 
 		// Cart routes (all require auth)
@@ -74,7 +74,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.With(jwt).Delete("/wallet/cards/{id}", h.deleteCard)
 
 		// Checkout - all payment logic is backend-only
-		r.With(optJWT).Post("/checkout", h.checkout)
+		r.Post("/checkout", h.checkout)
 
 		// Reference code routes
 		r.With(jwt).Get("/reference-codes", h.listReferenceCodes)
@@ -92,7 +92,7 @@ func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handle
 		r.Post("/orders/guest-lookup", h.guestLookupOrder)
 
 		// Subscription plan routes
-		r.With(optJWT).Get("/plans", h.listPlans)
+		r.Get("/plans", h.listPlans)
 		r.With(jwt).Post("/plans", h.createPlan)
 		r.With(jwt).Put("/plans/{id}", h.updatePlan)
 		r.With(jwt).Delete("/plans/{id}", h.deletePlan)

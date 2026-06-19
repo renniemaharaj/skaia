@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -18,6 +17,7 @@ import (
 	icfg "github.com/skaia/backend/internal/config"
 	ictx "github.com/skaia/backend/internal/ctx"
 	ijwt "github.com/skaia/backend/internal/jwt"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/ratelimit"
 )
@@ -45,26 +45,6 @@ func ssrClientPrefix() string {
 	return name + ":"
 }
 
-// ssrRealIP extracts the true client IP from the request for SSR purposes.
-func ssrRealIP(r *http.Request) string {
-	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
-		return ip
-	}
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		for i := 0; i < len(ip); i++ {
-			if ip[i] == ',' {
-				return ip[:i]
-			}
-		}
-		return ip
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
-}
-
 // IndexHandler returns an http.HandlerFunc that serves the SPA index file
 // with server-injected SEO/head tags based on the site config and route context.
 func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.HandlerFunc {
@@ -82,7 +62,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		path := r.URL.Path
-		ip := ssrRealIP(r)
+		ip := utils.RealIP(r)
 		cacheKey := ssrClientPrefix() + "ssr:meta:" + path
 		ctx := r.Context()
 

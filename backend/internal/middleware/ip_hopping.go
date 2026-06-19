@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"container/list"
-	"net"
 	"net/http"
 	"sync"
 
@@ -97,25 +96,8 @@ func IPHoppingMiddleware(authSvc *auth.Service) func(http.Handler) http.Handler 
 	}
 }
 
-// extractRealIP robustly extracts the client IP, handling Cloudflare, proxies, and stripping TCP ports.
+// extractRealIP extracts the true client IP from the request.
+// Delegates to utils.RealIP for consistent behaviour across the codebase.
 func extractRealIP(r *http.Request) string {
-	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
-		return ip
-	}
-	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
-		for i := 0; i < len(ip); i++ {
-			if ip[i] == ',' {
-				return ip[:i]
-			}
-		}
-		return ip
-	}
-	if ip := r.Header.Get("X-Real-IP"); ip != "" {
-		return ip
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
+	return utils.RealIP(r)
 }

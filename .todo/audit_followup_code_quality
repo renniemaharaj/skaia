@@ -1,0 +1,62 @@
+# Audit Follow-Up: Code Quality Fixes
+
+## Context
+
+Identified during the 2026-06-19 auditor run. Three code-quality issues remain after the initial
+batch of hot-fixes:
+
+1. **IP extraction is duplicated in 4 places** — `realIP`, `extractRealIP`, `ClientIP`, and
+   `ssrRealIP` are independent implementations of identical logic. Critically, `events.ClientIP`
+   does **not** check `CF-Connecting-IP`, so Cloudflare-proxied requests log Cloudflare's edge IP
+   rather than the real client IP in the audit/event log.
+
+2. **Handler bypasses service layer** — `auth/handlers.go:121` calls `h.svc.repo.GetBackupCodes`
+   directly, skipping the public service API and coupling the HTTP layer to the repository.
+
+3. **`OptionalJWTAuthMiddleware` is a documented no-op** passed to 6 `Mount` call-sites — wastes
+   a function call per request and misleads readers into thinking optional-auth is handled there.
+
+## Goal
+
+- Consolidate all IP extraction into a single `internal/utils/ip.go` helper used everywhere.
+- Replace the direct repo call in the auth handler with `h.svc.GetBackupCodes`.
+- Remove `OptionalJWTAuthMiddleware` from all 6 `Mount` call-sites and delete the no-op function.
+
+## Non-Goals
+
+- Implementing the unimplemented token-based reset/verify flows (separate effort).
+- Changing any rate-limit policy or DEFCON logic.
+
+## Steps
+
+1. Create `backend/internal/utils/ip.go` with a single exported `RealIP(r *http.Request) string`
+   that checks CF-Connecting-IP → X-Forwarded-For (first element) → X-Real-IP → RemoteAddr.
+2. Replace all 4 existing implementations with calls to `utils.RealIP`:
+   - `backend/middleware/ratelimit.go` → `realIP` / `RealIP`
+   - `backend/internal/middleware/ip_hopping.go` → `extractRealIP`
+   - `backend/internal/events/ip.go` → `ClientIP`
+   - `backend/internal/ssr/handler.go` → `ssrRealIP`
+3. Fix the layering violation: replace `h.svc.repo.GetBackupCodes(...)` in
+   `auth/handlers.go:121` with `h.svc.GetBackupCodes(r.Context(), user.ID)`.
+4. Delete `OptionalJWTAuthMiddleware` from `internal/middleware/auth.go` and remove all
+   6 call-sites in `main.go` and any handler `Mount` signatures that reference it.
+5. Run `JWT_SECRET=test go test ./...` from `backend/`; verify zero failures.
+
+## Verification
+
+- `go build ./...` passes from `backend/`.
+- `JWT_SECRET=test go test ./...` passes from `backend/` with zero failures.
+- `grep -r "OptionalJWTAuthMiddleware" backend/` returns zero results.
+- `grep -r "h\.svc\.repo\." backend/internal/auth/handlers.go` returns zero results.
+- `grep -r "extractRealIP\|ssrRealIP\|realIP\b" backend/internal/` returns only call-sites.
+
+## References
+
+- `.routines/auditor`
+- `backend/internal/utils/http.go`
+- `backend/internal/middleware/ip_hopping.go`
+- `backend/middleware/ratelimit.go`
+- `backend/internal/events/ip.go`
+- `backend/internal/ssr/handler.go`
+- `backend/internal/auth/handlers.go`
+- `backend/main.go`

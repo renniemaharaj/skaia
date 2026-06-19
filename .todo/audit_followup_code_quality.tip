@@ -1,0 +1,20 @@
+<--/------->
+
+## audit_followup_code_quality
+
+### Current Progress
+- **Phase 1: Consolidate IP extraction into utils.RealIP** — ✅ Complete
+- **Phase 2: Fix handler layering violation (direct repo access)** — ✅ Complete
+- **Phase 3: Remove OptionalJWTAuthMiddleware no-op** — ✅ Complete
+
+### Next Steps
+- [x] Create `backend/internal/utils/ip.go` with `RealIP(r *http.Request) string`
+- [x] Update `backend/middleware/ratelimit.go` to use `utils.RealIP`
+- [x] Update `backend/internal/middleware/ip_hopping.go` to use `utils.RealIP`
+- [x] Update `backend/internal/events/ip.go` to use `utils.RealIP`
+- [x] Update `backend/internal/ssr/handler.go` to use `utils.RealIP`
+- [x] Replace `h.svc.repo.GetBackupCodes` with `h.svc.GetBackupCodes` in `auth/handlers.go`
+- [x] Delete `OptionalJWTAuthMiddleware` and remove all 6 call-sites
+- [x] Verify: `JWT_SECRET=test go test ./...` passes
+
+<--/------->

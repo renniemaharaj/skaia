@@ -39,35 +39,35 @@ func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Aut
 }
 
 // Mount registers all forum routes on r.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
 	r.Route("/forum", func(r chi.Router) {
 		// Category routes
-		r.With(optJWT).Get("/categories", h.listCategories)
+		r.Get("/categories", h.listCategories)
 		r.With(jwt).Post("/categories", h.createCategory)
 		r.With(jwt).Put("/categories/{id}", h.updateCategory)
 		r.With(jwt).Put("/categories/{id}/pin", h.pinCategory)
 		r.With(jwt).Delete("/categories/{id}", h.deleteCategory)
 
 		// Category-scoped thread listing
-		r.With(optJWT).Get("/categories/{id}/threads", h.listCategoryThreads)
+		r.Get("/categories/{id}/threads", h.listCategoryThreads)
 
 		// Thread routes
-		r.With(optJWT).Get("/threads", h.listThreads)
+		r.Get("/threads", h.listThreads)
 		r.With(jwt).Post("/threads", h.createThread)
-		r.With(optJWT).Get("/threads/{id}", h.getThread)
+		r.Get("/threads/{id}", h.getThread)
 		r.With(jwt).Put("/threads/{id}", h.updateThread)
 		r.With(jwt).Put("/threads/{id}/lock", h.lockThread)
 		r.With(jwt).Put("/threads/{id}/pin", h.pinThread)
 		r.With(jwt).Delete("/threads/{id}", h.deleteThread)
 		r.With(jwt).Post("/threads/{threadId}/like", h.likeThread)
 		r.With(jwt).Delete("/threads/{threadId}/like", h.unlikeThread)
-		r.With(optJWT).Get("/threads/{id}/likers", h.listThreadLikers)
-		r.With(optJWT).Get("/threads/{id}/viewers", h.listThreadViewers)
-		r.With(optJWT).Get("/threads/{id}/contributors", h.listThreadContributors)
+		r.Get("/threads/{id}/likers", h.listThreadLikers)
+		r.Get("/threads/{id}/viewers", h.listThreadViewers)
+		r.Get("/threads/{id}/contributors", h.listThreadContributors)
 		r.With(jwt).Post("/threads/{threadId}/share", h.shareThread)
 
 		// Comment routes
-		r.With(optJWT).Get("/threads/{id}/comments", h.listComments)
+		r.Get("/threads/{id}/comments", h.listComments)
 		r.With(jwt, commentLimiter).Post("/threads/{id}/comments", h.createComment)
 		r.With(jwt, commentLimiter).Put("/comments/{id}", h.updateComment)
 		r.With(jwt, commentLimiter).Delete("/comments/{id}", h.deleteComment)

@@ -149,6 +149,11 @@ func (s *Service) GenerateBackupCodes(ctx context.Context, userID int64, count i
 	return codes, nil
 }
 
+// GetBackupCodes returns all backup codes for the user.
+func (s *Service) GetBackupCodes(ctx context.Context, userID int64) ([]*models.BackupCode, error) {
+	return s.repo.GetBackupCodes(ctx, userID)
+}
+
 // DeleteBackupCodes removes all backup codes for the user.
 func (s *Service) DeleteBackupCodes(ctx context.Context, userID int64) error {
 	return s.repo.DeleteBackupCodes(ctx, userID)

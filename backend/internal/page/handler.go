@@ -34,17 +34,17 @@ func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service
 	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher, analyticsSvc: analyticsSvc}
 }
 
-// Mount registers page routes under /pages and config-only endpoints under /config.
-func (h *Handler) Mount(r chi.Router, jwt, optJWT func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
+// Mount registers all page routes on r.
+func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
 	r.Route("/pages", func(r chi.Router) {
 		// Public reads
-		r.With(optJWT).Get("/index", h.getIndex)
+		r.Get("/index", h.getIndex)
 		r.Get("/landing-slug", h.getLandingSlug)
 		r.Get("/list", h.listPages)
-		r.With(optJWT).Get("/browse", h.browsePages)
-		r.With(optJWT).Get("/{slug}", h.getBySlug)
-		r.With(optJWT).Get("/{slug}/comments", h.listComments)
-		r.With(optJWT).Post("/{slug}/view", h.recordView)
+		r.Get("/browse", h.browsePages)
+		r.Get("/{slug}", h.getBySlug)
+		r.Get("/{slug}/comments", h.listComments)
+		r.Post("/{slug}/view", h.recordView)
 
 		// Protected writes
 		r.Group(func(r chi.Router) {
