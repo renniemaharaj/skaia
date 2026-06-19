@@ -190,7 +190,7 @@ proxy_cache_path /var/cache/nginx/uploads
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%META_DESCRIPTION_PLACEHOLDER%", "<meta name=\"description\" content=\"Service is currently restarting. Please wait a moment.\">")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%OG_IMAGE_PLACEHOLDER%", "")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%FAVICON_PLACEHOLDER%", "<link rel=\"icon\" href=\"/logo.png\">")
-		fallbackHTML = strings.ReplaceAll(fallbackHTML, "</head>", "  <meta http-equiv=\"refresh\" content=\"2\">\n</head>")
+		fallbackHTML = strings.ReplaceAll(fallbackHTML, "</head>", "  <script>window.fallbackTimer=setTimeout(function(){window.location.reload();}, 3000);</script>\n</head>")
 		
 		// Escape for nginx double-quoted string
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\\", "\\\\")
