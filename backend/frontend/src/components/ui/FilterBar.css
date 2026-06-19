@@ -6,7 +6,8 @@
 }
 
 .filter-bar__search {
-  flex: 1 1 16rem;
+  flex: 1 1 auto;
+  width: 16rem;
   min-width: 10rem;
 }
 
@@ -35,7 +36,8 @@
 }
 
 .filter-bar--compact .filter-bar__search {
-  flex-basis: 13rem;
+  flex-basis: auto;
+  width: 13rem;
   height: 2rem;
   min-height: 2rem;
 }
@@ -60,7 +62,8 @@
 
   .filter-bar__search,
   .filter-bar__controls {
-    flex-basis: 100%;
+    flex-basis: auto;
+    width: 100%;
   }
 
   .filter-bar__controls {
