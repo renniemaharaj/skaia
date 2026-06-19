@@ -101,11 +101,13 @@ operational policies.
 
 ## Last Ran
 
-- 2026-06-17
+- 2026-06-19
 
 ## Last Run Remarks
 
-- Planner is the single routine for todo lifecycle plus compact spec maintenance.
+- Added the authoritative security architecture card and the phased
+  `security_invariants_hardening` todo pair; linked security-sensitive routing
+  from the spec index and operating instructions.
 
 ## Next Steps
 

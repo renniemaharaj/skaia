@@ -9,6 +9,7 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"github.com/skaia/backend/models"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -146,6 +147,23 @@ func newTestService() (*Service, *fakeAuthRepository, *fakeUserService) {
 	return NewService(repo, users), repo, users
 }
 
+func TestRequireMFAStoresReasonAndAction(t *testing.T) {
+	svc, repo, _ := newTestService()
+
+	err := svc.RequireMFA(context.Background(), 42, MFAReasonSensitiveAction, "revoke session")
+	require.NoError(t, err)
+
+	status := repo.mfaStatuses[42]
+	assert.True(t, status.Required)
+	assert.Equal(t, MFAReasonSensitiveAction, status.Reason)
+	assert.Equal(t, "revoke session", status.Action)
+}
+
+func TestRecoveryChallengeActionLabel(t *testing.T) {
+	assert.Equal(t, "approve password recovery", recoveryChallengeActionLabel("accept"))
+	assert.Equal(t, "reject password recovery", recoveryChallengeActionLabel("reject"))
+}
+
 type fakeAuthRepository struct {
 	nextID      int64
 	credentials map[int64]*models.Credential
@@ -208,8 +226,6 @@ func (r *fakeAuthRepository) UpdatePasswordHash(ctx context.Context, userID int6
 	cred.UpdatedAt = time.Now()
 	return nil
 }
-
-
 
 func (r *fakeAuthRepository) CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error) {
 	existing, ok := r.totpSecrets[userID]
@@ -293,9 +309,15 @@ func (r *fakeAuthRepository) DeleteBackupCodes(ctx context.Context, userID int64
 }
 
 func (r *fakeAuthRepository) SetMFARequired(ctx context.Context, userID int64, required bool) error {
+	return r.SetMFAChallenge(ctx, userID, required, "", "")
+}
+
+func (r *fakeAuthRepository) SetMFAChallenge(ctx context.Context, userID int64, required bool, reason, action string) error {
 	r.mfaStatuses[userID] = models.MFAChallengeStatus{
 		UserID:    userID,
 		Required:  required,
+		Reason:    reason,
+		Action:    action,
 		UpdatedAt: time.Now(),
 	}
 	return nil
@@ -307,6 +329,7 @@ func (r *fakeAuthRepository) GetMFARequired(ctx context.Context, userID int64) (
 		return models.MFAChallengeStatus{
 			UserID:   userID,
 			Required: true,
+			Reason:   MFAReasonAuthenticationRequired,
 		}, nil
 	}
 	return status, nil

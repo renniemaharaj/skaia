@@ -854,6 +854,13 @@ select,
   margin-bottom: 0;
 }
 
+.form-input--sm {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+  height: 34px;
+}
+
 select:not(.sk-select__native) {
   appearance: none;
   -webkit-appearance: none;

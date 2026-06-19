@@ -12,4 +12,9 @@
 - [ ] Run live testing on session-aware IP validation
 - [ ] Deploy and verify Cloudflare Turnstile behavior
 
+### Completed Follow-up
+- [x] 2026-06-19: Changed-IP MFA interruptions now persist and display the exact
+  `ip_changed` reason; persistence failures deny the request instead of silently
+  continuing.
+
 <--/------->

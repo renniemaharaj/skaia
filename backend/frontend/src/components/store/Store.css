@@ -854,10 +854,10 @@
 
 .store-special-action-row {
   display: grid;
-  grid-template-columns: minmax(11rem, 1fr) minmax(14rem, 2fr) auto;
-  align-items: start;
-  gap: 0.625rem;
-  margin-bottom: 0.625rem;
+  grid-template-columns: minmax(9rem, 1.2fr) minmax(9rem, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .store-special-action-row .form-input {
@@ -868,9 +868,15 @@
   margin-bottom: 0;
 }
 
-.store-special-action-row .btn-admin-icon {
-  width: 42px;
-  height: 42px;
+.store-special-action-row .btn-admin-icon,
+.store-special-action-row .sk-btn {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 640px) {

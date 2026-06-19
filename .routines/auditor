@@ -19,6 +19,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 - `.routines/README.md`, `.routines/correctness`, and the routine being audited
 - `.specs/README.md`, `.specs/PROTOCOL.md`, and relevant spec cards
+- `.specs/security_architecture_spec` for any security-sensitive scope
 - Related `.todo/*` and `.todo/*.tip`
 - Changed source/tests/migrations/package manifests
 - Existing verification outputs and git diff/status
@@ -30,6 +31,8 @@ truth and implementation meet the highest maintainability and product-quality ba
 - Enforce frontend quality: intentional design, token CSS, accessibility, mobile/empty/error/loading states, real-time state ownership.
 - Enforce dynamic-page quality: schema validation, page-builder edit safety, section reactivity, no stale CDN/data flows.
 - Review security and privacy first: auth, MFA, sessions, permissions, uploads, SSRF/XSS/CSS injection, payment/card data exposure.
+- Reject sensitive operations that bypass centralized service policy, fresh
+  action/session-bound step-up, fail-closed decisions, or required audit trails.
 - Review performance and reliability: N+1s, unbounded memory/goroutines, polling, cache invalidation, slow-client WS behavior.
 - Audit docs/routines/specs/todos for stale references, duplicated authority, and poor handoff quality.
 - Produce findings ordered by severity with file/line evidence when possible.
@@ -84,11 +87,14 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-06-17
+- 2026-06-19
 
 ## Last Run Remarks
 
-- Created as the unified strict whole-repo audit routine replacing split backend/frontend audit authority. Auditor now covers repository quality, routines, specs, tests, security, dynamic page contracts, and intentional UI.
+- Security architecture audit separated implemented controls from target
+  invariants and made centralized policy, session/action-bound step-up,
+  fail-closed authorization, and audit coverage explicit quality gates in
+  `.specs/security_architecture_spec`.
 
 ## Next Steps
 

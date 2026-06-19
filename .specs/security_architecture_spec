@@ -1,0 +1,166 @@
+# Security Architecture Spec
+
+## Scope
+
+Defense-in-depth, authorization, step-up authentication, session trust, adaptive
+load shedding, auditability, tenant isolation, and the mandatory policy boundary
+for security-sensitive backend work.
+
+## Load when
+
+Changing authentication, authorization, roles, permissions, users, sessions,
+passwords, TOTP, API keys, rate limiting, cached shells, audit events, tenant
+boundaries, Turnstile, security metrics, or any privileged/sensitive action.
+
+## Owns
+
+- Policy target: `backend/internal/security/` (planned centralized package)
+- Current auth/session code: `backend/internal/auth/`, `backend/internal/session/`
+- Current RBAC code: `backend/internal/user/`, `backend/internal/middleware/perm.go`
+- Rate limiting: `backend/middleware/ratelimit.go`, `backend/ratelimit/`
+- Audit/event storage: `backend/internal/events/`, `backend/models/analytics.go`
+- Tenant boundary: `grengo/`, generated tenant env, database, Redis, and uploads
+- Implementation plan: `.todo/security_invariants_hardening`
+
+## Threat Model
+
+Skaia assumes any one control can fail. Security must remain intact when an
+attacker bypasses or exhausts one layer, and when generated code omits a local
+check. Controls therefore compose independently and fail closed:
+
+`rate limit => cached shell => session risk => Turnstile => TOTP => power/RBAC
+=> superuser isolation => audit => tenant isolation`
+
+AI-generated code is an explicit threat source. A handler-local permission check
+is not an architectural invariant and must not be treated as one.
+
+## Required Invariants
+
+### Privilege and authorization
+
+- User-management authorization requires `actorPower > targetPower`; equality is
+  denied. No ordinary bypass may manage equal or higher power.
+- Superusers may bypass ordinary permission membership, but may not directly
+  manage another superuser. Superuser demotion uses the dedicated collective
+  demotion flow.
+- Assigning or creating a role may never grant power at or above the actor's
+  power, or permissions the actor is not authorized to delegate.
+- Every privileged service operation must call one centralized, fail-closed
+  policy API. Frontend checks, route grouping, and scattered handler checks are
+  defense-in-depth only.
+- Required policy concepts are `CanManageUser`, `RequirePowerLevel`, and
+  `RequirePermission`. They return typed decisions/errors and never write HTTP
+  responses or silently discard lookup failures.
+- Permission storage and middleware must share one documented superuser rule;
+  conflicting middleware/service interpretations are forbidden.
+
+### Step-up and session trust
+
+- Sensitive actions require a fresh, action-bound, session-bound, single-use,
+  short-lived step-up grant. Authentication at login is not sufficient.
+- Sensitive actions include role/permission changes, password resets, TOTP
+  disablement, API-key creation, session revocation, recovery resolution, and
+  every superuser action. New actions of equivalent impact join this set by
+  default.
+- `RequireTOTP` and `RequireTrustedSession` are centralized policy gates. The
+  grant identifies actor, session, action, target/resource, issued time, expiry,
+  and consumption state; changing any binding requires a new challenge.
+- TOTP verification is unconditional once requested. Codes must use an explicit
+  validation window owned by Skaia; library defaults are not policy. Replay in
+  the accepted time step must be prevented for sensitive-action grants.
+- Expired, consumed, mismatched, or missing grants fail closed. Expiration never
+  auto-issues another challenge; the client explicitly requests a new one.
+- Challenge responses carry a stable reason code and optional server-owned action
+  label. Clients show the exact trigger and never infer it from the current URL.
+- Trust belongs to a server-side session, never to an IP, browser, user account,
+  or all tabs globally. One trusted session cannot elevate another.
+- Sessions record `created_ip`, `last_seen_ip`, and a user-agent hash. IP or user
+  agent changes raise risk and trigger step-up rather than immediate account
+  denial. A session remains restricted until verification succeeds.
+- Turnstile may precede TOTP for anomalous sessions but never replaces TOTP for a
+  sensitive action that requires it.
+- Access JWTs remain short lived and session state remains revocable server side.
+
+### Availability and containment
+
+- DEFCON budgets measure weighted work, not only request count. Expensive routes
+  consume more budget; pressure and jailed populations reduce available budget.
+- Rejection happens in Redis/middleware before database, SSR, or expensive Go
+  work whenever possible. Limiter failure behavior must be explicit and tested.
+- Under pressure, public reads may serve a generic cached shell instead of DB,
+  SSR, SEO, or other tenant computations. Cached shells contain no user/session
+  data and never satisfy authenticated mutations.
+- Trust/bypass is user-session scoped. Clearing an IP jail must not release other
+  users sharing that NAT.
+- Tenant data is isolated by database, Redis namespace, upload root, runtime env,
+  and host routing. Cross-tenant identifiers and cache keys are never accepted
+  without resolving the current tenant boundary.
+
+### Audit and observability
+
+- Security audit records are append-only through application APIs. They cover
+  login outcomes, TOTP failures, challenge issue/expiry/consumption, role and
+  permission changes, superuser actions, IP/user-agent changes, permission
+  denials, API-key actions, and session revocations.
+- Records include tenant, actor, target/resource, session, action, outcome,
+  reason code, request correlation ID, source IP metadata, and timestamp. They do
+  not contain passwords, TOTP/API secrets, raw tokens, or sensitive payloads.
+- Security events and limiter telemetry use structured logs and bounded metrics.
+  Required views include DEFCON state, jailed users, weighted request cost,
+  authentication events, superuser activity, and per-tenant activity.
+- Audit write failure policy is explicit per action. High-impact mutations fail
+  closed or use a durable transactional/outbox mechanism; silent loss is forbidden.
+
+## Current Baseline (2026-06-19)
+
+- Strict power comparison exists for several user/role handlers, but it is
+  fragmented and `CheckManagePowerLevel` writes HTTP from the user service.
+- `PermissionMiddleware` grants admin/superuser bypass from JWT claims, while
+  repository `HasPermission` checks permission membership only. The rule is not
+  centralized.
+- MFA challenge expiry and recovery action binding exist in selected flows, but
+  fresh step-up is not enforced for every sensitive action.
+- `totp.Validate` currently uses the dependency's default skew of one adjacent
+  period; exact-cycle validation is not implemented as a Skaia invariant.
+- Stateful `sessions` track IP and user-agent hash and can use Turnstile on an IP
+  change. Trust is a boolean and is not yet a general action/session grant model.
+- DEFCON weighted limiting and priority bypass primitives exist. Generic cached
+  pressure shells, comprehensive audit coverage, anomaly detection, and unified
+  security metrics remain incomplete.
+- Database, Redis-prefix, upload-directory, env-file, and host-routing tenant
+  boundaries exist; verification must accompany every new storage path.
+
+## Change Rules
+
+- Do not add a sensitive route until its service-level policy gate, audit event,
+  denial behavior, and focused tests exist.
+- Do not copy authorization or step-up logic into a domain. Extend the central
+  policy package and use it from the service operation.
+- Never treat claims, client state, IP allowlists, or successful Turnstile as
+  proof of fresh TOTP or trusted-session authorization.
+- Security lookup, cache, challenge-store, and audit failures must never become
+  authorization success through ignored errors.
+- Any intentional exception requires a spec change, threat analysis, tests, and
+  auditor review in the same work item.
+
+## Verify
+
+- Centralization drift: `rg "CheckManagePowerLevel|HasPermission|PermissionMiddleware|VerifyTOTP" backend/internal backend/middleware -n`
+- Session schema/logic: `backend/internal/migrations/012_sessions.sql`,
+  `backend/internal/session/*_test.go`
+- Auth challenge logic: `backend/internal/auth/service.go`,
+  `backend/internal/middleware/mfarequired.go`
+- Full backend check:
+  `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- Security-sensitive changes require focused denial, equality, expiry, replay,
+  cross-session, cross-tenant, audit-failure, and dependency-failure tests.
+
+## Trace
+
+- `.specs/auth_user_separation_spec`
+- `.specs/backend_spec`
+- `.specs/infrastructure_spec`
+- `.todo/security_invariants_hardening`
+- `.routines/auditor`
+- `.routines/correctness`
+- `.routines/worker`

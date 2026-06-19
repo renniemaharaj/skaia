@@ -37,6 +37,8 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
 
 ## Security Invariants
 
+- Cross-domain authorization, sensitive-action step-up, and session trust follow
+  `.specs/security_architecture_spec`.
 - Passwords are bcrypt hashed and never returned from repositories/services.
 - Backup codes are stored hashed and become unusable after consumption.
 - TOTP secrets are read only through auth service flows.
@@ -44,6 +46,9 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
 - Auth middleware must never depend on frontend permission checks.
 - Sensitive auth failures should not leak which secret or factor was valid beyond
   the intended challenge flow.
+- MFA-required responses expose a closed `reason_code` and optional server-owned
+  `action` label so clients can explain IP changes, suspicious activity, session
+  expiry, or the exact sensitive action without inferring policy from routes.
 - Recovery approval flows that mint an auth session must not be undone by generic
   frontend `auth:unauthorized` cleanup or guest WebSocket session teardown after
   the accepted recovery event is delivered.
@@ -85,5 +90,6 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
 
 - `.specs/backend_spec`
 - `.specs/migrations_spec`
+- `.specs/security_architecture_spec`
 - `.routines/auditor`
 - `.routines/correctness`

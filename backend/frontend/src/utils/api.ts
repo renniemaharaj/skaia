@@ -16,8 +16,22 @@ export interface ApiError {
   error: string;
   message?: string;
   challenge?: string;
+  reason_code?: MFAChallengeReason;
+  action?: string;
   defcon_info?: RateLimitDefconInfo;
   retry_after?: number;
+}
+
+export type MFAChallengeReason =
+  | "authentication_required"
+  | "ip_changed"
+  | "suspicious_activity"
+  | "sensitive_action"
+  | "session_expired";
+
+export interface MFAChallengeContext {
+  reasonCode?: MFAChallengeReason;
+  action?: string;
 }
 
 export interface ApiResponse<T> {
@@ -194,10 +208,14 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     // Handle 401 Unauthorized
     if (response.status === 401) {
       if (response.statusText === "MFA Required" || errorMessage === "MFA Required") {
-        toast.error(
-          "Multi-factor authentication required. Please complete MFA challenge to continue."
+        window.dispatchEvent(
+          new CustomEvent<MFAChallengeContext>("auth:mfa-required", {
+            detail: {
+              reasonCode: errorData?.reason_code,
+              action: errorData?.action,
+            },
+          })
         );
-        window.dispatchEvent(new CustomEvent("auth:mfa-required", { detail: {} }));
         throw new Error("MFA Required");
       }
 

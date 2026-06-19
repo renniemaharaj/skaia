@@ -11,6 +11,7 @@ import (
 
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/models"
 )
 
 const (
@@ -23,7 +24,11 @@ type mfaCodeRequest struct {
 	BackupCode string `json:"backup_code"`
 }
 
-var errMFARequired = errors.New("MFA Required")
+type mfaRequiredError struct {
+	status models.MFAChallengeStatus
+}
+
+func (e *mfaRequiredError) Error() string { return "MFA Required" }
 
 // MFARequiredMiddleware enforces MFA verification for authenticated users with TOTP enabled.
 // It allows requests through if:
@@ -63,13 +68,31 @@ func MFARequiredMiddleware(authSvc *auth.Service) func(http.Handler) http.Handle
 			}
 
 			if err := assertMFACleared(r, authSvc, userID); err != nil {
-				utils.WriteError(w, http.StatusUnauthorized, err.Error())
+				var required *mfaRequiredError
+				if errors.As(err, &required) {
+					writeMFARequired(w, required.status)
+					return
+				}
+				utils.WriteError(w, http.StatusInternalServerError, "failed to verify MFA status")
 				return
 			}
 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func writeMFARequired(w http.ResponseWriter, status models.MFAChallengeStatus) {
+	reason := status.Reason
+	if reason == "" {
+		reason = auth.MFAReasonAuthenticationRequired
+	}
+	utils.WriteJSON(w, http.StatusUnauthorized, map[string]interface{}{
+		"error":       "MFA Required",
+		"challenge":   "totp",
+		"reason_code": reason,
+		"action":      status.Action,
+	})
 }
 
 // handleMFAChallenge processes the dedicated MFA verification endpoint.
@@ -122,7 +145,14 @@ func assertMFACleared(r *http.Request, authSvc *auth.Service, userID int64) erro
 				return nil
 			}
 		}
-		return errMFARequired
+		if err != nil {
+			return err
+		}
+		if expired && !mfaStatus.Required {
+			mfaStatus.Reason = auth.MFAReasonSessionExpired
+			mfaStatus.Action = ""
+		}
+		return &mfaRequiredError{status: mfaStatus}
 	}
 	return nil
 }

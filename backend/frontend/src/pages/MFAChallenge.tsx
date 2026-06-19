@@ -2,21 +2,66 @@ import { AlertCircle, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
 import Button from "../components/input/Button";
-import { type AuthResponse, loginTOTP, verifyMFAChallenge } from "../utils/api";
+import {
+  type AuthResponse,
+  type MFAChallengeReason,
+  loginTOTP,
+  verifyMFAChallenge,
+} from "../utils/api";
 import "../components/ui/FormGroup.css";
 import "../components/auth/Auth.css";
 
 interface MFAChallengeProps {
   totpToken: string;
+  reasonCode?: MFAChallengeReason;
+  action?: string;
   onBack?: () => void;
   onAuthSuccess?: (token: string, data?: AuthResponse) => void;
 }
 
-const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) => {
+function challengeCopy(
+  reasonCode: MFAChallengeReason | undefined,
+  action: string | undefined,
+  isLogin: boolean
+) {
+  if (isLogin) {
+    return {
+      label: "Sign-in verification",
+      detail: "Confirm this sign-in with your second factor.",
+    };
+  }
+  switch (reasonCode) {
+    case "ip_changed":
+      return {
+        label: "IP address changed",
+        detail: "This session moved to a different network address.",
+      };
+    case "suspicious_activity":
+      return { label: "Suspicious activity", detail: "A security review flagged this session." };
+    case "sensitive_action":
+      return {
+        label: action ? `Required to ${action}` : "Sensitive action",
+        detail: "Fresh verification is required for this action.",
+      };
+    case "session_expired":
+      return { label: "Session trust expired", detail: "This session needs fresh verification." };
+    default:
+      return { label: "Authentication required", detail: "This session needs fresh verification." };
+  }
+}
+
+const MFAChallenge = ({
+  totpToken,
+  reasonCode,
+  action,
+  onBack,
+  onAuthSuccess,
+}: MFAChallengeProps) => {
   const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const reason = challengeCopy(reasonCode, action, Boolean(totpToken));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,18 +96,22 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <section className="section auth-card">
+        <section className="section auth-card auth-card--challenge">
           <div className="section__header auth-header">
-            <ShieldCheck size={40} style={{ color: "var(--primary-color)", marginBottom: 8 }} />
-            <h1>Two-Factor Authentication</h1>
-            <p>
-              {useBackupCode
-                ? "Enter one of your backup codes"
-                : "Enter the 6-digit code from your authenticator app"}
-            </p>
+            <ShieldCheck size={28} aria-hidden="true" />
+            <div>
+              <h1>Verify it's you</h1>
+              <p>{useBackupCode ? "Use an unused backup code." : "Use your authenticator code."}</p>
+            </div>
           </div>
 
           <div className="section__content">
+            <output className="mfa-reason" aria-label="Challenge reason">
+              <span>Why now</span>
+              <strong>{reason.label}</strong>
+              <p>{reason.detail}</p>
+            </output>
+
             {error && (
               <div className="auth-error">
                 <AlertCircle size={20} />
@@ -75,11 +124,6 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
                 <label htmlFor="totp_code">
                   {useBackupCode ? "Backup Code" : "Verification Code"}
                 </label>
-                <p className="form-help">
-                  {useBackupCode
-                    ? "Enter one of your unused recovery codes."
-                    : "Enter the six-digit code from your authenticator app."}
-                </p>
                 <div className="input-wrapper">
                   <ShieldCheck size={20} className="input-icon" />
                   <input
@@ -110,10 +154,6 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
               </div>
             </form>
 
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
             <div className="auth-toggle">
               <p>
                 <button
@@ -129,11 +169,18 @@ const MFAChallenge = ({ totpToken, onBack, onAuthSuccess }: MFAChallengeProps) =
                   {useBackupCode ? "Use authenticator code" : "Use a backup code"}
                 </button>
               </p>
-              <p style={{ marginTop: 8 }}>
-                <button type="button" className="auth-toggle-btn" onClick={onBack} disabled={loading}>
-                  Back to login
-                </button>
-              </p>
+              {onBack && (
+                <p>
+                  <button
+                    type="button"
+                    className="auth-toggle-btn"
+                    onClick={onBack}
+                    disabled={loading}
+                  >
+                    Back to login
+                  </button>
+                </p>
+              )}
             </div>
           </div>
         </section>

@@ -18,6 +18,7 @@ docs disagree.
 
 - Changed files and git diff/status
 - Relevant `.specs/*`, especially `.specs/README.md` and `.specs/PROTOCOL.md`
+- `.specs/security_architecture_spec` when classifying security intent versus implemented truth
 - Relevant `.todo/*` and `.todo/*.tip`
 - Relevant `.routines/*`
 - `backend/internal/migrations/`, `backend/models/`, route handlers, tests
@@ -77,11 +78,13 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-06-17
+- 2026-06-19
 
 ## Last Run Remarks
 
-- Recast correctness as the architectural truth/drift authority for the routine system. Split strict quality auditing into `.routines/auditor` while keeping all routines subject to correctness.
+- Corrected security intent drift: exact-cycle TOTP and universal fresh step-up
+  are targets rather than current guarantees, and superuser permission bypass is
+  not yet consistent across middleware and service/repository checks.
 
 ## Next Steps
 

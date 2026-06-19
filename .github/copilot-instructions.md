@@ -39,6 +39,15 @@ These instructions guide AI agents and developers working in the Skaia monorepo.
 
 ## Agent/AI Guidance
 
+- **Security first:** Before touching auth, users, roles, permissions, sessions,
+  TOTP, API keys, rate limiting, audit events, or tenant boundaries, load
+  `.specs/security_architecture_spec`. Never add a sensitive operation with only
+  handler, middleware, claims, IP, or frontend enforcement.
+- **Central policy gates:** Security rules belong in transport-independent,
+  fail-closed service policy APIs. Do not duplicate power, permission, fresh
+  step-up, or trusted-session decisions inside domain handlers.
+- **Truth labels:** Keep implemented controls and target controls explicitly
+  separate. A todo or intended invariant is not evidence that code enforces it.
 - **Planning:** Propose new `.todo` and `.specs` entries for any non-trivial change or refactor. Use `.tip` for status tracking.
 - **Documentation:** When adding or updating documentation, prefer `.specs/` for technical details, `.routines/` for automation, and `.todo/` for planning.
 - **Status:** Update `.tip` and `.todo` as work progresses. Use only allowed emoji for status in `.todo/`.

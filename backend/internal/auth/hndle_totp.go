@@ -200,7 +200,7 @@ func (h *Handler) TOTPEnable(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	
+
 	// Since the user successfully provided a valid TOTP code to set it up,
 	// clear any pending MFA requirement for their current session.
 	_ = h.svc.SetMFARequired(r.Context(), userID, false)
@@ -241,14 +241,17 @@ func (h *Handler) AdminTriggerMFAChallenge(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Set MFA required in the DB
-	if err := h.svc.SetMFARequired(r.Context(), targetID, true); err != nil {
+	if err := h.svc.RequireMFA(r.Context(), targetID, MFAReasonSuspiciousActivity, ""); err != nil {
 		log.Printf("auth.Handler.AdminTriggerMFAChallenge: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to trigger challenge")
 		return
 	}
 
 	// Dispatch websocket event to the target user via propagateAuthUser
-	h.propagateAuthUser(r.Context(), targetID, map[string]interface{}{"mfa_challenge_triggered": true})
+	h.propagateAuthUser(r.Context(), targetID, map[string]interface{}{
+		"mfa_challenge_triggered": true,
+		"mfa_reason_code":         MFAReasonSuspiciousActivity,
+	})
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "challenge triggered"})
 }

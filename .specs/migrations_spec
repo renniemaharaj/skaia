@@ -60,6 +60,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `025_product_owner_media_seller.sql` | Product ownership, product media JSON, Vendor role/permission |
 | `026_scrub_user_card_secrets.sql` | Reduce stored card numbers to last-four and clear CVV |
 | `027_vendor_order_statuses.sql` | Per-vendor order item status/note timestamps and `store-seller` to `Vendor` role consolidation |
+| `028_mfa_challenge_context.sql` | Machine-readable MFA challenge reason and sensitive-action label |
 
 ## Invariants
 

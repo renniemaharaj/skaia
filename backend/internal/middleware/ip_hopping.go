@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"container/list"
-	"context"
 	"net"
 	"net/http"
 	"sync"
@@ -76,11 +75,16 @@ func IPHoppingMiddleware(authSvc *auth.Service) func(http.Handler) http.Handler 
 				ip := extractRealIP(r)
 				if lastIP, loaded := lastIPs.load(userID); loaded {
 					if lastIP != ip {
-						_, enabled, _ := authSvc.GetTOTPEnabled(r.Context(), userID)
+						_, enabled, err := authSvc.GetTOTPEnabled(r.Context(), userID)
+						if err != nil {
+							utils.WriteError(w, http.StatusInternalServerError, "failed to evaluate session risk")
+							return
+						}
 						if enabled {
-							go func() {
-								_ = authSvc.SetMFARequired(context.Background(), userID, true)
-							}()
+							if err := authSvc.RequireMFA(r.Context(), userID, auth.MFAReasonIPChanged, ""); err != nil {
+								utils.WriteError(w, http.StatusInternalServerError, "failed to secure changed session")
+								return
+							}
 						}
 						lastIPs.store(userID, ip)
 					}

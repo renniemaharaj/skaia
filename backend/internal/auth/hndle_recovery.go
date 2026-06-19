@@ -134,7 +134,12 @@ func (h *Handler) resolveRecoveryRequest(w http.ResponseWriter, r *http.Request,
 		case errors.Is(err, ErrRecoveryChallengeMethodRequired):
 			utils.WriteError(w, http.StatusForbidden, err.Error())
 		case errors.Is(err, ErrRecoveryChallengeRequired):
-			utils.WriteError(w, http.StatusUnauthorized, err.Error())
+			utils.WriteJSON(w, http.StatusUnauthorized, map[string]interface{}{
+				"error":       err.Error(),
+				"challenge":   "totp",
+				"reason_code": MFAReasonSensitiveAction,
+				"action":      recoveryChallengeActionLabel(action),
+			})
 		default:
 			utils.WriteError(w, http.StatusInternalServerError, "failed to prepare MFA challenge")
 		}

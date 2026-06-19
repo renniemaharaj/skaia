@@ -24,6 +24,7 @@ type Repository interface {
 	DeleteBackupCodes(ctx context.Context, userID int64) error
 
 	SetMFARequired(ctx context.Context, userID int64, required bool) error
+	SetMFAChallenge(ctx context.Context, userID int64, required bool, reason, action string) error
 	GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error)
 }
 
@@ -150,19 +151,31 @@ func (r *SQLRepository) DeleteBackupCodes(ctx context.Context, userID int64) err
 }
 
 func (r *SQLRepository) SetMFARequired(ctx context.Context, userID int64, required bool) error {
-	_, err := r.executor(ctx).ExecContext(ctx, `INSERT INTO mfa_challenge_required (user_id, required) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET required = EXCLUDED.required, updated_at = NOW()`, userID, required)
+	return r.SetMFAChallenge(ctx, userID, required, "", "")
+}
+
+func (r *SQLRepository) SetMFAChallenge(ctx context.Context, userID int64, required bool, reason, action string) error {
+	_, err := r.executor(ctx).ExecContext(ctx, `
+		INSERT INTO mfa_challenge_required (user_id, required, reason_code, action)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id) DO UPDATE SET
+			required = EXCLUDED.required,
+			reason_code = EXCLUDED.reason_code,
+			action = EXCLUDED.action,
+			updated_at = NOW()`, userID, required, reason, action)
 	return err
 }
 
 func (r *SQLRepository) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `SELECT required, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT required, reason_code, action, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
 	var status models.MFAChallengeStatus
 	status.UserID = userID
-	if err := row.Scan(&status.Required, &status.CreatedAt, &status.UpdatedAt); err != nil {
+	if err := row.Scan(&status.Required, &status.Reason, &status.Action, &status.CreatedAt, &status.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return models.MFAChallengeStatus{
 				UserID:   userID,
 				Required: true,
+				Reason:   MFAReasonAuthenticationRequired,
 			}, nil
 		}
 		return models.MFAChallengeStatus{}, err

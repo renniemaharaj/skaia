@@ -11,8 +11,6 @@ type AuthService interface {
 	GetCredentialByUserID(ctx context.Context, userID int64) (*models.Credential, error)
 	UpdatePasswordHash(ctx context.Context, userID int64, newHash string) error
 
-
-
 	CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error)
 	GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error)
 	SetTOTPEnabled(ctx context.Context, userID int64, enabled bool) error
@@ -24,5 +22,6 @@ type AuthService interface {
 	DeleteBackupCodes(ctx context.Context, userID int64) error
 
 	SetMFARequired(ctx context.Context, userID int64, required bool) error
+	SetMFAChallenge(ctx context.Context, userID int64, required bool, reason, action string) error
 	GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error)
 }

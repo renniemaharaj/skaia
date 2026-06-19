@@ -496,6 +496,14 @@ func recoveryChallengeKey(requestID, action string) string {
 	return strings.TrimSpace(action) + ":" + strings.TrimSpace(requestID)
 }
 
+func recoveryChallengeActionLabel(action string) string {
+	action = strings.TrimSpace(action)
+	if action == "accept" {
+		return "approve password recovery"
+	}
+	return action + " password recovery"
+}
+
 func (s *Service) RequireRecoveryResolutionChallenge(ctx context.Context, actorID int64, requestID, action string) error {
 	_, enabled, err := s.GetTOTPEnabled(ctx, actorID)
 	if err != nil {
@@ -520,7 +528,8 @@ func (s *Service) RequireRecoveryResolutionChallenge(ctx context.Context, actorI
 		return nil
 	}
 
-	if err := s.SetMFARequired(ctx, actorID, true); err != nil {
+	actionLabel := recoveryChallengeActionLabel(action)
+	if err := s.RequireMFA(ctx, actorID, MFAReasonSensitiveAction, actionLabel); err != nil {
 		return err
 	}
 	s.recoveryMu.Lock()
@@ -674,6 +683,23 @@ func (s *Service) ResendVerificationToken(ctx context.Context, userID int64) (st
 
 func (s *Service) SetMFARequired(ctx context.Context, userID int64, required bool) error {
 	return s.repo.SetMFARequired(ctx, userID, required)
+}
+
+const (
+	MFAReasonAuthenticationRequired = "authentication_required"
+	MFAReasonIPChanged              = "ip_changed"
+	MFAReasonSuspiciousActivity     = "suspicious_activity"
+	MFAReasonSensitiveAction        = "sensitive_action"
+	MFAReasonSessionExpired         = "session_expired"
+)
+
+// RequireMFA records why a challenge is required. Reason is a stable machine
+// code; action is a short server-owned label such as "approve password recovery".
+func (s *Service) RequireMFA(ctx context.Context, userID int64, reason, action string) error {
+	if reason == "" {
+		reason = MFAReasonAuthenticationRequired
+	}
+	return s.repo.SetMFAChallenge(ctx, userID, true, reason, action)
 }
 
 func (s *Service) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {

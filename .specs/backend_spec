@@ -149,6 +149,8 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 
 ## Invariants
 
+- Security-sensitive operations follow `.specs/security_architecture_spec`; route
+  middleware and frontend checks never replace service-level policy enforcement.
 - API JSON must go through `utils.WriteJSON` / `utils.WriteError`.
 - Business logic and SQL must not live in handlers.
 - Auth secrets must never be cached in public user models.
@@ -167,4 +169,5 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - `.specs/realtime_wss_spec`
 - `.specs/migrations_spec`
 - `.specs/auth_user_separation_spec`
+- `.specs/security_architecture_spec`
 - `.specs/route_resolution_spec`

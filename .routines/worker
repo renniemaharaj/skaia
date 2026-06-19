@@ -15,6 +15,7 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 - `.todo/<entry>` and `.todo/<entry>.tip` for the requested work
 - `.todo/README.md` for todo/status conventions
 - Relevant `.specs/*` files for affected architecture, models, or protocols
+- `.specs/security_architecture_spec` for every security-sensitive change
 - `.routines/auditor` for backend/frontend/security/UI quality standards
 - `.routines/correctness` for drift and contradiction checks
 - `.routines/planner` when specs or model/protocol docs may change
@@ -27,6 +28,8 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 - Maintain a detailed, replicable checklist for non-trivial work
 - Prioritize backend modeling, extension, and polish before frontend work if both are required
 - Enforce idiomatic Go backend layering: service, interface, repository, API, caching, models, and tests
+- Enforce centralized, service-level, fail-closed policy gates; never ship a
+  sensitive action protected only by handlers, middleware, claims, IP, or UI
 - Keep implementations reliable, maintainable, and testable
 - Add or update backend/frontend tests proportional to risk and blast radius
 - Reference `.specs/` and `.routines/planner` for authoritative architecture and model decisions

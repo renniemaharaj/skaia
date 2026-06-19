@@ -310,7 +310,11 @@ export const useWebSocketSync = () => {
                   currentUserIdRef.current &&
                   String(updatedUser.id) === String(currentUserIdRef.current)
                 ) {
-                  window.dispatchEvent(new CustomEvent("auth:mfa-required"));
+                  window.dispatchEvent(
+                    new CustomEvent("auth:mfa-required", {
+                      detail: { reasonCode: payload?.data?.mfa_reason_code },
+                    })
+                  );
                 }
               }
 
@@ -388,7 +392,14 @@ export const useWebSocketSync = () => {
 
           // MFA Required
           if (message.type === "mfa:required") {
-            window.dispatchEvent(new CustomEvent("auth:mfa-required"));
+            window.dispatchEvent(
+              new CustomEvent("auth:mfa-required", {
+                detail: {
+                  reasonCode: payload?.reason_code,
+                  action: payload?.action,
+                },
+              })
+            );
           }
 
           // Handle forum update propagation

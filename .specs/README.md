@@ -17,7 +17,8 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 
 | Task | Load |
 | --- | --- |
-| Backend routes, models, services, auth, store | `backend_spec`, `auth_user_separation_spec`, `migrations_spec` |
+| Backend routes, models, services, auth, store | `backend_spec`, `auth_user_separation_spec`, `security_architecture_spec`, `migrations_spec` |
+| Security, privileges, step-up, sessions, audit, rate limiting | `security_architecture_spec`, `auth_user_separation_spec`, `backend_spec`, `infrastructure_spec` |
 | Frontend UI, state, routes, cart/store pages | `frontend_spec`, `realtime_wss_spec`, `route_resolution_spec` |
 | WebSocket, presence, voice, media, push delivery | `realtime_wss_spec`, `voice_chat_architecture.md` |
 | Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `caching_cdn_spec` |
@@ -35,6 +36,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 - `migrations_spec` - idempotent migration policy and current migration list.
 - `infrastructure_spec` - Docker/grengo/nginx tenancy model.
 - `auth_user_separation_spec` - standalone auth module contracts.
+- `security_architecture_spec` - defense-in-depth and mandatory security policy invariants.
 - `voice_chat_architecture.md` - binary audio/media WebSocket plane.
 
 ## Maintenance

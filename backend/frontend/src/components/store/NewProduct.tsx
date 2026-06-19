@@ -266,7 +266,7 @@ export const NewProduct = () => {
           {specialActions.map((action, idx) => (
             <div key={idx} className="store-special-action-row">
               <Select
-                className="form-input"
+                size="sm"
                 value={action.type}
                 options={[
                   { value: "role", label: "Assign Role" },
@@ -282,7 +282,7 @@ export const NewProduct = () => {
 
               {action.type === "role" ? (
                 <Select
-                  className="form-input"
+                  size="sm"
                   value={action.value}
                   options={[
                     { value: "", label: "Select Role..." },
@@ -300,7 +300,7 @@ export const NewProduct = () => {
               ) : (
                 <input
                   type="number"
-                  className="form-input"
+                  className="form-input form-input--sm"
                   placeholder="Amount in cents"
                   value={action.value}
                   onChange={e => {

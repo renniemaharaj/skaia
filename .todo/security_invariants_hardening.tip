@@ -1,0 +1,31 @@
+<--/------->
+
+## security_invariants_hardening
+
+### Current Progress
+- **Phase 1: Standards and inventory** — 🟡 In progress
+- **Phase 2: Central policy package** — ⬜ Not started
+- **Phase 3: Sensitive action migration** — ⬜ Not started
+- **Phase 4: Session-bound step-up** — ⬜ Not started
+- **Phase 5: Audit and observability** — ⬜ Not started
+- **Phase 6: Availability and anomaly controls** — ⬜ Not started
+- **Phase 7: Adversarial verification** — ⬜ Not started
+
+### Completed Work
+- [x] 2026-06-19: Added persisted MFA `reason_code` and server-owned `action`
+  context with fresh-schema and idempotent migration support.
+- [x] 2026-06-19: IP changes, administrator security reviews, expired trust,
+  and password-recovery decisions now reach HTTP/WebSocket clients with an
+  explicit reason; IP risk persistence fails closed.
+- [x] 2026-06-19: Added an ultra-dense MFA screen that names the exact reason or
+  sensitive action, plus backend response/service tests and frontend UI tests.
+- [x] 2026-06-19: Verified full backend tests and frontend production build.
+
+### Next Steps
+- [ ] Build the sensitive-action matrix from current routes and service methods.
+- [ ] Define policy interfaces and typed denial/error contracts before migration.
+- [ ] Add characterization tests for current power, superuser, TOTP, and session behavior.
+- [ ] Move MFA requirement state from its current user-wide record to a
+  session-bound, action-bound, single-use grant.
+
+<--/------->

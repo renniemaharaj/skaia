@@ -12,7 +12,7 @@ import { cursorPositionsAtom, pendingTpRouteAtom, pendingTpUserAtom } from "../a
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
-import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
+import { type MFAChallengeContext, type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import "./Layout.css";
 import { Toaster, toast } from "sonner";
 import { physicsSettingsAtom } from "../atoms/physics";
@@ -104,6 +104,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     getStoredRateLimitDefcon()
   );
   const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaContext, setMfaContext] = useState<MFAChallengeContext>({});
 
   useEffect(() => {
     const handleRateLimit = (event: Event) => {
@@ -175,7 +176,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [holdingSeconds]);
 
   useEffect(() => {
-    const handleMfaRequired = () => {
+    const handleMfaRequired = (event: Event) => {
+      const detail = (event as CustomEvent<MFAChallengeContext>).detail;
+      setMfaContext(detail ?? {});
       setMfaRequired(true);
     };
     window.addEventListener("auth:mfa-required", handleMfaRequired);
@@ -428,12 +431,18 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     return (
       <MFAChallenge
         totpToken=""
-        onAuthSuccess={() => setMfaRequired(false)}
+        reasonCode={mfaContext.reasonCode}
+        action={mfaContext.action}
+        onAuthSuccess={() => {
+          setMfaRequired(false);
+          setMfaContext({});
+        }}
         onBack={() => {
           setAccessToken(null);
           setRefreshToken(null);
           setCurrentUser(null);
           setMfaRequired(false);
+          setMfaContext({});
           navigate("/login");
         }}
       />

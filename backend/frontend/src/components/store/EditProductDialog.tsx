@@ -1,4 +1,4 @@
-import { Check, X } from "lucide-react";
+import { Check, Loader, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
@@ -7,6 +7,8 @@ import { centsToDollars } from "../../utils/money";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
+import "../forum/NewThread.css";
+import "../forum/IconButton.css";
 
 interface EditProductDialogProps {
   isOpen: boolean;
@@ -169,27 +171,24 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
               Update <em>{product.name}</em>
             </p>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <Button
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              type="button"
+              className="action-btn btn-close"
+              onClick={onClose}
+              title="Cancel"
+            >
+              <X size={20} />
+            </button>
+            <button
               type="submit"
               form="edit-product-form"
-              variant="primary"
-              size="icon"
-              loading={loading}
-              disabled={!formData.name.trim()}
-              aria-label="Save product"
+              className="action-btn btn-submit"
+              disabled={loading || !formData.name.trim()}
+              title="Save"
             >
-              <Check size={16} />
-            </Button>
-            <Button
-              type="button"
-              onClick={onClose}
-              variant="action"
-              size="icon"
-              aria-label="Close product editor"
-            >
-              <X size={16} />
-            </Button>
+              {loading ? <Loader size={20} className="spin" /> : <Check size={20} />}
+            </button>
           </div>
         </div>
 
@@ -341,7 +340,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
             {specialActions.map((action, idx) => (
               <div key={idx} className="store-special-action-row">
                 <Select
-                  className="form-input"
+                  size="sm"
                   value={action.type}
                   options={[
                     { value: "role", label: "Assign Role" },
@@ -357,7 +356,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
 
                 {action.type === "role" ? (
                   <Select
-                    className="form-input"
+                    size="sm"
                     value={action.value}
                     options={[
                       { value: "", label: "Select Role..." },
@@ -375,7 +374,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
                 ) : (
                   <input
                     type="number"
-                    className="form-input"
+                    className="form-input form-input--sm"
                     placeholder="Amount in cents"
                     value={action.value}
                     onChange={e => {

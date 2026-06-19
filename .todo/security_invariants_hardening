@@ -1,0 +1,56 @@
+# Security Invariants Hardening
+
+## Context
+
+Skaia has strong security primitives, but important authorization, step-up,
+session-risk, and audit rules remain distributed across handlers and services.
+The target contracts are authoritative in `.specs/security_architecture_spec`.
+
+## Goal
+
+- Make sensitive operations depend on centralized, fail-closed policy APIs.
+- Bind fresh step-up and trust to one session and one action.
+- Complete independent availability, audit, anomaly, and tenant controls without
+  weakening existing behavior.
+
+## Non-Goals
+
+- Replace TOTP with Turnstile, IP reputation, or frontend checks.
+- Rewrite all auth/session code in one unreviewable change.
+- Claim planned controls are implemented before tests prove them.
+
+## Steps
+
+1. Inventory every sensitive action and add a denial/audit/step-up coverage matrix.
+2. Add a transport-independent security policy package with typed decisions for
+   permission, power hierarchy, user management, trusted session, and TOTP.
+3. Migrate role, permission, password, TOTP, API-key, session-revocation,
+   recovery, and superuser operations to service-level policy enforcement.
+4. Implement action/target/session-bound, single-use step-up grants with explicit
+   TOTP window and replay protection.
+5. Expand session risk signals for IP and user-agent changes; compose Turnstile
+   then TOTP without trusting the network globally.
+6. Complete append-only security auditing, structured logs, metrics, and explicit
+   audit-write failure behavior.
+7. Complete pressure-mode cached shells and verify early weighted DEFCON rejection.
+8. Add cross-session, cross-tenant, equality, replay, expiry, fail-closed, and
+   audit-integrity tests; update the security spec after each delivered phase.
+
+## Verification
+
+- Focused tests for each migrated policy/action and negative path.
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- Frontend build/tests when challenge or restricted-session UX changes.
+- Auditor review against `.specs/security_architecture_spec` before completion.
+
+## References
+
+- `.specs/security_architecture_spec`
+- `.specs/auth_user_separation_spec`
+- `.specs/backend_spec`
+- `.todo/session_cookie_ip_val`
+- `.todo/nat_jail_bypass`
+- `.todo/smart_rate_limiter`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`

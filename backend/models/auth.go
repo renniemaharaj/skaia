@@ -108,6 +108,8 @@ type PasswordResetToken struct {
 type MFAChallengeStatus struct {
 	UserID    int64     `json:"user_id"`
 	Required  bool      `json:"required"`
+	Reason    string    `json:"reason_code,omitempty"`
+	Action    string    `json:"action,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
