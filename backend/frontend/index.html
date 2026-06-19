@@ -29,13 +29,14 @@
         box-sizing: border-box;
       }
       .fallback-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(255, 255, 255, 0.1);
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(255, 255, 255, 0.15);
         border-radius: 50%;
         border-top-color: #3b82f6;
-        animation: fallback-spin 1s ease-in-out infinite;
+        animation: fallback-spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         margin-bottom: 24px;
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
       }
       @keyframes fallback-spin {
         to { transform: rotate(360deg); }

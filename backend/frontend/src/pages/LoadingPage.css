@@ -17,13 +17,13 @@
 }
 
 .spinner-circle {
-  width: 60px;
-  height: 60px;
-  border: 4px solid color-mix(in srgb, var(--primary-color) 15%, transparent);
-  border-top: 4px solid var(--primary-color);
+  width: 48px;
+  height: 48px;
+  border: 3px solid color-mix(in srgb, var(--primary-color) 15%, transparent);
+  border-top: 3px solid var(--primary-color);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  box-shadow: 0 0 20px color-mix(in srgb, var(--primary-color) 30%, transparent);
+  animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 @keyframes spin {

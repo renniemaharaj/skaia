@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import type { FallbackProps } from "react-error-boundary";
 import { ErrorBoundary as ErrorBoundaryLib } from "react-error-boundary";
 import ErrorPage from "./pages/ErrorPage";
+import LoadingPage from "./pages/LoadingPage";
 
 /**
  * Error fallback component that displays error details
@@ -27,12 +28,9 @@ const ErrorFallback = ({ error }: FallbackProps) => {
 
   if (isNetworkOrChunkError) {
     return (
-      <ErrorPage
-        errorCode={503}
-        errorTitle="Updating System..."
-        errorMessage="The application is currently restarting. This page will automatically refresh in 10 seconds."
-        showBackButton={false}
-        showHomeButton={false}
+      <LoadingPage
+        message="Updating System..."
+        subMessage="The application is currently restarting. This page will automatically refresh in 10 seconds."
       />
     );
   }
