@@ -94,16 +94,17 @@
 }
 
 .derived-section-card {
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
   overflow: hidden;
-  background: var(--bg-secondary);
+  background: transparent;
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .derived-section-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+  box-shadow: none;
+  transform: none;
 }
 
 .derived-section-card-image {

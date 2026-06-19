@@ -64,14 +64,17 @@ export function CartItemsList({
         <div className="cart-filler" aria-label="More room in your cart">
           <div className="cart-filler-list" aria-hidden="true">
             {CART_FILLER_IDS.map(fillerId => (
-              <div key={fillerId} className="cart-item cart-checkout-item cart-filler-item">
+              <ContentFlatCard
+                key={fillerId}
+                className="cart-item cart-checkout-item cart-filler-item"
+              >
                 <div className="cart-filler-thumb skeleton" />
                 <div className="cart-filler-lines">
                   <div className="cart-filler-line cart-filler-line--title skeleton" />
                   <div className="cart-filler-line cart-filler-line--meta skeleton" />
                 </div>
                 <div className="cart-filler-action skeleton" />
-              </div>
+              </ContentFlatCard>
             ))}
           </div>
           <p className="cart-filler-message">

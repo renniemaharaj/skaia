@@ -2,7 +2,6 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
-import { Link } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import { useAtomValue } from "jotai";
 import L from "leaflet";
@@ -14,7 +13,10 @@ import type { CartItem, Order } from "../../atoms/store";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import UserAvatar from "../user/UserAvatar";
+import { StorePageShell } from "./StorePageShell";
 
 import "../../styles/Cart.css";
 
@@ -88,47 +90,49 @@ const OrderSubmittedView: React.FC<Props> = ({
     titleText = "Order Pending";
   }
 
+  const itemSubtotal = itemsToRender.reduce(
+    (sum, item) => sum + (item.price ?? 0) * item.quantity,
+    0
+  );
+  const adjustment = (order.total_price || 0) - itemSubtotal;
+  const invoiceLines = itemsToRender.map(item => {
+    const product = getProduct(String(item.product_id));
+    return {
+      label: product?.name ?? `Product #${item.product_id}`,
+      detail: `${item.quantity} × ${formatCents(item.price ?? 0)}`,
+      amount: (item.price ?? 0) * item.quantity,
+    };
+  });
+  if (adjustment !== 0) {
+    invoiceLines.push({
+      label: "Order adjustment",
+      detail: "Difference recorded by the order authority",
+      amount: adjustment,
+    });
+  }
+
   return (
-    <div className="cart-page-container order-status-view">
-      <div
-        className="cart-header"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-          <div
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "var(--bg-secondary)",
-              marginBottom: 0,
-            }}
-          >
-            <TitleIcon size={24} />
-          </div>
-          <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>{titleText}</h1>
-        </div>
-
-        <Link to={onBackLink ?? "/store"} className="btn">
-          Back
-        </Link>
-      </div>
-
-      <div className="cart-content order-status-content">
-        <div className="cart-items">
+    <StorePageShell
+      className="order-status-view"
+      backTo={onBackLink ?? "/store"}
+      backLabel="Back"
+      title={
+        <span className="order-status-title">
+          <TitleIcon size={20} />
+          {titleText}
+        </span>
+      }
+      subtitle={`Order #${order.id}`}
+      meta={<span className="cart-success-status">{order.status}</span>}
+    >
+      <div className="order-status-content">
+        <section className="order-status-items">
           <h3 className="order-status-items-title">Items ({itemsToRender.length})</h3>
-          {itemsToRender.map(item => {
+          {itemsToRender.map((item, index) => {
             const product = getProduct(String(item.product_id));
             const displayName = product?.name ?? `Product #${item.product_id}`;
             return (
-              <ContentFlatCard key={item.product_id} className="order-status-item">
+              <ContentFlatCard key={`${item.product_id}-${index}`} className="order-status-item">
                 <div className="order-status-item-media">
                   {product?.image_url ? (
                     <img src={product.image_url} alt={displayName} />
@@ -147,64 +151,48 @@ const OrderSubmittedView: React.FC<Props> = ({
               </ContentFlatCard>
             );
           })}
-        </div>
+        </section>
 
-        <div className="cart-summary order-status-summary">
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 10,
-                margin: "0 auto 6px",
-                background: "var(--bg-secondary)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <TitleIcon size={32} />
+        <aside className="order-status-sidebar">
+          <ContentStandOutCard className="order-status-information">
+            <h2>Order information</h2>
+            <div className="cart-success-meta">
+              <div className="cart-success-meta-row">
+                <span>Status</span>
+                <span className="cart-success-status">{order.status}</span>
+              </div>
+              <div className="cart-success-meta-row">
+                <span>Submitted</span>
+                <span>{new Date(order.created_at).toLocaleString()}</span>
+              </div>
+              <div className="cart-success-meta-row">
+                <span>Delivery Location</span>
+                <DeliveryLocationCell loc={order.delivery_location} />
+              </div>
+              <div className="cart-success-meta-row">
+                <span>Delivery Time</span>
+                <span>
+                  {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : ""}{" "}
+                  {order.delivery_time || ""}
+                </span>
+              </div>
+              <div className="cart-success-meta-row">
+                <span>Billing Info</span>
+                <span>{order.billing_info || "N/A"}</span>
+              </div>
             </div>
-            <h3 style={{ marginBottom: 0, fontSize: "1.15rem", fontWeight: 700 }}>
-              Order #{order.id}
-            </h3>
-          </div>
+          </ContentStandOutCard>
 
-          <div className="cart-success-meta">
-            <div className="cart-success-meta-row">
-              <span>Status</span>
-              <span className="cart-success-status">{order.status}</span>
-            </div>
-            <div className="cart-success-meta-row">
-              <span>Submitted</span>
-              <span>{new Date(order.created_at).toLocaleString()}</span>
-            </div>
-            <div className="cart-success-meta-row">
-              <span>Delivery Location</span>
-              <DeliveryLocationCell loc={order.delivery_location} />
-            </div>
-            <div className="cart-success-meta-row">
-              <span>Delivery Time</span>
-              <span>
-                {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : ""}{" "}
-                {order.delivery_time || ""}
-              </span>
-            </div>
-            <div className="cart-success-meta-row">
-              <span>Billing Info</span>
-              <span>{order.billing_info || "N/A"}</span>
-            </div>
-          </div>
-
-          <hr className="cart-divider" />
-
-          <div className="cart-total-row">
-            <span>Total</span>
-            <span>{formatCents(order.total_price || 0)}</span>
-          </div>
+          <BalanceSheetCard
+            className="order-status-invoice"
+            title="Invoice"
+            totalLabel="Order total"
+            balance={order.total_price || 0}
+            lines={invoiceLines}
+          />
 
           {Array.isArray(order.vendors) && order.vendors.length > 0 && (
-            <div className="order-vendor-panel">
+            <ContentFlatCard className="order-vendor-panel">
               <div className="order-vendor-panel__header">
                 <span>Vendor Activity</span>
                 <strong>{order.vendors.length}</strong>
@@ -232,34 +220,35 @@ const OrderSubmittedView: React.FC<Props> = ({
                     <span className={`order-vendor-status order-vendor-status--${vendor.status}`}>
                       {vendor.status}
                     </span>
-                    {onVendorStatusChange && !["completed", "cancelled", "failed"].includes(vendor.status) && (
-                      <div className="order-vendor-actions">
-                        <button
-                          type="button"
-                          className="order-vendor-action order-vendor-action--accept"
-                          onClick={() => onVendorStatusChange(order.id, "accepted")}
-                          title="Accept your part"
-                        >
-                          <PackageCheck size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="order-vendor-action order-vendor-action--reject"
-                          onClick={() => onVendorStatusChange(order.id, "rejected")}
-                          title="Reject your part"
-                        >
-                          <XCircle size={14} />
-                        </button>
-                      </div>
-                    )}
+                    {onVendorStatusChange &&
+                      !["completed", "cancelled", "failed"].includes(vendor.status) && (
+                        <div className="order-vendor-actions">
+                          <button
+                            type="button"
+                            className="order-vendor-action order-vendor-action--accept"
+                            onClick={() => onVendorStatusChange(order.id, "accepted")}
+                            title="Accept your part"
+                          >
+                            <PackageCheck size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="order-vendor-action order-vendor-action--reject"
+                            onClick={() => onVendorStatusChange(order.id, "rejected")}
+                            title="Reject your part"
+                          >
+                            <XCircle size={14} />
+                          </button>
+                        </div>
+                      )}
                   </div>
                 );
               })}
-            </div>
+            </ContentFlatCard>
           )}
-        </div>
+        </aside>
       </div>
-    </div>
+    </StorePageShell>
   );
 };
 
@@ -328,8 +317,8 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
               }}
               onClick={() => setOpen(false)}
             />
-            <div
-              className="glass-menu-wrap"
+            <ContentStandOutCard
+              className="order-location-map"
               style={{
                 position: "fixed",
                 left: "50%",
@@ -367,7 +356,7 @@ const DeliveryLocationCell: React.FC<{ loc?: string | null }> = ({ loc }) => {
                   <Marker position={coords} />
                 </MapContainer>
               </div>
-            </div>
+            </ContentStandOutCard>
           </>,
           document.body
         )}

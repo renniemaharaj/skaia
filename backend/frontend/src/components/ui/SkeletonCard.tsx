@@ -1,4 +1,5 @@
 import "./SkeletonCard.css";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 type SkeletonVariant = "default" | "forumCategory";
 
@@ -14,7 +15,7 @@ export const SkeletonCard: React.FC<{
     <>
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="skeleton-card-wrapper">
-          <div
+          <ContentFlatCard
             className={`skeleton skeleton-card ${
               variant === "forumCategory" ? "skeleton-card-forum" : ""
             }`}
@@ -73,7 +74,7 @@ export const SkeletonCard: React.FC<{
                 />
               </>
             )}
-          </div>
+          </ContentFlatCard>
         </div>
       ))}
     </>

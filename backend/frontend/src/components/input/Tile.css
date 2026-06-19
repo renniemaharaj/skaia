@@ -9,11 +9,12 @@
 .sk-tile {
   display: flex;
   flex-direction: column;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--card-radius);
-  padding: var(--card-padding);
-  box-shadow: var(--card-shadow);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--card-border);
+  border-radius: 0;
+  padding: 0.625rem;
+  box-shadow: none;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s
     cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -25,15 +26,15 @@
 }
 
 .sk-tile--interactive:hover:not(.sk-tile--disabled) {
-  background: var(--card-hover-bg);
-  border-color: var(--primary-color);
-  box-shadow: var(--card-shadow-hover);
-  transform: translateY(-1px);
+  background: transparent;
+  border-color: var(--card-border);
+  box-shadow: none;
+  transform: none;
 }
 
 .sk-tile--interactive:active:not(.sk-tile--disabled) {
   transform: translateY(0);
-  box-shadow: var(--card-shadow);
+  box-shadow: none;
 }
 
 .sk-tile--interactive:focus-visible {
@@ -59,8 +60,8 @@
 
 /* Compact ----------------------------------------------------------------- */
 .sk-tile--compact {
-  padding: calc(var(--card-padding) * 0.6);
-  border-radius: var(--radius-lg);
+  padding: 0.4rem 0.5rem;
+  border-radius: 0;
 }
 
 /* Disabled ---------------------------------------------------------------- */

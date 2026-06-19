@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import "./StorePageShell.css";
 
 interface StorePageShellProps {
-  children: ReactNode;
+  children?: ReactNode;
   title?: ReactNode;
   subtitle?: ReactNode;
   backTo?: string;

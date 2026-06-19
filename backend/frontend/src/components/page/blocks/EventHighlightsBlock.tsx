@@ -1,4 +1,5 @@
 import type { PageItem, PageSection } from "../types";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import "./EventHighlightsBlock.css";
 import {
   AddItemButton,
@@ -98,7 +99,7 @@ export const EventHighlightsBlock = ({
 
       <div className="event-highlights-grid">
         {items.map(item => (
-          <div key={item.id} className="event-highlight-card">
+          <ContentFlatCard key={item.id} className="event-highlight-card">
             <div className="event-highlight-image">
               {canEdit && (
                 <>
@@ -132,7 +133,7 @@ export const EventHighlightsBlock = ({
                 </>
               )}
             </div>
-          </div>
+          </ContentFlatCard>
         ))}
         {canEdit && (
           <AddItemButton

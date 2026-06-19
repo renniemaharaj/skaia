@@ -8,6 +8,7 @@ import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import "./ComponentRenderer.css";
 
 /*  helpers  */
@@ -179,7 +180,11 @@ function CompoundCard({
   onEvent?: (e: string, d: unknown) => void;
 }) {
   return (
-    <div className="cr-card" style={styles.root} onClick={() => onEvent?.("onClick", data)}>
+    <ContentFlatCard
+      className="cr-card"
+      style={styles.root}
+      onClick={() => onEvent?.("onClick", data)}
+    >
       {!!data.media && (
         <div className="cr-card__image" style={styles.image}>
           <img src={str(data.media)} alt={str(data.title)} />
@@ -201,7 +206,7 @@ function CompoundCard({
           </a>
         </div>
       )}
-    </div>
+    </ContentFlatCard>
   );
 }
 
@@ -236,7 +241,11 @@ function CompoundMediaCard({
 }) {
   const src = str(data.media);
   return (
-    <div className="cr-media-card" style={styles.root} onClick={() => onEvent?.("onClick", data)}>
+    <ContentFlatCard
+      className="cr-media-card"
+      style={styles.root}
+      onClick={() => onEvent?.("onClick", data)}
+    >
       <div className="cr-media-card__media" style={styles.media}>
         {src ? (
           <img src={src} alt={str(data.title)} />
@@ -255,7 +264,7 @@ function CompoundMediaCard({
           )}
         </div>
       )}
-    </div>
+    </ContentFlatCard>
   );
 }
 

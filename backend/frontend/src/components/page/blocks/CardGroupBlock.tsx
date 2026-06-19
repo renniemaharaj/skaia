@@ -1,4 +1,5 @@
 import type { PageItem, PageSection } from "../types";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import "./CardGroupBlock.css";
 import {
   AddItemButton,
@@ -95,7 +96,7 @@ export const CardGroupBlock = ({
       </div>
       <div className="community-info">
         {items.map(item => (
-          <div key={item.id} className="info-card">
+          <ContentFlatCard key={item.id} className="info-card">
             {canEdit && <DeleteItemButton onClick={() => onItemDelete(item.id)} />}
             {canEdit ? (
               <>
@@ -116,7 +117,7 @@ export const CardGroupBlock = ({
                 <p>{item.subheading}</p>
               </>
             )}
-          </div>
+          </ContentFlatCard>
         ))}
         {canEdit && (
           <AddItemButton

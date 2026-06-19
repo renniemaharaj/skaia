@@ -152,7 +152,7 @@ export default function DataSourcesPage() {
         ) : null
       }
       renderGridCard={ds => (
-        <Link key={ds.id} to={`/datasources/${ds.id}`} className="ds-card card card--interactive">
+        <Link key={ds.id} to={`/datasources/${ds.id}`} className="ds-card">
           <div className="ds-card__header">
             <div className="ds-card__title-row">
               <Zap size={16} className="ds-card__type-icon" />

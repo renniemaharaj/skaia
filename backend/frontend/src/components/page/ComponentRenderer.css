@@ -149,16 +149,17 @@
 .cr-card {
   display: flex;
   flex-direction: column;
-  border-radius: var(--card-radius, 16px);
-  background: var(--card-bg, var(--bg-secondary));
-  border: 1px solid var(--card-border, var(--border-color));
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--card-border, var(--border-color));
   overflow: hidden;
   transition: box-shadow 0.25s ease, transform 0.2s ease;
   cursor: pointer;
 }
 .cr-card:hover {
-  box-shadow: var(--card-shadow-hover, var(--shadow-hover));
-  transform: translateY(-2px);
+  box-shadow: none;
+  transform: none;
 }
 .cr-card__image img {
   display: block;
@@ -244,16 +245,17 @@
 /*  Compound: Media Card  */
 
 .cr-media-card {
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
   transition: box-shadow 0.25s ease, transform 0.2s ease;
   cursor: pointer;
 }
 .cr-media-card:hover {
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-2px);
+  box-shadow: none;
+  transform: none;
 }
 .cr-media-card__media img {
   display: block;

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import "./ImageCardGrid.css";
 
 export type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
@@ -17,7 +18,7 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
     {items.map((item, index) => {
       const width = item.width ?? "regular";
       return (
-        <div key={index} className={`image-card-item image-card-item--${width}`}>
+        <ContentFlatCard key={index} className={`image-card-item image-card-item--${width}`}>
           <div className="image-card-image">
             {item.image_url ? (
               <img src={item.image_url} alt={item.heading ?? ""} loading="lazy" />
@@ -39,7 +40,7 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
             {item.subheading && <p className="image-card-subheading">{item.subheading}</p>}
             {item.link_url && <span className="image-card-link">{item.link_url}</span>}
           </div>
-        </div>
+        </ContentFlatCard>
       );
     })}
   </div>

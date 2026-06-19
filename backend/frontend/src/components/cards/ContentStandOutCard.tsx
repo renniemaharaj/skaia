@@ -1,23 +1,17 @@
 import type { CSSProperties } from "react";
-import {
-  ContentFlatCard,
-  type ContentFlatCardProps,
-} from "./ContentFlatCard";
+import { ContentFlatCard, type ContentFlatCardProps } from "./ContentFlatCard";
 
 const standOutStyle: CSSProperties = {
-  background:
-    "color-mix(in srgb, var(--bg-secondary) 86%, transparent)",
+  background: "color-mix(in srgb, var(--bg-secondary) 86%, transparent)",
   border: "1px solid color-mix(in srgb, var(--border-color) 82%, transparent)",
   borderRadius: "var(--radius-lg)",
-  boxShadow:
-    "0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent)",
+  boxShadow: "0 10px 32px color-mix(in srgb, var(--text-primary) 8%, transparent)",
   backdropFilter: "blur(18px)",
   WebkitBackdropFilter: "blur(18px)",
 };
 
 const groupStandOutStyle: CSSProperties = {
-  background:
-    "color-mix(in srgb, var(--bg-secondary) 70%, transparent)",
+  background: "color-mix(in srgb, var(--bg-secondary) 70%, transparent)",
   border: "1px solid color-mix(in srgb, var(--border-color) 72%, transparent)",
   borderRadius: "var(--radius-md)",
   boxShadow: "none",

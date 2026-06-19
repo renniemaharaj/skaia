@@ -506,7 +506,6 @@ export default function CustomPages() {
 				renderGridCard={(page) => (
 					<ContentFlatCard
             key={page.id}
-            className="card card--interactive"
             style={{ display: "flex", padding: 0, margin: 0 }}
             spotlightColor="rgba(var(--primary-color-rgb), 0.15)"
           >

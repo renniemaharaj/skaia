@@ -1,3 +1,5 @@
+import { ContentFlatCard } from "../cards/ContentFlatCard";
+
 /**  Skeleton placeholder shown while page data is loading. */
 export const PageSkeleton = () => (
   <>
@@ -19,7 +21,7 @@ export const PageSkeleton = () => (
       />
       <div className="skeleton-pb-cards">
         {[1, 2, 3].map(i => (
-          <div key={i} className="skeleton-pb-card">
+          <ContentFlatCard key={i} className="skeleton-pb-card">
             <div className="skeleton skeleton-bar" style={{ width: "60%", height: 18 }} />
             <div
               className="skeleton skeleton-bar"
@@ -29,7 +31,7 @@ export const PageSkeleton = () => (
               className="skeleton skeleton-bar"
               style={{ width: "80%", height: 12, marginTop: 4 }}
             />
-          </div>
+          </ContentFlatCard>
         ))}
       </div>
     </div>
@@ -38,7 +40,7 @@ export const PageSkeleton = () => (
     <div className="skeleton-pb-section">
       <div className="skeleton-pb-cards">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="skeleton-pb-stat">
+          <ContentFlatCard key={i} className="skeleton-pb-stat">
             <div className="skeleton skeleton-circle" />
             <div style={{ flex: 1 }}>
               <div className="skeleton skeleton-bar" style={{ width: "50%", height: 14 }} />
@@ -47,7 +49,7 @@ export const PageSkeleton = () => (
                 style={{ width: "70%", height: 12, marginTop: 6 }}
               />
             </div>
-          </div>
+          </ContentFlatCard>
         ))}
       </div>
     </div>
@@ -73,7 +75,7 @@ export const PageSkeleton = () => (
       />
       <div className="skeleton-pb-features">
         {[1, 2, 3, 4, 5, 6].map(i => (
-          <div key={i} className="skeleton-pb-feature">
+          <ContentFlatCard key={i} className="skeleton-pb-feature">
             <div className="skeleton skeleton-circle-sm" />
             <div
               className="skeleton skeleton-bar"
@@ -83,7 +85,7 @@ export const PageSkeleton = () => (
               className="skeleton skeleton-bar"
               style={{ width: "80%", height: 10, marginTop: 4 }}
             />
-          </div>
+          </ContentFlatCard>
         ))}
       </div>
     </div>

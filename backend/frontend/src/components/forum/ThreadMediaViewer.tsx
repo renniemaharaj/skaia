@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai";
 import { ImageIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { currentThreadAtom } from "../../atoms/forum";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import "../user/UserProfile.css";
 import "./ThreadMediaViewer.css";
 import UserUploads from "../user/UserUploads";
@@ -117,8 +118,8 @@ const ThreadMediaViewer = () => {
   );
 
   return (
-    <div
-      className="card up-uploads-section tmv-container"
+    <ContentFlatCard
+      className="up-uploads-section tmv-container"
       style={{ marginBottom: "1.5rem", padding: 0, border: "none" }}
     >
       <UserUploads
@@ -129,7 +130,7 @@ const ThreadMediaViewer = () => {
         title={title}
         emptyMessage={emptyMessage}
       />
-    </div>
+    </ContentFlatCard>
   );
 };
 

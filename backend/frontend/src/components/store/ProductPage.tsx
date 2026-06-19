@@ -335,7 +335,7 @@ export const ProductPage = () => {
               <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
               <div style={{ marginTop: 12 }}>
                 {RELATED_SKELETON_KEYS.map(key => (
-                  <div
+                  <ContentFlatCard
                     key={key}
                     className="skeleton-card"
                     style={{ padding: 12, marginBottom: 12 }}
@@ -353,7 +353,7 @@ export const ProductPage = () => {
                         />
                       </div>
                     </div>
-                  </div>
+                  </ContentFlatCard>
                 ))}
               </div>
             </div>

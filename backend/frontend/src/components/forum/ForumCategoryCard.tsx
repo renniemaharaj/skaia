@@ -3,6 +3,7 @@ import type { KeyboardEvent } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import type { User } from "../../atoms/auth";
 import type { ForumCategory } from "../../atoms/forum";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { CategoryThreadsPreview } from "./CategoryThreadsPreview";
 import { ForumPinnedIcon } from "./ForumPinnedIcon";
 
@@ -45,10 +46,10 @@ export function ForumCategoryCard({
   };
 
   return (
-    <div
+    <ContentFlatCard
       role={loading ? undefined : "button"}
       tabIndex={loading ? undefined : 0}
-      className="card card--interactive forum-category-card"
+      className="forum-category-card"
       onClick={loading ? undefined : navigateToCategory}
       onKeyDown={loading ? undefined : handleKeyNavigate}
       style={loading ? { cursor: "default" } : undefined}
@@ -174,6 +175,6 @@ export function ForumCategoryCard({
       ) : (
         <div className="empty-threads">No threads yet</div>
       )}
-    </div>
+    </ContentFlatCard>
   );
 }

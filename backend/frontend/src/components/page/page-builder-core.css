@@ -530,22 +530,19 @@
 }
 
 .skeleton-pb-section {
-  padding: 3rem 2rem;
+  padding: 1rem var(--app-inline-padding);
   text-align: center;
 }
 
 .skeleton-pb-cards {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--app-section-gap);
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 1.5rem;
+  margin-top: var(--app-section-gap);
 }
 
 .skeleton-pb-card {
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: var(--skeleton-color);
   width: 280px;
 }
 
@@ -553,9 +550,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  background: var(--skeleton-color);
   width: 220px;
 }
 
@@ -597,9 +591,6 @@
 }
 
 .skeleton-pb-feature {
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: var(--skeleton-color);
   text-align: center;
 }
 

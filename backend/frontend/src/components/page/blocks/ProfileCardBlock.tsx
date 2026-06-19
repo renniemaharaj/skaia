@@ -1,4 +1,5 @@
 import { Check, ExternalLink, Plus, Trash2 } from "lucide-react";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { useEffect, useRef } from "react";
 import type { PageItem, PageSection } from "../types";
 import "./ProfileCardBlock.css";
@@ -164,7 +165,7 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
 
       <div className="profile-card-layout">
         {/* Profile card */}
-        <div className="profile-card">
+        <ContentFlatCard className="profile-card">
           {/* Banner */}
           <div className="profile-card-banner">
             <img src={bannerUrl} alt="Banner" />
@@ -264,7 +265,7 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
               </div>
             )}
           </div>
-        </div>
+        </ContentFlatCard>
 
         {/* Checklist / highlights side */}
         <div className="profile-card-highlights">

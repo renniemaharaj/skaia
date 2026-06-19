@@ -97,7 +97,7 @@
 .ds-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  gap: var(--app-section-gap);
 }
 
 .ds-card {
@@ -109,6 +109,8 @@
   position: relative;
   height: 240px;
   overflow: hidden;
+  padding: var(--content-flat-card-padding, var(--card-padding));
+  border-bottom: 1px solid var(--card-border);
 }
 
 .ds-card__header {

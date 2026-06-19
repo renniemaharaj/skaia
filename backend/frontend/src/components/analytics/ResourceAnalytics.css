@@ -9,22 +9,18 @@
 }
 
 .ra-panel {
-  background: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
   width: 720px;
   max-width: 94vw;
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-hover);
 }
 
 .ra-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  padding: 0.625rem;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }

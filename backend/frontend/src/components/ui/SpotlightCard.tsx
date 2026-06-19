@@ -2,11 +2,9 @@ import type React from "react";
 import { useRef } from "react";
 import "./SpotlightCard.css";
 
-interface SpotlightCardProps extends React.PropsWithChildren {
+interface SpotlightCardProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
   spotlightColor?: string;
-  style?: React.CSSProperties;
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const SpotlightCard: React.FC<SpotlightCardProps> = ({
@@ -14,11 +12,13 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
   className = "",
   spotlightColor = "var(--primary-color, rgba(255, 255, 255, 0.25))",
   style = {},
-  onClick,
+  onMouseMove,
+  ...props
 }) => {
   const divRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove: React.MouseEventHandler<HTMLDivElement> = e => {
+    onMouseMove?.(e);
     if (!divRef.current) return;
 
     const rect = divRef.current.getBoundingClientRect();
@@ -36,7 +36,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
       onMouseMove={handleMouseMove}
       className={`card-spotlight ${className}`}
       style={style}
-      onClick={onClick}
+      {...props}
     >
       {children}
     </div>

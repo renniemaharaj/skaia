@@ -1,7 +1,7 @@
 import type React from "react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation, useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { isAuthenticatedAtom } from "../../atoms/auth";
 import { currentOrderAtom, ordersAtom } from "../../atoms/store";
@@ -9,6 +9,7 @@ import type { Order } from "../../atoms/store";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
+import { StorePageShell } from "./StorePageShell";
 
 type OrderResponse = Order | { order: Order };
 
@@ -72,12 +73,16 @@ const OrderViewPage: React.FC = () => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (loading) return <div style={{ padding: "2rem" }}>Loading...</div>;
+  if (loading) {
+    return (
+      <StorePageShell backTo="/store/orders" backLabel="Back to orders" title="Order">
+        <div className="store-page-shell__empty">Loading order…</div>
+      </StorePageShell>
+    );
+  }
   if (!order || String(order.id) !== String(id))
     return (
-      <div style={{ padding: "2rem" }}>
-        Order not found. <Link to="/store/orders">Back to orders</Link>
-      </div>
+      <StorePageShell backTo="/store/orders" backLabel="Back to orders" title="Order not found" />
     );
 
   return (

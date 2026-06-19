@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { apiRequest } from "../../utils/api";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import Select from "../input/Select";
 import CountUp from "../ui/CountUp/CountUp";
 import UserAvatar from "../user/UserAvatar";
@@ -260,7 +261,7 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
 
   return (
     <div className="ra-overlay" onClick={onClose}>
-      <div className="ra-panel" onClick={e => e.stopPropagation()}>
+      <ContentStandOutCard className="ra-panel" onClick={e => e.stopPropagation()}>
         {/* header */}
         <div className="ra-header">
           <h3>
@@ -514,7 +515,7 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
             </>
           )}
         </div>
-      </div>
+      </ContentStandOutCard>
     </div>
   );
 }

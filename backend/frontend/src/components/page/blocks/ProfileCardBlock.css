@@ -17,10 +17,11 @@
 }
 
 .profile-card {
-  border-radius: 16px;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
 }
 
 .profile-card-banner {
