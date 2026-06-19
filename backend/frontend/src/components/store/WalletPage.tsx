@@ -19,6 +19,7 @@ import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import { useUserData } from "../user/useUserData";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { StorePageShell } from "./StorePageShell";
@@ -311,7 +312,7 @@ export const WalletPage = () => {
 					style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}
 				>
           {/* Balance Tile */}
-					<ContentFlatCard
+					<ContentStandOutCard
 						className="card--store"
 						style={{ textAlign: "center" }}
 					>
@@ -348,7 +349,7 @@ export const WalletPage = () => {
 								Funds
               </button>
             </div>
-					</ContentFlatCard>
+					</ContentStandOutCard>
 
           {/* User Cards Tile */}
 					<ContentFlatCard>

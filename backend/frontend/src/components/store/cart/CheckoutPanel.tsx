@@ -2,6 +2,7 @@ import { Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCents } from "../../../utils/money";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
 import Select, { type SelectOption } from "../../input/Select";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
@@ -94,7 +95,7 @@ export function CheckoutPanel({
         <h3>Checkout</h3>
 
         {!isAuthenticated && (
-          <div className="cart-summary-section">
+          <ContentStandOutCard className="cart-summary-section" emphasis="group">
             <h4>Guest Information</h4>
             <label className="cart-field cart-field--compact">
               <span className="cart-field-label">Email address</span>
@@ -112,7 +113,7 @@ export function CheckoutPanel({
 							<Link to="/login">Sign in</Link> to save your details and earn
 							rewards.
             </p>
-          </div>
+          </ContentStandOutCard>
         )}
 
         <DeliveryLocationPicker
@@ -144,7 +145,10 @@ export function CheckoutPanel({
       )}
 
 			<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
-        <div className="cart-summary-section cart-summary-section--last">
+        <ContentStandOutCard
+          className="cart-summary-section cart-summary-section--last"
+          emphasis="group"
+        >
           <h4>Payment</h4>
           <div className="cart-field">
             <Select
@@ -156,7 +160,7 @@ export function CheckoutPanel({
               block
             />
           </div>
-        </div>
+        </ContentStandOutCard>
 
         <hr className="cart-divider" />
 

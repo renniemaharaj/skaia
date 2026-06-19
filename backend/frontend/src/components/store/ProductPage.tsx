@@ -31,6 +31,7 @@ import { apiRequest } from "../../utils/api";
 import "./ProductPage.css";
 import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { ProductMediaTable } from "./ProductMediaTable";
 import { StorePageShell } from "./StorePageShell";
@@ -400,7 +401,7 @@ export const ProductPage = () => {
     <StorePageShell className="product-page-container" backTo="/store">
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
-        <ContentFlatCard className="product-page-hero">
+        <ContentStandOutCard className="product-page-hero">
           <div className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}>
             {activeMedia ? (
               <button
@@ -537,7 +538,7 @@ export const ProductPage = () => {
               </button>
             </div>
           </div>
-        </ContentFlatCard>
+        </ContentStandOutCard>
 
         <ContentFlatCard className="product-page-media-section">
           <div className="product-page-section-label">Product Media</div>

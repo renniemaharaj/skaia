@@ -4,6 +4,7 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { MapPin, Phone } from "lucide-react";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
 
 const DefaultIcon = L.icon({
   iconUrl: icon,
@@ -61,7 +62,7 @@ export function DeliveryLocationPicker({
   onReferralCodeChange,
 }: DeliveryLocationPickerProps) {
   return (
-    <div className="cart-summary-section">
+    <ContentStandOutCard className="cart-summary-section" emphasis="group">
       <h4>Order Contact</h4>
       <label className="cart-field cart-field--compact">
         <span className="cart-field-label">Contact phone</span>
@@ -161,6 +162,6 @@ export function DeliveryLocationPicker({
           />
         </div>
       </label>
-    </div>
+    </ContentStandOutCard>
   );
 }

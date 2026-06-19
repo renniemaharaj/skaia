@@ -31,6 +31,7 @@ import {
 } from "../../hooks/useWebSocketSync";
 import Select from "../input/Select";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 
 // Types
 
@@ -1096,7 +1097,7 @@ export default function GrengoDashboard() {
       </div>
 
       {/* Console */}
-      <ContentFlatCard
+      <ContentStandOutCard
 				className="grengo-console grengo-flat-card"
         style={{
           position: "fixed",
@@ -1226,7 +1227,7 @@ export default function GrengoDashboard() {
           .input { font-size: 0.9rem; transform: scale(0); animation: scale1 300ms cubic-bezier(.47, 1.64, .41, .8) forwards; }
           @keyframes scale1 { 100% { transform: scale(1); } }
         `}</style>
-      </ContentFlatCard>
+      </ContentStandOutCard>
     </div>
   );
 }

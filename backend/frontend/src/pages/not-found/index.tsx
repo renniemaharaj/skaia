@@ -1,11 +1,12 @@
 import { AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ContentStandOutCard } from "../../components/cards/ContentStandOutCard";
 import "../../styles/NotFound.css";
 
 export const NotFoundPage = () => {
   return (
     <div className="not-found-container">
-      <div className="not-found-content">
+      <ContentStandOutCard className="not-found-content">
         <div className="not-found-icon">
           <AlertCircle size={80} />
         </div>
@@ -18,7 +19,7 @@ export const NotFoundPage = () => {
         <Link to="/" className="btn btn-primary btn-lg">
           Return to Home
         </Link>
-      </div>
+      </ContentStandOutCard>
     </div>
   );
 };

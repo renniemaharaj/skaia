@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
 import type { ProfileUser, Role } from "./types";
@@ -105,7 +105,7 @@ const UserProfileCard = ({
       </div>
 
       {/* Profile card */}
-			<ContentFlatCard
+			<ContentStandOutCard
         className="up-card"
 				spotlightColor={
 					glowColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
@@ -250,7 +250,7 @@ const UserProfileCard = ({
 						Member since {formatDate(user.created_at)}
 					</span>
         </div>
-			</ContentFlatCard>
+			</ContentStandOutCard>
     </>
   );
 };

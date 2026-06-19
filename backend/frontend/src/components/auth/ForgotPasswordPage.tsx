@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { hasPermissionAtom } from "../../atoms/auth";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import {
   acceptRecoveryRequest,
   forgotPassword,
@@ -286,7 +287,7 @@ export default function ForgotPasswordPage() {
 								onSubmit={handleSubmit}
 								className="auth-form compact-form-card"
 							>
-                <div className="form-group">
+                <ContentStandOutCard className="form-group" emphasis="group">
                   <label htmlFor="email">Account email</label>
 									<p className="form-help">
 										Use the email associated with the account.
@@ -303,7 +304,7 @@ export default function ForgotPasswordPage() {
                       disabled={loading}
                     />
                   </div>
-                </div>
+                </ContentStandOutCard>
 
                 <div className="form-actions">
                   <Button

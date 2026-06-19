@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../../utils/api";
 import Button from "../input/Button";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import "./Auth.css";
 import "../ui/FormGroup.css";
@@ -50,7 +51,7 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-container">
-					<ContentFlatCard
+					<ContentStandOutCard
 						className="auth-card"
 						style={{ textAlign: "center" }}
 					>
@@ -78,7 +79,7 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </div>
-					</ContentFlatCard>
+					</ContentStandOutCard>
         </div>
       </div>
     );
@@ -105,7 +106,7 @@ export default function ResetPasswordPage() {
 							onSubmit={handleSubmit}
 							className="auth-form compact-form-card"
 						>
-              <div className="form-group">
+              <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="password">New Password</label>
 								<p className="form-help">
 									Choose a unique password you do not use elsewhere.
@@ -122,9 +123,9 @@ export default function ResetPasswordPage() {
                     disabled={loading}
                   />
                 </div>
-              </div>
+              </ContentStandOutCard>
 
-              <div className="form-group">
+              <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="confirm">Confirm Password</label>
                 <p className="form-help">Enter the new password again.</p>
                 <div className="input-wrapper">
@@ -139,7 +140,7 @@ export default function ResetPasswordPage() {
                     disabled={loading}
                   />
                 </div>
-              </div>
+              </ContentStandOutCard>
 
               <div className="form-actions">
                 <Button

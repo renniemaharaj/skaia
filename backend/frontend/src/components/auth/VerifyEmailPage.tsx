@@ -2,7 +2,7 @@ import { AlertCircle, CheckCircle, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { verifyEmail } from "../../utils/api";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import "./Auth.css";
 
 export default function VerifyEmailPage() {
@@ -34,7 +34,7 @@ export default function VerifyEmailPage() {
   return (
     <div className="auth-page">
       <div className="auth-container">
-				<ContentFlatCard className="auth-card" style={{ textAlign: "center" }}>
+				<ContentStandOutCard className="auth-card" style={{ textAlign: "center" }}>
           <div className="section__content">
             {status === "loading" && (
               <>
@@ -99,7 +99,7 @@ export default function VerifyEmailPage() {
               </>
             )}
           </div>
-				</ContentFlatCard>
+				</ContentStandOutCard>
       </div>
     </div>
   );

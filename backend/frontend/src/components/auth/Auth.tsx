@@ -12,6 +12,7 @@ import "../ui/FormGroup.css";
 import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
 import Button from "../input/Button";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 
 interface AuthPageProps {
@@ -183,7 +184,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 							className="auth-form compact-form-card"
 						>
               {!isLogin && (
-                <div className="form-group">
+                <ContentStandOutCard className="form-group" emphasis="group">
                   <label htmlFor="username">Username</label>
 									<p className="form-help">
 										This is how other members will identify you.
@@ -201,10 +202,10 @@ export const Auth: React.FC<AuthPageProps> = ({
                       disabled={loading}
                     />
                   </div>
-                </div>
+                </ContentStandOutCard>
               )}
 
-              <div className="form-group">
+              <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="email">Account email</label>
                 <div className="input-wrapper">
                   <Mail size={20} className="input-icon" />
@@ -219,9 +220,9 @@ export const Auth: React.FC<AuthPageProps> = ({
                     disabled={loading}
                   />
                 </div>
-              </div>
+              </ContentStandOutCard>
 
-              <div className="form-group">
+              <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="password">Password</label>
                 {!isLogin && (
 									<p className="form-help">
@@ -241,10 +242,10 @@ export const Auth: React.FC<AuthPageProps> = ({
                     disabled={loading}
                   />
                 </div>
-              </div>
+              </ContentStandOutCard>
 
               {!isLogin && (
-                <div className="form-group">
+                <ContentStandOutCard className="form-group" emphasis="group">
                   <label htmlFor="passwordConfirm">Confirm Password</label>
                   <p className="form-help">Enter the same password again.</p>
                   <div className="input-wrapper">
@@ -260,7 +261,7 @@ export const Auth: React.FC<AuthPageProps> = ({
                       disabled={loading}
                     />
                   </div>
-                </div>
+                </ContentStandOutCard>
               )}
 
               {isLogin && (

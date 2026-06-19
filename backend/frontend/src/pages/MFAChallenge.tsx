@@ -2,6 +2,7 @@ import { AlertCircle, ShieldCheck, Fingerprint } from "lucide-react";
 import { useState } from "react";
 
 import Button from "../components/input/Button";
+import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
 import { ContentFlatCard } from "../components/cards/ContentFlatCard";
 import {
   type AuthResponse,
@@ -143,7 +144,7 @@ const MFAChallenge = ({
 							onSubmit={handleSubmit}
 							className="auth-form compact-form-card"
 						>
-              <div className="form-group">
+              <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="totp_code">
                   {useBackupCode ? "Backup Code" : "Verification Code"}
                 </label>
@@ -162,7 +163,7 @@ const MFAChallenge = ({
                     disabled={loading}
                   />
                 </div>
-              </div>
+              </ContentStandOutCard>
 
               <div className="form-actions">
                 <Button

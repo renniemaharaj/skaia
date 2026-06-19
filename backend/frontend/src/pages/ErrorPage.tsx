@@ -1,6 +1,7 @@
 import { AlertCircle, ArrowLeft, Home } from "lucide-react";
 import type React from "react";
 import { useNavigate } from "react-router-dom";
+import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
 import "./ErrorPage.css";
 
 interface ErrorPageProps {
@@ -31,7 +32,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
 
   return (
     <div className="error-page">
-      <div className="error-page-content">
+      <ContentStandOutCard className="error-page-content">
         <div className="error-icon">
           <AlertCircle size={64} />
         </div>
@@ -58,7 +59,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </ContentStandOutCard>
     </div>
   );
 };

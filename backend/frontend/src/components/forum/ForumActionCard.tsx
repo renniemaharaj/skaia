@@ -1,7 +1,7 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 
 interface ForumActionCardProps {
   canCreateCategory: boolean;
@@ -17,7 +17,7 @@ export function ForumActionCard({
 	>(null);
 
   return (
-		<ContentFlatCard className="new-thread-card feature-card">
+		<ContentStandOutCard className="new-thread-card feature-card">
       <div className="new-thread-content">
         <div style={{ display: "flex", gap: "12px", width: "100%" }}>
           <button
@@ -107,6 +107,6 @@ export function ForumActionCard({
           )}
         </div>
       </div>
-		</ContentFlatCard>
+		</ContentStandOutCard>
   );
 }

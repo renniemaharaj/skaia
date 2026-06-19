@@ -13,7 +13,10 @@ export function BillingInfoCard({
 }: BillingInfoCardProps) {
   return (
 		<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-billing-card">
-      <div className="cart-summary-section cart-summary-section--last">
+      <ContentStandOutCard
+        className="cart-summary-section cart-summary-section--last"
+        emphasis="group"
+      >
         <h4>Billing</h4>
         <label className="cart-checkbox-label">
           <input
@@ -34,8 +37,9 @@ export function BillingInfoCard({
             />
           </label>
         )}
-      </div>
+      </ContentStandOutCard>
 		</ContentFlatCard>
   );
 }
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../../cards/ContentStandOutCard";

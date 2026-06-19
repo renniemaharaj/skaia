@@ -1,7 +1,7 @@
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import SpotlightCard from "../ui/SpotlightCard";
 
-interface ContentFlatCardProps {
+export interface ContentFlatCardProps {
   children: ReactNode;
   className?: string;
   spotlightColor?: string;

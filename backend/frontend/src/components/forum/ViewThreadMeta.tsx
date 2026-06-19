@@ -10,7 +10,7 @@ import { truncate } from "lodash";
 import { useEffect, useState } from "react";
 import { currentThreadAtom } from "../../atoms/forum";
 import { apiRequest } from "../../utils/api";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import RoleBadge from "../user/RoleBadge";
 import UserAvatar from "../user/UserAvatar";
 // import { formatDate } from "../../utils/serverTime";
@@ -104,7 +104,7 @@ const ViewThreadMeta = ({
 
   const cardStyle: React.CSSProperties = {};
   return (
-		<ContentFlatCard className="vtm-panel" style={cardStyle}>
+		<ContentStandOutCard className="vtm-panel" style={cardStyle}>
       <div className="vtm-header">
         <UserProfileOverlay
           userId={currentThread?.user_id || ""}
@@ -201,7 +201,7 @@ const ViewThreadMeta = ({
           );
         })}
       </div>
-		</ContentFlatCard>
+		</ContentStandOutCard>
   );
 };
 

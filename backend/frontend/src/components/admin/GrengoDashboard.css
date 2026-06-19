@@ -35,11 +35,6 @@
 	height: 13px;
 }
 
-.grengo-console {
-	backdrop-filter: blur(18px);
-	-webkit-backdrop-filter: blur(18px);
-}
-
 .grengo-dashboard h1 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;

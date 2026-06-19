@@ -15,6 +15,7 @@ import Button from "../input/Button";
 import Checkbox from "../input/Checkbox";
 import { SideRouteShell } from "../layout/SideRouteShell";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];
@@ -392,7 +393,7 @@ export default function RolesManagementPage() {
       {showCreate && (
 				<ContentFlatCard className="rmp-create-card">
           <h3 className="rmp-section-heading">Create Role</h3>
-          <div className="rmp-form-row">
+          <ContentStandOutCard className="rmp-form-row" emphasis="group">
             <div className="rmp-field">
               <label className="rmp-label">Name</label>
               <input
@@ -443,8 +444,8 @@ export default function RolesManagementPage() {
 								onChange={(e) => setCreateStorageBonus(Number(e.target.value))}
               />
             </div>
-          </div>
-          <div className="rmp-field">
+          </ContentStandOutCard>
+          <ContentStandOutCard className="rmp-field" emphasis="group">
             <label className="rmp-label">Description</label>
             <input
               className="rmp-input"
@@ -452,7 +453,7 @@ export default function RolesManagementPage() {
 							onChange={(e) => setCreateDesc(e.target.value)}
               placeholder="Optional description"
             />
-          </div>
+          </ContentStandOutCard>
           <div className="rmp-form-actions">
             <Button variant="action" onClick={() => setShowCreate(false)}>
               Cancel

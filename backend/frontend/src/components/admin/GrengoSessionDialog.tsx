@@ -2,7 +2,7 @@ import { useAtomValue } from "jotai";
 import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { useGrengoShortcut } from "../../hooks/useGrengoShortcut";
 import "./GrengoSessionDialog.css";
@@ -62,13 +62,13 @@ export default function GrengoSessionDialog() {
   if (showMaintenance) {
     return createPortal(
       <div className="grengo-maintenance-overlay">
-				<ContentFlatCard className="grengo-maintenance-card">
+				<ContentStandOutCard className="grengo-maintenance-card">
           <h2>Under Maintenance</h2>
 					<p>
 						This site is currently undergoing maintenance. Please check back
 						shortly.
 					</p>
-				</ContentFlatCard>
+				</ContentStandOutCard>
       </div>,
 			document.body,
     );

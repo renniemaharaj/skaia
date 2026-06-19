@@ -2,6 +2,7 @@ import { useAtomValue } from "jotai";
 import { Home, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { isAuthenticatedAtom } from "../../atoms/auth";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import "../../styles/NotFound.css";
 
 export const Unauthorized: React.FC = () => {
@@ -11,7 +12,7 @@ export const Unauthorized: React.FC = () => {
   return (
     <div className="not-found-page">
       <div className="not-found-container">
-        <div className="not-found-content">
+        <ContentStandOutCard className="not-found-content">
           <div className="not-found-icon">
             <Lock size={80} />
           </div>
@@ -29,7 +30,7 @@ export const Unauthorized: React.FC = () => {
               Go Home
             </button>
           </div>
-        </div>
+        </ContentStandOutCard>
       </div>
     </div>
   );
