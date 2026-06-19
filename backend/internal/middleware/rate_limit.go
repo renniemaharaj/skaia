@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-chi/httprate"
-	"github.com/skaia/backend/internal/auth"
 )
 
 // RateLimitMiddleware applies 100 req/min per IP.
@@ -22,8 +21,8 @@ func RateLimitMiddleware() func(http.Handler) http.Handler {
 	)
 }
 
-func RateLimitByIP(authSvc *auth.Service) func(http.Handler) http.Handler {
-	_ = authSvc
+// RateLimitByIP applies a per-IP rate limit with penalty box.
+func RateLimitByIP() func(http.Handler) http.Handler {
 	limit := envIntDefault("API_RATE_LIMIT_IP", 100)
 	penaltyDuration := time.Duration(envIntDefault("API_RATE_LIMIT_PENALTY_SECONDS", 15)) * time.Second
 	pb := newPenaltyBox()

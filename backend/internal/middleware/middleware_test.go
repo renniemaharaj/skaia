@@ -242,10 +242,10 @@ func TestAuthLimitMiddleware_ExceedsLimit_Returns429(t *testing.T) {
 	assert.True(t, hitLimit, "rate limit must eventually be hit")
 }
 
-func TestRateLimitByIP_Returns429WithoutAuthService(t *testing.T) {
+func TestRateLimitByIP_Returns429(t *testing.T) {
 	t.Setenv("API_RATE_LIMIT_IP", "1")
 	t.Setenv("API_RATE_LIMIT_PENALTY_SECONDS", "1")
-	limiter := mw.RateLimitByIP(nil)
+	limiter := mw.RateLimitByIP()
 	srv := httptest.NewServer(limiter(okHandler()))
 	defer srv.Close()
 

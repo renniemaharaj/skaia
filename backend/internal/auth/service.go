@@ -172,11 +172,7 @@ func (s *Service) GenerateTOTPSecret(ctx context.Context, userID int64) (string,
 
 // GetTOTPSecretByUserID gets user's totp model and returns any errors
 func (s *Service) GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error) {
-	totp, err := s.repo.GetTOTPSecretByUserID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	return totp, err
+	return s.repo.GetTOTPSecretByUserID(ctx, userID)
 }
 
 // GetTOTPEnabled returns the TOTP secret and whether it's enabled for the user.
@@ -657,26 +653,32 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*models.User, e
 	return s.userService.GetByEmail(email)
 }
 
+// TODO: implement token-based password reset flow.
 func (s *Service) CreatePasswordResetToken(ctx context.Context, userID int64) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+// TODO: implement token-based password reset flow.
 func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword string) error {
 	return errors.New("not implemented")
 }
 
+// TODO: implement token-based password reset flow.
 func (s *Service) GetPasswordResetTokenUser(ctx context.Context, token string) (*models.User, error) {
 	return nil, errors.New("not implemented")
 }
 
+// TODO: implement email-verification flow.
 func (s *Service) CreateEmailVerificationToken(ctx context.Context, userID int64) (string, error) {
 	return "", errors.New("not implemented")
 }
 
+// TODO: implement email-verification flow.
 func (s *Service) VerifyEmail(ctx context.Context, token string) error {
 	return errors.New("not implemented")
 }
 
+// TODO: implement email-verification flow.
 func (s *Service) ResendVerificationToken(ctx context.Context, userID int64) (string, error) {
 	return "", errors.New("not implemented")
 }

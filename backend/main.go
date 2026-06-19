@@ -455,8 +455,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			armedDir = "armed"
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
-		globalAuthSvc := auth.NewService(auth.NewSQLRepository(db), userSvc)
-		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(globalAuthSvc), imw.MFARequiredMiddleware(globalAuthSvc))
+		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(authSvc), imw.MFARequiredMiddleware(authSvc))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -520,13 +519,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				utils.WriteError(w, http.StatusForbidden, "priority access unavailable")
 				return
 			}
-			_, enabled, err := globalAuthSvc.GetTOTPEnabled(r.Context(), userID)
+			_, enabled, err := authSvc.GetTOTPEnabled(r.Context(), userID)
 			if err != nil || !enabled {
 				utils.WriteError(w, http.StatusForbidden, "priority access requires MFA")
 				return
 			}
 			totpCode := r.Header.Get("X-TOTP-Code")
-			valid, _ := globalAuthSvc.VerifyTOTP(r.Context(), userID, totpCode)
+			valid, _ := authSvc.VerifyTOTP(r.Context(), userID, totpCode)
 			if !valid {
 				utils.WriteError(w, http.StatusForbidden, "invalid priority access code")
 				return
@@ -562,11 +561,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 					return
 				}
 
-				armedDir := os.Getenv("ARMED_DIR")
-				if armedDir == "" {
-					armedDir = "armed"
-				}
-
 				if err := writeArmedFile(armedDir, "site-admin"); err != nil {
 					http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
 					return
@@ -593,11 +587,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 					return
 				}
 
-				armedDir := os.Getenv("ARMED_DIR")
-				if armedDir == "" {
-					armedDir = "armed"
-				}
-
 				if err := removeArmedFile(armedDir, "site-admin"); err != nil {
 					if os.IsNotExist(err) {
 						w.Header().Set("Content-Type", "application/json")
@@ -621,11 +610,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				return
 			}
 
-			armedDir := os.Getenv("ARMED_DIR")
-			if armedDir == "" {
-				armedDir = "armed"
-			}
-
 			if err := writeArmedFile(armedDir, clientID); err != nil {
 				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusInternalServerError)
 				return
@@ -640,11 +624,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			if err != nil {
 				http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnauthorized)
 				return
-			}
-
-			armedDir := os.Getenv("ARMED_DIR")
-			if armedDir == "" {
-				armedDir = "armed"
 			}
 
 			if err := removeArmedFile(armedDir, clientID); err != nil {

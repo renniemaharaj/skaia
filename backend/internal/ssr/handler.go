@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -20,7 +20,6 @@ import (
 	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/ratelimit"
-	"net"
 )
 
 type CachedMeta struct {
@@ -46,8 +45,8 @@ func ssrClientPrefix() string {
 	return name + ":"
 }
 
-// realIP extracts the true client IP from the request.
-func realIP(r *http.Request) string {
+// ssrRealIP extracts the true client IP from the request for SSR purposes.
+func ssrRealIP(r *http.Request) string {
 	if ip := r.Header.Get("CF-Connecting-IP"); ip != "" {
 		return ip
 	}
@@ -75,7 +74,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		data, err := ioutil.ReadFile(indexPath)
+		data, err := os.ReadFile(indexPath)
 		if err != nil {
 			log.Printf("ssr: failed to read index file %s: %v", indexPath, err)
 			http.Error(w, "not found", http.StatusNotFound)
@@ -83,7 +82,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		path := r.URL.Path
-		ip := realIP(r)
+		ip := ssrRealIP(r)
 		cacheKey := ssrClientPrefix() + "ssr:meta:" + path
 		ctx := r.Context()
 
