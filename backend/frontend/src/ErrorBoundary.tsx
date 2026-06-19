@@ -1,4 +1,5 @@
 import type { ErrorInfo, ReactNode } from "react";
+import { useEffect } from "react";
 import type { FallbackProps } from "react-error-boundary";
 import { ErrorBoundary as ErrorBoundaryLib } from "react-error-boundary";
 import ErrorPage from "./pages/ErrorPage";
@@ -7,12 +8,42 @@ import ErrorPage from "./pages/ErrorPage";
  * Error fallback component that displays error details
  */
 const ErrorFallback = ({ error }: FallbackProps) => {
+  const isNetworkOrChunkError =
+    error?.message?.includes("Failed to fetch dynamically imported module") ||
+    error?.message?.includes("dynamically imported module") ||
+    error?.message?.includes("Importing a module script failed") ||
+    error?.message?.includes("Load failed") ||
+    error?.message?.includes("NetworkError") ||
+    error?.message?.includes("network");
+
+  useEffect(() => {
+    if (isNetworkOrChunkError) {
+      const timer = setTimeout(() => {
+        window.location.reload();
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [isNetworkOrChunkError]);
+
+  if (isNetworkOrChunkError) {
+    return (
+      <ErrorPage
+        errorCode={503}
+        errorTitle="Updating System..."
+        errorMessage="We'll be right back shortly!"
+        details="The application is currently restarting. This page will automatically refresh in 10 seconds."
+        showBackButton={false}
+        showHomeButton={false}
+      />
+    );
+  }
+
   return (
     <ErrorPage
       errorCode={500}
       errorTitle="Application Error"
       errorMessage="Something unexpected happened."
-      details={error.message}
+      details={error?.message}
       showBackButton={false}
       showHomeButton={true}
     />
