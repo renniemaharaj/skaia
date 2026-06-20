@@ -16,6 +16,7 @@ import (
 	ictx "github.com/skaia/backend/internal/ctx"
 	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/utils"
+	"github.com/skaia/backend/internal/workers"
 )
 
 const sessionTTL = 10 * time.Minute
@@ -442,6 +443,16 @@ func (h *Handler) handleSysInfo(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	info.WorkerBudget = map[string]int{
+		"WS":           workers.Budget(workers.DomainWS),
+		"Events":       workers.Budget(workers.DomainEvents),
+		"Compile":      workers.Budget(workers.DomainDSCompile),
+		"Execute":      workers.Budget(workers.DomainDSExecute),
+		"Scraper":      workers.Budget(workers.DomainMediaScraper),
+		"Provisioning": workers.Budget(workers.DomainProvisioning),
+	}
+
 	utils.WriteJSON(w, http.StatusOK, info)
 }
 

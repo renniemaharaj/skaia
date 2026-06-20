@@ -87,7 +87,7 @@ interface StorageInfo {
   total_limit_human: string;
 }
 
-interface SysInfo {
+export interface SysInfo {
   server_time: string;
   cpu_model?: string;
   cpu_cores?: number;
@@ -95,6 +95,7 @@ interface SysInfo {
   uptime_human?: string;
   mem_total?: string;
   load_avg?: string;
+  worker_budget?: Record<string, number>;
 }
 
 interface HardwareInfo {
@@ -1424,8 +1425,20 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
       )}
       {sysInfo.load_avg && (
         <div className="sysinfo-item">
-          <span className="sysinfo-label">Load</span>
+          <span className="sysinfo-label">Load Average:</span>
           <span className="sysinfo-value">{sysInfo.load_avg}</span>
+        </div>
+      )}
+      {sysInfo.worker_budget && (
+        <div className="sysinfo-item sysinfo-budget-item">
+          <span className="sysinfo-label">Worker Budget:</span>
+          <span className="sysinfo-value">
+            {Object.entries(sysInfo.worker_budget).map(([key, val]) => (
+              <span key={key} style={{ marginRight: 8 }}>
+                {key}: {val}
+              </span>
+            ))}
+          </span>
         </div>
       )}
 		</ContentFlatCard>

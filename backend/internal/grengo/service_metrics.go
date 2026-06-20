@@ -79,8 +79,9 @@ type SysInfo struct {
 	CPUCores      int     `json:"cpu_cores,omitempty"`
 	UptimeSeconds float64 `json:"uptime_seconds,omitempty"`
 	UptimeHuman   string  `json:"uptime_human,omitempty"`
-	MemTotal      string  `json:"mem_total,omitempty"`
-	LoadAvg       string  `json:"load_avg,omitempty"`
+	MemTotal      string         `json:"mem_total,omitempty"`
+	LoadAvg       string         `json:"load_avg,omitempty"`
+	WorkerBudget  map[string]int `json:"worker_budget,omitempty"`
 }
 
 // GetSysInfo retrieves server system information from the grengo API.

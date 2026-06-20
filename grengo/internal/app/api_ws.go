@@ -102,8 +102,11 @@ func broadcastJobStatus(j *jobStatus) {
 }
 
 func broadcastStatsAndStorageLoop() {
+	ticks := 0
 	for {
 		time.Sleep(5 * time.Second)
+		ticks++
+		
 		wsClientsMu.Lock()
 		if len(wsClients) == 0 {
 			wsClientsMu.Unlock()
@@ -121,14 +124,16 @@ func broadcastStatsAndStorageLoop() {
 			wsClientsMu.Unlock()
 		}
 
-		storage := gatherStorage()
-		if storage != nil {
-			data, _ := json.Marshal(map[string]any{"type": "storage_update", "payload": storage})
-			wsClientsMu.Lock()
-			for conn := range wsClients {
-				conn.WriteMessage(websocket.TextMessage, data)
+		if ticks%12 == 1 { // Poll storage every 60s
+			storage := gatherStorage()
+			if storage != nil {
+				data, _ := json.Marshal(map[string]any{"type": "storage_update", "payload": storage})
+				wsClientsMu.Lock()
+				for conn := range wsClients {
+					conn.WriteMessage(websocket.TextMessage, data)
+				}
+				wsClientsMu.Unlock()
 			}
-			wsClientsMu.Unlock()
 		}
 
 		hwPayload := hardware.GetPayload()
