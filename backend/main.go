@@ -353,6 +353,19 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	}
 
 	r := chi.NewRouter()
+
+	// Intercept *.skaia.localhost and proxy directly to Frappe cluster
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if strings.HasSuffix(req.Host, ".skaia.localhost") {
+				targetURL, _ := url.Parse("http://skaia_frappe_cluster_1:80")
+				proxy := httputil.NewSingleHostReverseProxy(targetURL)
+				proxy.ServeHTTP(w, req)
+				return
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
 	// Inject X-Backend header on every response (identifies which tenant backend handled it).
 	clientName := os.Getenv("CLIENT_NAME")
 	if clientName == "" {
@@ -747,13 +760,20 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		iprovisioning.NewHandler(provSvc).Mount(api, imw.JWTAuthMiddleware)
 	})
 
+
+
 	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
 		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
 		imw.ExtractTokenMiddleware(ssrHandler).ServeHTTP(w, req)
 	})
 
-	// Proxy /instances/{id} to the corresponding container
+	// Proxy /instances/{id} to the corresponding container (or redirect Frappe)
+	r.Handle("/instances/{id}", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		req.URL.Path = req.URL.Path + "/"
+		http.Redirect(w, req, req.URL.Path, http.StatusMovedPermanently)
+	}))
+
 	r.Handle("/instances/{id}/*", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		idStr := chi.URLParam(req, "id")
 		var id int64
@@ -785,20 +805,24 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			}
 		}
 
-		var targetURL *url.URL
 		if isFrappe {
-			// Frappe multi-tenant site on port 8000
-			targetURL, _ = url.Parse("http://127.0.0.1:8000")
+			// Redirect Frappe to its native subdomain to avoid asset path issues
 			if siteName == "" {
-				siteName = fmt.Sprintf("site%d.skaia.local", id)
+				siteName = fmt.Sprintf("site%d.skaia.localhost", id)
 			}
-			req.Host = siteName
-			req.URL.Host = siteName
-		} else {
-			// Other blueprint like Superset
-			targetURL, _ = url.Parse(fmt.Sprintf("http://127.0.0.1:%d", int(targetPort)))
+			
+			// Reconstruct the remaining path if any
+			prefix := fmt.Sprintf("/instances/%d", id)
+			remaining := strings.TrimPrefix(req.URL.Path, prefix)
+			
+			http.Redirect(w, req, "http://"+siteName+remaining, http.StatusFound)
+			return
 		}
 
+		// Proxy for other blueprints
+		targetURL, _ := url.Parse(fmt.Sprintf("http://host.docker.internal:%d", int(targetPort)))
+
+		log.Printf("[DEBUG] Proxying to non-Frappe instance: targetPort=%v, targetURL=%v", targetPort, targetURL)
 		proxy := httputil.NewSingleHostReverseProxy(targetURL)
 		
 		// Remove the /instances/{id} prefix

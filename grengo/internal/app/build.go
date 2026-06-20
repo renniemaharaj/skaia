@@ -51,29 +51,6 @@ func cmdRebuildFrontend(target string) {
 }
 
 func cmdShipFrontend() {
-	log("Stashing current changes...")
-	cmdStash := exec.Command("git", "stash")
-	cmdStash.Dir = ProjectRoot()
-	cmdStash.Stdout = os.Stdout
-	cmdStash.Stderr = os.Stderr
-	cmdStash.Run() // ignore error, might not be any changes to stash
-
-	log("Pulling latest changes...")
-	cmdPull := exec.Command("git", "pull")
-	cmdPull.Dir = ProjectRoot()
-	cmdPull.Stdout = os.Stdout
-	cmdPull.Stderr = os.Stderr
-	if err := cmdPull.Run(); err != nil {
-		die("git pull failed: %v", err)
-	}
-
-	log("Popping stashed changes...")
-	cmdPop := exec.Command("git", "stash", "pop")
-	cmdPop.Dir = ProjectRoot()
-	cmdPop.Stdout = os.Stdout
-	cmdPop.Stderr = os.Stderr
-	cmdPop.Run() // ignore error, might not be any stashed changes
-
 	log("Rebuilding and shipping frontend...")
 	cmdRebuildFrontend("all")
 }

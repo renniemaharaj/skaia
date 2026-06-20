@@ -13,7 +13,7 @@ func FrappeProvisionWorker(instanceID int64, configPayload []byte, l *logger.Log
 		return fmt.Errorf("grengo service is nil")
 	}
 
-	siteName := fmt.Sprintf("site%d.skaia.local", instanceID)
+	siteName := fmt.Sprintf("site%d.skaia.localhost", instanceID)
 	l.InfoF("Delegating Frappe provisioning for %s to host Grengo orchestrator...", siteName)
 
 	if err := grengo.ProvisionFrappe(siteName, func(line string) {

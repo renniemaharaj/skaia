@@ -38,7 +38,7 @@ services:
     build: %s/backend/pkg/frappe
     container_name: skaia_frappe_cluster_1
     ports:
-      - "8000:8000"
+      - "8000:80"
       - "3000:3000"
     environment:
       MARIADB_HOST: mariadb
@@ -53,6 +53,13 @@ services:
     depends_on:
       - mariadb
       - redis
+    networks:
+      - default
+      - skaia-network
+
+networks:
+  skaia-network:
+    external: true
 `
 	composePath := filepath.Join(clusterDir, "docker-compose.yml")
 	formattedCompose := fmt.Sprintf(composeContent, ProjectRoot())
