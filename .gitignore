@@ -1,5 +1,4 @@
 node_modules/
-./Kingdom-market
 postgres_data/
 redis_data/
 dist/
