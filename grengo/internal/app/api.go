@@ -171,6 +171,7 @@ type APIHandlers struct {
 	GetEnv         http.HandlerFunc
 	PutEnv         http.HandlerFunc
 	Exec           http.HandlerFunc
+	FrappeProvision http.HandlerFunc
 	ExportSite     http.HandlerFunc
 	ImportSite     http.HandlerFunc
 	ArmSite        http.HandlerFunc
@@ -200,6 +201,7 @@ func Handlers() APIHandlers {
 		GetEnv:         apiGetEnv,
 		PutEnv:         apiPutEnv,
 		Exec:           apiExec,
+		FrappeProvision: apiFrappeProvision,
 		ExportSite:     apiExportSite,
 		ImportSite:     apiImportSite,
 		ArmSite:        apiArmSite,

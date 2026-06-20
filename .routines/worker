@@ -114,21 +114,19 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-06-11T11:14:00-04:00
+- 2026-06-20T07:10:00-04:00
 
 ## Last Run Remarks
 
-- Executed `critical_fixes_stabilization` Phases 1-3:
-  - Added SSRF protection (`validateScrapeURL`) with scheme whitelist and private IP blocking in `mediascraper/handler.go`.
-  - Replaced raw string error interpolation with `writeJSONError` helper using `json.Marshal` to prevent injection.
-  - Added `imw.JWTAuthMiddleware` to mediascraper mount in `main.go` (was the only unprotected handler).
-  - Removed startup `ClearCache()` debug call from `main.go`.
-  - Removed 22MB `backend/tmp_build` binary from git tracking, added to `.gitignore`.
-  - Fixed `b` variable shadowing in `scraper.go` (browser vs marshalled bytes).
-  - Added `sanitizeCSS` function to `DesignedCardWrapper` to strip dangerous CSS constructs.
-- Retired `hotfix_reconciliation` todo pair (all phases verified complete).
-- Updated `ui_component_refactor_plan.tip` with Phase 5 progress.
-- Backend build verified clean: `go build ./...` passes.
+- Executed `grengo_backend_refactor` / `grengo_cli_refactor` critical fixes and provisioning/real-time badge improvements:
+  - **Fixed Frappe deployment failure**: `frappe.go` `cmdFrappeProvision` was calling `services.NewCommandRunner.RunSelf("docker", ...)` which executed `grengo docker compose ...` instead of the Docker binary. Fixed to use `exec.Command("docker", "compose", "-f", composePath, "up", "-d")` directly.
+  - **Fixed SQL injection**: `dbExists` in `docker.go` interpolated raw `dbName` into SQL. Added `sanitizeDBName()` that strips non-alphanumeric/dash/underscore chars before use.
+  - **Fixed real-time badge updates**: `provisioning:status` was only broadcast to `admin.general` permission holders. Now also broadcasts via `BroadcastToSubscribers("provisioning_logs", instanceID)` so ordinary users see live status changes.
+  - **Added provisioning WS message type constants**: `ProvisioningProgress` and `ProvisioningStatus` added to `ws/message.go`.
+  - **Frontend auto-subscribe**: `DeploymentsPage.tsx` now auto-subscribes to `provisioning_logs:{id}` for every loaded instance on mount, eliminating the need to expand a row to see live badge updates.
+  - Removed unused `services` import from `frappe.go`.
+- Build verified: `go build ./...` from `grengo/` ✅ and `backend/` ✅. `go test ./...` from `backend/` ✅ all pass.
+- Grengo orchestration passcode/MFA: confirmed grengo's `apiPasscodeMiddleware` only enforces passcode if `.pcode` file exists and is non-empty. Grengo manages orchestration without passcode/MFA for machine-to-machine calls when `.pcode` is not configured.
 
 ## Next Steps
 

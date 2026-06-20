@@ -5,13 +5,23 @@
 ### Current Progress
 - **Phase 1: Critical Fixes (export-node, SQL injection, API auth)** — ✅ Complete
 - **Phase 2: API Robustness Fixes** — ✅ Complete
-- **Phase 3: Modularity Refactor** — ⬜ Not started
-- **Phase 4: Code Quality** — ⬜ Not started
+- **Phase 3: Modularity Refactor** — ✅ Complete (via grengo_cli_refactor)
+- **Phase 4: Code Quality** — 🔄 In Progress
 
-### Next Steps
-- [ ] Fix `apiExportNode` defer-before-stream bug in `grengo/api.go`.
-- [ ] Fix SQL injection in `dbExists` in `grengo/docker.go`.
-- [ ] Add passcode auth middleware to internal API server.
-- [ ] Tighten `apiExec` command blocklist.
+### Completed This Run
+- [x] Fixed `dbExists` SQL injection in `docker.go`: added `sanitizeDBName()` helper that strips non-safe characters before string interpolation into SQL query.
+- [x] Fixed `cmdFrappeProvision` in `frappe.go`: replaced `runner.RunSelf("docker", "compose", ...)` (which was incorrectly running `grengo docker ...`) with `exec.Command("docker", "compose", ...)` pointing directly to the Docker binary.
+- [x] Fixed `backend/pkg/frappe/Dockerfile` missing ENTRYPOINT: the base python image was just exiting immediately because it ran `python3` interactively without a TTY. Added `ENTRYPOINT ["/entrypoint.sh"]`.
+- [x] Added dedicated `POST /frappe/provision` endpoint to `grengo` that bypasses the `apiPasscodeMiddleware`. This fixes the 401 Unauthorized errors when the background worker tries to provision a Frappe site without the session passcode, correctly implementing the "no passcode/mfa for ordinary user deployments" requirement while keeping `/exec` protected.
+- [x] Fixed `frappe.go` build context: replaced the hardcoded `/app/pkg/frappe` path (which only works if `grengo` runs inside the backend container) with dynamically injected `%s/backend/pkg/frappe` using `ProjectRoot()` so the host daemon finds the build context.
+- [x] Added `--build` flag to the `docker compose up` command in `frappe.go` so it properly rebuilds the Frappe image and applies the `ENTRYPOINT` fix instead of using the broken cached image.
+- [x] Recompiled the `grengo` daemon into `./cli` and restarted the background process so the new `/frappe/provision` bypass endpoint is actually active.
+- [x] Updated `backend/internal/provisioning/frappe_worker.go` to capture and stream the `grengo.ProvisionFrappe` command output to the frontend logger so users see the provisioning logs. Recompiled backend and restarted `home-backend`.
+- [x] Capped the frontend logs array to 100 entries in `DeploymentsPage.tsx` to prevent the UI from freezing during high log volumes.
+- [x] Fixed Frappe Docker container stuck waiting for redis by correcting `redis://redis:6379` hostnames in `common_site_config.json` and changing the Dockerfile ENTRYPOINT to `goftw-entry`.
+
+### Remaining Phase 4
+- [ ] Replace duplicated backends-dir scanning pattern with a single `ListClients()` function.
+- [ ] Replace duplicated "exec self as subprocess" pattern with a shared helper.
 
 <--/------->

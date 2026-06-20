@@ -40,5 +40,8 @@ func CLICommands() cli.Commands {
 		PasscodeVerify:  cmdPasscodeVerify,
 		PasscodeClear:   cmdPasscodeClear,
 		PasscodeStatus:  cmdPasscodeStatus,
+		FrappeProvision: func(siteName string) {
+			cmdFrappeProvision(siteName)
+		},
 	}
 }

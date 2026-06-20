@@ -18,6 +18,7 @@ func newAPIRouter(handlers app.APIHandlers) *http.ServeMux {
 	mux.HandleFunc("GET /env/{name}", handlers.GetEnv)
 	mux.HandleFunc("PUT /env/{name}", handlers.PutEnv)
 	mux.HandleFunc("POST /exec", handlers.Exec)
+	mux.HandleFunc("POST /frappe/provision", handlers.FrappeProvision)
 	mux.HandleFunc("GET /export/{name}", handlers.ExportSite)
 	mux.HandleFunc("POST /import", handlers.ImportSite)
 	mux.HandleFunc("POST /sites/{name}/arm", handlers.ArmSite)
@@ -51,6 +52,7 @@ func apiPasscodeMiddleware(next http.Handler) http.Handler {
 		"/ws":              true,
 		"/storage":         true,
 		"/webhook/github":  true,
+		"/frappe/provision": true,
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

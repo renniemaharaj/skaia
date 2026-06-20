@@ -58,6 +58,53 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// apiFrappeProvision bypasses the generic passcode-protected /exec endpoint
+// specifically for orchestrating Frappe instances via the internal backend.
+func apiFrappeProvision(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		SiteName string `json:"site_name"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		apiError(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+	if req.SiteName == "" {
+		apiError(w, http.StatusBadRequest, "site_name required")
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
+	result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(fw, "frappe-provision", req.SiteName)
+	if err != nil {
+		fmt.Fprintf(fw, "ERROR: %v\n", err)
+	} else if result.ExitCode != 0 {
+		fmt.Fprintf(fw, "ERROR: exit code %d\n", result.ExitCode)
+	}
+}
+
+type flushWriter struct {
+	w http.ResponseWriter
+	f http.Flusher
+}
+
+func (fw *flushWriter) Write(p []byte) (n int, err error) {
+	n, err = fw.w.Write(p)
+	if fw.f != nil {
+		fw.f.Flush()
+	}
+	return
+}
+
 // Async job runners (site-cmd, global-cmd)
 
 func startSiteCommand(name, command string, extraArgs []string) string {

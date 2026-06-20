@@ -60,6 +60,7 @@ const AdminMetaSettings = lazy(() =>
 );
 const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
 const RolesManagementPage = lazy(() => import("../components/admin/RolesManagementPage.tsx"));
+const DeploymentsPage = lazy(() => import("../components/page/deployments/DeploymentsPage.tsx").then(m => ({ default: m.DeploymentsPage })));
 const PageBuilder = lazy(() => import("./page/index.tsx"));
 const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
 const DataSourcesPage = lazy(() => import("../components/page/datasources/DataSourcesPage.tsx"));
@@ -109,6 +110,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta/*", element: <AdminMetaSettings /> },
   { path: "admin/roles", element: <RolesManagementPage /> },
+  { path: "deployments", element: <DeploymentsPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },

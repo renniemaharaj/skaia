@@ -144,11 +144,27 @@ func pgRunning() bool {
 	return containerRunning("skaia-postgres")
 }
 
+// sanitizeDBName strips any character that is not alphanumeric, dash, or underscore.
+// dbName originates from local .env config files (not user input), but we sanitize
+// defensively before interpolating it into a raw SQL string.
+func sanitizeDBName(name string) string {
+	var b strings.Builder
+	for _, c := range name {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+			(c >= '0' && c <= '9') || c == '_' || c == '-' {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
+}
+
 // dbExists checks if a database exists in the shared PostgreSQL.
 func dbExists(dbName string, env SharedEnv) bool {
-	// We must trust dbName since psql -c doesn't interpolate variables.
-	// It's safe here because dbName is derived from local configs.
-	query := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", dbName)
+	safe := sanitizeDBName(dbName)
+	if safe == "" {
+		return false
+	}
+	query := fmt.Sprintf("SELECT 1 FROM pg_database WHERE datname='%s'", safe)
 	out, err := dockerExecOutput("skaia-postgres", "psql", "-U", env.PostgresUser, "-d", "template1", "-tAc", query)
 	return err == nil && strings.TrimSpace(out) == "1"
 }

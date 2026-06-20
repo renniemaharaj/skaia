@@ -435,6 +435,30 @@ func (h *Hub) BroadcastExceptUser(userID int64, msg *Message) {
 	}
 }
 
+// BroadcastToSubscribers sends a message to all clients subscribed to a specific resource.
+func (h *Hub) BroadcastToSubscribers(resourceType string, resourceID int64, msg *Message) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	key := subscriptionKey(resourceType, resourceID)
+	clients, exists := h.subscriptions[key]
+	if !exists {
+		return
+	}
+
+	for _, client := range clients {
+		// Only send to those with admin.general if we enforce it, but typically
+		// subscribers are already authorized when they subscribe. To be safe, we check here
+		// if the message implies high privileges. But to be flexible, we'll just broadcast
+		// to the subscribers.
+		select {
+		case client.Send <- msg:
+		default:
+			log.Printf("ws: send buffer full, dropping message for userID=%d", client.UserID)
+		}
+	}
+}
+
 // SendTeleport enqueues a teleport request so the hub routes it to the target.
 func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	select {

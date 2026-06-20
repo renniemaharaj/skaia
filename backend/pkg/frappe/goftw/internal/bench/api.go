@@ -159,3 +159,33 @@ func (b *Bench) PutSitesHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 201, resp)
 	fmt.Printf("[API] Site %s creation & apps applied successfully\n", siteName)
 }
+
+// UpdateHandler runs bench update
+func (b *Bench) UpdateHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("[API] UpdateHandler called")
+	if err := b.ExecRunInBenchPrintIO("bench", "update"); err != nil {
+		writeError(w, 500, fmt.Sprintf("update failed: %v", err))
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "updated"})
+}
+
+// MigrateHandler runs bench migrate
+func (b *Bench) MigrateHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("[API] MigrateHandler called")
+	if err := b.ExecRunInBenchPrintIO("bench", "migrate"); err != nil {
+		writeError(w, 500, fmt.Sprintf("migrate failed: %v", err))
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "migrated"})
+}
+
+// BackupHandler runs bench backup
+func (b *Bench) BackupHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("[API] BackupHandler called")
+	if err := b.ExecRunInBenchPrintIO("bench", "backup"); err != nil {
+		writeError(w, 500, fmt.Sprintf("backup failed: %v", err))
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "backed up"})
+}

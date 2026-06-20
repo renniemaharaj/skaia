@@ -66,3 +66,5 @@ RUN chown -R frappe:frappe \
 
 USER frappe
 WORKDIR /home/frappe
+
+ENTRYPOINT ["/usr/local/bin/goftw-entry"]

@@ -225,3 +225,9 @@ INSERT INTO auth_credentials (user_id, password_hash, created_at, updated_at)
 SELECT id, '$2a$12$000000000000000000000uGhostyLocked0000000000000000000', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 FROM users WHERE username = 'noreply'
     AND NOT EXISTS (SELECT 1 FROM auth_credentials WHERE user_id = users.id);
+
+-- Provisioning Blueprints Seed Data
+INSERT INTO app_blueprints (name, description, is_active) VALUES
+    ('Frappe Framework', 'Enterprise Multi-tenant ERP and application framework', true),
+    ('Apache Superset', 'Modern data exploration and visualization platform', true)
+ON CONFLICT (name) DO NOTHING;

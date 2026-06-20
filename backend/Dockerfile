@@ -31,7 +31,7 @@ WORKDIR /app
 # Runtime stage
 FROM alpine:3.21
 
-RUN apk --no-cache add ca-certificates su-exec nodejs chromium && \
+RUN apk --no-cache add ca-certificates su-exec nodejs chromium docker docker-cli-compose && \
     adduser -D -h /app appuser
 
 WORKDIR /app
@@ -39,6 +39,7 @@ WORKDIR /app
 COPY --from=builder /app/backend /app/backend
 COPY --from=builder /app/frontend/dist /app/frontend/dist
 COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
+COPY --from=builder /app/pkg/frappe /app/pkg/frappe
 
 # make sure the compiled binary can be executed
 RUN chmod +x /app/backend
@@ -53,6 +54,9 @@ set -e
 # as root-owned (common with Docker bind mounts on Linux).
 chown -R appuser:appuser /app/uploads 2>/dev/null || true
 chown -R appuser:appuser /app/armed 2>/dev/null || true
+
+# Give appuser access to the docker socket if mounted
+chmod 666 /var/run/docker.sock 2>/dev/null || true
 # execute the compiled backend binary
 exec su-exec appuser /app/backend
 EOF

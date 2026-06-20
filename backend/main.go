@@ -8,6 +8,8 @@ import (
 	"fmt"
 	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -46,6 +48,8 @@ import (
 	"github.com/skaia/backend/internal/ws"
 	defconmw "github.com/skaia/backend/middleware"
 	"github.com/skaia/backend/ratelimit"
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
+	iprovisioning "github.com/skaia/backend/internal/provisioning"
 )
 
 // SimpleResponse is a basic JSON response.
@@ -158,6 +162,9 @@ func main() {
 	dsCompileDispatcher.Start()
 	dsExecuteDispatcher.Start()
 
+	conveyorManager := conveyor.CreateManager()
+	conveyorManager.Start()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -165,7 +172,7 @@ func main() {
 
 	ratelimit.InitCloudflare()
 
-	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher, dsExecuteDispatcher)
+	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher, dsExecuteDispatcher, conveyorManager)
 
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -197,6 +204,7 @@ func main() {
 	dsCompileDispatcher.Stop()
 	dsExecuteDispatcher.Stop()
 	dispatcher.Stop()
+	conveyorManager.Stop()
 	log.Println("server stopped")
 }
 
@@ -280,7 +288,7 @@ func removeArmedFile(armedDir, clientID string) error {
 	return os.Remove(filePath)
 }
 
-func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher, dsExecuteDispatcher *ids.ExecuteDispatcher) http.Handler {
+func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *redis.Client, dsCompileCache *ids.CompileCache, dsExecuteCache *ids.ExecuteCache, dsCompileDispatcher *ids.CompileDispatcher, dsExecuteDispatcher *ids.ExecuteDispatcher, conveyorManager *conveyor.Manager) http.Handler {
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
@@ -717,8 +725,15 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")
+		var grengoSvc *igrengo.Service
 		if grengoAPI != "" {
-			grengoSvc := igrengo.NewService(grengoAPI, hub)
+			grengoSvc = igrengo.NewService(grengoAPI, hub)
+			if pcode := os.Getenv("GRENGO_API_PASSCODE"); pcode != "" {
+				parts := strings.SplitN(pcode, ":", 2)
+				if len(parts) == 2 {
+					grengoSvc = grengoSvc.WithPasscode(parts[0], parts[1])
+				}
+			}
 			hub.GrengoActionHandler = grengoSvc.SendAction
 			go grengoSvc.WatchJobs()
 			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
@@ -726,6 +741,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		immediascraper.SetHub(hub)
 		immediascraper.NewHandler(userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		provRepo := iprovisioning.NewRepository(db)
+		provSvc := iprovisioning.NewService(provRepo, conveyorManager, hub, grengoSvc)
+		iprovisioning.NewHandler(provSvc).Mount(api, imw.JWTAuthMiddleware)
 	})
 
 	// SSR: serve index.html with injected SEO head tags
@@ -733,6 +752,64 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
 		imw.ExtractTokenMiddleware(ssrHandler).ServeHTTP(w, req)
 	})
+
+	// Proxy /instances/{id} to the corresponding container
+	r.Handle("/instances/{id}/*", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		idStr := chi.URLParam(req, "id")
+		var id int64
+		fmt.Sscanf(idStr, "%d", &id)
+
+		inst, err := iprovisioning.NewRepository(database.DB).GetInstanceByID(id)
+		if err != nil || inst == nil {
+			http.Error(w, "Instance not found", http.StatusNotFound)
+			return
+		}
+
+		var configMap map[string]interface{}
+		json.Unmarshal(inst.ConfigPayload, &configMap)
+
+		siteName, _ := configMap["site_name"].(string)
+		portRaw := configMap["port"]
+		var targetPort float64
+		if portRaw != nil {
+			targetPort, _ = portRaw.(float64)
+		} else {
+			targetPort = 8000
+		}
+
+		bp, _ := iprovisioning.NewRepository(database.DB).GetBlueprintByID(inst.BlueprintID)
+		isFrappe := true
+		if bp != nil {
+			if bp.Name == "Superset" || bp.Name == "superset" || bp.Name == "Apache Superset" {
+				isFrappe = false
+			}
+		}
+
+		var targetURL *url.URL
+		if isFrappe {
+			// Frappe multi-tenant site on port 8000
+			targetURL, _ = url.Parse("http://127.0.0.1:8000")
+			if siteName == "" {
+				siteName = fmt.Sprintf("site%d.skaia.local", id)
+			}
+			req.Host = siteName
+			req.URL.Host = siteName
+		} else {
+			// Other blueprint like Superset
+			targetURL, _ = url.Parse(fmt.Sprintf("http://127.0.0.1:%d", int(targetPort)))
+		}
+
+		proxy := httputil.NewSingleHostReverseProxy(targetURL)
+		
+		// Remove the /instances/{id} prefix
+		prefix := fmt.Sprintf("/instances/%d", id)
+		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
+		if req.URL.Path == "" {
+			req.URL.Path = "/"
+		}
+
+		proxy.ServeHTTP(w, req)
+	}))
 
 	// SPA fallback
 	// API routes and /uploads/* above take precedence.  If a static file

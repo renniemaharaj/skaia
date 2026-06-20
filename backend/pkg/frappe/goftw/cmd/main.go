@@ -111,6 +111,10 @@ func main() {
 		r.Get("/sites", bench.ListSitesHandler)
 		r.Get("/site/{name}", bench.GetSitesHandler)
 		r.Put("/site/{name}", bench.PutSitesHandler)
+		
+		r.Post("/maintenance/update", bench.UpdateHandler)
+		r.Post("/maintenance/migrate", bench.MigrateHandler)
+		r.Post("/maintenance/backup", bench.BackupHandler)
 	})
 
 	fmt.Printf("[SERVER] Server running on :3000")

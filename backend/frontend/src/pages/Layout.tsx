@@ -309,6 +309,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/inbox")) return true;
     if (pathname === "/users") return true;
     if (pathname.startsWith("/activity")) return true;
+    if (pathname.startsWith("/deployments")) return true;
     if (pathname.startsWith("/datasources")) return true;
     if (pathname.startsWith("/settings")) return true;
     if (pathname.startsWith("/admin")) return true;

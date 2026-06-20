@@ -37,3 +37,6 @@ Status: IN_PROGRESS
 - `go build .` creates an untracked `grengo/grengo` binary; cleanup was not approved previously, so follow-up build verification now uses `-o /tmp/grengo-check`.
 - `backend/internal/grengo/handler.go` is modified in the worktree but was not changed as part of this refactor pass.
 - Plain `npm run build` currently fails in this workspace because the `mise` npm shim has no project Node version selected; verification used the installed `node@24.16.0` through `mise exec`.
+- 2026-06-20: Fixed critical Frappe deployment bug: `frappe.go` `cmdFrappeProvision` was calling `runner.RunSelf("docker", ...)` which ran `grengo docker ...` instead of the Docker binary. Fixed to use `exec.Command("docker", "compose", ...)` directly.
+- 2026-06-20: Fixed `dbExists` SQL injection with `sanitizeDBName()` helper in `docker.go`.
+- 2026-06-20: Build verified: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go build ./...` from both `grengo/` and `backend/` passes. All backend tests pass.

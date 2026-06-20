@@ -4,38 +4,41 @@
 Implement a robust provisioning system bound to client backends, allowing clients to provision various instances such as Frappe and Superset within allowed limits. The system orchestrates the creation of these deployments via a dynamic worker queue (`conveyorbelt`), ensuring reliability, auto-scaling, and controlled resource allocation. Real-time setup logs are streamed to clients using `grouplogs`.
 
 ## Phase 1: Database & Registry Schema
-- [ ] Create database migration for `app_blueprints` table (name, supported_versions, config_schema, is_active).
-- [ ] Create database migration for `provisioned_instances` table (client_id, blueprint_id, version_tag, status, config_payload).
-- [ ] Implement `internal/provisioning/repository.go` for blueprint and instance CRUD operations.
-- [ ] Implement `internal/provisioning/service.go` containing the business logic for verifying quotas and tracking limits.
+- [x] Create database migration for `app_blueprints` table (name, supported_versions, config_schema, is_active).
+- [x] Create database migration for `provisioned_instances` table (client_id, blueprint_id, version_tag, status, config_payload).
+- [x] Implement `internal/provisioning/repository.go` for blueprint and instance CRUD operations.
+- [x] Implement `internal/provisioning/service.go` containing the business logic for verifying quotas and tracking limits.
 
 ## Phase 2: The Queue & Orchestration Engine (`conveyorbelt`)
-- [ ] Refactor the backend to initialize a global `conveyor.Manager` for dynamic worker auto-scaling, replacing the static `jobs.Manager`.
-- [ ] Define the `Conveyor Job` definitions that will handle `Provision` and `Teardown` tasks.
-- [ ] Build the API endpoints in `backend/main.go` or a new `handler.go`:
+- [x] Refactor the backend to initialize a global `conveyor.Manager` for dynamic worker auto-scaling, replacing the static `jobs.Manager`.
+- [x] Define the `Conveyor Job` definitions that will handle `Provision` and `Teardown` tasks.
+- [x] Build the API endpoints in `backend/main.go` or a new `handler.go`:
   - `GET /api/provisioning/blueprints`
   - `POST /api/provisioning/instances`
   - `GET /api/provisioning/instances`
-- [ ] Use conveyor's `OnSuccess` and `OnError` callbacks to update the `provisioned_instances` DB status (`queued` -> `running` / `failed`).
+- [x] Use conveyor's `OnSuccess` and `OnError` callbacks to update the `provisioned_instances` DB status (`queued` -> `running` / `failed`).
 
 ## Phase 3: Frappe Integration (`goftw` Wrapper)
-- [ ] Modify `backend/frappe/goftw/internal/bench.go` to accept an explicit `--frappe-branch {version}` flag dynamically.
-- [ ] Update `instance.json` handling to enforce the selected version tags.
-- [ ] Expose maintenance API endpoints in `frappe/goftw`:
+- [x] Modify `backend/frappe/goftw/internal/bench.go` to accept an explicit `--frappe-branch {version}` flag dynamically.
+- [x] Update `instance.json` handling to enforce the selected version tags.
+- [x] Implement bench clustering logic: treat a single bench as a multi-tenant cluster node.
+- [x] Enforce a threshold limit (max sites per bench) and spin up a new bench cluster once full.
+- [x] Expose maintenance API endpoints in `frappe/goftw`:
   - `POST /api/goftw/maintenance/update` -> Runs `bench update`
   - `POST /api/goftw/maintenance/migrate` -> Runs `bench migrate`
   - `POST /api/goftw/maintenance/backup` -> Runs `bench backup`
 
 ## Phase 4: Superset Integration
-- [ ] Create `SupersetWorker` closures for the conveyor queue.
-- [ ] Implement secure dynamic environment injection (`GCP_KEY`, Postgres, Redis credentials) prior to container start.
-- [ ] Build a one-time bootstrap initialization conveyor job:
+- [x] Implement single-tenant deployment strategy for Superset (deploying separate containerized instances per deployment for complete isolation).
+- [x] Create `SupersetWorker` closures for the conveyor queue.
+- [x] Implement secure dynamic environment injection (`GCP_KEY`, Postgres, Redis credentials) prior to container start.
+- [x] Build a one-time bootstrap initialization conveyor job:
   - `superset db upgrade`
   - `superset fab create-admin`
   - `superset init`
 
 ## Phase 5: WebSockets, Logs & Frontend Integration (`grouplogs`)
-- [ ] Attach a `grouplogs.New()` instance to each running provisioning conveyor job.
-- [ ] Integrate the `grouplogs` delegate channels with `internal/ws.Hub`.
-- [ ] Broadcast real-time `provisioning:progress` websocket events natively using the streaming logs.
-- [ ] Build the client dashboard UI to list available blueprints, request provisioning, and display the live WebSocket terminal logs during setup.
+- [x] Attach a `grouplogs.New()` instance to each running provisioning conveyor job.
+- [x] Integrate the `grouplogs` delegate channels with `internal/ws.Hub`.
+- [x] Broadcast real-time `provisioning:progress` websocket events natively using the streaming logs.
+- [x] Build the client dashboard UI to list available blueprints, request provisioning, and display the live WebSocket terminal logs during setup.

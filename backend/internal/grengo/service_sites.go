@@ -1,10 +1,12 @@
 package grengo
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // SiteInfo describes a single client visible to the dashboard.
@@ -106,6 +108,39 @@ func (s *Service) CreateSite(p CreateSiteParams) error {
 	}
 
 	return s.execOK("new", args...)
+}
+
+// ProvisionFrappe provisions a new multi-tenant Frappe site using grengo on the host
+func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
+	body, _ := json.Marshal(map[string]any{
+		"site_name": siteName,
+	})
+	resp, err := s.client.Post(s.apiURL+"/frappe/provision", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("grengo API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return s.readAPIError(resp)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "ERROR: exit code") {
+			return fmt.Errorf("grengo frappe-provision failed: %s", line)
+		} else if strings.HasPrefix(line, "ERROR: ") {
+			return fmt.Errorf("grengo API: %s", line)
+		}
+		if onLog != nil {
+			onLog(line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("reading stream: %w", err)
+	}
+	return nil
 }
 
 // DeleteSite removes a client via the grengo API.

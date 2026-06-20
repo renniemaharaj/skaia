@@ -269,6 +269,15 @@ export const useWebSocketSync = () => {
             return;
           }
 
+          if (message.type === "provisioning:progress") {
+            window.dispatchEvent(new CustomEvent("provisioning:progress", { detail: payload }));
+            return;
+          }
+          if (message.type === "provisioning:status") {
+            window.dispatchEvent(new CustomEvent("provisioning:status", { detail: payload }));
+            return;
+          }
+
           // Handle user update propagation
           if (message.type === "user:update") {
             const { action: userAction, data: userData } = payload;
