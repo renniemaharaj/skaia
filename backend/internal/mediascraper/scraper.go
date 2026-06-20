@@ -15,6 +15,7 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/redis/go-redis/v9"
+	"github.com/skaia/backend/internal/workers"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
@@ -39,7 +40,7 @@ func initScraper() {
 	initOnce.Do(func() {
 		scraperManager = conveyor.CreateManager().
 			SetMinWorkers(1).
-			SetMaxWorkers(5). // limit headless browser instances
+			SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)). // limit headless browser instances based on CPU
 			SetSafeQueueLength(10)
 		scraperManager.Start()
 	})
@@ -109,7 +110,7 @@ func ClearJobsAndCache() {
 
 	scraperManager = conveyor.CreateManager().
 		SetMinWorkers(1).
-		SetMaxWorkers(5).
+		SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)).
 		SetSafeQueueLength(10)
 	scraperManager.Start()
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skaia/backend/internal/events"
+	"github.com/skaia/backend/internal/workers"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
@@ -64,8 +65,8 @@ type CompileDispatcher struct {
 }
 
 func NewCompileDispatcher(cache *CompileCache, eventsDispatcher *events.Dispatcher) *CompileDispatcher {
-	workers := compilerEnvIntDefault(compilerWorkersEnv, 2)
-	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workers).SetSafeQueueLength(10)
+	workersCount := compilerEnvIntDefault(compilerWorkersEnv, workers.Budget(workers.DomainDSCompile))
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(10)
 	d := &CompileDispatcher{
 		manager: m,
 		cache:   cache,
@@ -155,8 +156,8 @@ type ExecuteDispatcher struct {
 }
 
 func NewExecuteDispatcher(cache *ExecuteCache, eventsDispatcher *events.Dispatcher) *ExecuteDispatcher {
-	workers := envIntDefault("DATASOURCE_EXECUTE_WORKERS", 2)
-	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workers).SetSafeQueueLength(10)
+	workersCount := envIntDefault("DATASOURCE_EXECUTE_WORKERS", workers.Budget(workers.DomainDSExecute))
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(10)
 	
 	d := &ExecuteDispatcher{
 		manager: m,

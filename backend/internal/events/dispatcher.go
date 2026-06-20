@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/skaia/backend/internal/workers"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
@@ -156,14 +157,14 @@ func envIntDefault(key string, def int) int {
 }
 
 // NewDispatcher creates a Dispatcher powered by conveyor.
-// Tunable via EVENTS_WORKERS (default 4) and EVENTS_BUFFER (default 4096).
+// Tunable via EVENTS_WORKERS (default based on CPU cores) and EVENTS_BUFFER (default 4096).
 func NewDispatcher(db *sql.DB) *Dispatcher {
-	workers := envIntDefault("EVENTS_WORKERS", 4)
+	workersCount := envIntDefault("EVENTS_WORKERS", workers.Budget(workers.DomainEvents))
 	bufSize := envIntDefault("EVENTS_BUFFER", 4096)
 	
 	m := conveyor.CreateManager().
 		SetMinWorkers(1).
-		SetMaxWorkers(workers).
+		SetMaxWorkers(workersCount).
 		SetSafeQueueLength(bufSize)
 
 	var repo *Repository

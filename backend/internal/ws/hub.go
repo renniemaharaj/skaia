@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/skaia/backend/internal/workers"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
@@ -48,7 +49,7 @@ func envInt(key string, def int) int {
 func loadHubConfig() HubConfig {
 	return HubConfig{
 		MaxConnections:   int64(envInt("WS_MAX_CONNECTIONS", 100_000)),
-		MaxWorkers:       envInt("WS_MAX_WORKERS", 256),
+		MaxWorkers:       envInt("WS_MAX_WORKERS", workers.Budget(workers.DomainWS)),
 		SessionSize:      envInt("WS_SESSION_SIZE", 100),
 		ChatRingSize:     envInt("WS_CHAT_RING_SIZE", 80),
 		PresenceInterval: time.Duration(envInt("WS_PRESENCE_INTERVAL_MS", 1000)) * time.Millisecond,
