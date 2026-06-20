@@ -41,7 +41,7 @@ func initScraper() {
 		scraperManager = conveyor.CreateManager().
 			SetMinWorkers(1).
 			SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)). // limit headless browser instances based on CPU
-			SetSafeQueueLength(10)
+			SetSafeQueueLength(200)
 		scraperManager.Start()
 	})
 }
@@ -111,7 +111,7 @@ func ClearJobsAndCache() {
 	scraperManager = conveyor.CreateManager().
 		SetMinWorkers(1).
 		SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)).
-		SetSafeQueueLength(10)
+		SetSafeQueueLength(200)
 	scraperManager.Start()
 
 	ClearCache()

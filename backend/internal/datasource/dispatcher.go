@@ -66,7 +66,8 @@ type CompileDispatcher struct {
 
 func NewCompileDispatcher(cache *CompileCache, eventsDispatcher *events.Dispatcher) *CompileDispatcher {
 	workersCount := compilerEnvIntDefault(compilerWorkersEnv, workers.Budget(workers.DomainDSCompile))
-	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(10)
+	queueLen := compilerEnvIntDefault("DATASOURCE_COMPILE_QUEUE", 500)
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(queueLen)
 	d := &CompileDispatcher{
 		manager: m,
 		cache:   cache,
@@ -157,7 +158,8 @@ type ExecuteDispatcher struct {
 
 func NewExecuteDispatcher(cache *ExecuteCache, eventsDispatcher *events.Dispatcher) *ExecuteDispatcher {
 	workersCount := envIntDefault("DATASOURCE_EXECUTE_WORKERS", workers.Budget(workers.DomainDSExecute))
-	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(10)
+	queueLen := envIntDefault("DATASOURCE_EXECUTE_QUEUE", 500)
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(queueLen)
 	
 	d := &ExecuteDispatcher{
 		manager: m,

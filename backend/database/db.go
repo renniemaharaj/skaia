@@ -58,8 +58,8 @@ func Init() error {
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	DB.SetMaxOpenConns(envInt("DB_MAX_OPEN_CONNS", 100))
-	DB.SetMaxIdleConns(envInt("DB_MAX_IDLE_CONNS", 50))
+	DB.SetMaxOpenConns(envInt("DB_MAX_OPEN_CONNS", 300))
+	DB.SetMaxIdleConns(envInt("DB_MAX_IDLE_CONNS", 150))
 	DB.SetConnMaxLifetime(time.Duration(envInt("DB_CONN_MAX_LIFETIME_MIN", 30)) * time.Minute)
 	DB.SetConnMaxIdleTime(time.Duration(envInt("DB_CONN_MAX_IDLE_TIME_MIN", 5)) * time.Minute)
 

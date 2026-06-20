@@ -82,24 +82,24 @@ func Budget(domain string) int {
 
 	switch domain {
 	case DomainWS:
-		return min(cores*64, 2048)
+		return min(cores*128, 4096)
 
 	case DomainEvents:
-		return min(cores*4, max(1, maxDBConns/4))
+		return min(cores*8, max(2, maxDBConns/4))
 
 	case DomainDSCompile:
-		return max(1, cores/5)
+		return max(2, cores)
 
 	case DomainDSExecute:
-		return max(1, cores/5)
+		return max(2, cores)
 
 	case DomainMediaScraper:
-		return max(1, min(cores/6, memoryMB/512))
+		return max(2, min(cores*4, memoryMB/512))
 
 	case DomainProvisioning:
-		return max(1, cores/4)
+		return max(2, cores)
 
 	default:
-		return max(1, cores/10)
+		return max(2, cores/2)
 	}
 }

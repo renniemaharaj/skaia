@@ -1221,8 +1221,9 @@ export default function GrengoDashboard() {
                   <span key={logger} style={{
                     padding: "2px 8px",
                     borderRadius: "12px",
-                    background: "var(--accent-color)",
-                    color: "white",
+                    background: "var(--bg-secondary)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
                     fontSize: "0.8rem",
                     display: "flex",
                     alignItems: "center",

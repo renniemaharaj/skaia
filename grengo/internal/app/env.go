@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,18 +43,17 @@ var envDefaults = []envDefaultEntry{
 	{"STRIPE_SECRET_KEY", "", ""},
 	{"STRIPE_WEBHOOK_SECRET", "", ""},
 	// Tuning
-	{"DB_MAX_OPEN_CONNS", "100", "Tuning"},
-	{"DB_MAX_IDLE_CONNS", "50", ""},
+	{"DB_MAX_OPEN_CONNS", "300", "Tuning"},
+	{"DB_MAX_IDLE_CONNS", "150", ""},
 	{"DB_CONN_MAX_LIFETIME_MIN", "30", ""},
 	{"DB_CONN_MAX_IDLE_TIME_MIN", "5", ""},
 	{"WS_MAX_CONNECTIONS", "100000", ""},
-	{"WS_MAX_WORKERS", "256", ""},
 	{"WS_SESSION_SIZE", "100", ""},
 	{"WS_CHAT_RING_SIZE", "80", ""},
 	{"WS_PRESENCE_INTERVAL_MS", "1000", ""},
-	{"HTTP_READ_TIMEOUT_SEC", "15", ""},
-	{"HTTP_WRITE_TIMEOUT_SEC", "15", ""},
-	{"HTTP_IDLE_TIMEOUT_SEC", "60", ""},
+	{"HTTP_READ_TIMEOUT_SEC", "3600", ""},
+	{"HTTP_WRITE_TIMEOUT_SEC", "3600", ""},
+	{"HTTP_IDLE_TIMEOUT_SEC", "120", ""},
 	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30", ""},
 	// Upload limits
 	{"MAX_UPLOAD_PER_USER_MB", "500", "Upload Limits"},
@@ -120,7 +120,43 @@ func syncEnvDefaults(name string) int {
 		return 0
 	}
 
+	upgradeEnvPerformanceKeys(envFile)
+
 	return len(toAdd)
+}
+
+func upgradeEnvPerformanceKeys(envFile string) {
+	raw, err := os.ReadFile(envFile)
+	if err != nil {
+		return
+	}
+	content := string(raw)
+
+	originalContent := content
+
+	// Aggressively upgrade all performance variables regardless of their current value
+	reDBOpen := regexp.MustCompile(`(?m)^DB_MAX_OPEN_CONNS=.*$`)
+	content = reDBOpen.ReplaceAllString(content, "DB_MAX_OPEN_CONNS=300")
+
+	reDBIdle := regexp.MustCompile(`(?m)^DB_MAX_IDLE_CONNS=.*$`)
+	content = reDBIdle.ReplaceAllString(content, "DB_MAX_IDLE_CONNS=150")
+
+	reHTTPRead := regexp.MustCompile(`(?m)^HTTP_READ_TIMEOUT_SEC=.*$`)
+	content = reHTTPRead.ReplaceAllString(content, "HTTP_READ_TIMEOUT_SEC=3600")
+
+	reHTTPWrite := regexp.MustCompile(`(?m)^HTTP_WRITE_TIMEOUT_SEC=.*$`)
+	content = reHTTPWrite.ReplaceAllString(content, "HTTP_WRITE_TIMEOUT_SEC=3600")
+
+	reHTTPIdle := regexp.MustCompile(`(?m)^HTTP_IDLE_TIMEOUT_SEC=.*$`)
+	content = reHTTPIdle.ReplaceAllString(content, "HTTP_IDLE_TIMEOUT_SEC=120")
+
+	// Completely strip WS_MAX_WORKERS regardless of its value
+	reWSWorkers := regexp.MustCompile(`(?m)^WS_MAX_WORKERS=.*$\n?`)
+	content = reWSWorkers.ReplaceAllString(content, "")
+
+	if content != originalContent {
+		_ = os.WriteFile(envFile, []byte(content), 0644)
+	}
 }
 
 // envVal reads a single key from an .env file without sourcing the whole file.

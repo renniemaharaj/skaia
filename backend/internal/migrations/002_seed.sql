@@ -122,39 +122,7 @@ INSERT INTO user_roles (user_id, role_id)
 SELECT 1, (SELECT id FROM roles WHERE name = 'admin')
 WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role_id = (SELECT id FROM roles WHERE name = 'admin'));
 
--- Default forum categories
-INSERT INTO forum_categories (id, name, description, display_order) VALUES
-    (1, 'General Discussion',    'Talk about anything related to our community', 1),
-    (2, 'Support',               'Get help with server issues',                  2),
-    (3, 'Events & Competitions', 'Participate in community events',              3)
-ON CONFLICT DO NOTHING;
 
-SELECT setval(pg_get_serial_sequence('forum_categories', 'id'),
-              (SELECT COALESCE(MAX(id), 0) + 1 FROM forum_categories), false);
-
--- Welcome threads
-DO $$
-DECLARE
-    v_admin_id BIGINT;
-    v_cat_id   BIGINT;
-BEGIN
-    SELECT id INTO v_admin_id FROM users            WHERE username = 'admin'             LIMIT 1;
-    SELECT id INTO v_cat_id   FROM forum_categories WHERE name    = 'General Discussion' LIMIT 1;
-
-    IF v_admin_id IS NOT NULL AND v_cat_id IS NOT NULL THEN
-        INSERT INTO forum_threads (category_id, user_id, title, content, reply_count)
-        VALUES
-            (v_cat_id, v_admin_id,
-             'Welcome to the forum!',
-             'Welcome to our community forum!',
-             0),
-            (v_cat_id, v_admin_id,
-             'Server updates and news',
-             'Stay tuned for the latest updates.',
-             0)
-        ON CONFLICT DO NOTHING;
-    END IF;
-END $$;
 -- Home/manage permission and default site config seed
 INSERT INTO permissions (name, category, description) VALUES
     ('home.manage', 'home', 'Edit landing page sections, branding, and site config'),
