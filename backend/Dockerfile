@@ -7,6 +7,8 @@ RUN apk add --no-cache git nodejs npm
 WORKDIR /app
 
 COPY go.mod go.sum* ./
+COPY pkg/conveyor/ ./pkg/conveyor/
+COPY pkg/grouplogs/ ./pkg/grouplogs/
 RUN go mod download
 
 # copy the entire repository (including frontend) so we can build the SPA

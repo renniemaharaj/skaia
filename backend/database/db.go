@@ -3,7 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
 	"time"

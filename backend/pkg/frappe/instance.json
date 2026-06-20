@@ -1,0 +1,17 @@
+{
+    "deployment": "production",
+    "server_name": "localhost",
+    "instance_sites": [
+        {
+            "site_name": "home.localhost",
+            "apps": [
+                "frappe",
+                "erpnext",
+                "hrms"
+            ]
+        }
+    ],
+    "drop_abandoned_sites": true,
+    "run_sites_manager": true,
+    "frappe_branch": "develop"
+}

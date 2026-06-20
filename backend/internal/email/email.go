@@ -3,7 +3,7 @@ package email
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/smtp"
 	"os"
 	"strconv"

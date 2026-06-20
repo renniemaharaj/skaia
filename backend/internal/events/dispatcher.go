@@ -1,15 +1,19 @@
 package events
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
+
+var pkgLog = log.New("Events")
 
 // Activity constants for the event log.
 const (
@@ -131,12 +135,10 @@ type Job struct {
 	Fn         func() // optional side-effect to execute within the worker
 }
 
-// Dispatcher manages the job conveyor belt with buffered channels and a worker pool.
+// Dispatcher manages the job conveyor belt.
 type Dispatcher struct {
-	jobs      chan Job
+	manager   *conveyor.Manager
 	repo      *Repository
-	workers   int
-	wg        sync.WaitGroup
 	done      atomic.Bool
 	OnPersist func(event map[string]interface{}) // optional callback after an event is persisted
 }
@@ -153,55 +155,58 @@ func envIntDefault(key string, def int) int {
 	return n
 }
 
-// NewDispatcher creates a Dispatcher with a buffered job channel and worker pool.
+// NewDispatcher creates a Dispatcher powered by conveyor.
 // Tunable via EVENTS_WORKERS (default 4) and EVENTS_BUFFER (default 4096).
 func NewDispatcher(db *sql.DB) *Dispatcher {
 	workers := envIntDefault("EVENTS_WORKERS", 4)
 	bufSize := envIntDefault("EVENTS_BUFFER", 4096)
+	
+	m := conveyor.CreateManager().
+		SetMinWorkers(1).
+		SetMaxWorkers(workers).
+		SetSafeQueueLength(bufSize)
+
+	var repo *Repository
+	if db != nil {
+		repo = NewRepository(db)
+	}
+
 	return &Dispatcher{
-		jobs:    make(chan Job, bufSize),
-		repo:    NewRepository(db),
-		workers: workers,
+		manager: m,
+		repo:    repo,
 	}
 }
 
-// Start launches the worker pool goroutines.
+// Start launches the worker pool.
 func (d *Dispatcher) Start() {
-	for i := 0; i < d.workers; i++ {
-		d.wg.Add(1)
-		go d.worker(i)
-	}
-	log.Printf("events: dispatcher started — workers=%d buffer=%d", d.workers, cap(d.jobs))
+	d.manager.Start()
+	pkgLog.Info("dispatcher started")
 }
 
-// Stop signals workers to drain remaining jobs and exit.
-// Call after the HTTP server has stopped accepting new requests.
+// Stop signals workers to stop.
 func (d *Dispatcher) Stop() {
 	d.done.Store(true)
-	close(d.jobs)
-	d.wg.Wait()
-	log.Println("events: dispatcher stopped")
+	d.manager.Stop()
+	pkgLog.Info("dispatcher stopped")
 }
 
-// Dispatch pushes a job onto the conveyor belt. Non-blocking: if the buffer is
-// full the job is dropped with a log warning (back-pressure safety valve).
+// Dispatch pushes a job onto the conveyor belt. 
 func (d *Dispatcher) Dispatch(job Job) {
 	if d.done.Load() {
 		return
 	}
-	select {
-	case d.jobs <- job:
-	default:
-		log.Printf("events: buffer full, dropping %s for user %d", job.Activity, job.UserID)
-	}
-}
-
-// worker processes jobs from the conveyor belt until the channel is closed.
-func (d *Dispatcher) worker(id int) {
-	defer d.wg.Done()
-	for job := range d.jobs {
-		d.processJob(job)
-	}
+	
+	d.manager.B.Push(conveyor.CreateJob(
+		context.Background(),
+		job,
+		func(param any) error {
+			j := param.(Job)
+			d.processJob(j)
+			return nil
+		},
+		nil,
+		nil,
+	))
 }
 
 // processJob executes the optional side-effect, then persists the event log.
@@ -211,7 +216,7 @@ func (d *Dispatcher) processJob(job Job) {
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("events: panic in job %s: %v", job.Activity, r)
+					pkgLog.ErrorF("panic in job %s: %v", job.Activity, r)
 				}
 			}()
 			job.Fn()
@@ -235,9 +240,9 @@ func (d *Dispatcher) processJob(job Job) {
 		resourceID = &job.ResourceID
 	}
 
-	if d.repo != nil && d.repo.db != nil {
+	if d.repo != nil {
 		if err := d.repo.Insert(userID, job.Activity, job.Resource, resourceID, meta, job.IP); err != nil {
-			log.Printf("events: failed to persist %s: %v", job.Activity, err)
+			pkgLog.ErrorF("failed to persist %s: %v", job.Activity, err)
 		} else if d.OnPersist != nil {
 			evt := map[string]interface{}{
 				"activity":   job.Activity,

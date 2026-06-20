@@ -13,7 +13,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"mime"
 	"mime/multipart"
 	"net/http"

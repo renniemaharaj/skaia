@@ -2,7 +2,7 @@ package ws
 
 import (
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 )
 
 // PropagateUser sends updated user data to all clients subscribed to that user.

@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"time"
 )
 

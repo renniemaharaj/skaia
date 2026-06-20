@@ -2,7 +2,7 @@ package datasource
 
 import (
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strconv"
 	"time"

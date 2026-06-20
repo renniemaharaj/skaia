@@ -3,7 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 
 	ievents "github.com/skaia/backend/internal/events"

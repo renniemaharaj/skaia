@@ -2,7 +2,7 @@ package ws
 
 import (
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 )
 
 // doPresenceBroadcast builds a per-session online user list and sends it only

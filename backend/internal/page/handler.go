@@ -3,7 +3,7 @@ package page
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strconv"
 	"strings"

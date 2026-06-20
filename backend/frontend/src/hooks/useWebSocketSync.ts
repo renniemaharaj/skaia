@@ -256,6 +256,10 @@ export const useWebSocketSync = () => {
           if (message.type === "grengo:hardware_update") {
             window.dispatchEvent(new CustomEvent("grengo:hardware_update", { detail: payload }));
           }
+          if (message.type === "logs:stream") {
+            window.dispatchEvent(new CustomEvent("logs:stream", { detail: payload }));
+            return;
+          }
           if (
             message.type === "grengo:job_update" ||
             message.type === "grengo:stats_update" ||

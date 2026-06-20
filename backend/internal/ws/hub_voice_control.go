@@ -2,7 +2,7 @@ package ws
 
 import (
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 )
 
 // VoiceControlAction asks the hub to update voice permissions.

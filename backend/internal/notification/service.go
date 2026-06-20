@@ -2,7 +2,7 @@ package notification
 
 import (
 	"encoding/json"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"strconv"
 
 	"github.com/skaia/backend/internal/ws"

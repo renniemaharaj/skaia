@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
 	"time"

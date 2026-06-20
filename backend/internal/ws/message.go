@@ -57,6 +57,7 @@ const (
 	MediaScraperResult      MessageType = "mediascraper:result"       // server => all: job completion
 	MediaScraperStarted     MessageType = "mediascraper:started"      // server => all: job started processing
 	MediaScraperPending     MessageType = "mediascraper:pending"      // server => all: job cleared and back to pending
+	LogsStream              MessageType = "logs:stream"               // server => subscribed clients: realtime log line
 	ErrorMessage            MessageType = "error"
 )
 

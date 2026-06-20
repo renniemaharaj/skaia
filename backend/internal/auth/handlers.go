@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strings"
 	"time"

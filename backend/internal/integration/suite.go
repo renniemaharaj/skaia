@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"net/http/httptest"
 	"strings"

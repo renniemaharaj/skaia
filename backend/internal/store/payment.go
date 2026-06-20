@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"math/rand"
 	"os"
 	"time"

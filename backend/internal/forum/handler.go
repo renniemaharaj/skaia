@@ -3,7 +3,7 @@ package forum
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strconv"
 	"strings"

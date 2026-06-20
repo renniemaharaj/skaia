@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  frappe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /home/frappe
+    entrypoint: [ "/usr/local/bin/goftw-entry" ]
+    environment:
+      MARIADB_HOST: mariadb
+      MARIADB_PORT: 3306
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_ROOT_USERNAME: root
+      MARIADB_USER: frappe
+      MARIADB_PASSWORD: frappe
+      MARIADB_DATABASE: frappe
+      # SSH key-based authentication (set via env or .env file)
+      SSH_PUBLIC_KEY: ${SSH_PUBLIC_KEY:-}
+    restart: always
+    volumes:
+      - ./mount:/home/frappe
+    ports:
+      # - "22:22" # SSH (key-based only)
+      - "80:80" # Nginx (main Frappe)
+      - "8000:8000" # Frappe web
+      - "9000:9000" # Socket.IO port
+      - "3000:3000" # API
+    depends_on:
+      - mariadb
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+    networks:
+      - frappe_net
+    logging:
+      driver: local
+
+  nginx-dynamic-proxy:
+    image: nginx:latest
+    restart: always
+    ports:
+      - "2020:2020"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/dynamic-proxy.conf:/etc/nginx/conf.d/dynamic-proxy.conf:ro
+      # - ./mount/frappe-bench/sites:/var/www/sites:ro
+      - /var/log/nginx:/var/log/nginx
+    depends_on:
+      - frappe
+    networks:
+      - frappe_net
+    logging:
+      driver: local
+
+  mariadb:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_ROOT_USERNAME: root
+      MARIADB_USER: frappe
+      MARIADB_PASSWORD: frappe
+      MARIADB_DATABASE: frappe
+    ports:
+      - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+    networks:
+      - frappe_net
+
+  redis-cache:
+    image: redis:7
+    restart: always
+    volumes:
+      - ./redis-cache:/data
+    networks:
+      - frappe_net
+
+  redis-queue:
+    image: redis:7
+    restart: always
+    volumes:
+      - ./redis-queue:/data
+    networks:
+      - frappe_net
+
+  redis-socketio:
+    image: redis:7
+    restart: always
+    volumes:
+      - ./redis-socketio:/data
+    networks:
+      - frappe_net
+
+networks:
+  frappe_net:
+    driver: bridge

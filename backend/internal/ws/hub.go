@@ -1,15 +1,20 @@
 package ws
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
+
+var pkgLog = log.New("WebSocket")
 
 // Environment-driven configuration
 // All values default to production-ready settings tuned for 100K concurrent
@@ -33,7 +38,7 @@ func envInt(key string, def int) int {
 	}
 	n, err := strconv.Atoi(v)
 	if err != nil || n <= 0 {
-		log.Printf("ws: invalid %s=%q, using default %d", key, v, def)
+		pkgLog.WarningF("invalid %s=%q, using default %d", key, v, def)
 		return def
 	}
 	return n
@@ -173,8 +178,8 @@ type Hub struct {
 	// clients + subscriptions - protected by mu
 	mu sync.RWMutex
 
-	// worker pool
-	workerSem chan struct{}
+	// worker pool powered by conveyor
+	manager *conveyor.Manager
 
 	// per-session chat ring buffers - protected by chatMu
 	chatMu     sync.Mutex
@@ -229,7 +234,10 @@ func NewHub() *Hub {
 		mediaRoutes:     make(map[string]*MediaState),
 		sessions:        make(map[int64]int),
 		chatRings:       make(map[int64]*sessionChatRing),
-		workerSem:       make(chan struct{}, cfg.MaxWorkers),
+		manager: conveyor.CreateManager().
+			SetMinWorkers(1).
+			SetMaxWorkers(cfg.MaxWorkers).
+			SetSafeQueueLength(4096),
 		mediaRepo:       &MediaHistoryRepo{},
 	}
 }
@@ -265,6 +273,8 @@ func clientLabel(c *Client) string {
 // coalesced: rapid changes set a dirty flag and a background ticker
 // fires the actual broadcast at most once per cfg.PresenceInterval.
 func (h *Hub) Run() {
+	h.manager.Start()
+	
 	// Presence debounce: a background ticker checks the dirty flag and
 	// broadcasts at most once per cfg.PresenceInterval.
 	go func() {
@@ -283,6 +293,16 @@ func (h *Hub) Run() {
 		defer ticker.Stop()
 		for range ticker.C {
 			h.cleanupInactiveMedia()
+		}
+	}()
+
+	// Log streaming: broadcast global logs to subscribed clients.
+	// Clients subscribe with ResourceType "log" and ResourceID 0.
+	go func() {
+		sub := log.GlobalGroup.Delegate.Subscribe()
+		defer log.GlobalGroup.Delegate.Unsubscribe(sub)
+		for line := range sub.C {
+			h.propagate("log", 0, LogsStream, "log", line)
 		}
 	}()
 
@@ -340,11 +360,16 @@ func (h *Hub) Run() {
 // are occupied. This caps concurrent fan-out and provides natural back-pressure
 // through the channel buffers.
 func (h *Hub) dispatch(fn func()) {
-	h.workerSem <- struct{}{}
-	go func() {
-		defer func() { <-h.workerSem }()
-		fn()
-	}()
+	h.manager.B.Push(conveyor.CreateJob(
+		context.Background(),
+		nil,
+		func(param any) error {
+			fn()
+			return nil
+		},
+		nil,
+		nil,
+	))
 }
 
 // markPresenceDirty flags that a presence broadcast is needed. The background
@@ -370,7 +395,7 @@ func (h *Hub) Broadcast(msg *Message) {
 	select {
 	case h.broadcast <- msg:
 	default:
-		log.Println("ws: broadcast channel full, message dropped")
+		pkgLog.Warning("broadcast channel full, message dropped")
 	}
 }
 
@@ -414,7 +439,7 @@ func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	select {
 	case h.teleport <- TeleportRequest{TargetUserID: targetUserID, Route: route}:
 	default:
-		log.Println("ws: teleport channel full, request dropped")
+		pkgLog.Warning("teleport channel full, request dropped")
 	}
 }
 

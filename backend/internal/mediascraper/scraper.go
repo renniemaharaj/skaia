@@ -16,6 +16,7 @@ import (
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/ws"
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
 var (
@@ -26,8 +27,8 @@ var (
 	activeJobs int32
 	wsHub      *ws.Hub
 
-	jobQueue chan jobRequest
-	initOnce sync.Once
+	scraperManager *conveyor.Manager
+	initOnce       sync.Once
 )
 
 type jobRequest struct {
@@ -36,22 +37,15 @@ type jobRequest struct {
 
 func initScraper() {
 	initOnce.Do(func() {
-		jobQueue = make(chan jobRequest, 100)
-		go workerLoop()
+		scraperManager = conveyor.CreateManager().
+			SetMinWorkers(1).
+			SetMaxWorkers(5). // limit headless browser instances
+			SetSafeQueueLength(10)
+		scraperManager.Start()
 	})
 }
 
-func workerLoop() {
-	for req := range jobQueue {
-		broadcastJobStarted(req.targetURL)
-		res, err := doScrape(req.targetURL)
-		
-		atomic.AddInt32(&activeJobs, -1)
-		broadcastJobsUpdate()
 
-		broadcastJobResult(req.targetURL, res, err)
-	}
-}
 
 func broadcastJobStarted(targetURL string) {
 	if wsHub == nil {
@@ -99,17 +93,25 @@ func SetHub(hub *ws.Hub) {
 func ClearJobsAndCache() {
 	initScraper()
 
+	scraperManager.Stop()
+
 	// Drain the queue to drop pending requests
 	drained := false
 	for !drained {
 		select {
-		case req := <-jobQueue:
+		case req := <-scraperManager.B.C:
 			atomic.AddInt32(&activeJobs, -1)
-			broadcastJobPending(req.targetURL)
+			broadcastJobPending(req.Param.(jobRequest).targetURL)
 		default:
 			drained = true
 		}
 	}
+
+	scraperManager = conveyor.CreateManager().
+		SetMinWorkers(1).
+		SetMaxWorkers(5).
+		SetSafeQueueLength(10)
+	scraperManager.Start()
 
 	ClearCache()
 	broadcastJobsUpdate()
@@ -282,8 +284,26 @@ func QueueScrape(targetURL string) error {
 	atomic.AddInt32(&activeJobs, 1)
 	broadcastJobsUpdate()
 
+	job := conveyor.CreateJob(
+		context.Background(),
+		jobRequest{targetURL},
+		func(param any) error {
+			req := param.(jobRequest)
+			broadcastJobStarted(req.targetURL)
+			res, err := doScrape(req.targetURL)
+			
+			atomic.AddInt32(&activeJobs, -1)
+			broadcastJobsUpdate()
+
+			broadcastJobResult(req.targetURL, res, err)
+			return err
+		},
+		nil,
+		nil,
+	)
+
 	select {
-	case jobQueue <- jobRequest{targetURL}:
+	case scraperManager.B.C <- *job:
 		return nil
 	default:
 		atomic.AddInt32(&activeJobs, -1)

@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"time"
 )
 

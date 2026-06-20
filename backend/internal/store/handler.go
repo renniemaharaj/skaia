@@ -3,7 +3,7 @@ package store
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"math"
 	"net/http"
 	"strconv"

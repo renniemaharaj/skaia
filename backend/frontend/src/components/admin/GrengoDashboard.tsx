@@ -32,6 +32,8 @@ import {
 import Select from "../input/Select";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { useAtomValue } from "jotai";
+import { socketAtom } from "../../atoms/auth";
 
 // Types
 
@@ -486,6 +488,14 @@ export default function GrengoDashboard() {
   const [consoleOutputLines, setConsoleOutputLines] = useState<string[]>([]);
   const [consoleBusy, setConsoleBusy] = useState(false);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [availableLoggers, setAvailableLoggers] = useState<string[]>(["System", "WebSocket", "Events"]);
+  const [subscribedLoggers, setSubscribedLoggers] = useState<string[]>([]);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  
+  const subscribedLoggersRef = useRef<string[]>([]);
+  useEffect(() => {
+    subscribedLoggersRef.current = subscribedLoggers;
+  }, [subscribedLoggers]);
 
   const consoleOutputRef = useRef<HTMLDivElement>(null);
   const wasAtBottomRef = useRef(true);
@@ -502,6 +512,49 @@ export default function GrengoDashboard() {
 				consoleOutputRef.current.scrollHeight;
     }
   }, [consoleOutputLines, isConsoleOpen]);
+
+  const socket = useAtomValue(socketAtom);
+  
+  useEffect(() => {
+    if (isConsoleOpen && sessionValid && socket && socket.readyState === WebSocket.OPEN) {
+      // Send websocket subscribe request for "log" resource type
+      socket.send(JSON.stringify({
+        type: "subscribe",
+        payload: { resource_type: "log", resource_id: 0 }
+      }));
+    }
+  }, [isConsoleOpen, sessionValid, socket]);
+
+  useEffect(() => {
+    const handleLogStream = (e: Event) => {
+      const payload = (e as CustomEvent).detail;
+      if (!payload || !payload.data) return;
+      
+      const logLine = payload.data;
+      
+      setAvailableLoggers(prev => {
+        if (logLine.prefix && !prev.includes(logLine.prefix)) {
+          return [...prev, logLine.prefix];
+        }
+        return prev;
+      });
+
+      const subs = subscribedLoggersRef.current;
+      if (subs.length > 0 && !subs.includes(logLine.prefix)) {
+        return; // filter out if we have subscriptions and this doesn't match
+      }
+
+      setConsoleOutputLines(prev => {
+        const timeStr = logLine.time?.split(" ")[1] || "";
+        const level = logLine.level || "INFO";
+        const lineStr = `[${timeStr}] ${level} [${logLine.prefix}] ${logLine.msg}`;
+        return [...prev, lineStr].slice(-500);
+      });
+    };
+    
+    window.addEventListener("logs:stream", handleLogStream);
+    return () => window.removeEventListener("logs:stream", handleLogStream);
+  }, []);
 
   const handleConsoleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1157,6 +1210,90 @@ export default function GrengoDashboard() {
               flexDirection: "column",
             }}
           >
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", padding: "8px 12px", borderBottom: "1px solid var(--border-color)", position: "relative" }}>
+              {/* Active Badges */}
+              {subscribedLoggers.length === 0 ? (
+                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Subscribe to loggers to see streams</span>
+              ) : (
+                subscribedLoggers.map(logger => (
+                  <span key={logger} style={{
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                    background: "var(--accent-color)",
+                    color: "white",
+                    fontSize: "0.8rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px"
+                  }}>
+                    {logger}
+                    <X size={12} style={{ cursor: "pointer" }} onClick={() => setSubscribedLoggers(prev => prev.filter(l => l !== logger))} />
+                  </span>
+                ))
+              )}
+              
+              <button 
+                className="action-btn" 
+                style={{ padding: "2px 8px", height: "auto", fontSize: "0.8rem", marginLeft: "auto" }}
+                onClick={() => setIsPickerOpen(!isPickerOpen)}
+              >
+                <Plus size={14} style={{ marginRight: "4px" }}/> Add Stream
+              </button>
+
+              {/* Glass Menu Dropdown */}
+              {isPickerOpen && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: "12px",
+                  marginTop: "4px",
+                  background: "rgba(20, 20, 25, 0.8)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  zIndex: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  minWidth: "150px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
+                }}>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px", padding: "0 4px" }}>Available Loggers</div>
+                  {availableLoggers.map(logger => {
+                    const isSubbed = subscribedLoggers.includes(logger);
+                    return (
+                      <div 
+                        key={logger}
+                        style={{
+                          padding: "6px 8px",
+                          borderRadius: "4px",
+                          fontSize: "0.85rem",
+                          cursor: "pointer",
+                          background: isSubbed ? "rgba(255, 255, 255, 0.1)" : "transparent",
+                          color: isSubbed ? "var(--text-primary)" : "var(--text-muted)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center"
+                        }}
+                        onClick={() => {
+                          setSubscribedLoggers(prev => 
+                            isSubbed ? prev.filter(l => l !== logger) : [...prev, logger]
+                          );
+                        }}
+                      >
+                        {logger}
+                        {isSubbed && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-color)" }} />}
+                      </div>
+                    );
+                  })}
+                  {availableLoggers.length === 0 && (
+                    <div style={{ padding: "4px", fontSize: "0.8rem", color: "var(--text-muted)" }}>Listening...</div>
+                  )}
+                </div>
+              )}
+            </div>
             <div
               ref={consoleOutputRef}
               onScroll={handleConsoleScroll}
@@ -1170,6 +1307,7 @@ export default function GrengoDashboard() {
                 display: "flex",
                 flexDirection: "column",
                 border: "1px solid var(--border-color)",
+                borderTop: "none",
                 marginBottom: "12px",
               }}
             >

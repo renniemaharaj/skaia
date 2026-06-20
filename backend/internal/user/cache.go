@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
 	"time"

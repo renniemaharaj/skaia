@@ -6,7 +6,7 @@
 package upload
 
 import (
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"regexp"
 	"strings"

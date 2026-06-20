@@ -1,0 +1,5 @@
+mount
+mysqldata
+redis-cache
+redis-queue
+redis-socketio

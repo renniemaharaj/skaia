@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
 	"os/signal"

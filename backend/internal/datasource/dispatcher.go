@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+	"strconv"
+	"sync"
+	"os"
 
+	"github.com/google/uuid"
 	"github.com/skaia/backend/internal/events"
-	"github.com/skaia/backend/internal/jobs"
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
 const (
@@ -14,11 +18,37 @@ const (
 	compilerBufferEnv  = "COMPILER_BUFFER"
 )
 
-func compilerEnvIntDefault(key string, def int) int {
-	return jobs.EnvIntDefault(key, def)
+func envIntDefault(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n <= 0 {
+		return def
+	}
+	return n
 }
 
-// CompileJob is a compile request on the conveyor.
+func compilerEnvIntDefault(key string, def int) int {
+	return envIntDefault(key, def)
+}
+
+type Result[R any] struct {
+	Value R
+	Err   error
+}
+
+type Snapshot[R any] struct {
+	ID        string    `json:"id"`
+	Kind      string    `json:"kind"`
+	OwnerID   int64     `json:"owner_id,omitempty"`
+	State     string    `json:"state"`
+	Result    *R        `json:"result,omitempty"`
+	Error     string    `json:"error,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type CompileJob struct {
 	DataSourceID int64
 	Source       string
@@ -27,45 +57,50 @@ type CompileJob struct {
 	IP           string
 }
 
-// CompileDispatcher manages a separate compiler conveyor belt.
 type CompileDispatcher struct {
-	manager *jobs.Manager[CompileJob, CompileResult]
+	manager *conveyor.Manager
 	cache   *CompileCache
 	events  *events.Dispatcher
 }
 
-// NewCompileDispatcher creates a dispatcher for compiler jobs.
 func NewCompileDispatcher(cache *CompileCache, eventsDispatcher *events.Dispatcher) *CompileDispatcher {
 	workers := compilerEnvIntDefault(compilerWorkersEnv, 2)
-	bufSize := compilerEnvIntDefault(compilerBufferEnv, 64)
-	d := &CompileDispatcher{cache: cache, events: eventsDispatcher}
-	d.manager = jobs.NewManager(jobs.Config{
-		Kind:    "datasource.compile",
-		Workers: workers,
-		Buffer:  bufSize,
-		TTL:     10 * time.Minute,
-	}, d.processJob)
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workers).SetSafeQueueLength(10)
+	d := &CompileDispatcher{
+		manager: m,
+		cache:   cache,
+		events:  eventsDispatcher,
+	}
 	return d
 }
 
-// Start launches compiler workers.
 func (d *CompileDispatcher) Start() {
 	d.manager.Start()
 }
 
-// Stop closes the compiler conveyor and waits for workers.
 func (d *CompileDispatcher) Stop() {
 	d.manager.Stop()
 }
 
-// Dispatch enqueues a compile job and returns a channel for the result.
-func (d *CompileDispatcher) Dispatch(job CompileJob) (<-chan jobs.Result[CompileResult], bool) {
-	_, resultCh, ok := d.manager.DispatchWithResult(job.UserID, job)
-	return resultCh, ok
+func (d *CompileDispatcher) Dispatch(job CompileJob) (<-chan Result[CompileResult], bool) {
+	ch := make(chan Result[CompileResult], 1)
+	
+	d.manager.B.Push(conveyor.CreateJob(
+		context.Background(),
+		job,
+		func(param any) error {
+			j := param.(CompileJob)
+			res, err := d.processJob(context.Background(), j)
+			ch <- Result[CompileResult]{Value: res, Err: err}
+			return err
+		},
+		nil,
+		nil,
+	))
+	return ch, true
 }
 
 func (d *CompileDispatcher) processJob(ctx context.Context, job CompileJob) (CompileResult, error) {
-	_ = ctx
 	files := job.Files
 	if len(files) == 0 && job.Source != "" {
 		files = map[string]string{"main.ts": job.Source}
@@ -110,24 +145,25 @@ type ExecuteJob struct {
 	IP           string
 }
 
-// ExecuteDispatcher manages server-side datasource execution jobs.
 type ExecuteDispatcher struct {
-	manager *jobs.Manager[ExecuteJob, CachedExecuteResult]
+	manager *conveyor.Manager
 	cache   *ExecuteCache
 	events  *events.Dispatcher
+
+	mu    sync.RWMutex
+	snaps map[string]*Snapshot[CachedExecuteResult]
 }
 
-// NewExecuteDispatcher creates a managed worker pool for expensive executions.
 func NewExecuteDispatcher(cache *ExecuteCache, eventsDispatcher *events.Dispatcher) *ExecuteDispatcher {
-	workers := jobs.EnvIntDefault("DATASOURCE_EXECUTE_WORKERS", 2)
-	bufSize := jobs.EnvIntDefault("DATASOURCE_EXECUTE_BUFFER", 64)
-	d := &ExecuteDispatcher{cache: cache, events: eventsDispatcher}
-	d.manager = jobs.NewManager(jobs.Config{
-		Kind:    "datasource.execute",
-		Workers: workers,
-		Buffer:  bufSize,
-		TTL:     30 * time.Minute,
-	}, d.processJob)
+	workers := envIntDefault("DATASOURCE_EXECUTE_WORKERS", 2)
+	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workers).SetSafeQueueLength(10)
+	
+	d := &ExecuteDispatcher{
+		manager: m,
+		cache:   cache,
+		events:  eventsDispatcher,
+		snaps:   make(map[string]*Snapshot[CachedExecuteResult]),
+	}
 	return d
 }
 
@@ -139,20 +175,68 @@ func (d *ExecuteDispatcher) Stop() {
 	d.manager.Stop()
 }
 
-func (d *ExecuteDispatcher) Dispatch(job ExecuteJob) (jobs.Snapshot[CachedExecuteResult], bool) {
-	return d.manager.Dispatch(job.UserID, job)
+func (d *ExecuteDispatcher) Dispatch(job ExecuteJob) (Snapshot[CachedExecuteResult], bool) {
+	snap, _, ok := d.DispatchWithResult(job)
+	return snap, ok
 }
 
-func (d *ExecuteDispatcher) DispatchWithResult(job ExecuteJob) (jobs.Snapshot[CachedExecuteResult], <-chan jobs.Result[CachedExecuteResult], bool) {
-	return d.manager.DispatchWithResult(job.UserID, job)
+func (d *ExecuteDispatcher) DispatchWithResult(job ExecuteJob) (Snapshot[CachedExecuteResult], <-chan Result[CachedExecuteResult], bool) {
+	ch := make(chan Result[CachedExecuteResult], 1)
+	id := uuid.NewString()
+
+	snap := Snapshot[CachedExecuteResult]{
+		ID:        id,
+		Kind:      "datasource.execute",
+		OwnerID:   job.UserID,
+		State:     "queued",
+		CreatedAt: time.Now().UTC(),
+	}
+
+	d.mu.Lock()
+	d.snaps[id] = &snap
+	d.mu.Unlock()
+
+	d.manager.B.Push(conveyor.CreateJob(
+		context.Background(),
+		job,
+		func(param any) error {
+			d.mu.Lock()
+			d.snaps[id].State = "running"
+			d.mu.Unlock()
+
+			j := param.(ExecuteJob)
+			res, err := d.processJob(context.Background(), j)
+
+			d.mu.Lock()
+			if err != nil {
+				d.snaps[id].State = "failed"
+				d.snaps[id].Error = err.Error()
+			} else {
+				d.snaps[id].State = "succeeded"
+				d.snaps[id].Result = &res
+			}
+			d.mu.Unlock()
+
+			ch <- Result[CachedExecuteResult]{Value: res, Err: err}
+			return err
+		},
+		nil,
+		nil,
+	))
+
+	return snap, ch, true
 }
 
-func (d *ExecuteDispatcher) Get(id string) (jobs.Snapshot[CachedExecuteResult], bool) {
-	return d.manager.Get(id)
+func (d *ExecuteDispatcher) Get(id string) (Snapshot[CachedExecuteResult], bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if snap, ok := d.snaps[id]; ok {
+		return *snap, true
+	}
+	return Snapshot[CachedExecuteResult]{}, false
 }
 
 func (d *ExecuteDispatcher) processJob(ctx context.Context, job ExecuteJob) (CachedExecuteResult, error) {
-	_ = ctx
 	result, err := ExecuteTypeScript(job.Files, job.Env)
 	if err != nil {
 		d.recordExecuteEvent(job, false, err)

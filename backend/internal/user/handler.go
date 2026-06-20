@@ -5,7 +5,7 @@ import (
 	"errors"
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
+	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
 	"path/filepath"

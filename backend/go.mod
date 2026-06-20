@@ -1,6 +1,6 @@
 module github.com/skaia/backend
 
-go 1.24.0
+go 1.24.5
 
 require (
 	github.com/go-chi/chi/v5 v5.2.5
@@ -13,6 +13,8 @@ require (
 	github.com/lib/pq v1.11.2
 	github.com/pquerna/otp v1.5.0
 	github.com/redis/go-redis/v9 v9.18.0
+	github.com/renniemaharaj/conveyor v0.0.0-20250821123734-2de0e1bcadc1
+	github.com/renniemaharaj/grouplogs v1.6.2
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v82 v82.5.1
 	golang.org/x/crypto v0.48.0
@@ -23,7 +25,10 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ysmood/fetchup v0.2.3 // indirect
 	github.com/ysmood/goob v0.4.0 // indirect
@@ -36,3 +41,7 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/renniemaharaj/conveyor => ./pkg/conveyor
+
+replace github.com/renniemaharaj/grouplogs => ./pkg/grouplogs
