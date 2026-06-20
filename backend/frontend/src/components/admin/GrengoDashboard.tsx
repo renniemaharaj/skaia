@@ -34,6 +34,7 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { useAtomValue } from "jotai";
 import { socketAtom } from "../../atoms/auth";
+import "../ui/GlassMenu.css";
 
 // Types
 
@@ -1242,40 +1243,20 @@ export default function GrengoDashboard() {
 
               {/* Glass Menu Dropdown */}
               {isPickerOpen && (
-                <div style={{
-                  position: "absolute",
+                <div className="glass-menu-wrap" style={{
                   top: "100%",
                   right: "12px",
                   marginTop: "4px",
-                  background: "rgba(20, 20, 25, 0.8)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  borderRadius: "8px",
-                  padding: "8px",
-                  zIndex: 10,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
                   minWidth: "150px",
-                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
                 }}>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px", padding: "0 4px" }}>Available Loggers</div>
                   {availableLoggers.map(logger => {
                     const isSubbed = subscribedLoggers.includes(logger);
                     return (
-                      <div 
+                      <button 
                         key={logger}
+                        className="glass-menu-op"
                         style={{
-                          padding: "6px 8px",
-                          borderRadius: "4px",
-                          fontSize: "0.85rem",
-                          cursor: "pointer",
-                          background: isSubbed ? "rgba(255, 255, 255, 0.1)" : "transparent",
-                          color: isSubbed ? "var(--text-primary)" : "var(--text-muted)",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center"
+                          background: isSubbed ? "var(--bg-tertiary)" : "transparent",
                         }}
                         onClick={() => {
                           setSubscribedLoggers(prev => 
@@ -1283,13 +1264,13 @@ export default function GrengoDashboard() {
                           );
                         }}
                       >
-                        {logger}
+                        <span className="glass-menu-title" style={{ margin: 0, fontWeight: isSubbed ? 600 : 400 }}>{logger}</span>
                         {isSubbed && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-color)" }} />}
-                      </div>
+                      </button>
                     );
                   })}
                   {availableLoggers.length === 0 && (
-                    <div style={{ padding: "4px", fontSize: "0.8rem", color: "var(--text-muted)" }}>Listening...</div>
+                    <div style={{ padding: "4px 12px", fontSize: "0.8rem", color: "var(--text-muted)" }}>Listening...</div>
                   )}
                 </div>
               )}
