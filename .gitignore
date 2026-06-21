@@ -12,6 +12,7 @@ pgadmin_data/
 !backend/.env
 nginx/
 scratch/
+mnt/
 
 # Grengo state
 backends/

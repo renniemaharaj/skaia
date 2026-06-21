@@ -358,7 +358,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if strings.HasSuffix(req.Host, ".frappe.localhost") {
-				targetURL, _ := url.Parse("http://skaia_frappe_cluster_1:80")
+				targetURL, _ := url.Parse("http://host.docker.internal:8000")
 				proxy := httputil.NewSingleHostReverseProxy(targetURL)
 				proxy.ServeHTTP(w, req)
 				return
@@ -806,23 +806,22 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		}
 
 		if isFrappe {
-			// Redirect Frappe to its native subdomain to avoid asset path issues
 			if siteName == "" {
-			siteName = fmt.Sprintf("site%d.frappe.localhost", id)
+				siteName = fmt.Sprintf("site%d.frappe.localhost", id)
 			}
-			
-			// Reconstruct the remaining path if any
-			prefix := fmt.Sprintf("/instances/%d", id)
-			remaining := strings.TrimPrefix(req.URL.Path, prefix)
-			
-			http.Redirect(w, req, "http://"+siteName+remaining, http.StatusFound)
+			// Frappe does not support sub-path proxying. Redirect to the subdomain.
+			scheme := "http"
+			if req.TLS != nil || req.Header.Get("X-Forwarded-Proto") == "https" {
+				scheme = "https"
+			}
+			redirectURL := fmt.Sprintf("%s://%s/", scheme, siteName)
+			http.Redirect(w, req, redirectURL, http.StatusMovedPermanently)
 			return
 		}
 
-		// Proxy for other blueprints
 		targetURL, _ := url.Parse(fmt.Sprintf("http://host.docker.internal:%d", int(targetPort)))
-
 		log.Printf("[DEBUG] Proxying to non-Frappe instance: targetPort=%v, targetURL=%v", targetPort, targetURL)
+
 		proxy := httputil.NewSingleHostReverseProxy(targetURL)
 		
 		// Remove the /instances/{id} prefix
