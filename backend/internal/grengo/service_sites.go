@@ -126,6 +126,22 @@ func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
 	}
 
 	scanner := bufio.NewScanner(resp.Body)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+		if i := bytes.IndexAny(data, "\r\n"); i >= 0 {
+			// If we have a CR LF sequence, advance past both
+			if data[i] == '\r' && i+1 < len(data) && data[i+1] == '\n' {
+				return i + 2, data[0:i], nil
+			}
+			return i + 1, data[0:i], nil
+		}
+		if atEOF {
+			return len(data), data, nil
+		}
+		return 0, nil, nil
+	})
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "ERROR: exit code") {

@@ -2,6 +2,7 @@ package bench
 
 import (
 	"fmt"
+	"io"
 	"goftw/internal/entity"
 )
 
@@ -18,6 +19,11 @@ func siteExistsInCfx(site string, cfg *entity.Instance) bool {
 // New creates a new site
 func (b *Bench) NewSite(site, dbRootUser, dbRootPass string) error {
 	err := b.ExecRunInBenchPrintIO("bench", "new-site", site, "--db-root-username", dbRootUser, "--db-root-password", dbRootPass, "--admin-password", "admin")
+	return err
+}
+
+func (b *Bench) NewSiteStream(w io.Writer, site, dbRootUser, dbRootPass string) error {
+	err := b.ExecRunInBenchStream(w, "bench", "new-site", site, "--db-root-username", dbRootUser, "--db-root-password", dbRootPass, "--admin-password", "admin")
 	return err
 }
 

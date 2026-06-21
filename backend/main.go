@@ -354,10 +354,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	r := chi.NewRouter()
 
-	// Intercept *.skaia.localhost and proxy directly to Frappe cluster
+	// Intercept *.frappe.localhost and proxy directly to Frappe cluster
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if strings.HasSuffix(req.Host, ".skaia.localhost") {
+			if strings.HasSuffix(req.Host, ".frappe.localhost") {
 				targetURL, _ := url.Parse("http://skaia_frappe_cluster_1:80")
 				proxy := httputil.NewSingleHostReverseProxy(targetURL)
 				proxy.ServeHTTP(w, req)
@@ -808,7 +808,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		if isFrappe {
 			// Redirect Frappe to its native subdomain to avoid asset path issues
 			if siteName == "" {
-				siteName = fmt.Sprintf("site%d.skaia.localhost", id)
+			siteName = fmt.Sprintf("site%d.frappe.localhost", id)
 			}
 			
 			// Reconstruct the remaining path if any

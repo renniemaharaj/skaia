@@ -64,41 +64,13 @@ func main() {
 		ServerName: instanceCfx.ServerName,
 	}
 
-	if _, err := os.Stat(bench.Path); os.IsNotExist(err) {
-		log.Printf("[BENCH] Bench directory %s does not exist, initializing...", bench.Path)
-		if err := bench.Initialize(bench.Branch); err != nil {
-			log.Fatalf("bench init failed: %v", err)
-		}
-	} else {
-		log.Printf("[BENCH] Bench directory %s exists, running test ...", bench.Path)
-		_, err := bench.ExecRunInBenchSwallowIO("bench", "find", ".")
-		if err != nil {
-			log.Fatalf("[ERROR] Bench test failed: %v", err)
-		}
-		log.Printf("[BENCH] Bench test succeeded")
-	}
-	// Checkout sites for anomalies and missing sites
-	if instanceCfx.RunSitesManager {
-		if err := bench.CheckoutSites(instanceCfx, dbCfg.User, dbCfg.Password); err != nil {
-			log.Fatalf("sites sync failed: %v", err)
-		}
-	}
-	// Update bench and apps after deployment
-	// if err := bench.ManualUpdate(benchDir); err != nil {
-	// 	fmt.Printf("[ERROR] Failed to update bench: %v", err)
-	// }
-	// sites.MigrateAll(benchDir)
+	// Bench is defined but not automatically initialized. It must be initialized via API.
 
-	// Deployment
-	switch deployment {
-	case "production":
-		if err := bench.RunSupervisorNginx(); err != nil {
-			fmt.Printf("[ERROR] Production mode failed: %v", err)
-		}
-	default:
-		if err := bench.StartBench(); err != nil {
-			fmt.Printf("[ERROR] Development mode failed: %v", err)
-		}
+	// Ensure Bench struct is ready for API calls
+	if _, err := os.Stat(bench.Path); err == nil {
+		log.Printf("[BENCH] Bench directory %s exists", bench.Path)
+	} else {
+		log.Printf("[BENCH] Bench directory %s does not exist. Awaiting API initialization.", bench.Path)
 	}
 
 	// api restricted to sites-only for demo instance
@@ -111,10 +83,17 @@ func main() {
 		r.Get("/sites", bench.ListSitesHandler)
 		r.Get("/site/{name}", bench.GetSitesHandler)
 		r.Put("/site/{name}", bench.PutSitesHandler)
-		
+
 		r.Post("/maintenance/update", bench.UpdateHandler)
 		r.Post("/maintenance/migrate", bench.MigrateHandler)
 		r.Post("/maintenance/backup", bench.BackupHandler)
+
+		r.Post("/setup/init", func(w http.ResponseWriter, r *http.Request) { bench.InitBenchHandler(w, r) })
+		r.Post("/setup/sites", func(w http.ResponseWriter, r *http.Request) { bench.CheckoutSitesHandler(w, r, instanceCfx, dbCfg) })
+		r.Post("/deployment/start", func(w http.ResponseWriter, r *http.Request) { bench.StartDeploymentHandler(w, r, deployment) })
+
+		r.Post("/deployment/deploy", bench.RerunSupervisorNginx)
+		r.Post("/deployment/nginx", bench.ReloadNginxHandler)
 	})
 
 	fmt.Printf("[SERVER] Server running on :3000")

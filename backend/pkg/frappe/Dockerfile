@@ -49,6 +49,7 @@ RUN mkdir -p /run/sshd \
 
 # Frappe user
 RUN useradd -ms /bin/bash frappe \
+    && chmod 755 /home/frappe \
     && echo "frappe ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Go binary + configs

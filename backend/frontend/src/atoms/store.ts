@@ -138,8 +138,8 @@ export interface CheckoutResponse {
 
 // Atoms
 
-export const productsAtom = atomWithStorage<Product[]>("store.products", []);
-export const productCategoriesAtom = atomWithStorage<StoreCategory[]>("store.categories", []);
+export const productsAtom = atom<Product[]>([]);
+export const productCategoriesAtom = atom<StoreCategory[]>([]);
 export const ordersAtom = atom<Order[]>([]);
 export const currentOrderAtom = atom<Order | null>(null);
 export const isLoadingStoreAtom = atom(false);

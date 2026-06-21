@@ -2,6 +2,7 @@ package bench
 
 import (
 	"fmt"
+	"io"
 	"goftw/internal/entity"
 	"goftw/internal/fns"
 	"goftw/internal/utils"
@@ -93,6 +94,23 @@ func (b *Bench) InstallApp(site, app string) error {
 
 	// First attempt: direct install
 	if err := b.ExecRunInBenchPrintIO("bench", "--site", site, "install-app", app); err == nil {
+		return nil
+	}
+
+	// Try fetching app
+	if err := b.GetApp(app); err != nil {
+		return err
+	}
+
+	return b.ExecRunInBenchPrintIO("bench", "--site", site, "install-app", app)
+}
+
+// InstallAppStream installs an app on a site, streaming output to an io.Writer
+func (b *Bench) InstallAppStream(w io.Writer, site, app string) error {
+	fmt.Fprintf(w, "[APPS] Installing app: %s on site: %s\n", app, site)
+
+	// First attempt: direct install
+	if err := b.ExecRunInBenchStream(w, "bench", "--site", site, "install-app", app); err == nil {
 		return nil
 	}
 

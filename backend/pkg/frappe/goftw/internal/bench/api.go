@@ -7,7 +7,10 @@ import (
 
 	// "goftw/internal/deploy"
 	"goftw/internal/environ"
+	"goftw/internal/entity"
+	"goftw/internal/db"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -104,6 +107,19 @@ func normalizeSiteName(siteName string) string {
 	return siteName + siteExtension
 }
 
+type flushWriter struct {
+	w http.ResponseWriter
+	f http.Flusher
+}
+
+func (fw *flushWriter) Write(p []byte) (n int, err error) {
+	n, err = fw.w.Write(p)
+	if fw.f != nil {
+		fw.f.Flush()
+	}
+	return
+}
+
 // PutSitesHandler creates a new site and installs apps
 func (b *Bench) PutSitesHandler(w http.ResponseWriter, r *http.Request) {
 	siteName := chi.URLParam(r, "name")
@@ -124,40 +140,63 @@ func (b *Bench) PutSitesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("[API] Requested apps to install: %v\n", body.Apps)
 
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
 	// Create site
-	fmt.Printf("[API] Creating site %s...\n", siteName)
-	if err := b.NewSite(siteName, "root", "root"); err != nil {
-		fmt.Printf("[ERROR] Could not create new site: %s %v", siteName, err)
-		writeError(w, 500, fmt.Sprintf("failed to create site: %v", err))
+	fmt.Fprintf(fw, "[API] Creating site %s...\n", siteName)
+	if err := b.NewSiteStream(fw, siteName, "root", "root"); err != nil {
+		fmt.Fprintf(fw, "[ERROR] Could not create new site: %s %v\n", siteName, err)
 		return
 	}
-	fmt.Printf("[API] Site %s created successfully\n", siteName)
+	fmt.Fprintf(fw, "[API] Site %s created successfully\n", siteName)
 
 	// Apply apps
 	for _, app := range body.Apps {
-		fmt.Printf("[API] Installing app %s on site %s...\n", app, siteName)
-		if err := b.InstallApp(siteName, app); err != nil {
-			fmt.Printf("[API] Fail to install app:%s on site: %s %v", app, siteName, err)
-			writeError(w, 500, fmt.Sprintf("failed to install app %s: %v", app, err))
+		fmt.Fprintf(fw, "[API] Installing app %s on site %s...\n", app, siteName)
+		if err := b.InstallAppStream(fw, siteName, app); err != nil {
+			fmt.Fprintf(fw, "[API] Fail to install app:%s on site: %s %v\n", app, siteName, err)
 			b.DropSite(siteName, "root", "root")
 			return
 		}
-		fmt.Printf("[API] App %s installed successfully\n", app)
+		fmt.Fprintf(fw, "[API] App %s installed successfully\n", app)
 	}
 
 	// Restart deployment
-	fmt.Println("[API] Restarting deployment services...")
+	fmt.Fprintf(fw, "[API] Restarting deployment services...\n")
 	if err := b.RestartDeployment(); err != nil {
-		fmt.Printf("[ERROR] Deployment restart failed: %v\n", err)
+		fmt.Fprintf(fw, "[ERROR] Deployment restart failed: %v\n", err)
 	}
 
-	resp := map[string]interface{}{
-		"site": siteName,
-		"apps": body.Apps,
-		"url":  fmt.Sprintf("http://%s", siteName),
+	fmt.Fprintf(fw, "[API] Site %s creation & apps applied successfully\n", siteName)
+}
+
+// RunSupervisorNginx starts the bench in production mode with Supervisor and Nginx
+func (b *Bench) RerunSupervisorNginx(w http.ResponseWriter, r *http.Request) {
+	err := b.RestartDeployment()
+	if err != nil {
+		writeError(w, 500, fmt.Sprintf("failed to restart deployment: %v", err))
+		return
 	}
-	writeJSON(w, 201, resp)
-	fmt.Printf("[API] Site %s creation & apps applied successfully\n", siteName)
+
+	writeJSON(w, 200, map[string]string{"status": "deployment restarted"})
+}
+
+// ReloadNginxHandler generates nginx config and reloads nginx
+func (b *Bench) ReloadNginxHandler(w http.ResponseWriter, r *http.Request) {
+	err := b.ReloadNginx()
+	if err != nil {
+		writeError(w, 500, fmt.Sprintf("failed to reload nginx: %v", err))
+		return
+	}
+	writeJSON(w, 200, map[string]string{"status": "nginx reloaded"})
 }
 
 // UpdateHandler runs bench update
@@ -188,4 +227,95 @@ func (b *Bench) BackupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"status": "backed up"})
+}
+
+// InitBenchHandler initializes the bench and streams output
+func (b *Bench) InitBenchHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
+	// Parse branch from payload or use default
+	var body struct {
+		Branch string `json:"branch"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	branch := body.Branch
+	if branch == "" {
+		branch = b.Branch
+	}
+
+	fmt.Fprintf(fw, "[API] Initializing bench with branch: %s\n", branch)
+	if _, err := os.Stat(b.Path); err == nil {
+		fmt.Fprintf(fw, "[API] Bench directory %s already exists, skipping init\n", b.Path)
+		return
+	}
+	if err := b.Initialize(branch); err != nil {
+		fmt.Fprintf(fw, "[ERROR] Bench init failed: %v\n", err)
+		return
+	}
+	fmt.Fprintf(fw, "[API] Bench initialized successfully\n")
+}
+
+// CheckoutSitesHandler runs sites synchronization
+func (b *Bench) CheckoutSitesHandler(w http.ResponseWriter, r *http.Request, instanceCfx *entity.Instance, dbCfg db.Config) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
+	if err := b.CheckoutSites(instanceCfx, dbCfg.User, dbCfg.Password); err != nil {
+		fmt.Fprintf(fw, "[ERROR] sites sync failed: %v\n", err)
+		return
+	}
+	fmt.Fprintf(fw, "[API] CheckoutSites completed successfully\n")
+}
+
+// StartDeploymentHandler starts the deployment process based on deployment mode
+func (b *Bench) StartDeploymentHandler(w http.ResponseWriter, r *http.Request, defaultDeployment string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
+	// Parse deployment override from payload or use default
+	var body struct {
+		Deployment string `json:"deployment"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	deployment := body.Deployment
+	if deployment == "" {
+		deployment = defaultDeployment
+	}
+
+	fmt.Fprintf(fw, "[API] Starting deployment mode: %s\n", deployment)
+	switch deployment {
+	case "production":
+		if err := b.RunSupervisorNginx(); err != nil {
+			fmt.Fprintf(fw, "[ERROR] Production mode failed: %v\n", err)
+			return
+		}
+	default:
+		if err := b.StartBench(); err != nil {
+			fmt.Fprintf(fw, "[ERROR] Development mode failed: %v\n", err)
+			return
+		}
+	}
+	fmt.Fprintf(fw, "[API] Deployment started successfully\n")
 }

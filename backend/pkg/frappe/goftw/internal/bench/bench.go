@@ -3,6 +3,7 @@ package bench
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -119,6 +120,23 @@ func (b *Bench) ExecRunInBenchPrintIO(args ...string) error {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("bench failed: %v", err)
+	}
+
+	return nil
+}
+
+// ExecRunInBenchStream executes a bench command and streams output to w.
+func (b *Bench) ExecRunInBenchStream(w io.Writer, args ...string) error {
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Dir = b.Path
+	cmd.Env = os.Environ() // inherit environment variables
+
+	cmd.Stdout = io.MultiWriter(os.Stdout, w)
+	cmd.Stderr = io.MultiWriter(os.Stderr, w)
 
 	err := cmd.Run()
 	if err != nil {

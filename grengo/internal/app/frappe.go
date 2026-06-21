@@ -1,9 +1,11 @@
 package app
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -90,14 +92,36 @@ networks:
 		die("Timed out waiting for Frappe GoFTW API to become ready")
 	}
 
+	fmt.Println("Orchestrating Frappe global cluster setup via API (streams logs)...")
+
+	// 1. Setup Init
+	callGoFTWStream("POST", apiURL+"/api/goftw/setup/init", map[string]interface{}{"branch": "develop"})
+
+	// 2. Checkout Sites
+	callGoFTWStream("POST", apiURL+"/api/goftw/setup/sites", nil)
+
+	// 3. Deployment Start
+	callGoFTWStream("POST", apiURL+"/api/goftw/deployment/start", map[string]interface{}{"deployment": "production"})
+
 	fmt.Printf("Orchestrating new Frappe site via API: %s\n", siteName)
 
 	payload := map[string]interface{}{
-		"apps": []string{"frappe", "erpnext"},
+		"apps": []string{"frappe"},
 	}
-	bodyBytes, _ := json.Marshal(payload)
+	callGoFTWStream("PUT", fmt.Sprintf("%s/api/goftw/site/%s", apiURL, siteName), payload)
 
-	req, err := http.NewRequest("PUT", fmt.Sprintf("%s/api/goftw/site/%s", apiURL, siteName), bytes.NewBuffer(bodyBytes))
+	fmt.Println("Frappe Framework multi-tenant site successfully provisioned via API and is now RUNNING.")
+	StartFrappeHealthRoutine()
+}
+
+func callGoFTWStream(method, url string, payload interface{}) {
+	var bodyReader io.Reader
+	if payload != nil {
+		bodyBytes, _ := json.Marshal(payload)
+		bodyReader = bytes.NewBuffer(bodyBytes)
+	}
+
+	req, err := http.NewRequest(method, url, bodyReader)
 	if err != nil {
 		die("failed to create request: %v", err)
 	}
@@ -110,8 +134,30 @@ networks:
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 && resp.StatusCode != 200 {
-		die("API returned status %d", resp.StatusCode)
+		body, _ := io.ReadAll(resp.Body)
+		die("API returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	fmt.Println("Frappe Framework multi-tenant site successfully provisioned via API and is now RUNNING.")
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+		if i := bytes.IndexAny(data, "\r\n"); i >= 0 {
+			if data[i] == '\r' && i+1 < len(data) && data[i+1] == '\n' {
+				return i + 2, data[0:i], nil
+			}
+			return i + 1, data[0:i], nil
+		}
+		if atEOF {
+			return len(data), data, nil
+		}
+		return 0, nil, nil
+	})
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		die("reading stream: %v", err)
+	}
 }

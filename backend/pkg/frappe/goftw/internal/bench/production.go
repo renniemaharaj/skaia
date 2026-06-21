@@ -115,7 +115,7 @@ func (b *Bench) configurePatchNginx(bench *Bench, serverName string) error {
 	_ = internalExec.RemoveFile(nginxConfDest)
 
 	// Generate nginx config
-	if err := bench.ExecRunInBenchPrintIO("bench", "setup", "nginx"); err != nil {
+	if err := bench.ExecRunInBenchPrintIO("bench", "setup", "nginx", "--yes"); err != nil {
 		fmt.Printf("[ERROR] Failed to setup nginx: %v\n", err)
 		return fmt.Errorf("failed to setup nginx: %v", err)
 	}
@@ -144,6 +144,19 @@ func (b *Bench) configurePatchNginx(bench *Bench, serverName string) error {
 	// if str, err := internalExec.ReadFile(nginxConf); err == nil {
 	// 	fmt.Println(string(str))
 	// }
+	return nil
+}
+
+// ReloadNginx generates nginx config and reloads it without restarting supervisord
+func (b *Bench) ReloadNginx() error {
+	if err := b.configurePatchNginx(b, b.ServerName); err != nil {
+		return err
+	}
+	// Reload nginx config
+	if err := internalExec.ExecRunPrintIO("sudo", "nginx", "-s", "reload"); err != nil {
+		return fmt.Errorf("failed to reload nginx: %v", err)
+	}
+	fmt.Printf("[NGINX] Nginx reloaded successfully\n")
 	return nil
 }
 
