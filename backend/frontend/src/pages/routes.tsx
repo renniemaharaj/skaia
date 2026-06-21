@@ -74,6 +74,7 @@ const ResetPasswordPage = lazy(() => import("./reset-password/index.tsx"));
 const VisualizerPage = lazy(() => import("./visualizer/index.tsx"));
 const UserUploadsDirectory = lazy(() => import("../components/user/UserUploadsDirectory.tsx"));
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
+const FlowPage = lazy(() => import("./flow/index.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -113,8 +114,8 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "deployments", element: <DeploymentsPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
-  { path: "tmp/:sessionId", element: <GrengoPage /> },
   { path: "activity", element: <ActivityPage /> },
+  { path: "flow", element: <FlowPage /> },
   { path: "settings/users/:userId/*", element: <SettingsPage /> },
   { path: "settings/*", element: <SettingsPage /> },
 ];

@@ -1,0 +1,46 @@
+/* Formik Input styles matching the select/checkbox philosophy */
+.sk-form-input {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.sk-form-input__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  color: var(--text-primary);
+}
+
+.sk-form-input__native {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.sk-form-input__native:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 15%, transparent);
+}
+
+.sk-form-input--error .sk-form-input__native {
+  border-color: var(--danger-color, #ef4444);
+}
+
+.sk-form-input--error .sk-form-input__native:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger-color, #ef4444) 15%, transparent);
+}
+
+.sk-form-input__error {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--danger-color, #ef4444);
+  margin-bottom: 0;
+}

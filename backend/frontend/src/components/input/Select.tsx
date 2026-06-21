@@ -85,21 +85,25 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const optionItems = useMemo<SelectOption[]>(() => {
       if (options) return options;
 
-      return React.Children.toArray(children).flatMap(child => {
-        if (!React.isValidElement<React.OptionHTMLAttributes<HTMLOptionElement>>(child)) {
-          return [];
+      const processChild = (child: React.ReactNode): SelectOption[] => {
+        if (!React.isValidElement(child)) return [];
+        if (child.type === "optgroup") {
+          const props = (child as any).props;
+          return React.Children.toArray(props.children).flatMap(processChild);
         }
-        if (child.type !== "option") return [];
-
-        return {
-          value: String(child.props.value ?? ""),
-          label:
-            typeof child.props.children === "string"
-              ? child.props.children
-              : String(child.props.children ?? child.props.value ?? ""),
-          disabled: child.props.disabled,
-        };
-      });
+        if (child.type === "option") {
+          const props = (child as any).props;
+          return [{
+            value: String(props.value ?? ""),
+            label: typeof props.children === "string"
+              ? props.children
+              : String(props.children ?? props.value ?? ""),
+            disabled: props.disabled,
+          }];
+        }
+        return [];
+      };
+      return React.Children.toArray(children).flatMap(processChild);
     }, [children, options]);
     const fallbackValue =
       optionItems.find(opt => !opt.disabled)?.value ?? optionItems[0]?.value ?? "";

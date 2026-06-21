@@ -1,0 +1,13 @@
+.react-flow__node {
+  background-color: transparent !important;
+}
+.react-flow__edge.selected {
+  box-shadow: 0px 0px 5px 1px #3b82f6;
+  background: white;
+  padding: 1px;
+}
+.react-flow__node.selected {
+  box-shadow: 0px 0px 5px 1px #3b82f6;
+  background: white;
+  padding: 1px;
+}

@@ -314,6 +314,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/settings")) return true;
     if (pathname.startsWith("/admin")) return true;
     if (pathname.startsWith("/tmp/")) return true;
+    if (pathname.startsWith("/flow")) return true;
     return false;
   };
   const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
