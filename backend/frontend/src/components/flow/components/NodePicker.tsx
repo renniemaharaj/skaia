@@ -71,7 +71,7 @@ const NodePicker = ({
           >
             {nodeGroups.map((group) => (
               <optgroup key={group.displayText} label={group.displayText}>
-                {group.options.map((opt) => (
+                {group.options.map((opt: any) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>

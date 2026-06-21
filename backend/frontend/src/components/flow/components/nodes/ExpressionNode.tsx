@@ -18,7 +18,6 @@ const ExpressionNode = memo(({ data, id }: NodeProps & CustomNodeProps) => {
       title={data.label || "Expression"}
       // expressionPrefix="Evaluate"
       acceptExpression
-      expressionValue={data.expression}
     />
   );
 });

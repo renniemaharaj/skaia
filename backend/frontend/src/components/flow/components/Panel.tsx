@@ -2,12 +2,11 @@ import { useState } from "react";
 import type { Node } from "@xyflow/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { flowStateAtom } from "../../../atoms/flow";
-import { LayoutDashboard, Plus, Settings } from "lucide-react";
+import { LayoutDashboard, Plus } from "lucide-react";
 import NodeEditor from "./panels/editor/NodeEditor";
 import JsonViewer from "./panels/json/JsonViewer";
 import NodePicker from "./NodePicker";
 import FileMenu from "./panels/sidebar/FileMenu";
-import UserBox from "./UserBox";
 
 export default function Panel({
   nodes,
@@ -104,7 +103,7 @@ export default function Panel({
                 ) : selectedNodes.length === 0 ? (
                   <p className="opacity-50 text-sm">Select a node to edit its properties.</p>
                 ) : (
-                  <NodeEditor selectedNodes={selectedNodes} contentViewBlocked={false} />
+                  <NodeEditor selectedNodes={selectedNodes} />
                 )}
               </div>
             )}

@@ -18,8 +18,10 @@ import {
   ParallelogramNode,
 } from "./components/nodes/Shapes";
 
-// Imports the OptionGroup type from the Select component.
-import { OptionGroup } from "../Select";
+export type OptionGroup = {
+  displayText: string;
+  options: { displayText: string; value: string }[];
+};
 
 /**
  * Configuration for node groups available in the flow editor.

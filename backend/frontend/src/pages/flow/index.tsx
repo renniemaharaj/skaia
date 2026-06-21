@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import Flow from "../../components/flow/Flow";
 import SiteHead from "../../components/SiteHead";
 

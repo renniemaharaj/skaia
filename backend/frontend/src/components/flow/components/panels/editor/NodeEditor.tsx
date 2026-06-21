@@ -9,10 +9,8 @@ import { nodeGroups } from "../../../config";
 
 export default function NodeEditor({
   selectedNodes,
-  contentViewBlocked,
 }: {
   selectedNodes: Node[];
-  contentViewBlocked: boolean;
 }) {
   const setFlowState = useSetAtom(flowStateAtom);
 
@@ -42,7 +40,7 @@ export default function NodeEditor({
     }));
   };
 
-  const typeOptions = nodeGroups.flatMap((group) => group.options.map(opt => ({ label: opt.displayText, value: opt.value })));
+  const typeOptions = nodeGroups.flatMap((group) => group.options.map((opt: any) => ({ label: opt.displayText, value: opt.value })));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "12px" }}>
@@ -68,15 +66,16 @@ export default function NodeEditor({
               height: selectedNode.height || 0,
             }}
             enableReinitialize
-            onSubmit={(values) => {}}
+            onSubmit={() => {}}
           >
-            {({ values, handleChange }) => (
+            {({ handleChange }: any) => (
               <Form style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <FormikSelect
                   name="type"
                   label="Node Type"
                   options={typeOptions}
-                  onChange={(e) => {
+                  // @ts-expect-error FormikSelect does not have onChange in props
+                  onChange={(e: any) => {
                     handleChange(e);
                     updateNode(selectedNode.id, "type", e.target.value);
                   }}
@@ -87,7 +86,7 @@ export default function NodeEditor({
                   label="Label"
                   type="text"
                   placeholder="Node label"
-                  onChange={(e) => {
+                  onChange={(e: any) => {
                     handleChange(e);
                     updateNode(selectedNode.id, "data", { label: e.target.value });
                   }}

@@ -37,16 +37,9 @@ export default function Flow() {
   const [nodes, setNodes] = useState(flowState.nodes);
   const [edges, setEdges] = useState(flowState.edges);
   const [selectedLocal, setSelectedLocal] = useState<Node[]>([]);
-  const [progressSaved, setProgressSaved] = useState(false);
-
-  const debounceSetProgressSaved = useRef(
-    debounce(() => setProgressSaved(true), 3000)
-  ).current;
-
   const debouncedSync = useRef(
-    debounce((updatedNodes: Node[], updatedEdges: Edge[], profile: any) => {
+    debounce((updatedNodes: Node[], updatedEdges: Edge[]) => {
       setFlowState((prev) => ({ ...prev, nodes: updatedNodes, edges: updatedEdges }));
-      debounceSetProgressSaved();
     }, 100)
   ).current;
 
@@ -55,10 +48,7 @@ export default function Flow() {
     setEdges([...flowState.edges]);
   }, [flowState.nodes, flowState.edges]);
 
-  const syncNow = useCallback(() => {
-    setFlowState((prev) => ({ ...prev, nodes, edges }));
-    setProgressSaved(true);
-  }, [nodes, edges, setFlowState]);
+
 
   const updateSelectedLocal = useCallback(
     (updatedNodes: Node[]) => {
@@ -71,25 +61,23 @@ export default function Flow() {
     (changes: NodeChange[]) => {
       setNodes((prev) => {
         const updated = applyNodeChanges(changes, JSON.parse(JSON.stringify(prev)));
-        debouncedSync(updated, edges, flowState);
+        debouncedSync(updated, edges);
         updateSelectedLocal(updated);
-        setProgressSaved(false);
         return updated;
       });
     },
-    [edges, debouncedSync, flowState, updateSelectedLocal]
+    [edges, debouncedSync, updateSelectedLocal]
   );
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
       setEdges((prev) => {
         const updated = applyEdgeChanges(changes, JSON.parse(JSON.stringify(prev)));
-        debouncedSync(nodes, updated, flowState);
-        setProgressSaved(false);
+        debouncedSync(nodes, updated);
         return updated;
       });
     },
-    [nodes, debouncedSync, flowState]
+    [nodes, debouncedSync]
   );
 
   const onSelectionChange = useCallback(({ nodes: selNodes }: { nodes: Node[] }) => {
@@ -100,17 +88,17 @@ export default function Flow() {
     (params: Connection) => {
       setEdges((prev) => {
         const updated = [...prev, { ...params, id: `${params.source}-${params.target}`, animated: true }];
-        debouncedSync(nodes, updated, flowState);
+        debouncedSync(nodes, updated);
         return updated;
       });
     },
-    [nodes, debouncedSync, flowState]
+    [nodes, debouncedSync]
   );
 
   return (
     <ReactFlowProvider>
       <div className="sk-flow-wrapper">
-        <Header progressSaved={progressSaved} syncNow={syncNow} />
+        <Header />
         <main className="sk-flow-main">
           <div className="sk-flow-panel-container" style={{ width: flowState.editor.panelExtended ? flowState.editor.maxPanelSize : 48, overflow: 'hidden' }}>
             <Panel nodes={nodes} selectedNodes={selectedLocal} />

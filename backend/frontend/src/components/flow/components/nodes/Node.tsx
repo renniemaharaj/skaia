@@ -1,7 +1,6 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Handle as ReactHandle, Position } from "@xyflow/react";
 import type { HandleType } from "@xyflow/react";
-import { useThemeContext } from "../../../../hooks/theme/useThemeContext";
 import { SquareFunctionIcon } from "lucide-react";
 
 export type Handle = {
@@ -17,8 +16,6 @@ export function Node({
   title,
   id,
   acceptExpression,
-  expressionValue,
-  expressionPrefix,
 }: {
   handles: Handle[];
   className?: string;
@@ -27,8 +24,6 @@ export function Node({
   title?: string;
   id?: string;
   acceptExpression?: boolean;
-  expressionValue?: string;
-  expressionPrefix?: string;
 }) {
   const nodeStyle = {
     padding: "12px",

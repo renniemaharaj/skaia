@@ -58,7 +58,7 @@ const InboxPage = lazy(() => import("./inbox/index.tsx"));
 const AdminMetaSettings = lazy(() =>
   import("./admin/meta.tsx").then(m => ({ default: m.AdminMetaSettings }))
 );
-const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
+
 const RolesManagementPage = lazy(() => import("../components/admin/RolesManagementPage.tsx"));
 const DeploymentsPage = lazy(() => import("../components/page/deployments/DeploymentsPage.tsx").then(m => ({ default: m.DeploymentsPage })));
 const PageBuilder = lazy(() => import("./page/index.tsx"));

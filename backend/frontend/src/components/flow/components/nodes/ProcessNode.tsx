@@ -19,7 +19,6 @@ const ProcessNode = memo(({ data, id }: NodeProps & CustomNodeProps) => {
       title={data.label || "Process"}
       // expressionPrefix="Process Signal"
       acceptExpression
-      expressionValue={data.expression}
     />
   );
 });
