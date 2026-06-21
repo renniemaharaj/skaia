@@ -89,9 +89,9 @@ export default function ResetPasswordPage() {
     <div className="auth-page">
       <div className="auth-container">
 				<ContentFlatCard className="auth-card">
-          <div className="section__header auth-header">
-            <Lock size={24} className="auth-header-icon" aria-hidden="true" />
-            <span className="auth-header-eyebrow">Account Access</span>
+          <div className="section__header">
+            <Lock size={24} className="section__header-icon" aria-hidden="true" />
+            <span className="section__header-eyebrow">Account Access</span>
             <h1>Set New Password</h1>
             <p>Enter your new password below</p>
           </div>

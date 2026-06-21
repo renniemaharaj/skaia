@@ -1,4 +1,4 @@
-import { Loader, Mail } from "lucide-react";
+import { Loader, Mail, CreditCard, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCents } from "../../../utils/money";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
@@ -92,7 +92,12 @@ export function CheckoutPanel({
   return (
     <div className="cart-summary cart-checkout-panel">
 			<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--details">
-        <h3>Checkout</h3>
+        <div className="section__header">
+          <CreditCard className="section__header-icon" size={24} />
+          <span className="section__header-eyebrow">Checkout</span>
+          <h3>Complete Order</h3>
+          <p>Please enter your delivery details securely.</p>
+        </div>
 
         {!isAuthenticated && (
           <ContentStandOutCard className="cart-summary-section" emphasis="group">
@@ -145,11 +150,16 @@ export function CheckoutPanel({
       )}
 
 			<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
+        <div className="section__header" style={{ marginBottom: "16px" }}>
+          <ShieldCheck className="section__header-icon" size={24} />
+          <span className="section__header-eyebrow">Secure Payment</span>
+          <h3>Payment Method</h3>
+          <p>All transactions are secure and encrypted.</p>
+        </div>
         <ContentStandOutCard
           className="cart-summary-section cart-summary-section--last"
           emphasis="group"
         >
-          <h4>Payment</h4>
           <div className="cart-field">
             <Select
               className="cart-select"

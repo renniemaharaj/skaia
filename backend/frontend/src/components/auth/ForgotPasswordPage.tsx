@@ -257,9 +257,9 @@ export default function ForgotPasswordPage() {
         className={`auth-container ${canManageUsers ? "auth-container--wide" : ""}`}
       >
 				<ContentFlatCard className="auth-card">
-          <div className="section__header auth-header">
-            <ShieldCheck size={24} className="auth-header-icon" aria-hidden="true" />
-            <span className="auth-header-eyebrow">Account Access</span>
+          <div className="section__header">
+            <ShieldCheck size={24} className="section__header-icon" aria-hidden="true" />
+            <span className="section__header-eyebrow">Account Access</span>
             <h1>Recover Account</h1>
             <p>
               {sent

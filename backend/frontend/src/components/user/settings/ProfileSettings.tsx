@@ -1,4 +1,4 @@
-import { Loader, Save, Trash2 } from "lucide-react";
+import { Loader, Save, Trash2, User } from "lucide-react";
 import type { ProfileUser } from "../types";
 import { useProfileEdit } from "../useProfileEdit";
 import "../UserProfile.css";
@@ -71,6 +71,8 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
     <div className="modal-form compact-form-card">
       <section className="section">
         <div className="section__header">
+          <User className="section__header-icon" size={24} />
+          <span className="section__header-eyebrow">Account Settings</span>
           <h3>Profile Settings</h3>
           <p>Update your public profile details and aesthetics.</p>
         </div>

@@ -711,8 +711,52 @@ div#root {
 }
 
 .section__header {
-  margin-bottom: 1rem;
-  color: var(--panel-heading-color);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+  text-align: left;
+}
+
+.section__header-icon {
+  grid-row: 1 / span 3;
+  margin-top: 2px;
+  color: var(--primary-color);
+  opacity: 0.8;
+}
+
+.section__header-eyebrow {
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.section__header h1,
+.section__header h2,
+.section__header h3 {
+  grid-column: 2;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.45;
+  margin: 0 0 2px 0;
+}
+
+.section__header p {
+  grid-column: 2;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.35;
 }
 
 .section__content {

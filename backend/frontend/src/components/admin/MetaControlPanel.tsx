@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Settings } from "lucide-react";
 import { useState } from "react";
 import { uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
@@ -93,9 +93,18 @@ export default function MetaControlPanel({
       className="modal-form compact-form-card"
     >
       <div className="section__header">
+        <Settings className="section__header-icon" size={24} />
+        <span className="section__header-eyebrow">
+          {category === "seo" ? "Configuration" : "Customization"}
+        </span>
         <h3 style={{ margin: 0 }}>
           {category === "seo" ? "SEO Settings" : "Visual Settings"}
         </h3>
+        <p>
+          {category === "seo"
+            ? "Configure metadata for search engines and social media."
+            : "Customize the appearance of this page."}
+        </p>
       </div>
 
       {category === "seo" && (

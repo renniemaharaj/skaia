@@ -108,13 +108,13 @@ const MFAChallenge = ({
     <div className="auth-page">
       <div className="auth-container">
 				<ContentFlatCard className="auth-card auth-card--challenge">
-          <div className="section__header auth-header">
+          <div className="section__header">
             <Fingerprint
               size={24}
-              className="auth-header-icon"
+              className="section__header-icon"
               aria-hidden="true"
             />
-            <span className="auth-header-eyebrow">Why now: {reason.label}</span>
+            <span className="section__header-eyebrow">Why now: {reason.label}</span>
             <h1>Verify it's you</h1>
             <p>
               {useBackupCode

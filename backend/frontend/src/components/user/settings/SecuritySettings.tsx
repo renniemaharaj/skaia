@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { ShieldCheck } from "lucide-react";
 import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
 
@@ -49,6 +50,8 @@ export default function SecuritySettings() {
     <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
       <section className="section">
         <div className="section__header">
+          <ShieldCheck className="section__header-icon" size={24} />
+          <span className="section__header-eyebrow">Account Security</span>
           <h3>Change Password</h3>
           <p>Update your password to keep your account secure.</p>
         </div>
