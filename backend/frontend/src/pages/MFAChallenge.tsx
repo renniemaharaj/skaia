@@ -109,29 +109,22 @@ const MFAChallenge = ({
       <div className="auth-container">
 				<ContentFlatCard className="auth-card auth-card--challenge">
           <div className="section__header auth-header">
-            <ShieldCheck size={28} aria-hidden="true" />
-            <div>
-              <h1>Verify it's you</h1>
-							<p>
-								{useBackupCode
-									? "Use an unused backup code."
-									: "Use your authenticator code."}
-							</p>
-            </div>
+            <Fingerprint
+              size={24}
+              className="auth-header-icon"
+              aria-hidden="true"
+            />
+            <span className="auth-header-eyebrow">Why now: {reason.label}</span>
+            <h1>Verify it's you</h1>
+            <p>
+              {useBackupCode
+                ? "Use an unused backup code."
+                : "Use your authenticator code."}
+            </p>
           </div>
 
           <div className="section__content">
-            <output className="mfa-reason" aria-label="Challenge reason">
-							<Fingerprint
-								size={24}
-								className="mfa-reason-icon"
-								aria-hidden="true"
-								style={{ marginBottom: "8px", opacity: 0.8 }}
-							/>
-              <span>Why now</span>
-              <strong>{reason.label}</strong>
-              <p>{reason.detail}</p>
-            </output>
+
 
             {error && (
               <div className="auth-error">

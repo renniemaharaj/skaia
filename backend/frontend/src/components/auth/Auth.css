@@ -76,46 +76,40 @@
 	padding: 0.625rem;
 }
 
-.auth-card--challenge .auth-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  text-align: left;
-}
 
-.auth-card--challenge .auth-header > svg {
-  flex: 0 0 auto;
-  color: var(--primary-color);
-}
-
-.auth-card--challenge .auth-header h1 {
-  font-size: 1.25rem;
-  margin-bottom: 2px;
-}
-
-.auth-card--challenge .auth-header p {
-  font-size: 0.8125rem;
-}
 
 .auth-card--challenge .auth-form {
   gap: 12px;
   margin-bottom: 10px;
 }
 
-.mfa-reason {
+
+
+.auth-card--challenge .auth-toggle {
+  margin-top: 8px;
+}
+
+.auth-header {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 8px;
-  margin-bottom: 14px;
-  padding: 9px 10px;
+  gap: 2px 12px;
+  margin-bottom: 24px;
+  padding: 14px 16px;
   border: 1px solid var(--border-color);
   border-left: 3px solid var(--primary-color);
   border-radius: 8px;
   background: color-mix(in srgb, var(--primary-color) 6%, transparent);
+  text-align: left;
 }
 
-.mfa-reason span {
+.auth-header-icon {
+  grid-row: 1 / span 3;
+  margin-top: 2px;
+  color: var(--primary-color);
+  opacity: 0.8;
+}
+
+.auth-header-eyebrow {
   color: var(--text-secondary);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -124,41 +118,22 @@
   text-transform: uppercase;
 }
 
-.mfa-reason strong {
+.auth-header h1 {
+  grid-column: 2;
   min-width: 0;
   color: var(--text-primary);
-  font-size: 0.8125rem;
-  line-height: 1.45;
-}
-
-.mfa-reason p {
-  grid-column: 2;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.auth-card--challenge .auth-toggle {
-  margin-top: 8px;
-}
-
-.auth-header {
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.auth-header h1 {
-  font-size: 1.75rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
+  line-height: 1.45;
+  margin: 0 0 2px 0;
 }
 
 .auth-header p {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
+  grid-column: 2;
   margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.35;
 }
 
 .auth-error {

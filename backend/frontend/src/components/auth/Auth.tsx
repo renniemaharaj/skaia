@@ -156,6 +156,8 @@ export const Auth: React.FC<AuthPageProps> = ({
       <div className="auth-container">
 				<ContentFlatCard className="auth-card">
           <div className="section__header auth-header">
+            <Lock size={24} className="auth-header-icon" aria-hidden="true" />
+            <span className="auth-header-eyebrow">Authentication</span>
             <h1>{isLogin ? "Welcome Back" : "Join Us"}</h1>
             <p>
               {isLogin

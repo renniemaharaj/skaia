@@ -258,6 +258,8 @@ export default function ForgotPasswordPage() {
       >
 				<ContentFlatCard className="auth-card">
           <div className="section__header auth-header">
+            <ShieldCheck size={24} className="auth-header-icon" aria-hidden="true" />
+            <span className="auth-header-eyebrow">Account Access</span>
             <h1>Recover Account</h1>
             <p>
               {sent
