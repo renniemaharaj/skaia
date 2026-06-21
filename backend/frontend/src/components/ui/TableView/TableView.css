@@ -93,6 +93,7 @@
 .table-view__cell--actions {
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 
 .table-view__row-actions {

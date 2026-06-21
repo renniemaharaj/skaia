@@ -1,6 +1,6 @@
 /* GlassMenu.css */
 .glass-menu-wrap {
-  position: absolute;
+  position: fixed;
   min-width: 200px;
   max-width: 300px;
   padding: var(--radius-xs);

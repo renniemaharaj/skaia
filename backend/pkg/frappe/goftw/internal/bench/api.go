@@ -49,17 +49,69 @@ func (b *Bench) ListSitesHandler(w http.ResponseWriter, r *http.Request) {
 // ListAppsHandler lists all apps in the bench
 func (b *Bench) ListAppsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[API] ListAppsHandler called")
-	benchDir := environ.GetBenchPath()
-	fmt.Printf("[API] Bench directory: %s\n", benchDir)
+	apps := GetAppsForReact()
+	
+	fmt.Printf("[API] Found apps: %v\n", apps)
+	writeJSON(w, 200, apps)
+}
 
-	apps, err := b.ListApps()
-	if err != nil {
-		writeError(w, 500, fmt.Sprintf("failed to list apps: %v", err))
+// InstallAppHandler installs a specific app on a site
+func (b *Bench) InstallAppHandler(w http.ResponseWriter, r *http.Request) {
+	siteName := chi.URLParam(r, "name")
+	fmt.Printf("[API] InstallAppHandler called for site: %s\n", siteName)
+	if siteName == "" {
+		writeError(w, 400, "no site name")
+		return
+	}
+	siteName = normalizeSiteName(siteName)
+
+	var body struct {
+		App string `json:"app"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, 400, "invalid JSON body")
+		return
+	}
+	if body.App == "" {
+		writeError(w, 400, "no app specified")
 		return
 	}
 
-	fmt.Printf("[API] Found apps: %v\n", apps)
-	writeJSON(w, 200, apps)
+	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	fw := &flushWriter{w: w}
+	if f, ok := w.(http.Flusher); ok {
+		fw.f = f
+	}
+
+	fmt.Fprintf(fw, "[API] Installing app %s on site %s...\n", body.App, siteName)
+	if err := b.InstallAppStream(fw, siteName, body.App); err != nil {
+		fmt.Fprintf(fw, "[ERROR] Failed to install app: %v\n", err)
+		return
+	}
+	fmt.Fprintf(fw, "[API] App %s installed successfully on site %s\n", body.App, siteName)
+}
+
+// UninstallAppHandler uninstalls an app from a site
+func (b *Bench) UninstallAppHandler(w http.ResponseWriter, r *http.Request) {
+	siteName := chi.URLParam(r, "name")
+	appName := chi.URLParam(r, "app")
+	fmt.Printf("[API] UninstallAppHandler called for site: %s, app: %s\n", siteName, appName)
+	if siteName == "" || appName == "" {
+		writeError(w, 400, "missing site or app name")
+		return
+	}
+	siteName = normalizeSiteName(siteName)
+
+	if err := b.UninstallApp(siteName, appName); err != nil {
+		writeError(w, 500, fmt.Sprintf("failed to uninstall app: %v", err))
+		return
+	}
+
+	writeJSON(w, 200, map[string]string{"status": "uninstalled"})
 }
 
 // GetSitesHandler returns a single site and its apps

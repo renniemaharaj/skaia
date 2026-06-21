@@ -81,8 +81,11 @@ func main() {
 	r.Route("/api/goftw", func(r chi.Router) {
 		// sites management endpoints only (apps endpoint disabled)
 		r.Get("/sites", bench.ListSitesHandler)
+		r.Get("/apps", bench.ListAppsHandler)
 		r.Get("/site/{name}", bench.GetSitesHandler)
 		r.Put("/site/{name}", bench.PutSitesHandler)
+		r.Post("/site/{name}/apps", bench.InstallAppHandler)
+		r.Delete("/site/{name}/apps/{app}", bench.UninstallAppHandler)
 
 		r.Post("/maintenance/update", bench.UpdateHandler)
 		r.Post("/maintenance/migrate", bench.MigrateHandler)

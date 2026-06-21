@@ -26,7 +26,12 @@ func (h *Handler) Mount(r chi.Router, middlewares ...func(http.Handler) http.Han
 		r.Delete("/instances/{id}", h.TearDownInstance)
 		r.Post("/instances/{id}/start", h.StartInstance)
 		r.Post("/instances/{id}/stop", h.StopInstance)
+		r.Post("/instances/{id}/restart", h.RestartInstance)
+		r.Get("/available-apps", h.GetAvailableApps)
+		r.Post("/instances/{id}/apps", h.InstallApp)
+		r.Delete("/instances/{id}/apps/{app}", h.UninstallApp)
 		r.Get("/instances/{id}/logs", h.GetInstanceLogs)
+		r.Get("/stats", h.GetStats)
 	})
 }
 
@@ -102,6 +107,63 @@ func (h *Handler) StopInstance(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *Handler) RestartInstance(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	var id int64
+	fmt.Sscanf(idStr, "%d", &id)
+	if err := h.svc.RestartInstance(id); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) GetAvailableApps(w http.ResponseWriter, r *http.Request) {
+	apps, err := h.svc.GetAvailableApps()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if apps == nil {
+		apps = []map[string]interface{}{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"apps": apps})
+}
+
+func (h *Handler) InstallApp(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	var id int64
+	fmt.Sscanf(idStr, "%d", &id)
+
+	var req struct {
+		App string `json:"app"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if err := h.svc.InstallApp(id, req.App); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) UninstallApp(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	var id int64
+	fmt.Sscanf(idStr, "%d", &id)
+	app := chi.URLParam(r, "app")
+
+	if err := h.svc.UninstallApp(id, app); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *Handler) GetInstanceLogs(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	var id int64
@@ -124,4 +186,14 @@ func (h *Handler) TearDownInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := h.svc.GetStats(r.Context())
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
 }

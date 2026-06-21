@@ -15,14 +15,13 @@ import {
   Square,
   Trash2,
   UploadCloud,
-  Terminal,
-  X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import { customAlert, customConfirm } from "../ui/Prompt";
+import { Console } from "../ui/Console";
 import "./GrengoDashboard.css";
 import { uploader } from "../../atoms/uploadAtom";
 import {
@@ -31,7 +30,6 @@ import {
 } from "../../hooks/useWebSocketSync";
 import Select from "../input/Select";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
-import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { useAtomValue } from "jotai";
 import { socketAtom } from "../../atoms/auth";
 import "../ui/GlassMenu.css";
@@ -486,34 +484,16 @@ export default function GrengoDashboard() {
     }
   };
 
-  const [consoleInput, setConsoleInput] = useState("");
   const [consoleOutputLines, setConsoleOutputLines] = useState<string[]>([]);
   const [consoleBusy, setConsoleBusy] = useState(false);
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [availableLoggers, setAvailableLoggers] = useState<string[]>(["System", "WebSocket", "Events"]);
   const [subscribedLoggers, setSubscribedLoggers] = useState<string[]>([]);
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
   
   const subscribedLoggersRef = useRef<string[]>([]);
   useEffect(() => {
     subscribedLoggersRef.current = subscribedLoggers;
   }, [subscribedLoggers]);
-
-  const consoleOutputRef = useRef<HTMLDivElement>(null);
-  const wasAtBottomRef = useRef(true);
-
-  const handleConsoleScroll = () => {
-    if (!consoleOutputRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = consoleOutputRef.current;
-    wasAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 20;
-  };
-
-  useEffect(() => {
-    if (wasAtBottomRef.current && consoleOutputRef.current) {
-			consoleOutputRef.current.scrollTop =
-				consoleOutputRef.current.scrollHeight;
-    }
-  }, [consoleOutputLines, isConsoleOpen]);
 
   const socket = useAtomValue(socketAtom);
   
@@ -557,35 +537,6 @@ export default function GrengoDashboard() {
     window.addEventListener("logs:stream", handleLogStream);
     return () => window.removeEventListener("logs:stream", handleLogStream);
   }, []);
-
-  const handleConsoleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!consoleInput.trim() || consoleBusy) return;
-
-    const cmd = consoleInput.trim();
-    const parts = cmd.split(" ");
-    const command = parts[0];
-    const args = parts.slice(1);
-
-    setConsoleBusy(true);
-    setConsoleOutputLines((prev) => [...prev, `$ ${cmd}`]);
-    setConsoleInput("");
-
-    try {
-      const waitPromise = triggerAndWaitForJob("exec");
-      sendGrengoJobAction("exec", undefined, command, args);
-      const result = await waitPromise;
-      if (result.error) {
-        setConsoleOutputLines((prev) => [...prev, result.error]);
-      } else {
-        setConsoleOutputLines((prev) => [...prev, "Command completed"]);
-      }
-    } catch (e: any) {
-      setConsoleOutputLines((prev) => [...prev, e.message || "Command failed"]);
-    } finally {
-      setConsoleBusy(false);
-    }
-  };
 
   // Migrate actions
 
@@ -1152,8 +1103,7 @@ export default function GrengoDashboard() {
       </div>
 
       {/* Console */}
-      <ContentStandOutCard
-				className="grengo-console grengo-flat-card"
+      <div
         style={{
           position: "fixed",
           bottom: 0,
@@ -1162,193 +1112,42 @@ export default function GrengoDashboard() {
           width: "100%",
           maxWidth: "900px",
           zIndex: 1000,
-          // border: "1px solid var(--border-color)",
-          borderBottom: "none",
-          borderTopLeftRadius: "var(--radius-lg)",
-          borderTopRightRadius: "var(--radius-lg)",
-          display: "flex",
-          flexDirection: "column",
-          // boxShadow: "0 -4px 20px rgba(0,0,0,0.5)",
         }}
       >
-				<button
-					type="button"
-          className="section__header"
-          style={{
-            marginBottom: 0,
-            cursor: "pointer",
-            padding: "12px 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-						width: "100%",
-						border: 0,
-						background: "transparent",
+        <Console
+          title="grengo-cli"
+          lines={consoleOutputLines.map((text, i) => ({ id: i, text }))}
+          isOpen={isConsoleOpen}
+          onToggle={setIsConsoleOpen}
+          isBusy={consoleBusy}
+          availableStreams={availableLoggers}
+          subscribedStreams={subscribedLoggers}
+          onSubscribeStream={(stream) => setSubscribedLoggers(prev => [...prev, stream])}
+          onUnsubscribeStream={(stream) => setSubscribedLoggers(prev => prev.filter(s => s !== stream))}
+          onCommand={(cmd) => {
+            const parts = cmd.split(" ");
+            const command = parts[0];
+            const args = parts.slice(1);
+
+            setConsoleBusy(true);
+            setConsoleOutputLines((prev) => [...prev, `$ ${cmd}`]);
+
+            triggerAndWaitForJob("exec").then(result => {
+              if (result.error) {
+                setConsoleOutputLines((prev) => [...prev, result.error]);
+              } else {
+                setConsoleOutputLines((prev) => [...prev, "Command completed"]);
+              }
+            }).catch(e => {
+              setConsoleOutputLines((prev) => [...prev, e.message || "Command failed"]);
+            }).finally(() => {
+              setConsoleBusy(false);
+            });
+
+            sendGrengoJobAction("exec", undefined, command, args);
           }}
-          onClick={() => setIsConsoleOpen(!isConsoleOpen)}
-					aria-expanded={isConsoleOpen}
-					aria-controls="grengo-console-body"
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <Terminal size={18} style={{ color: "var(--accent-color)" }} />
-            <h3
-              style={{
-                margin: 0,
-                fontSize: "14px",
-                color: "var(--text-primary)",
-              }}
-            >
-              grengo-cli
-            </h3>
-          </div>
-				</button>
-
-        {isConsoleOpen && (
-          <div
-						id="grengo-console-body"
-            style={{
-              // padding: "0 16px 16px 16px",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", padding: "8px 12px", borderBottom: "1px solid var(--border-color)", position: "relative" }}>
-              {/* Active Badges */}
-              {subscribedLoggers.length === 0 ? (
-                <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Subscribe to loggers to see streams</span>
-              ) : (
-                subscribedLoggers.map(logger => (
-                  <span key={logger} style={{
-                    padding: "2px 8px",
-                    borderRadius: "12px",
-                    background: "var(--bg-secondary)",
-                    border: "1px solid var(--border-color)",
-                    color: "var(--text-primary)",
-                    fontSize: "0.8rem",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px"
-                  }}>
-                    {logger}
-                    <X size={12} style={{ cursor: "pointer" }} onClick={() => setSubscribedLoggers(prev => prev.filter(l => l !== logger))} />
-                  </span>
-                ))
-              )}
-              
-              <button 
-                className="action-btn" 
-                style={{ padding: "2px 8px", height: "auto", fontSize: "0.8rem", marginLeft: "auto" }}
-                onClick={() => setIsPickerOpen(!isPickerOpen)}
-              >
-                <Plus size={14} style={{ marginRight: "4px" }}/> Add Stream
-              </button>
-
-              {/* Glass Menu Dropdown */}
-              {isPickerOpen && (
-                <div className="glass-menu-wrap" style={{
-                  top: "100%",
-                  right: "12px",
-                  marginTop: "4px",
-                  minWidth: "150px",
-                }}>
-                  {availableLoggers.map(logger => {
-                    const isSubbed = subscribedLoggers.includes(logger);
-                    return (
-                      <button 
-                        key={logger}
-                        className="glass-menu-op"
-                        style={{
-                          background: isSubbed ? "var(--bg-tertiary)" : "transparent",
-                        }}
-                        onClick={() => {
-                          setSubscribedLoggers(prev => 
-                            isSubbed ? prev.filter(l => l !== logger) : [...prev, logger]
-                          );
-                        }}
-                      >
-                        <span className="glass-menu-title" style={{ margin: 0, fontWeight: isSubbed ? 600 : 400 }}>{logger}</span>
-                        {isSubbed && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-color)" }} />}
-                      </button>
-                    );
-                  })}
-                  {availableLoggers.length === 0 && (
-                    <div style={{ padding: "4px 12px", fontSize: "0.8rem", color: "var(--text-muted)" }}>Listening...</div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div
-              ref={consoleOutputRef}
-              onScroll={handleConsoleScroll}
-              className="console-output invisiblescroll"
-              style={{
-                flex: 1,
-                overflowY: "scroll",
-                padding: "12px",
-                minHeight: "200px",
-                maxHeight: "40vh",
-                display: "flex",
-                flexDirection: "column",
-                border: "1px solid var(--border-color)",
-                borderTop: "none",
-                marginBottom: "12px",
-              }}
-            >
-              {consoleOutputLines.length === 0 && (
-                <div className="conp" style={{ color: "var(--text-muted)" }}>
-                  grengo-cli &gt;&gt; Ready...
-                </div>
-              )}
-              {consoleOutputLines.map((line, i) => (
-                <div key={i} className="conp">
-                  <span style={{ color: "var(--accent-color)" }}>
-                    grengo-cli &gt;&gt;
-                  </span>{" "}
-                  {line}
-                </div>
-              ))}
-            </div>
-            <form
-              onSubmit={handleConsoleSubmit}
-              style={{ display: "flex", gap: "8px" }}
-            >
-              <input
-                type="text"
-                value={consoleInput}
-                onChange={(e) => setConsoleInput(e.target.value)}
-                placeholder="grengo-cli >> _"
-                className="form-input form-input--sm input"
-                style={{ flex: 1, fontFamily: "var(--font-mono, monospace)" }}
-                disabled={consoleBusy}
-              />
-              <button
-                type="submit"
-                className="action-btn"
-                disabled={consoleBusy || !consoleInput.trim()}
-                style={{ width: "34px", height: "34px", flexShrink: 0 }}
-                title="Execute"
-              >
-                <Activity size={14} />
-              </button>
-              <button
-                type="button"
-                className="action-btn danger"
-                onClick={() => setIsConsoleOpen(false)}
-                style={{ width: "34px", height: "34px", flexShrink: 0 }}
-                title="Close"
-              >
-                <X size={14} />
-              </button>
-            </form>
-          </div>
-        )}
-        <style>{`
-          .invisiblescroll::-webkit-scrollbar { display: none; }
-          .conp { font-size: 0.9rem; color: var(--text-primary); transform: scale(0); animation: scale1 300ms cubic-bezier(.47, 1.64, .41, .8) forwards; font-family: var(--font-mono, monospace); white-space: pre-wrap; margin-bottom: 4px; }
-          .input { font-size: 0.9rem; transform: scale(0); animation: scale1 300ms cubic-bezier(.47, 1.64, .41, .8) forwards; }
-          @keyframes scale1 { 100% { transform: scale(1); } }
-        `}</style>
-      </ContentStandOutCard>
+        />
+      </div>
     </div>
   );
 }

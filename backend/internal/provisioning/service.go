@@ -2,10 +2,12 @@ package provisioning
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,8 +32,13 @@ type Service interface {
 	GetClientInstances(clientID int64) ([]*models.ProvisionedInstance, error)
 	StartInstance(id int64) error
 	StopInstance(id int64) error
+	RestartInstance(id int64) error
 	GetInstanceLogs(id int64) ([]logger.Line, error)
 	TearDownInstance(id int64) error
+	GetStats(ctx context.Context) (interface{}, error)
+	GetAvailableApps() ([]map[string]interface{}, error)
+	InstallApp(id int64, app string) error
+	UninstallApp(id int64, app string) error
 }
 
 type service struct {
@@ -240,6 +247,14 @@ func (s *service) GetClientInstances(clientID int64) ([]*models.ProvisionedInsta
 }
 
 func (s *service) StartInstance(id int64) error {
+	isFrappe, err := s.isFrappe(id)
+	if err != nil {
+		return err
+	}
+	if isFrappe {
+		return errors.New("Not supported for multi-tenant")
+	}
+
 	dir, err := s.findInstanceDir(id)
 	if err != nil {
 		return err
@@ -262,6 +277,14 @@ func (s *service) StartInstance(id int64) error {
 }
 
 func (s *service) StopInstance(id int64) error {
+	isFrappe, err := s.isFrappe(id)
+	if err != nil {
+		return err
+	}
+	if isFrappe {
+		return errors.New("Not supported for multi-tenant")
+	}
+
 	dir, err := s.findInstanceDir(id)
 	if err != nil {
 		return err
@@ -280,6 +303,141 @@ func (s *service) StopInstance(id int64) error {
 		Type:    "provisioning:status",
 		Payload: payloadBytes,
 	})
+	return nil
+}
+
+func (s *service) RestartInstance(id int64) error {
+	isFrappe, err := s.isFrappe(id)
+	if err != nil {
+		return err
+	}
+	if isFrappe {
+		return errors.New("Not supported for multi-tenant")
+	}
+
+	dir, err := s.findInstanceDir(id)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command("docker", "compose", "restart")
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	s.repo.UpdateInstanceStatus(id, "running")
+	payloadBytes, _ := json.Marshal(map[string]interface{}{
+		"id":     id,
+		"status": "running",
+	})
+	s.hub.BroadcastToPermission("admin.general", &ws.Message{
+		Type:    "provisioning:status",
+		Payload: payloadBytes,
+	})
+
+	// Log to websocket
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	s.logGroup.Join(l)
+	defer s.logGroup.Remove(l)
+	l.Info("Instance restarted successfully")
+
+	return nil
+}
+
+func (s *service) isFrappe(id int64) (bool, error) {
+	inst, err := s.repo.GetInstanceByID(id)
+	if err != nil {
+		return false, err
+	}
+	bp, err := s.repo.GetBlueprintByID(inst.BlueprintID)
+	if err != nil {
+		return false, err
+	}
+	name := bp.Name
+	if name == "Superset" || name == "superset" || name == "Apache Superset" {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (s *service) GetAvailableApps() ([]map[string]interface{}, error) {
+	resp, err := http.Get("http://skaia_frappe_cluster_1:3000/api/goftw/apps")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var apps []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&apps); err != nil {
+		return nil, err
+	}
+	return apps, nil
+}
+
+func (s *service) InstallApp(id int64, appName string) error {
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	s.logGroup.Join(l)
+	defer s.logGroup.Remove(l)
+
+	l.Info(fmt.Sprintf("Installing app %s...", appName))
+
+	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
+	url := fmt.Sprintf("http://skaia_frappe_cluster_1:3000/api/goftw/site/%s/apps", siteName)
+	
+	payload := map[string]string{"app": appName}
+	payloadBytes, _ := json.Marshal(payload)
+	
+	resp, err := http.Post(url, "application/json", bytes.NewReader(payloadBytes))
+	if err != nil {
+		l.Error(fmt.Sprintf("Failed to install app: %v", err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		l.Error(fmt.Sprintf("Failed to install app, status code: %d", resp.StatusCode))
+		return fmt.Errorf("failed to install app")
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		l.Info(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		l.Error(fmt.Sprintf("Stream error: %v", err))
+	}
+
+	l.Success(fmt.Sprintf("Successfully installed app %s", appName))
+	return nil
+}
+
+func (s *service) UninstallApp(id int64, appName string) error {
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	s.logGroup.Join(l)
+	defer s.logGroup.Remove(l)
+
+	l.Info(fmt.Sprintf("Uninstalling app %s...", appName))
+
+	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
+	url := fmt.Sprintf("http://skaia_frappe_cluster_1:3000/api/goftw/site/%s/apps/%s", siteName, appName)
+	
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	if err != nil {
+		l.Error(fmt.Sprintf("Failed to uninstall app: %v", err))
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		l.Error(fmt.Sprintf("Failed to uninstall app: %v", err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		l.Error(fmt.Sprintf("Failed to uninstall app, status code: %d", resp.StatusCode))
+		return fmt.Errorf("failed to uninstall app")
+	}
+
+	l.Success(fmt.Sprintf("Successfully uninstalled app %s", appName))
 	return nil
 }
 
@@ -358,4 +516,35 @@ func (s *service) findInstanceDir(id int64) (string, error) {
 		return supersetDir, nil
 	}
 	return "", errors.New("instance directory not found")
+}
+
+func (s *service) GetStats(ctx context.Context) (interface{}, error) {
+	if s.grengo != nil {
+		stats, err := s.grengo.Stats()
+		if err == nil {
+			return stats, nil
+		}
+		// fallback to local docker stats if grengo fails or is inaccessible
+	}
+
+	cmd := exec.CommandContext(ctx, "docker", "stats", "--no-stream", "--format", "{{json .}}")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get docker stats: %w", err)
+	}
+
+	var stats []map[string]interface{}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var stat map[string]interface{}
+		if err := json.Unmarshal([]byte(line), &stat); err == nil {
+			stats = append(stats, stat)
+		}
+	}
+
+	return stats, nil
 }
