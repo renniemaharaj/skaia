@@ -59,6 +59,10 @@ func (h *Hub) PropagateOrder(orderID int64, data interface{}, action string) {
 	h.propagate("order", orderID, OrderUpdate, action, data)
 }
 
+func (h *Hub) PropagateLog(data interface{}) {
+	h.propagate("log", 0, LogsStream, "log", data)
+}
+
 func (h *Hub) PushOrderUpdate(userID int64, data interface{}, action string) {
 	payload, _ := json.Marshal(map[string]interface{}{
 		"action": action,

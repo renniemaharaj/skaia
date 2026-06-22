@@ -413,14 +413,15 @@ export default function GrengoDashboard() {
     setComposeBusy(true);
     setComposeOutput("");
     try {
-      const waitPromise = triggerAndWaitForJob("global-cmd");
-      sendGrengoJobAction(
+      await triggerAndWaitForJob(
         "global-cmd",
-        undefined,
-        "compose",
-        build ? ["up", "--build", "-d"] : ["up", "-d"]
+        sendGrengoJobAction(
+          "global-cmd",
+          undefined,
+          "compose",
+          build ? ["up", "--build", "-d"] : ["up", "-d"]
+        )
       );
-      await waitPromise;
       setComposeOutput(build ? "compose up --build completed" : "compose up completed");
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Compose up failed");
@@ -433,9 +434,10 @@ export default function GrengoDashboard() {
     setComposeBusy(true);
     setComposeOutput("");
     try {
-      const waitPromise = triggerAndWaitForJob("global-cmd");
-      sendGrengoJobAction("global-cmd", undefined, "compose", ["down"]);
-      await waitPromise;
+      await triggerAndWaitForJob(
+        "global-cmd",
+        sendGrengoJobAction("global-cmd", undefined, "compose", ["down"])
+      );
       setComposeOutput("compose down completed");
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Compose down failed");
@@ -448,9 +450,10 @@ export default function GrengoDashboard() {
     setComposeBusy(true);
     setComposeOutput("");
     try {
-      const waitPromise = triggerAndWaitForJob("global-cmd");
-      sendGrengoJobAction("global-cmd", undefined, "ship", ["frontend"]);
-      await waitPromise;
+      await triggerAndWaitForJob(
+        "global-cmd",
+        sendGrengoJobAction("global-cmd", undefined, "ship", ["frontend"])
+      );
       setComposeOutput("ship frontend completed");
     } catch (e: unknown) {
       setComposeOutput(e instanceof Error ? e.message : "Ship frontend failed");
@@ -525,9 +528,10 @@ export default function GrengoDashboard() {
     setMigrateBusy(prev => ({ ...prev, [name]: true }));
     setMigrateOutput(prev => ({ ...prev, [name]: "" }));
     try {
-      const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", name, "migrate", rebuild ? ["--rebuild"] : undefined);
-      await waitPromise;
+      await triggerAndWaitForJob(
+        "site-cmd",
+        sendGrengoJobAction("site-cmd", name, "migrate", rebuild ? ["--rebuild"] : undefined)
+      );
       setMigrateOutput(prev => ({
         ...prev,
         [name]: "Migration completed successfully",
@@ -546,9 +550,10 @@ export default function GrengoDashboard() {
     setMigrateAllBusy(true);
     setMigrateAllOutput("");
     try {
-      const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", "all", "migrate", rebuild ? ["--rebuild"] : undefined);
-      await waitPromise;
+      await triggerAndWaitForJob(
+        "site-cmd",
+        sendGrengoJobAction("site-cmd", "all", "migrate", rebuild ? ["--rebuild"] : undefined)
+      );
       setMigrateAllOutput("All migrations completed successfully");
     } catch (e: unknown) {
       setMigrateAllOutput(e instanceof Error ? e.message : "Migrate all failed");
@@ -559,20 +564,18 @@ export default function GrengoDashboard() {
 
   // Node export / import
 
-  const triggerAndWaitForJob = (actionType: string): Promise<any> => {
+  const triggerAndWaitForJob = (actionType: string, jobIDPromise: Promise<string>): Promise<any> => {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
+      const bufferedUpdates: any[] = [];
 
       const handleUpdate = (e: Event) => {
         const customEvent = e as CustomEvent;
         const job = customEvent.detail;
 
         if (!trackedJobId) {
-          if (job.type === actionType) {
-            trackedJobId = job.id;
-          } else {
-            return;
-          }
+          bufferedUpdates.push(job);
+          return;
         } else if (job.id !== trackedJobId) {
           return;
         }
@@ -590,23 +593,35 @@ export default function GrengoDashboard() {
       };
 
       window.addEventListener("grengo:job_update", handleUpdate);
+
+      jobIDPromise
+        .then(jobID => {
+          trackedJobId = jobID;
+          for (const job of bufferedUpdates) {
+            if (job.id === trackedJobId || (!trackedJobId && job.type === actionType)) {
+              handleUpdate(new CustomEvent("grengo:job_update", { detail: job }));
+            }
+          }
+        })
+        .catch(err => {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          reject(err);
+        });
     });
   };
 
-  const triggerAndDownloadJob = (actionType: string): Promise<void> => {
+  const triggerAndDownloadJob = (actionType: string, jobIDPromise: Promise<string>): Promise<void> => {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
+      const bufferedUpdates: any[] = [];
 
       const handleUpdate = async (e: Event) => {
         const customEvent = e as CustomEvent;
         const job = customEvent.detail;
 
         if (!trackedJobId) {
-          if (job.type === actionType) {
-            trackedJobId = job.id;
-          } else {
-            return;
-          }
+          bufferedUpdates.push(job);
+          return;
         } else if (job.id !== trackedJobId) {
           return;
         }
@@ -630,15 +645,27 @@ export default function GrengoDashboard() {
       };
 
       window.addEventListener("grengo:job_update", handleUpdate);
+
+      jobIDPromise
+        .then(jobID => {
+          trackedJobId = jobID;
+          for (const job of bufferedUpdates) {
+            if (job.id === trackedJobId || (!trackedJobId && job.type === actionType)) {
+              handleUpdate(new CustomEvent("grengo:job_update", { detail: job }));
+            }
+          }
+        })
+        .catch(err => {
+          window.removeEventListener("grengo:job_update", handleUpdate);
+          reject(err);
+        });
     });
   };
 
   const handleExportNode = async () => {
     setNodeExportBusy(true);
     try {
-      const waitPromise = triggerAndDownloadJob("export-node");
-      sendGrengoJobAction("export-node", "");
-      await waitPromise;
+      await triggerAndDownloadJob("export-node", sendGrengoJobAction("export-node", ""));
     } catch (e: any) {
       customAlert(e.message);
     } finally {
@@ -651,9 +678,7 @@ export default function GrengoDashboard() {
   const siteAction = async (name: string, action: string, _method = "POST") => {
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
-      const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", name, action);
-      await waitPromise;
+      await triggerAndWaitForJob("site-cmd", sendGrengoJobAction("site-cmd", name, action));
       await fetchSites();
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Action failed");
@@ -666,9 +691,7 @@ export default function GrengoDashboard() {
     if (!(await customConfirm(`Permanently delete site "${name}" and all its data?`))) return;
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
-      const waitPromise = triggerAndWaitForJob("site-cmd");
-      sendGrengoJobAction("site-cmd", name, "remove");
-      await waitPromise;
+      await triggerAndWaitForJob("site-cmd", sendGrengoJobAction("site-cmd", name, "remove"));
       await fetchSites();
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Delete failed");
@@ -680,9 +703,7 @@ export default function GrengoDashboard() {
   const handleExport = async (name: string) => {
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
-      const waitPromise = triggerAndDownloadJob("export-site");
-      sendGrengoJobAction("export-site", name);
-      await waitPromise;
+      await triggerAndDownloadJob("export-site", sendGrengoJobAction("export-site", name));
     } catch (e: unknown) {
       customAlert(e instanceof Error ? e.message : "Export failed");
     } finally {
@@ -1079,7 +1100,7 @@ export default function GrengoDashboard() {
             setConsoleBusy(true);
             setConsoleOutputLines(prev => [...prev, `$ ${cmd}`]);
 
-            triggerAndWaitForJob("exec")
+            triggerAndWaitForJob("exec", sendGrengoJobAction("exec", undefined, command, args))
               .then(result => {
                 if (result.error) {
                   setConsoleOutputLines(prev => [...prev, result.error]);
@@ -1094,7 +1115,6 @@ export default function GrengoDashboard() {
                 setConsoleBusy(false);
               });
 
-            sendGrengoJobAction("exec", undefined, command, args);
           }}
         />
       </div>
@@ -1288,7 +1308,7 @@ function SiteTable({
                       flexWrap: "wrap",
                     }}
                   >
-                    {site.status === "running" ? (
+                    {site.running ? (
                       <button
                         className="action-btn"
                         title="Stop"
@@ -1802,7 +1822,7 @@ function CreateSiteForm({
   triggerAndWaitForJob,
 }: {
   onCreated: () => void;
-  triggerAndWaitForJob: (actionType: string) => Promise<any>;
+  triggerAndWaitForJob: (actionType: string, jobIDPromise: Promise<string>) => Promise<any>;
 }) {
   const [form, setForm] = useState<CreateSiteParams>({
     name: "",
@@ -1838,9 +1858,10 @@ function CreateSiteForm({
         args.push("--domain", d);
       });
 
-      const waitPromise = triggerAndWaitForJob("global-cmd");
-      sendGrengoJobAction("global-cmd", undefined, "new", args);
-      await waitPromise;
+      await triggerAndWaitForJob(
+        "global-cmd",
+        sendGrengoJobAction("global-cmd", undefined, "new", args)
+      );
       onCreated();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create site");
@@ -1938,7 +1959,7 @@ function ImportSiteForm({
 }: {
   apiBase: string;
   onImported: () => void;
-  triggerAndWaitForJob: (actionType: string) => Promise<any>;
+  triggerAndWaitForJob: (actionType: string, jobIDPromise: Promise<string>) => Promise<any>;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
@@ -1976,8 +1997,7 @@ function ImportSiteForm({
       }
       const data = await res.json();
       if (data.job_id) {
-        const waitPromise = triggerAndWaitForJob("import-site");
-        await waitPromise;
+        await triggerAndWaitForJob("import-site", Promise.resolve(data.job_id));
       }
       onImported();
     } catch (e: unknown) {
@@ -2027,7 +2047,7 @@ function ImportNodeForm({
 }: {
   apiBase: string;
   onImported: () => void;
-  triggerAndWaitForJob: (actionType: string) => Promise<any>;
+  triggerAndWaitForJob: (actionType: string, jobIDPromise: Promise<string>) => Promise<any>;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -2067,8 +2087,7 @@ function ImportNodeForm({
       }
       const data = await res.json();
       if (data.job_id) {
-        const waitPromise = triggerAndWaitForJob("import-node");
-        await waitPromise;
+        await triggerAndWaitForJob("import-node", Promise.resolve(data.job_id));
       }
       onImported();
     } catch (e: unknown) {

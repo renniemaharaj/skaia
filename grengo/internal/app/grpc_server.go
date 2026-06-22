@@ -90,14 +90,7 @@ func (s *GrengoServer) ListSites(ctx context.Context, req *pb.ListSitesRequest) 
 }
 
 func (s *GrengoServer) Exec(ctx context.Context, req *pb.ExecRequest) (*pb.ExecResponse, error) {
-	blocked := map[string]bool{
-		"api":      true,
-		"wipe":     true,
-		"remove":   true,
-		"rm":       true,
-		"passcode": true,
-	}
-	if blocked[req.Command] {
+	if commandBlocked(req.Command) {
 		return &pb.ExecResponse{Ok: false, Error: "command not allowed"}, nil
 	}
 	args := append([]string{req.Command}, req.Args...)
@@ -380,17 +373,33 @@ func (s *GrengoServer) GetJob(ctx context.Context, req *pb.GetJobRequest) (*pb.G
 }
 
 func (s *GrengoServer) WatchJobs(req *pb.EmptyRequest, stream pb.GrengoService_WatchJobsServer) error {
-	// For gRPC we just stream existing jobs then wait.
-	// We'll emulate the stream by sending job statuses.
-	ch := make(chan *jobStatus, 10)
+	ch := make(chan *jobStatus, 100)
 
 	jobsMu.Lock()
+	existing := make([]*jobStatus, 0, len(jobs))
 	for _, j := range jobs {
-		ch <- j
+		existing = append(existing, j)
 	}
 	jobsMu.Unlock()
 
-	// Simply consume the channel and stream. In a real system, broadcastJobStatus would push to this channel.
+	for _, j := range existing {
+		b, _ := json.Marshal(j)
+		if err := stream.Send(&pb.JobEvent{EventJson: string(b)}); err != nil {
+			return err
+		}
+	}
+
+	grpcJobListenersMu.Lock()
+	grpcJobListeners[ch] = true
+	grpcJobListenersMu.Unlock()
+
+	defer func() {
+		grpcJobListenersMu.Lock()
+		delete(grpcJobListeners, ch)
+		grpcJobListenersMu.Unlock()
+		close(ch)
+	}()
+
 	for {
 		select {
 		case j := <-ch:
@@ -404,9 +413,46 @@ func (s *GrengoServer) WatchJobs(req *pb.EmptyRequest, stream pb.GrengoService_W
 	}
 }
 
-func (s *GrengoServer) SendAction(ctx context.Context, req *pb.SendActionRequest) (*pb.EmptyResponse, error) {
-	// Action handling (e.g., job cancellation) would go here
-	return &pb.EmptyResponse{}, nil
+func (s *GrengoServer) WatchLogs(req *pb.EmptyRequest, stream pb.GrengoService_WatchLogsServer) error {
+	ch := make(chan LogLine, 100)
+
+	logStreamMu.Lock()
+	logStreams[ch] = true
+	logStreamMu.Unlock()
+
+	defer func() {
+		logStreamMu.Lock()
+		delete(logStreams, ch)
+		logStreamMu.Unlock()
+		close(ch)
+	}()
+
+	for {
+		select {
+		case line := <-ch:
+			b, _ := json.Marshal(line)
+			if err := stream.Send(&pb.LogStreamResponse{Output: string(b)}); err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return nil
+		}
+	}
+}
+
+func (s *GrengoServer) SendAction(ctx context.Context, req *pb.SendActionRequest) (*pb.SendActionResponse, error) {
+	var parsed grengoActionRequest
+	if err := json.Unmarshal(req.Action, &parsed); err != nil {
+		return &pb.SendActionResponse{Accepted: false, Error: "invalid action payload"}, nil
+	}
+	if parsed.Action == "exec" && commandBlocked(parsed.Command) {
+		return &pb.SendActionResponse{Accepted: false, Error: fmt.Sprintf("command %q not allowed via API", parsed.Command)}, nil
+	}
+	jobID, err := dispatchGrengoAction(parsed)
+	if err != nil {
+		return &pb.SendActionResponse{Accepted: false, Error: err.Error()}, nil
+	}
+	return &pb.SendActionResponse{Accepted: true, JobId: jobID}, nil
 }
 
 func (s *GrengoServer) DeleteExport(ctx context.Context, req *pb.DeleteExportRequest) (*pb.EmptyResponse, error) {

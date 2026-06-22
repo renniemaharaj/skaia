@@ -49,6 +49,7 @@ const (
 	GrengoService_GetJob_FullMethodName          = "/grengo.grpc.GrengoService/GetJob"
 	GrengoService_DownloadJob_FullMethodName     = "/grengo.grpc.GrengoService/DownloadJob"
 	GrengoService_WatchJobs_FullMethodName       = "/grengo.grpc.GrengoService/WatchJobs"
+	GrengoService_WatchLogs_FullMethodName       = "/grengo.grpc.GrengoService/WatchLogs"
 	GrengoService_SendAction_FullMethodName      = "/grengo.grpc.GrengoService/SendAction"
 	GrengoService_PasscodeStatus_FullMethodName  = "/grengo.grpc.GrengoService/PasscodeStatus"
 	GrengoService_VerifyPasscode_FullMethodName  = "/grengo.grpc.GrengoService/VerifyPasscode"
@@ -93,8 +94,9 @@ type GrengoServiceClient interface {
 	GetJob(ctx context.Context, in *GetJobRequest, opts ...grpc.CallOption) (*GetJobResponse, error)
 	DownloadJob(ctx context.Context, in *DownloadJobRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
 	WatchJobs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[JobEvent], error)
+	WatchLogs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
 	// WS proxy replacement
-	SendAction(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	SendAction(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (*SendActionResponse, error)
 	// Auth
 	PasscodeStatus(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*PasscodeStatusResponse, error)
 	VerifyPasscode(ctx context.Context, in *VerifyPasscodeRequest, opts ...grpc.CallOption) (*VerifyPasscodeResponse, error)
@@ -444,9 +446,28 @@ func (c *grengoServiceClient) WatchJobs(ctx context.Context, in *EmptyRequest, o
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GrengoService_WatchJobsClient = grpc.ServerStreamingClient[JobEvent]
 
-func (c *grengoServiceClient) SendAction(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *grengoServiceClient) WatchLogs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EmptyResponse)
+	stream, err := c.cc.NewStream(ctx, &GrengoService_ServiceDesc.Streams[4], GrengoService_WatchLogs_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[EmptyRequest, LogStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GrengoService_WatchLogsClient = grpc.ServerStreamingClient[LogStreamResponse]
+
+func (c *grengoServiceClient) SendAction(ctx context.Context, in *SendActionRequest, opts ...grpc.CallOption) (*SendActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendActionResponse)
 	err := c.cc.Invoke(ctx, GrengoService_SendAction_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -513,8 +534,9 @@ type GrengoServiceServer interface {
 	GetJob(context.Context, *GetJobRequest) (*GetJobResponse, error)
 	DownloadJob(*DownloadJobRequest, grpc.ServerStreamingServer[FileChunk]) error
 	WatchJobs(*EmptyRequest, grpc.ServerStreamingServer[JobEvent]) error
+	WatchLogs(*EmptyRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
 	// WS proxy replacement
-	SendAction(context.Context, *SendActionRequest) (*EmptyResponse, error)
+	SendAction(context.Context, *SendActionRequest) (*SendActionResponse, error)
 	// Auth
 	PasscodeStatus(context.Context, *EmptyRequest) (*PasscodeStatusResponse, error)
 	VerifyPasscode(context.Context, *VerifyPasscodeRequest) (*VerifyPasscodeResponse, error)
@@ -618,7 +640,10 @@ func (UnimplementedGrengoServiceServer) DownloadJob(*DownloadJobRequest, grpc.Se
 func (UnimplementedGrengoServiceServer) WatchJobs(*EmptyRequest, grpc.ServerStreamingServer[JobEvent]) error {
 	return status.Error(codes.Unimplemented, "method WatchJobs not implemented")
 }
-func (UnimplementedGrengoServiceServer) SendAction(context.Context, *SendActionRequest) (*EmptyResponse, error) {
+func (UnimplementedGrengoServiceServer) WatchLogs(*EmptyRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method WatchLogs not implemented")
+}
+func (UnimplementedGrengoServiceServer) SendAction(context.Context, *SendActionRequest) (*SendActionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendAction not implemented")
 }
 func (UnimplementedGrengoServiceServer) PasscodeStatus(context.Context, *EmptyRequest) (*PasscodeStatusResponse, error) {
@@ -1160,6 +1185,17 @@ func _GrengoService_WatchJobs_Handler(srv interface{}, stream grpc.ServerStream)
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GrengoService_WatchJobsServer = grpc.ServerStreamingServer[JobEvent]
 
+func _GrengoService_WatchLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(EmptyRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GrengoServiceServer).WatchLogs(m, &grpc.GenericServerStream[EmptyRequest, LogStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GrengoService_WatchLogsServer = grpc.ServerStreamingServer[LogStreamResponse]
+
 func _GrengoService_SendAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendActionRequest)
 	if err := dec(in); err != nil {
@@ -1357,6 +1393,11 @@ var GrengoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchJobs",
 			Handler:       _GrengoService_WatchJobs_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchLogs",
+			Handler:       _GrengoService_WatchLogs_Handler,
 			ServerStreams: true,
 		},
 	},

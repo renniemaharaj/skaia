@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/skaia/grengo/internal/services"
@@ -31,14 +31,7 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Block recursive / dangerous commands.
-	blocked := map[string]bool{
-		"api":      true, // recursive
-		"wipe":     true, // destructive
-		"remove":   true, // destructive
-		"rm":       true, // destructive
-		"passcode": true, // credential management
-	}
-	if blocked[req.Command] {
+	if commandBlocked(req.Command) {
 		apiError(w, http.StatusBadRequest, fmt.Sprintf("command %q not allowed via API", req.Command))
 		return
 	}
@@ -105,6 +98,27 @@ func (fw *flushWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
+func commandBlocked(command string) bool {
+	blocked := map[string]bool{
+		"api":      true,
+		"wipe":     true,
+		"remove":   true,
+		"rm":       true,
+		"passcode": true,
+	}
+	return blocked[command]
+}
+
+func logPrefix(parts ...string) string {
+	var clean []string
+	for _, part := range parts {
+		if strings.TrimSpace(part) != "" {
+			clean = append(clean, part)
+		}
+	}
+	return strings.Join(clean, ":")
+}
+
 // Async job runners (site-cmd, global-cmd)
 
 func startSiteCommand(name, command string, extraArgs []string) string {
@@ -113,6 +127,7 @@ func startSiteCommand(name, command string, extraArgs []string) string {
 	j := &jobStatus{
 		ID:        jobID,
 		Type:      "site-cmd",
+		Target:    name,
 		Status:    "running",
 		CreatedAt: time.Now(),
 	}
@@ -123,17 +138,25 @@ func startSiteCommand(name, command string, extraArgs []string) string {
 
 	go func() {
 		cmdArgs := append([]string{command, name}, extraArgs...)
-		result, err := services.NewCommandRunner(ProjectRoot()).RunSelf(cmdArgs...)
+		writer := NewLogWriter(logPrefix("site", name, command), "INFO")
+		BroadcastLog("INFO", writer.prefix, fmt.Sprintf("running grengo %s", strings.Join(cmdArgs, " ")))
+		result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, cmdArgs...)
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
 
 		if err != nil || result.ExitCode != 0 {
 			j.Status = "failed"
-			j.Error = fmt.Sprintf("%s failed: %s", command, result.Output)
+			if err != nil {
+				j.Error = fmt.Sprintf("%s failed: %v", command, err)
+			} else {
+				j.Error = fmt.Sprintf("%s failed with exit code %d", command, result.ExitCode)
+			}
+			BroadcastLog("ERROR", writer.prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", writer.prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 	return jobID
@@ -155,17 +178,25 @@ func startGlobalCommand(command string, extraArgs []string) string {
 
 	go func() {
 		cmdArgs := append([]string{command}, extraArgs...)
-		result, err := services.NewCommandRunner(ProjectRoot()).RunSelf(cmdArgs...)
+		writer := NewLogWriter(logPrefix("global", command), "INFO")
+		BroadcastLog("INFO", writer.prefix, fmt.Sprintf("running grengo %s", strings.Join(cmdArgs, " ")))
+		result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, cmdArgs...)
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
 
 		if err != nil || result.ExitCode != 0 {
 			j.Status = "failed"
-			j.Error = fmt.Sprintf("%s failed: %s", command, result.Output)
+			if err != nil {
+				j.Error = fmt.Sprintf("%s failed: %v", command, err)
+			} else {
+				j.Error = fmt.Sprintf("%s failed with exit code %d", command, result.ExitCode)
+			}
+			BroadcastLog("ERROR", writer.prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", writer.prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 	return jobID
@@ -186,24 +217,37 @@ func startGenericCommand(command string, args []string) string {
 	jobsMu.Unlock()
 
 	go func() {
-		cmd := exec.Command(command, args...)
-		cmd.Dir = ProjectRoot()
-		out, err := cmd.CombinedOutput()
-		
+		writer := NewLogWriter(logPrefix("exec", command), "INFO")
+		if commandBlocked(command) {
+			jobsMu.Lock()
+			j.Status = "failed"
+			j.Error = fmt.Sprintf("command %q not allowed via API", command)
+			BroadcastLog("ERROR", writer.prefix, j.Error)
+			broadcastJobStatus(j)
+			jobsMu.Unlock()
+			return
+		}
+
+		cmdArgs := append([]string{command}, args...)
+		BroadcastLog("INFO", writer.prefix, fmt.Sprintf("running grengo %s", strings.Join(cmdArgs, " ")))
+		result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, cmdArgs...)
+
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
 
-		if err != nil {
+		if err != nil || result.ExitCode != 0 {
 			j.Status = "failed"
-			j.Error = string(out)
-			if j.Error == "" {
+			if err != nil {
 				j.Error = err.Error()
+			} else {
+				j.Error = fmt.Sprintf("%s failed with exit code %d", command, result.ExitCode)
 			}
+			BroadcastLog("ERROR", writer.prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
-		j.Error = string(out) // We use Error field to pass the stdout output back
+		BroadcastLog("INFO", writer.prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 	return jobID

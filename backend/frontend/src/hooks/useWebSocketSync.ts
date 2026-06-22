@@ -247,6 +247,9 @@ export const useWebSocketSync = () => {
           if (message.type === "grengo:job_update") {
             window.dispatchEvent(new CustomEvent("grengo:job_update", { detail: payload }));
           }
+          if (message.type === "grengo:action_ack") {
+            window.dispatchEvent(new CustomEvent("grengo:action_ack", { detail: payload }));
+          }
           if (message.type === "grengo:stats_update") {
             window.dispatchEvent(new CustomEvent("grengo:stats_update", { detail: payload }));
           }
@@ -262,6 +265,7 @@ export const useWebSocketSync = () => {
           }
           if (
             message.type === "grengo:job_update" ||
+            message.type === "grengo:action_ack" ||
             message.type === "grengo:stats_update" ||
             message.type === "grengo:storage_update" ||
             message.type === "grengo:hardware_update"
@@ -1316,15 +1320,50 @@ export const sendGrengoJobAction = (
   name?: string,
   command?: string,
   args?: string[]
-) => {
+): Promise<string> => {
+  const requestId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const waitForAck = new Promise<string>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      window.removeEventListener("grengo:action_ack", handleAck);
+      reject(new Error("Timed out waiting for grengo action acknowledgement"));
+    }, 15000);
+
+    function handleAck(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (!detail || detail.request_id !== requestId) return;
+      window.clearTimeout(timeout);
+      window.removeEventListener("grengo:action_ack", handleAck);
+      if (!detail.accepted) {
+        reject(new Error(detail.error || "Grengo action was rejected"));
+        return;
+      }
+      resolve(detail.job_id);
+    }
+
+    window.addEventListener("grengo:action_ack", handleAck);
+  });
+
   if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
     _globalWs.send(
       JSON.stringify({
         type: "grengo:action",
-        payload: { action, name, command, args },
+        payload: { request_id: requestId, action, name, command, args },
       })
     );
   } else {
-    console.warn("WebSocket not connected, cannot send grengo action");
+    window.dispatchEvent(
+      new CustomEvent("grengo:action_ack", {
+        detail: {
+          request_id: requestId,
+          accepted: false,
+          error: "WebSocket not connected, cannot send grengo action",
+        },
+      })
+    );
   }
+  return waitForAck;
 };

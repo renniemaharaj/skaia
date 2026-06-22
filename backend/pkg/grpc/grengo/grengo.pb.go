@@ -1745,6 +1745,66 @@ func (x *SendActionRequest) GetAction() []byte {
 	return nil
 }
 
+type SendActionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	JobId         string                 `protobuf:"bytes,2,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendActionResponse) Reset() {
+	*x = SendActionResponse{}
+	mi := &file_grengo_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendActionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendActionResponse) ProtoMessage() {}
+
+func (x *SendActionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_grengo_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendActionResponse.ProtoReflect.Descriptor instead.
+func (*SendActionResponse) Descriptor() ([]byte, []int) {
+	return file_grengo_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *SendActionResponse) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
+func (x *SendActionResponse) GetJobId() string {
+	if x != nil {
+		return x.JobId
+	}
+	return ""
+}
+
+func (x *SendActionResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type PasscodeStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Configured    bool                   `protobuf:"varint,1,opt,name=configured,proto3" json:"configured,omitempty"`
@@ -1754,7 +1814,7 @@ type PasscodeStatusResponse struct {
 
 func (x *PasscodeStatusResponse) Reset() {
 	*x = PasscodeStatusResponse{}
-	mi := &file_grengo_proto_msgTypes[37]
+	mi := &file_grengo_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1766,7 +1826,7 @@ func (x *PasscodeStatusResponse) String() string {
 func (*PasscodeStatusResponse) ProtoMessage() {}
 
 func (x *PasscodeStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[37]
+	mi := &file_grengo_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1779,7 +1839,7 @@ func (x *PasscodeStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PasscodeStatusResponse.ProtoReflect.Descriptor instead.
 func (*PasscodeStatusResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{37}
+	return file_grengo_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *PasscodeStatusResponse) GetConfigured() bool {
@@ -1799,7 +1859,7 @@ type VerifyPasscodeRequest struct {
 
 func (x *VerifyPasscodeRequest) Reset() {
 	*x = VerifyPasscodeRequest{}
-	mi := &file_grengo_proto_msgTypes[38]
+	mi := &file_grengo_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1811,7 +1871,7 @@ func (x *VerifyPasscodeRequest) String() string {
 func (*VerifyPasscodeRequest) ProtoMessage() {}
 
 func (x *VerifyPasscodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[38]
+	mi := &file_grengo_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1824,7 +1884,7 @@ func (x *VerifyPasscodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasscodeRequest.ProtoReflect.Descriptor instead.
 func (*VerifyPasscodeRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{38}
+	return file_grengo_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *VerifyPasscodeRequest) GetP1() string {
@@ -1850,7 +1910,7 @@ type VerifyPasscodeResponse struct {
 
 func (x *VerifyPasscodeResponse) Reset() {
 	*x = VerifyPasscodeResponse{}
-	mi := &file_grengo_proto_msgTypes[39]
+	mi := &file_grengo_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1862,7 +1922,7 @@ func (x *VerifyPasscodeResponse) String() string {
 func (*VerifyPasscodeResponse) ProtoMessage() {}
 
 func (x *VerifyPasscodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[39]
+	mi := &file_grengo_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1875,7 +1935,7 @@ func (x *VerifyPasscodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasscodeResponse.ProtoReflect.Descriptor instead.
 func (*VerifyPasscodeResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{39}
+	return file_grengo_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *VerifyPasscodeResponse) GetValid() bool {
@@ -1981,7 +2041,11 @@ const file_grengo_proto_rawDesc = "" +
 	"\n" +
 	"event_json\x18\x01 \x01(\tR\teventJson\"+\n" +
 	"\x11SendActionRequest\x12\x16\n" +
-	"\x06action\x18\x01 \x01(\fR\x06action\"8\n" +
+	"\x06action\x18\x01 \x01(\fR\x06action\"]\n" +
+	"\x12SendActionResponse\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted\x12\x15\n" +
+	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"8\n" +
 	"\x16PasscodeStatusResponse\x12\x1e\n" +
 	"\n" +
 	"configured\x18\x01 \x01(\bR\n" +
@@ -1990,7 +2054,7 @@ const file_grengo_proto_rawDesc = "" +
 	"\x02p1\x18\x01 \x01(\tR\x02p1\x12\x0e\n" +
 	"\x02p2\x18\x02 \x01(\tR\x02p2\".\n" +
 	"\x16VerifyPasscodeResponse\x12\x14\n" +
-	"\x05valid\x18\x01 \x01(\bR\x05valid2\x8c\x13\n" +
+	"\x05valid\x18\x01 \x01(\bR\x05valid2\xdb\x13\n" +
 	"\rGrengoService\x12J\n" +
 	"\tListSites\x12\x1d.grengo.grpc.ListSitesRequest\x1a\x1e.grengo.grpc.ListSitesResponse\x12;\n" +
 	"\x04Exec\x12\x18.grengo.grpc.ExecRequest\x1a\x19.grengo.grpc.ExecResponse\x12M\n" +
@@ -2033,8 +2097,9 @@ const file_grengo_proto_rawDesc = "" +
 	"\x06GetJob\x12\x1a.grengo.grpc.GetJobRequest\x1a\x1b.grengo.grpc.GetJobResponse\x12H\n" +
 	"\vDownloadJob\x12\x1f.grengo.grpc.DownloadJobRequest\x1a\x16.grengo.grpc.FileChunk0\x01\x12?\n" +
 	"\tWatchJobs\x12\x19.grengo.grpc.EmptyRequest\x1a\x15.grengo.grpc.JobEvent0\x01\x12H\n" +
+	"\tWatchLogs\x12\x19.grengo.grpc.EmptyRequest\x1a\x1e.grengo.grpc.LogStreamResponse0\x01\x12M\n" +
 	"\n" +
-	"SendAction\x12\x1e.grengo.grpc.SendActionRequest\x1a\x1a.grengo.grpc.EmptyResponse\x12P\n" +
+	"SendAction\x12\x1e.grengo.grpc.SendActionRequest\x1a\x1f.grengo.grpc.SendActionResponse\x12P\n" +
 	"\x0ePasscodeStatus\x12\x19.grengo.grpc.EmptyRequest\x1a#.grengo.grpc.PasscodeStatusResponse\x12Y\n" +
 	"\x0eVerifyPasscode\x12\".grengo.grpc.VerifyPasscodeRequest\x1a#.grengo.grpc.VerifyPasscodeResponseB\x1eZ\x1cgithub.com/skaia/grpc/grengob\x06proto3"
 
@@ -2050,7 +2115,7 @@ func file_grengo_proto_rawDescGZIP() []byte {
 	return file_grengo_proto_rawDescData
 }
 
-var file_grengo_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_grengo_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_grengo_proto_goTypes = []any{
 	(*EmptyRequest)(nil),           // 0: grengo.grpc.EmptyRequest
 	(*EmptyResponse)(nil),          // 1: grengo.grpc.EmptyResponse
@@ -2089,9 +2154,10 @@ var file_grengo_proto_goTypes = []any{
 	(*DownloadJobRequest)(nil),     // 34: grengo.grpc.DownloadJobRequest
 	(*JobEvent)(nil),               // 35: grengo.grpc.JobEvent
 	(*SendActionRequest)(nil),      // 36: grengo.grpc.SendActionRequest
-	(*PasscodeStatusResponse)(nil), // 37: grengo.grpc.PasscodeStatusResponse
-	(*VerifyPasscodeRequest)(nil),  // 38: grengo.grpc.VerifyPasscodeRequest
-	(*VerifyPasscodeResponse)(nil), // 39: grengo.grpc.VerifyPasscodeResponse
+	(*SendActionResponse)(nil),     // 37: grengo.grpc.SendActionResponse
+	(*PasscodeStatusResponse)(nil), // 38: grengo.grpc.PasscodeStatusResponse
+	(*VerifyPasscodeRequest)(nil),  // 39: grengo.grpc.VerifyPasscodeRequest
+	(*VerifyPasscodeResponse)(nil), // 40: grengo.grpc.VerifyPasscodeResponse
 }
 var file_grengo_proto_depIdxs = []int32{
 	3,  // 0: grengo.grpc.GrengoService.ListSites:input_type -> grengo.grpc.ListSitesRequest
@@ -2124,44 +2190,46 @@ var file_grengo_proto_depIdxs = []int32{
 	32, // 27: grengo.grpc.GrengoService.GetJob:input_type -> grengo.grpc.GetJobRequest
 	34, // 28: grengo.grpc.GrengoService.DownloadJob:input_type -> grengo.grpc.DownloadJobRequest
 	0,  // 29: grengo.grpc.GrengoService.WatchJobs:input_type -> grengo.grpc.EmptyRequest
-	36, // 30: grengo.grpc.GrengoService.SendAction:input_type -> grengo.grpc.SendActionRequest
-	0,  // 31: grengo.grpc.GrengoService.PasscodeStatus:input_type -> grengo.grpc.EmptyRequest
-	38, // 32: grengo.grpc.GrengoService.VerifyPasscode:input_type -> grengo.grpc.VerifyPasscodeRequest
-	4,  // 33: grengo.grpc.GrengoService.ListSites:output_type -> grengo.grpc.ListSitesResponse
-	6,  // 34: grengo.grpc.GrengoService.Exec:output_type -> grengo.grpc.ExecResponse
-	8,  // 35: grengo.grpc.GrengoService.CreateSite:output_type -> grengo.grpc.CreateSiteResponse
-	10, // 36: grengo.grpc.GrengoService.ProvisionFrappe:output_type -> grengo.grpc.LogStreamResponse
-	1,  // 37: grengo.grpc.GrengoService.DeleteSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 38: grengo.grpc.GrengoService.StartSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 39: grengo.grpc.GrengoService.StopSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 40: grengo.grpc.GrengoService.EnableSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 41: grengo.grpc.GrengoService.DisableSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 42: grengo.grpc.GrengoService.ArmSite:output_type -> grengo.grpc.EmptyResponse
-	1,  // 43: grengo.grpc.GrengoService.DisarmSite:output_type -> grengo.grpc.EmptyResponse
-	11, // 44: grengo.grpc.GrengoService.GetSiteEnv:output_type -> grengo.grpc.GetSiteEnvResponse
-	1,  // 45: grengo.grpc.GrengoService.UpdateSiteEnv:output_type -> grengo.grpc.EmptyResponse
-	13, // 46: grengo.grpc.GrengoService.Stats:output_type -> grengo.grpc.StatsResponse
-	14, // 47: grengo.grpc.GrengoService.Storage:output_type -> grengo.grpc.StorageResponse
-	15, // 48: grengo.grpc.GrengoService.GetSysInfo:output_type -> grengo.grpc.SysInfoResponse
-	16, // 49: grengo.grpc.GrengoService.GetHardware:output_type -> grengo.grpc.HardwareResponse
-	17, // 50: grengo.grpc.GrengoService.ExportSite:output_type -> grengo.grpc.ExportSiteResponse
-	19, // 51: grengo.grpc.GrengoService.ImportSite:output_type -> grengo.grpc.ImportSiteResponse
-	21, // 52: grengo.grpc.GrengoService.MigrateSite:output_type -> grengo.grpc.MigrateSiteResponse
-	23, // 53: grengo.grpc.GrengoService.MigrateAll:output_type -> grengo.grpc.MigrateAllResponse
-	24, // 54: grengo.grpc.GrengoService.ExportNode:output_type -> grengo.grpc.ExportNodeResponse
-	26, // 55: grengo.grpc.GrengoService.ImportNode:output_type -> grengo.grpc.ImportNodeResponse
-	27, // 56: grengo.grpc.GrengoService.ListExports:output_type -> grengo.grpc.ListExportsResponse
-	30, // 57: grengo.grpc.GrengoService.DownloadExport:output_type -> grengo.grpc.FileChunk
-	1,  // 58: grengo.grpc.GrengoService.DeleteExport:output_type -> grengo.grpc.EmptyResponse
-	31, // 59: grengo.grpc.GrengoService.ListJobs:output_type -> grengo.grpc.ListJobsResponse
-	33, // 60: grengo.grpc.GrengoService.GetJob:output_type -> grengo.grpc.GetJobResponse
-	30, // 61: grengo.grpc.GrengoService.DownloadJob:output_type -> grengo.grpc.FileChunk
-	35, // 62: grengo.grpc.GrengoService.WatchJobs:output_type -> grengo.grpc.JobEvent
-	1,  // 63: grengo.grpc.GrengoService.SendAction:output_type -> grengo.grpc.EmptyResponse
-	37, // 64: grengo.grpc.GrengoService.PasscodeStatus:output_type -> grengo.grpc.PasscodeStatusResponse
-	39, // 65: grengo.grpc.GrengoService.VerifyPasscode:output_type -> grengo.grpc.VerifyPasscodeResponse
-	33, // [33:66] is the sub-list for method output_type
-	0,  // [0:33] is the sub-list for method input_type
+	0,  // 30: grengo.grpc.GrengoService.WatchLogs:input_type -> grengo.grpc.EmptyRequest
+	36, // 31: grengo.grpc.GrengoService.SendAction:input_type -> grengo.grpc.SendActionRequest
+	0,  // 32: grengo.grpc.GrengoService.PasscodeStatus:input_type -> grengo.grpc.EmptyRequest
+	39, // 33: grengo.grpc.GrengoService.VerifyPasscode:input_type -> grengo.grpc.VerifyPasscodeRequest
+	4,  // 34: grengo.grpc.GrengoService.ListSites:output_type -> grengo.grpc.ListSitesResponse
+	6,  // 35: grengo.grpc.GrengoService.Exec:output_type -> grengo.grpc.ExecResponse
+	8,  // 36: grengo.grpc.GrengoService.CreateSite:output_type -> grengo.grpc.CreateSiteResponse
+	10, // 37: grengo.grpc.GrengoService.ProvisionFrappe:output_type -> grengo.grpc.LogStreamResponse
+	1,  // 38: grengo.grpc.GrengoService.DeleteSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 39: grengo.grpc.GrengoService.StartSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 40: grengo.grpc.GrengoService.StopSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 41: grengo.grpc.GrengoService.EnableSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 42: grengo.grpc.GrengoService.DisableSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 43: grengo.grpc.GrengoService.ArmSite:output_type -> grengo.grpc.EmptyResponse
+	1,  // 44: grengo.grpc.GrengoService.DisarmSite:output_type -> grengo.grpc.EmptyResponse
+	11, // 45: grengo.grpc.GrengoService.GetSiteEnv:output_type -> grengo.grpc.GetSiteEnvResponse
+	1,  // 46: grengo.grpc.GrengoService.UpdateSiteEnv:output_type -> grengo.grpc.EmptyResponse
+	13, // 47: grengo.grpc.GrengoService.Stats:output_type -> grengo.grpc.StatsResponse
+	14, // 48: grengo.grpc.GrengoService.Storage:output_type -> grengo.grpc.StorageResponse
+	15, // 49: grengo.grpc.GrengoService.GetSysInfo:output_type -> grengo.grpc.SysInfoResponse
+	16, // 50: grengo.grpc.GrengoService.GetHardware:output_type -> grengo.grpc.HardwareResponse
+	17, // 51: grengo.grpc.GrengoService.ExportSite:output_type -> grengo.grpc.ExportSiteResponse
+	19, // 52: grengo.grpc.GrengoService.ImportSite:output_type -> grengo.grpc.ImportSiteResponse
+	21, // 53: grengo.grpc.GrengoService.MigrateSite:output_type -> grengo.grpc.MigrateSiteResponse
+	23, // 54: grengo.grpc.GrengoService.MigrateAll:output_type -> grengo.grpc.MigrateAllResponse
+	24, // 55: grengo.grpc.GrengoService.ExportNode:output_type -> grengo.grpc.ExportNodeResponse
+	26, // 56: grengo.grpc.GrengoService.ImportNode:output_type -> grengo.grpc.ImportNodeResponse
+	27, // 57: grengo.grpc.GrengoService.ListExports:output_type -> grengo.grpc.ListExportsResponse
+	30, // 58: grengo.grpc.GrengoService.DownloadExport:output_type -> grengo.grpc.FileChunk
+	1,  // 59: grengo.grpc.GrengoService.DeleteExport:output_type -> grengo.grpc.EmptyResponse
+	31, // 60: grengo.grpc.GrengoService.ListJobs:output_type -> grengo.grpc.ListJobsResponse
+	33, // 61: grengo.grpc.GrengoService.GetJob:output_type -> grengo.grpc.GetJobResponse
+	30, // 62: grengo.grpc.GrengoService.DownloadJob:output_type -> grengo.grpc.FileChunk
+	35, // 63: grengo.grpc.GrengoService.WatchJobs:output_type -> grengo.grpc.JobEvent
+	10, // 64: grengo.grpc.GrengoService.WatchLogs:output_type -> grengo.grpc.LogStreamResponse
+	37, // 65: grengo.grpc.GrengoService.SendAction:output_type -> grengo.grpc.SendActionResponse
+	38, // 66: grengo.grpc.GrengoService.PasscodeStatus:output_type -> grengo.grpc.PasscodeStatusResponse
+	40, // 67: grengo.grpc.GrengoService.VerifyPasscode:output_type -> grengo.grpc.VerifyPasscodeResponse
+	34, // [34:68] is the sub-list for method output_type
+	0,  // [0:34] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -2178,7 +2246,7 @@ func file_grengo_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_grengo_proto_rawDesc), len(file_grengo_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   40,
+			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

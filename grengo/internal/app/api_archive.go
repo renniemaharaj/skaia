@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/skaia/grengo/internal/services"
 )
 
 // Export / Import (site & node)
@@ -35,6 +37,8 @@ func startSiteExport(name string) string {
 	jobsMu.Unlock()
 
 	go func() {
+		prefix := logPrefix("export", name)
+		BroadcastLog("INFO", prefix, fmt.Sprintf("exporting %s", name))
 		self, _ := os.Executable()
 		cmd := exec.Command(self, "export", name, "-o", outPath)
 		cmd.Dir = ProjectRoot()
@@ -47,6 +51,7 @@ func startSiteExport(name string) string {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
+			BroadcastLog("INFO", prefix, line)
 			jobsMu.Lock()
 			j.Message = line
 			broadcastJobStatus(j)
@@ -56,6 +61,7 @@ func startSiteExport(name string) string {
 			jobsMu.Lock()
 			j.Status = "failed"
 			j.Error = fmt.Sprintf("export-node output scan error: %v", err)
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			jobsMu.Unlock()
 			cmd.Wait()
@@ -69,11 +75,13 @@ func startSiteExport(name string) string {
 		if err != nil {
 			j.Status = "failed"
 			j.Error = fmt.Sprintf("export failed: %s (%v)", j.Message, err)
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			os.Remove(outPath)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 	return jobID
@@ -98,6 +106,8 @@ func startNodeExport() string {
 	jobsMu.Unlock()
 
 	go func() {
+		prefix := "export-node"
+		BroadcastLog("INFO", prefix, "exporting node")
 		self, _ := os.Executable()
 		cmd := exec.Command(self, "export-node", "-o", outPath)
 		cmd.Dir = ProjectRoot()
@@ -110,6 +120,7 @@ func startNodeExport() string {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
+			BroadcastLog("INFO", prefix, line)
 			jobsMu.Lock()
 			j.Message = line
 			broadcastJobStatus(j)
@@ -119,6 +130,7 @@ func startNodeExport() string {
 			jobsMu.Lock()
 			j.Status = "failed"
 			j.Error = fmt.Sprintf("export-node output scan error: %v", err)
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			jobsMu.Unlock()
 			cmd.Wait()
@@ -132,11 +144,13 @@ func startNodeExport() string {
 		if err != nil {
 			j.Status = "failed"
 			j.Error = fmt.Sprintf("export-node failed: %s (%v)", j.Message, err)
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			os.Remove(outPath)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 	return jobID
@@ -216,22 +230,26 @@ func apiImportSite(w http.ResponseWriter, r *http.Request) {
 
 	go func(tmpPath string) {
 		defer os.Remove(tmpPath)
-		self, _ := os.Executable()
-		cmd := exec.Command(self, args...)
-		cmd.Dir = ProjectRoot()
-		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-		output, err := cmd.CombinedOutput()
+		prefix := "import-site"
+		writer := NewLogWriter(prefix, "INFO")
+		BroadcastLog("INFO", prefix, "importing site archive")
+		result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, args...)
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
 
-		if err != nil {
+		if err != nil || result.ExitCode != 0 {
 			j.Status = "failed"
-			j.Error = fmt.Sprintf("import failed: %s", string(output))
+			if err != nil {
+				j.Error = fmt.Sprintf("import failed: %v", err)
+			} else {
+				j.Error = fmt.Sprintf("import failed with exit code %d", result.ExitCode)
+			}
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", prefix, "completed")
 		broadcastJobStatus(j)
 	}(tmpFile.Name())
 
@@ -280,22 +298,26 @@ func apiImportNode(w http.ResponseWriter, r *http.Request) {
 
 	go func(tmpPath string) {
 		defer os.Remove(tmpPath)
-		self, _ := os.Executable()
-		cmd := exec.Command(self, "import", tmpPath)
-		cmd.Dir = ProjectRoot()
-		cmd.Env = append(os.Environ(), "GRENGO_NONINTERACTIVE=1")
-
-		output, err := cmd.CombinedOutput()
+		prefix := "import-node"
+		writer := NewLogWriter(prefix, "INFO")
+		BroadcastLog("INFO", prefix, "importing node archive")
+		result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, "import", tmpPath)
 		jobsMu.Lock()
 		defer jobsMu.Unlock()
 
-		if err != nil {
+		if err != nil || result.ExitCode != 0 {
 			j.Status = "failed"
-			j.Error = fmt.Sprintf("node import failed: %s", string(output))
+			if err != nil {
+				j.Error = fmt.Sprintf("node import failed: %v", err)
+			} else {
+				j.Error = fmt.Sprintf("node import failed with exit code %d", result.ExitCode)
+			}
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
+		BroadcastLog("INFO", prefix, "completed")
 		broadcastJobStatus(j)
 	}(tmpFile.Name())
 
@@ -379,6 +401,8 @@ func apiDeleteExport(w http.ResponseWriter, r *http.Request) {
 	jobsMu.Unlock()
 
 	go func() {
+		prefix := "delete-export"
+		BroadcastLog("INFO", prefix, fmt.Sprintf("deleting %s", filename))
 		filePath := filepath.Join(ProjectRoot(), "exports", filename)
 		err := os.Remove(filePath)
 
@@ -388,11 +412,13 @@ func apiDeleteExport(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			j.Status = "failed"
 			j.Error = fmt.Sprintf("failed to delete: %v", err)
+			BroadcastLog("ERROR", prefix, j.Error)
 			broadcastJobStatus(j)
 			return
 		}
 		j.Status = "completed"
 		j.Message = "Export deleted"
+		BroadcastLog("INFO", prefix, "completed")
 		broadcastJobStatus(j)
 	}()
 

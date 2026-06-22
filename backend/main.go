@@ -22,8 +22,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/redis/go-redis/v9"
+	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 	"github.com/skaia/backend/database"
-	"github.com/skaia/backend/internal/grpcserver"
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/authhandler"
@@ -35,12 +35,14 @@ import (
 	ievents "github.com/skaia/backend/internal/events"
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
+	"github.com/skaia/backend/internal/grpcserver"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	ijwt "github.com/skaia/backend/internal/jwt"
 	immediascraper "github.com/skaia/backend/internal/mediascraper"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
+	iprovisioning "github.com/skaia/backend/internal/provisioning"
 	"github.com/skaia/backend/internal/ssr"
 	istore "github.com/skaia/backend/internal/store"
 	iupload "github.com/skaia/backend/internal/upload"
@@ -49,8 +51,6 @@ import (
 	"github.com/skaia/backend/internal/ws"
 	defconmw "github.com/skaia/backend/middleware"
 	"github.com/skaia/backend/ratelimit"
-	"github.com/renniemaharaj/conveyor/pkg/conveyor"
-	iprovisioning "github.com/skaia/backend/internal/provisioning"
 )
 
 // SimpleResponse is a basic JSON response.
@@ -191,7 +191,7 @@ func main() {
 		}
 	}()
 
-	grpcPort := strconv.Itoa(envInt("GRPC_PORT", envInt("PORT", 8000) + 100))
+	grpcPort := strconv.Itoa(envInt("GRPC_PORT", envInt("PORT", 8000)+100))
 	go func() {
 		grpcserver.StartServer(":" + grpcPort)
 	}()
@@ -766,6 +766,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			go grengoSvc.WatchStats()
 			go grengoSvc.WatchStorage()
 			go grengoSvc.WatchHardware()
+			go grengoSvc.WatchLogs()
 			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
 		}
 
@@ -776,8 +777,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		provSvc := iprovisioning.NewService(provRepo, conveyorManager, hub, grengoSvc)
 		iprovisioning.NewHandler(provSvc).Mount(api, imw.JWTAuthMiddleware)
 	})
-
-
 
 	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
@@ -840,7 +839,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		log.Printf("[DEBUG] Proxying to non-Frappe instance: targetPort=%v, targetURL=%v", targetPort, targetURL)
 
 		proxy := httputil.NewSingleHostReverseProxy(targetURL)
-		
+
 		// Remove the /instances/{id} prefix
 		prefix := fmt.Sprintf("/instances/%d", id)
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)

@@ -51,6 +51,7 @@ const (
 	MediaScraperJobs        MessageType = "mediascraper:jobs"         // server => all: update active jobs count
 	GrengoJobUpdate         MessageType = "grengo:job_update"         // server => client: async job update
 	GrengoJobAction         MessageType = "grengo:action"             // client => server => grengo: trigger export
+	GrengoActionAck         MessageType = "grengo:action_ack"         // server => client: grengo action accepted/rejected
 	GrengoStatsUpdate       MessageType = "grengo:stats_update"       // server => client: live stats stream
 	GrengoStorageUpdate     MessageType = "grengo:storage_update"     // server => client: live storage stream
 	GrengoHardwareUpdate    MessageType = "grengo:hardware_update"    // server => client: live hardware stream

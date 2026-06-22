@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/skaia/backend/internal/workers"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
+	"github.com/skaia/backend/internal/workers"
 )
 
 var pkgLog = log.New("WebSocket")
@@ -147,7 +147,7 @@ type Hub struct {
 	MentionProcessor func(content string, senderID int64, message string, route string)
 
 	// GrengoActionHandler, when set, is called when a client sends a grengo action.
-	GrengoActionHandler  func(action []byte)
+	GrengoActionHandler  func(action []byte) (string, error)
 	OnGuestSessionClosed func(guestSessionID string)
 
 	// channels
@@ -239,7 +239,7 @@ func NewHub() *Hub {
 			SetMinWorkers(1).
 			SetMaxWorkers(cfg.MaxWorkers).
 			SetSafeQueueLength(4096),
-		mediaRepo:       &MediaHistoryRepo{},
+		mediaRepo: &MediaHistoryRepo{},
 	}
 }
 
@@ -275,7 +275,7 @@ func clientLabel(c *Client) string {
 // fires the actual broadcast at most once per cfg.PresenceInterval.
 func (h *Hub) Run() {
 	h.manager.Start()
-	
+
 	// Presence debounce: a background ticker checks the dirty flag and
 	// broadcasts at most once per cfg.PresenceInterval.
 	go func() {
@@ -470,7 +470,7 @@ func (h *Hub) SendTeleport(targetUserID int64, route string) {
 
 func (h *Hub) handleGrengoJobAction(ga []byte) {
 	if h.GrengoActionHandler != nil {
-		h.GrengoActionHandler(ga)
+		_, _ = h.GrengoActionHandler(ga)
 	}
 }
 

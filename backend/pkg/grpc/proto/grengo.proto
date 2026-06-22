@@ -44,9 +44,10 @@ service GrengoService {
   rpc GetJob (GetJobRequest) returns (GetJobResponse);
   rpc DownloadJob (DownloadJobRequest) returns (stream FileChunk);
   rpc WatchJobs (EmptyRequest) returns (stream JobEvent);
+  rpc WatchLogs (EmptyRequest) returns (stream LogStreamResponse);
   
   // WS proxy replacement
-  rpc SendAction (SendActionRequest) returns (EmptyResponse);
+  rpc SendAction (SendActionRequest) returns (SendActionResponse);
   
   // Auth
   rpc PasscodeStatus (EmptyRequest) returns (PasscodeStatusResponse);
@@ -198,6 +199,12 @@ message JobEvent {
 
 message SendActionRequest {
   bytes action = 1;
+}
+
+message SendActionResponse {
+  bool accepted = 1;
+  string job_id = 2;
+  string error = 3;
 }
 
 message PasscodeStatusResponse {

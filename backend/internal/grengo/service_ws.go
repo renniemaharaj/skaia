@@ -3,6 +3,7 @@ package grengo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -134,8 +135,67 @@ func (s *Service) WatchHardware() {
 	}
 }
 
-func (s *Service) SendAction(action []byte) {
-	_, _ = s.client.SendAction(context.Background(), &pb.SendActionRequest{
+// WatchLogs connects to the grengo gRPC log stream and broadcasts lines to the
+// frontend using the existing logs:stream websocket event shape.
+func (s *Service) WatchLogs() {
+	for {
+		stream, err := s.client.WatchLogs(context.Background(), &pb.EmptyRequest{})
+		if err != nil {
+			fmt.Printf("grengo gRPC: failed to open WatchLogs stream: %v, retrying in 5s...\n", err)
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		fmt.Printf("grengo gRPC: opened WatchLogs stream\n")
+
+		for {
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				if status.Code(err) == codes.Unimplemented {
+					fmt.Printf("grengo gRPC: WatchLogs is not implemented by %s; check GRENGO_API_URL and restart grengo api.\n", s.grpcURL)
+				}
+				if status.Code(err) == codes.Unauthenticated {
+					fmt.Printf("grengo gRPC: WatchLogs requires GRENGO_API_PASSCODE for background updates; stopping watcher.\n")
+					return
+				}
+				fmt.Printf("grengo gRPC: WatchLogs disconnected: %v\n", err)
+				break
+			}
+
+			if s.hub == nil {
+				continue
+			}
+			line := json.RawMessage(resp.Output)
+			if !json.Valid(line) {
+				fallback, _ := json.Marshal(map[string]string{
+					"level":  "INFO",
+					"prefix": "grengo",
+					"msg":    resp.Output,
+				})
+				line = json.RawMessage(fallback)
+			}
+			var data any
+			if err := json.Unmarshal(line, &data); err != nil {
+				continue
+			}
+			s.hub.PropagateLog(data)
+		}
+
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func (s *Service) SendAction(action []byte) (string, error) {
+	resp, err := s.client.SendAction(context.Background(), &pb.SendActionRequest{
 		Action: action,
 	})
+	if err != nil {
+		return "", err
+	}
+	if !resp.Accepted {
+		return "", errors.New(resp.Error)
+	}
+	return resp.JobId, nil
 }

@@ -2,8 +2,9 @@ package ws
 
 import (
 	"encoding/json"
-	"io"
+	"errors"
 	log "github.com/skaia/backend/internal/syslog"
+	"io"
 	"strconv"
 	"time"
 
@@ -126,16 +127,47 @@ func (c *Client) ReadPump() {
 		case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
 			c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 		case GrengoJobAction:
-			select {
-			case c.Hub.grengoActions <- msg.Payload:
-			default:
-			}
+			c.handleGrengoJobAction(msg)
 		default:
 			if c.broadcastLimit.allow() {
 				c.Hub.Broadcast(&msg)
 			}
 		}
 	}
+}
+
+func (c *Client) handleGrengoJobAction(msg Message) {
+	var req struct {
+		RequestID string `json:"request_id"`
+	}
+	_ = json.Unmarshal(msg.Payload, &req)
+
+	go func() {
+		var jobID string
+		var err error
+		if c.Hub.GrengoActionHandler == nil {
+			err = errors.New("grengo action handler is not configured")
+		} else {
+			jobID, err = c.Hub.GrengoActionHandler(msg.Payload)
+		}
+
+		payload := map[string]any{
+			"request_id": req.RequestID,
+			"accepted":   err == nil,
+			"job_id":     jobID,
+		}
+		if err != nil {
+			payload["error"] = err.Error()
+		}
+		data, marshalErr := json.Marshal(payload)
+		if marshalErr != nil {
+			return
+		}
+		select {
+		case c.Send <- &Message{Type: GrengoActionAck, Payload: data}:
+		default:
+		}
+	}()
 }
 
 // WritePump pumps outbound messages from the hub to the connection and
