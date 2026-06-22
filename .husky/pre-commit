@@ -11,9 +11,7 @@ while read -r mod; do
   dir=$(dirname "$mod")
   echo "Testing Go module in $dir..."
   cd "$dir"
-  if [ "$dir" = "." ]; then
-    go test ./stress-test/... || exit 1
-  else
+  if [ "$dir" != "." ]; then
     go test ./... || exit 1
   fi
   cd - > /dev/null
