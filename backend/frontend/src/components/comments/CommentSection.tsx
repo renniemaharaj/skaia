@@ -239,7 +239,14 @@ const CommentSection = ({
 
                   {useRichText ? (
                     <div className="comment-content rich-text-comment">
-                      <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 40 }} />}>
+                      <Suspense
+                        fallback={
+                          <div
+                            className="skeleton skeleton-text"
+                            style={{ width: "100%", height: 40 }}
+                          />
+                        }
+                      >
                         <ViewThread content={comment.content} />
                       </Suspense>
                     </div>
@@ -306,7 +313,11 @@ const CommentSection = ({
           {useRichText ? (
             isEditorVisible ? (
               <div className="comment-editor-wrapper">
-                <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 80 }} />}>
+                <Suspense
+                  fallback={
+                    <div className="skeleton skeleton-text" style={{ width: "100%", height: 80 }} />
+                  }
+                >
                   <Editor value={richTextContent} onChange={setRichTextContent} minHeight="80px" />
                 </Suspense>
                 <div

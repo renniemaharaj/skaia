@@ -229,7 +229,11 @@ const EditThread = () => {
 
         <div className="form-group">
           <label htmlFor="content">Message *</label>
-          <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />}>
+          <Suspense
+            fallback={
+              <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
+            }
+          >
             <Editor value={editContent} onChange={setEditContent} />
           </Suspense>
         </div>

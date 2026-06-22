@@ -359,7 +359,11 @@ const ViewThreadPage = () => {
         >
           <div className="view-thread-main">
             <div>
-              <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 300 }} />}>
+              <Suspense
+                fallback={
+                  <div className="skeleton skeleton-text" style={{ width: "100%", height: 300 }} />
+                }
+              >
                 <ViewThread content={currentThread.content} />
               </Suspense>
               {readingMode && <ViewThreadComments threadId={threadId} />}

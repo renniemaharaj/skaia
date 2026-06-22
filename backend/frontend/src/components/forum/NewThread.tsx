@@ -162,7 +162,11 @@ const NewThread = () => {
         <div className="form-group">
           <label htmlFor="content">Message</label>
           <p className="form-help">Add the context other members need to respond.</p>
-          <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />}>
+          <Suspense
+            fallback={
+              <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
+            }
+          >
             <Editor value={threadContent} onChange={setThreadContent} />
           </Suspense>
         </div>
