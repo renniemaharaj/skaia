@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/internal/jwt"
+	"github.com/skaia/backend/internal/utils"
 )
 
 const maxMessageSize = 1 << 20
@@ -27,7 +28,7 @@ func checkOrigin(r *http.Request) bool {
 	}
 
 	// Allow localhost development origins
-	if strings.HasPrefix(origin, "http://localhost:") || strings.HasPrefix(origin, "https://localhost:") || strings.Contains(origin, ".localhost:") {
+	if strings.HasPrefix(origin, "http://localhost:") || strings.HasPrefix(origin, "https://localhost:") || strings.Contains(origin, ".localhost:") || strings.Contains(origin, "."+utils.GetFrappeDomain()+":") || strings.HasSuffix(origin, "."+utils.GetFrappeDomain()) {
 		return true
 	}
 

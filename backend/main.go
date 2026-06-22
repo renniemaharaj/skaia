@@ -363,7 +363,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	// Intercept *.frappe.localhost and proxy directly to Frappe cluster
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if strings.HasSuffix(req.Host, ".frappe.localhost") {
+			if strings.HasSuffix(req.Host, "."+utils.GetFrappeDomain()) {
 				targetURL, _ := url.Parse("http://host.docker.internal:8000")
 				proxy := httputil.NewSingleHostReverseProxy(targetURL)
 				proxy.ServeHTTP(w, req)
@@ -813,7 +813,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		if isFrappe {
 			if siteName == "" {
-				siteName = fmt.Sprintf("site%d.frappe.localhost", id)
+				siteName = fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
 			}
 			// Frappe does not support sub-path proxying. Redirect to the subdomain.
 			scheme := "http"

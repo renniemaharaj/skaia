@@ -22,6 +22,7 @@ import (
 	igrengo "github.com/skaia/backend/internal/grengo"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
+	"github.com/skaia/backend/internal/utils"
 )
 
 // MaxInstancesPerClient defines the limit of instances a client can provision.
@@ -393,7 +394,7 @@ func (s *service) InstallApp(id int64, appName string) error {
 
 	l.Info(fmt.Sprintf("Installing app %s...", appName))
 
-	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
+	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
 	
 	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -436,7 +437,7 @@ func (s *service) UninstallApp(id int64, appName string) error {
 
 	l.Info(fmt.Sprintf("Uninstalling app %s...", appName))
 
-	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
+	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
 	
 	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
