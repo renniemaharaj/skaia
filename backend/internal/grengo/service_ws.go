@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/skaia/backend/internal/ws"
@@ -13,6 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func isUnauthenticated(err error) bool {
+	return status.Code(err) == codes.Unauthenticated || strings.Contains(err.Error(), "code = Unauthenticated")
+}
 
 // WatchJobs connects to the grengo gRPC job stream and broadcasts updates to the frontend hub.
 func (s *Service) WatchJobs() {
@@ -34,9 +39,9 @@ func (s *Service) WatchJobs() {
 				if status.Code(err) == codes.Unimplemented {
 					fmt.Printf("grengo gRPC: WatchJobs is not implemented by %s; expected grengo.grpc.GrengoService on port 9100. Check GRENGO_API_URL and restart grengo api.\n", s.grpcURL)
 				}
-				if status.Code(err) == codes.Unauthenticated {
-					fmt.Printf("grengo gRPC: WatchJobs requires GRENGO_API_PASSCODE for background updates; stopping watcher.\n")
-					return
+				if isUnauthenticated(err) {
+					fmt.Printf("grengo gRPC: WatchJobs waiting for grengo passcode; retrying in 5s...\n")
+					break
 				}
 				fmt.Printf("grengo gRPC: WatchJobs disconnected: %v\n", err)
 				break
@@ -58,6 +63,7 @@ func (s *Service) WatchJobs() {
 // WatchStats polls grengo for Docker container stats every 5 seconds and broadcasts
 // the results to all connected WebSocket clients as grengo:stats_update events.
 func (s *Service) WatchStats() {
+	waitingForPasscode := false
 	for {
 		time.Sleep(5 * time.Second)
 		if s.hub == nil {
@@ -66,9 +72,18 @@ func (s *Service) WatchStats() {
 
 		stats, err := s.Stats()
 		if err != nil {
+			if isUnauthenticated(err) {
+				if !waitingForPasscode {
+					fmt.Printf("grengo gRPC: WatchStats waiting for grengo passcode; telemetry will resume after dashboard unlock or GRENGO_API_PASSCODE is set.\n")
+				}
+				waitingForPasscode = true
+				time.Sleep(25 * time.Second)
+				continue
+			}
 			fmt.Printf("grengo gRPC: WatchStats poll error: %v\n", err)
 			continue
 		}
+		waitingForPasscode = false
 
 		data, err := json.Marshal(stats)
 		if err != nil {
@@ -85,6 +100,7 @@ func (s *Service) WatchStats() {
 // the results to all connected WebSocket clients as grengo:storage_update events.
 func (s *Service) WatchStorage() {
 	// Start immediately then repeat every 60s.
+	waitingForPasscode := false
 	for {
 		time.Sleep(60 * time.Second)
 		if s.hub == nil {
@@ -93,9 +109,17 @@ func (s *Service) WatchStorage() {
 
 		info, err := s.Storage()
 		if err != nil {
+			if isUnauthenticated(err) {
+				if !waitingForPasscode {
+					fmt.Printf("grengo gRPC: WatchStorage waiting for grengo passcode; telemetry will resume after dashboard unlock or GRENGO_API_PASSCODE is set.\n")
+				}
+				waitingForPasscode = true
+				continue
+			}
 			fmt.Printf("grengo gRPC: WatchStorage poll error: %v\n", err)
 			continue
 		}
+		waitingForPasscode = false
 
 		data, err := json.Marshal(info)
 		if err != nil {
@@ -112,6 +136,7 @@ func (s *Service) WatchStorage() {
 // the results to all connected WebSocket clients as grengo:hardware_update events.
 // This drives the CPU cores, RAM, temperature, and disk I/O panels in the dashboard.
 func (s *Service) WatchHardware() {
+	waitingForPasscode := false
 	for {
 		time.Sleep(5 * time.Second)
 		if s.hub == nil {
@@ -120,9 +145,18 @@ func (s *Service) WatchHardware() {
 
 		payload, err := s.GetHardware()
 		if err != nil {
+			if isUnauthenticated(err) {
+				if !waitingForPasscode {
+					fmt.Printf("grengo gRPC: WatchHardware waiting for grengo passcode; telemetry will resume after dashboard unlock or GRENGO_API_PASSCODE is set.\n")
+				}
+				waitingForPasscode = true
+				time.Sleep(25 * time.Second)
+				continue
+			}
 			fmt.Printf("grengo gRPC: WatchHardware poll error: %v\n", err)
 			continue
 		}
+		waitingForPasscode = false
 
 		data, err := json.Marshal(payload)
 		if err != nil {
@@ -156,9 +190,9 @@ func (s *Service) WatchLogs() {
 				if status.Code(err) == codes.Unimplemented {
 					fmt.Printf("grengo gRPC: WatchLogs is not implemented by %s; check GRENGO_API_URL and restart grengo api.\n", s.grpcURL)
 				}
-				if status.Code(err) == codes.Unauthenticated {
-					fmt.Printf("grengo gRPC: WatchLogs requires GRENGO_API_PASSCODE for background updates; stopping watcher.\n")
-					return
+				if isUnauthenticated(err) {
+					fmt.Printf("grengo gRPC: WatchLogs waiting for grengo passcode; retrying in 5s...\n")
+					break
 				}
 				fmt.Printf("grengo gRPC: WatchLogs disconnected: %v\n", err)
 				break

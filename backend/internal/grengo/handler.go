@@ -2,8 +2,8 @@ package grengo
 
 import (
 	"encoding/json"
-	"io"
 	log "github.com/skaia/backend/internal/syslog"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -235,6 +235,7 @@ func (h *Handler) handleCreateSession(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "invalid passcode")
 		return
 	}
+	h.svc.SetPasscode(body.P1, body.P2)
 
 	// Create session.
 	now := time.Now()
