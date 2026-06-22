@@ -191,7 +191,7 @@ proxy_cache_path /var/cache/nginx/uploads
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%OG_IMAGE_PLACEHOLDER%", "")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "%FAVICON_PLACEHOLDER%", "<link rel=\"icon\" href=\"/logo.png\">")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "</head>", "  <script>window.fallbackTimer=setTimeout(function(){window.location.reload();}, 3000);</script>\n</head>")
-		
+
 		// Escape for nginx double-quoted string
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\\", "\\\\")
 		fallbackHTML = strings.ReplaceAll(fallbackHTML, "\"", "\\\"")
@@ -207,7 +207,7 @@ proxy_cache_path /var/cache/nginx/uploads
 	b.WriteString("    location = /fallback-503 {\n")
 	b.WriteString("        internal;\n")
 	b.WriteString("        default_type text/html;\n")
-	b.WriteString("        return 503 \"" + fallbackHTML + "\";\n")
+	b.WriteString(fmt.Sprintf("        return 503 \"%s\";\n", fallbackHTML))
 	b.WriteString("    }\n\n")
 
 	// Security headers
