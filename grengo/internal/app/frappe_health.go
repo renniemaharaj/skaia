@@ -1,14 +1,18 @@
 package app
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	pb "github.com/skaia/grpc/skaia"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-const frappeAPIBase = "http://127.0.0.1:3000"
+const frappeGRPCEndpoint = "127.0.0.1:3001"
 
 // StartFrappeHealthRoutine starts the singleton background health routine.
 // Call once at CLI startup. Discovers sites from the API each tick.
@@ -23,19 +27,19 @@ func runFrappeHealthLoop() {
 	fmt.Println("[HEALTH] Frappe health routine started")
 
 	for {
-		sites, err := listSites(client)
+		sites, err := listSites()
 		if err != nil {
-			fmt.Printf("[HEALTH] could not list sites: %v\n", err)
+			fmt.Printf("[HEALTH] could not list sites via gRPC: %v\n", err)
 			time.Sleep(interval)
 			continue
 		}
 
 		for _, site := range sites {
-			status := checkSite(client, frappeAPIBase, site)
+			status := checkSite(client, site)
 			logStatus(status)
 
 			if !status.APIReachable || !status.HTTPReachable {
-				ok, err := triggerDeploy(client, frappeAPIBase)
+				ok, err := triggerDeploy()
 				if err != nil {
 					fmt.Printf("[HEALTH][%s] nginx reload trigger failed: %v\n", site, err)
 				} else if ok {
@@ -50,23 +54,23 @@ func runFrappeHealthLoop() {
 	}
 }
 
-func listSites(client *http.Client) ([]string, error) {
-	resp, err := client.Get(frappeAPIBase + "/api/goftw/sites")
+func listSites() ([]string, error) {
+	conn, err := grpc.NewClient(frappeGRPCEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("dial: %w", err)
 	}
-	defer resp.Body.Close()
+	defer conn.Close()
 
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("status %d: %s", resp.StatusCode, truncate(string(body), 120))
+	c := pb.NewGoFTWServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := c.ListSites(ctx, &pb.ListSitesRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("rpc: %w", err)
 	}
 
-	var sites []string
-	if err := json.NewDecoder(resp.Body).Decode(&sites); err != nil {
-		return nil, fmt.Errorf("decode: %w", err)
-	}
-	return sites, nil
+	return resp.Sites, nil
 }
 
 // SiteHealthStatus holds the result of a single health check cycle for one site.
@@ -77,24 +81,27 @@ type SiteHealthStatus struct {
 	Error         string
 }
 
-func checkSite(client *http.Client, apiBase, site string) SiteHealthStatus {
+func checkSite(client *http.Client, site string) SiteHealthStatus {
 	status := SiteHealthStatus{Site: site}
 
-	// 1. GoFTW API probe — GET /api/goftw/site/{name}
-	apiURL := fmt.Sprintf("%s/api/goftw/site/%s", apiBase, site)
-	resp, err := client.Get(apiURL)
+	// 1. GoFTW API probe — CheckSite over gRPC
+	conn, err := grpc.NewClient(frappeGRPCEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		status.Error = fmt.Sprintf("API probe error: %v", err)
-		fmt.Printf("[HEALTH][%s] API unreachable: %v\n", site, err)
+		status.Error = fmt.Sprintf("API probe error (dial): %v", err)
+		fmt.Printf("[HEALTH][%s] API unreachable (gRPC dial): %v\n", site, err)
 	} else {
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		if resp.StatusCode == 200 {
-			status.APIReachable = true
-			fmt.Printf("[HEALTH][%s] API OK (200): %s\n", site, truncate(string(body), 120))
+		defer conn.Close()
+		c := pb.NewGoFTWServiceClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		resp, err := c.CheckSite(ctx, &pb.CheckSiteRequest{SiteName: site})
+		if err != nil {
+			status.Error = fmt.Sprintf("API status: %v", err)
+			fmt.Printf("[HEALTH][%s] API error via gRPC: %v\n", site, err)
 		} else {
-			status.Error = fmt.Sprintf("API status %d: %s", resp.StatusCode, truncate(string(body), 120))
-			fmt.Printf("[HEALTH][%s] API returned %d: %s\n", site, resp.StatusCode, truncate(string(body), 120))
+			status.APIReachable = true
+			fmt.Printf("[HEALTH][%s] API OK (gRPC): %s\n", site, resp.StatusJson)
 		}
 	}
 
@@ -126,25 +133,25 @@ func checkSite(client *http.Client, apiBase, site string) SiteHealthStatus {
 	return status
 }
 
-func triggerDeploy(client *http.Client, apiBase string) (bool, error) {
-	deployURL := fmt.Sprintf("%s/api/goftw/deployment/nginx", apiBase)
-
-	req, err := http.NewRequest("POST", deployURL, nil)
+func triggerDeploy() (bool, error) {
+	conn, err := grpc.NewClient(frappeGRPCEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return false, fmt.Errorf("build request: %w", err)
+		return false, fmt.Errorf("dial: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	defer conn.Close()
 
-	resp, err := client.Do(req)
+	c := pb.NewGoFTWServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := c.ReloadNginx(ctx, &pb.ReloadNginxRequest{})
 	if err != nil {
-		return false, fmt.Errorf("POST deploy: %w", err)
+		return false, fmt.Errorf("rpc: %w", err)
 	}
-	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
-	fmt.Printf("[HEALTH][DEPLOY] POST /deployment/nginx → %d: %s\n", resp.StatusCode, truncate(string(body), 200))
+	fmt.Printf("[HEALTH][DEPLOY] gRPC ReloadNginx → success: %v\n", resp.Success)
 
-	return resp.StatusCode >= 200 && resp.StatusCode < 300, nil
+	return resp.Success, nil
 }
 
 func logStatus(s SiteHealthStatus) {

@@ -25,7 +25,7 @@ services:
       - "80:80" # Nginx (main Frappe)
       - "8000:8000" # Frappe web
       - "9000:9000" # Socket.IO port
-      - "3000:3000" # API
+      - "3001:3001" # API
     depends_on:
       - mariadb
       - redis-cache

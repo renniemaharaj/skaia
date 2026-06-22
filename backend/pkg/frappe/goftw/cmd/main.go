@@ -1,24 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	internalBench "goftw/internal/bench"
 	"goftw/internal/db"
 	"goftw/internal/entity"
-	internalMiddleware "goftw/internal/middleware"
-
 	"goftw/internal/environ"
 	"goftw/internal/redis"
 	"goftw/internal/grpcserver"
 
 	// "goftw/internal/ssh"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+
 )
 
 func main() {
@@ -41,7 +36,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load common_site_config.json: %v", err)
 	}
-	deployment := instanceCfx.Deployment
+	// deployment := instanceCfx.Deployment
 
 	// Wait for DB
 	if err := db.WaitForDB(dbCfg); err != nil {
@@ -74,36 +69,5 @@ func main() {
 		log.Printf("[BENCH] Bench directory %s does not exist. Awaiting API initialization.", bench.Path)
 	}
 
-	// api restricted to sites-only for demo instance
-	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(internalMiddleware.CORS)
-
-	r.Route("/api/goftw", func(r chi.Router) {
-		// sites management endpoints only (apps endpoint disabled)
-		r.Get("/sites", bench.ListSitesHandler)
-		r.Get("/apps", bench.ListAppsHandler)
-		r.Get("/site/{name}", bench.GetSitesHandler)
-		r.Put("/site/{name}", bench.PutSitesHandler)
-		r.Post("/site/{name}/apps", bench.InstallAppHandler)
-		r.Delete("/site/{name}/apps/{app}", bench.UninstallAppHandler)
-
-		r.Post("/maintenance/update", bench.UpdateHandler)
-		r.Post("/maintenance/migrate", bench.MigrateHandler)
-		r.Post("/maintenance/backup", bench.BackupHandler)
-
-		r.Post("/setup/init", func(w http.ResponseWriter, r *http.Request) { bench.InitBenchHandler(w, r) })
-		r.Post("/setup/sites", func(w http.ResponseWriter, r *http.Request) { bench.CheckoutSitesHandler(w, r, instanceCfx, dbCfg) })
-		r.Post("/deployment/start", func(w http.ResponseWriter, r *http.Request) { bench.StartDeploymentHandler(w, r, deployment) })
-
-		r.Post("/deployment/deploy", bench.RerunSupervisorNginx)
-		r.Post("/deployment/nginx", bench.ReloadNginxHandler)
-	})
-
-	fmt.Printf("[SERVER] Server running on :3000")
-	go grpcserver.StartServer(":3001", bench)
-	err = http.ListenAndServe(":3000", r)
-	if err != nil {
-		fmt.Printf("[ERROR] Could not start server %v", err)
-	}
+	grpcserver.StartServer(":3001", bench)
 }

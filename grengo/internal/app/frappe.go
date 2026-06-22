@@ -35,7 +35,7 @@ services:
     container_name: skaia_frappe_cluster_1
     ports:
       - "8000:80"
-      - "3000:3000"
+      - "3001:3001"
     environment:
       MARIADB_HOST: mariadb
       MARIADB_PORT: 3306

@@ -20,6 +20,17 @@ service GoFTWService {
   rpc CheckoutSites (CheckoutSitesRequest) returns (stream LogStreamResponse);
   rpc StartDeployment (StartDeploymentRequest) returns (stream LogStreamResponse);
   rpc InstallApps (InstallAppsRequest) returns (stream LogStreamResponse);
+  
+  rpc ListSites (ListSitesRequest) returns (ListSitesResponse);
+  rpc CheckSite (CheckSiteRequest) returns (CheckSiteResponse);
+  rpc ReloadNginx (ReloadNginxRequest) returns (ReloadNginxResponse);
+  rpc GetApps (GetAppsRequest) returns (GetAppsResponse);
+  rpc GetSiteApps (GetSiteAppsRequest) returns (GetSiteAppsResponse);
+  rpc InstallApp (InstallAppRequest) returns (stream LogStreamResponse);
+  rpc UninstallApp (UninstallAppRequest) returns (stream LogStreamResponse);
+  
+  // New method for creating a site
+  rpc NewSite (NewSiteRequest) returns (stream LogStreamResponse);
 }
 
 // ----------------------------------------------------
@@ -64,4 +75,47 @@ message StartDeploymentRequest {
 message InstallAppsRequest {
   string site_name = 1;
   repeated string apps = 2;
+}
+
+message ListSitesRequest {}
+message ListSitesResponse {
+  repeated string sites = 1;
+}
+
+message CheckSiteRequest {
+  string site_name = 1;
+}
+message CheckSiteResponse {
+  string status_json = 1; // Or defined strictly
+}
+
+message ReloadNginxRequest {}
+message ReloadNginxResponse {
+  bool success = 1;
+}
+
+message GetAppsRequest {}
+message GetAppsResponse {
+  repeated string apps = 1;
+}
+
+message GetSiteAppsRequest {
+  string site_name = 1;
+}
+message GetSiteAppsResponse {
+  repeated string apps = 1;
+}
+
+message InstallAppRequest {
+  string site_name = 1;
+  string app_name = 2;
+}
+
+message UninstallAppRequest {
+  string site_name = 1;
+  string app_name = 2;
+}
+
+message NewSiteRequest {
+  string site_name = 1;
 }

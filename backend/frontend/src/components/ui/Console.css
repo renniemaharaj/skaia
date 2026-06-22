@@ -91,3 +91,15 @@
 .conp-text {
   color: inherit;
 }
+
+.log-error {
+  color: var(--error-color, #ff6b7a) !important;
+}
+
+.log-warn {
+  color: var(--warning-color, #ffaa44) !important;
+}
+
+.log-info {
+  color: var(--info-color, #60a5fa) !important;
+}

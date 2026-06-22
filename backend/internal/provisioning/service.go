@@ -2,16 +2,20 @@ package provisioning
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	pb "github.com/skaia/grpc/skaia"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 	"github.com/renniemaharaj/grouplogs/pkg/logger"
@@ -360,14 +364,24 @@ func (s *service) isFrappe(id int64) (bool, error) {
 }
 
 func (s *service) GetAvailableApps() ([]map[string]interface{}, error) {
-	resp, err := http.Get("http://skaia_frappe_cluster_1:3000/api/goftw/apps")
+	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gRPC dial failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer conn.Close()
+
+	c := pb.NewGoFTWServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, err := c.GetApps(ctx, &pb.GetAppsRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("gRPC GetApps failed: %w", err)
+	}
+
 	var apps []map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&apps); err != nil {
-		return nil, err
+	for _, appName := range resp.Apps {
+		apps = append(apps, map[string]interface{}{"name": appName})
 	}
 	return apps, nil
 }
@@ -380,29 +394,35 @@ func (s *service) InstallApp(id int64, appName string) error {
 	l.Info(fmt.Sprintf("Installing app %s...", appName))
 
 	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
-	url := fmt.Sprintf("http://skaia_frappe_cluster_1:3000/api/goftw/site/%s/apps", siteName)
 	
-	payload := map[string]string{"app": appName}
-	payloadBytes, _ := json.Marshal(payload)
-	
-	resp, err := http.Post(url, "application/json", bytes.NewReader(payloadBytes))
+	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		l.Error(fmt.Sprintf("Failed to install app: %v", err))
+		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
 		return err
 	}
-	defer resp.Body.Close()
+	defer conn.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		l.Error(fmt.Sprintf("Failed to install app, status code: %d", resp.StatusCode))
-		return fmt.Errorf("failed to install app")
+	c := pb.NewGoFTWServiceClient(conn)
+	// InstallApp is a streaming RPC
+	stream, err := c.InstallApp(context.Background(), &pb.InstallAppRequest{
+		SiteName: siteName,
+		AppName:  appName,
+	})
+	if err != nil {
+		l.Error(fmt.Sprintf("gRPC InstallApp failed: %v", err))
+		return err
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	for scanner.Scan() {
-		l.Info(scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		l.Error(fmt.Sprintf("Stream error: %v", err))
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			l.Error(fmt.Sprintf("Stream error: %v", err))
+			return err
+		}
+		l.Info(resp.Output)
 	}
 
 	l.Success(fmt.Sprintf("Successfully installed app %s", appName))
@@ -417,24 +437,35 @@ func (s *service) UninstallApp(id int64, appName string) error {
 	l.Info(fmt.Sprintf("Uninstalling app %s...", appName))
 
 	siteName := fmt.Sprintf("site%d.frappe.localhost", id)
-	url := fmt.Sprintf("http://skaia_frappe_cluster_1:3000/api/goftw/site/%s/apps/%s", siteName, appName)
 	
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		l.Error(fmt.Sprintf("Failed to uninstall app: %v", err))
+		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
+		return err
+	}
+	defer conn.Close()
+
+	c := pb.NewGoFTWServiceClient(conn)
+	// UninstallApp is a streaming RPC
+	stream, err := c.UninstallApp(context.Background(), &pb.UninstallAppRequest{
+		SiteName: siteName,
+		AppName:  appName,
+	})
+	if err != nil {
+		l.Error(fmt.Sprintf("gRPC UninstallApp failed: %v", err))
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		l.Error(fmt.Sprintf("Failed to uninstall app: %v", err))
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		l.Error(fmt.Sprintf("Failed to uninstall app, status code: %d", resp.StatusCode))
-		return fmt.Errorf("failed to uninstall app")
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			l.Error(fmt.Sprintf("Stream error: %v", err))
+			return err
+		}
+		l.Info(resp.Output)
 	}
 
 	l.Success(fmt.Sprintf("Successfully uninstalled app %s", appName))

@@ -196,16 +196,23 @@ export function Console({
                 Ready...
               </div>
             )}
-            {lines.map((line, i) => (
-              <div key={line.id || i} className="conp">
-                {line.prefix && (
-                  <span style={{ color: "var(--accent-color)", marginRight: "6px" }}>
-                    {line.prefix} &gt;&gt;
-                  </span>
-                )}
-                <span className="conp-text">{line.text}</span>
-              </div>
-            ))}
+            {lines.map((line, i) => {
+              let colorClass = "";
+              if (line.text.includes("[ERROR]") || line.text.includes("✗")) colorClass = "log-error";
+              else if (line.text.includes("[WARN]")) colorClass = "log-warn";
+              else if (line.text.includes("[INFO]")) colorClass = "log-info";
+
+              return (
+                <div key={line.id || i} className="conp">
+                  {line.prefix && (
+                    <span style={{ color: "var(--accent-color)", marginRight: "6px" }}>
+                      {line.prefix} &gt;&gt;
+                    </span>
+                  )}
+                  <span className={`conp-text ${colorClass}`}>{line.text}</span>
+                </div>
+              );
+            })}
           </div>
 
           {!readOnly && (

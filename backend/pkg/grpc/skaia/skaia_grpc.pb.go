@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.34.1
-// source: pkg/grpc/proto/skaia.proto
+// source: proto/skaia.proto
 
 package skaia
 
@@ -121,7 +121,7 @@ var GrengoService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/grpc/proto/skaia.proto",
+	Metadata: "proto/skaia.proto",
 }
 
 const (
@@ -227,7 +227,7 @@ var BackendService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/grpc/proto/skaia.proto",
+	Metadata: "proto/skaia.proto",
 }
 
 const (
@@ -235,6 +235,14 @@ const (
 	GoFTWService_CheckoutSites_FullMethodName   = "/skaia.grpc.GoFTWService/CheckoutSites"
 	GoFTWService_StartDeployment_FullMethodName = "/skaia.grpc.GoFTWService/StartDeployment"
 	GoFTWService_InstallApps_FullMethodName     = "/skaia.grpc.GoFTWService/InstallApps"
+	GoFTWService_ListSites_FullMethodName       = "/skaia.grpc.GoFTWService/ListSites"
+	GoFTWService_CheckSite_FullMethodName       = "/skaia.grpc.GoFTWService/CheckSite"
+	GoFTWService_ReloadNginx_FullMethodName     = "/skaia.grpc.GoFTWService/ReloadNginx"
+	GoFTWService_GetApps_FullMethodName         = "/skaia.grpc.GoFTWService/GetApps"
+	GoFTWService_GetSiteApps_FullMethodName     = "/skaia.grpc.GoFTWService/GetSiteApps"
+	GoFTWService_InstallApp_FullMethodName      = "/skaia.grpc.GoFTWService/InstallApp"
+	GoFTWService_UninstallApp_FullMethodName    = "/skaia.grpc.GoFTWService/UninstallApp"
+	GoFTWService_NewSite_FullMethodName         = "/skaia.grpc.GoFTWService/NewSite"
 )
 
 // GoFTWServiceClient is the client API for GoFTWService service.
@@ -247,6 +255,15 @@ type GoFTWServiceClient interface {
 	CheckoutSites(ctx context.Context, in *CheckoutSitesRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
 	StartDeployment(ctx context.Context, in *StartDeploymentRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
 	InstallApps(ctx context.Context, in *InstallAppsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
+	ListSites(ctx context.Context, in *ListSitesRequest, opts ...grpc.CallOption) (*ListSitesResponse, error)
+	CheckSite(ctx context.Context, in *CheckSiteRequest, opts ...grpc.CallOption) (*CheckSiteResponse, error)
+	ReloadNginx(ctx context.Context, in *ReloadNginxRequest, opts ...grpc.CallOption) (*ReloadNginxResponse, error)
+	GetApps(ctx context.Context, in *GetAppsRequest, opts ...grpc.CallOption) (*GetAppsResponse, error)
+	GetSiteApps(ctx context.Context, in *GetSiteAppsRequest, opts ...grpc.CallOption) (*GetSiteAppsResponse, error)
+	InstallApp(ctx context.Context, in *InstallAppRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
+	UninstallApp(ctx context.Context, in *UninstallAppRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
+	// New method for creating a site
+	NewSite(ctx context.Context, in *NewSiteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
 }
 
 type goFTWServiceClient struct {
@@ -333,6 +350,113 @@ func (c *goFTWServiceClient) InstallApps(ctx context.Context, in *InstallAppsReq
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GoFTWService_InstallAppsClient = grpc.ServerStreamingClient[LogStreamResponse]
 
+func (c *goFTWServiceClient) ListSites(ctx context.Context, in *ListSitesRequest, opts ...grpc.CallOption) (*ListSitesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSitesResponse)
+	err := c.cc.Invoke(ctx, GoFTWService_ListSites_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goFTWServiceClient) CheckSite(ctx context.Context, in *CheckSiteRequest, opts ...grpc.CallOption) (*CheckSiteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckSiteResponse)
+	err := c.cc.Invoke(ctx, GoFTWService_CheckSite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goFTWServiceClient) ReloadNginx(ctx context.Context, in *ReloadNginxRequest, opts ...grpc.CallOption) (*ReloadNginxResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReloadNginxResponse)
+	err := c.cc.Invoke(ctx, GoFTWService_ReloadNginx_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goFTWServiceClient) GetApps(ctx context.Context, in *GetAppsRequest, opts ...grpc.CallOption) (*GetAppsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAppsResponse)
+	err := c.cc.Invoke(ctx, GoFTWService_GetApps_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goFTWServiceClient) GetSiteApps(ctx context.Context, in *GetSiteAppsRequest, opts ...grpc.CallOption) (*GetSiteAppsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSiteAppsResponse)
+	err := c.cc.Invoke(ctx, GoFTWService_GetSiteApps_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *goFTWServiceClient) InstallApp(ctx context.Context, in *InstallAppRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GoFTWService_ServiceDesc.Streams[4], GoFTWService_InstallApp_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[InstallAppRequest, LogStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_InstallAppClient = grpc.ServerStreamingClient[LogStreamResponse]
+
+func (c *goFTWServiceClient) UninstallApp(ctx context.Context, in *UninstallAppRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GoFTWService_ServiceDesc.Streams[5], GoFTWService_UninstallApp_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[UninstallAppRequest, LogStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_UninstallAppClient = grpc.ServerStreamingClient[LogStreamResponse]
+
+func (c *goFTWServiceClient) NewSite(ctx context.Context, in *NewSiteRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GoFTWService_ServiceDesc.Streams[6], GoFTWService_NewSite_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[NewSiteRequest, LogStreamResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_NewSiteClient = grpc.ServerStreamingClient[LogStreamResponse]
+
 // GoFTWServiceServer is the server API for GoFTWService service.
 // All implementations must embed UnimplementedGoFTWServiceServer
 // for forward compatibility.
@@ -343,6 +467,15 @@ type GoFTWServiceServer interface {
 	CheckoutSites(*CheckoutSitesRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
 	StartDeployment(*StartDeploymentRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
 	InstallApps(*InstallAppsRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
+	ListSites(context.Context, *ListSitesRequest) (*ListSitesResponse, error)
+	CheckSite(context.Context, *CheckSiteRequest) (*CheckSiteResponse, error)
+	ReloadNginx(context.Context, *ReloadNginxRequest) (*ReloadNginxResponse, error)
+	GetApps(context.Context, *GetAppsRequest) (*GetAppsResponse, error)
+	GetSiteApps(context.Context, *GetSiteAppsRequest) (*GetSiteAppsResponse, error)
+	InstallApp(*InstallAppRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
+	UninstallApp(*UninstallAppRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
+	// New method for creating a site
+	NewSite(*NewSiteRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
 	mustEmbedUnimplementedGoFTWServiceServer()
 }
 
@@ -364,6 +497,30 @@ func (UnimplementedGoFTWServiceServer) StartDeployment(*StartDeploymentRequest, 
 }
 func (UnimplementedGoFTWServiceServer) InstallApps(*InstallAppsRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
 	return status.Error(codes.Unimplemented, "method InstallApps not implemented")
+}
+func (UnimplementedGoFTWServiceServer) ListSites(context.Context, *ListSitesRequest) (*ListSitesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSites not implemented")
+}
+func (UnimplementedGoFTWServiceServer) CheckSite(context.Context, *CheckSiteRequest) (*CheckSiteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckSite not implemented")
+}
+func (UnimplementedGoFTWServiceServer) ReloadNginx(context.Context, *ReloadNginxRequest) (*ReloadNginxResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReloadNginx not implemented")
+}
+func (UnimplementedGoFTWServiceServer) GetApps(context.Context, *GetAppsRequest) (*GetAppsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetApps not implemented")
+}
+func (UnimplementedGoFTWServiceServer) GetSiteApps(context.Context, *GetSiteAppsRequest) (*GetSiteAppsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSiteApps not implemented")
+}
+func (UnimplementedGoFTWServiceServer) InstallApp(*InstallAppRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method InstallApp not implemented")
+}
+func (UnimplementedGoFTWServiceServer) UninstallApp(*UninstallAppRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method UninstallApp not implemented")
+}
+func (UnimplementedGoFTWServiceServer) NewSite(*NewSiteRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
+	return status.Error(codes.Unimplemented, "method NewSite not implemented")
 }
 func (UnimplementedGoFTWServiceServer) mustEmbedUnimplementedGoFTWServiceServer() {}
 func (UnimplementedGoFTWServiceServer) testEmbeddedByValue()                      {}
@@ -430,13 +587,157 @@ func _GoFTWService_InstallApps_Handler(srv interface{}, stream grpc.ServerStream
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GoFTWService_InstallAppsServer = grpc.ServerStreamingServer[LogStreamResponse]
 
+func _GoFTWService_ListSites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSitesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoFTWServiceServer).ListSites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoFTWService_ListSites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoFTWServiceServer).ListSites(ctx, req.(*ListSitesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoFTWService_CheckSite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckSiteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoFTWServiceServer).CheckSite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoFTWService_CheckSite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoFTWServiceServer).CheckSite(ctx, req.(*CheckSiteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoFTWService_ReloadNginx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReloadNginxRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoFTWServiceServer).ReloadNginx(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoFTWService_ReloadNginx_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoFTWServiceServer).ReloadNginx(ctx, req.(*ReloadNginxRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoFTWService_GetApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAppsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoFTWServiceServer).GetApps(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoFTWService_GetApps_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoFTWServiceServer).GetApps(ctx, req.(*GetAppsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoFTWService_GetSiteApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSiteAppsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GoFTWServiceServer).GetSiteApps(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GoFTWService_GetSiteApps_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GoFTWServiceServer).GetSiteApps(ctx, req.(*GetSiteAppsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GoFTWService_InstallApp_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(InstallAppRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GoFTWServiceServer).InstallApp(m, &grpc.GenericServerStream[InstallAppRequest, LogStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_InstallAppServer = grpc.ServerStreamingServer[LogStreamResponse]
+
+func _GoFTWService_UninstallApp_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(UninstallAppRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GoFTWServiceServer).UninstallApp(m, &grpc.GenericServerStream[UninstallAppRequest, LogStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_UninstallAppServer = grpc.ServerStreamingServer[LogStreamResponse]
+
+func _GoFTWService_NewSite_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(NewSiteRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GoFTWServiceServer).NewSite(m, &grpc.GenericServerStream[NewSiteRequest, LogStreamResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GoFTWService_NewSiteServer = grpc.ServerStreamingServer[LogStreamResponse]
+
 // GoFTWService_ServiceDesc is the grpc.ServiceDesc for GoFTWService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var GoFTWService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "skaia.grpc.GoFTWService",
 	HandlerType: (*GoFTWServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListSites",
+			Handler:    _GoFTWService_ListSites_Handler,
+		},
+		{
+			MethodName: "CheckSite",
+			Handler:    _GoFTWService_CheckSite_Handler,
+		},
+		{
+			MethodName: "ReloadNginx",
+			Handler:    _GoFTWService_ReloadNginx_Handler,
+		},
+		{
+			MethodName: "GetApps",
+			Handler:    _GoFTWService_GetApps_Handler,
+		},
+		{
+			MethodName: "GetSiteApps",
+			Handler:    _GoFTWService_GetSiteApps_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "SetupInit",
@@ -458,6 +759,21 @@ var GoFTWService_ServiceDesc = grpc.ServiceDesc{
 			Handler:       _GoFTWService_InstallApps_Handler,
 			ServerStreams: true,
 		},
+		{
+			StreamName:    "InstallApp",
+			Handler:       _GoFTWService_InstallApp_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "UninstallApp",
+			Handler:       _GoFTWService_UninstallApp_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "NewSite",
+			Handler:       _GoFTWService_NewSite_Handler,
+			ServerStreams: true,
+		},
 	},
-	Metadata: "pkg/grpc/proto/skaia.proto",
+	Metadata: "proto/skaia.proto",
 }

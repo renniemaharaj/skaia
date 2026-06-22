@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: pkg/grpc/proto/skaia.proto
+// source: proto/skaia.proto
 
 package skaia
 
@@ -34,7 +34,7 @@ type ReportStatusRequest struct {
 
 func (x *ReportStatusRequest) Reset() {
 	*x = ReportStatusRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[0]
+	mi := &file_proto_skaia_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +46,7 @@ func (x *ReportStatusRequest) String() string {
 func (*ReportStatusRequest) ProtoMessage() {}
 
 func (x *ReportStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[0]
+	mi := &file_proto_skaia_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +59,7 @@ func (x *ReportStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStatusRequest.ProtoReflect.Descriptor instead.
 func (*ReportStatusRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{0}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ReportStatusRequest) GetNodeId() string {
@@ -85,7 +85,7 @@ type ReportStatusResponse struct {
 
 func (x *ReportStatusResponse) Reset() {
 	*x = ReportStatusResponse{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[1]
+	mi := &file_proto_skaia_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -97,7 +97,7 @@ func (x *ReportStatusResponse) String() string {
 func (*ReportStatusResponse) ProtoMessage() {}
 
 func (x *ReportStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[1]
+	mi := &file_proto_skaia_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,7 +110,7 @@ func (x *ReportStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStatusResponse.ProtoReflect.Descriptor instead.
 func (*ReportStatusResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{1}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ReportStatusResponse) GetSuccess() bool {
@@ -131,7 +131,7 @@ type GetStorageRequest struct {
 
 func (x *GetStorageRequest) Reset() {
 	*x = GetStorageRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[2]
+	mi := &file_proto_skaia_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -143,7 +143,7 @@ func (x *GetStorageRequest) String() string {
 func (*GetStorageRequest) ProtoMessage() {}
 
 func (x *GetStorageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[2]
+	mi := &file_proto_skaia_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -156,7 +156,7 @@ func (x *GetStorageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStorageRequest.ProtoReflect.Descriptor instead.
 func (*GetStorageRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{2}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{2}
 }
 
 type GetStorageResponse struct {
@@ -169,7 +169,7 @@ type GetStorageResponse struct {
 
 func (x *GetStorageResponse) Reset() {
 	*x = GetStorageResponse{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[3]
+	mi := &file_proto_skaia_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -181,7 +181,7 @@ func (x *GetStorageResponse) String() string {
 func (*GetStorageResponse) ProtoMessage() {}
 
 func (x *GetStorageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[3]
+	mi := &file_proto_skaia_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -194,7 +194,7 @@ func (x *GetStorageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStorageResponse.ProtoReflect.Descriptor instead.
 func (*GetStorageResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{3}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetStorageResponse) GetStorageJson() string {
@@ -216,7 +216,7 @@ type LogStreamResponse struct {
 
 func (x *LogStreamResponse) Reset() {
 	*x = LogStreamResponse{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[4]
+	mi := &file_proto_skaia_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -228,7 +228,7 @@ func (x *LogStreamResponse) String() string {
 func (*LogStreamResponse) ProtoMessage() {}
 
 func (x *LogStreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[4]
+	mi := &file_proto_skaia_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -241,7 +241,7 @@ func (x *LogStreamResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogStreamResponse.ProtoReflect.Descriptor instead.
 func (*LogStreamResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{4}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *LogStreamResponse) GetOutput() string {
@@ -260,7 +260,7 @@ type SetupInitRequest struct {
 
 func (x *SetupInitRequest) Reset() {
 	*x = SetupInitRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[5]
+	mi := &file_proto_skaia_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -272,7 +272,7 @@ func (x *SetupInitRequest) String() string {
 func (*SetupInitRequest) ProtoMessage() {}
 
 func (x *SetupInitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[5]
+	mi := &file_proto_skaia_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -285,7 +285,7 @@ func (x *SetupInitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupInitRequest.ProtoReflect.Descriptor instead.
 func (*SetupInitRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{5}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SetupInitRequest) GetBranch() string {
@@ -303,7 +303,7 @@ type CheckoutSitesRequest struct {
 
 func (x *CheckoutSitesRequest) Reset() {
 	*x = CheckoutSitesRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[6]
+	mi := &file_proto_skaia_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -315,7 +315,7 @@ func (x *CheckoutSitesRequest) String() string {
 func (*CheckoutSitesRequest) ProtoMessage() {}
 
 func (x *CheckoutSitesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[6]
+	mi := &file_proto_skaia_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -328,7 +328,7 @@ func (x *CheckoutSitesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckoutSitesRequest.ProtoReflect.Descriptor instead.
 func (*CheckoutSitesRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{6}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{6}
 }
 
 type StartDeploymentRequest struct {
@@ -340,7 +340,7 @@ type StartDeploymentRequest struct {
 
 func (x *StartDeploymentRequest) Reset() {
 	*x = StartDeploymentRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[7]
+	mi := &file_proto_skaia_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -352,7 +352,7 @@ func (x *StartDeploymentRequest) String() string {
 func (*StartDeploymentRequest) ProtoMessage() {}
 
 func (x *StartDeploymentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[7]
+	mi := &file_proto_skaia_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -365,7 +365,7 @@ func (x *StartDeploymentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartDeploymentRequest.ProtoReflect.Descriptor instead.
 func (*StartDeploymentRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{7}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StartDeploymentRequest) GetDeployment() string {
@@ -385,7 +385,7 @@ type InstallAppsRequest struct {
 
 func (x *InstallAppsRequest) Reset() {
 	*x = InstallAppsRequest{}
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[8]
+	mi := &file_proto_skaia_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +397,7 @@ func (x *InstallAppsRequest) String() string {
 func (*InstallAppsRequest) ProtoMessage() {}
 
 func (x *InstallAppsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_grpc_proto_skaia_proto_msgTypes[8]
+	mi := &file_proto_skaia_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +410,7 @@ func (x *InstallAppsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstallAppsRequest.ProtoReflect.Descriptor instead.
 func (*InstallAppsRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_grpc_proto_skaia_proto_rawDescGZIP(), []int{8}
+	return file_proto_skaia_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *InstallAppsRequest) GetSiteName() string {
@@ -427,11 +427,575 @@ func (x *InstallAppsRequest) GetApps() []string {
 	return nil
 }
 
-var File_pkg_grpc_proto_skaia_proto protoreflect.FileDescriptor
+type ListSitesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_pkg_grpc_proto_skaia_proto_rawDesc = "" +
+func (x *ListSitesRequest) Reset() {
+	*x = ListSitesRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSitesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSitesRequest) ProtoMessage() {}
+
+func (x *ListSitesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSitesRequest.ProtoReflect.Descriptor instead.
+func (*ListSitesRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{9}
+}
+
+type ListSitesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sites         []string               `protobuf:"bytes,1,rep,name=sites,proto3" json:"sites,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSitesResponse) Reset() {
+	*x = ListSitesResponse{}
+	mi := &file_proto_skaia_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSitesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSitesResponse) ProtoMessage() {}
+
+func (x *ListSitesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSitesResponse.ProtoReflect.Descriptor instead.
+func (*ListSitesResponse) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListSitesResponse) GetSites() []string {
+	if x != nil {
+		return x.Sites
+	}
+	return nil
+}
+
+type CheckSiteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckSiteRequest) Reset() {
+	*x = CheckSiteRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckSiteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckSiteRequest) ProtoMessage() {}
+
+func (x *CheckSiteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckSiteRequest.ProtoReflect.Descriptor instead.
+func (*CheckSiteRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CheckSiteRequest) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+type CheckSiteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	StatusJson    string                 `protobuf:"bytes,1,opt,name=status_json,json=statusJson,proto3" json:"status_json,omitempty"` // Or defined strictly
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckSiteResponse) Reset() {
+	*x = CheckSiteResponse{}
+	mi := &file_proto_skaia_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckSiteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckSiteResponse) ProtoMessage() {}
+
+func (x *CheckSiteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckSiteResponse.ProtoReflect.Descriptor instead.
+func (*CheckSiteResponse) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CheckSiteResponse) GetStatusJson() string {
+	if x != nil {
+		return x.StatusJson
+	}
+	return ""
+}
+
+type ReloadNginxRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReloadNginxRequest) Reset() {
+	*x = ReloadNginxRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReloadNginxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReloadNginxRequest) ProtoMessage() {}
+
+func (x *ReloadNginxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReloadNginxRequest.ProtoReflect.Descriptor instead.
+func (*ReloadNginxRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{13}
+}
+
+type ReloadNginxResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReloadNginxResponse) Reset() {
+	*x = ReloadNginxResponse{}
+	mi := &file_proto_skaia_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReloadNginxResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReloadNginxResponse) ProtoMessage() {}
+
+func (x *ReloadNginxResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReloadNginxResponse.ProtoReflect.Descriptor instead.
+func (*ReloadNginxResponse) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ReloadNginxResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type GetAppsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAppsRequest) Reset() {
+	*x = GetAppsRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAppsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAppsRequest) ProtoMessage() {}
+
+func (x *GetAppsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAppsRequest.ProtoReflect.Descriptor instead.
+func (*GetAppsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{15}
+}
+
+type GetAppsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Apps          []string               `protobuf:"bytes,1,rep,name=apps,proto3" json:"apps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAppsResponse) Reset() {
+	*x = GetAppsResponse{}
+	mi := &file_proto_skaia_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAppsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAppsResponse) ProtoMessage() {}
+
+func (x *GetAppsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAppsResponse.ProtoReflect.Descriptor instead.
+func (*GetAppsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetAppsResponse) GetApps() []string {
+	if x != nil {
+		return x.Apps
+	}
+	return nil
+}
+
+type GetSiteAppsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteAppsRequest) Reset() {
+	*x = GetSiteAppsRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteAppsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteAppsRequest) ProtoMessage() {}
+
+func (x *GetSiteAppsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteAppsRequest.ProtoReflect.Descriptor instead.
+func (*GetSiteAppsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetSiteAppsRequest) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+type GetSiteAppsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Apps          []string               `protobuf:"bytes,1,rep,name=apps,proto3" json:"apps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetSiteAppsResponse) Reset() {
+	*x = GetSiteAppsResponse{}
+	mi := &file_proto_skaia_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetSiteAppsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetSiteAppsResponse) ProtoMessage() {}
+
+func (x *GetSiteAppsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetSiteAppsResponse.ProtoReflect.Descriptor instead.
+func (*GetSiteAppsResponse) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetSiteAppsResponse) GetApps() []string {
+	if x != nil {
+		return x.Apps
+	}
+	return nil
+}
+
+type InstallAppRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	AppName       string                 `protobuf:"bytes,2,opt,name=app_name,json=appName,proto3" json:"app_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InstallAppRequest) Reset() {
+	*x = InstallAppRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InstallAppRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstallAppRequest) ProtoMessage() {}
+
+func (x *InstallAppRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstallAppRequest.ProtoReflect.Descriptor instead.
+func (*InstallAppRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *InstallAppRequest) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+func (x *InstallAppRequest) GetAppName() string {
+	if x != nil {
+		return x.AppName
+	}
+	return ""
+}
+
+type UninstallAppRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	AppName       string                 `protobuf:"bytes,2,opt,name=app_name,json=appName,proto3" json:"app_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UninstallAppRequest) Reset() {
+	*x = UninstallAppRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UninstallAppRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UninstallAppRequest) ProtoMessage() {}
+
+func (x *UninstallAppRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UninstallAppRequest.ProtoReflect.Descriptor instead.
+func (*UninstallAppRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UninstallAppRequest) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+func (x *UninstallAppRequest) GetAppName() string {
+	if x != nil {
+		return x.AppName
+	}
+	return ""
+}
+
+type NewSiteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NewSiteRequest) Reset() {
+	*x = NewSiteRequest{}
+	mi := &file_proto_skaia_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NewSiteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewSiteRequest) ProtoMessage() {}
+
+func (x *NewSiteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_skaia_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewSiteRequest.ProtoReflect.Descriptor instead.
+func (*NewSiteRequest) Descriptor() ([]byte, []int) {
+	return file_proto_skaia_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *NewSiteRequest) GetSiteName() string {
+	if x != nil {
+		return x.SiteName
+	}
+	return ""
+}
+
+var File_proto_skaia_proto protoreflect.FileDescriptor
+
+const file_proto_skaia_proto_rawDesc = "" +
 	"\n" +
-	"\x1apkg/grpc/proto/skaia.proto\x12\n" +
+	"\x11proto/skaia.proto\x12\n" +
 	"skaia.grpc\"F\n" +
 	"\x13ReportStatusRequest\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x16\n" +
@@ -452,32 +1016,67 @@ const file_pkg_grpc_proto_skaia_proto_rawDesc = "" +
 	"deployment\"E\n" +
 	"\x12InstallAppsRequest\x12\x1b\n" +
 	"\tsite_name\x18\x01 \x01(\tR\bsiteName\x12\x12\n" +
-	"\x04apps\x18\x02 \x03(\tR\x04apps2b\n" +
+	"\x04apps\x18\x02 \x03(\tR\x04apps\"\x12\n" +
+	"\x10ListSitesRequest\")\n" +
+	"\x11ListSitesResponse\x12\x14\n" +
+	"\x05sites\x18\x01 \x03(\tR\x05sites\"/\n" +
+	"\x10CheckSiteRequest\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\"4\n" +
+	"\x11CheckSiteResponse\x12\x1f\n" +
+	"\vstatus_json\x18\x01 \x01(\tR\n" +
+	"statusJson\"\x14\n" +
+	"\x12ReloadNginxRequest\"/\n" +
+	"\x13ReloadNginxResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x10\n" +
+	"\x0eGetAppsRequest\"%\n" +
+	"\x0fGetAppsResponse\x12\x12\n" +
+	"\x04apps\x18\x01 \x03(\tR\x04apps\"1\n" +
+	"\x12GetSiteAppsRequest\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\")\n" +
+	"\x13GetSiteAppsResponse\x12\x12\n" +
+	"\x04apps\x18\x01 \x03(\tR\x04apps\"K\n" +
+	"\x11InstallAppRequest\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\x12\x19\n" +
+	"\bapp_name\x18\x02 \x01(\tR\aappName\"M\n" +
+	"\x13UninstallAppRequest\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\x12\x19\n" +
+	"\bapp_name\x18\x02 \x01(\tR\aappName\"-\n" +
+	"\x0eNewSiteRequest\x12\x1b\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName2b\n" +
 	"\rGrengoService\x12Q\n" +
 	"\fReportStatus\x12\x1f.skaia.grpc.ReportStatusRequest\x1a .skaia.grpc.ReportStatusResponse2]\n" +
 	"\x0eBackendService\x12K\n" +
 	"\n" +
-	"GetStorage\x12\x1d.skaia.grpc.GetStorageRequest\x1a\x1e.skaia.grpc.GetStorageResponse2\xd6\x02\n" +
+	"GetStorage\x12\x1d.skaia.grpc.GetStorageRequest\x1a\x1e.skaia.grpc.GetStorageResponse2\xb6\a\n" +
 	"\fGoFTWService\x12J\n" +
 	"\tSetupInit\x12\x1c.skaia.grpc.SetupInitRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12R\n" +
 	"\rCheckoutSites\x12 .skaia.grpc.CheckoutSitesRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12V\n" +
 	"\x0fStartDeployment\x12\".skaia.grpc.StartDeploymentRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12N\n" +
-	"\vInstallApps\x12\x1e.skaia.grpc.InstallAppsRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01B\x1dZ\x1bgithub.com/skaia/grpc/skaiab\x06proto3"
+	"\vInstallApps\x12\x1e.skaia.grpc.InstallAppsRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12H\n" +
+	"\tListSites\x12\x1c.skaia.grpc.ListSitesRequest\x1a\x1d.skaia.grpc.ListSitesResponse\x12H\n" +
+	"\tCheckSite\x12\x1c.skaia.grpc.CheckSiteRequest\x1a\x1d.skaia.grpc.CheckSiteResponse\x12N\n" +
+	"\vReloadNginx\x12\x1e.skaia.grpc.ReloadNginxRequest\x1a\x1f.skaia.grpc.ReloadNginxResponse\x12B\n" +
+	"\aGetApps\x12\x1a.skaia.grpc.GetAppsRequest\x1a\x1b.skaia.grpc.GetAppsResponse\x12N\n" +
+	"\vGetSiteApps\x12\x1e.skaia.grpc.GetSiteAppsRequest\x1a\x1f.skaia.grpc.GetSiteAppsResponse\x12L\n" +
+	"\n" +
+	"InstallApp\x12\x1d.skaia.grpc.InstallAppRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12P\n" +
+	"\fUninstallApp\x12\x1f.skaia.grpc.UninstallAppRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01\x12F\n" +
+	"\aNewSite\x12\x1a.skaia.grpc.NewSiteRequest\x1a\x1d.skaia.grpc.LogStreamResponse0\x01B\x1dZ\x1bgithub.com/skaia/grpc/skaiab\x06proto3"
 
 var (
-	file_pkg_grpc_proto_skaia_proto_rawDescOnce sync.Once
-	file_pkg_grpc_proto_skaia_proto_rawDescData []byte
+	file_proto_skaia_proto_rawDescOnce sync.Once
+	file_proto_skaia_proto_rawDescData []byte
 )
 
-func file_pkg_grpc_proto_skaia_proto_rawDescGZIP() []byte {
-	file_pkg_grpc_proto_skaia_proto_rawDescOnce.Do(func() {
-		file_pkg_grpc_proto_skaia_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_grpc_proto_skaia_proto_rawDesc), len(file_pkg_grpc_proto_skaia_proto_rawDesc)))
+func file_proto_skaia_proto_rawDescGZIP() []byte {
+	file_proto_skaia_proto_rawDescOnce.Do(func() {
+		file_proto_skaia_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_skaia_proto_rawDesc), len(file_proto_skaia_proto_rawDesc)))
 	})
-	return file_pkg_grpc_proto_skaia_proto_rawDescData
+	return file_proto_skaia_proto_rawDescData
 }
 
-var file_pkg_grpc_proto_skaia_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_pkg_grpc_proto_skaia_proto_goTypes = []any{
+var file_proto_skaia_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_proto_skaia_proto_goTypes = []any{
 	(*ReportStatusRequest)(nil),    // 0: skaia.grpc.ReportStatusRequest
 	(*ReportStatusResponse)(nil),   // 1: skaia.grpc.ReportStatusResponse
 	(*GetStorageRequest)(nil),      // 2: skaia.grpc.GetStorageRequest
@@ -487,47 +1086,76 @@ var file_pkg_grpc_proto_skaia_proto_goTypes = []any{
 	(*CheckoutSitesRequest)(nil),   // 6: skaia.grpc.CheckoutSitesRequest
 	(*StartDeploymentRequest)(nil), // 7: skaia.grpc.StartDeploymentRequest
 	(*InstallAppsRequest)(nil),     // 8: skaia.grpc.InstallAppsRequest
+	(*ListSitesRequest)(nil),       // 9: skaia.grpc.ListSitesRequest
+	(*ListSitesResponse)(nil),      // 10: skaia.grpc.ListSitesResponse
+	(*CheckSiteRequest)(nil),       // 11: skaia.grpc.CheckSiteRequest
+	(*CheckSiteResponse)(nil),      // 12: skaia.grpc.CheckSiteResponse
+	(*ReloadNginxRequest)(nil),     // 13: skaia.grpc.ReloadNginxRequest
+	(*ReloadNginxResponse)(nil),    // 14: skaia.grpc.ReloadNginxResponse
+	(*GetAppsRequest)(nil),         // 15: skaia.grpc.GetAppsRequest
+	(*GetAppsResponse)(nil),        // 16: skaia.grpc.GetAppsResponse
+	(*GetSiteAppsRequest)(nil),     // 17: skaia.grpc.GetSiteAppsRequest
+	(*GetSiteAppsResponse)(nil),    // 18: skaia.grpc.GetSiteAppsResponse
+	(*InstallAppRequest)(nil),      // 19: skaia.grpc.InstallAppRequest
+	(*UninstallAppRequest)(nil),    // 20: skaia.grpc.UninstallAppRequest
+	(*NewSiteRequest)(nil),         // 21: skaia.grpc.NewSiteRequest
 }
-var file_pkg_grpc_proto_skaia_proto_depIdxs = []int32{
-	0, // 0: skaia.grpc.GrengoService.ReportStatus:input_type -> skaia.grpc.ReportStatusRequest
-	2, // 1: skaia.grpc.BackendService.GetStorage:input_type -> skaia.grpc.GetStorageRequest
-	5, // 2: skaia.grpc.GoFTWService.SetupInit:input_type -> skaia.grpc.SetupInitRequest
-	6, // 3: skaia.grpc.GoFTWService.CheckoutSites:input_type -> skaia.grpc.CheckoutSitesRequest
-	7, // 4: skaia.grpc.GoFTWService.StartDeployment:input_type -> skaia.grpc.StartDeploymentRequest
-	8, // 5: skaia.grpc.GoFTWService.InstallApps:input_type -> skaia.grpc.InstallAppsRequest
-	1, // 6: skaia.grpc.GrengoService.ReportStatus:output_type -> skaia.grpc.ReportStatusResponse
-	3, // 7: skaia.grpc.BackendService.GetStorage:output_type -> skaia.grpc.GetStorageResponse
-	4, // 8: skaia.grpc.GoFTWService.SetupInit:output_type -> skaia.grpc.LogStreamResponse
-	4, // 9: skaia.grpc.GoFTWService.CheckoutSites:output_type -> skaia.grpc.LogStreamResponse
-	4, // 10: skaia.grpc.GoFTWService.StartDeployment:output_type -> skaia.grpc.LogStreamResponse
-	4, // 11: skaia.grpc.GoFTWService.InstallApps:output_type -> skaia.grpc.LogStreamResponse
-	6, // [6:12] is the sub-list for method output_type
-	0, // [0:6] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+var file_proto_skaia_proto_depIdxs = []int32{
+	0,  // 0: skaia.grpc.GrengoService.ReportStatus:input_type -> skaia.grpc.ReportStatusRequest
+	2,  // 1: skaia.grpc.BackendService.GetStorage:input_type -> skaia.grpc.GetStorageRequest
+	5,  // 2: skaia.grpc.GoFTWService.SetupInit:input_type -> skaia.grpc.SetupInitRequest
+	6,  // 3: skaia.grpc.GoFTWService.CheckoutSites:input_type -> skaia.grpc.CheckoutSitesRequest
+	7,  // 4: skaia.grpc.GoFTWService.StartDeployment:input_type -> skaia.grpc.StartDeploymentRequest
+	8,  // 5: skaia.grpc.GoFTWService.InstallApps:input_type -> skaia.grpc.InstallAppsRequest
+	9,  // 6: skaia.grpc.GoFTWService.ListSites:input_type -> skaia.grpc.ListSitesRequest
+	11, // 7: skaia.grpc.GoFTWService.CheckSite:input_type -> skaia.grpc.CheckSiteRequest
+	13, // 8: skaia.grpc.GoFTWService.ReloadNginx:input_type -> skaia.grpc.ReloadNginxRequest
+	15, // 9: skaia.grpc.GoFTWService.GetApps:input_type -> skaia.grpc.GetAppsRequest
+	17, // 10: skaia.grpc.GoFTWService.GetSiteApps:input_type -> skaia.grpc.GetSiteAppsRequest
+	19, // 11: skaia.grpc.GoFTWService.InstallApp:input_type -> skaia.grpc.InstallAppRequest
+	20, // 12: skaia.grpc.GoFTWService.UninstallApp:input_type -> skaia.grpc.UninstallAppRequest
+	21, // 13: skaia.grpc.GoFTWService.NewSite:input_type -> skaia.grpc.NewSiteRequest
+	1,  // 14: skaia.grpc.GrengoService.ReportStatus:output_type -> skaia.grpc.ReportStatusResponse
+	3,  // 15: skaia.grpc.BackendService.GetStorage:output_type -> skaia.grpc.GetStorageResponse
+	4,  // 16: skaia.grpc.GoFTWService.SetupInit:output_type -> skaia.grpc.LogStreamResponse
+	4,  // 17: skaia.grpc.GoFTWService.CheckoutSites:output_type -> skaia.grpc.LogStreamResponse
+	4,  // 18: skaia.grpc.GoFTWService.StartDeployment:output_type -> skaia.grpc.LogStreamResponse
+	4,  // 19: skaia.grpc.GoFTWService.InstallApps:output_type -> skaia.grpc.LogStreamResponse
+	10, // 20: skaia.grpc.GoFTWService.ListSites:output_type -> skaia.grpc.ListSitesResponse
+	12, // 21: skaia.grpc.GoFTWService.CheckSite:output_type -> skaia.grpc.CheckSiteResponse
+	14, // 22: skaia.grpc.GoFTWService.ReloadNginx:output_type -> skaia.grpc.ReloadNginxResponse
+	16, // 23: skaia.grpc.GoFTWService.GetApps:output_type -> skaia.grpc.GetAppsResponse
+	18, // 24: skaia.grpc.GoFTWService.GetSiteApps:output_type -> skaia.grpc.GetSiteAppsResponse
+	4,  // 25: skaia.grpc.GoFTWService.InstallApp:output_type -> skaia.grpc.LogStreamResponse
+	4,  // 26: skaia.grpc.GoFTWService.UninstallApp:output_type -> skaia.grpc.LogStreamResponse
+	4,  // 27: skaia.grpc.GoFTWService.NewSite:output_type -> skaia.grpc.LogStreamResponse
+	14, // [14:28] is the sub-list for method output_type
+	0,  // [0:14] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_pkg_grpc_proto_skaia_proto_init() }
-func file_pkg_grpc_proto_skaia_proto_init() {
-	if File_pkg_grpc_proto_skaia_proto != nil {
+func init() { file_proto_skaia_proto_init() }
+func file_proto_skaia_proto_init() {
+	if File_proto_skaia_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_grpc_proto_skaia_proto_rawDesc), len(file_pkg_grpc_proto_skaia_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_skaia_proto_rawDesc), len(file_proto_skaia_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   3,
 		},
-		GoTypes:           file_pkg_grpc_proto_skaia_proto_goTypes,
-		DependencyIndexes: file_pkg_grpc_proto_skaia_proto_depIdxs,
-		MessageInfos:      file_pkg_grpc_proto_skaia_proto_msgTypes,
+		GoTypes:           file_proto_skaia_proto_goTypes,
+		DependencyIndexes: file_proto_skaia_proto_depIdxs,
+		MessageInfos:      file_proto_skaia_proto_msgTypes,
 	}.Build()
-	File_pkg_grpc_proto_skaia_proto = out.File
-	file_pkg_grpc_proto_skaia_proto_goTypes = nil
-	file_pkg_grpc_proto_skaia_proto_depIdxs = nil
+	File_proto_skaia_proto = out.File
+	file_proto_skaia_proto_goTypes = nil
+	file_proto_skaia_proto_depIdxs = nil
 }
