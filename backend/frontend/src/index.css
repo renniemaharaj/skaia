@@ -61,7 +61,8 @@
   --scrollbar-thumb: rgba(0, 0, 0, 0.15);
 
   /* Typography & Modern Layout Tokens */
-  --font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
+  --font-sans:
+    "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -70,9 +71,12 @@
   --radius-xl: 16px;
   --radius-full: 9999px;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #3b82f6;
@@ -169,12 +173,16 @@ html[data-theme="dark"] {
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
 
   /* Typography & Modern Layout Tokens */
-  --font-sans: "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
+  --font-sans:
+    "Inter", "Outfit", "Roboto", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.25);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 
   /* Module accent colors (activity badges, etc.) */
   --module-user: #60a5fa;
@@ -210,7 +218,9 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   letter-spacing: -0.01em;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 html,
@@ -550,7 +560,11 @@ div#root {
 
 .btn-secondary:hover {
   background-color: var(--bg-tertiary);
-  border-color: color-mix(in srgb, var(--primary-color) 48%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--primary-color) 48%,
+    var(--border-color)
+  );
 }
 
 .btn-ghost {
@@ -623,8 +637,11 @@ div#root {
   border-radius: var(--card-radius);
   padding: var(--card-padding);
   box-shadow: var(--card-shadow);
-  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s
-    ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .card--interactive {
@@ -661,8 +678,11 @@ div#root {
   border-bottom: 1px solid var(--card-border);
   border-radius: 0;
   box-shadow: none;
-  transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s
-    ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .content-flat-card:hover {

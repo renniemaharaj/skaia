@@ -78,7 +78,11 @@ const SIMILAR_SKELETON_KEYS = [
   "similar-skeleton-4",
 ];
 
-const RELATED_SKELETON_KEYS = ["related-skeleton-1", "related-skeleton-2", "related-skeleton-3"];
+const RELATED_SKELETON_KEYS = [
+  "related-skeleton-1",
+  "related-skeleton-2",
+  "related-skeleton-3",
+];
 
 const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
@@ -97,7 +101,9 @@ export const ProductPage = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [previewMediaIndex, setPreviewMediaIndex] = useState<number | null>(null);
+  const [previewMediaIndex, setPreviewMediaIndex] = useState<number | null>(
+    null,
+  );
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProduct, setLoadingProduct] = useState(true);
@@ -136,16 +142,16 @@ export const ProductPage = () => {
   };
 
   useEffect(() => {
-    const cached = allProducts.find(p => String(p.id) === id);
+    const cached = allProducts.find((p) => String(p.id) === id);
     if (cached) {
       setProduct(cached);
       setLoadingProduct(false);
     } else {
       apiRequest<Product>(`/store/products/${id}`)
-        .then(p => {
+        .then((p) => {
           if (p) setProduct(p);
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Failed to load product", err);
           toast.error("Product not found");
         })
@@ -157,7 +163,7 @@ export const ProductPage = () => {
     if (!id) return;
     setSimilarLoading(true);
     apiRequest<Product[]>(`/store/products/${id}/similar`)
-      .then(data => {
+      .then((data) => {
         setSimilarProducts(data || []);
       })
       .catch(() => {
@@ -169,8 +175,10 @@ export const ProductPage = () => {
   const loadReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
-      const data = await apiRequest<ProductReviewApiResponse[]>(`/store/products/${id}/reviews`);
-      const mappedReviews: ProductReview[] = (data || []).map(r => ({
+      const data = await apiRequest<ProductReviewApiResponse[]>(
+        `/store/products/${id}/reviews`,
+      );
+      const mappedReviews: ProductReview[] = (data || []).map((r) => ({
         id: r.id,
         author_id: r.user?.id || r.user_id,
         author_name: r.user?.display_name,
@@ -197,7 +205,7 @@ export const ProductPage = () => {
 
   const userHasReviewed = useMemo(() => {
     if (!currentUser) return false;
-    return reviews.some(r => String(r.author_id) === String(currentUser.id));
+    return reviews.some((r) => String(r.author_id) === String(currentUser.id));
   }, [reviews, currentUser]);
 
   const handleReviewSubmit = async (text: string, rating?: number) => {
@@ -221,15 +229,18 @@ export const ProductPage = () => {
         body: JSON.stringify({ product_id: targetProduct.id, quantity: 1 }),
       });
 
-      setCartItems(prev => {
+      setCartItems((prev) => {
         const exists = prev.find(
-          i => i.product?.id === targetProduct.id || i.product_id === targetProduct.id
+          (i) =>
+            i.product?.id === targetProduct.id ||
+            i.product_id === targetProduct.id,
         );
         if (exists) {
-          return prev.map(i =>
-            i.product?.id === targetProduct.id || i.product_id === targetProduct.id
+          return prev.map((i) =>
+            i.product?.id === targetProduct.id ||
+            i.product_id === targetProduct.id
               ? { ...i, quantity: i.quantity + 1 }
-              : i
+              : i,
           );
         }
         return [
@@ -270,7 +281,7 @@ export const ProductPage = () => {
   useEffect(() => {
     if (hasInteracted || !canCycleMedia || media.length === 0) return;
     const interval = setInterval(() => {
-      setActiveMediaIndex(index => (index + 1) % media.length);
+      setActiveMediaIndex((index) => (index + 1) % media.length);
     }, 4000);
     return () => clearInterval(interval);
   }, [hasInteracted, canCycleMedia, media.length]);
@@ -281,11 +292,17 @@ export const ProductPage = () => {
         <div className="product-page-layout">
           <div className="product-page-hero">
             <div className="product-page-image-container">
-              <div className="skeleton" style={{ width: "100%", height: "100%" }} />
+              <div
+                className="skeleton"
+                style={{ width: "100%", height: "100%" }}
+              />
             </div>
 
             <div className="product-page-details">
-              <div className="skeleton skeleton-heading" style={{ width: "60%", height: 28 }} />
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: "60%", height: 28 }}
+              />
 
               <div
                 style={{
@@ -294,28 +311,58 @@ export const ProductPage = () => {
                   alignItems: "center",
                 }}
               >
-                <div className="skeleton skeleton-text" style={{ width: 120, height: 20 }} />
-                <div className="skeleton skeleton-text" style={{ width: 80, height: 16 }} />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: 120, height: 20 }}
+                />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: 80, height: 16 }}
+                />
               </div>
 
-              <div className="skeleton skeleton-text" style={{ width: "40%", height: 12 }} />
-              <div className="skeleton skeleton-text" style={{ width: "80%", height: 12 }} />
-              <div className="skeleton skeleton-text" style={{ width: "70%", height: 12 }} />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "40%", height: 12 }}
+              />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "80%", height: 12 }}
+              />
+              <div
+                className="skeleton skeleton-text"
+                style={{ width: "70%", height: 12 }}
+              />
 
               <div style={{ display: "flex", gap: "0.5rem", marginTop: 12 }}>
-                <div className="skeleton" style={{ height: 36, width: 100, borderRadius: 8 }} />
-                <div className="skeleton" style={{ height: 36, width: 80, borderRadius: 8 }} />
+                <div
+                  className="skeleton"
+                  style={{ height: 36, width: 100, borderRadius: 8 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 36, width: 80, borderRadius: 8 }}
+                />
               </div>
             </div>
           </div>
 
           <div className="product-page-bottom">
             <div>
-              <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: 140, height: 18 }}
+              />
               <div style={{ marginTop: 12 }}>
                 {REVIEW_SKELETON_KEYS.map((key, i) => (
-                  <div key={key} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
-                    <div className="skeleton skeleton-circle" style={{ width: 44, height: 44 }} />
+                  <div
+                    key={key}
+                    style={{ display: "flex", gap: 12, marginBottom: 10 }}
+                  >
+                    <div
+                      className="skeleton skeleton-circle"
+                      style={{ width: 44, height: 44 }}
+                    />
                     <div style={{ flex: 1 }}>
                       <div
                         className="skeleton skeleton-text"
@@ -332,16 +379,22 @@ export const ProductPage = () => {
             </div>
 
             <div>
-              <div className="skeleton skeleton-heading" style={{ width: 140, height: 18 }} />
+              <div
+                className="skeleton skeleton-heading"
+                style={{ width: 140, height: 18 }}
+              />
               <div style={{ marginTop: 12 }}>
-                {RELATED_SKELETON_KEYS.map(key => (
+                {RELATED_SKELETON_KEYS.map((key) => (
                   <ContentFlatCard
                     key={key}
                     className="skeleton-card"
                     style={{ padding: 12, marginBottom: 12 }}
                   >
                     <div style={{ display: "flex", gap: 12 }}>
-                      <div className="skeleton skeleton-circle" style={{ width: 36, height: 36 }} />
+                      <div
+                        className="skeleton skeleton-circle"
+                        style={{ width: 36, height: 36 }}
+                      />
                       <div style={{ flex: 1 }}>
                         <div
                           className="skeleton skeleton-text"
@@ -372,20 +425,25 @@ export const ProductPage = () => {
   }
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
-  const productCategoryName = categories.find(cat => cat.id === product.category_id)?.name;
+  const productCategoryName = categories.find(
+    (cat) => cat.id === product.category_id,
+  )?.name;
   const safeActiveMediaIndex =
-    media.length > 0 ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1) : 0;
+    media.length > 0
+      ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1)
+      : 0;
   const activeMedia = media[safeActiveMediaIndex];
   const activeMediaIsVideo =
-    activeMedia?.mime_type?.startsWith("video/") || activeMedia?.type === "video";
+    activeMedia?.mime_type?.startsWith("video/") ||
+    activeMedia?.type === "video";
 
   const previousMedia = () => {
     setHasInteracted(true);
-    setActiveMediaIndex(index => (index - 1 + media.length) % media.length);
+    setActiveMediaIndex((index) => (index - 1 + media.length) % media.length);
   };
   const nextMedia = () => {
     setHasInteracted(true);
-    setActiveMediaIndex(index => (index + 1) % media.length);
+    setActiveMediaIndex((index) => (index + 1) % media.length);
   };
 
   const formatDateTime = (value: string) =>
@@ -402,12 +460,14 @@ export const ProductPage = () => {
       <div className="product-page-layout">
         {/* ── Hero: image + details ── */}
         <ContentStandOutCard className="product-page-hero">
-          <div className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}>
+          <div
+            className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}
+          >
             {activeMedia ? (
               <button
                 type="button"
                 className="product-page-image-button"
-                onClick={e => {
+                onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setHasInteracted(true);
@@ -415,11 +475,19 @@ export const ProductPage = () => {
                 }}
               >
                 {activeMediaIsVideo ? (
-                  <video src={activeMedia.url} preload="metadata" muted playsInline>
+                  <video
+                    src={activeMedia.url}
+                    preload="metadata"
+                    muted
+                    playsInline
+                  >
                     <track kind="captions" />
                   </video>
                 ) : (
-                  <img src={activeMedia.url} alt={activeMedia.filename || product.name} />
+                  <img
+                    src={activeMedia.url}
+                    alt={activeMedia.filename || product.name}
+                  />
                 )}
               </button>
             ) : (
@@ -430,7 +498,7 @@ export const ProductPage = () => {
                 <button
                   type="button"
                   className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--prev"
-                  onClick={event => {
+                  onClick={(event) => {
                     event.stopPropagation();
                     previousMedia();
                   }}
@@ -442,7 +510,7 @@ export const ProductPage = () => {
                 <button
                   type="button"
                   className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--next"
-                  onClick={event => {
+                  onClick={(event) => {
                     event.stopPropagation();
                     nextMedia();
                   }}
@@ -455,7 +523,9 @@ export const ProductPage = () => {
             )}
             {activeMedia && (
               <div className="up-upload-lightbox-bar product-page-media-bar">
-                <span className="up-upload-lightbox-name">{activeMedia.filename}</span>
+                <span className="up-upload-lightbox-name">
+                  {activeMedia.filename}
+                </span>
                 <div className="thread-actions">
                   <span className="up-upload-lightbox-count">
                     {safeActiveMediaIndex + 1}/{media.length}
@@ -471,18 +541,30 @@ export const ProductPage = () => {
             <div className="product-page-price">
               <MoneyAmount cents={product.price} className="current-price" />
               {product.original_price && (
-                <MoneyAmount cents={product.original_price} className="original-price" />
+                <MoneyAmount
+                  cents={product.original_price}
+                  className="original-price"
+                />
               )}
             </div>
 
             <div className="product-page-rating-summary">
-              <StarRating rating={Math.round(averageRating)} disabled size={15} />
+              <StarRating
+                rating={Math.round(averageRating)}
+                disabled
+                size={15}
+              />
               <span>
                 {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
               </span>
             </div>
 
-            <p className="product-page-description">{product.description}</p>
+            <p className="product-page-description">
+              {product.description.split(".").map((line, i) => (
+                <p key={i}>{line.trim() ? line.trim() + "." : ""}</p>
+              ))}
+              {!product.description && <p>No description provided.</p>}
+            </p>
 
             <div className="product-page-meta-grid">
               <span>
@@ -495,15 +577,19 @@ export const ProductPage = () => {
                 <Clock size={14} /> Updated {formatDateTime(product.updated_at)}
               </span>
               <span>
-                <ShoppingBag size={14} /> {product.recent_purchases ?? 0} recent purchases
+                <ShoppingBag size={14} /> {product.recent_purchases ?? 0} recent
+                purchases
               </span>
               <span>
-                <TrendingUp size={14} /> {product.current_orders ?? 0} current orders
+                <TrendingUp size={14} /> {product.current_orders ?? 0} current
+                orders
               </span>
             </div>
 
             <div className="product-page-stock">
-              {product.stock_unlimited ? "In Stock" : `${product.stock} available`}
+              {product.stock_unlimited
+                ? "In Stock"
+                : `${product.stock} available`}
             </div>
 
             <div className="product-page-actions-row">
@@ -534,7 +620,11 @@ export const ProductPage = () => {
                 disabled={!product.is_active || isSoldOut || addingToCart}
               >
                 <ShoppingCart size={14} />
-                {addingToCart ? "Adding…" : isSoldOut ? "Sold Out" : "Add to Cart"}
+                {addingToCart
+                  ? "Adding…"
+                  : isSoldOut
+                    ? "Sold Out"
+                    : "Add to Cart"}
               </button>
             </div>
           </div>
@@ -551,9 +641,13 @@ export const ProductPage = () => {
           <div className="product-page-similar">
             <div className="product-page-section-heading">
               <div>
-                <div className="product-page-section-label">Similar Products</div>
+                <div className="product-page-section-label">
+                  Similar Products
+                </div>
                 {productCategoryName && (
-                  <p className="product-page-section-context">{productCategoryName}</p>
+                  <p className="product-page-section-context">
+                    {productCategoryName}
+                  </p>
                 )}
               </div>
               {similarProducts.length > 0 && (
@@ -585,10 +679,11 @@ export const ProductPage = () => {
                   <span>No other products in this category yet.</span>
                 </div>
               ) : (
-                similarProducts.map(sp => {
+                similarProducts.map((sp) => {
                   const similarCover = getProductMediaItems(sp)[0];
                   const similarCoverIsVideo =
-                    similarCover?.mime_type?.startsWith("video/") || similarCover?.type === "video";
+                    similarCover?.mime_type?.startsWith("video/") ||
+                    similarCover?.type === "video";
                   const similarStockLabel = sp.stock_unlimited
                     ? "In stock"
                     : sp.stock > 0
@@ -602,7 +697,12 @@ export const ProductPage = () => {
                     >
                       <div className="similar-product-thumb">
                         {similarCover && similarCoverIsVideo ? (
-                          <video src={similarCover.url} preload="metadata" muted playsInline>
+                          <video
+                            src={similarCover.url}
+                            preload="metadata"
+                            muted
+                            playsInline
+                          >
                             <track kind="captions" />
                           </video>
                         ) : similarCover ? (
@@ -614,14 +714,22 @@ export const ProductPage = () => {
                       <div className="similar-product-info">
                         <span className="similar-product-name">{sp.name}</span>
                         {sp.description && (
-                          <span className="similar-product-description">{sp.description}</span>
+                          <span className="similar-product-description">
+                            {sp.description}
+                          </span>
                         )}
                         <span className="similar-product-meta">
-                          <MoneyAmount cents={sp.price} className="similar-product-price" />
+                          <MoneyAmount
+                            cents={sp.price}
+                            className="similar-product-price"
+                          />
                           <span>{similarStockLabel}</span>
                         </span>
                       </div>
-                      <ChevronRight size={14} className="similar-product-arrow" />
+                      <ChevronRight
+                        size={14}
+                        className="similar-product-arrow"
+                      />
                     </Link>
                   );
                 })
@@ -658,7 +766,7 @@ export const ProductPage = () => {
           onSuccess={() => {
             setLoadingProduct(true);
             apiRequest<Product>(`/store/products/${id}`)
-              .then(p => {
+              .then((p) => {
                 if (p) setProduct(p);
               })
               .finally(() => setLoadingProduct(false));
@@ -670,7 +778,7 @@ export const ProductPage = () => {
         <MediaPreviewLightbox
           items={media}
           index={previewMediaIndex}
-          onIndexChange={index => {
+          onIndexChange={(index) => {
             setPreviewMediaIndex(index);
             setActiveMediaIndex(index);
           }}
