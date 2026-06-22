@@ -66,8 +66,10 @@ networks:
 	fmt.Println("Starting Frappe ERPNext global cluster via docker compose (idempotent)...")
 	upCmd := exec.Command("docker", "compose", "-f", composePath, "up", "-d", "--build")
 	upCmd.Dir = clusterDir
-	if out, err := upCmd.CombinedOutput(); err != nil {
-		die("docker compose up failed: %v\n%s", err, string(out))
+	upCmd.Stdout = os.Stdout
+	upCmd.Stderr = os.Stderr
+	if err := upCmd.Run(); err != nil {
+		die("docker compose up failed: %v", err)
 	}
 
 	grpcFrappeProvision(siteName)
