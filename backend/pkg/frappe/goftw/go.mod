@@ -3,7 +3,6 @@ module goftw
 go 1.25.0
 
 require (
-	github.com/go-chi/chi/v5 v5.2.3
 	github.com/skaia/grpc v0.0.0
 	google.golang.org/grpc v1.81.1
 )
