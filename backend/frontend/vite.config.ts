@@ -50,11 +50,7 @@ export default defineConfig({
             if (id.includes("@tiptap") || id.includes("prosemirror")) {
               return "vendor-tiptap-core";
             }
-            if (
-              id.includes("react") ||
-              id.includes("react-dom") ||
-              id.includes("react-router")
-            ) {
+            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router")) {
               return "vendor-react";
             }
             if (id.includes("@monaco-editor")) {
