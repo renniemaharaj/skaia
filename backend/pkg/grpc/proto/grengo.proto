@@ -26,6 +26,7 @@ service GrengoService {
   rpc Stats (EmptyRequest) returns (StatsResponse);
   rpc Storage (EmptyRequest) returns (StorageResponse);
   rpc GetSysInfo (EmptyRequest) returns (SysInfoResponse);
+  rpc GetHardware (EmptyRequest) returns (HardwareResponse);
   
   // Archives & Migrations
   rpc ExportSite (SiteRequest) returns (ExportSiteResponse);
@@ -115,6 +116,10 @@ message StorageResponse {
 
 message SysInfoResponse {
   string sysinfo_json = 1;
+}
+
+message HardwareResponse {
+  string hardware_json = 1;
 }
 
 message ExportSiteResponse {

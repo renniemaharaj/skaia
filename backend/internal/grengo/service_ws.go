@@ -54,6 +54,86 @@ func (s *Service) WatchJobs() {
 	}
 }
 
+// WatchStats polls grengo for Docker container stats every 5 seconds and broadcasts
+// the results to all connected WebSocket clients as grengo:stats_update events.
+func (s *Service) WatchStats() {
+	for {
+		time.Sleep(5 * time.Second)
+		if s.hub == nil {
+			continue
+		}
+
+		stats, err := s.Stats()
+		if err != nil {
+			fmt.Printf("grengo gRPC: WatchStats poll error: %v\n", err)
+			continue
+		}
+
+		data, err := json.Marshal(stats)
+		if err != nil {
+			continue
+		}
+		s.hub.Broadcast(&ws.Message{
+			Type:    ws.GrengoStatsUpdate,
+			Payload: json.RawMessage(data),
+		})
+	}
+}
+
+// WatchStorage polls grengo for upload storage usage every 60 seconds and broadcasts
+// the results to all connected WebSocket clients as grengo:storage_update events.
+func (s *Service) WatchStorage() {
+	// Start immediately then repeat every 60s.
+	for {
+		time.Sleep(60 * time.Second)
+		if s.hub == nil {
+			continue
+		}
+
+		info, err := s.Storage()
+		if err != nil {
+			fmt.Printf("grengo gRPC: WatchStorage poll error: %v\n", err)
+			continue
+		}
+
+		data, err := json.Marshal(info)
+		if err != nil {
+			continue
+		}
+		s.hub.Broadcast(&ws.Message{
+			Type:    ws.GrengoStorageUpdate,
+			Payload: json.RawMessage(data),
+		})
+	}
+}
+
+// WatchHardware polls grengo for hardware metrics every 5 seconds and broadcasts
+// the results to all connected WebSocket clients as grengo:hardware_update events.
+// This drives the CPU cores, RAM, temperature, and disk I/O panels in the dashboard.
+func (s *Service) WatchHardware() {
+	for {
+		time.Sleep(5 * time.Second)
+		if s.hub == nil {
+			continue
+		}
+
+		payload, err := s.GetHardware()
+		if err != nil {
+			fmt.Printf("grengo gRPC: WatchHardware poll error: %v\n", err)
+			continue
+		}
+
+		data, err := json.Marshal(payload)
+		if err != nil {
+			continue
+		}
+		s.hub.Broadcast(&ws.Message{
+			Type:    ws.GrengoHardwareUpdate,
+			Payload: json.RawMessage(data),
+		})
+	}
+}
+
 func (s *Service) SendAction(action []byte) {
 	_, _ = s.client.SendAction(context.Background(), &pb.SendActionRequest{
 		Action: action,

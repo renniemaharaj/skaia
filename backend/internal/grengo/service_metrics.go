@@ -90,3 +90,38 @@ func (s *Service) GetSysInfo() (*SysInfo, error) {
 	}
 	return &info, nil
 }
+
+// HardwarePayload holds the full static+dynamic hardware payload.
+// This mirrors the hardware.HardwarePayload struct in the grengo server.
+type HardwarePayload struct {
+	Static struct {
+		CPUModel      string   `json:"cpu_model"`
+		TotalCores    uint32   `json:"total_cores"`
+		MemoryTotal   uint64   `json:"memory_total"`
+		MemorySticks  []string `json:"memory_sticks"`
+		GPUs          []string `json:"gpus"`
+		StorageDrives []string `json:"storage_drives"`
+	} `json:"static"`
+	Dynamic struct {
+		CorePercents []float64 `json:"core_percents"`
+		MemoryUsed   uint64    `json:"memory_used"`
+		Temps        []float64 `json:"temps"`
+		DiskReads    uint64    `json:"disk_reads"`
+		DiskWrites   uint64    `json:"disk_writes"`
+		DiskTotal    uint64    `json:"disk_total"`
+		DiskFree     uint64    `json:"disk_free"`
+	} `json:"dynamic"`
+}
+
+// GetHardware retrieves the full static+dynamic hardware payload from grengo.
+func (s *Service) GetHardware() (*HardwarePayload, error) {
+	resp, err := s.client.GetHardware(context.Background(), &pb.EmptyRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("grengo API: %w", err)
+	}
+	var payload HardwarePayload
+	if err := json.Unmarshal([]byte(resp.HardwareJson), &payload); err != nil {
+		return nil, fmt.Errorf("decode hardware: %w", err)
+	}
+	return &payload, nil
+}

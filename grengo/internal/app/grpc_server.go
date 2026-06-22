@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -196,9 +197,80 @@ func (s *GrengoServer) Storage(ctx context.Context, req *pb.EmptyRequest) (*pb.S
 }
 
 func (s *GrengoServer) GetSysInfo(ctx context.Context, req *pb.EmptyRequest) (*pb.SysInfoResponse, error) {
-	info := hardware.GetPayload().Static
+	// Build the same sysinfo map as the old REST apiSysInfo, then merge in static hardware.
+	info := map[string]any{
+		"server_time": time.Now().UTC().Format(time.RFC3339),
+	}
+
+	// CPU model & core count from /proc/cpuinfo
+	if data, err := os.ReadFile("/proc/cpuinfo"); err == nil {
+		count := 0
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "model name") && info["cpu_model"] == nil {
+				if parts := strings.SplitN(line, ":", 2); len(parts) == 2 {
+					info["cpu_model"] = strings.TrimSpace(parts[1])
+				}
+			}
+			if strings.HasPrefix(line, "processor") {
+				count++
+			}
+		}
+		if count > 0 {
+			info["cpu_cores"] = count
+		}
+	}
+
+	// Uptime from /proc/uptime
+	if data, err := os.ReadFile("/proc/uptime"); err == nil {
+		if parts := strings.Fields(string(data)); len(parts) >= 1 {
+			if secs, err := strconv.ParseFloat(parts[0], 64); err == nil {
+				info["uptime_seconds"] = secs
+				d := time.Duration(secs * float64(time.Second))
+				days := int(d.Hours()) / 24
+				hours := int(d.Hours()) % 24
+				mins := int(d.Minutes()) % 60
+				info["uptime_human"] = fmt.Sprintf("%dd %dh %dm", days, hours, mins)
+			}
+		}
+	}
+
+	// Total RAM from /proc/meminfo
+	if data, err := os.ReadFile("/proc/meminfo"); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if strings.HasPrefix(line, "MemTotal:") {
+				if parts := strings.Fields(line); len(parts) >= 2 {
+					if kb, err := strconv.ParseUint(parts[1], 10, 64); err == nil {
+						info["mem_total"] = humanBytes(kb * 1024)
+					}
+				}
+				break
+			}
+		}
+	}
+
+	// Load average from /proc/loadavg
+	if data, err := os.ReadFile("/proc/loadavg"); err == nil {
+		if parts := strings.Fields(string(data)); len(parts) >= 3 {
+			info["load_avg"] = strings.Join(parts[:3], " ")
+		}
+	}
+
+	// Also include static hardware info (memory_total in bytes, gpus, storage_drives, etc.)
+	hw := hardware.GetPayload().Static
+	info["memory_total"] = hw.MemoryTotal
+	info["memory_sticks"] = hw.MemorySticks
+	info["gpus"] = hw.GPUs
+	info["storage_drives"] = hw.StorageDrives
+	info["total_cores"] = hw.TotalCores
+
 	b, _ := json.Marshal(info)
 	return &pb.SysInfoResponse{SysinfoJson: string(b)}, nil
+}
+
+func (s *GrengoServer) GetHardware(ctx context.Context, req *pb.EmptyRequest) (*pb.HardwareResponse, error) {
+	payload := hardware.GetPayload()
+	b, _ := json.Marshal(payload)
+	return &pb.HardwareResponse{HardwareJson: string(b)}, nil
 }
 
 func (s *GrengoServer) ExportSite(ctx context.Context, req *pb.SiteRequest) (*pb.ExportSiteResponse, error) {

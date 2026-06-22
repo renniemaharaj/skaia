@@ -763,6 +763,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			}
 			hub.GrengoActionHandler = grengoSvc.SendAction
 			go grengoSvc.WatchJobs()
+			go grengoSvc.WatchStats()
+			go grengoSvc.WatchStorage()
+			go grengoSvc.WatchHardware()
 			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
 		}
 

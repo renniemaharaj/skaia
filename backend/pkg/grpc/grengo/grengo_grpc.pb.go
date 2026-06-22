@@ -35,6 +35,7 @@ const (
 	GrengoService_Stats_FullMethodName           = "/grengo.grpc.GrengoService/Stats"
 	GrengoService_Storage_FullMethodName         = "/grengo.grpc.GrengoService/Storage"
 	GrengoService_GetSysInfo_FullMethodName      = "/grengo.grpc.GrengoService/GetSysInfo"
+	GrengoService_GetHardware_FullMethodName     = "/grengo.grpc.GrengoService/GetHardware"
 	GrengoService_ExportSite_FullMethodName      = "/grengo.grpc.GrengoService/ExportSite"
 	GrengoService_ImportSite_FullMethodName      = "/grengo.grpc.GrengoService/ImportSite"
 	GrengoService_MigrateSite_FullMethodName     = "/grengo.grpc.GrengoService/MigrateSite"
@@ -76,6 +77,7 @@ type GrengoServiceClient interface {
 	Stats(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*StatsResponse, error)
 	Storage(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*StorageResponse, error)
 	GetSysInfo(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*SysInfoResponse, error)
+	GetHardware(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HardwareResponse, error)
 	// Archives & Migrations
 	ExportSite(ctx context.Context, in *SiteRequest, opts ...grpc.CallOption) (*ExportSiteResponse, error)
 	ImportSite(ctx context.Context, in *ImportSiteRequest, opts ...grpc.CallOption) (*ImportSiteResponse, error)
@@ -269,6 +271,16 @@ func (c *grengoServiceClient) GetSysInfo(ctx context.Context, in *EmptyRequest, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SysInfoResponse)
 	err := c.cc.Invoke(ctx, GrengoService_GetSysInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *grengoServiceClient) GetHardware(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HardwareResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HardwareResponse)
+	err := c.cc.Invoke(ctx, GrengoService_GetHardware_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -485,6 +497,7 @@ type GrengoServiceServer interface {
 	Stats(context.Context, *EmptyRequest) (*StatsResponse, error)
 	Storage(context.Context, *EmptyRequest) (*StorageResponse, error)
 	GetSysInfo(context.Context, *EmptyRequest) (*SysInfoResponse, error)
+	GetHardware(context.Context, *EmptyRequest) (*HardwareResponse, error)
 	// Archives & Migrations
 	ExportSite(context.Context, *SiteRequest) (*ExportSiteResponse, error)
 	ImportSite(context.Context, *ImportSiteRequest) (*ImportSiteResponse, error)
@@ -562,6 +575,9 @@ func (UnimplementedGrengoServiceServer) Storage(context.Context, *EmptyRequest) 
 }
 func (UnimplementedGrengoServiceServer) GetSysInfo(context.Context, *EmptyRequest) (*SysInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSysInfo not implemented")
+}
+func (UnimplementedGrengoServiceServer) GetHardware(context.Context, *EmptyRequest) (*HardwareResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHardware not implemented")
 }
 func (UnimplementedGrengoServiceServer) ExportSite(context.Context, *SiteRequest) (*ExportSiteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExportSite not implemented")
@@ -913,6 +929,24 @@ func _GrengoService_GetSysInfo_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GrengoService_GetHardware_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GrengoServiceServer).GetHardware(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GrengoService_GetHardware_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GrengoServiceServer).GetHardware(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GrengoService_ExportSite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SiteRequest)
 	if err := dec(in); err != nil {
@@ -1246,6 +1280,10 @@ var GrengoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSysInfo",
 			Handler:    _GrengoService_GetSysInfo_Handler,
+		},
+		{
+			MethodName: "GetHardware",
+			Handler:    _GrengoService_GetHardware_Handler,
 		},
 		{
 			MethodName: "ExportSite",
