@@ -3,8 +3,9 @@ import { type RefObject, useEffect, useMemo, useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { formatDate } from "../../utils/serverTime";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
-import Editor from "../forum/Editor";
-import ViewThread from "../forum/ViewThread";
+import { lazy, Suspense } from "react";
+const Editor = lazy(() => import("../forum/Editor"));
+const ViewThread = lazy(() => import("../forum/ViewThread"));
 import ComposerInput from "../input/Input";
 import StarRating from "../ui/StarRating";
 import RoleBadge from "../user/RoleBadge";
@@ -238,7 +239,9 @@ const CommentSection = ({
 
                   {useRichText ? (
                     <div className="comment-content rich-text-comment">
-                      <ViewThread content={comment.content} />
+                      <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 40 }} />}>
+                        <ViewThread content={comment.content} />
+                      </Suspense>
                     </div>
                   ) : (
                     <div className="comment-content">{comment.content}</div>
@@ -303,7 +306,9 @@ const CommentSection = ({
           {useRichText ? (
             isEditorVisible ? (
               <div className="comment-editor-wrapper">
-                <Editor value={richTextContent} onChange={setRichTextContent} minHeight="80px" />
+                <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 80 }} />}>
+                  <Editor value={richTextContent} onChange={setRichTextContent} minHeight="80px" />
+                </Suspense>
                 <div
                   style={{
                     display: "flex",

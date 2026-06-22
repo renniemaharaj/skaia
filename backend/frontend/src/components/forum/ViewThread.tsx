@@ -8,7 +8,7 @@ import "react-image-crop/dist/ReactCrop.css";
 import { useEffect, useState } from "react";
 import "./Editor.css";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
-import extensions from "./extensions";
+import extensions from "./extensions/index";
 function ViewThread({ content }: { content: string }) {
   const [localContent, setLocalContent] = useState(content);
   const { theme } = useThemeContext();

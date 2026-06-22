@@ -13,7 +13,7 @@ import "./Editor.css";
 // import { useSetAtom } from "jotai";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 // import { useThemeContext } from "../context/theme/useThemeContext";
-import extensions from "./extensions";
+import extensions from "./extensions/index";
 
 interface EditorProps {
   value: string;

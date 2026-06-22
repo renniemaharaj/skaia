@@ -1,6 +1,6 @@
 import { useAtom } from "jotai";
-import { useState } from "react";
-import Editor from "./Editor";
+import { lazy, Suspense, useState } from "react";
+const Editor = lazy(() => import("./Editor"));
 import ForumCategory from "./ForumCategory";
 import "./NewThread.css";
 import { CheckIcon, X } from "lucide-react";
@@ -162,7 +162,9 @@ const NewThread = () => {
         <div className="form-group">
           <label htmlFor="content">Message</label>
           <p className="form-help">Add the context other members need to respond.</p>
-          <Editor value={threadContent} onChange={setThreadContent} />
+          <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />}>
+            <Editor value={threadContent} onChange={setThreadContent} />
+          </Suspense>
         </div>
       </form>
     </div>

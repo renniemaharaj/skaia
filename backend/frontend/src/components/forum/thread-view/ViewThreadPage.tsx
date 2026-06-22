@@ -26,7 +26,8 @@ import RecentThreadsTile from "../RecentThreadsTile";
 import TableOfContentsTile from "../TableOfContentsTile";
 import ThreadMediaViewer from "../ThreadMediaViewer";
 import { ThreadUserTiles } from "../ThreadUserTiles";
-import ViewThread from "../ViewThread";
+import { lazy, Suspense } from "react";
+const ViewThread = lazy(() => import("../ViewThread"));
 import ViewThreadComments from "../ViewThreadComments";
 import ViewThreadMeta from "../ViewThreadMeta";
 
@@ -358,7 +359,9 @@ const ViewThreadPage = () => {
         >
           <div className="view-thread-main">
             <div>
-              <ViewThread content={currentThread.content} />
+              <Suspense fallback={<div className="skeleton skeleton-text" style={{ width: "100%", height: 300 }} />}>
+                <ViewThread content={currentThread.content} />
+              </Suspense>
               {readingMode && <ViewThreadComments threadId={threadId} />}
             </div>
           </div>
