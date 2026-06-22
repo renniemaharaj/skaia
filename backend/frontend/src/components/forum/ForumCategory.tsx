@@ -51,7 +51,7 @@ const ForumCategory: React.FC<ForumCategoryProps> = ({ value, onChange }) => {
         options={[
           { value: "", label: "Select a category" },
           ...categories.map(cat => ({
-            value: cat.id,
+            value: String(cat.id),
             label: `${cat.name}${cat.is_locked ? " (locked)" : ""}`,
             disabled: cat.is_locked && !canEditCategory,
           })),

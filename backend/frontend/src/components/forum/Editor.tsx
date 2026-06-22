@@ -11,7 +11,6 @@ import "easydrawer/styles.css";
 import "react-image-crop/dist/ReactCrop.css";
 import "./Editor.css";
 // import { useSetAtom } from "jotai";
-import { debounce } from "lodash";
 import { useThemeContext } from "../../hooks/theme/useThemeContext";
 // import { useThemeContext } from "../context/theme/useThemeContext";
 import extensions from "./extensions";
@@ -47,20 +46,10 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const onValueChange = useMemo(
-    () =>
-      debounce((newContent: string) => {
-        setLocalContent(newContent);
-        onChangeRef.current(newContent);
-      }, 300),
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      onValueChange.cancel();
-    };
-  }, [onValueChange]);
+  const onValueChange = (newContent: string) => {
+    setLocalContent(newContent);
+    onChangeRef.current(newContent);
+  };
 
   const importHtmlFile = () => {
     fileInputRef.current?.click();
