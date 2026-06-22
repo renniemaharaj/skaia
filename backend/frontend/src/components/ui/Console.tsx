@@ -198,9 +198,10 @@ export function Console({
             )}
             {lines.map((line, i) => {
               let colorClass = "";
-              if (line.text.includes("[ERROR]") || line.text.includes("✗")) colorClass = "log-error";
-              else if (line.text.includes("[WARN]")) colorClass = "log-warn";
-              else if (line.text.includes("[INFO]")) colorClass = "log-info";
+              const combinedText = (line.prefix || "") + " " + line.text;
+              if (combinedText.includes("[ERROR]") || combinedText.includes("✗") || combinedText.includes("error") || combinedText.includes("ERROR")) colorClass = "log-error";
+              else if (combinedText.includes("[WARN]") || combinedText.includes("warn") || combinedText.includes("WARN")) colorClass = "log-warn";
+              else if (combinedText.includes("[INFO]") || combinedText.includes("info") || combinedText.includes("INFO")) colorClass = "log-info";
 
               return (
                 <div key={line.id || i} className="conp">

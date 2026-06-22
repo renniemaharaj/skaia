@@ -37,7 +37,34 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 		branch = s.Bench.Branch
 	}
 	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Initializing bench with branch: %s\n", branch)})
-	if err := s.Bench.Initialize(branch); err != nil {
+	
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := r.Read(buf)
+			if n > 0 {
+				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+	
+	defer func() {
+		w.Close()
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+	}()
+	err := s.Bench.Initialize(branch)
+	
+	if err != nil {
 		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Bench init failed: %v\n", err)})
 		return err
 	}
@@ -47,6 +74,32 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 
 func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFTWService_CheckoutSitesServer) error {
 	stream.Send(&pb.LogStreamResponse{Output: "[API] Checking out sites...\n"})
+	
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := r.Read(buf)
+			if n > 0 {
+				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+	
+	defer func() {
+		w.Close()
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+	}()
+
 	instanceCfx, err := entity.LoadInstance(environ.GetInstanceFile())
 	if err != nil {
 		return err
@@ -66,6 +119,32 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 
 func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.GoFTWService_StartDeploymentServer) error {
 	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Starting deployment mode: %s\n", req.Deployment)})
+	
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, err := r.Read(buf)
+			if n > 0 {
+				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+			}
+			if err != nil {
+				break
+			}
+		}
+	}()
+	
+	defer func() {
+		w.Close()
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+	}()
+
 	switch req.Deployment {
 	case "production":
 		if err := s.Bench.RunSupervisorNginx(); err != nil {
