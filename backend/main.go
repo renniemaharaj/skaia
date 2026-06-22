@@ -360,14 +360,22 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	r := chi.NewRouter()
 
-	// Intercept *.frappe.localhost and proxy directly to Frappe cluster
+	// Intercept Frappe sites (e.g. site1.domain.com) and proxy directly to Frappe cluster
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			if strings.HasSuffix(req.Host, "."+utils.GetFrappeDomain()) {
-				targetURL, _ := url.Parse("http://host.docker.internal:8000")
-				proxy := httputil.NewSingleHostReverseProxy(targetURL)
-				proxy.ServeHTTP(w, req)
-				return
+			host := req.Host
+			if idx := strings.Index(host, ":"); idx != -1 {
+				host = host[:idx]
+			}
+			domain := utils.GetFrappeDomain()
+			if strings.HasSuffix(host, "."+domain) {
+				subdomain := strings.TrimSuffix(host, "."+domain)
+				if strings.HasPrefix(subdomain, "site") {
+					targetURL, _ := url.Parse("http://host.docker.internal:8000")
+					proxy := httputil.NewSingleHostReverseProxy(targetURL)
+					proxy.ServeHTTP(w, req)
+					return
+				}
 			}
 			next.ServeHTTP(w, req)
 		})
