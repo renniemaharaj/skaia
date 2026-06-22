@@ -279,6 +279,14 @@ export function Console({
               )
                 colorClass = "log-warn";
               else if (
+                combinedText.includes("[SUCCESS]") ||
+                combinedText.includes("success") ||
+                combinedText.includes("SUCCESS") ||
+                combinedText.includes("successfully") ||
+                combinedText.includes("✓")
+              )
+                colorClass = "log-success";
+              else if (
                 combinedText.includes("[INFO]") ||
                 combinedText.includes("info") ||
                 combinedText.includes("INFO")

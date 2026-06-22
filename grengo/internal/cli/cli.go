@@ -51,6 +51,7 @@ func commandRegistry() []commandEntry {
 		{names: []string{"api"}, run: runAPI},
 		{names: []string{"passcode"}, run: runPasscode},
 		{names: []string{"frappe-provision"}, run: runFrappeProvision},
+		{names: []string{"frappe-rebuild"}, run: runFrappeRebuild},
 		{names: []string{"help", "--help", "-h"}, run: runHelp},
 	}
 }
@@ -307,4 +308,8 @@ func outputFlag(args []string) string {
 func runFrappeProvision(rest []string, c Commands) {
 	siteName := requireArg(rest, "frappe-provision <site_name>", c)
 	c.FrappeProvision(siteName)
+}
+
+func runFrappeRebuild(_ []string, c Commands) {
+	c.FrappeRebuild()
 }

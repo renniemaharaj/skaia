@@ -76,6 +76,27 @@ func (b *Bench) Initialize(frappeBranch string) error {
 		return fmt.Errorf("failed to chown parent directory: %w", err)
 	}
 
+	// Check if bench already exists to reuse it
+	if stat, err := os.Stat(benchPath); err == nil && stat.IsDir() {
+		// Also check if it's a valid bench by looking for the 'apps' directory
+		if _, err := os.Stat(filepath.Join(benchPath, "apps")); err == nil {
+			fmt.Printf("[INFO] Bench already exists at '%s', reusing it.\n", benchPath)
+			
+			// Auto-heal: verify and reinstall dependencies for existing apps in case of a corrupted previous build
+			fmt.Printf("[INFO] Running bench setup requirements to heal any corrupted modules...\n")
+			healCmd := fmt.Sprintf("cd %s && bench setup requirements && bench build", benchPath)
+			if err := whoiam.ExecRunPrintIO("sh", "-c", healCmd); err != nil {
+				fmt.Printf("[WARN] Auto-healing failed: %v\n", err)
+				// We don't fail outright since it might just be a minor warning, but we log it.
+			}
+
+			if err := b.CopyCommonSitesConfig(); err != nil {
+				return fmt.Errorf("[ERROR] Failed to copy common sites config: %w", err)
+			}
+			return nil
+		}
+	}
+
 	// Run bench init
 	cmd := fmt.Sprintf("bench init --frappe-branch %s %s", frappeBranch, benchPath)
 	if err := whoiam.ExecRunPrintIO("sh", "-c", cmd); err != nil {

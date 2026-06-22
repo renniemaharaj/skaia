@@ -43,5 +43,8 @@ func CLICommands() cli.Commands {
 		FrappeProvision: func(siteName string) {
 			cmdFrappeProvision(siteName)
 		},
+		FrappeRebuild: func() {
+			cmdFrappeRebuild()
+		},
 	}
 }

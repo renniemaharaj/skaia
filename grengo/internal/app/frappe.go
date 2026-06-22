@@ -74,3 +74,50 @@ networks:
 
 	grpcFrappeProvision(siteName)
 }
+
+func cmdFrappeRebuild() {
+	frappeBaseDir := "/tmp/skaia/frappe"
+	entries, err := os.ReadDir(frappeBaseDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("No Frappe clusters found.")
+			return
+		}
+		die("failed to read frappe clusters dir: %v", err)
+	}
+
+	found := false
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		clusterDir := filepath.Join(frappeBaseDir, entry.Name())
+		composePath := filepath.Join(clusterDir, "docker-compose.yml")
+		if _, err := os.Stat(composePath); err == nil {
+			found = true
+			fmt.Printf("Rebuilding Frappe cluster: %s...\n", entry.Name())
+			buildCmd := exec.Command("docker", "compose", "-f", composePath, "build", "--no-cache")
+			buildCmd.Dir = clusterDir
+			buildCmd.Stdout = os.Stdout
+			buildCmd.Stderr = os.Stderr
+			if err := buildCmd.Run(); err != nil {
+				die("docker compose build failed for %s: %v", entry.Name(), err)
+			}
+
+			fmt.Printf("Restarting Frappe cluster: %s...\n", entry.Name())
+			upCmd := exec.Command("docker", "compose", "-f", composePath, "up", "-d", "--force-recreate")
+			upCmd.Dir = clusterDir
+			upCmd.Stdout = os.Stdout
+			upCmd.Stderr = os.Stderr
+			if err := upCmd.Run(); err != nil {
+				die("docker compose up failed for %s: %v", entry.Name(), err)
+			}
+		}
+	}
+
+	if !found {
+		fmt.Println("No Frappe clusters found to rebuild.")
+	} else {
+		fmt.Println("All Frappe clusters rebuilt successfully.")
+	}
+}
