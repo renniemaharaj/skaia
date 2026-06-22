@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 
 import RichTextEditor from "reactjs-tiptap-editor";
 
@@ -32,7 +32,7 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
   useEffect(() => {
     if (value === "" && prevValueRef.current !== "") {
       setLocalContent("");
-      setEditorKey(k => k + 1);
+      setEditorKey((k) => k + 1);
     } else if (value !== "" && value !== prevValueRef.current) {
       setLocalContent(value || "");
     }
@@ -64,7 +64,7 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
       const importedHtml = reader.result as string;
       setLocalContent(importedHtml);
       onChange(importedHtml);
-      setEditorKey(k => k + 1); // force rerender so editor refreshes with imported content
+      setEditorKey((k) => k + 1); // force rerender so editor refreshes with imported content
     };
     reader.onerror = () => {
       console.error("Failed to load HTML file");
@@ -78,10 +78,16 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
   return (
     <main
       className="editor-wrapper"
-      style={{ "--editor-min-height": minHeight || "200px" } as React.CSSProperties}
+      style={
+        { "--editor-min-height": minHeight || "200px" } as React.CSSProperties
+      }
     >
       <div className="editor-toolbar">
-        <button type="button" className="import-html-btn" onClick={importHtmlFile}>
+        <button
+          type="button"
+          className="import-html-btn"
+          onClick={importHtmlFile}
+        >
           Import HTML
         </button>
         <input
@@ -97,7 +103,11 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
           <RichTextEditor
             output="html"
             key={editorKey}
-            content={typeof localContent === "string" ? localContent : String(localContent ?? "")}
+            content={
+              typeof localContent === "string"
+                ? localContent
+                : String(localContent ?? "")
+            }
             onChangeContent={onValueChange}
             extensions={extensions}
             dark={theme === "dark"}
