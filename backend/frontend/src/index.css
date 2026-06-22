@@ -93,6 +93,21 @@
   --dark-tertiary: #f0f0f0;
 }
 
+.money-amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  white-space: nowrap;
+}
+
+.money-amount__currency {
+  color: var(--module-store);
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 /* Dark mode */
 html[data-theme="dark"] {
   --primary-color: #7bb3a0;

@@ -1,5 +1,5 @@
 import { Activity, ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { formatCents } from "../../utils/money";
+import { MoneyAmount } from "../ui/MoneyAmount";
 import { ContentFlatCard } from "./ContentFlatCard";
 
 interface BalanceSheetCardProps {
@@ -54,7 +54,9 @@ export const BalanceSheetCard = ({
           <span style={{ color: "var(--text-primary)" }}>{line.label}</span>
           {line.detail && <small style={{ color: "var(--text-secondary)" }}>{line.detail}</small>}
         </span>
-        <strong style={{ whiteSpace: "nowrap" }}>{formatCents(line.amount)}</strong>
+        <strong style={{ whiteSpace: "nowrap" }}>
+          <MoneyAmount cents={line.amount} />
+        </strong>
       </div>
     ))}
     {totalCredits !== undefined && (
@@ -77,7 +79,7 @@ export const BalanceSheetCard = ({
           <ArrowDownRight size={16} color="var(--color-success)" /> Total Credits
         </span>
         <span style={{ color: "var(--color-success)", fontWeight: "bold" }}>
-          + {formatCents(totalCredits)}
+          + <MoneyAmount cents={totalCredits} />
         </span>
       </div>
     )}
@@ -103,7 +105,7 @@ export const BalanceSheetCard = ({
           <ArrowUpRight size={16} color="var(--text-primary)" /> Total Debits
         </span>
         <span style={{ color: "var(--text-primary)", fontWeight: "bold" }}>
-          - {formatCents(totalDebits)}
+          - <MoneyAmount cents={totalDebits} />
         </span>
       </div>
     )}
@@ -121,7 +123,7 @@ export const BalanceSheetCard = ({
           color: balance >= 0 ? "var(--color-success)" : "var(--color-danger)",
         }}
       >
-        {formatCents(balance)}
+        <MoneyAmount cents={balance} />
       </span>
     </div>
   </ContentFlatCard>

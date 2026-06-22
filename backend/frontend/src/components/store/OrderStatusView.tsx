@@ -15,6 +15,7 @@ import { formatCents } from "../../utils/money";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { MoneyAmount } from "../ui/MoneyAmount";
 import UserAvatar from "../user/UserAvatar";
 import { StorePageShell } from "./StorePageShell";
 
@@ -142,11 +143,15 @@ const OrderSubmittedView: React.FC<Props> = ({
                 </div>
                 <div className="order-status-item-info">
                   <h3>{displayName}</h3>
-                  <span>{formatCents(item.price ?? 0)} each</span>
+                  <span>
+                    <MoneyAmount cents={item.price ?? 0} /> each
+                  </span>
                 </div>
                 <div className="order-status-item-total">
                   <span>Qty {item.quantity}</span>
-                  <strong>{formatCents((item.price ?? 0) * item.quantity)}</strong>
+                  <strong>
+                    <MoneyAmount cents={(item.price ?? 0) * item.quantity} />
+                  </strong>
                 </div>
               </ContentFlatCard>
             );
@@ -213,7 +218,7 @@ const OrderSubmittedView: React.FC<Props> = ({
                         <strong>{vendorName}</strong>
                         <small>
                           {vendor.items} item{vendor.items === 1 ? "" : "s"} ·{" "}
-                          {formatCents(vendor.total || 0)}
+                          <MoneyAmount cents={vendor.total || 0} />
                         </small>
                       </span>
                     </div>

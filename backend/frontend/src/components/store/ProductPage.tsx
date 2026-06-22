@@ -29,9 +29,9 @@ import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import "./ProductPage.css";
-import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { MoneyAmount } from "../ui/MoneyAmount";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { ProductMediaTable } from "./ProductMediaTable";
 import { StorePageShell } from "./StorePageShell";
@@ -469,9 +469,9 @@ export const ProductPage = () => {
             <h1>{product.name}</h1>
 
             <div className="product-page-price">
-              <span className="current-price">{formatCents(product.price)}</span>
+              <MoneyAmount cents={product.price} className="current-price" />
               {product.original_price && (
-                <span className="original-price">{formatCents(product.original_price)}</span>
+                <MoneyAmount cents={product.original_price} className="original-price" />
               )}
             </div>
 
@@ -617,7 +617,7 @@ export const ProductPage = () => {
                           <span className="similar-product-description">{sp.description}</span>
                         )}
                         <span className="similar-product-meta">
-                          <span className="similar-product-price">{formatCents(sp.price)}</span>
+                          <MoneyAmount cents={sp.price} className="similar-product-price" />
                           <span>{similarStockLabel}</span>
                         </span>
                       </div>

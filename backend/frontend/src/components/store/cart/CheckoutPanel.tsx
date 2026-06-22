@@ -1,9 +1,9 @@
 import { CreditCard, Loader, Mail, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatCents } from "../../../utils/money";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
 import Select, { type SelectOption } from "../../input/Select";
+import { MoneyAmount } from "../../ui/MoneyAmount";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
 
@@ -173,7 +173,7 @@ export function CheckoutPanel({
 
         <div className="cart-total-row">
           <span>Total</span>
-          <span>{formatCents(Math.round(cartTotal * 100))}</span>
+          <MoneyAmount cents={Math.round(cartTotal * 100)} />
         </div>
 
         <button

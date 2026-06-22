@@ -1,8 +1,8 @@
 import { Clock, Edit2, Package, ShoppingBag, Trash2, TrendingUp, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../atoms/store";
-import { formatCents } from "../../utils/money";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { MoneyAmount } from "../ui/MoneyAmount";
 import StarRating from "../ui/StarRating";
 import { useProductRatings } from "./ratings";
 import { getProductMediaItems } from "./storeMedia";
@@ -100,10 +100,10 @@ export const InlineProduct = ({
           <h3 className="product-title">{product.name}</h3>
 
           <div className="product-page-price">
-            <span className="current-price">{formatCents(product.price)}</span>
+            <MoneyAmount cents={product.price} className="current-price" />
 
             {product.original_price && product.original_price > product.price && (
-              <span className="original-price">{formatCents(product.original_price)}</span>
+              <MoneyAmount cents={product.original_price} className="original-price" />
             )}
           </div>
 

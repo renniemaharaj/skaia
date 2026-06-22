@@ -1,8 +1,8 @@
 import { ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CartItem, Product } from "../../../atoms/store";
-import { formatCents } from "../../../utils/money";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { MoneyAmount } from "../../ui/MoneyAmount";
 
 const CART_FILLER_IDS = ["cart-filler-primary", "cart-filler-secondary", "cart-filler-tertiary"];
 
@@ -38,7 +38,9 @@ export function CartItemsList({
             )}
             <div className="cart-item-info">
               <h3>{displayName}</h3>
-              <p className="cart-item-price">{formatCents(product?.price ?? 0)}</p>
+              <p className="cart-item-price">
+                <MoneyAmount cents={product?.price ?? 0} />
+              </p>
             </div>
             <div className="cart-item-controls">
               <input
