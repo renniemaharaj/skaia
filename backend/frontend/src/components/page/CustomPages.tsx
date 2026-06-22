@@ -22,6 +22,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
+import { useLayoutPosition } from "../../atoms/viewModes";
 import { usePageData } from "../../hooks/usePageData";
 import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
@@ -88,11 +89,7 @@ export default function CustomPages() {
 
   // Permission logic for homepage management
   const hasPermission = usePageData().isAdmin; // home.manage permission
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-		return (
-			(localStorage.getItem("custom-pages-view-mode") as ViewMode) || "grid"
-		);
-  });
+  const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("customPages", "grid");
 
   useEffect(() => {
 		apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>(
@@ -120,10 +117,6 @@ export default function CustomPages() {
     window.addEventListener("page:live:event", handler);
     return () => window.removeEventListener("page:live:event", handler);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("custom-pages-view-mode", viewMode);
-  }, [viewMode]);
 
   useEffect(() => {
     if (!currentUser) return;

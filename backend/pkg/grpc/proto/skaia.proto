@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package skaia.grpc;
+
+option go_package = "github.com/skaia/grpc/skaia";
+
+// GrengoService handles incoming communication from backend nodes to the central orchestrator
+service GrengoService {
+  rpc ReportStatus (ReportStatusRequest) returns (ReportStatusResponse);
+}
+
+// BackendService handles communication from Grengo to individual backend nodes
+service BackendService {
+  rpc GetStorage (GetStorageRequest) returns (GetStorageResponse);
+}
+
+// GoFTWService handles orchestration of the frappe cluster instances
+service GoFTWService {
+  rpc SetupInit (SetupInitRequest) returns (stream LogStreamResponse);
+  rpc CheckoutSites (CheckoutSitesRequest) returns (stream LogStreamResponse);
+  rpc StartDeployment (StartDeploymentRequest) returns (stream LogStreamResponse);
+  rpc InstallApps (InstallAppsRequest) returns (stream LogStreamResponse);
+}
+
+// ----------------------------------------------------
+// GrengoService Messages
+// ----------------------------------------------------
+message ReportStatusRequest {
+  string node_id = 1;
+  string status = 2;
+}
+
+message ReportStatusResponse {
+  bool success = 1;
+}
+
+// ----------------------------------------------------
+// BackendService Messages
+// ----------------------------------------------------
+message GetStorageRequest {}
+
+message GetStorageResponse {
+  // We can serialize the existing JSON response or define strict fields
+  string storage_json = 1; 
+}
+
+// ----------------------------------------------------
+// GoFTWService Messages
+// ----------------------------------------------------
+message LogStreamResponse {
+  string output = 1;
+}
+
+message SetupInitRequest {
+  string branch = 1;
+}
+
+message CheckoutSitesRequest {}
+
+message StartDeploymentRequest {
+  string deployment = 1;
+}
+
+message InstallAppsRequest {
+  string site_name = 1;
+  repeated string apps = 2;
+}

@@ -23,6 +23,7 @@ import "./Deployments.css";
 // Reuse orders page CSS for expand buttons and status pills if needed
 import "../../store/OrdersPage.css";
 import { GlassMenu } from "../../ui/GlassMenu";
+import { useLayoutPosition } from "../../../atoms/viewModes";
 
 interface Blueprint {
   id: number;
@@ -79,7 +80,7 @@ export function DeploymentsPage() {
   );
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("deployments", "list");
   const [showNewModal, setShowNewModal] = useState(false);
   const [logCap, setLogCap] = useState(500);
   const logCapRef = useRef(logCap);

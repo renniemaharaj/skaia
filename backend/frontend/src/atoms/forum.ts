@@ -74,6 +74,9 @@ export const forumCategoriesAtom = atomWithStorage<ForumCategory[]>("forum.categ
 export const forumThreadsAtom = atomWithStorage<ForumThread[]>("forum.threads", []);
 export const selectedThreadIdAtom = atom<string | null>(null);
 
+export const draftNewThreadAtom = atomWithStorage<{ title: string; content: string; categoryId: string } | null>("forum.draft.new", null);
+export const draftEditThreadAtom = atomWithStorage<{ title: string; content: string; categoryId: string; threadId: string } | null>("forum.draft.edit", null);
+
 // Current thread being viewed
 export const currentThreadAtom = atom<ForumThread | null>(null);
 

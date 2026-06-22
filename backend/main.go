@@ -23,6 +23,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/database"
+	"github.com/skaia/backend/internal/grpcserver"
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/authhandler"
@@ -188,6 +189,11 @@ func main() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}
+	}()
+
+	grpcPort := strconv.Itoa(envInt("GRPC_PORT", envInt("PORT", 8000) + 100))
+	go func() {
+		grpcserver.StartServer(":" + grpcPort)
 	}()
 
 	quit := make(chan os.Signal, 1)

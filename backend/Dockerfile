@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # we need git for go modules and node/npm for building the frontend
 RUN apk add --no-cache git nodejs npm
@@ -9,6 +9,7 @@ WORKDIR /app
 COPY go.mod go.sum* ./
 COPY pkg/conveyor/ ./pkg/conveyor/
 COPY pkg/grouplogs/ ./pkg/grouplogs/
+COPY pkg/grpc/ ./pkg/grpc/
 RUN go mod download
 
 # copy the entire repository (including frontend) so we can build the SPA

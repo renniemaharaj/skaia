@@ -13,6 +13,7 @@ import (
 
 	"goftw/internal/environ"
 	"goftw/internal/redis"
+	"goftw/internal/grpcserver"
 
 	// "goftw/internal/ssh"
 
@@ -100,6 +101,7 @@ func main() {
 	})
 
 	fmt.Printf("[SERVER] Server running on :3000")
+	go grpcserver.StartServer(":3001", bench)
 	err = http.ListenAndServe(":3000", r)
 	if err != nil {
 		fmt.Printf("[ERROR] Could not start server %v", err)

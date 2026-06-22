@@ -13,6 +13,9 @@ import (
 	"time"
 
 	"github.com/skaia/grengo/internal/repo"
+	pb "github.com/skaia/grpc/skaia"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Docker stats, storage, and system info
@@ -280,22 +283,30 @@ func gatherStorage() *storageInfo {
 		if port == "" {
 			port = "1080"
 		}
+		
+		portInt, _ := strconv.Atoi(port)
+		grpcPort := strconv.Itoa(portInt + 100)
+		grpcAddr := fmt.Sprintf("127.0.0.1:%s", grpcPort)
 
 		var used int64
-		client := &http.Client{Timeout: 3 * time.Second}
-		resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:%s/api/internal/storage", port))
-		if err == nil && resp.StatusCode == http.StatusOK {
-			var payload struct {
-				Limit int64 `json:"limit"`
-				Used  int64 `json:"used"`
+		
+		conn, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err == nil {
+			client := pb.NewBackendServiceClient(conn)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			resp, err := client.GetStorage(ctx, &pb.GetStorageRequest{})
+			if err == nil {
+				var payload struct {
+					Limit int64 `json:"limit"`
+					Used  int64 `json:"used"`
+				}
+				if err := json.Unmarshal([]byte(resp.StorageJson), &payload); err == nil {
+					totalLimit += payload.Limit
+					used = payload.Used
+				}
 			}
-			if err := json.NewDecoder(resp.Body).Decode(&payload); err == nil {
-				totalLimit += payload.Limit
-				used = payload.Used
-			}
-			resp.Body.Close()
-		} else if resp != nil {
-			resp.Body.Close()
+			cancel()
+			conn.Close()
 		}
 
 		grandTotal += used

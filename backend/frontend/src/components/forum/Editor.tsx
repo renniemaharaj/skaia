@@ -1,4 +1,4 @@
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState, useMemo } from "react";
 
 import RichTextEditor from "reactjs-tiptap-editor";
 
@@ -42,10 +42,25 @@ function Editor({ value, onChange, minHeight }: EditorProps) {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const onValueChange = debounce((newContent: string) => {
-    setLocalContent(newContent);
-    onChange(newContent);
-  }, 300);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const onValueChange = useMemo(
+    () =>
+      debounce((newContent: string) => {
+        setLocalContent(newContent);
+        onChangeRef.current(newContent);
+      }, 300),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      onValueChange.cancel();
+    };
+  }, [onValueChange]);
 
   const importHtmlFile = () => {
     fileInputRef.current?.click();

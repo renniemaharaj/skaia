@@ -5,6 +5,7 @@ import { type ForumCategory, forumCategoriesAtom } from "../../atoms/forum";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
+import { useLayoutPosition } from "../../atoms/viewModes";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
@@ -34,7 +35,7 @@ interface ForumCategoryApiResponse {
 
 export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useLayoutPosition<"grid" | "list">("forum", "grid");
   const [isCompactForum, setIsCompactForum] = useState(
     () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 880px)").matches
   );

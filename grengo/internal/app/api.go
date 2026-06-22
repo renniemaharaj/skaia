@@ -13,6 +13,7 @@ import (
 	"time"
 
 	grengoapi "github.com/skaia/grengo/internal/api"
+	"github.com/skaia/grengo/internal/grpcserver"
 	"github.com/skaia/grengo/internal/hardware"
 	"github.com/skaia/grengo/internal/repo"
 )
@@ -63,6 +64,7 @@ func cmdAPIStart(port int) {
 
 	hardware.InitAndWatch()
 	go broadcastStatsAndStorageLoop()
+	go grpcserver.StartServer(":9101")
 
 	if apiHandlerFactory == nil {
 		die("API handler not configured")

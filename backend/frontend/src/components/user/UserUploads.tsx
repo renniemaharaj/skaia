@@ -25,6 +25,7 @@ import { customConfirm } from "../ui/Prompt";
 import { TableView } from "../ui/TableView/TableView";
 
 import "../page/layout/templates/DirectoryLayout.css";
+import "./UserProfile.css";
 
 interface UserUpload {
   url: string;

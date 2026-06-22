@@ -5,6 +5,7 @@ import { apiRequest } from "../../../utils/api";
 import { customConfirm } from "../../ui/Prompt";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
+import { useLayoutPosition } from "../../../atoms/viewModes";
 
 import { toast } from "sonner";
 import { relativeTimeAgo } from "../../../utils/serverTime";
@@ -19,9 +20,7 @@ export default function DataSourcesPage() {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    () => (localStorage.getItem("ds-view-mode") as ViewMode) || "grid"
-  );
+  const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("dataSources", "grid");
 
   const fetchAll = useCallback(async () => {
     try {
@@ -40,7 +39,6 @@ export default function DataSourcesPage() {
 
   const toggleView = (mode: ViewMode) => {
     setViewMode(mode);
-    localStorage.setItem("ds-view-mode", mode);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: number) => {

@@ -1,10 +1,10 @@
 # Stage 1: Go builder
-FROM golang:1.24-alpine AS go-builder
+FROM golang:1.25-alpine AS go-builder
 
 WORKDIR /app
 COPY goftw /app/goftw
 WORKDIR /app/goftw/cmd
-RUN go build -o /goftw-entry
+RUN go build -mod=vendor -o /goftw-entry
 
 
 # Stage 2: Runtime

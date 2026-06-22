@@ -5,8 +5,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import Editor from "./Editor";
 import ForumCategory from "./ForumCategory";
 import "./IconButton.css";
+import "./NewThread.css";
 
-import { currentThreadAtom } from "../../atoms/forum";
+import { currentThreadAtom, draftEditThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
@@ -30,10 +31,22 @@ interface ThreadData {
 const EditThread = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
+  const [draft, setDraft] = useAtom(draftEditThreadAtom);
+  
   const { subscribe, unsubscribe } = useWebSocketSync();
-  const [editTitle, setEditTitle] = useState("");
-  const [editContent, setEditContent] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const editTitle = draft?.threadId === threadId && draft?.title ? draft.title : "";
+  const editContent = draft?.threadId === threadId && draft?.content ? draft.content : "";
+  const selectedCategory = draft?.threadId === threadId && draft?.categoryId ? draft.categoryId : "";
+
+  const setEditTitle = (title: string) =>
+    setDraft(prev => ({ title, content: prev?.content || "", categoryId: prev?.categoryId || "", threadId: threadId! }));
+    
+  const setEditContent = (content: string) =>
+    setDraft(prev => ({ title: prev?.title || "", content, categoryId: prev?.categoryId || "", threadId: threadId! }));
+    
+  const setSelectedCategory = (categoryId: string) =>
+    setDraft(prev => ({ title: prev?.title || "", content: prev?.content || "", categoryId, threadId: threadId! }));
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -48,9 +61,12 @@ const EditThread = () => {
         const response = await apiRequest<ThreadData>(`/forum/threads/${threadId}`);
         if (response) {
           setCurrentThread(response);
-          setEditTitle(response.title);
-          setEditContent(response.content);
-          setSelectedCategory(String(response.category_id));
+          // Only overwrite draft if we don't have a draft for this thread
+          if (draft?.threadId !== threadId) {
+            setEditTitle(response.title);
+            setEditContent(response.content);
+            setSelectedCategory(String(response.category_id));
+          }
           setLastUpdated(response.updated_at);
           // Subscribe to thread updates to detect changes from other users
           subscribe("thread", Number(threadId));
@@ -113,6 +129,9 @@ const EditThread = () => {
       if (response) {
         setCurrentThread(response);
       }
+
+      // Clear draft on success
+      setDraft(null);
 
       // Navigate back to the thread view
       navigate(`/view-thread/${threadId}`);

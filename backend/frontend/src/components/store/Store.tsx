@@ -23,6 +23,7 @@ import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewL
 import { StoreCategoryBar } from "./StoreCategoryBar";
 import { StoreProductGrid } from "./StoreProductGrid";
 import { getProductMediaItems } from "./storeMedia";
+import { useLayoutPosition } from "../../atoms/viewModes";
 
 export type StoreSortMode = "newest" | "oldest" | "price-asc" | "price-desc" | "rating-desc";
 export type StoreViewMode = "grid" | "wide";
@@ -79,7 +80,7 @@ export const Store: React.FC = () => {
     items: PreviewMediaItem[];
     index: number;
   } | null>(null);
-  const [viewMode, setViewMode] = useState<StoreViewMode>("grid");
+  const [viewMode, setViewMode] = useLayoutPosition<StoreViewMode>("store", "grid");
   const [filters, setFilters] = useState<StoreFilterState>(DEFAULT_STORE_FILTERS);
   const [productRatings, setProductRatings] = useState<Record<string, ProductRatingSummary>>({});
   const [walletBalance, setWalletBalance] = useState<number | null>(null);

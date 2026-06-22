@@ -1,6 +1,6 @@
 module github.com/skaia/backend
 
-go 1.24.5
+go 1.25.3
 
 require (
 	github.com/go-chi/chi/v5 v5.2.5
@@ -15,9 +15,11 @@ require (
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/renniemaharaj/conveyor v0.0.0-20250821123734-2de0e1bcadc1
 	github.com/renniemaharaj/grouplogs v1.6.2
+	github.com/skaia/grpc v0.0.0
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v82 v82.5.1
 	golang.org/x/crypto v0.48.0
+	google.golang.org/grpc v1.81.1
 )
 
 require (
@@ -37,11 +39,16 @@ require (
 	github.com/ysmood/leakless v0.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260226221140-a57be14db171 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/renniemaharaj/conveyor => ./pkg/conveyor
 
 replace github.com/renniemaharaj/grouplogs => ./pkg/grouplogs
+
+replace github.com/skaia/grpc => ./pkg/grpc

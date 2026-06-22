@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useAtom } from "jotai";
 import Editor from "./Editor";
 import ForumCategory from "./ForumCategory";
 import "./NewThread.css";
 import { CheckIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { draftNewThreadAtom } from "../../atoms/forum";
 import "./IconButton.css";
 
 import { apiRequest } from "../../utils/api";
@@ -21,9 +23,21 @@ interface CreateThreadResponse {
 }
 
 const NewThread = () => {
-  const [threadTitle, setThreadTitle] = useState("");
-  const [threadContent, setThreadContent] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [draft, setDraft] = useAtom(draftNewThreadAtom);
+
+  const threadTitle = draft?.title || "";
+  const threadContent = draft?.content || "";
+  const selectedCategory = draft?.categoryId || "";
+
+  const setThreadTitle = (title: string) => 
+    setDraft(prev => ({ title, content: prev?.content || "", categoryId: prev?.categoryId || "" }));
+    
+  const setThreadContent = (content: string) => 
+    setDraft(prev => ({ title: prev?.title || "", content, categoryId: prev?.categoryId || "" }));
+    
+  const setSelectedCategory = (categoryId: string) => 
+    setDraft(prev => ({ title: prev?.title || "", content: prev?.content || "", categoryId }));
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -62,6 +76,8 @@ const NewThread = () => {
       });
 
       if (response?.id) {
+        // Clear draft on success
+        setDraft(null);
         // Navigate to the created thread
         navigate(`/view-thread/${response.id}`);
       }
