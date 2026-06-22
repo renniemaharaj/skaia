@@ -3,10 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
-import {
-	loadUserProfile,
-	subscribeUserProfile,
-} from "../../utils/userRequests";
+import { loadUserProfile, subscribeUserProfile } from "../../utils/userRequests";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
@@ -29,7 +26,7 @@ const loadOverlayRoles = () => {
   if (overlayRoleCache) return Promise.resolve(overlayRoleCache);
   if (!overlayRoleRequest) {
     overlayRoleRequest = apiRequest<Role[]>("/users/roles")
-			.then((data) => {
+      .then(data => {
         overlayRoleCache = Array.isArray(data) ? data : [];
         return overlayRoleCache;
       })
@@ -155,16 +152,13 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
 
   // Compute visual details based on fetched user OR fallbacks
   const displayName =
-		resolvedUser?.display_name ||
-		resolvedUser?.username ||
-		fallbackName ||
-		"Unknown User";
+    resolvedUser?.display_name || resolvedUser?.username || fallbackName || "Unknown User";
   const avatarUrl = resolvedUser?.avatar_url || fallbackAvatar;
   const bannerUrl = resolvedUser?.banner_url || "/banner_7783x7783.png";
   const roles = resolvedUser?.roles || fallbackRoles || [];
 
   const rolesWithDetails = allRoles
-		.filter((r) => roles.includes(r.name))
+    .filter(r => roles.includes(r.name))
     .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const themeColor = topRole?.theme_color;
@@ -176,7 +170,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
       ref={wrapperRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-			onClick={(e) => {
+      onClick={e => {
         if (disableClick) return;
         e.stopPropagation();
         e.preventDefault();
@@ -197,14 +191,12 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
             style={popoverStyle}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-						onClick={(e) => e.stopPropagation()}
-						onKeyDown={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+            onKeyDown={e => e.stopPropagation()}
           >
-						<ContentStandOutCard
+            <ContentStandOutCard
               className="upo-card"
-							spotlightColor={
-								themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"
-							}
+              spotlightColor={themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"}
             >
               <div className="upo-banner">
                 <img src={bannerUrl} alt="Banner" className="upo-banner-img" />
@@ -218,11 +210,7 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                     size={64}
                     initials={displayName[0]?.toUpperCase()}
                     onImageError={() => {
-											if (
-												!avatarUrl ||
-												retriedAvatarURLs.current.has(avatarUrl)
-											)
-												return;
+                      if (!avatarUrl || retriedAvatarURLs.current.has(avatarUrl)) return;
                       retriedAvatarURLs.current.add(avatarUrl);
                       void loadUserProfile(userId).catch(() => {});
                     }}
@@ -252,15 +240,13 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                       marginTop: "0.2rem",
                     }}
                   >
-										{roles.map((r) => {
-											const roleDetails = allRoles.find((ar) => ar.name === r);
+                    {roles.map(r => {
+                      const roleDetails = allRoles.find(ar => ar.name === r);
                       return <RoleBadge key={r} role={roleDetails || r} />;
                     })}
                   </div>
 
-									{resolvedUser?.bio && (
-										<p className="upo-bio">{resolvedUser.bio}</p>
-									)}
+                  {resolvedUser?.bio && <p className="upo-bio">{resolvedUser.bio}</p>}
                 </div>
 
                 <div className="upo-actions">
@@ -273,9 +259,9 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
                   </button>
                 </div>
               </div>
-						</ContentStandOutCard>
+            </ContentStandOutCard>
           </div>,
-					document.body,
+          document.body
         )}
     </div>
   );

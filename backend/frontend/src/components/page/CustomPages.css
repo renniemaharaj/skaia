@@ -142,16 +142,16 @@
   color: inherit;
   position: relative;
   overflow: hidden;
-	border-radius: 0;
-	padding: 0.625rem;
-	background: transparent;
-	border: 0;
-	border-bottom: 1px solid var(--border-color);
-	transition: border-color 0.15s;
+  border-radius: 0;
+  padding: 0.625rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: border-color 0.15s;
 }
 
 .cp-card:hover {
-	border-color: var(--border-color);
+  border-color: var(--border-color);
 }
 
 .cp-card__title {

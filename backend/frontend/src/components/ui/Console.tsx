@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Activity, Plus, Terminal, X, Settings } from "lucide-react";
+import { Activity, Plus, Settings, Terminal, X } from "lucide-react";
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
 import "./Console.css";
 
 export interface ConsoleLine {
@@ -84,13 +85,23 @@ export function Console({
 
   return (
     <div className="shared-console">
-      <div className="shared-console-header" onClick={handleToggle} style={{ flexWrap: "wrap", gap: "12px" }}>
+      <div
+        className="shared-console-header"
+        onClick={handleToggle}
+        style={{ flexWrap: "wrap", gap: "12px" }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <Terminal size={18} style={{ color: "var(--accent-color)" }} />
-          <div style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)", fontWeight: 600 }}>{title}</div>
+          <div
+            style={{ margin: 0, fontSize: "14px", color: "var(--text-primary)", fontWeight: 600 }}
+          >
+            {title}
+          </div>
         </div>
         {headerExtra && (
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", flexWrap: "wrap" }}>
+          <div
+            style={{ marginLeft: "auto", display: "flex", alignItems: "center", flexWrap: "wrap" }}
+          >
             {headerExtra}
           </div>
         )}
@@ -101,13 +112,19 @@ export function Console({
           <div className="shared-console-toolbar">
             {/* Active Badges */}
             {subscribedStreams.length === 0 && availableStreams.length > 0 ? (
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Select streams</span>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                Select streams
+              </span>
             ) : (
-              subscribedStreams.map((stream) => (
+              subscribedStreams.map(stream => (
                 <span key={stream} className="shared-console-badge">
                   {stream}
                   {onUnsubscribeStream && (
-                    <X size={12} style={{ cursor: "pointer" }} onClick={() => onUnsubscribeStream(stream)} />
+                    <X
+                      size={12}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => onUnsubscribeStream(stream)}
+                    />
                   )}
                 </span>
               ))
@@ -120,28 +137,57 @@ export function Console({
                   type="button"
                   className="action-btn"
                   style={{ padding: "2px 8px", height: "auto", fontSize: "0.8rem" }}
-                  onClick={() => { setIsSettingsOpen(!isSettingsOpen); setIsPickerOpen(false); }}
+                  onClick={() => {
+                    setIsSettingsOpen(!isSettingsOpen);
+                    setIsPickerOpen(false);
+                  }}
                 >
                   <Settings size={14} style={{ marginRight: "4px" }} /> Settings
                 </button>
                 {isSettingsOpen && (
-                  <div className="glass-menu-wrap" style={{ top: "100%", right: 0, marginTop: "4px", minWidth: "150px" }}>
-                    <div style={{ padding: "8px 12px", color: "var(--text-secondary)", fontSize: "0.8rem", borderBottom: "1px solid var(--border-color)" }}>
+                  <div
+                    className="glass-menu-wrap"
+                    style={{ top: "100%", right: 0, marginTop: "4px", minWidth: "150px" }}
+                  >
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        color: "var(--text-secondary)",
+                        fontSize: "0.8rem",
+                        borderBottom: "1px solid var(--border-color)",
+                      }}
+                    >
                       Max Log Lines
                     </div>
-                    {[100, 500, 1000, 5000].map((cap) => (
+                    {[100, 500, 1000, 5000].map(cap => (
                       <button
                         key={cap}
                         type="button"
                         className="glass-menu-op"
-                        style={{ background: logCap === cap ? "var(--bg-tertiary)" : "transparent" }}
+                        style={{
+                          background: logCap === cap ? "var(--bg-tertiary)" : "transparent",
+                        }}
                         onClick={() => {
                           if (onLogCapChange) onLogCapChange(cap);
                           setIsSettingsOpen(false);
                         }}
                       >
-                        <span className="glass-menu-title" style={{ margin: 0, fontWeight: logCap === cap ? 600 : 400 }}>{cap} lines</span>
-                        {logCap === cap && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-color)" }} />}
+                        <span
+                          className="glass-menu-title"
+                          style={{ margin: 0, fontWeight: logCap === cap ? 600 : 400 }}
+                        >
+                          {cap} lines
+                        </span>
+                        {logCap === cap && (
+                          <div
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              borderRadius: "50%",
+                              background: "var(--accent-color)",
+                            }}
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -155,13 +201,19 @@ export function Console({
                     type="button"
                     className="action-btn"
                     style={{ padding: "2px 8px", height: "auto", fontSize: "0.8rem" }}
-                    onClick={() => { setIsPickerOpen(!isPickerOpen); setIsSettingsOpen(false); }}
+                    onClick={() => {
+                      setIsPickerOpen(!isPickerOpen);
+                      setIsSettingsOpen(false);
+                    }}
                   >
                     <Plus size={14} style={{ marginRight: "4px" }} /> Add Stream
                   </button>
                   {isPickerOpen && (
-                    <div className="glass-menu-wrap" style={{ top: "100%", right: 0, marginTop: "4px", minWidth: "150px" }}>
-                      {availableStreams.map((stream) => {
+                    <div
+                      className="glass-menu-wrap"
+                      style={{ top: "100%", right: 0, marginTop: "4px", minWidth: "150px" }}
+                    >
+                      {availableStreams.map(stream => {
                         const isSubbed = subscribedStreams.includes(stream);
                         return (
                           <button
@@ -174,8 +226,22 @@ export function Console({
                               if (!isSubbed && onSubscribeStream) onSubscribeStream(stream);
                             }}
                           >
-                            <span className="glass-menu-title" style={{ margin: 0, fontWeight: isSubbed ? 600 : 400 }}>{stream}</span>
-                            {isSubbed && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-color)" }} />}
+                            <span
+                              className="glass-menu-title"
+                              style={{ margin: 0, fontWeight: isSubbed ? 600 : 400 }}
+                            >
+                              {stream}
+                            </span>
+                            {isSubbed && (
+                              <div
+                                style={{
+                                  width: "6px",
+                                  height: "6px",
+                                  borderRadius: "50%",
+                                  background: "var(--accent-color)",
+                                }}
+                              />
+                            )}
                           </button>
                         );
                       })}
@@ -198,10 +264,26 @@ export function Console({
             )}
             {lines.map((line, i) => {
               let colorClass = "";
-              const combinedText = (line.prefix || "") + " " + line.text;
-              if (combinedText.includes("[ERROR]") || combinedText.includes("✗") || combinedText.includes("error") || combinedText.includes("ERROR")) colorClass = "log-error";
-              else if (combinedText.includes("[WARN]") || combinedText.includes("warn") || combinedText.includes("WARN")) colorClass = "log-warn";
-              else if (combinedText.includes("[INFO]") || combinedText.includes("info") || combinedText.includes("INFO")) colorClass = "log-info";
+              const combinedText = `${line.prefix || ""} ${line.text}`;
+              if (
+                combinedText.includes("[ERROR]") ||
+                combinedText.includes("✗") ||
+                combinedText.includes("error") ||
+                combinedText.includes("ERROR")
+              )
+                colorClass = "log-error";
+              else if (
+                combinedText.includes("[WARN]") ||
+                combinedText.includes("warn") ||
+                combinedText.includes("WARN")
+              )
+                colorClass = "log-warn";
+              else if (
+                combinedText.includes("[INFO]") ||
+                combinedText.includes("info") ||
+                combinedText.includes("INFO")
+              )
+                colorClass = "log-info";
 
               return (
                 <div key={line.id || i} className="conp">
@@ -221,7 +303,7 @@ export function Console({
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={e => setInput(e.target.value)}
                 placeholder="Type a command..."
                 className="form-input form-input--sm shared-console-input"
                 disabled={isBusy}

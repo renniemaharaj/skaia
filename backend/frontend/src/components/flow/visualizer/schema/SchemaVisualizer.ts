@@ -31,7 +31,7 @@ export const SchemaVisualizer = ({ schema }: { schema?: string }) => {
     };
   });
 
-  const edges: Edge[] = connections.map((connection) => {
+  const edges: Edge[] = connections.map(connection => {
     const sourceId = `${connection.source}-${connection.name}`;
     return {
       id: sourceId,

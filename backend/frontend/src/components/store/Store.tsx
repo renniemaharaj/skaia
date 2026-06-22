@@ -8,9 +8,9 @@ import {
   type Order,
   type Product,
   type StoreCategory,
+  ordersAtom,
   productCategoriesAtom,
   productsAtom,
-  ordersAtom,
   storeCartItemsAtom,
 } from "../../atoms/store";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -19,11 +19,11 @@ import { apiRequest } from "../../utils/api";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
+import { useLayoutPosition } from "../../atoms/viewModes";
 import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewLightbox";
 import { StoreCategoryBar } from "./StoreCategoryBar";
 import { StoreProductGrid } from "./StoreProductGrid";
 import { getProductMediaItems } from "./storeMedia";
-import { useLayoutPosition } from "../../atoms/viewModes";
 
 export type StoreSortMode = "newest" | "oldest" | "price-asc" | "price-desc" | "rating-desc";
 export type StoreViewMode = "grid" | "wide";
@@ -164,7 +164,11 @@ export const Store: React.FC = () => {
           categoryName,
           product.owner?.display_name,
           product.owner_id,
-        ].some(value => String(value || "").toLowerCase().includes(search));
+        ].some(value =>
+          String(value || "")
+            .toLowerCase()
+            .includes(search)
+        );
       })
       .sort((a, b) => {
         switch (filters.sort) {

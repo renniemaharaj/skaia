@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import linterRegexSetup from "../linters";
 
 type Case = {
@@ -6,8 +6,7 @@ type Case = {
   regex: RegExp;
 };
 
-const [atCommentRegex, singleLineCommentRegex, multiLineCommentRegex] =
-  linterRegexSetup;
+const [atCommentRegex, singleLineCommentRegex, multiLineCommentRegex] = linterRegexSetup;
 
 const cases: Case[] = [
   {

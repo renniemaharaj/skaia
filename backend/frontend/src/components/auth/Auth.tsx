@@ -2,28 +2,21 @@ import { useSetAtom } from "jotai";
 import { AlertCircle, CheckCircle, Lock, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-	accessTokenAtom,
-	currentUserAtom,
-	refreshTokenAtom,
-} from "../../atoms/auth";
+import { accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../../atoms/auth";
 import { type AuthResponse, loginUser, registerUser } from "../../utils/api";
 import "../ui/FormGroup.css";
 import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
-import Button from "../input/Button";
-import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import Button from "../input/Button";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
   initialMode?: "login" | "register";
 }
 
-export const Auth: React.FC<AuthPageProps> = ({
-	onAuthSuccess,
-	initialMode = "login",
-}) => {
+export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "login" }) => {
   const [isLogin, setIsLogin] = useState(initialMode === "login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +45,7 @@ export const Auth: React.FC<AuthPageProps> = ({
       setSuccess(state.message);
       // Pre-fill email if provided
       if (state?.email) {
-				setFormData((prev) => ({
+        setFormData(prev => ({
           ...prev,
           email: state.email,
         }));
@@ -64,7 +57,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-		setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
@@ -80,8 +73,7 @@ export const Auth: React.FC<AuthPageProps> = ({
       onAuthSuccess(data.access_token);
     }
     const from = (location.state as any)?.from?.pathname;
-		const redirectTo =
-			from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
+    const redirectTo = from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
     navigate(redirectTo);
   };
 
@@ -108,11 +100,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 
         completeLogin(data);
       } else {
-				data = await registerUser(
-					formData.username,
-					formData.email,
-					formData.password,
-				);
+        data = await registerUser(formData.username, formData.email, formData.password);
 
         setError(null);
         setFormData({
@@ -154,7 +142,7 @@ export const Auth: React.FC<AuthPageProps> = ({
   return (
     <div className="auth-page">
       <div className="auth-container">
-				<ContentFlatCard className="auth-card">
+        <ContentFlatCard className="auth-card">
           <div className="section__header">
             <Lock size={24} className="section__header-icon" aria-hidden="true" />
             <span className="section__header-eyebrow">Authentication</span>
@@ -181,16 +169,11 @@ export const Auth: React.FC<AuthPageProps> = ({
               </div>
             )}
 
-						<form
-							onSubmit={handleSubmit}
-							className="auth-form compact-form-card"
-						>
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
               {!isLogin && (
                 <ContentStandOutCard className="form-group" emphasis="group">
                   <label htmlFor="username">Username</label>
-									<p className="form-help">
-										This is how other members will identify you.
-									</p>
+                  <p className="form-help">This is how other members will identify you.</p>
                   <div className="input-wrapper">
                     <User size={20} className="input-icon" />
                     <input
@@ -227,9 +210,7 @@ export const Auth: React.FC<AuthPageProps> = ({
               <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="password">Password</label>
                 {!isLogin && (
-									<p className="form-help">
-										Use a unique password you do not use elsewhere.
-									</p>
+                  <p className="form-help">Use a unique password you do not use elsewhere.</p>
                 )}
                 <div className="input-wrapper">
                   <Lock size={20} className="input-icon" />
@@ -273,13 +254,13 @@ export const Auth: React.FC<AuthPageProps> = ({
               )}
 
               <div className="form-actions">
-								<Button
-									type="submit"
-									className="auth-button"
-									variant="primary"
-									loading={loading}
-									block
-								>
+                <Button
+                  type="submit"
+                  className="auth-button"
+                  variant="primary"
+                  loading={loading}
+                  block
+                >
                   {loading
                     ? isLogin
                       ? "Logging in..."
@@ -297,9 +278,7 @@ export const Auth: React.FC<AuthPageProps> = ({
 
             <div className="auth-toggle">
               <p>
-								{isLogin
-									? "Don't have an account?"
-									: "Already have an account?"}
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
                 <button
                   type="button"
                   className="auth-toggle-btn"
@@ -321,7 +300,7 @@ export const Auth: React.FC<AuthPageProps> = ({
               </p>
             </div>
           </div>
-				</ContentFlatCard>
+        </ContentFlatCard>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

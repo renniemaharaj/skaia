@@ -32,7 +32,9 @@ const PromptDialog = ({
 
   return (
     <>
-      <div onClick={() => setIsOpen(true)} className="cursor-pointer">{trigger}</div>
+      <div onClick={() => setIsOpen(true)} className="cursor-pointer">
+        {trigger}
+      </div>
       {isOpen && (
         <div className="ui-dialog-overlay">
           <div className="ui-dialog" style={{ maxWidth: "400px" }}>
@@ -46,7 +48,10 @@ const PromptDialog = ({
               <button className="btn btn-secondary" onClick={handleCancel}>
                 Cancel
               </button>
-              <button className={`btn ${type === "Error" || type === "Warning" ? "btn-danger" : "btn-primary"}`} onClick={handleConfirm}>
+              <button
+                className={`btn ${type === "Error" || type === "Warning" ? "btn-danger" : "btn-primary"}`}
+                onClick={handleConfirm}
+              >
                 {confirmText}
               </button>
             </div>

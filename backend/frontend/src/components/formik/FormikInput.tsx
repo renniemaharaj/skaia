@@ -1,5 +1,5 @@
 import { useField } from "formik";
-import React from "react";
+import type React from "react";
 import "./Formik.css";
 
 // Formik bindings for standard inputs.
@@ -15,11 +15,7 @@ export const FormikInput: React.FC<FormikInputProps> = ({ name, label, className
   const [field, meta] = useField(name);
   const isError = meta.touched && meta.error;
 
-  const wrapperClasses = [
-    "sk-form-input",
-    isError && "sk-form-input--error",
-    className,
-  ]
+  const wrapperClasses = ["sk-form-input", isError && "sk-form-input--error", className]
     .filter(Boolean)
     .join(" ");
 

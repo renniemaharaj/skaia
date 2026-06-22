@@ -1,29 +1,29 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import { useAtomValue } from "jotai";
 import {
   ChevronDown,
   ChevronUp,
-  Server,
-  Plus,
-  Trash2,
   Play,
-  Square,
+  Plus,
   RefreshCw,
+  Server,
+  Square,
+  Trash2,
 } from "lucide-react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { DirectoryLayout } from "../layout/templates/DirectoryLayout";
-import { type TableColumn } from "../../ui/TableView/TableView";
-import { useAtomValue } from "jotai";
-import { socketAtom } from "../../../atoms/auth";
-import Button from "../../input/Button";
 import { toast } from "sonner";
+import { socketAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
-import { customConfirm } from "../../ui/Prompt";
+import Button from "../../input/Button";
 import { Console, type ConsoleLine } from "../../ui/Console";
+import { customConfirm } from "../../ui/Prompt";
+import type { TableColumn } from "../../ui/TableView/TableView";
+import { DirectoryLayout } from "../layout/templates/DirectoryLayout";
 import "./Deployments.css";
 // Reuse orders page CSS for expand buttons and status pills if needed
 import "../../store/OrdersPage.css";
-import { GlassMenu } from "../../ui/GlassMenu";
 import { useLayoutPosition } from "../../../atoms/viewModes";
+import { GlassMenu } from "../../ui/GlassMenu";
 
 interface Blueprint {
   id: number;
@@ -75,20 +75,20 @@ export function DeploymentsPage() {
   const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [expandedInstances, setExpandedInstances] = useState<Set<number>>(
-    new Set(),
-  );
+  const [expandedInstances, setExpandedInstances] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("deployments", "list");
   const [showNewModal, setShowNewModal] = useState(false);
   const [logCap, setLogCap] = useState(500);
   const logCapRef = useRef(logCap);
-  const [openAppsMenu, setOpenAppsMenu] = useState<{ id: number; x: number; y: number } | null>(null);
+  const [openAppsMenu, setOpenAppsMenu] = useState<{ id: number; x: number; y: number } | null>(
+    null
+  );
   const [stats, setStats] = useState<ContainerStats[]>([]);
   type AppForReact = { name: string; description: string };
   const [availableApps, setAvailableApps] = useState<AppForReact[]>([]);
-  
+
   useEffect(() => {
     logCapRef.current = logCap;
   }, [logCap]);
@@ -101,7 +101,7 @@ export function DeploymentsPage() {
 
     const handleProgress = (event: Event) => {
       const customEvent = event as CustomEvent;
-      setLogs((prev) => {
+      setLogs(prev => {
         const next = [...prev, customEvent.detail];
         const max = logCapRef.current;
         return next.length > max ? next.slice(next.length - max) : next;
@@ -110,12 +110,10 @@ export function DeploymentsPage() {
 
     const handleStatus = (event: Event) => {
       const customEvent = event as CustomEvent;
-      setInstances((prev) =>
-        prev.map((inst) =>
-          inst.id === customEvent.detail.id
-            ? { ...inst, status: customEvent.detail.status }
-            : inst,
-        ),
+      setInstances(prev =>
+        prev.map(inst =>
+          inst.id === customEvent.detail.id ? { ...inst, status: customEvent.detail.status } : inst
+        )
       );
     };
 
@@ -144,7 +142,7 @@ export function DeploymentsPage() {
     const fetchAvailableApps = async () => {
       try {
         const data = await apiRequest<{ apps: AppForReact[] }>("/provisioning/available-apps");
-        if (data && data.apps) {
+        if (data?.apps) {
           setAvailableApps(data.apps);
         }
       } catch (err) {
@@ -159,18 +157,13 @@ export function DeploymentsPage() {
   // Auto-subscribe to provisioning_logs for every known instance so the status
   // badge updates in real-time without requiring the user to expand the row.
   useEffect(() => {
-    if (
-      !socket ||
-      socket.readyState !== WebSocket.OPEN ||
-      instances.length === 0
-    )
-      return;
+    if (!socket || socket.readyState !== WebSocket.OPEN || instances.length === 0) return;
     for (const inst of instances) {
       socket.send(
         JSON.stringify({
           type: "subscribe",
           payload: { resource_type: "provisioning_logs", resource_id: inst.id },
-        }),
+        })
       );
     }
   }, [socket, instances]);
@@ -196,10 +189,7 @@ export function DeploymentsPage() {
     }
   };
 
-  const provisionInstance = async (
-    blueprintId: number,
-    blueprintName: string,
-  ) => {
+  const provisionInstance = async (blueprintId: number, blueprintName: string) => {
     try {
       await apiRequest("/provisioning/instances", {
         method: "POST",
@@ -213,27 +203,18 @@ export function DeploymentsPage() {
       setShowNewModal(false);
       fetchInstances();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to provision instance",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to provision instance");
     }
   };
 
   const deleteInstance = async (id: number) => {
-    if (
-      !(await customConfirm(
-        `Are you sure you want to tear down instance #${id}?`,
-      ))
-    )
-      return;
+    if (!(await customConfirm(`Are you sure you want to tear down instance #${id}?`))) return;
     try {
       await apiRequest(`/provisioning/instances/${id}`, { method: "DELETE" });
       toast.success("Instance torn down successfully.");
       fetchInstances();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to tear down instance",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to tear down instance");
     }
   };
 
@@ -245,9 +226,7 @@ export function DeploymentsPage() {
       toast.success("Instance started.");
       fetchInstances();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to start instance",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to start instance");
     }
   };
 
@@ -259,9 +238,7 @@ export function DeploymentsPage() {
       toast.success("Instance stopped.");
       fetchInstances();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to stop instance",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to stop instance");
     }
   };
 
@@ -273,17 +250,15 @@ export function DeploymentsPage() {
       toast.success("Instance restart requested. View logs for progress.");
       fetchInstances();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to restart instance",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to restart instance");
     }
   };
 
   const installApp = async (id: number, app: string) => {
     try {
-      await apiRequest(`/provisioning/instances/${id}/apps`, { 
+      await apiRequest(`/provisioning/instances/${id}/apps`, {
         method: "POST",
-        body: JSON.stringify({ app })
+        body: JSON.stringify({ app }),
       });
       toast.success(`App ${app} queued for installation. Check logs.`);
     } catch (err) {
@@ -293,8 +268,8 @@ export function DeploymentsPage() {
 
   const uninstallApp = async (id: number, app: string) => {
     try {
-      await apiRequest(`/provisioning/instances/${id}/apps/${app}`, { 
-        method: "DELETE"
+      await apiRequest(`/provisioning/instances/${id}/apps/${app}`, {
+        method: "DELETE",
       });
       toast.success(`App ${app} queued for uninstallation. Check logs.`);
     } catch (err) {
@@ -312,10 +287,8 @@ export function DeploymentsPage() {
       });
       if (resp.ok) {
         const historicalLogs: LogEntry[] = await resp.json();
-        setLogs((prev) => {
-          const filtered = prev.filter(
-            (l) => l.prefix !== String(id) || l.time !== "historical",
-          );
+        setLogs(prev => {
+          const filtered = prev.filter(l => l.prefix !== String(id) || l.time !== "historical");
           if (!historicalLogs || historicalLogs.length === 0) return filtered;
           return [...filtered, ...historicalLogs];
         });
@@ -326,7 +299,7 @@ export function DeploymentsPage() {
   };
 
   const toggleExpand = (id: number) => {
-    setExpandedInstances((prev) => {
+    setExpandedInstances(prev => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -335,17 +308,15 @@ export function DeploymentsPage() {
             JSON.stringify({
               type: "unsubscribe",
               payload: { resource_type: "provisioning_logs", resource_id: id },
-            }),
+            })
           );
         }
       } else {
         newSet.add(id);
-        const inst = instances.find((i) => i.id === id);
+        const inst = instances.find(i => i.id === id);
         if (
           inst &&
-          (inst.status === "running" ||
-            inst.status === "stopped" ||
-            inst.status === "failed")
+          (inst.status === "running" || inst.status === "stopped" || inst.status === "failed")
         ) {
           fetchInstanceLogs(id);
         }
@@ -354,7 +325,7 @@ export function DeploymentsPage() {
             JSON.stringify({
               type: "subscribe",
               payload: { resource_type: "provisioning_logs", resource_id: id },
-            }),
+            })
           );
         }
       }
@@ -365,11 +336,11 @@ export function DeploymentsPage() {
   const filteredInstances = useMemo(() => {
     if (!search.trim()) return instances;
     const q = search.toLowerCase();
-    return instances.filter((inst) => {
-      const bp = blueprints.find((b) => b.id === inst.blueprint_id);
+    return instances.filter(inst => {
+      const bp = blueprints.find(b => b.id === inst.blueprint_id);
       return (
         String(inst.id).includes(q) ||
-        (bp && bp.name.toLowerCase().includes(q)) ||
+        bp?.name.toLowerCase().includes(q) ||
         inst.status.toLowerCase().includes(q)
       );
     });
@@ -379,13 +350,13 @@ export function DeploymentsPage() {
     {
       header: "",
       width: "44px",
-      cell: (inst) => {
+      cell: inst => {
         const isExpanded = expandedInstances.has(inst.id);
         return (
           <button
             type="button"
             className="orders-expand-btn"
-            onClick={(event) => {
+            onClick={event => {
               event.stopPropagation();
               toggleExpand(inst.id);
             }}
@@ -400,13 +371,13 @@ export function DeploymentsPage() {
       header: "Instance",
       width: "minmax(110px, 0.8fr)",
       className: "table-view__cell--bold",
-      cell: (inst) => `#${inst.id}`,
+      cell: inst => `#${inst.id}`,
     },
     {
       header: "Blueprint",
       width: "minmax(140px, 1fr)",
-      cell: (inst) => {
-        const bp = blueprints.find((b) => b.id === inst.blueprint_id);
+      cell: inst => {
+        const bp = blueprints.find(b => b.id === inst.blueprint_id);
         return bp ? bp.name : `Blueprint ${inst.blueprint_id}`;
       },
     },
@@ -414,19 +385,19 @@ export function DeploymentsPage() {
       header: "Version",
       width: "minmax(100px, 0.8fr)",
       className: "table-view__cell--muted",
-      cell: (inst) => inst.version_tag,
+      cell: inst => inst.version_tag,
     },
     {
       header: "URL",
       width: "minmax(180px, 1fr)",
-      cell: (inst) =>
+      cell: inst =>
         inst.config_payload?.url ? (
           <a
             href={inst.config_payload.url}
             target="_blank"
             rel="noopener noreferrer"
             className="table-link"
-            onClick={(e) => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
           >
             {inst.config_payload.url}
           </a>
@@ -437,7 +408,7 @@ export function DeploymentsPage() {
     {
       header: "Status",
       width: "minmax(120px, 1fr)",
-      cell: (inst) => {
+      cell: inst => {
         let statusClass = "pending";
         if (inst.status === "running") statusClass = "completed";
         if (inst.status === "failed") statusClass = "failed";
@@ -452,11 +423,14 @@ export function DeploymentsPage() {
       header: "Actions",
       width: "160px",
       className: "table-view__cell--actions",
-      cell: (inst) => (
+      cell: inst => (
         <div
           className="table-view__row-actions"
-          onClick={(e) => e.stopPropagation()}
-          style={{ position: "relative", ...(openAppsMenu?.id === inst.id ? { opacity: 1, pointerEvents: "auto" } : {}) }}
+          onClick={e => e.stopPropagation()}
+          style={{
+            position: "relative",
+            ...(openAppsMenu?.id === inst.id ? { opacity: 1, pointerEvents: "auto" } : {}),
+          }}
         >
           {inst.status === "stopped" && (
             <button
@@ -486,10 +460,10 @@ export function DeploymentsPage() {
               >
                 <Square size={14} />
               </button>
-              <button 
-                type="button" 
-                className="action-btn" 
-                onClick={(e) => {
+              <button
+                type="button"
+                className="action-btn"
+                onClick={e => {
                   e.stopPropagation();
                   if (openAppsMenu?.id === inst.id) {
                     setOpenAppsMenu(null);
@@ -521,17 +495,14 @@ export function DeploymentsPage() {
     inst: Instance,
     _index: number,
     rowProps: { className: string; style: React.CSSProperties },
-    cells: React.ReactNode[],
+    cells: React.ReactNode[]
   ) => {
     const isExpanded = expandedInstances.has(inst.id);
-    const instanceLogs = logs.filter((log) => log.prefix === String(inst.id));
+    const instanceLogs = logs.filter(log => log.prefix === String(inst.id));
 
     const consoleLines: ConsoleLine[] = instanceLogs.map((log, i) => ({
       id: i,
-      prefix:
-        log.time !== "historical"
-          ? `[${log.time}] [${log.level || "info"}]`
-          : "",
+      prefix: log.time !== "historical" ? `[${log.time}] [${log.level || "info"}]` : "",
       text:
         log.msg +
         (log.file && log.func && log.time !== "historical"
@@ -548,9 +519,10 @@ export function DeploymentsPage() {
     let mem = "0MB";
     let net = "0B";
     if (frappeStat) {
-      cpu = typeof frappeStat.cpu_percent === "number"
-        ? `${frappeStat.cpu_percent.toFixed(1)}%`
-        : (frappeStat.CPUPerc || "0.0%");
+      cpu =
+        typeof frappeStat.cpu_percent === "number"
+          ? `${frappeStat.cpu_percent.toFixed(1)}%`
+          : frappeStat.CPUPerc || "0.0%";
       mem = frappeStat.mem_usage || frappeStat.MemUsage || "0MB";
       net = frappeStat.net_io || frappeStat.NetIO || "0B";
     }
@@ -565,22 +537,36 @@ export function DeploymentsPage() {
           {cells}
         </div>
         {isExpanded && (
-          <div
-            className="provisioning-expanded-row"
-            style={{ padding: "1rem" }}
-          >
+          <div className="provisioning-expanded-row" style={{ padding: "1rem" }}>
             <Console
               lines={consoleLines}
               title={
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px" }}>
+                <div
+                  style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px" }}
+                >
                   <span>
                     Live Logs: <span style={{ fontWeight: 400 }}>Instance #{inst.id}</span>
                   </span>
                   {frappeStat && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-secondary)' }}>
-                      <span title="CPU Usage">CPU: <span style={{color: 'var(--text-primary)'}}>{cpu}</span></span>
-                      <span title="Memory Usage">MEM: <span style={{color: 'var(--text-primary)'}}>{mem}</span></span>
-                      <span title="Network I/O">NET: <span style={{color: 'var(--text-primary)'}}>{net}</span></span>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "12px",
+                        fontSize: "0.8rem",
+                        fontWeight: 400,
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      <span title="CPU Usage">
+                        CPU: <span style={{ color: "var(--text-primary)" }}>{cpu}</span>
+                      </span>
+                      <span title="Memory Usage">
+                        MEM: <span style={{ color: "var(--text-primary)" }}>{mem}</span>
+                      </span>
+                      <span title="Network I/O">
+                        NET: <span style={{ color: "var(--text-primary)" }}>{net}</span>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -600,16 +586,10 @@ export function DeploymentsPage() {
   const NewDeploymentModal = () => {
     return createPortal(
       <div className="modal-backdrop" onClick={() => setShowNewModal(false)}>
-        <div
-          className="modal-content deployments-modal"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="modal-content deployments-modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <h3>New Deployment</h3>
-            <button
-              className="modal-close"
-              onClick={() => setShowNewModal(false)}
-            >
+            <button className="modal-close" onClick={() => setShowNewModal(false)}>
               ×
             </button>
           </div>
@@ -618,12 +598,10 @@ export function DeploymentsPage() {
               Select an available blueprint to provision a new instance.
             </p>
             {blueprints.length === 0 ? (
-              <p className="orders-empty-state">
-                No active blueprints currently available.
-              </p>
+              <p className="orders-empty-state">No active blueprints currently available.</p>
             ) : (
               <div className="blueprint-grid">
-                {blueprints.map((bp) => (
+                {blueprints.map(bp => (
                   <div key={bp.id} className="blueprint-card">
                     <div>
                       <h4>{bp.name}</h4>
@@ -643,7 +621,7 @@ export function DeploymentsPage() {
           </div>
         </div>
       </div>,
-      document.body,
+      document.body
     );
   };
 
@@ -687,14 +665,8 @@ export function DeploymentsPage() {
               <div className="ds-skeleton" />
             </div>
           ) : instances.length === 0 ? (
-            <div
-              className="ds-page__empty"
-              style={{ textAlign: "center", padding: "4rem 2rem" }}
-            >
-              <Server
-                size={48}
-                style={{ color: "var(--text-muted)", marginBottom: "1rem" }}
-              />
+            <div className="ds-page__empty" style={{ textAlign: "center", padding: "4rem 2rem" }}>
+              <Server size={48} style={{ color: "var(--text-muted)", marginBottom: "1rem" }} />
               <h3>No instances deployed yet</h3>
               <p style={{ color: "var(--text-secondary)" }}>
                 Provision a new infrastructure blueprint to get started.
@@ -716,14 +688,10 @@ export function DeploymentsPage() {
           ) : null
         }
         tableColumns={instanceColumns}
-        tableRowKey={(inst) => inst.id}
+        tableRowKey={inst => inst.id}
         renderRowWrapper={renderInstanceRow}
-        renderGridCard={(inst) => (
-          <div
-            key={inst.id}
-            className="ds-card"
-            onClick={() => toggleExpand(inst.id)}
-          >
+        renderGridCard={inst => (
+          <div key={inst.id} className="ds-card" onClick={() => toggleExpand(inst.id)}>
             <div className="ds-card__header">
               <div className="ds-card__title-row">
                 <Server size={16} className="ds-card__type-icon" />
@@ -733,7 +701,7 @@ export function DeploymentsPage() {
                 {inst.status === "stopped" && (
                   <button
                     className="action-btn"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       startInstance(inst.id);
                     }}
@@ -745,7 +713,7 @@ export function DeploymentsPage() {
                   <>
                     <button
                       className="action-btn"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         restartInstance(inst.id);
                       }}
@@ -754,7 +722,7 @@ export function DeploymentsPage() {
                     </button>
                     <button
                       className="action-btn danger"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         stopInstance(inst.id);
                       }}
@@ -765,7 +733,7 @@ export function DeploymentsPage() {
                 )}
                 <button
                   className="action-btn danger ds-card__danger-btn"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     deleteInstance(inst.id);
                   }}
@@ -776,8 +744,7 @@ export function DeploymentsPage() {
             </div>
             <p className="ds-card__desc">
               Blueprint:{" "}
-              {blueprints.find((b) => b.id === inst.blueprint_id)?.name ||
-                `ID ${inst.blueprint_id}`}
+              {blueprints.find(b => b.id === inst.blueprint_id)?.name || `ID ${inst.blueprint_id}`}
             </p>
             <div className="ds-card__meta">
               <span
@@ -790,7 +757,7 @@ export function DeploymentsPage() {
                   href={inst.config_payload.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                   style={{ fontSize: "12px", color: "var(--primary-color)" }}
                 >
                   {inst.config_payload.url.replace(/^https?:\/\//, "")}
@@ -806,45 +773,65 @@ export function DeploymentsPage() {
           x={openAppsMenu.x}
           y={openAppsMenu.y}
           onClose={() => setOpenAppsMenu(null)}
-          options={availableApps.length === 0 ? [
-            { title: "No apps available", disabled: true }
-          ] : availableApps.map(app => {
-            const inst = instances.find(i => i.id === openAppsMenu.id);
-            const isInstalled = inst?.config_payload?.apps?.includes(app.name) || false;
-            
-            return {
-              key: app.name,
-              title: (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '16px' }}>
-                  <span style={{ fontWeight: 600 }}>{app.name}</span>
-                  <span 
-                    role="button"
-                    className={`action-btn ${isInstalled ? 'danger' : ''}`}
-                    style={{ padding: '2px 6px', height: 'auto', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isInstalled) uninstallApp(openAppsMenu.id, app.name);
-                      else installApp(openAppsMenu.id, app.name);
-                      setOpenAppsMenu(null);
-                    }}
-                  >
-                    {isInstalled ? 'Uninstall' : 'Install'}
-                  </span>
-                </div>
-              ),
-              subOptions: [
-                {
-                  key: "desc",
-                  title: (
-                    <div style={{ whiteSpace: 'normal', lineHeight: 1.4, maxWidth: '200px' }}>
-                      <span style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>{app.name}</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{app.description}</span>
-                    </div>
-                  )
-                }
-              ]
-            };
-          })}
+          options={
+            availableApps.length === 0
+              ? [{ title: "No apps available", disabled: true }]
+              : availableApps.map(app => {
+                  const inst = instances.find(i => i.id === openAppsMenu.id);
+                  const isInstalled = inst?.config_payload?.apps?.includes(app.name) || false;
+
+                  return {
+                    key: app.name,
+                    title: (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          width: "100%",
+                          gap: "16px",
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>{app.name}</span>
+                        <span
+                          role="button"
+                          className={`action-btn ${isInstalled ? "danger" : ""}`}
+                          style={{
+                            padding: "2px 6px",
+                            height: "auto",
+                            fontSize: "0.7rem",
+                            display: "inline-flex",
+                            alignItems: "center",
+                          }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (isInstalled) uninstallApp(openAppsMenu.id, app.name);
+                            else installApp(openAppsMenu.id, app.name);
+                            setOpenAppsMenu(null);
+                          }}
+                        >
+                          {isInstalled ? "Uninstall" : "Install"}
+                        </span>
+                      </div>
+                    ),
+                    subOptions: [
+                      {
+                        key: "desc",
+                        title: (
+                          <div style={{ whiteSpace: "normal", lineHeight: 1.4, maxWidth: "200px" }}>
+                            <span
+                              style={{ fontWeight: 600, display: "block", marginBottom: "4px" }}
+                            >
+                              {app.name}
+                            </span>
+                            <span style={{ color: "var(--text-muted)" }}>{app.description}</span>
+                          </div>
+                        ),
+                      },
+                    ],
+                  };
+                })
+          }
         />
       )}
     </>

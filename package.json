@@ -1,6 +1,10 @@
 {
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
+    "husky": "^9.1.7",
     "vitest": "^4.1.5"
+  },
+  "scripts": {
+    "prepare": "husky"
   }
 }

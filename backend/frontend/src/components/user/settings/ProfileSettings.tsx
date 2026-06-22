@@ -102,10 +102,7 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
             </div>
           </div>
 
-          <div
-            className="form-grid"
-            style={{ marginTop: "1.5rem" }}
-          >
+          <div className="form-grid" style={{ marginTop: "1.5rem" }}>
             <div className="form-group">
               <label className="form-label">Avatar Image</label>
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -172,7 +169,14 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
               margin: "1.5rem 0",
             }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1rem",
+            }}
+          >
             <h4 style={{ margin: 0 }}>Cosmetics &amp; Skins</h4>
             <Button
               variant="action"
@@ -293,8 +297,17 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
 
             {/* Background Position - select dropdown */}
             <div className="form-group">
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between" }}>
-                <label className="form-label" style={{ marginBottom: 0 }}>Background Position</label>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <label className="form-label" style={{ marginBottom: 0 }}>
+                  Background Position
+                </label>
                 <button
                   className="action-btn danger"
                   onClick={() => setEditBackgroundPosition("")}

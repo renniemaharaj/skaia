@@ -1,6 +1,6 @@
+import type { Edge, Node } from "@xyflow/react";
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { Node, Edge } from "@xyflow/react";
 
 export type NodeData = {
   [key: string]: string | number | boolean | object | undefined;
@@ -38,7 +38,7 @@ export const defaultFlowState: FlowState = {
 
 export const flowStateAtom = atomWithStorage<FlowState>("flowprofile_v2", defaultFlowState);
 export const nodesAtom = atom(
-  (get) => get(flowStateAtom).nodes,
+  get => get(flowStateAtom).nodes,
   (get, set, update: Node[] | ((prev: Node[]) => Node[])) => {
     const prev = get(flowStateAtom);
     const nextNodes = typeof update === "function" ? update(prev.nodes) : update;
@@ -47,7 +47,7 @@ export const nodesAtom = atom(
 );
 
 export const edgesAtom = atom(
-  (get) => get(flowStateAtom).edges,
+  get => get(flowStateAtom).edges,
   (get, set, update: Edge[] | ((prev: Edge[]) => Edge[])) => {
     const prev = get(flowStateAtom);
     const nextEdges = typeof update === "function" ? update(prev.edges) : update;

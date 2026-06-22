@@ -11,11 +11,11 @@
 .view-thread-wrapper {
   display: flex;
   flex-direction: column;
-	background-color: transparent;
-	border: 0;
-	border-bottom: 1px solid var(--border-color);
-	border-radius: 0;
-	padding: 0.625rem;
+  background-color: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 0.625rem;
   width: 100%;
   max-width: 1180px;
   overflow-y: auto;
@@ -155,7 +155,7 @@
 
 /* State Cards (Loading / Error) */
 .view-thread-state-card {
-	padding: 0.625rem;
+  padding: 0.625rem;
   text-align: center;
 }
 

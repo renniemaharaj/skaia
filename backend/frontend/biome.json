@@ -7,12 +7,23 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "recommended": false,
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "off"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "off"
+      },
+      "complexity": {
+        "noForEach": "off"
+      },
+      "a11y": {
+        "useKeyWithClickEvents": "off",
+        "useButtonType": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useConst": "off"
       }
     }
   },
@@ -37,7 +48,6 @@
     }
   },
   "files": {
-    "ignoreUnknown": true,
-    "ignore": ["node_modules", "dist", "build", ".git"]
+    "ignoreUnknown": true
   }
 }

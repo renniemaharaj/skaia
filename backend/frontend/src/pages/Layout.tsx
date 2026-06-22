@@ -27,6 +27,7 @@ import {
 import Particles from "../components/ui/Particles/Particles";
 import { PromptContainer } from "../components/ui/Prompt";
 import type { Role } from "../components/user/types";
+import { useThemeContext } from "../hooks/theme/useThemeContext";
 import { useCursorTracking } from "../hooks/useCursorTracking";
 import { useGuestSandboxMode } from "../hooks/useGuestSandboxMode";
 import { usePresence } from "../hooks/usePresence";
@@ -35,7 +36,6 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
-import { useThemeContext } from "../hooks/theme/useThemeContext";
 
 interface LayoutProps {
   children: ReactNode;
@@ -597,7 +597,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Header
         cartCount={cartCount}
         isDarkMode={isDarkMode}
-        onDarkModeToggle={(dark) => specifyTheme(dark ? "dark" : "light")}
+        onDarkModeToggle={dark => specifyTheme(dark ? "dark" : "light")}
         layoutMode={effectiveLayoutMode as "application" | "web"}
         onToggleLayoutMode={() =>
           setLayoutMode(layoutMode === "application" ? "web" : "application")

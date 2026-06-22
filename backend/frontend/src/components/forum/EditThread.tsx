@@ -32,20 +32,36 @@ const EditThread = () => {
   const { threadId } = useParams<{ threadId: string }>();
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
   const [draft, setDraft] = useAtom(draftEditThreadAtom);
-  
+
   const { subscribe, unsubscribe } = useWebSocketSync();
   const editTitle = draft?.threadId === threadId && draft?.title ? draft.title : "";
   const editContent = draft?.threadId === threadId && draft?.content ? draft.content : "";
-  const selectedCategory = draft?.threadId === threadId && draft?.categoryId ? draft.categoryId : "";
+  const selectedCategory =
+    draft?.threadId === threadId && draft?.categoryId ? draft.categoryId : "";
 
   const setEditTitle = (title: string) =>
-    setDraft(prev => ({ title, content: prev?.content || "", categoryId: prev?.categoryId || "", threadId: threadId! }));
-    
+    setDraft(prev => ({
+      title,
+      content: prev?.content || "",
+      categoryId: prev?.categoryId || "",
+      threadId: threadId!,
+    }));
+
   const setEditContent = (content: string) =>
-    setDraft(prev => ({ title: prev?.title || "", content, categoryId: prev?.categoryId || "", threadId: threadId! }));
-    
+    setDraft(prev => ({
+      title: prev?.title || "",
+      content,
+      categoryId: prev?.categoryId || "",
+      threadId: threadId!,
+    }));
+
   const setSelectedCategory = (categoryId: string) =>
-    setDraft(prev => ({ title: prev?.title || "", content: prev?.content || "", categoryId, threadId: threadId! }));
+    setDraft(prev => ({
+      title: prev?.title || "",
+      content: prev?.content || "",
+      categoryId,
+      threadId: threadId!,
+    }));
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -60,7 +60,11 @@ const AdminMetaSettings = lazy(() =>
 );
 
 const RolesManagementPage = lazy(() => import("../components/admin/RolesManagementPage.tsx"));
-const DeploymentsPage = lazy(() => import("../components/page/deployments/DeploymentsPage.tsx").then(m => ({ default: m.DeploymentsPage })));
+const DeploymentsPage = lazy(() =>
+  import("../components/page/deployments/DeploymentsPage.tsx").then(m => ({
+    default: m.DeploymentsPage,
+  }))
+);
 const PageBuilder = lazy(() => import("./page/index.tsx"));
 const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
 const DataSourcesPage = lazy(() => import("../components/page/datasources/DataSourcesPage.tsx"));

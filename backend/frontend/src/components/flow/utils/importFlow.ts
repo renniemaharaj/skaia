@@ -2,7 +2,7 @@ import type { FlowState } from "../../../atoms/flow";
 
 export default function openAndPullDifferences(
   onComplete: (flowState: FlowState) => void,
-  currentFlowState: FlowState,
+  currentFlowState: FlowState
 ) {
   const input = document.createElement("input");
   input.type = "file";
@@ -28,9 +28,8 @@ export default function openAndPullDifferences(
         }
 
         mergedFlowState = mergeFlowStates(mergedFlowState, json);
-      } catch (error: Error | unknown) {
-        failures[file.name] =
-          error instanceof Error ? error.message : "Unknown JSON parsing error";
+      } catch (error: unknown) {
+        failures[file.name] = error instanceof Error ? error.message : "Unknown JSON parsing error";
       }
     }
 
@@ -45,11 +44,7 @@ export default function openAndPullDifferences(
 }
 
 function isValidFlowState(json: any): json is FlowState {
-  return (
-    Array.isArray(json.nodes) &&
-    Array.isArray(json.edges) &&
-    typeof json.editor === "object"
-  );
+  return Array.isArray(json.nodes) && Array.isArray(json.edges) && typeof json.editor === "object";
 }
 
 function mergeFlowStates(base: FlowState, incoming: FlowState): FlowState {
@@ -65,14 +60,9 @@ function mergeFlowStates(base: FlowState, incoming: FlowState): FlowState {
   };
 }
 
-function mergeUniqueById<T extends { id: string }>(
-  base: T[],
-  incoming: T[],
-): T[] {
+function mergeUniqueById<T extends { id: string }>(base: T[], incoming: T[]): T[] {
   const map = new Map<string, T>();
-  base.forEach((item) => map.set(item.id, item));
-  incoming.forEach((item) =>
-    map.set(item.id, { ...map.get(item.id), ...item }),
-  );
+  base.forEach(item => map.set(item.id, item));
+  incoming.forEach(item => map.set(item.id, { ...map.get(item.id), ...item }));
   return Array.from(map.values());
 }

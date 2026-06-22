@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TableView } from "./TableView/TableView";
 import { FilterBar } from "./FilterBar";
+import { TableView } from "./TableView/TableView";
 
 describe("FilterBar", () => {
   it("forwards search changes and clears active filters", async () => {

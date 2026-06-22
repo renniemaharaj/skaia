@@ -1,8 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import {
-  Atom,
   ArrowLeft,
   ArrowRight,
+  Atom,
   ChevronDown,
   ChevronUp,
   Gauge,
@@ -26,8 +26,8 @@ import { type OnlineUser, onlineUsersAtom, pendingTpUserAtom } from "../../../at
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
 import ComposerInput from "../../input/Input";
-import UserInlineCard from "../../user/UserInlineCard";
 import UserAvatar from "../../user/UserAvatar";
+import UserInlineCard from "../../user/UserInlineCard";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./PresencePanel.css";
 import PhysicsControls from "./PhysicsControls";
@@ -664,9 +664,18 @@ const PresencePanel = () => {
               }}
             >
               <div className="defcon-telemetry-header">
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flex: "1 1 100%" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flex: "1 1 100%",
+                  }}
+                >
                   <span>[ DEFCON THREAT TELEMETRY ]</span>
-                  <span className="defcon-threat-label" style={{ marginLeft: 0 }}>{defconInfo.threat_level}</span>
+                  <span className="defcon-threat-label" style={{ marginLeft: 0 }}>
+                    {defconInfo.threat_level}
+                  </span>
                 </div>
                 <button
                   type="button"

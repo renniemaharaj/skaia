@@ -122,15 +122,15 @@
 }
 
 .grengo-maintenance-card {
-	background: transparent;
-	border: 0;
-	border-bottom: 1px solid var(--border-color);
-	border-radius: 0;
-	padding: 0.625rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 0;
+  padding: 0.625rem;
   text-align: center;
   max-width: 420px;
   width: 90%;
-	box-shadow: none;
+  box-shadow: none;
 }
 
 .grengo-maintenance-card h2 {

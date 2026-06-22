@@ -1,6 +1,6 @@
+import { ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
 import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
 

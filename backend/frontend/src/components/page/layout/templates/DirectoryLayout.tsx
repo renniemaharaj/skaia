@@ -87,7 +87,10 @@ export function DirectoryLayout<T>({
         </div>
       </div>
 
-      {(!!onSearchChange || (metrics && metrics.length > 0) || headerActions || onViewModeChange) && (
+      {(!!onSearchChange ||
+        (metrics && metrics.length > 0) ||
+        headerActions ||
+        onViewModeChange) && (
         <div className="directory-layout__toolbar-container">
           <FilterBar
             compact

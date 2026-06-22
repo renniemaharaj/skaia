@@ -1,21 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ReactFlow,
   Background,
-  Controls as ReactFlowControls,
   BackgroundVariant,
-  ReactFlowProvider,
   MiniMap,
+  ReactFlow,
+  Controls as ReactFlowControls,
+  ReactFlowProvider,
   applyEdgeChanges,
   applyNodeChanges,
 } from "@xyflow/react";
-import type {
-  Connection,
-  NodeChange,
-  EdgeChange,
-  Node,
-  Edge,
-} from "@xyflow/react";
+import type { Connection, Edge, EdgeChange, Node, NodeChange } from "@xyflow/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 
 import CustomControls from "./components/Controls";
@@ -24,11 +18,11 @@ import "./styles.css";
 import "./Flow.css";
 
 import { useAtom } from "jotai";
-import { flowStateAtom } from "../../atoms/flow";
-import { nodeData } from "./config";
-import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import { debounce } from "lodash";
+import { flowStateAtom } from "../../atoms/flow";
+import { useThemeContext } from "../../hooks/theme/useThemeContext";
 import Panel from "./components/Panel";
+import { nodeData } from "./config";
 
 export default function Flow() {
   const { theme } = useThemeContext();
@@ -39,7 +33,7 @@ export default function Flow() {
   const [selectedLocal, setSelectedLocal] = useState<Node[]>([]);
   const debouncedSync = useRef(
     debounce((updatedNodes: Node[], updatedEdges: Edge[]) => {
-      setFlowState((prev) => ({ ...prev, nodes: updatedNodes, edges: updatedEdges }));
+      setFlowState(prev => ({ ...prev, nodes: updatedNodes, edges: updatedEdges }));
     }, 100)
   ).current;
 
@@ -48,18 +42,16 @@ export default function Flow() {
     setEdges([...flowState.edges]);
   }, [flowState.nodes, flowState.edges]);
 
-
-
   const updateSelectedLocal = useCallback(
     (updatedNodes: Node[]) => {
-      setSelectedLocal(updatedNodes.filter((node) => selectedLocal.find((sn) => sn.id === node.id)));
+      setSelectedLocal(updatedNodes.filter(node => selectedLocal.find(sn => sn.id === node.id)));
     },
     [selectedLocal]
   );
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((prev) => {
+      setNodes(prev => {
         const updated = applyNodeChanges(changes, JSON.parse(JSON.stringify(prev)));
         debouncedSync(updated, edges);
         updateSelectedLocal(updated);
@@ -71,7 +63,7 @@ export default function Flow() {
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
-      setEdges((prev) => {
+      setEdges(prev => {
         const updated = applyEdgeChanges(changes, JSON.parse(JSON.stringify(prev)));
         debouncedSync(nodes, updated);
         return updated;
@@ -86,8 +78,11 @@ export default function Flow() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((prev) => {
-        const updated = [...prev, { ...params, id: `${params.source}-${params.target}`, animated: true }];
+      setEdges(prev => {
+        const updated = [
+          ...prev,
+          { ...params, id: `${params.source}-${params.target}`, animated: true },
+        ];
         debouncedSync(nodes, updated);
         return updated;
       });
@@ -100,7 +95,13 @@ export default function Flow() {
       <div className="sk-flow-wrapper">
         <Header />
         <main className="sk-flow-main">
-          <div className="sk-flow-panel-container" style={{ width: flowState.editor.panelExtended ? flowState.editor.maxPanelSize : 48, overflow: 'hidden' }}>
+          <div
+            className="sk-flow-panel-container"
+            style={{
+              width: flowState.editor.panelExtended ? flowState.editor.maxPanelSize : 48,
+              overflow: "hidden",
+            }}
+          >
             <Panel nodes={nodes} selectedNodes={selectedLocal} />
           </div>
           <div className="sk-flow-canvas">
@@ -121,7 +122,11 @@ export default function Flow() {
                 <CustomControls />
               </ReactFlowControls>
               {flowState.editor.displayMiniMap && <MiniMap />}
-              <Background variant={BackgroundVariant.Lines} gap={24} color="color-mix(in srgb, var(--text-primary) 5%, transparent)" />
+              <Background
+                variant={BackgroundVariant.Lines}
+                gap={24}
+                color="color-mix(in srgb, var(--text-primary) 5%, transparent)"
+              />
             </ReactFlow>
           </div>
         </main>

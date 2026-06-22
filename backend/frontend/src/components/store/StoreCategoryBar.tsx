@@ -78,7 +78,11 @@ export function StoreCategoryBar({
     filters.sort !== "newest";
 
   const balanceClass =
-    walletBalance === null ? "" : walletBalance < 0 ? " store-balance-badge--negative" : " store-balance-badge--positive";
+    walletBalance === null
+      ? ""
+      : walletBalance < 0
+        ? " store-balance-badge--negative"
+        : " store-balance-badge--positive";
   const updateFilter = <K extends keyof StoreFilterState>(key: K, value: StoreFilterState[K]) => {
     onChangeFilters({ ...filters, [key]: value });
   };

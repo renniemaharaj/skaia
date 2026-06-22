@@ -1,4 +1,4 @@
-import { Trash2, Settings } from "lucide-react";
+import { Settings, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
@@ -88,18 +88,13 @@ export default function MetaControlPanel({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="modal-form compact-form-card"
-    >
+    <form onSubmit={handleSubmit} className="modal-form compact-form-card">
       <div className="section__header">
         <Settings className="section__header-icon" size={24} />
         <span className="section__header-eyebrow">
           {category === "seo" ? "Configuration" : "Customization"}
         </span>
-        <h3 style={{ margin: 0 }}>
-          {category === "seo" ? "SEO Settings" : "Visual Settings"}
-        </h3>
+        <h3 style={{ margin: 0 }}>{category === "seo" ? "SEO Settings" : "Visual Settings"}</h3>
         <p>
           {category === "seo"
             ? "Configure metadata for search engines and social media."
@@ -110,7 +105,9 @@ export default function MetaControlPanel({
       {category === "seo" && (
         <>
           <div className="form-group">
-            <label className="form-label" htmlFor="meta-description">Description</label>
+            <label className="form-label" htmlFor="meta-description">
+              Description
+            </label>
             <textarea
               id="meta-description"
               name="description"
@@ -121,7 +118,9 @@ export default function MetaControlPanel({
             />
           </div>
           <div className="form-group">
-            <label className="form-label" htmlFor="meta-og-image">OG Image</label>
+            <label className="form-label" htmlFor="meta-og-image">
+              OG Image
+            </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <input
                 type="text"

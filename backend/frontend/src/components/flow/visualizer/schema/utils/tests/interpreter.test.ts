@@ -1,9 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import interpreter from "../interpreter";
 import modelRegexExtractors from "../models";
 
-const [modelRegex, typestructRegex, interfaceRegex, typeRegex] =
-  modelRegexExtractors;
+const [modelRegex, typestructRegex, interfaceRegex, typeRegex] = modelRegexExtractors;
 
 type Case = {
   input: string;

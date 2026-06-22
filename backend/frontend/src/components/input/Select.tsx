@@ -93,13 +93,16 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         }
         if (child.type === "option") {
           const props = (child as any).props;
-          return [{
-            value: String(props.value ?? ""),
-            label: typeof props.children === "string"
-              ? props.children
-              : String(props.children ?? props.value ?? ""),
-            disabled: props.disabled,
-          }];
+          return [
+            {
+              value: String(props.value ?? ""),
+              label:
+                typeof props.children === "string"
+                  ? props.children
+                  : String(props.children ?? props.value ?? ""),
+              disabled: props.disabled,
+            },
+          ];
         }
         return [];
       };

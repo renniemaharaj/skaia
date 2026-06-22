@@ -1,21 +1,21 @@
-// Imports the components used to render different types of nodes in the flow editor.
-import ProcessNode from "./components/nodes/ProcessNode";
 import EntryNode from "./components/nodes/EntryNode";
 import ExpectNode from "./components/nodes/ExpectNode";
 import ExpressionNode from "./components/nodes/ExpressionNode";
+// Imports the components used to render different types of nodes in the flow editor.
+import ProcessNode from "./components/nodes/ProcessNode";
 
 // Imports the components used to render different shapes of nodes in the flow editor.
 import {
   CircleNode,
-  SquareNode,
-  RoundedSquareNode,
-  DiamondNode,
-  PentagonNode,
-  HexagonNode,
-  CylinderNode,
-  TriangleNode,
   CrossNode,
+  CylinderNode,
+  DiamondNode,
+  HexagonNode,
   ParallelogramNode,
+  PentagonNode,
+  RoundedSquareNode,
+  SquareNode,
+  TriangleNode,
 } from "./components/nodes/Shapes";
 
 export type OptionGroup = {

@@ -1,4 +1,4 @@
-import { Position } from "@xyflow/react";
+import type { Position } from "@xyflow/react";
 
 export interface CustomNodeProps {
   data: {

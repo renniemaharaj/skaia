@@ -7,8 +7,7 @@ export function Header() {
         <Workflow size={24} />
         <span>Flow designer</span>
       </div>
-      <div className="sk-flow-header-actions">
-      </div>
+      <div className="sk-flow-header-actions" />
     </header>
   );
 }

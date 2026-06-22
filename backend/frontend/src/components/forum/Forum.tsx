@@ -2,10 +2,10 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { currentUserAtom, isAuthenticatedAtom, socketAtom } from "../../atoms/auth";
 import { type ForumCategory, forumCategoriesAtom } from "../../atoms/forum";
+import { useLayoutPosition } from "../../atoms/viewModes";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
-import { useLayoutPosition } from "../../atoms/viewModes";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";

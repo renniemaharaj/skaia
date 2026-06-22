@@ -102,9 +102,7 @@
   color: var(--text-secondary);
   background: transparent;
   cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .directory-view-btn:hover {

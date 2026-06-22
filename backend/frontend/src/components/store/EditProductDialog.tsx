@@ -172,12 +172,7 @@ export const EditProductDialog: React.FC<EditProductDialogProps> = ({
             </p>
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button
-              type="button"
-              className="action-btn btn-close"
-              onClick={onClose}
-              title="Cancel"
-            >
+            <button type="button" className="action-btn btn-close" onClick={onClose} title="Cancel">
               <X size={20} />
             </button>
             <button

@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
-import { Handle as ReactHandle, Position } from "@xyflow/react";
+import { type Position, Handle as ReactHandle } from "@xyflow/react";
 import type { HandleType } from "@xyflow/react";
 import { SquareFunctionIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type Handle = {
   type: HandleType;
@@ -30,16 +30,22 @@ export function Node({
     borderRadius: "var(--radius-lg)",
     boxShadow: "var(--shadow-lg)",
     display: "flex",
-    flexDirection: layout === "horizontal" ? "row" as const : "column" as const,
+    flexDirection: layout === "horizontal" ? ("row" as const) : ("column" as const),
     background: "var(--color-bg-elevated)",
     border: "1px solid var(--border-color)",
     color: "var(--text-primary)",
-    minWidth: "150px"
+    minWidth: "150px",
   };
 
   return (
-    <div key={"node" + id} style={nodeStyle} className={`hrtm-react-node-wrapper ${className || ""}`}>
-      <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-start" }}>
+    <div
+      key={`node${id}`}
+      style={nodeStyle}
+      className={`hrtm-react-node-wrapper ${className || ""}`}
+    >
+      <div
+        style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-start" }}
+      >
         {icon}
         {acceptExpression && !icon && <SquareFunctionIcon size={16} />}
         <span style={{ fontSize: "0.85rem", fontWeight: 600 }}>{title}</span>
@@ -50,7 +56,12 @@ export function Node({
           key={index}
           type={handle.type}
           position={handle.position}
-          style={{ background: "var(--primary-color)", width: "12px", height: "12px", border: "2px solid var(--bg-color)" }}
+          style={{
+            background: "var(--primary-color)",
+            width: "12px",
+            height: "12px",
+            border: "2px solid var(--bg-color)",
+          }}
         />
       ))}
     </div>

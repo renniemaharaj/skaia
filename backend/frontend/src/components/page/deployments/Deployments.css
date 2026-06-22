@@ -30,12 +30,14 @@
   border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-size: 0.8rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
 }
 
 .terminal-body {
   padding: 1rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   font-size: 0.8rem;
   max-height: 280px;
   overflow-y: auto;
@@ -58,11 +60,24 @@
   margin-right: 0.5rem;
 }
 
-.log-level--error, .log-level--fatal, .log-level--panic { color: #ef4444; }
-.log-level--warning { color: #f59e0b; }
-.log-level--success { color: #10b981; }
-.log-level--info, .log-level--print { color: #e5e5e5; }
-.log-level--debug { color: #8b5cf6; }
+.log-level--error,
+.log-level--fatal,
+.log-level--panic {
+  color: #ef4444;
+}
+.log-level--warning {
+  color: #f59e0b;
+}
+.log-level--success {
+  color: #10b981;
+}
+.log-level--info,
+.log-level--print {
+  color: #e5e5e5;
+}
+.log-level--debug {
+  color: #8b5cf6;
+}
 
 .blueprint-scroll-container {
   display: flex;
@@ -131,7 +146,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .modal-header {
@@ -171,4 +186,7 @@
   margin: 0 0 1.25rem;
   color: var(--text-secondary);
 }
-.log-source { color: #888; font-style: italic; }
+.log-source {
+  color: #888;
+  font-style: italic;
+}

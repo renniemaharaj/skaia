@@ -1,11 +1,7 @@
-import { useCallback } from "react";
 import { useAtomValue } from "jotai";
+import { useCallback } from "react";
 import { flowStateAtom } from "../../../atoms/flow";
-import {
-  getFullState,
-  getTrimmedState,
-  memoizedGetLogicalFlow,
-} from "../utils/extractFlow";
+import { getFullState, getTrimmedState, memoizedGetLogicalFlow } from "../utils/extractFlow";
 
 export default function useDownloadJSON({ depth }: { depth: "logical" | "full" }) {
   const flowProfile = useAtomValue(flowStateAtom);

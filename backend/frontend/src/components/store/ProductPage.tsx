@@ -378,7 +378,7 @@ export const ProductPage = () => {
   const activeMedia = media[safeActiveMediaIndex];
   const activeMediaIsVideo =
     activeMedia?.mime_type?.startsWith("video/") || activeMedia?.type === "video";
-  
+
   const previousMedia = () => {
     setHasInteracted(true);
     setActiveMediaIndex(index => (index - 1 + media.length) % media.length);

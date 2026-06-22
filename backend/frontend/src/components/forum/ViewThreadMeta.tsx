@@ -1,9 +1,4 @@
-import {
-	CalendarIcon,
-	ClockIcon,
-	EyeIcon,
-	MessageCircleIcon,
-} from "lucide-react";
+import { CalendarIcon, ClockIcon, EyeIcon, MessageCircleIcon } from "lucide-react";
 import "./ViewThreadMeta.css";
 import { useAtomValue } from "jotai";
 import { truncate } from "lodash";
@@ -44,19 +39,17 @@ const ViewThreadMeta = ({
   useEffect(() => {
     if (currentThread?.user_id) {
       apiRequest<Role[]>("/users/roles")
-				.then((res) => res && setAllRoles(res))
+        .then(res => res && setAllRoles(res))
         .catch(() => {});
       apiRequest<ProfileUser>(`/users/${currentThread.user_id}`)
-				.then((res) => res && setAuthorProfile(res))
+        .then(res => res && setAuthorProfile(res))
         .catch(() => {});
     }
   }, [currentThread?.user_id]);
 
   const author: Author = {
-		name:
-			authorProfile?.display_name || currentThread?.user_name || "Unknown User",
-		profilePicture:
-			authorProfile?.avatar_url || currentThread?.user_avatar || "",
+    name: authorProfile?.display_name || currentThread?.user_name || "Unknown User",
+    profilePicture: authorProfile?.avatar_url || currentThread?.user_avatar || "",
     role: currentThread?.user_roles?.join(", ") || "Member",
   };
 
@@ -104,7 +97,7 @@ const ViewThreadMeta = ({
 
   const cardStyle: React.CSSProperties = {};
   return (
-		<ContentStandOutCard className="vtm-panel" style={cardStyle}>
+    <ContentStandOutCard className="vtm-panel" style={cardStyle}>
       <div className="vtm-header">
         <UserProfileOverlay
           userId={currentThread?.user_id || ""}
@@ -123,9 +116,7 @@ const ViewThreadMeta = ({
         </UserProfileOverlay>
         <div className="vtm-info">
           <div className="vtm-label">Thread Viewer</div>
-					<h1 className="vtm-title">
-						{currentThread?.title || "Untitled Thread"}
-					</h1>
+          <h1 className="vtm-title">{currentThread?.title || "Untitled Thread"}</h1>
           {previewText ? (
             <p className="vtm-description">{previewText}</p>
           ) : (
@@ -144,8 +135,8 @@ const ViewThreadMeta = ({
                   className="vtm-roles"
                   style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}
                 >
-									{currentThread?.user_roles?.map((r) => {
-										const roleDetails = allRoles.find((ar) => ar.name === r);
+                  {currentThread?.user_roles?.map(r => {
+                    const roleDetails = allRoles.find(ar => ar.name === r);
                     return <RoleBadge key={r} role={roleDetails || r} />;
                   })}
                 </div>
@@ -153,9 +144,7 @@ const ViewThreadMeta = ({
             </div>
             <div className="vtm-group">
               <span className={statusClass}>{threadMeta.status}</span>
-							<span className="vtm-id">
-								ID: {truncate(threadMeta.threadId, { length: 10 })}
-							</span>
+              <span className="vtm-id">ID: {truncate(threadMeta.threadId, { length: 10 })}</span>
             </div>
           </div>
         </div>
@@ -163,34 +152,21 @@ const ViewThreadMeta = ({
       </div>
 
       <div className="vtm-metrics">
-				{metrics.map((metric) => {
+        {metrics.map(metric => {
           const Icon = metric.icon;
           return (
             <div key={metric.id} className="vtm-chip">
               {metric.id === "activity" ? (
                 <UserProfileOverlay
-									userId={
-										currentThread?.last_edited_by?.toString() ||
-										currentThread?.user_id ||
-										""
-									}
-									fallbackName={
-										currentThread?.last_edited_by_name || author.name
-									}
-									fallbackAvatar={
-										currentThread?.last_edited_by_avatar ||
-										author.profilePicture
-									}
+                  userId={currentThread?.last_edited_by?.toString() || currentThread?.user_id || ""}
+                  fallbackName={currentThread?.last_edited_by_name || author.name}
+                  fallbackAvatar={currentThread?.last_edited_by_avatar || author.profilePicture}
                 >
                   <UserAvatar
-										src={
-											currentThread?.last_edited_by_avatar ||
-											author.profilePicture
-										}
+                    src={currentThread?.last_edited_by_avatar || author.profilePicture}
                     alt={currentThread?.last_edited_by_name || author.name}
                     size={14}
-										initials={(currentThread?.last_edited_by_name ||
-											author.name)[0]?.toUpperCase()}
+                    initials={(currentThread?.last_edited_by_name || author.name)[0]?.toUpperCase()}
                   />
                 </UserProfileOverlay>
               ) : (
@@ -201,7 +177,7 @@ const ViewThreadMeta = ({
           );
         })}
       </div>
-		</ContentStandOutCard>
+    </ContentStandOutCard>
   );
 };
 

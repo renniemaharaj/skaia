@@ -1,9 +1,9 @@
-import { AlertCircle, ShieldCheck, Fingerprint } from "lucide-react";
+import { AlertCircle, Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
-import Button from "../components/input/Button";
-import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
 import { ContentFlatCard } from "../components/cards/ContentFlatCard";
+import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
+import Button from "../components/input/Button";
 import {
   type AuthResponse,
   type MFAChallengeReason,
@@ -24,7 +24,7 @@ interface MFAChallengeProps {
 function challengeCopy(
   reasonCode: MFAChallengeReason | undefined,
   action: string | undefined,
-	isLogin: boolean,
+  isLogin: boolean
 ) {
   if (isLogin) {
     return {
@@ -39,25 +39,25 @@ function challengeCopy(
         detail: "This session moved to a different network address.",
       };
     case "suspicious_activity":
-			return {
-				label: "Suspicious activity",
-				detail: "A security review flagged this session.",
-			};
+      return {
+        label: "Suspicious activity",
+        detail: "A security review flagged this session.",
+      };
     case "sensitive_action":
       return {
         label: action ? `Required to ${action}` : "Sensitive action",
         detail: "Fresh verification is required for this action.",
       };
     case "session_expired":
-			return {
-				label: "Session trust expired",
-				detail: "This session needs fresh verification.",
-			};
+      return {
+        label: "Session trust expired",
+        detail: "This session needs fresh verification.",
+      };
     default:
-			return {
-				label: "Authentication required",
-				detail: "This session needs fresh verification.",
-			};
+      return {
+        label: "Authentication required",
+        detail: "This session needs fresh verification.",
+      };
   }
 }
 
@@ -83,7 +83,7 @@ const MFAChallenge = ({
         const data = await loginTOTP(
           totpToken,
           useBackupCode ? undefined : totpCode,
-					useBackupCode ? totpCode : undefined,
+          useBackupCode ? totpCode : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess(data.access_token, data);
@@ -91,7 +91,7 @@ const MFAChallenge = ({
       } else {
         await verifyMFAChallenge(
           useBackupCode ? undefined : totpCode,
-					useBackupCode ? totpCode : undefined,
+          useBackupCode ? totpCode : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess("");
@@ -107,25 +107,15 @@ const MFAChallenge = ({
   return (
     <div className="auth-page">
       <div className="auth-container">
-				<ContentFlatCard className="auth-card auth-card--challenge">
+        <ContentFlatCard className="auth-card auth-card--challenge">
           <div className="section__header">
-            <Fingerprint
-              size={24}
-              className="section__header-icon"
-              aria-hidden="true"
-            />
+            <Fingerprint size={24} className="section__header-icon" aria-hidden="true" />
             <span className="section__header-eyebrow">Why now: {reason.label}</span>
             <h1>Verify it's you</h1>
-            <p>
-              {useBackupCode
-                ? "Use an unused backup code."
-                : "Use your authenticator code."}
-            </p>
+            <p>{useBackupCode ? "Use an unused backup code." : "Use your authenticator code."}</p>
           </div>
 
           <div className="section__content">
-
-
             {error && (
               <div className="auth-error">
                 <AlertCircle size={20} />
@@ -133,10 +123,7 @@ const MFAChallenge = ({
               </div>
             )}
 
-						<form
-							onSubmit={handleSubmit}
-							className="auth-form compact-form-card"
-						>
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
               <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="totp_code">
                   {useBackupCode ? "Backup Code" : "Verification Code"}
@@ -151,7 +138,7 @@ const MFAChallenge = ({
                     placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
                     maxLength={useBackupCode ? 9 : 6}
                     value={totpCode}
-										onChange={(e) => setTotpCode(e.target.value)}
+                    onChange={e => setTotpCode(e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -183,9 +170,7 @@ const MFAChallenge = ({
                   }}
                   disabled={loading}
                 >
-									{useBackupCode
-										? "Use authenticator code"
-										: "Use a backup code"}
+                  {useBackupCode ? "Use authenticator code" : "Use a backup code"}
                 </button>
               </p>
               {onBack && (
@@ -202,7 +187,7 @@ const MFAChallenge = ({
               )}
             </div>
           </div>
-				</ContentFlatCard>
+        </ContentFlatCard>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

@@ -278,14 +278,14 @@
 }
 
 .vp-playlist-card {
-	background: transparent;
-	border-radius: 0;
-	padding: 0.5rem 0.625rem;
+  background: transparent;
+  border-radius: 0;
+  padding: 0.5rem 0.625rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-	border: 0;
-	border-bottom: 1px solid var(--border-color);
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .vp-playlist-header {

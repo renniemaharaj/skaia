@@ -206,7 +206,7 @@
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-	box-shadow: none;
+  box-shadow: none;
 }
 
 .cart-item-image {
@@ -359,23 +359,23 @@
 
 .cart-checkout-card {
   width: 100%;
-	padding: 0.625rem;
-	border-radius: 0;
+  padding: 0.625rem;
+  border-radius: 0;
 }
 
 .cart-glass-tile {
-	background: transparent;
-	border: 0;
-	border-bottom: 1px solid var(--border-color);
-	backdrop-filter: none;
-	-webkit-backdrop-filter: none;
-	box-shadow: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
 .cart-checkout-card--details,
 .cart-billing-card,
 .cart-checkout-card--payment {
-	background: transparent;
+  background: transparent;
 }
 
 .cart-summary h3 {

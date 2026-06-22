@@ -26,33 +26,29 @@ export const useUploadFiles = ({
     const validFiles: File[] = [];
     const errorMessages: string[] = [];
 
-    Array.from(newFiles).forEach((file) => {
+    Array.from(newFiles).forEach(file => {
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
-      const isAccepted =
-        fileExtension && acceptedExtensions.includes(fileExtension);
+      const isAccepted = fileExtension && acceptedExtensions.includes(fileExtension);
 
       const isSizeValid = file.size <= maxFileSizeInMB * 1024 * 1024;
       const isDuplicate = files.some(
-        (existingFile) =>
-          existingFile.name === file.name && existingFile.size === file.size,
+        existingFile => existingFile.name === file.name && existingFile.size === file.size
       );
 
       if (isDuplicate) return;
 
       if (!isAccepted) {
         errorMessages.push(
-          `${file.name} has an unsupported file extension. Accepted extensions: ${acceptedExtensions.join(", ")}.`,
+          `${file.name} has an unsupported file extension. Accepted extensions: ${acceptedExtensions.join(", ")}.`
         );
       } else if (!isSizeValid) {
-        errorMessages.push(
-          `${file.name} exceeds the size limit of ${maxFileSizeInMB}MB.`,
-        );
+        errorMessages.push(`${file.name} exceeds the size limit of ${maxFileSizeInMB}MB.`);
       } else {
         validFiles.push(file);
       }
     });
 
-    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+    setFiles(prevFiles => [...prevFiles, ...validFiles]);
     setErrors(errorMessages);
 
     if (event.target) {

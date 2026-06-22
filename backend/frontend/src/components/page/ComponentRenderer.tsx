@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
 /**
  * ComponentRenderer — renders a single registered component using bound row data.
@@ -8,7 +9,6 @@ import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
  * each bind-point value and renders the correct visual for the component type.
  */
 import type { ComponentDefinition } from "./types";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
 import "./ComponentRenderer.css";
 
 /*  helpers  */

@@ -76,9 +76,7 @@
   font-size: 0.9rem;
   cursor: pointer;
   position: relative;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
   white-space: nowrap;
   border-radius: 6px;
 }
@@ -183,19 +181,12 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .store-you-toggle:hover,
 .store-you-toggle.active {
-  border-color: color-mix(
-    in srgb,
-    var(--primary-color) 42%,
-    var(--border-color)
-  );
+  border-color: color-mix(in srgb, var(--primary-color) 42%, var(--border-color));
   background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
   color: var(--text-primary);
 }
@@ -309,9 +300,7 @@
   color: var(--text-secondary);
   background: transparent;
   cursor: pointer;
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
 .store-view-button:hover {
@@ -355,7 +344,7 @@
     animation: storeFilterPanelIn 0.18s ease-out;
   }
 
-.store-filter-mobile-row {
+  .store-filter-mobile-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -402,8 +391,7 @@
     position: sticky;
     right: 0;
     background: color-mix(in srgb, var(--bg-secondary) 94%, transparent);
-    box-shadow: -12px 0 18px
-      color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    box-shadow: -12px 0 18px color-mix(in srgb, var(--bg-secondary) 80%, transparent);
   }
 }
 
@@ -638,9 +626,7 @@
   transform: translateY(-4px);
   pointer-events: none;
   backdrop-filter: blur(10px);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .product-card:hover .product-card-meta,
@@ -784,8 +770,7 @@
 .btn-add-to-cart:hover {
   background-color: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px
-    color-mix(in srgb, var(--primary-color) 35%, transparent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color) 35%, transparent);
 }
 
 .btn-add-to-cart:disabled {

@@ -1,8 +1,8 @@
 import { Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
+import { memo } from "react";
 import { Node } from "./Node";
 import type { Handle } from "./Node";
-import { memo } from "react";
 import type { CustomNodeProps } from "./types";
 
 const handles: Handle[] = [

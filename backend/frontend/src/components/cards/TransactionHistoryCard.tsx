@@ -21,7 +21,7 @@ export const TransactionHistoryCard = ({
   transactions,
   hasFetched,
 }: TransactionHistoryCardProps) => (
-	<ContentFlatCard
+  <ContentFlatCard
     style={{
       flex: 1,
       display: "flex",
@@ -54,7 +54,7 @@ export const TransactionHistoryCard = ({
           paddingRight: "4px",
         }}
       >
-				{transactions.map((tx) => (
+        {transactions.map(tx => (
           <div
             key={tx.id}
             style={{
@@ -92,10 +92,7 @@ export const TransactionHistoryCard = ({
               style={{
                 fontWeight: "bold",
                 fontSize: "1.15rem",
-								color:
-									tx.type === "credit"
-										? "var(--color-success)"
-										: "var(--text-primary)",
+                color: tx.type === "credit" ? "var(--color-success)" : "var(--text-primary)",
               }}
             >
               {tx.type === "credit" ? "+" : "-"}
@@ -106,7 +103,7 @@ export const TransactionHistoryCard = ({
       </div>
     ) : (
       <div style={{ opacity: 0.5, pointerEvents: "none" }}>
-				{[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <div
             key={`skel-tx-${i}`}
             style={{
@@ -152,5 +149,5 @@ export const TransactionHistoryCard = ({
         ))}
       </div>
     )}
-	</ContentFlatCard>
+  </ContentFlatCard>
 );

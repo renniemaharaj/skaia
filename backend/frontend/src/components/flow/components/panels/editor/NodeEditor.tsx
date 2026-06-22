@@ -1,11 +1,11 @@
 import type { Node } from "@xyflow/react";
+import { Form, Formik } from "formik";
 import { useSetAtom } from "jotai";
 import { flowStateAtom } from "../../../../../atoms/flow";
-import PromptDialog from "./PromptDialog";
-import { Formik, Form } from "formik";
 import FormikInput from "../../../../formik/FormikInput";
 import FormikSelect from "../../../../formik/FormikSelect";
 import { nodeGroups } from "../../../config";
+import PromptDialog from "./PromptDialog";
 
 export default function NodeEditor({
   selectedNodes,
@@ -18,17 +18,17 @@ export default function NodeEditor({
   const multipleNodesSelected = selectedNodes.length > 1;
 
   const handleNodeDelete = (id: string) => {
-    setFlowState((prev) => ({
+    setFlowState(prev => ({
       ...prev,
-      nodes: prev.nodes.filter((n) => n.id !== id),
-      edges: prev.edges.filter((e) => e.source !== id && e.target !== id),
+      nodes: prev.nodes.filter(n => n.id !== id),
+      edges: prev.edges.filter(e => e.source !== id && e.target !== id),
     }));
   };
 
   const updateNode = (id: string, property: string, value: any) => {
-    setFlowState((prev) => ({
+    setFlowState(prev => ({
       ...prev,
-      nodes: prev.nodes.map((n) => {
+      nodes: prev.nodes.map(n => {
         if (n.id === id) {
           if (property === "data") {
             return { ...n, data: { ...n.data, ...value } };
@@ -40,20 +40,49 @@ export default function NodeEditor({
     }));
   };
 
-  const typeOptions = nodeGroups.flatMap((group) => group.options.map((opt: any) => ({ label: opt.displayText, value: opt.value })));
+  const typeOptions = nodeGroups.flatMap(group =>
+    group.options.map((opt: any) => ({ label: opt.displayText, value: opt.value }))
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "12px" }}>
       {selectedNodes.length === 1 && selectedNode && (
         <>
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-            <span style={{ padding: "2px 6px", background: "color-mix(in srgb, var(--primary-color) 15%, transparent)", color: "var(--primary-color)", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", fontWeight: 600 }}>
+            <span
+              style={{
+                padding: "2px 6px",
+                background: "color-mix(in srgb, var(--primary-color) 15%, transparent)",
+                color: "var(--primary-color)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              }}
+            >
               ID: {selectedNode.id}
             </span>
-            <span style={{ padding: "2px 6px", background: "color-mix(in srgb, var(--primary-color) 15%, transparent)", color: "var(--primary-color)", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", fontWeight: 600 }}>
+            <span
+              style={{
+                padding: "2px 6px",
+                background: "color-mix(in srgb, var(--primary-color) 15%, transparent)",
+                color: "var(--primary-color)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              }}
+            >
               X: {selectedNode.position.x.toFixed(1)}
             </span>
-            <span style={{ padding: "2px 6px", background: "color-mix(in srgb, var(--primary-color) 15%, transparent)", color: "var(--primary-color)", borderRadius: "var(--radius-sm)", fontSize: "0.75rem", fontWeight: 600 }}>
+            <span
+              style={{
+                padding: "2px 6px",
+                background: "color-mix(in srgb, var(--primary-color) 15%, transparent)",
+                color: "var(--primary-color)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+              }}
+            >
               Y: {selectedNode.position.y.toFixed(1)}
             </span>
           </div>
@@ -92,19 +121,9 @@ export default function NodeEditor({
                   }}
                 />
 
-                <FormikInput
-                  name="width"
-                  label="Width (readonly)"
-                  type="number"
-                  disabled
-                />
+                <FormikInput name="width" label="Width (readonly)" type="number" disabled />
 
-                <FormikInput
-                  name="height"
-                  label="Height (readonly)"
-                  type="number"
-                  disabled
-                />
+                <FormikInput name="height" label="Height (readonly)" type="number" disabled />
               </Form>
             )}
           </Formik>
@@ -112,11 +131,7 @@ export default function NodeEditor({
           <hr style={{ borderColor: "var(--border-color)", borderTop: "none", margin: "16px 0" }} />
 
           <PromptDialog
-            trigger={
-              <button className="btn btn-danger btn-block">
-                Remove Node
-              </button>
-            }
+            trigger={<button className="btn btn-danger btn-block">Remove Node</button>}
             title="Remove Node"
             description={`Are you sure you want to delete node ${selectedNode.id}?`}
             onConfirm={() => handleNodeDelete(selectedNode.id)}
@@ -128,14 +143,10 @@ export default function NodeEditor({
 
       {multipleNodesSelected && (
         <PromptDialog
-          trigger={
-            <button className="btn btn-danger btn-block">
-              Remove Selected Nodes
-            </button>
-          }
+          trigger={<button className="btn btn-danger btn-block">Remove Selected Nodes</button>}
           title="Remove Nodes"
           description={`Are you sure you want to delete ${selectedNodes.length} nodes?`}
-          onConfirm={() => selectedNodes.forEach((node) => handleNodeDelete(node.id))}
+          onConfirm={() => selectedNodes.forEach(node => handleNodeDelete(node.id))}
           confirmText="Remove Nodes"
           type="Warning"
         />

@@ -1,0 +1,20 @@
+cd backend/frontend
+npm run lint
+npm run format
+npm run build
+cd ../..
+export JWT_SECRET=test
+export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/skaia_db?sslmode=disable
+export REDIS_URL=redis://localhost:6379/0
+
+while read -r mod; do
+  dir=$(dirname "$mod")
+  echo "Testing Go module in $dir..."
+  cd "$dir"
+  if [ "$dir" = "." ]; then
+    go test ./stress-test/... || exit 1
+  else
+    go test ./... || exit 1
+  fi
+  cd - > /dev/null
+done < <(find . -type d \( -name node_modules -o -name postgres_data -o -name redis_data -o -name pgadmin_data -o -name .git \) -prune -o -name "go.mod" -print)

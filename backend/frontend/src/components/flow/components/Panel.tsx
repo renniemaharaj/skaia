@@ -1,11 +1,11 @@
-import { useState } from "react";
 import type { Node } from "@xyflow/react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { flowStateAtom } from "../../../atoms/flow";
 import { LayoutDashboard, Plus } from "lucide-react";
+import { useState } from "react";
+import { flowStateAtom } from "../../../atoms/flow";
+import NodePicker from "./NodePicker";
 import NodeEditor from "./panels/editor/NodeEditor";
 import JsonViewer from "./panels/json/JsonViewer";
-import NodePicker from "./NodePicker";
 import FileMenu from "./panels/sidebar/FileMenu";
 
 export default function Panel({
@@ -21,7 +21,7 @@ export default function Panel({
   const setFlowState = useSetAtom(flowStateAtom);
 
   const togglePanel = () => {
-    setFlowState((prev) => ({
+    setFlowState(prev => ({
       ...prev,
       editor: { ...prev.editor, panelExtended: !prev.editor.panelExtended },
     }));
@@ -29,42 +29,76 @@ export default function Panel({
 
   return (
     <div style={{ display: "flex", height: "100%", width: "100%", background: "var(--bg-color)" }}>
-      <div style={{
-        width: "56px",
-        flexShrink: 0,
-        borderRight: "1px solid var(--border-color)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "16px 8px",
-        gap: "16px",
-        background: "var(--bg-secondary)"
-      }}>
-        <button title="Dashboard" onClick={togglePanel} style={{
-          background: "none", border: "none", cursor: "pointer",
-          color: flowProfile.editor.panelExtended ? "var(--primary-color)" : "var(--text-secondary)",
-          transition: "all 0.2s",
-          padding: "8px", borderRadius: "var(--radius-md)",
-          display: "flex", alignItems: "center", justifyContent: "center"
+      <div
+        style={{
+          width: "56px",
+          flexShrink: 0,
+          borderRight: "1px solid var(--border-color)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "16px 8px",
+          gap: "16px",
+          background: "var(--bg-secondary)",
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary-color)"; e.currentTarget.style.background = "var(--bg-tertiary)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = flowProfile.editor.panelExtended ? "var(--primary-color)" : "var(--text-secondary)"; e.currentTarget.style.background = "none"; }}
+      >
+        <button
+          title="Dashboard"
+          onClick={togglePanel}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: flowProfile.editor.panelExtended
+              ? "var(--primary-color)"
+              : "var(--text-secondary)",
+            transition: "all 0.2s",
+            padding: "8px",
+            borderRadius: "var(--radius-md)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.color = "var(--primary-color)";
+            e.currentTarget.style.background = "var(--bg-tertiary)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.color = flowProfile.editor.panelExtended
+              ? "var(--primary-color)"
+              : "var(--text-secondary)";
+            e.currentTarget.style.background = "none";
+          }}
         >
           <LayoutDashboard size={20} />
         </button>
-        
+
         <NodePicker
           pickerOpened={pickerOpened}
           onPickerOpenChange={setPickerOpened}
           trigger={
-            <button title="Node Creator" style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--text-secondary)", transition: "all 0.2s",
-              padding: "8px", borderRadius: "var(--radius-md)",
-              display: "flex", alignItems: "center", justifyContent: "center"
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--primary-color)"; e.currentTarget.style.background = "var(--bg-tertiary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.background = "none"; }}
+            <button
+              title="Node Creator"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-secondary)",
+                transition: "all 0.2s",
+                padding: "8px",
+                borderRadius: "var(--radius-md)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = "var(--primary-color)";
+                e.currentTarget.style.background = "var(--bg-tertiary)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = "var(--text-secondary)";
+                e.currentTarget.style.background = "none";
+              }}
             >
               <Plus size={20} />
             </button>
@@ -76,7 +110,17 @@ export default function Panel({
 
       {/* Expanded Content Area */}
       {flowProfile.editor.panelExtended && (
-        <div style={{ flex: 1, overflowY: "auto", width: "100%", minWidth: "250px", borderRight: "1px solid var(--border-color)", background: "var(--bg-color)" }} className="sk-flow-sidebar">
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            width: "100%",
+            minWidth: "250px",
+            borderRight: "1px solid var(--border-color)",
+            background: "var(--bg-color)",
+          }}
+          className="sk-flow-sidebar"
+        >
           <div className="sk-flow-tabs">
             <div
               className={`sk-flow-tab ${activeTab === "editor" ? "sk-flow-tab--active" : ""}`}
@@ -90,7 +134,10 @@ export default function Panel({
             >
               Scripts
             </div>
-            <div className="sk-flow-tab ml-auto font-bold cursor-pointer hover:opacity-80" onClick={togglePanel}>
+            <div
+              className="sk-flow-tab ml-auto font-bold cursor-pointer hover:opacity-80"
+              onClick={togglePanel}
+            >
               ✕
             </div>
           </div>

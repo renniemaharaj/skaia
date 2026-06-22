@@ -521,7 +521,11 @@ export const OrdersPage = () => {
           order.delivery_location,
           order.status,
           paymentStatus,
-        ].some(value => String(value || "").toLowerCase().includes(search));
+        ].some(value =>
+          String(value || "")
+            .toLowerCase()
+            .includes(search)
+        );
       })
       .sort((a, b) => {
         switch (orderFilters.sort) {
@@ -554,9 +558,7 @@ export const OrdersPage = () => {
         className="orders-filter-select"
         aria-label="Order status"
         value={orderFilters.status}
-        onChange={event =>
-          setOrderFilters(current => ({ ...current, status: event.target.value }))
-        }
+        onChange={event => setOrderFilters(current => ({ ...current, status: event.target.value }))}
         options={[
           { value: "all", label: "Any status" },
           { value: "pending", label: "Pending" },
@@ -702,7 +704,10 @@ export const OrdersPage = () => {
                       }
                     />
                   </div>
-                  <label className="cart-checkbox-label reference-code-active" style={{ margin: 0 }}>
+                  <label
+                    className="cart-checkbox-label reference-code-active"
+                    style={{ margin: 0 }}
+                  >
                     <input
                       type="checkbox"
                       checked={referenceForm.is_active}

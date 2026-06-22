@@ -1,7 +1,7 @@
+import type { Edge, Node } from "@xyflow/react";
 import { memoize } from "lodash";
 import type { FlowState } from "../../../atoms/flow";
 import type { LogicalFlow, LogicalNode, TrimmedFlow } from "./types";
-import type { Node, Edge } from "@xyflow/react";
 
 export const getFullState = (flowState: FlowState) => {
   return flowState;
@@ -10,13 +10,13 @@ export const getFullState = (flowState: FlowState) => {
 export const getTrimmedState = (flowState: FlowState): TrimmedFlow => {
   return {
     name: flowState.name,
-    nodes: flowState.nodes.map((node) => ({
+    nodes: flowState.nodes.map(node => ({
       id: node.id,
       data: node.data,
       type: node.type,
-      position: node.position
+      position: node.position,
     })) as Node[],
-    edges: flowState.edges.map((edge) => ({
+    edges: flowState.edges.map(edge => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
@@ -29,9 +29,9 @@ const getLogicalFlow = (trimmedFlow: TrimmedFlow): LogicalFlow => {
 
   const getChildren = (nodeId: string): LogicalNode[] => {
     return edges
-      .filter((edge) => edge.source === nodeId)
-      .map((edge) => {
-        const targetNode = nodes.find((node) => node.id === edge.target);
+      .filter(edge => edge.source === nodeId)
+      .map(edge => {
+        const targetNode = nodes.find(node => node.id === edge.target);
         if (!targetNode) return null;
 
         return {
@@ -42,10 +42,10 @@ const getLogicalFlow = (trimmedFlow: TrimmedFlow): LogicalFlow => {
           next: getChildren(targetNode.id),
         };
       })
-      .filter((child) => child !== null) as LogicalNode[];
+      .filter(child => child !== null) as LogicalNode[];
   };
 
-  const startNode = nodes.find((node) => node.type === "entry");
+  const startNode = nodes.find(node => node.type === "entry");
   if (!startNode) {
     return { name, flow: {} };
   }
@@ -65,6 +65,6 @@ const getLogicalFlow = (trimmedFlow: TrimmedFlow): LogicalFlow => {
   };
 };
 
-export const memoizedGetLogicalFlow = memoize(getLogicalFlow, (trimmedState) =>
-  JSON.stringify(trimmedState),
+export const memoizedGetLogicalFlow = memoize(getLogicalFlow, trimmedState =>
+  JSON.stringify(trimmedState)
 );

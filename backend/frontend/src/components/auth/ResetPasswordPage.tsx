@@ -2,9 +2,9 @@ import { AlertCircle, CheckCircle, Lock } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { resetPassword } from "../../utils/api";
-import Button from "../input/Button";
-import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import Button from "../input/Button";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 
@@ -51,24 +51,14 @@ export default function ResetPasswordPage() {
     return (
       <div className="auth-page">
         <div className="auth-container">
-					<ContentStandOutCard
-						className="auth-card"
-						style={{ textAlign: "center" }}
-					>
+          <ContentStandOutCard className="auth-card" style={{ textAlign: "center" }}>
             <div className="section__content">
-							<CheckCircle
-								size={40}
-								style={{ color: "var(--success-color)", marginBottom: 16 }}
-							/>
+              <CheckCircle size={40} style={{ color: "var(--success-color)", marginBottom: 16 }} />
               <h2 style={{ margin: "0 0 12px" }}>Password Reset</h2>
               <p style={{ color: "var(--text-secondary)", margin: "0 0 24px" }}>
-								Your password has been changed. You can now log in with your new
-								password.
+                Your password has been changed. You can now log in with your new password.
               </p>
-							<div
-								className="form-actions"
-								style={{ justifyContent: "center" }}
-							>
+              <div className="form-actions" style={{ justifyContent: "center" }}>
                 <button
                   type="button"
                   className="auth-button"
@@ -79,7 +69,7 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </div>
-					</ContentStandOutCard>
+          </ContentStandOutCard>
         </div>
       </div>
     );
@@ -88,7 +78,7 @@ export default function ResetPasswordPage() {
   return (
     <div className="auth-page">
       <div className="auth-container">
-				<ContentFlatCard className="auth-card">
+        <ContentFlatCard className="auth-card">
           <div className="section__header">
             <Lock size={24} className="section__header-icon" aria-hidden="true" />
             <span className="section__header-eyebrow">Account Access</span>
@@ -104,15 +94,10 @@ export default function ResetPasswordPage() {
               </div>
             )}
 
-						<form
-							onSubmit={handleSubmit}
-							className="auth-form compact-form-card"
-						>
+            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
               <ContentStandOutCard className="form-group" emphasis="group">
                 <label htmlFor="password">New Password</label>
-								<p className="form-help">
-									Choose a unique password you do not use elsewhere.
-								</p>
+                <p className="form-help">Choose a unique password you do not use elsewhere.</p>
                 <div className="input-wrapper">
                   <Lock size={20} className="input-icon" />
                   <input
@@ -120,7 +105,7 @@ export default function ResetPasswordPage() {
                     type="password"
                     placeholder="Enter new password"
                     value={password}
-										onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -137,7 +122,7 @@ export default function ResetPasswordPage() {
                     type="password"
                     placeholder="Confirm new password"
                     value={confirm}
-										onChange={(e) => setConfirm(e.target.value)}
+                    onChange={e => setConfirm(e.target.value)}
                     required
                     disabled={loading}
                   />
@@ -169,7 +154,7 @@ export default function ResetPasswordPage() {
               </p>
             </div>
           </div>
-				</ContentFlatCard>
+        </ContentFlatCard>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

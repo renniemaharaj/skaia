@@ -1,6 +1,6 @@
 import { Check, ExternalLink, Plus, Trash2 } from "lucide-react";
-import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { useEffect, useRef } from "react";
+import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import type { PageItem, PageSection } from "../types";
 import "./ProfileCardBlock.css";
 import {

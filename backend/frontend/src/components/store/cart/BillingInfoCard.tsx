@@ -12,7 +12,7 @@ export function BillingInfoCard({
   onRememberBillingChange,
 }: BillingInfoCardProps) {
   return (
-		<ContentFlatCard className="cart-checkout-card cart-glass-tile cart-billing-card">
+    <ContentFlatCard className="cart-checkout-card cart-glass-tile cart-billing-card">
       <ContentStandOutCard
         className="cart-summary-section cart-summary-section--last"
         emphasis="group"
@@ -22,7 +22,7 @@ export function BillingInfoCard({
           <input
             type="checkbox"
             checked={rememberBilling}
-						onChange={(event) => onRememberBillingChange(event.target.checked)}
+            onChange={event => onRememberBillingChange(event.target.checked)}
           />
           Remember billing information
         </label>
@@ -33,12 +33,12 @@ export function BillingInfoCard({
               className="cart-textarea"
               placeholder="Name, note for driver, or billing details"
               value={billingInfo}
-							onChange={(event) => onBillingInfoChange(event.target.value)}
+              onChange={event => onBillingInfoChange(event.target.value)}
             />
           </label>
         )}
       </ContentStandOutCard>
-		</ContentFlatCard>
+    </ContentFlatCard>
   );
 }
 import { ContentFlatCard } from "../../cards/ContentFlatCard";

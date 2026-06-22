@@ -35,9 +35,7 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
         const data = await apiRequest<ForumThread[]>(url);
         if (data) {
           // filter out current thread
-					const filtered = data.filter(
-						(t) => t.id.toString() !== currentThreadId?.toString(),
-					);
+          const filtered = data.filter(t => t.id.toString() !== currentThreadId?.toString());
           // only take top 5
           setThreads(filtered.slice(0, 5));
         }
@@ -53,13 +51,13 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
   if (loading || threads.length === 0) return null;
 
   return (
-		<ContentFlatCard className="toc-tile recent-threads-tile">
+    <ContentFlatCard className="toc-tile recent-threads-tile">
       <div className="toc-header">
         <Clock size={16} />
         <h3>Recent Threads</h3>
       </div>
       <div className="toc-content">
-				{threads.map((thread) => (
+        {threads.map(thread => (
           <Link
             key={thread.id}
             to={`/view-thread/${thread.id}`}
@@ -80,18 +78,14 @@ const RecentThreadsTile: React.FC<RecentThreadsTileProps> = ({
                     size={20}
                   />
                 </UserProfileOverlay>
-								<span className="recent-threads-author">
-									By {thread.user_name || "Unknown"}
-								</span>
-								<span className="recent-threads-time">
-									{relativeTimeAgo(thread.created_at)}
-								</span>
+                <span className="recent-threads-author">By {thread.user_name || "Unknown"}</span>
+                <span className="recent-threads-time">{relativeTimeAgo(thread.created_at)}</span>
               </div>
             </div>
           </Link>
         ))}
       </div>
-		</ContentFlatCard>
+    </ContentFlatCard>
   );
 };
 

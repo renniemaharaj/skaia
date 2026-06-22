@@ -1,5 +1,5 @@
 import { useField } from "formik";
-import React from "react";
+import type React from "react";
 import Checkbox, { type CheckboxProps } from "../input/Checkbox";
 
 export interface FormikCheckboxProps extends Omit<CheckboxProps, "name" | "checked" | "onChange"> {
@@ -14,7 +14,7 @@ export const FormikCheckbox: React.FC<FormikCheckboxProps> = ({ name, ...props }
       <Checkbox
         id={name}
         checked={field.checked}
-        onChange={(e) => helpers.setValue(e.target.checked)}
+        onChange={e => helpers.setValue(e.target.checked)}
         onBlur={() => helpers.setTouched(true)}
         {...props}
       />

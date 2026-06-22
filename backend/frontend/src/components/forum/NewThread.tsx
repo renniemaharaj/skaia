@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { useAtom } from "jotai";
+import { useState } from "react";
 import Editor from "./Editor";
 import ForumCategory from "./ForumCategory";
 import "./NewThread.css";
@@ -29,13 +29,13 @@ const NewThread = () => {
   const threadContent = draft?.content || "";
   const selectedCategory = draft?.categoryId || "";
 
-  const setThreadTitle = (title: string) => 
+  const setThreadTitle = (title: string) =>
     setDraft(prev => ({ title, content: prev?.content || "", categoryId: prev?.categoryId || "" }));
-    
-  const setThreadContent = (content: string) => 
+
+  const setThreadContent = (content: string) =>
     setDraft(prev => ({ title: prev?.title || "", content, categoryId: prev?.categoryId || "" }));
-    
-  const setSelectedCategory = (categoryId: string) => 
+
+  const setSelectedCategory = (categoryId: string) =>
     setDraft(prev => ({ title: prev?.title || "", content: prev?.content || "", categoryId }));
 
   const [error, setError] = useState<string | null>(null);

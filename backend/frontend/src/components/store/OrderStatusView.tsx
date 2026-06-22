@@ -12,9 +12,9 @@ import { productsAtom } from "../../atoms/store";
 import type { CartItem, Order } from "../../atoms/store";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { formatCents } from "../../utils/money";
+import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import UserAvatar from "../user/UserAvatar";
 import { StorePageShell } from "./StorePageShell";
 

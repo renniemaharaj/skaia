@@ -1,5 +1,5 @@
 import { useField } from "formik";
-import React from "react";
+import type React from "react";
 import Select, { type SelectProps } from "../input/Select";
 
 export interface FormikSelectProps extends Omit<SelectProps, "name" | "value" | "onChange"> {
@@ -14,7 +14,7 @@ export const FormikSelect: React.FC<FormikSelectProps> = ({ name, ...props }) =>
       <Select
         id={name}
         value={field.value}
-        onChange={(e) => helpers.setValue(e.target.value)}
+        onChange={e => helpers.setValue(e.target.value)}
         onBlur={() => helpers.setTouched(true)}
         error={meta.touched && meta.error ? meta.error : undefined}
         {...props}

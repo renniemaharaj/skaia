@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 // Assuming you have a file named `models.ts` that exports the model regex
 import modelRegexExtractors from "../models";
@@ -8,8 +8,7 @@ type Case = {
   regex: RegExp;
 };
 
-const [modelRegex, typestructRegex, interfaceRegex, typeRegex] =
-  modelRegexExtractors;
+const [modelRegex, typestructRegex, interfaceRegex, typeRegex] = modelRegexExtractors;
 
 const cases: Case[] = [
   {

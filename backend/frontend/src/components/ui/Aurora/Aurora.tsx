@@ -154,7 +154,7 @@ export default function Aurora(props: AuroraProps) {
 
     const geometry = new Triangle(gl);
     if (geometry.attributes.uv) {
-      delete geometry.attributes.uv;
+      delete (geometry.attributes as any).uv;
     }
 
     const colorStopsArray = colorStops.map(hex => {

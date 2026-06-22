@@ -14,9 +14,7 @@ interface TableOfContentsTileProps {
   htmlContent: string;
 }
 
-const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
-	htmlContent,
-}) => {
+const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }) => {
   const tocItems = useMemo(() => {
     if (!htmlContent) return [];
 
@@ -51,7 +49,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
 
   if (tocItems.length === 0) {
     return (
-			<ContentFlatCard className="toc-tile">
+      <ContentFlatCard className="toc-tile">
         <div className="toc-header">
           <List size={16} />
           <h3>Table of Contents</h3>
@@ -71,7 +69,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
             Use h tags hierarchically to populate this tile
           </div>
         </div>
-			</ContentFlatCard>
+      </ContentFlatCard>
     );
   }
 
@@ -90,15 +88,10 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
     if (!el) {
       // Fallback: try to find heading by text
       const headings = Array.from(
-				document.querySelectorAll(
-					".renderer-editor h1, .renderer-editor h2, .renderer-editor h3",
-				),
+        document.querySelectorAll(".renderer-editor h1, .renderer-editor h2, .renderer-editor h3")
       );
-			const targetText = tocItems.find((item) => item.id === id)?.text;
-			el =
-				(headings.find((h) => h.textContent === targetText) as
-					| HTMLElement
-					| undefined) || null;
+      const targetText = tocItems.find(item => item.id === id)?.text;
+      el = (headings.find(h => h.textContent === targetText) as HTMLElement | undefined) || null;
     }
 
     if (el) {
@@ -107,7 +100,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
   };
 
   return (
-		<ContentFlatCard className="toc-tile">
+    <ContentFlatCard className="toc-tile">
       <div className="toc-header">
         <List size={16} />
         <h3>Table of Contents</h3>
@@ -142,7 +135,7 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({
           </div>
         )}
       </div>
-		</ContentFlatCard>
+    </ContentFlatCard>
   );
 };
 

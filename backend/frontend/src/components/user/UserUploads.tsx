@@ -124,9 +124,7 @@ const UserUploads = ({
   const fetchStorage = useCallback(async () => {
     if (!userId) return;
     try {
-			const data = await apiRequest<UserStorageInfo>(
-				`/upload/storage/${userId}`,
-			);
+      const data = await apiRequest<UserStorageInfo>(`/upload/storage/${userId}`);
       setStorageInfo(data ?? null);
     } catch {
       // non-critical
@@ -140,15 +138,15 @@ const UserUploads = ({
   const handleDelete = useCallback(
     async (url: string) => {
       if (!(await customConfirm("Delete this upload permanently?"))) return;
-			setDeletingSet((prev) => new Set(prev).add(url));
+      setDeletingSet(prev => new Set(prev).add(url));
       try {
         await apiRequest("/upload/file", {
           method: "DELETE",
           body: JSON.stringify({ url }),
         });
-				setUploads((prev) => prev.filter((u) => u.url !== url));
+        setUploads(prev => prev.filter(u => u.url !== url));
         if (selectedUpload?.url === url) setSelectedUpload(null);
-				setSelectedItems((prev) => {
+        setSelectedItems(prev => {
           const next = new Set(prev);
           next.delete(url);
           return next;
@@ -157,39 +155,37 @@ const UserUploads = ({
       } catch {
         alert("Failed to delete upload");
       } finally {
-				setDeletingSet((prev) => {
+        setDeletingSet(prev => {
           const next = new Set(prev);
           next.delete(url);
           return next;
         });
       }
     },
-		[selectedUpload, fetchStorage],
+    [selectedUpload, fetchStorage]
   );
 
   const handleMultiDelete = async () => {
     const urls = Array.from(selectedItems);
     if (urls.length === 0) return;
-		if (!(await customConfirm(`Delete ${urls.length} upload(s) permanently?`)))
-			return;
+    if (!(await customConfirm(`Delete ${urls.length} upload(s) permanently?`))) return;
 
     const deleting = new Set(urls);
-		setDeletingSet((prev) => new Set([...prev, ...deleting]));
+    setDeletingSet(prev => new Set([...prev, ...deleting]));
 
     try {
       await apiRequest("/upload/file", {
         method: "DELETE",
         body: JSON.stringify({ urls }),
       });
-			setUploads((prev) => prev.filter((u) => !deleting.has(u.url)));
-			if (selectedUpload && deleting.has(selectedUpload.url))
-				setSelectedUpload(null);
+      setUploads(prev => prev.filter(u => !deleting.has(u.url)));
+      if (selectedUpload && deleting.has(selectedUpload.url)) setSelectedUpload(null);
       setSelectedItems(new Set());
       fetchStorage();
     } catch {
       alert("Failed to delete uploads");
     } finally {
-			setDeletingSet((prev) => {
+      setDeletingSet(prev => {
         const next = new Set(prev);
         for (const url of deleting) next.delete(url);
         return next;
@@ -203,19 +199,16 @@ const UserUploads = ({
 
       // Determine the active list
       const filtered = externalSearch
-				? uploads.filter((u) =>
-						u.filename.toLowerCase().includes(externalSearch.toLowerCase()),
-					)
+        ? uploads.filter(u => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
         : uploads;
 
-			setSelectedItems((prev) => {
+      setSelectedItems(prev => {
         const next = new Set(prev);
         const isShift = (e as React.MouseEvent)?.shiftKey;
-				const isCtrl =
-					(e as React.MouseEvent)?.ctrlKey || (e as React.MouseEvent)?.metaKey;
+        const isCtrl = (e as React.MouseEvent)?.ctrlKey || (e as React.MouseEvent)?.metaKey;
 
         if (isShift && lastSelectedUrl) {
-					const allUrls = filtered.map((u) => u.url);
+          const allUrls = filtered.map(u => u.url);
           const startIdx = allUrls.indexOf(lastSelectedUrl);
           const endIdx = allUrls.indexOf(url);
           if (startIdx !== -1 && endIdx !== -1) {
@@ -237,20 +230,18 @@ const UserUploads = ({
         return next;
       });
     },
-		[uploads, externalSearch, lastSelectedUrl],
+    [uploads, externalSearch, lastSelectedUrl]
   );
 
   const toggleSelectAll = () => {
     const filtered = externalSearch
-			? uploads.filter((u) =>
-					u.filename.toLowerCase().includes(externalSearch.toLowerCase()),
-				)
+      ? uploads.filter(u => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
       : uploads;
 
     if (selectedItems.size === filtered.length && filtered.length > 0) {
       setSelectedItems(new Set());
     } else {
-			setSelectedItems(new Set(filtered.map((u) => u.url)));
+      setSelectedItems(new Set(filtered.map(u => u.url)));
     }
   };
 
@@ -300,8 +291,7 @@ const UserUploads = ({
     u.type === "photos" ||
     u.type === "banners";
 
-	const isVideo = (u: UserUpload) =>
-		u.mime_type.startsWith("video/") || u.type === "videos";
+  const isVideo = (u: UserUpload) => u.mime_type.startsWith("video/") || u.type === "videos";
 
   const getTypeIcon = (u: UserUpload) => {
     if (isImage(u)) return <ImageIcon size={14} />;
@@ -359,17 +349,13 @@ const UserUploads = ({
     );
   };
 
-	const [internalViewMode, setInternalViewMode] = useState<"grid" | "list">(
-		"grid",
-	);
+  const [internalViewMode, setInternalViewMode] = useState<"grid" | "list">("grid");
   const viewMode = externalViewMode || internalViewMode;
   const setViewMode = (m: "grid" | "list") => setInternalViewMode(m);
 
   // Filter uploads by search
   const filteredUploads = externalSearch
-		? uploads.filter((u) =>
-				u.filename.toLowerCase().includes(externalSearch.toLowerCase()),
-			)
+    ? uploads.filter(u => u.filename.toLowerCase().includes(externalSearch.toLowerCase()))
     : uploads;
 
   if (loading) {
@@ -434,7 +420,7 @@ const UserUploads = ({
                   <button
                     className="action-btn "
                     title="Toggle Upload Manager"
-										onClick={() => setShowManager((prev) => !prev)}
+                    onClick={() => setShowManager(prev => !prev)}
                   >
                     <UploadCloud size={16} />
                   </button>
@@ -450,11 +436,7 @@ const UserUploads = ({
           </h2>
         )}
         {!externalUploads && <StorageBar />}
-				{emptyMessage ? (
-					emptyMessage
-				) : (
-					<p className="up-empty-hint">No uploads yet</p>
-				)}
+        {emptyMessage ? emptyMessage : <p className="up-empty-hint">No uploads yet</p>}
       </div>
     );
   }
@@ -501,7 +483,7 @@ const UserUploads = ({
                 <button
                   className="action-btn "
                   title="Toggle Upload Manager"
-									onClick={() => setShowManager((prev) => !prev)}
+                  onClick={() => setShowManager(prev => !prev)}
                 >
                   <UploadCloud size={16} />
                 </button>
@@ -537,8 +519,7 @@ const UserUploads = ({
                     type="checkbox"
                     className="up-checkbox"
                     checked={
-											selectedItems.size === filteredUploads.length &&
-											filteredUploads.length > 0
+                      selectedItems.size === filteredUploads.length && filteredUploads.length > 0
                     }
                     onChange={toggleSelectAll}
                   />
@@ -555,11 +536,7 @@ const UserUploads = ({
                 <Trash2 size={16} />
               </button>
             )}
-						<Link
-							to={`/directory/${userId}`}
-							className="action-btn"
-							title="Open Full Directory"
-						>
+            <Link to={`/directory/${userId}`} className="action-btn" title="Open Full Directory">
               <ExternalLink size={16} />
             </Link>
             <div className="directory-layout__view-toggle">
@@ -600,28 +577,27 @@ const UserUploads = ({
       >
         <AlertCircle
           size={16}
-					style={{
-						flexShrink: 0,
-						marginTop: "2px",
-						color: "var(--text-warning)",
-					}}
+          style={{
+            flexShrink: 0,
+            marginTop: "2px",
+            color: "var(--text-warning)",
+          }}
         />
         <div style={{ lineHeight: "1.5" }}>
-					<strong>Disclaimer:</strong> This platform is not liable for what is
-					uploaded by users. Please only download files from trusted users.
-					Additionally, please report any non-conforming content to the site's
-					forum.
+          <strong>Disclaimer:</strong> This platform is not liable for what is uploaded by users.
+          Please only download files from trusted users. Additionally, please report any
+          non-conforming content to the site's forum.
         </div>
       </div>
 
       {viewMode === "grid" ? (
         <div className="up-uploads-scroll">
           <div className="up-uploads-grid">
-						{filteredUploads.map((u) => (
-							<ContentFlatCard
+            {filteredUploads.map(u => (
+              <ContentFlatCard
                 key={u.url}
                 className={`up-upload-card${deletingSet.has(u.url) ? " up-upload-deleting" : ""}${selectedUpload?.url === u.url ? " up-upload-selected" : ""}${selectedItems.has(u.url) ? " up-upload-checked" : ""}`}
-								onClick={(e) => {
+                onClick={e => {
                   if (e.ctrlKey || e.metaKey || e.shiftKey) {
                     handleSelect(u.url, e);
                   } else {
@@ -639,20 +615,20 @@ const UserUploads = ({
                     position: "relative",
                   }}
                 >
-									<div
-										style={{
-											position: "absolute",
-											top: "8px",
-											left: "8px",
-											zIndex: 10,
-										}}
-									>
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      left: "8px",
+                      zIndex: 10,
+                    }}
+                  >
                     <input
                       type="checkbox"
                       className="up-checkbox"
                       checked={selectedItems.has(u.url)}
-											onChange={(e) => handleSelect(u.url, e)}
-											onClick={(e) => e.stopPropagation()}
+                      onChange={e => handleSelect(u.url, e)}
+                      onClick={e => e.stopPropagation()}
                     />
                   </div>
                   {isImage(u) ? (
@@ -680,30 +656,26 @@ const UserUploads = ({
                   <button
                     className="action-btn view-btn"
                     title="Download"
-										onClick={(e) => handleDownload(u, e)}
+                    onClick={e => handleDownload(u, e)}
                   >
                     <Download size={14} />
                   </button>
                   <button
                     className="action-btn copy-btn"
                     title="Copy URL"
-										onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleCopyUrl(u.url);
                     }}
                   >
-										{copiedUrl === u.url ? (
-											<Check size={14} />
-										) : (
-											<Copy size={14} />
-										)}
+                    {copiedUrl === u.url ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                   {canDelete && (
                     <button
                       className="action-btn danger"
                       title="Delete"
                       disabled={deletingSet.has(u.url)}
-											onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         handleDelete(u.url);
                       }}
@@ -712,7 +684,7 @@ const UserUploads = ({
                     </button>
                   )}
                 </div>
-							</ContentFlatCard>
+              </ContentFlatCard>
             ))}
           </div>
         </div>
@@ -724,7 +696,7 @@ const UserUploads = ({
               key={u.url}
               {...rowProps}
               className={`${rowProps.className}${selectedItems.has(u.url) ? " up-upload-checked" : ""}${deletingSet.has(u.url) ? " up-upload-deleting" : ""}`}
-							onClick={(e) => {
+              onClick={e => {
                 if (e.ctrlKey || e.metaKey || e.shiftKey) {
                   handleSelect(u.url, e);
                 } else {
@@ -742,21 +714,20 @@ const UserUploads = ({
                   type="checkbox"
                   className="up-checkbox"
                   checked={
-										selectedItems.size === filteredUploads.length &&
-										filteredUploads.length > 0
+                    selectedItems.size === filteredUploads.length && filteredUploads.length > 0
                   }
                   onChange={toggleSelectAll}
                 />
               ),
               width: "40px",
               className: "table-view__cell--center",
-							cell: (u) => (
+              cell: u => (
                 <input
                   type="checkbox"
                   className="up-checkbox"
                   checked={selectedItems.has(u.url)}
-									onChange={(e) => handleSelect(u.url, e)}
-									onClick={(e) => e.stopPropagation()}
+                  onChange={e => handleSelect(u.url, e)}
+                  onClick={e => e.stopPropagation()}
                 />
               ),
             },
@@ -764,7 +735,7 @@ const UserUploads = ({
               header: "File",
               width: "minmax(250px, 3fr)",
               className: "table-view__cell--bold",
-							cell: (u) => (
+              cell: u => (
                 <div
                   style={{
                     display: "flex",
@@ -789,11 +760,11 @@ const UserUploads = ({
                       <img
                         src={u.url}
                         alt={u.filename}
-												style={{
-													width: "100%",
-													height: "100%",
-													objectFit: "cover",
-												}}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     </div>
                   ) : isVideo(u) ? (
@@ -809,11 +780,11 @@ const UserUploads = ({
                     >
                       <video
                         src={u.url}
-												style={{
-													width: "100%",
-													height: "100%",
-													objectFit: "cover",
-												}}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     </div>
                   ) : (
@@ -833,11 +804,11 @@ const UserUploads = ({
                     </div>
                   )}
                   <span
-										style={{
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap",
-										}}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {u.filename}
                   </span>
@@ -848,7 +819,7 @@ const UserUploads = ({
               header: "Type",
               width: "minmax(120px, 1fr)",
               className: "table-view__cell--muted",
-							cell: (u) => (
+              cell: u => (
                 <span
                   style={{
                     display: "inline-flex",
@@ -860,11 +831,11 @@ const UserUploads = ({
                 >
                   {getTypeIcon(u)}{" "}
                   <span
-										style={{
-											overflow: "hidden",
-											textOverflow: "ellipsis",
-											whiteSpace: "nowrap",
-										}}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {getTypeLabel(u.type)}
                   </span>
@@ -875,46 +846,42 @@ const UserUploads = ({
               header: "Size",
               width: "minmax(80px, 1fr)",
               className: "table-view__cell--muted",
-							cell: (u) => formatSize(u.size),
+              cell: u => formatSize(u.size),
             },
             {
               header: "Date",
               width: "minmax(140px, 1.5fr)",
               className: "table-view__cell--muted",
-							cell: (u) => formatDate(u.created_at),
+              cell: u => formatDate(u.created_at),
             },
             {
               header: "Actions",
               width: "120px",
-							cell: (u) => (
+              cell: u => (
                 <div className="table-view__row-actions">
                   <button
                     className="action-btn view-btn"
                     title="Download"
-										onClick={(e) => handleDownload(u, e)}
+                    onClick={e => handleDownload(u, e)}
                   >
                     <Download size={14} />
                   </button>
                   <button
                     className="action-btn copy-btn"
                     title="Copy URL"
-										onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleCopyUrl(u.url);
                     }}
                   >
-										{copiedUrl === u.url ? (
-											<Check size={14} />
-										) : (
-											<Copy size={14} />
-										)}
+                    {copiedUrl === u.url ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                   {canDelete && (
                     <button
                       className="action-btn danger"
                       title="Delete"
                       disabled={deletingSet.has(u.url)}
-											onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         handleDelete(u.url);
                       }}
@@ -930,20 +897,17 @@ const UserUploads = ({
       )}
 
       {/* Lightbox preview */}
-			{selectedUpload &&
-				(isImage(selectedUpload) || isVideo(selectedUpload)) && (
+      {selectedUpload && (isImage(selectedUpload) || isVideo(selectedUpload)) && (
         <MediaPreviewLightbox
-						items={filteredUploads.filter((u) => isImage(u) || isVideo(u))}
+          items={filteredUploads.filter(u => isImage(u) || isVideo(u))}
           index={Math.max(
             0,
             filteredUploads
-								.filter((u) => isImage(u) || isVideo(u))
-								.findIndex((u) => u.url === selectedUpload.url),
+              .filter(u => isImage(u) || isVideo(u))
+              .findIndex(u => u.url === selectedUpload.url)
           )}
-						onIndexChange={(nextIndex) => {
-							const items = filteredUploads.filter(
-								(u) => isImage(u) || isVideo(u),
-							);
+          onIndexChange={nextIndex => {
+            const items = filteredUploads.filter(u => isImage(u) || isVideo(u));
             setSelectedUpload(items[nextIndex] ?? null);
           }}
           onClose={() => setSelectedUpload(null)}

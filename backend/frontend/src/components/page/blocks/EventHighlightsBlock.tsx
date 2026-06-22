@@ -1,5 +1,5 @@
-import type { PageItem, PageSection } from "../types";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import type { PageItem, PageSection } from "../types";
 import "./EventHighlightsBlock.css";
 import {
   AddItemButton,
