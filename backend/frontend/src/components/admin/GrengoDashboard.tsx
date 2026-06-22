@@ -564,7 +564,10 @@ export default function GrengoDashboard() {
 
   // Node export / import
 
-  const triggerAndWaitForJob = (actionType: string, jobIDPromise: Promise<string>): Promise<any> => {
+  const triggerAndWaitForJob = (
+    actionType: string,
+    jobIDPromise: Promise<string>
+  ): Promise<any> => {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
       const bufferedUpdates: any[] = [];
@@ -610,7 +613,10 @@ export default function GrengoDashboard() {
     });
   };
 
-  const triggerAndDownloadJob = (actionType: string, jobIDPromise: Promise<string>): Promise<void> => {
+  const triggerAndDownloadJob = (
+    actionType: string,
+    jobIDPromise: Promise<string>
+  ): Promise<void> => {
     return new Promise((resolve, reject) => {
       let trackedJobId: string | null = null;
       const bufferedUpdates: any[] = [];
@@ -1114,7 +1120,6 @@ export default function GrengoDashboard() {
               .finally(() => {
                 setConsoleBusy(false);
               });
-
           }}
         />
       </div>
