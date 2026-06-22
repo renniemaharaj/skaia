@@ -1,0 +1,208 @@
+syntax = "proto3";
+
+package grengo.grpc;
+
+option go_package = "github.com/skaia/grpc/grengo";
+
+service GrengoService {
+  // Sites
+  rpc ListSites (ListSitesRequest) returns (ListSitesResponse);
+  rpc Exec (ExecRequest) returns (ExecResponse);
+  rpc CreateSite (CreateSiteRequest) returns (CreateSiteResponse);
+  rpc ProvisionFrappe (ProvisionFrappeRequest) returns (stream LogStreamResponse);
+  rpc DeleteSite (SiteRequest) returns (EmptyResponse);
+  rpc StartSite (SiteRequest) returns (EmptyResponse);
+  rpc StopSite (SiteRequest) returns (EmptyResponse);
+  rpc EnableSite (SiteRequest) returns (EmptyResponse);
+  rpc DisableSite (SiteRequest) returns (EmptyResponse);
+  rpc ArmSite (SiteRequest) returns (EmptyResponse);
+  rpc DisarmSite (SiteRequest) returns (EmptyResponse);
+  
+  // Environment
+  rpc GetSiteEnv (SiteRequest) returns (GetSiteEnvResponse);
+  rpc UpdateSiteEnv (UpdateSiteEnvRequest) returns (EmptyResponse);
+  
+  // Metrics & SysInfo
+  rpc Stats (EmptyRequest) returns (StatsResponse);
+  rpc Storage (EmptyRequest) returns (StorageResponse);
+  rpc GetSysInfo (EmptyRequest) returns (SysInfoResponse);
+  
+  // Archives & Migrations
+  rpc ExportSite (SiteRequest) returns (ExportSiteResponse);
+  rpc ImportSite (ImportSiteRequest) returns (ImportSiteResponse);
+  rpc MigrateSite (MigrateSiteRequest) returns (MigrateSiteResponse);
+  rpc MigrateAll (MigrateAllRequest) returns (MigrateAllResponse);
+  rpc ExportNode (EmptyRequest) returns (ExportNodeResponse);
+  rpc ImportNode (ImportNodeRequest) returns (ImportNodeResponse);
+  rpc ListExports (EmptyRequest) returns (ListExportsResponse);
+  rpc DownloadExport (DownloadExportRequest) returns (stream FileChunk);
+  rpc DeleteExport (DeleteExportRequest) returns (EmptyResponse);
+  
+  // Jobs
+  rpc ListJobs (EmptyRequest) returns (ListJobsResponse);
+  rpc GetJob (GetJobRequest) returns (GetJobResponse);
+  rpc DownloadJob (DownloadJobRequest) returns (stream FileChunk);
+  rpc WatchJobs (EmptyRequest) returns (stream JobEvent);
+  
+  // WS proxy replacement
+  rpc SendAction (SendActionRequest) returns (EmptyResponse);
+  
+  // Auth
+  rpc PasscodeStatus (EmptyRequest) returns (PasscodeStatusResponse);
+  rpc VerifyPasscode (VerifyPasscodeRequest) returns (VerifyPasscodeResponse);
+}
+
+message EmptyRequest {}
+message EmptyResponse {}
+
+message SiteRequest {
+  string name = 1;
+}
+
+message ListSitesRequest {}
+message ListSitesResponse {
+  string sites_json = 1; // Keeping it simple for migration
+}
+
+message ExecRequest {
+  string command = 1;
+  repeated string args = 2;
+}
+message ExecResponse {
+  bool ok = 1;
+  string output = 2;
+  int32 exit_code = 3;
+  string error = 4;
+}
+
+message CreateSiteRequest {
+  string name = 1;
+  string port = 2;
+  repeated string domains = 3;
+  string db_name = 4;
+  string admin_password = 5;
+  string admin_email = 6;
+  string session_timeout = 7;
+  string environment = 8;
+  string features = 9;
+}
+message CreateSiteResponse {}
+
+message ProvisionFrappeRequest {
+  string site_name = 1;
+}
+
+message LogStreamResponse {
+  string output = 1;
+}
+
+message GetSiteEnvResponse {
+  string content = 1;
+}
+
+message UpdateSiteEnvRequest {
+  string name = 1;
+  string content = 2;
+}
+
+message StatsResponse {
+  string stats_json = 1;
+}
+
+message StorageResponse {
+  string storage_json = 1;
+}
+
+message SysInfoResponse {
+  string sysinfo_json = 1;
+}
+
+message ExportSiteResponse {
+  string filename = 1;
+}
+
+message ImportSiteRequest {
+  string archive_path = 1;
+  string new_name = 2;
+  string new_port = 3;
+}
+message ImportSiteResponse {
+  string filename = 1;
+}
+
+message MigrateSiteRequest {
+  string name = 1;
+  bool rebuild = 2;
+}
+message MigrateSiteResponse {
+  string result_json = 1;
+}
+
+message MigrateAllRequest {
+  bool rebuild = 1;
+}
+message MigrateAllResponse {
+  string result_json = 1;
+}
+
+message ExportNodeResponse {
+  string filename = 1;
+}
+
+message ImportNodeRequest {
+  string archive_path = 1;
+}
+message ImportNodeResponse {
+  string filename = 1;
+}
+
+message ListExportsResponse {
+  string exports_json = 1;
+}
+
+message DownloadExportRequest {
+  string filename = 1;
+}
+
+message DeleteExportRequest {
+  string filename = 1;
+}
+
+message FileChunk {
+  bytes chunk = 1;
+}
+
+message ListJobsResponse {
+  string jobs_json = 1;
+}
+
+message GetJobRequest {
+  string id = 1;
+}
+message GetJobResponse {
+  string job_json = 1;
+}
+
+message DownloadJobRequest {
+  string id = 1;
+}
+
+message JobEvent {
+  string event_json = 1;
+}
+
+message SendActionRequest {
+  bytes action = 1;
+}
+
+message PasscodeStatusResponse {
+  bool configured = 1;
+}
+
+message VerifyPasscodeRequest {
+  string p1 = 1;
+  string p2 = 2;
+}
+message VerifyPasscodeResponse {
+  bool valid = 1;
+}

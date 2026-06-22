@@ -1,9 +1,11 @@
 package grengo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
+
+	pb "github.com/skaia/grpc/grengo"
 )
 
 // ContainerStats holds metrics for a single container.
@@ -20,16 +22,12 @@ type ContainerStats struct {
 
 // Stats retrieves Docker container stats from the grengo API.
 func (s *Service) Stats() ([]ContainerStats, error) {
-	resp, err := s.client.Get(s.apiURL + "/stats")
+	resp, err := s.client.Stats(context.Background(), &pb.EmptyRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.readAPIError(resp)
-	}
 	var stats []ContainerStats
-	if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+	if err := json.Unmarshal([]byte(resp.StatsJson), &stats); err != nil {
 		return nil, fmt.Errorf("decode stats: %w", err)
 	}
 	if stats == nil {
@@ -57,16 +55,12 @@ type StorageInfo struct {
 
 // Storage retrieves upload storage usage from the grengo API.
 func (s *Service) Storage() (*StorageInfo, error) {
-	resp, err := s.client.Get(s.apiURL + "/storage")
+	resp, err := s.client.Storage(context.Background(), &pb.EmptyRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.readAPIError(resp)
-	}
 	var info StorageInfo
-	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+	if err := json.Unmarshal([]byte(resp.StorageJson), &info); err != nil {
 		return nil, fmt.Errorf("decode storage: %w", err)
 	}
 	return &info, nil
@@ -86,16 +80,12 @@ type SysInfo struct {
 
 // GetSysInfo retrieves server system information from the grengo API.
 func (s *Service) GetSysInfo() (*SysInfo, error) {
-	resp, err := s.client.Get(s.apiURL + "/sysinfo")
+	resp, err := s.client.GetSysInfo(context.Background(), &pb.EmptyRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.readAPIError(resp)
-	}
 	var info SysInfo
-	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+	if err := json.Unmarshal([]byte(resp.SysinfoJson), &info); err != nil {
 		return nil, fmt.Errorf("decode sysinfo: %w", err)
 	}
 	return &info, nil

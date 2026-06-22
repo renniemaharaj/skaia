@@ -1,151 +1,52 @@
 package grengo
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
+
+	pb "github.com/skaia/grpc/grengo"
 )
 
-// ExportSite starts an async export job via the grengo API and returns the job ID.
 func (s *Service) ExportSite(name string) (string, error) {
-	resp, err := s.client.Get(fmt.Sprintf("%s/export/%s", s.apiURL, name))
+	resp, err := s.client.ExportSite(context.Background(), &pb.SiteRequest{Name: name})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted {
-		return "", s.readAPIError(resp)
-	}
-
-	var result struct {
-		JobID string `json:"job_id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("decode export response: %w", err)
-	}
-	return result.JobID, nil
+	return resp.Filename, nil
 }
 
-// ImportSite uploads an archive to the grengo API for import.
 func (s *Service) ImportSite(archivePath, newName, newPort string) (string, error) {
-	f, err := os.Open(archivePath)
-	if err != nil {
-		return "", fmt.Errorf("open archive: %w", err)
-	}
-
-	pr, pw := io.Pipe()
-	w := multipart.NewWriter(pw)
-
-	go func() {
-		defer pw.Close()
-		defer f.Close()
-		fw, err := w.CreateFormFile("archive", filepath.Base(archivePath))
-		if err == nil {
-			io.Copy(fw, f)
-		}
-		if newName != "" {
-			w.WriteField("name", newName)
-		}
-		if newPort != "" {
-			w.WriteField("port", newPort)
-		}
-		w.Close()
-	}()
-
-	req, err := http.NewRequest(http.MethodPost, s.apiURL+"/import", pr)
-	if err != nil {
-		return "", fmt.Errorf("build request: %w", err)
-	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
-
-	resp, err := s.client.Do(req)
+	resp, err := s.client.ImportSite(context.Background(), &pb.ImportSiteRequest{
+		ArchivePath: archivePath,
+		NewName:     newName,
+		NewPort:     newPort,
+	})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
-		return "", s.readAPIError(resp)
-	}
-	var result struct {
-		JobID string `json:"job_id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
-		return result.JobID, nil
-	}
-	return "", nil
+	return resp.Filename, nil
 }
 
-// ExportNode starts an async node export job via the grengo API and returns the job ID.
 func (s *Service) ExportNode() (string, error) {
-	resp, err := s.client.Post(s.apiURL+"/export-node", "application/json", nil)
+	resp, err := s.client.ExportNode(context.Background(), &pb.EmptyRequest{})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted {
-		return "", s.readAPIError(resp)
-	}
-
-	var result struct {
-		JobID string `json:"job_id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("decode export-node response: %w", err)
-	}
-	return result.JobID, nil
+	return resp.Filename, nil
 }
 
-// ImportNode imports an entire node state via the grengo API.
 func (s *Service) ImportNode(archivePath string) (string, error) {
-	f, err := os.Open(archivePath)
-	if err != nil {
-		return "", fmt.Errorf("open archive: %w", err)
-	}
-
-	pr, pw := io.Pipe()
-	w := multipart.NewWriter(pw)
-
-	go func() {
-		defer pw.Close()
-		defer f.Close()
-		fw, err := w.CreateFormFile("archive", filepath.Base(archivePath))
-		if err == nil {
-			io.Copy(fw, f)
-		}
-		w.Close()
-	}()
-
-	req, err := http.NewRequest(http.MethodPost, s.apiURL+"/import-node", pr)
-	if err != nil {
-		return "", fmt.Errorf("build request: %w", err)
-	}
-	req.Header.Set("Content-Type", w.FormDataContentType())
-
-	resp, err := s.client.Do(req)
+	resp, err := s.client.ImportNode(context.Background(), &pb.ImportNodeRequest{
+		ArchivePath: archivePath,
+	})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
-		return "", s.readAPIError(resp)
-	}
-	var result struct {
-		JobID string `json:"job_id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
-		return result.JobID, nil
-	}
-	return "", nil
+	return resp.Filename, nil
 }
 
 // MigrateResult holds the output of a migration command.
@@ -155,34 +56,34 @@ type MigrateResult struct {
 	ExitCode int    `json:"exit_code"`
 }
 
-// MigrateSite runs migrations for a single site.
 func (s *Service) MigrateSite(name string, rebuild bool) (*MigrateResult, error) {
-	body, _ := json.Marshal(map[string]bool{"rebuild": rebuild})
-	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/migrate", s.apiURL, name), "application/json", bytes.NewReader(body))
+	resp, err := s.client.MigrateSite(context.Background(), &pb.MigrateSiteRequest{
+		Name:    name,
+		Rebuild: rebuild,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	var result MigrateResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var res MigrateResult
+	if err := json.Unmarshal([]byte(resp.ResultJson), &res); err != nil {
 		return nil, fmt.Errorf("decode migrate: %w", err)
 	}
-	return &result, nil
+	return &res, nil
 }
 
 // MigrateAll runs migrations for all sites.
 func (s *Service) MigrateAll(rebuild bool) (*MigrateResult, error) {
-	body, _ := json.Marshal(map[string]bool{"rebuild": rebuild})
-	resp, err := s.client.Post(s.apiURL+"/migrate-all", "application/json", bytes.NewReader(body))
+	resp, err := s.client.MigrateAll(context.Background(), &pb.MigrateAllRequest{
+		Rebuild: rebuild,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	var result MigrateResult
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var res MigrateResult
+	if err := json.Unmarshal([]byte(resp.ResultJson), &res); err != nil {
 		return nil, fmt.Errorf("decode migrate-all: %w", err)
 	}
-	return &result, nil
+	return &res, nil
 }
 
 // ExportFile represents a completed export archive.
@@ -192,20 +93,13 @@ type ExportFile struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// ListExports fetches the list of available export archives.
 func (s *Service) ListExports() ([]ExportFile, error) {
-	resp, err := s.client.Get(s.apiURL + "/exports")
+	resp, err := s.client.ListExports(context.Background(), &pb.EmptyRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.readAPIError(resp)
-	}
-
 	var files []ExportFile
-	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
+	if err := json.Unmarshal([]byte(resp.ExportsJson), &files); err != nil {
 		return nil, fmt.Errorf("decode exports: %w", err)
 	}
 	if files == nil {
@@ -214,55 +108,34 @@ func (s *Service) ListExports() ([]ExportFile, error) {
 	return files, nil
 }
 
-// DeleteExport deletes a completed export archive via an async job.
 func (s *Service) DeleteExport(filename string) (string, error) {
-	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/exports/%s", s.apiURL, filename), nil)
-	if err != nil {
-		return "", fmt.Errorf("build request: %w", err)
-	}
-	resp, err := s.client.Do(req)
+	_, err := s.client.DeleteExport(context.Background(), &pb.DeleteExportRequest{Filename: filename})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted {
-		return "", s.readAPIError(resp)
-	}
-
-	var res struct {
-		JobID string `json:"job_id"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return "", fmt.Errorf("decode job response: %w", err)
-	}
-	return res.JobID, nil
+	return "", nil
 }
 
-// DownloadExport streams a completed export archive.
 func (s *Service) DownloadExport(w http.ResponseWriter, filename string) error {
-	resp, err := s.client.Get(fmt.Sprintf("%s/exports/%s/download", s.apiURL, filename))
+	stream, err := s.client.DownloadExport(context.Background(), &pb.DownloadExportRequest{Filename: filename})
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
+	
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
+	for {
+		chunk, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if _, err := w.Write(chunk.Chunk); err != nil {
+			return err
+		}
 	}
-
-	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-	if w.Header().Get("Content-Type") == "" {
-		w.Header().Set("Content-Type", "application/gzip")
-	}
-	cd := resp.Header.Get("Content-Disposition")
-	if cd == "" {
-		cd = fmt.Sprintf(`attachment; filename="%s"`, filename)
-	}
-	w.Header().Set("Content-Disposition", cd)
-	if cl := resp.Header.Get("Content-Length"); cl != "" {
-		w.Header().Set("Content-Length", cl)
-	}
-	io.Copy(w, resp.Body)
 	return nil
 }

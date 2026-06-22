@@ -20,9 +20,9 @@ import (
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 	"github.com/renniemaharaj/grouplogs/pkg/logger"
 	igrengo "github.com/skaia/backend/internal/grengo"
+	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
-	"github.com/skaia/backend/internal/utils"
 )
 
 // MaxInstancesPerClient defines the limit of instances a client can provision.
@@ -67,11 +67,11 @@ func NewService(repo Repository, manager *conveyor.Manager, hub *ws.Hub, grengo 
 	go func() {
 		for entry := range sub.C {
 			payloadBytes, _ := json.Marshal(entry)
-			
+
 			// Parse instanceID from entry.Prefix
 			var instanceID int64
 			fmt.Sscanf(entry.Prefix, "%d", &instanceID)
-			
+
 			if instanceID > 0 {
 				hub.BroadcastToSubscribers("provisioning_logs", instanceID, &ws.Message{
 					Type:    ws.ProvisioningProgress,
@@ -138,7 +138,7 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 	if bp.Name == "Superset" || bp.Name == "superset" || bp.Name == "Apache Superset" {
 		port = 8080 + created.ID
 	}
-	
+
 	baseDomain := os.Getenv("DOMAINS")
 	if baseDomain == "" {
 		baseDomain = "http://localhost:8080"
@@ -150,7 +150,7 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 			baseDomain = "https://" + domain
 		}
 	}
-	
+
 	configMap["url"] = fmt.Sprintf("%s/instances/%d", baseDomain, created.ID)
 	configMap["port"] = port
 
@@ -395,7 +395,7 @@ func (s *service) InstallApp(id int64, appName string) error {
 	l.Info(fmt.Sprintf("Installing app %s...", appName))
 
 	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
-	
+
 	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
@@ -438,7 +438,7 @@ func (s *service) UninstallApp(id int64, appName string) error {
 	l.Info(fmt.Sprintf("Uninstalling app %s...", appName))
 
 	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
-	
+
 	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
@@ -482,9 +482,25 @@ func (s *service) GetInstanceLogs(id int64) ([]logger.Line, error) {
 		for _, f := range files {
 			file, err := os.Open(f)
 			if err != nil {
+				logs = append(logs, logger.Line{
+					Prefix: fmt.Sprintf("%d", id),
+					Msg:    fmt.Sprintf("Error opening log file %s: %v", f, err),
+					Level:  "ERROR",
+					Time:   "historical",
+				})
 				continue
 			}
 			scanner := bufio.NewScanner(file)
+			if err := scanner.Err(); err != nil {
+				logs = append(logs, logger.Line{
+					Prefix: fmt.Sprintf("%d", id),
+					Msg:    fmt.Sprintf("Error reading log file %s: %v", f, err),
+					Level:  "ERROR",
+					Time:   "historical",
+				})
+				file.Close()
+				continue
+			}
 			for scanner.Scan() {
 				var line logger.Line
 				// Only parse if it looks like JSON to avoid errors on non-JSON lines

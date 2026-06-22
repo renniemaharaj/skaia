@@ -1,75 +1,51 @@
 package grengo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
+	"io"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/skaia/backend/internal/ws"
+	pb "github.com/skaia/grpc/grengo"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-// WatchJobs connects to the grengo WebSocket and broadcasts job updates to the frontend hub.
+// WatchJobs connects to the grengo gRPC job stream and broadcasts updates to the frontend hub.
 func (s *Service) WatchJobs() {
-	wsURL := strings.Replace(s.apiURL, "http://", "ws://", 1) + "/ws"
-
 	for {
-		headers := make(http.Header)
-		if s.passcode != "" {
-			headers.Set("X-Grengo-Passcode", s.passcode)
-		}
-		conn, _, err := websocket.DefaultDialer.Dial(wsURL, headers)
+		stream, err := s.client.WatchJobs(context.Background(), &pb.EmptyRequest{})
 		if err != nil {
-			fmt.Printf("grengo ws: failed to connect to %s: %v, retrying in 5s...\n", wsURL, err)
+			fmt.Printf("grengo gRPC: failed to open WatchJobs stream: %v, retrying in 5s...\n", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
-		fmt.Printf("grengo ws: connected to %s\n", wsURL)
-
-		s.wsConnMu.Lock()
-		s.wsConn = conn
-		s.wsConnMu.Unlock()
+		fmt.Printf("grengo gRPC: opened WatchJobs stream\n")
 
 		for {
-			_, msg, err := conn.ReadMessage()
+			resp, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
 			if err != nil {
-				fmt.Printf("grengo ws: disconnected: %v\n", err)
-				conn.Close()
-				s.wsConnMu.Lock()
-				if s.wsConn == conn {
-					s.wsConn = nil
+				if status.Code(err) == codes.Unimplemented {
+					fmt.Printf("grengo gRPC: WatchJobs is not implemented by %s; expected grengo.grpc.GrengoService on port 9100. Check GRENGO_API_URL and restart grengo api.\n", s.grpcURL)
 				}
-				s.wsConnMu.Unlock()
+				if status.Code(err) == codes.Unauthenticated {
+					fmt.Printf("grengo gRPC: WatchJobs requires GRENGO_API_PASSCODE for background updates; stopping watcher.\n")
+					return
+				}
+				fmt.Printf("grengo gRPC: WatchJobs disconnected: %v\n", err)
 				break
 			}
 
-			var parsed struct {
-				Type    string          `json:"type"`
-				Payload json.RawMessage `json:"payload"`
-			}
-			json.Unmarshal(msg, &parsed)
-
-			msgType := ws.GrengoJobUpdate
-			if parsed.Type == "stats_update" {
-				msgType = ws.GrengoStatsUpdate
-			} else if parsed.Type == "storage_update" {
-				msgType = ws.GrengoStorageUpdate
-			} else if parsed.Type == "hardware_update" {
-				msgType = ws.GrengoHardwareUpdate
-			}
-
-			// Broadcast only the payload to frontend clients (not the full grengo envelope)
-			broadcastPayload := parsed.Payload
-			if broadcastPayload == nil {
-				broadcastPayload = json.RawMessage(msg)
-			}
-
+			// In gRPC, WatchJobs currently returns JobEvent which represents JobStatus.
 			if s.hub != nil {
 				s.hub.Broadcast(&ws.Message{
-					Type:    msgType,
-					Payload: broadcastPayload,
+					Type:    ws.GrengoJobUpdate,
+					Payload: json.RawMessage(resp.EventJson),
 				})
 			}
 		}
@@ -78,11 +54,8 @@ func (s *Service) WatchJobs() {
 	}
 }
 
-// SendAction sends a command to grengo via the established WebSocket connection.
 func (s *Service) SendAction(action []byte) {
-	s.wsConnMu.Lock()
-	defer s.wsConnMu.Unlock()
-	if s.wsConn != nil {
-		_ = s.wsConn.WriteMessage(websocket.TextMessage, action)
-	}
+	_, _ = s.client.SendAction(context.Background(), &pb.SendActionRequest{
+		Action: action,
+	})
 }

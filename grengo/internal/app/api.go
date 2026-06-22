@@ -1,7 +1,10 @@
 package app
 
 import (
-	"context"
+	pb "github.com/skaia/grpc/grengo"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+
 	"fmt"
 	"net"
 	"net/http"
@@ -13,7 +16,6 @@ import (
 	"time"
 
 	grengoapi "github.com/skaia/grengo/internal/api"
-	"github.com/skaia/grengo/internal/grpcserver"
 	"github.com/skaia/grengo/internal/hardware"
 	"github.com/skaia/grengo/internal/repo"
 )
@@ -64,29 +66,27 @@ func cmdAPIStart(port int) {
 
 	hardware.InitAndWatch()
 	go broadcastStatsAndStorageLoop()
-	go grpcserver.StartServer(":9101")
 
-	if apiHandlerFactory == nil {
-		die("API handler not configured")
-	}
-	srv := &http.Server{Handler: apiHandlerFactory()}
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(passcodeInterceptor),
+		grpc.StreamInterceptor(passcodeStreamInterceptor),
+	)
+	pb.RegisterGrengoServiceServer(grpcServer, &GrengoServer{})
+	reflection.Register(grpcServer)
 
-	// Graceful shutdown on SIGINT / SIGTERM.
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-done
-		log("Shutting down grengo API…")
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		srv.Shutdown(ctx)
+		log("Shutting down grengo gRPC API…")
+		grpcServer.GracefulStop()
 	}()
 
-	log("Grengo internal API listening on %s (PID %d)", addr, os.Getpid())
+	log("Grengo internal gRPC API listening on %s (PID %d)", addr, os.Getpid())
 	info("Accessible from this host and local Docker containers")
 	info("Stop with: grengo api stop  (or Ctrl-C)")
 
-	if err := srv.Serve(listener); err != nil && err != http.ErrServerClosed {
+	if err := grpcServer.Serve(listener); err != nil {
 		die("Server error: %v", err)
 	}
 	log("Grengo API stopped")
@@ -166,62 +166,62 @@ func apiError(w http.ResponseWriter, status int, msg string) {
 }
 
 type APIHandlers struct {
-	ListSites      http.HandlerFunc
-	Stats          http.HandlerFunc
-	Storage        http.HandlerFunc
-	SysInfo        http.HandlerFunc
-	GetEnv         http.HandlerFunc
-	PutEnv         http.HandlerFunc
-	Exec           http.HandlerFunc
+	ListSites       http.HandlerFunc
+	Stats           http.HandlerFunc
+	Storage         http.HandlerFunc
+	SysInfo         http.HandlerFunc
+	GetEnv          http.HandlerFunc
+	PutEnv          http.HandlerFunc
+	Exec            http.HandlerFunc
 	FrappeProvision http.HandlerFunc
-	ExportSite     http.HandlerFunc
-	ImportSite     http.HandlerFunc
-	ArmSite        http.HandlerFunc
-	DisarmSite     http.HandlerFunc
-	MigrateSite    http.HandlerFunc
-	MigrateAll     http.HandlerFunc
-	ExportNode     http.HandlerFunc
-	ImportNode     http.HandlerFunc
-	ListJobs       http.HandlerFunc
-	GetJob         http.HandlerFunc
-	DownloadJob    http.HandlerFunc
-	ListExports    http.HandlerFunc
-	DownloadExport http.HandlerFunc
-	DeleteExport   http.HandlerFunc
-	WebSocket      http.HandlerFunc
-	VerifyPasscode http.HandlerFunc
-	PasscodeStatus http.HandlerFunc
-	WebhookGithub  http.HandlerFunc
+	ExportSite      http.HandlerFunc
+	ImportSite      http.HandlerFunc
+	ArmSite         http.HandlerFunc
+	DisarmSite      http.HandlerFunc
+	MigrateSite     http.HandlerFunc
+	MigrateAll      http.HandlerFunc
+	ExportNode      http.HandlerFunc
+	ImportNode      http.HandlerFunc
+	ListJobs        http.HandlerFunc
+	GetJob          http.HandlerFunc
+	DownloadJob     http.HandlerFunc
+	ListExports     http.HandlerFunc
+	DownloadExport  http.HandlerFunc
+	DeleteExport    http.HandlerFunc
+	WebSocket       http.HandlerFunc
+	VerifyPasscode  http.HandlerFunc
+	PasscodeStatus  http.HandlerFunc
+	WebhookGithub   http.HandlerFunc
 }
 
 func Handlers() APIHandlers {
 	return APIHandlers{
-		ListSites:      apiListSites,
-		Stats:          apiStats,
-		Storage:        apiStorage,
-		SysInfo:        apiSysInfo,
-		GetEnv:         apiGetEnv,
-		PutEnv:         apiPutEnv,
-		Exec:           apiExec,
+		ListSites:       apiListSites,
+		Stats:           apiStats,
+		Storage:         apiStorage,
+		SysInfo:         apiSysInfo,
+		GetEnv:          apiGetEnv,
+		PutEnv:          apiPutEnv,
+		Exec:            apiExec,
 		FrappeProvision: apiFrappeProvision,
-		ExportSite:     apiExportSite,
-		ImportSite:     apiImportSite,
-		ArmSite:        apiArmSite,
-		DisarmSite:     apiDisarmSite,
-		MigrateSite:    apiMigrateSite,
-		MigrateAll:     apiMigrateAll,
-		ExportNode:     apiExportNode,
-		ImportNode:     apiImportNode,
-		ListJobs:       apiListJobs,
-		GetJob:         apiGetJob,
-		DownloadJob:    apiDownloadJob,
-		ListExports:    apiListExports,
-		DownloadExport: apiDownloadExport,
-		DeleteExport:   apiDeleteExport,
-		WebSocket:      apiWebSocket,
-		VerifyPasscode: apiVerifyPasscode,
-		PasscodeStatus: apiPasscodeStatus,
-		WebhookGithub:  apiWebhookGithub,
+		ExportSite:      apiExportSite,
+		ImportSite:      apiImportSite,
+		ArmSite:         apiArmSite,
+		DisarmSite:      apiDisarmSite,
+		MigrateSite:     apiMigrateSite,
+		MigrateAll:      apiMigrateAll,
+		ExportNode:      apiExportNode,
+		ImportNode:      apiImportNode,
+		ListJobs:        apiListJobs,
+		GetJob:          apiGetJob,
+		DownloadJob:     apiDownloadJob,
+		ListExports:     apiListExports,
+		DownloadExport:  apiDownloadExport,
+		DeleteExport:    apiDeleteExport,
+		WebSocket:       apiWebSocket,
+		VerifyPasscode:  apiVerifyPasscode,
+		PasscodeStatus:  apiPasscodeStatus,
+		WebhookGithub:   apiWebhookGithub,
 	}
 }
 

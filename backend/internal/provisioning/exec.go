@@ -24,6 +24,10 @@ func streamCommand(cmd *exec.Cmd, l *logger.Logger) error {
 	// Stream stdout
 	go func() {
 		scanner := bufio.NewScanner(stdout)
+		if err := scanner.Err(); err != nil {
+			l.ErrorF("Error reading stdout: %v", err)
+			return
+		}
 		for scanner.Scan() {
 			l.Info(scanner.Text())
 		}
@@ -32,6 +36,10 @@ func streamCommand(cmd *exec.Cmd, l *logger.Logger) error {
 	// Stream stderr
 	go func() {
 		scanner := bufio.NewScanner(stderr)
+		if err := scanner.Err(); err != nil {
+			l.ErrorF("Error reading stderr: %v", err)
+			return
+		}
 		for scanner.Scan() {
 			l.Info(scanner.Text()) // log stderr as info for simplicity, or Error
 		}

@@ -1,12 +1,12 @@
 package grengo
 
 import (
-	"bufio"
-	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
+	"io"
+
+	pb "github.com/skaia/grpc/grengo"
 )
 
 // SiteInfo describes a single client visible to the dashboard.
@@ -36,16 +36,12 @@ type CreateSiteParams struct {
 
 // ListSites retrieves all sites from the grengo API.
 func (s *Service) ListSites() ([]SiteInfo, error) {
-	resp, err := s.client.Get(s.apiURL + "/sites")
+	resp, err := s.client.ListSites(context.Background(), &pb.ListSitesRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, s.readAPIError(resp)
-	}
 	var sites []SiteInfo
-	if err := json.NewDecoder(resp.Body).Decode(&sites); err != nil {
+	if err := json.Unmarshal([]byte(resp.SitesJson), &sites); err != nil {
 		return nil, fmt.Errorf("decode sites: %w", err)
 	}
 	if sites == nil {
@@ -62,24 +58,24 @@ type execResponse struct {
 }
 
 func (s *Service) exec(command string, args ...string) (*execResponse, error) {
-	body, _ := json.Marshal(map[string]any{
-		"command": command,
-		"args":    args,
+	resp, err := s.client.Exec(context.Background(), &pb.ExecRequest{
+		Command: command,
+		Args:    args,
 	})
-	resp, err := s.client.Post(s.apiURL+"/exec", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
 
-	var result execResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("decode exec response: %w", err)
+	result := &execResponse{
+		OK:       resp.Ok,
+		Output:   resp.Output,
+		ExitCode: int(resp.ExitCode),
+		Error:    resp.Error,
 	}
 	if result.Error != "" {
 		return nil, fmt.Errorf("grengo API: %s", result.Error)
 	}
-	return &result, nil
+	return result, nil
 }
 
 func (s *Service) execOK(command string, args ...string) error {
@@ -112,49 +108,31 @@ func (s *Service) CreateSite(p CreateSiteParams) error {
 
 // ProvisionFrappe provisions a new multi-tenant Frappe site using grengo on the host
 func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
-	body, _ := json.Marshal(map[string]any{
-		"site_name": siteName,
+	stream, err := s.client.ProvisionFrappe(context.Background(), &pb.ProvisionFrappeRequest{
+		SiteName: siteName,
 	})
-	resp, err := s.client.Post(s.apiURL+"/frappe/provision", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
-	}
-
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF && len(data) == 0 {
-			return 0, nil, nil
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
 		}
-		if i := bytes.IndexAny(data, "\r\n"); i >= 0 {
-			// If we have a CR LF sequence, advance past both
-			if data[i] == '\r' && i+1 < len(data) && data[i+1] == '\n' {
-				return i + 2, data[0:i], nil
-			}
-			return i + 1, data[0:i], nil
+		if err != nil {
+			return fmt.Errorf("reading stream: %w", err)
 		}
-		if atEOF {
-			return len(data), data, nil
-		}
-		return 0, nil, nil
-	})
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "ERROR: exit code") {
+		
+		line := resp.Output
+		if len(line) > 16 && line[:16] == "ERROR: exit code" {
 			return fmt.Errorf("grengo frappe-provision failed: %s", line)
-		} else if strings.HasPrefix(line, "ERROR: ") {
+		} else if len(line) > 7 && line[:7] == "ERROR: " {
 			return fmt.Errorf("grengo API: %s", line)
 		}
 		if onLog != nil {
 			onLog(line)
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("reading stream: %w", err)
 	}
 	return nil
 }
@@ -176,64 +154,36 @@ func (s *Service) DisableSite(name string) error { return s.execOK("disable", na
 
 // ArmSite arms a client via the grengo API.
 func (s *Service) ArmSite(name string) error {
-	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/arm", s.apiURL, name), "application/json", nil)
+	_, err := s.client.ArmSite(context.Background(), &pb.SiteRequest{Name: name})
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
 	}
 	return nil
 }
 
 // DisarmSite disarms a client via the grengo API.
 func (s *Service) DisarmSite(name string) error {
-	resp, err := s.client.Post(fmt.Sprintf("%s/sites/%s/disarm", s.apiURL, name), "application/json", nil)
+	_, err := s.client.DisarmSite(context.Background(), &pb.SiteRequest{Name: name})
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
 	}
 	return nil
 }
 
 // GetSiteEnv retrieves the raw .env file content for a site.
 func (s *Service) GetSiteEnv(name string) (string, error) {
-	resp, err := s.client.Get(fmt.Sprintf("%s/env/%s", s.apiURL, name))
+	resp, err := s.client.GetSiteEnv(context.Background(), &pb.SiteRequest{Name: name})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", s.readAPIError(resp)
-	}
-	var result struct {
-		Content string `json:"content"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("decode env: %w", err)
-	}
-	return result.Content, nil
+	return resp.Content, nil
 }
 
 // UpdateSiteEnv overwrites the .env file for a site.
 func (s *Service) UpdateSiteEnv(name, content string) error {
-	body, _ := json.Marshal(map[string]string{"content": content})
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/env/%s", s.apiURL, name), bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("build request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := s.client.Do(req)
+	_, err := s.client.UpdateSiteEnv(context.Background(), &pb.UpdateSiteEnvRequest{Name: name, Content: content})
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return s.readAPIError(resp)
 	}
 	return nil
 }
