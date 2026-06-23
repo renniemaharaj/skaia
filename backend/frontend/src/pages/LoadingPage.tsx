@@ -1,5 +1,6 @@
 import type React from "react";
 import "./LoadingPage.css";
+import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
 
 interface LoadingPageProps {
   message?: string;
@@ -15,16 +16,19 @@ const LoadingPage: React.FC<LoadingPageProps> = ({
   subMessage = "Please wait while we prepare your content",
 }) => {
   return (
-    <div className="loading-page">
-      <div className="loading-page-content">
-        <div className="loading-spinner">
-          <div className="spinner-circle" />
+    <div className="modal loading-page">
+      <ContentStandOutCard
+        style={{ paddingTop: "1.3rem" }}
+        className="loading-page-content"
+      >
+        <div className="loading-squares">
+          <div className="loading-square sq1" />
+          <div className="loading-square sq2" />
+          <div className="loading-square sq3" />
         </div>
-
         <h2 className="loading-title">{message}</h2>
-
         {subMessage && <p className="loading-subtitle">{subMessage}</p>}
-      </div>
+      </ContentStandOutCard>
     </div>
   );
 };
