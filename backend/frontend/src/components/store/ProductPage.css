@@ -95,11 +95,7 @@
 .product-page-media-cycle.action-btn.btn-ghost:hover {
   color: var(--primary-color);
   background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
-  border-color: color-mix(
-    in srgb,
-    var(--primary-color) 35%,
-    var(--border-color)
-  );
+  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
 }
 
 .product-page-media-cycle--prev {
@@ -232,9 +228,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
+  transition: background 0.2s ease, transform 0.15s ease;
 }
 
 .btn-add-to-cart:hover:not(:disabled) {
@@ -334,10 +328,7 @@
   background: var(--bg-primary);
   text-decoration: none;
   color: inherit;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .similar-product-item:hover {
