@@ -17,10 +17,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({
 }) => {
   return (
     <div className="modal loading-page">
-      <ContentStandOutCard
-        style={{ paddingTop: "1.3rem" }}
-        className="loading-page-content"
-      >
+      <ContentStandOutCard style={{ paddingTop: "1.3rem" }} className="loading-page-content">
         <div className="loading-squares">
           <div className="loading-square sq1" />
           <div className="loading-square sq2" />
