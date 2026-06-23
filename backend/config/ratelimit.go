@@ -8,7 +8,7 @@ var RateLimit = rateLimitConfig{
 
 	// ── Tier 1: Jail ─────────────────────────────────────────────────────────
 	// How long a jailed IP stays blocked before being automatically released.
-	JailTTL: 15 * time.Minute,
+	JailTTL: 5 * time.Minute,
 
 	// How long an admin user can bypass an IP jail before needing to re-auth
 	BypassTTL: 1 * time.Hour,
