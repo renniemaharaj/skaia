@@ -15,5 +15,6 @@ done < <(find . -type d \( -name node_modules -o -name postgres_data -o -name re
 cd backend/frontend
 npm run lint
 npm run format
+git add .
 npm run build
 cd ../..

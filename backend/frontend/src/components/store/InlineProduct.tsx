@@ -1,12 +1,4 @@
-import {
-  Clock,
-  Edit2,
-  Package,
-  ShoppingBag,
-  Trash2,
-  TrendingUp,
-  User,
-} from "lucide-react";
+import { Clock, Edit2, Package, ShoppingBag, Trash2, TrendingUp, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Product } from "../../atoms/store";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
@@ -37,15 +29,11 @@ export const InlineProduct = ({
   const { averageRating, reviewCount } = useProductRatings(product.id);
   const media = getProductMediaItems(product);
   const cover = media[0];
-  const coverIsVideo =
-    cover?.mime_type?.startsWith("video/") || cover?.type === "video";
-  const updatedDate = new Date(product.updated_at).toLocaleDateString(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
-    },
-  );
+  const coverIsVideo = cover?.mime_type?.startsWith("video/") || cover?.type === "video";
+  const updatedDate = new Date(product.updated_at).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 
   const stats = (
     <div className="product-card-meta">
@@ -85,7 +73,7 @@ export const InlineProduct = ({
             <button
               type="button"
               className="product-image-preview-button"
-              onClick={(e) => {
+              onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
                 onImagePreview?.(product, 0);
@@ -114,13 +102,9 @@ export const InlineProduct = ({
           <div className="product-page-price">
             <MoneyAmount cents={product.price} className="current-price" />
 
-            {product.original_price &&
-              product.original_price > product.price && (
-                <MoneyAmount
-                  cents={product.original_price}
-                  className="original-price"
-                />
-              )}
+            {product.original_price && product.original_price > product.price && (
+              <MoneyAmount cents={product.original_price} className="original-price" />
+            )}
           </div>
 
           <div className="product-page-rating-summary">
@@ -138,9 +122,7 @@ export const InlineProduct = ({
 
           {!product.stock_unlimited && (
             <div className="product-page-stock">
-              {product.stock > 0
-                ? `${product.stock} available`
-                : "Out of Stock"}
+              {product.stock > 0 ? `${product.stock} available` : "Out of Stock"}
             </div>
           )}
 
@@ -159,7 +141,7 @@ export const InlineProduct = ({
                 <button
                   type="button"
                   className="action-btn edit-btn"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     onEdit?.(product);
@@ -173,7 +155,7 @@ export const InlineProduct = ({
                 <button
                   type="button"
                   className="action-btn danger"
-                  onClick={(e) => {
+                  onClick={e => {
                     e.preventDefault();
                     e.stopPropagation();
                     onDelete?.(product.id);
@@ -187,16 +169,14 @@ export const InlineProduct = ({
             <button
               type="button"
               className="btn-add-to-cart"
-              onClick={(e) => {
+              onClick={e => {
                 e.preventDefault();
                 e.stopPropagation();
                 onAddToCart?.(product);
               }}
               disabled={!product.stock_unlimited && product.stock === 0}
             >
-              {!product.stock_unlimited && product.stock === 0
-                ? "Sold Out"
-                : "Add to Cart"}
+              {!product.stock_unlimited && product.stock === 0 ? "Sold Out" : "Add to Cart"}
             </button>
           </div>
         </div>

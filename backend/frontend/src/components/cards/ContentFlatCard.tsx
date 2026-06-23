@@ -7,13 +7,11 @@ export interface ContentFlatCardProps extends HTMLAttributes<HTMLDivElement> {
   padding?: boolean;
 }
 
-const contentFlatCardPadding =
-  "var(--content-flat-card-padding, var(--card-padding, 0.625rem))";
+const contentFlatCardPadding = "var(--content-flat-card-padding, var(--card-padding, 0.625rem))";
 
 const contentFlatCardStyle: CSSProperties = {
   background: "transparent",
-  borderColor:
-    "var(--content-flat-card-border-color, var(--card-border, transparent))",
+  borderColor: "var(--content-flat-card-border-color, var(--card-border, transparent))",
   boxShadow: "none",
 };
 
