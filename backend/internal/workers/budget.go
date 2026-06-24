@@ -18,20 +18,6 @@ const (
 	DomainProvisioning = "provisioning"
 )
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func getEnvInt(key string, def int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
@@ -52,6 +38,9 @@ func getSystemMemoryMB() int {
 	if err == nil {
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
+		if scanner.Err() != nil {
+			return 2048
+		}
 		for scanner.Scan() {
 			line := scanner.Text()
 			if strings.HasPrefix(line, "MemTotal:") {
