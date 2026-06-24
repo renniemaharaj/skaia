@@ -233,18 +233,19 @@
 
 .banner-content h1 {
   font-size: 4rem;
+  color: white;
   font-weight: 900;
   margin-bottom: 16px;
-  text-shadow: 0 4px 20px var(--overlay-dark-heavy);
+  /* text-shadow: 0 4px 20px var(--text-primary); */
   letter-spacing: 3px;
   animation: fadeInDown 0.8s ease-out;
 }
 
 .banner-content p {
+  color: white;
   font-size: 1.4rem;
   margin-bottom: 40px;
-  text-shadow: 0 2px 10px var(--overlay-dark-heavy);
-  color: color-mix(in srgb, var(--bg-color) 95%, transparent);
+  text-shadow: 0 2px 10px var(--text-primary);
   animation: fadeInDown 0.8s ease-out 0.2s both;
 }
 
