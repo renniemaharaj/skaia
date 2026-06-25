@@ -54,6 +54,26 @@ func isIPAddress(s string) bool {
 	return true
 }
 
+func wildcardHostForDomain(domain string) string {
+	if domain == "" ||
+		domain == "localhost" ||
+		strings.HasPrefix(domain, "www.") ||
+		strings.HasPrefix(domain, "*.") ||
+		!strings.Contains(domain, ".") ||
+		isIPAddress(domain) {
+		return ""
+	}
+	return "*." + domain
+}
+
+func nginxHostsForDomain(domain string) []string {
+	hosts := []string{domain}
+	if wildcard := wildcardHostForDomain(domain); wildcard != "" {
+		hosts = append(hosts, wildcard)
+	}
+	return hosts
+}
+
 // enabledClients scans the backends directory and returns info for all enabled clients.
 func enabledClients() []clientInfo {
 	var clients []clientInfo
@@ -139,9 +159,17 @@ gzip_types
 	// Host => backend mapping
 	b.WriteString("# ── Host => backend mapping ────────────────────────────────────────────────\n")
 	b.WriteString("map $host $backend_upstream {\n")
+	b.WriteString("    hostnames;\n")
+	mappedHosts := map[string]bool{}
 	for _, c := range clients {
 		for _, domain := range c.Domains {
-			fmt.Fprintf(&b, "    %-24s%s-backend;\n", domain, c.Name)
+			for _, host := range nginxHostsForDomain(domain) {
+				if mappedHosts[host] {
+					continue
+				}
+				mappedHosts[host] = true
+				fmt.Fprintf(&b, "    %-24s%s-backend;\n", host, c.Name)
+			}
 		}
 	}
 	// Default to first client
@@ -167,8 +195,17 @@ proxy_cache_path /var/cache/nginx/uploads
 
 	// Collect all server names
 	var serverNames []string
+	seenServerNames := map[string]bool{}
 	for _, c := range clients {
-		serverNames = append(serverNames, c.Domains...)
+		for _, domain := range c.Domains {
+			for _, host := range nginxHostsForDomain(domain) {
+				if seenServerNames[host] {
+					continue
+				}
+				seenServerNames[host] = true
+				serverNames = append(serverNames, host)
+			}
+		}
 	}
 
 	// Server block
