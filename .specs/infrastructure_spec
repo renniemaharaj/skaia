@@ -7,13 +7,13 @@ management operations.
 
 ## Load when
 
-Changing `grengo`, Docker Compose, nginx generation, tenant lifecycle, env vars,
-uploads paths, maintenance/armed mode, or deployment docs.
+Changing the root grengo CLI module, Docker Compose, nginx generation, tenant
+lifecycle, env vars, uploads paths, maintenance/armed mode, or deployment docs.
 
 ## Owns
 
-- CLI/API: `grengo/`
-- Nginx generator: `grengo/internal/app/nginx.go`
+- CLI/API: root Go module (`main.go`, `router.go`, `internal/`)
+- Nginx generator: `internal/app/nginx.go`
 - Backend image: `backend/Dockerfile`
 - Frontend nginx image variant: `backend/frontend/nginx/default.conf`
 - Shared/runtime config: root `.env`, per-tenant `backends/<tenant>/.env`
@@ -31,8 +31,7 @@ uploads paths, maintenance/armed mode, or deployment docs.
 Build:
 
 ```bash
-cd grengo
-go build -o ../grengo .
+go build -o grengo .
 ```
 
 | Command | Contract |
@@ -102,8 +101,8 @@ Per-tenant env:
 
 ## Verify
 
-- `rg "nginx reload|migrate <name|all>|compose up" grengo -n`
-- `grengo/internal/app/nginx.go`
+- `rg "nginx reload|migrate <name|all>|compose up" internal main.go router.go -n`
+- `internal/app/nginx.go`
 - `backend/main.go` armed middleware and `/api/grengo` mount
 
 ## Trace

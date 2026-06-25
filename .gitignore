@@ -15,6 +15,7 @@ scratch/
 mnt/
 
 # Grengo state
+/grengo
 backends/
 nginx/default.conf
 .grengo-api.pid

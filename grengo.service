@@ -1,0 +1,16 @@
+[Unit]
+Description=Grengo API Server
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/tmp/skaia
+Environment=GRENGO_ROOT=/tmp/skaia
+ExecStart=/usr/local/bin/grengo api start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

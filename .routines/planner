@@ -87,9 +87,11 @@ operational policies.
 - `.routines/correctness`
 - `.routines/auditor`
 - `.routines/worker`
+- `main.go`
+- `router.go`
+- `internal/`
 - `backend/`
 - `backend/frontend/`
-- `grengo/`
 
 ## Extension/See Also
 

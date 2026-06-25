@@ -42,9 +42,9 @@ Container management is split between the CLI and the project root Docker Compos
 
 ```bash
 # Build CLI (from project root)
-go build -o grengo ./grengo
+go build -o grengo .
 # Or, for simplicity, build as 'cli'
-go build -o cli ./grengo
+go build -o cli .
 
 # Configure (set POSTGRES_PASSWORD)
 cp .env.example .env
@@ -85,6 +85,9 @@ cd backend/frontend && npm install && npm run dev
 
 # Backend tests
 cd backend && go test ./...
+
+# CLI tests
+go test . ./internal/...
 
 # Frontend tests
 cd backend/frontend && npm test

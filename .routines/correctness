@@ -66,9 +66,11 @@ docs disagree.
 - `.routines/`
 - `.specs/`
 - `.todo/`
+- `main.go`
+- `router.go`
+- `internal/`
 - `backend/`
 - `backend/frontend/`
-- `grengo/`
 
 ## Extension/See Also
 

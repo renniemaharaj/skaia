@@ -9,6 +9,7 @@ Status: IN_PROGRESS
 5. [ ] Continue moving orchestration beyond self-command execution into narrower `internal/services` packages.
 6. [ ] Replace remaining app-level direct filesystem helpers with `internal/repo` methods where practical.
 7. [x] Move command implementations out of remaining root flat files into focused internal packages.
+8. [x] Promote grengo source into the project root so `go build .` builds the CLI from the root module.
 
 # Progress
 - Added `grengo/internal/repo` with project-root/path helpers, site env read/write helpers, and arm/disarm filesystem operations.
@@ -24,15 +25,24 @@ Status: IN_PROGRESS
 - Added `grengo/router.go` so route registration, `/health`, and passcode middleware remain in the root main package while using handler callbacks from `internal/app`.
 - Added `app.CLICommands()` and `app.ConfigureAPIHandler()` so root wiring stays explicit and internal app logic remains tucked away.
 - Added `grengo rebuilt frontend [<name>|all]` / `grengo rebuild frontend [<name>|all]` to run the frontend build once and hot-copy `dist` into running backend containers without restarting them.
+- Moved the grengo root package (`main.go`, `router.go`) and `internal/` packages from `grengo/` to the project root.
+- Promoted `github.com/skaia/grengo` to the root `go.mod`, with `github.com/skaia/grpc` replaced by `./backend/pkg/grpc`.
+- Removed the nested `grengo/` module and obsolete nginx stub so root-level `go build .`, `go test . ./internal/...`, and `go run . help` are the canonical CLI workflow.
+- Hardened Frappe provisioning after the root move: it now ensures the shared Docker network exists, validates the Frappe Docker build context under the resolved project root, and supports `GRENGO_ROOT` for deterministic production service startup.
 
 # Verification
 - `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .` from `grengo/` passes.
 - `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go test ./...` from `grengo/` passes.
 - `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go run . help` from `grengo/` shows the new `rebuilt frontend` command.
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .` from the repository root passes.
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go test . ./internal/...` from the repository root passes.
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go run . help` from the repository root shows CLI help.
+- 2026-06-24 regression follow-up: repeated `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .` and `go test . ./internal/...` after Frappe/root hardening; both pass.
 - `mise exec node@24.16.0 -- npm run build` from `backend/frontend/` passes.
 
 # Notes
 - A plain `go build .` attempted to use the sandboxed `~/.cache/go-build` and failed with a read-only cache error, so verification used writable Go cache/temp directories under `/tmp`.
+- Root-level `go test ./...` currently fails before test execution because Go traverses `postgres_data/`, which is unreadable in this workspace; targeted root CLI tests use `go test . ./internal/...`.
 - Existing unrelated deletions remain in the worktree: `.todo/grengo_cli_improvements` and `.todo/grengo_cli_improvements.tip`.
 - `go build .` creates an untracked `grengo/grengo` binary; cleanup was not approved previously, so follow-up build verification now uses `-o /tmp/grengo-check`.
 - `backend/internal/grengo/handler.go` is modified in the worktree but was not changed as part of this refactor pass.
@@ -40,3 +50,5 @@ Status: IN_PROGRESS
 - 2026-06-20: Fixed critical Frappe deployment bug: `frappe.go` `cmdFrappeProvision` was calling `runner.RunSelf("docker", ...)` which ran `grengo docker ...` instead of the Docker binary. Fixed to use `exec.Command("docker", "compose", ...)` directly.
 - 2026-06-20: Fixed `dbExists` SQL injection with `sanitizeDBName()` helper in `docker.go`.
 - 2026-06-20: Build verified: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go build ./...` from both `grengo/` and `backend/` passes. All backend tests pass.
+- 2026-06-24: Promoted grengo source/module to the project root; future CLI verification should run from the repository root, not `grengo/`.
+- 2026-06-24: Fixed deployment regression risk from root promotion by adding `GRENGO_ROOT`, setting it in `grengo.service`, ensuring `skaia-network` before Frappe compose up, and validating the Frappe Docker build context before launching Docker.

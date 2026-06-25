@@ -13,7 +13,7 @@ resolution, SSR, or CDN-facing behavior.
 ## Owns
 
 - API cache headers: `backend/internal/utils/http.go`
-- Runtime nginx generator: `grengo/internal/app/nginx.go`
+- Runtime nginx generator: `internal/app/nginx.go`
 - Frontend image nginx variant: `backend/frontend/nginx/default.conf`
 - Page flow: `.specs/route_resolution_spec`
 
@@ -49,11 +49,11 @@ Live page changes bypass CDN through WebSocket:
 - Returning different resources from the same cacheable URL.
 - Redirecting API endpoints for correctness.
 - Relying on Cloudflare purge to make live data correct.
-- Editing generated nginx config instead of `grengo/internal/app/nginx.go`.
+- Editing generated nginx config instead of `internal/app/nginx.go`.
 
 ## Verify
 
-- `rg "Cache-Control|Pragma|no-store" backend grengo -n`
+- `rg "Cache-Control|Pragma|no-store" backend internal main.go router.go -n`
 - `rg "landing-slug|pages/index|landing_page_changed" backend backend/frontend .specs -n`
 
 ## Trace
