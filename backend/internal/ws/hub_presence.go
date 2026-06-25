@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+
 	log "github.com/skaia/backend/internal/syslog"
 )
 
@@ -57,10 +58,7 @@ func (h *Hub) doPresenceBroadcast() {
 			users = append(users, u)
 		}
 
-		payload, _ := json.Marshal(map[string]interface{}{
-			"action": "presence_updated",
-			"users":  users,
-		})
+		payload, _ := json.Marshal(users)
 		msg := &Message{Type: PresenceSync, Payload: payload}
 
 		for _, client := range sd.clients {

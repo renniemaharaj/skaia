@@ -151,7 +151,9 @@ const PresencePanel = () => {
     if (defconResetting) return;
     setDefconResetting(true);
     try {
-      const resp = await apiRequest<{ stats?: DefconInfo }>("/defcon/reset", { method: "POST" });
+      const resp = await apiRequest<{ stats?: DefconInfo }>("/defcon/reset", {
+        method: "POST",
+      });
       if (resp?.stats) {
         setDefconInfo(resp.stats);
       } else {
@@ -641,14 +643,20 @@ const PresencePanel = () => {
         </div>
 
         <div
-          style={{ display: activeTab === "physics" ? "flex" : "none", flexDirection: "column" }}
+          style={{
+            display: activeTab === "physics" ? "flex" : "none",
+            flexDirection: "column",
+          }}
           className="pp-scroll"
         >
           {activeTab === "physics" && <PhysicsControls />}
         </div>
 
         <div
-          style={{ display: activeTab === "defcon" ? "block" : "none", padding: "1rem" }}
+          style={{
+            display: activeTab === "defcon" ? "block" : "none",
+            padding: "1rem",
+          }}
           className="pp-scroll"
         >
           {activeTab === "defcon" && defconInfo && (
@@ -688,7 +696,11 @@ const PresencePanel = () => {
                 </button>
               </div>
               <div
-                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
               >
                 <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span>
                 <strong style={{ color: "var(--text-primary, #fff)" }}>
@@ -696,7 +708,11 @@ const PresencePanel = () => {
                 </strong>
               </div>
               <div
-                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
               >
                 <span style={{ color: "var(--text-secondary, #aaa)" }}>› Tracked Signatures:</span>
                 <strong style={{ color: "var(--text-primary, #fff)" }}>
@@ -704,7 +720,11 @@ const PresencePanel = () => {
                 </strong>
               </div>
               <div
-                style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                }}
               >
                 <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span>
                 <strong style={{ color: "var(--text-primary, #fff)" }}>
@@ -729,7 +749,11 @@ const PresencePanel = () => {
           )}
           {activeTab === "defcon" && !defconInfo && (
             <div
-              style={{ color: "var(--text-secondary)", fontSize: "0.85rem", textAlign: "center" }}
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: "0.85rem",
+                textAlign: "center",
+              }}
             >
               Loading telemetry...
             </div>

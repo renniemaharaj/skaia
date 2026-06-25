@@ -53,7 +53,6 @@ const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 export const shouldUseProtobufWebSocket = () => {
-  return true;
   if (typeof import.meta !== "undefined" && import.meta.env?.VITE_WS_ENCODING === "proto") {
     return true;
   }

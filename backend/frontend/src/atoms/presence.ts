@@ -35,9 +35,10 @@ export const pendingTpRouteAtom = atom<string | null>(null);
 /** Tracks the user ID we are teleporting to or who summoned us, for scroll syncing. */
 export const pendingTpUserAtom = atom<number | null>(null);
 
-registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) =>
-  Array.isArray(data?.users) ? data.users : _prev
-);
+registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) => {
+  console.log("presence:update", data);
+  return Array.isArray(data) ? data : _prev;
+});
 registerResource("cursor:update", cursorPositionsAtom, (prev, data: CursorPosition) => {
   if (!data || typeof data.user_id !== "number") return prev;
   const next = new Map(prev);

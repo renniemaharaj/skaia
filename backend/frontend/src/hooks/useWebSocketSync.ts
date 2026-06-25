@@ -142,7 +142,10 @@ export const useWebSocketSync = () => {
 
           switch (type) {
             case "error": {
-              const errPayload = payload as { message?: string; action?: string };
+              const errPayload = payload as {
+                message?: string;
+                action?: string;
+              };
               if (errPayload.message) {
                 toast.error(errPayload.message, { duration: 5000 });
               }
