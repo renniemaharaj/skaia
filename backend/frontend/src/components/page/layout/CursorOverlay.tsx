@@ -26,6 +26,13 @@ const CursorOverlay = () => {
   const currentUser = useAtomValue(currentUserAtom);
   const currentUserId = currentUser?.id ? Number(currentUser.id) : 0;
 
+  // Mirror cursors into a ref so the RAF loop can read the latest positions
+  // without being in the dependency array (avoids restarting the loop every tick).
+  const cursorsRef = useRef(cursors);
+  cursorsRef.current = cursors;
+  const currentUserIdRef = useRef(currentUserId);
+  currentUserIdRef.current = currentUserId;
+
   // Interaction effects state
   const [pokedUsers, setPokedUsers] = useState<Set<number>>(new Set());
   const [spinningUsers, setSpinningUsers] = useState<Set<number>>(new Set());
@@ -103,16 +110,18 @@ const CursorOverlay = () => {
     return () => clearInterval(id);
   }, [setCursors]);
 
-  // Physics and Animation Loop
+  // Physics and Animation Loop — runs once, reads cursors via ref to avoid
+  // restarting the RAF loop on every cursor position update.
   useEffect(() => {
     const updatePhysics = () => {
-      if (cursors.size > 0) {
+      const currentCursors = cursorsRef.current;
+      if (currentCursors.size > 0) {
         const container = document.getElementById("root") || document.documentElement;
         const docWidth = container.scrollWidth;
         const docHeight = container.scrollHeight;
 
         // Sync targets
-        cursors.forEach((cursor, uid) => {
+        currentCursors.forEach((cursor, uid) => {
           let node = physicsRef.current.get(uid);
           const targetX = cursor.x * docWidth;
           const targetY = cursor.y * docHeight;
@@ -136,12 +145,13 @@ const CursorOverlay = () => {
         });
 
         const nodes = Array.from(physicsRef.current.values());
+        const uid = currentUserIdRef.current;
 
         // Apply collision repulsion from LOCAL MOUSE
         const { x: mx, y: my } = localMouseRef.current;
         for (let i = 0; i < nodes.length; i++) {
           const n1 = nodes[i];
-          if (n1.userId === currentUserId) continue; // Don't push local avatar with local mouse
+          if (n1.userId === uid) continue; // Don't push local avatar with local mouse
           const dx = n1.renderedX - mx;
           const dy = n1.renderedY - my;
           const dist = Math.sqrt(dx * dx + dy * dy);
@@ -198,7 +208,9 @@ const CursorOverlay = () => {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [cursors, triggerParticles]);
+    // triggerParticles is stable (useCallback []). cursors/currentUserId are read via refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerParticles]);
 
   const handlePoke = (userId: number) => {
     setPokedUsers(prev => new Set(prev).add(userId));

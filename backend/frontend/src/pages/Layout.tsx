@@ -1,14 +1,16 @@
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom, getDefaultStore } from "jotai";
 import { useAtom } from "jotai";
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
 import { contextUserAtom } from "../atoms/contextUser";
 import { layoutModeAtom } from "../atoms/layoutMode";
-import { cursorPositionsAtom, pendingTpRouteAtom, pendingTpUserAtom } from "../atoms/presence";
+import { pendingTpRouteAtom, pendingTpUserAtom, cursorPositionsAtom } from "../atoms/presence";
+
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
@@ -36,6 +38,36 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
+
+/**
+ * Isolated wrapper that subscribes to cursorPositionsAtom so that cursor
+ * updates only re-render this small component, not the entire Layout tree.
+ */
+const GravityParticlesWithCursors = ({
+  particleCount,
+  physicsSettings,
+}: { particleCount: number; physicsSettings: { rendererType: string; rendererText: string } }) => {
+  const cursorPositions = useAtomValue(cursorPositionsAtom);
+  const externalCursors = useMemo(() => {
+    return Array.from(cursorPositions.values()).map(c => ({
+      x: c.x * (typeof window !== "undefined" ? window.innerWidth : 1920),
+      y: c.y * (typeof window !== "undefined" ? window.innerHeight : 1080),
+    }));
+  }, [cursorPositions]);
+
+  if (physicsSettings.rendererType === "center-anchored") {
+    return <CenterAnchoredSystem particleCount={particleCount} />;
+  }
+  if (physicsSettings.rendererType === "text") {
+    return (
+      <TextGravityRenderer
+        text={physicsSettings.rendererText}
+        particleCount={particleCount + 150}
+      />
+    );
+  }
+  return <GravityParticles particleCount={particleCount} externalCursors={externalCursors} />;
+};
 
 interface LayoutProps {
   children: ReactNode;
@@ -194,13 +226,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
   const pendingTpUser = useAtomValue(pendingTpUserAtom);
   const clearTpUser = useSetAtom(pendingTpUserAtom);
-  const cursorPositions = useAtomValue(cursorPositionsAtom);
-  const externalCursors = useMemo(() => {
-    return Array.from(cursorPositions.values()).map(c => ({
-      x: c.x * (typeof window !== "undefined" ? window.innerWidth : 1920),
-      y: c.y * (typeof window !== "undefined" ? window.innerHeight : 1080),
-    }));
-  }, [cursorPositions]);
+
   const seo = useAtomValue(seoAtom);
   const physicsSettings = useAtomValue(physicsSettingsAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
@@ -357,10 +383,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [location.pathname, location.hash, isPending]);
 
-  // Teleport to user logic
+  // Teleport to user logic — reads cursor positions lazily from the Jotai store
+  // rather than subscribing to the atom (avoids Layout re-renders on cursor ticks).
   useEffect(() => {
     if (!isPending && pendingTpUser) {
       setTimeout(() => {
+        const cursorPositions = getDefaultStore().get(cursorPositionsAtom);
         const targetCursor = cursorPositions.get(pendingTpUser);
         if (targetCursor) {
           const root = document.getElementById("root");
@@ -376,7 +404,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         clearTpUser(null);
       }, 300);
     }
-  }, [pendingTpUser, cursorPositions, isPending, clearTpUser]);
+  }, [pendingTpUser, isPending, clearTpUser]);
 
   // Consume pending teleport route set by an incoming "tp" WS message.
   useEffect(() => {
@@ -558,15 +586,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             pointerEvents: "none",
           }}
         >
-          {physicsSettings.rendererType === "center-anchored" ? (
-            <CenterAnchoredSystem particleCount={200} />
-          ) : physicsSettings.rendererType === "text" ? (
-            <TextGravityRenderer text={physicsSettings.rendererText} particleCount={300} />
-          ) : (
-            <GravityParticles particleCount={150} externalCursors={externalCursors} />
-          )}
+          <GravityParticlesWithCursors
+            particleCount={150}
+            physicsSettings={{
+              rendererType: physicsSettings.rendererType,
+              rendererText: physicsSettings.rendererText,
+            }}
+          />
         </div>
       )}
+
       {(seo?.particle_style === "default" || !seo?.particle_style) && (
         <div
           style={{
