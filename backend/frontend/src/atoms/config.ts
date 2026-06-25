@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import type { Branding, FooterConfig, SEOConfig } from "../components/page/types";
+import { registerResource } from "../utils/wsRegistry";
 
 export const apiBaseUrlAtom = atom("/api");
 
@@ -15,3 +16,11 @@ export const featuresAtom = atom<FeatureMap | null>(null);
 export const brandingAtom = atom<Branding | null>(null);
 export const footerConfigAtom = atom<FooterConfig | null>(null);
 export const seoAtom = atom<SEOConfig | null>(null);
+
+registerResource("config:update:branding_updated", brandingAtom, (_prev, data: Branding) => data);
+registerResource("config:update:seo_updated", seoAtom, (_prev, data: SEOConfig) => data);
+registerResource(
+  "config:update:footer_updated",
+  footerConfigAtom,
+  (_prev, data: FooterConfig) => data
+);

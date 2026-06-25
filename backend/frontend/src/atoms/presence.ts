@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { registerResource } from "../utils/wsRegistry";
 
 export interface OnlineUser {
   user_id: number;
@@ -33,3 +34,13 @@ export const pendingTpRouteAtom = atom<string | null>(null);
 
 /** Tracks the user ID we are teleporting to or who summoned us, for scroll syncing. */
 export const pendingTpUserAtom = atom<number | null>(null);
+
+registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) =>
+  Array.isArray(data?.users) ? data.users : _prev
+);
+registerResource("cursor:update", cursorPositionsAtom, (prev, data: CursorPosition) => {
+  if (!data || typeof data.user_id !== "number") return prev;
+  const next = new Map(prev);
+  next.set(data.user_id, { ...data, updatedAt: Date.now() });
+  return next;
+});

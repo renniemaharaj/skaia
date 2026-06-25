@@ -1,6 +1,7 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { centsToDollars } from "../utils/money";
+import { registerResource } from "../utils/wsRegistry";
 
 export interface Product {
   id: string;
@@ -169,3 +170,84 @@ export const cartItemCountAtom = atom(get => {
   const items = get(storeCartItemsAtom);
   return items.reduce((count, item) => count + item.quantity, 0);
 });
+
+const mergeOrder = (prev: Order[], order: Order) => {
+  const exists = prev.some(o => String(o.id) === String(order.id));
+  return exists
+    ? prev.map(o => (String(o.id) === String(order.id) ? { ...o, ...order } : o))
+    : [order, ...prev];
+};
+
+registerResource(
+  "store:update:category_created",
+  productCategoriesAtom,
+  (prev, data: StoreCategory) =>
+    prev.some(c => String(c.id) === String(data.id)) ? prev : [...prev, data]
+);
+registerResource(
+  "store:update:category_updated",
+  productCategoriesAtom,
+  (prev, data: Partial<StoreCategory>) =>
+    prev.map(c => (String(c.id) === String(data.id) ? { ...c, ...data } : c))
+);
+registerResource(
+  "store:update:category_deleted",
+  productCategoriesAtom,
+  (prev, data: { id?: string | number }) =>
+    data?.id ? prev.filter(c => String(c.id) !== String(data.id)) : prev
+);
+
+registerResource("store:update:product_created", productsAtom, (prev, data: Product) =>
+  prev.some(p => String(p.id) === String(data.id)) ? prev : [...prev, data]
+);
+registerResource("store:update:product_updated", productsAtom, (prev, data: Partial<Product>) =>
+  prev.map(p => (String(p.id) === String(data.id) ? { ...p, ...data } : p))
+);
+registerResource(
+  "store:update:product_deleted",
+  productsAtom,
+  (prev, data: { id?: string | number }) =>
+    data?.id ? prev.filter(p => String(p.id) !== String(data.id)) : prev
+);
+
+registerResource("store:update:purchase_success", storeCartItemsAtom, () => []);
+registerResource("store:update:purchase_success", ordersAtom, (prev, data: CheckoutResponse) =>
+  data?.order ? mergeOrder(prev, { ...data.order, payment: data.payment }) : prev
+);
+registerResource(
+  "store:update:purchase_success",
+  currentOrderAtom,
+  (prev, data: CheckoutResponse) => {
+    if (!prev || !data?.order || String(prev.id) !== String(data.order.id)) return prev;
+    return { ...prev, ...data.order, payment: data.payment };
+  }
+);
+
+registerResource("order:update:order_created", ordersAtom, (prev, data: Order) =>
+  data?.id ? mergeOrder(prev, data) : prev
+);
+registerResource("order:update:order_created", currentOrderAtom, (prev, data: Order) =>
+  prev && data?.id && String(prev.id) === String(data.id) ? { ...prev, ...data } : prev
+);
+registerResource("order:update:order_updated", ordersAtom, (prev, data: Order) =>
+  data?.id ? mergeOrder(prev, data) : prev
+);
+registerResource("order:update:order_updated", currentOrderAtom, (prev, data: Order) =>
+  prev && data?.id && String(prev.id) === String(data.id) ? { ...prev, ...data } : prev
+);
+registerResource(
+  "order:update:order_deleted",
+  ordersAtom,
+  (prev, data: { id?: string | number }) =>
+    data?.id ? prev.filter(o => String(o.id) !== String(data.id)) : prev
+);
+registerResource(
+  "order:update:order_deleted",
+  currentOrderAtom,
+  (prev, data: { id?: string | number }) =>
+    prev && data?.id && String(prev.id) === String(data.id) ? null : prev
+);
+
+registerResource("cart:update:cart_updated", storeCartItemsAtom, (_prev, data: CartItem[]) =>
+  Array.isArray(data) ? data : _prev
+);

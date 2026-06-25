@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { registerResource } from "../utils/wsRegistry";
 import { currentUserAtom } from "./auth";
 import { guestSandboxAtom } from "./guestSandbox";
 
@@ -162,3 +163,233 @@ export const enrichedThreadCommentsAtom = atom(get => {
     };
   });
 });
+
+type IdPayload = { id?: string | number };
+
+const payloadId = (data: unknown) => {
+  if (data && typeof data === "object" && "id" in data) {
+    return (data as IdPayload).id;
+  }
+  return data;
+};
+
+const updateThread = (thread: ForumThread, data: Partial<ForumThread>) => ({
+  ...thread,
+  title: data.title || thread.title,
+  content: data.content || thread.content,
+  updated_at: data.updated_at || thread.updated_at,
+  view_count: data.view_count ?? thread.view_count,
+  reply_count: data.reply_count ?? thread.reply_count,
+});
+
+registerResource("forum:update:thread_created", currentThreadAtom, (prev, data: ForumThread) =>
+  prev && String(prev.id) === String(data.id) ? updateThread(prev, data) : prev
+);
+registerResource(
+  "forum:update:thread_updated",
+  currentThreadAtom,
+  (prev, data: Partial<ForumThread>) =>
+    prev && String(prev.id) === String(data.id) ? updateThread(prev, data) : prev
+);
+registerResource("forum:update:thread_deleted", currentThreadAtom, (prev, data: unknown) =>
+  prev && String(prev.id) === String(payloadId(data)) ? null : prev
+);
+registerResource("forum:update:thread_liked", currentThreadAtom, (prev, data: any, store) => {
+  if (!prev || String(prev.id) !== String(data.thread_id)) return prev;
+  const actingUserId = String(data.user_id);
+  const currentUser = store.get(currentUserAtom);
+  return {
+    ...prev,
+    likes: data.likes ?? (prev.likes || 0) + 1,
+    is_liked: actingUserId === String(currentUser?.id) ? true : prev.is_liked,
+  };
+});
+registerResource("forum:update:thread_unliked", currentThreadAtom, (prev, data: any, store) => {
+  if (!prev || String(prev.id) !== String(data.thread_id)) return prev;
+  const actingUserId = String(data.user_id);
+  const currentUser = store.get(currentUserAtom);
+  return {
+    ...prev,
+    likes: Math.max(0, data.likes ?? (prev.likes || 1) - 1),
+    is_liked: actingUserId === String(currentUser?.id) ? false : prev.is_liked,
+  };
+});
+
+registerResource("forum:update:comment_created", threadCommentsAtom, (prev, data: any, store) => {
+  const newComment = data?.new_comment;
+  if (!newComment || prev.some(p => String(p.id) === String(newComment.id))) return prev;
+
+  const user = store.get(currentUserAtom);
+  const userId = user?.id;
+  const perms = user?.permissions;
+  const isOwner = userId != null && String(newComment.user_id) === String(userId);
+  return [
+    ...prev,
+    {
+      ...newComment,
+      can_delete: isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
+      can_edit: isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
+      can_like_comments: true,
+    },
+  ];
+});
+registerResource("forum:update:comment_deleted", threadCommentsAtom, (prev, data: any) =>
+  prev.filter(p => String(p.id) !== String(data.comment_id))
+);
+registerResource("forum:update:comment_updated", threadCommentsAtom, (prev, data: any) =>
+  prev.map(p =>
+    String(p.id) === String(data.comment_id)
+      ? {
+          ...p,
+          content: data.content || p.content,
+          updated_at: data.updated_at || p.updated_at,
+        }
+      : p
+  )
+);
+registerResource("forum:update:comment_liked", threadCommentsAtom, (prev, data: any, store) => {
+  const actingUserId = String(data.user_id);
+  const currentUser = store.get(currentUserAtom);
+  return prev.map(p =>
+    String(p.id) === String(data.comment_id)
+      ? {
+          ...p,
+          likes: data.likes ?? p.likes + 1,
+          is_liked: actingUserId === String(currentUser?.id) ? true : p.is_liked,
+        }
+      : p
+  );
+});
+registerResource("forum:update:comment_unliked", threadCommentsAtom, (prev, data: any, store) => {
+  const actingUserId = String(data.user_id);
+  const currentUser = store.get(currentUserAtom);
+  return prev.map(p =>
+    String(p.id) === String(data.comment_id)
+      ? {
+          ...p,
+          likes: Math.max(0, data.likes ?? p.likes - 1),
+          is_liked: actingUserId === String(currentUser?.id) ? false : p.is_liked,
+        }
+      : p
+  );
+});
+
+const addToFeed = (prev: ForumThread[], thread: ForumThread) =>
+  prev.some(t => String(t.id) === String(thread.id)) ? prev : [...prev, thread];
+const updateInFeed = (prev: ForumThread[], data: Partial<ForumThread>) =>
+  prev.map(t => (String(t.id) === String(data.id) ? { ...t, ...data } : t));
+const removeFromFeed = (prev: ForumThread[], id: unknown) =>
+  prev.filter(t => String(t.id) !== String(id));
+
+registerResource(
+  "forum:update:thread_created",
+  categoryFeedThreadsAtom,
+  (prev, data: ForumThread, store) => {
+    const activeCategoryFeedId = store.get(activeCategoryFeedIdAtom);
+    return activeCategoryFeedId && String(data.category_id) === activeCategoryFeedId
+      ? addToFeed(prev, data)
+      : prev;
+  }
+);
+registerResource(
+  "forum:update:thread_created",
+  userFeedThreadsAtom,
+  (prev, data: ForumThread, store) => {
+    const activeUserFeedId = store.get(activeUserFeedIdAtom);
+    return activeUserFeedId && String(data.user_id) === activeUserFeedId
+      ? addToFeed(prev, data)
+      : prev;
+  }
+);
+registerResource(
+  "forum:update:thread_created",
+  allFeedThreadsAtom,
+  (prev, data: ForumThread, store) =>
+    store.get(activeAllFeedIdAtom) ? addToFeed(prev, data) : prev
+);
+registerResource("forum:update:thread_updated", categoryFeedThreadsAtom, updateInFeed);
+registerResource("forum:update:thread_updated", userFeedThreadsAtom, updateInFeed);
+registerResource("forum:update:thread_updated", allFeedThreadsAtom, updateInFeed);
+registerResource("forum:update:thread_deleted", categoryFeedThreadsAtom, (prev, data: unknown) =>
+  removeFromFeed(prev, payloadId(data))
+);
+registerResource("forum:update:thread_deleted", userFeedThreadsAtom, (prev, data: unknown) =>
+  removeFromFeed(prev, payloadId(data))
+);
+registerResource("forum:update:thread_deleted", allFeedThreadsAtom, (prev, data: unknown) =>
+  removeFromFeed(prev, payloadId(data))
+);
+
+registerResource("forum:update:category_created", forumCategoriesAtom, (prev, data: any) => {
+  if (!data?.id || prev.some(c => String(c.id) === String(data.id))) return prev;
+  const newCategory: ForumCategory = {
+    id: data.id,
+    name: data.name,
+    description: data.description,
+    is_locked: data.is_locked || false,
+    is_pinned: data.is_pinned || false,
+    display_order: data.display_order || 0,
+    thread_count: data.thread_count || 0,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    threads: [],
+  };
+  return [...prev, newCategory];
+});
+registerResource("forum:update:category_deleted", forumCategoriesAtom, (prev, data: unknown) =>
+  prev.filter(c => String(c.id) !== String(payloadId(data)))
+);
+registerResource(
+  "forum:update:category_updated",
+  forumCategoriesAtom,
+  (prev, data: Partial<ForumCategory>) =>
+    prev.map(c =>
+      String(c.id) === String(data.id)
+        ? {
+            ...c,
+            name: data.name || c.name,
+            description: data.description || c.description,
+            is_locked: data.is_locked ?? c.is_locked,
+            thread_count: data.thread_count ?? c.thread_count,
+            updated_at: data.updated_at || c.updated_at,
+            threads: c.threads,
+          }
+        : c
+    )
+);
+registerResource("forum:update:category_threads_updated", forumCategoriesAtom, (prev, data: any) =>
+  prev.map(c =>
+    String(c.id) === String(data.id)
+      ? {
+          ...c,
+          threads: data.threads ?? c.threads,
+          updated_at: new Date().toISOString(),
+        }
+      : c
+  )
+);
+registerResource("forum:update:thread_created", forumCategoriesAtom, (prev, data: ForumThread) => {
+  if (!data?.category_id) return prev;
+  const catId = String(data.category_id);
+  return prev.map(c => {
+    if (String(c.id) !== catId) return c;
+    const alreadyExists = (c.threads || []).some(t => String(t.id) === String(data.id));
+    if (alreadyExists) return c;
+    return {
+      ...c,
+      threads: [data, ...(c.threads || [])].slice(0, 2),
+      thread_count: (c.thread_count || 0) + 1,
+    };
+  });
+});
+registerResource("forum:update:thread_deleted", forumCategoriesAtom, (prev, data: unknown) =>
+  prev.map(c => {
+    const filtered = (c.threads || []).filter(t => String(t.id) !== String(payloadId(data)));
+    if (filtered.length === (c.threads || []).length) return c;
+    return {
+      ...c,
+      threads: filtered,
+      thread_count: Math.max(0, (c.thread_count || 0) - 1),
+    };
+  })
+);

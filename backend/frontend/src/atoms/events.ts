@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { registerResource } from "../utils/wsRegistry";
 
 export interface ActivityEvent {
   id: number;
@@ -13,3 +14,7 @@ export interface ActivityEvent {
 }
 
 export const activityEventsAtom = atom<ActivityEvent[]>([]);
+
+registerResource("events:update", activityEventsAtom, (prev, data: ActivityEvent) =>
+  data && !prev.some(e => e.id === data.id) ? [...prev, data] : prev
+);

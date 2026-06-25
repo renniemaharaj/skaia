@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import { type MutableRefObject, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
   type User,
@@ -9,40 +9,14 @@ import {
   refreshTokenAtom,
   socketAtom,
 } from "../atoms/auth";
-import { type GlobalChatMessage, globalChatMessagesAtom } from "../atoms/chat";
-import { brandingAtom, footerConfigAtom, seoAtom, wsBaseUrlAtom } from "../atoms/config";
-import { type ActivityEvent, activityEventsAtom } from "../atoms/events";
-import {
-  type ForumCategory,
-  type ForumThread,
-  activeAllFeedIdAtom,
-  activeCategoryFeedIdAtom,
-  activeUserFeedIdAtom,
-  allFeedThreadsAtom,
-  categoryFeedThreadsAtom,
-  currentThreadAtom,
-  forumCategoriesAtom,
-  threadCommentsAtom,
-  userFeedThreadsAtom,
-} from "../atoms/forum";
-import {
-  activeConversationIdAtom,
-  inboxConversationsAtom,
-  inboxMessagesAtom,
-  inboxUnreadCountAtom,
-} from "../atoms/inbox";
-import { mediaStateAtom } from "../atoms/media";
-import { type AppNotification, notificationsAtom } from "../atoms/notifications";
-import {
-  type CursorPosition,
-  cursorPositionsAtom,
-  onlineUsersAtom,
-  pendingTpRouteAtom,
-  pendingTpUserAtom,
-} from "../atoms/presence";
-import { voicePermissionsAtom } from "../atoms/voice";
+import { wsBaseUrlAtom } from "../atoms/config";
+import { activeConversationIdAtom } from "../atoms/inbox";
+import { type AppNotification } from "../atoms/notifications";
+import { pendingTpRouteAtom, pendingTpUserAtom } from "../atoms/presence";
+import { type CheckoutResponse } from "../atoms/store";
 import { formatCents } from "../utils/money";
 import { playChatSound, playMessageSound, playNotificationSound } from "../utils/sound";
+import "../utils/wsResources";
 import {
   WS_JSON_SUBPROTOCOL,
   WS_PROTO_SUBPROTOCOL,
@@ -50,28 +24,22 @@ import {
   sendWebSocketMessage,
   shouldUseProtobufWebSocket,
 } from "../utils/wsProtobuf";
-
-import {
-  type CartItem,
-  type CheckoutResponse,
-  type Order,
-  type Product,
-  type StoreCategory,
-  currentOrderAtom,
-  ordersAtom,
-  productCategoriesAtom,
-  productsAtom,
-  storeCartItemsAtom,
-} from "../atoms/store";
+import { applyWsUpdate } from "../utils/wsRegistry";
 
 interface WebSocketMessage {
   type: string;
+  userId?: number;
+  user_id?: number;
   payload: {
-    action: string;
+    action?: string;
     id?: string | number;
     data?: any;
+    [key: string]: any;
   };
 }
+
+type Setter<T> = (value: T | ((prev: T) => T)) => void;
+type ValueSetter<T> = (value: T) => void;
 
 /**
  * Module-level singleton - shared across every hook instance in the same JS context.
@@ -83,6 +51,21 @@ let _globalConnecting = false;
 // Module-level mirror of activeConversationIdAtom so the singleton onmessage
 // closure always has the latest value even across multiple hook instances.
 let _activeConversationId: string | null = null;
+
+const EVENT_BUS_TYPES = new Set([
+  "mediascraper:result",
+  "mediascraper:started",
+  "mediascraper:pending",
+  "grengo:job_update",
+  "grengo:action_ack",
+  "grengo:stats_update",
+  "grengo:storage_update",
+  "grengo:hardware_update",
+  "logs:stream",
+  "provisioning:progress",
+  "provisioning:status",
+  "recovery_request:update",
+]);
 
 const appendWsParam = (url: string, key: string, value: string) =>
   `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
@@ -109,81 +92,286 @@ const parseWebSocketMessage = async (ws: WebSocket, data: MessageEvent["data"]) 
   return { message, payload };
 };
 
+const registryPayload = (payload: WebSocketMessage["payload"]) => payload?.data ?? payload;
+
+const registryKey = (type: string, payload: WebSocketMessage["payload"]) =>
+  payload?.action ? `${type}:${payload.action}` : type;
+
+const applyMessageUpdate = (type: string, payload: WebSocketMessage["payload"]) =>
+  applyWsUpdate(registryKey(type, payload), registryPayload(payload));
+
+const dispatchEventBusMessage = (type: string, payload: any) => {
+  if (type === "mediascraper:jobs") {
+    const { active_jobs, cache_hits_1h, new_scrapes_1h } = payload as {
+      active_jobs?: number;
+      cache_hits_1h?: number;
+      new_scrapes_1h?: number;
+    };
+    if (active_jobs !== undefined) {
+      window.dispatchEvent(
+        new CustomEvent("mediascraper:jobs", {
+          detail: { active_jobs, cache_hits_1h, new_scrapes_1h },
+        })
+      );
+    }
+    return true;
+  }
+
+  if (type === "media:sfx") {
+    window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
+    return true;
+  }
+
+  if (type === "page:update") {
+    window.dispatchEvent(
+      new CustomEvent("page:live:event", {
+        detail: { action: payload?.action, data: payload?.data },
+      })
+    );
+    return true;
+  }
+
+  if (!EVENT_BUS_TYPES.has(type)) return false;
+  window.dispatchEvent(new CustomEvent(type, { detail: payload }));
+  return true;
+};
+
+const subscribeToForumCategory = (
+  ws: WebSocket,
+  subscriptions: MutableRefObject<Set<string>>,
+  categoryId: string | number
+) => {
+  const key = `forum_category:${categoryId}`;
+  subscriptions.current.add(key);
+  if (ws.readyState !== WebSocket.OPEN) return;
+  sendWebSocketMessage(ws, {
+    type: "subscribe",
+    payload: {
+      resource_type: "forum_category",
+      resource_id: categoryId,
+    },
+  });
+};
+
+const handleUserUpdate = (
+  payload: any,
+  currentUserIdRef: MutableRefObject<string | null>,
+  setCurrentUser: Setter<User | null>,
+  setAccessToken: ValueSetter<string | null>,
+  setRefreshToken: ValueSetter<string | null>
+) => {
+  const { action: userAction, data: userData } = payload;
+
+  if (userAction === "permissions_changed" && userData) {
+    const myId = currentUserIdRef.current;
+    if (myId && String(userData.id) === String(myId)) {
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          roles: userData.roles ?? prev.roles,
+          permissions: userData.permissions ?? prev.permissions,
+        };
+      });
+      if (userData.new_token) setAccessToken(userData.new_token);
+    }
+    window.dispatchEvent(
+      new CustomEvent("user:profile:updated", {
+        detail: {
+          userId: String(userData.id),
+          user: {
+            roles: userData.roles,
+            permissions: userData.permissions,
+          },
+        },
+      })
+    );
+  }
+
+  if (payload?.data?.user) {
+    const updatedUser = payload.data.user as User;
+    const newToken = payload.data.new_token as string | undefined;
+    const myId = currentUserIdRef.current;
+
+    if (payload?.data?.mfa_challenge_triggered && myId && String(updatedUser.id) === String(myId)) {
+      window.dispatchEvent(
+        new CustomEvent("auth:mfa-required", {
+          detail: { reasonCode: payload?.data?.mfa_reason_code },
+        })
+      );
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("user:profile:updated", {
+        detail: {
+          userId: String(updatedUser.id),
+          user: updatedUser,
+        },
+      })
+    );
+
+    if (myId && String(updatedUser.id) === String(myId)) {
+      setCurrentUser(updatedUser);
+      if (newToken) setAccessToken(newToken);
+      if (updatedUser.is_suspended) {
+        setAccessToken(null);
+        setRefreshToken(null);
+        setCurrentUser(null);
+      }
+    }
+  }
+
+  if (userAction === "user_updated" && (userData as any)?.action === "uploads_changed") {
+    const { id } = payload as { id?: number };
+    window.dispatchEvent(
+      new CustomEvent("user:uploads:changed", {
+        detail: { userId: String(id ?? 0) },
+      })
+    );
+  }
+};
+
+const handleForumUpdate = (
+  ws: WebSocket,
+  payload: WebSocketMessage["payload"],
+  subscriptions: MutableRefObject<Set<string>>,
+  currentUserIdRef: MutableRefObject<string | null>
+) => {
+  const { action, data } = payload;
+
+  if (action === "category_created" && data?.id) {
+    subscribeToForumCategory(ws, subscriptions, data.id);
+  }
+
+  applyMessageUpdate("forum:update", payload);
+
+  if (action === "comment_created") {
+    const newComment = data?.new_comment;
+    const isOwner =
+      currentUserIdRef.current != null &&
+      String(newComment?.user_id) === String(currentUserIdRef.current);
+    if (newComment && !isOwner) {
+      const preview =
+        newComment.content?.length > 80
+          ? `${newComment.content.slice(0, 80)}...`
+          : newComment.content;
+      toast(`${newComment.author_name || "Someone"} commented`, {
+        description: preview,
+        duration: 5000,
+      });
+    }
+  }
+};
+
+const handleStoreUpdate = (payload: WebSocketMessage["payload"]) => {
+  applyMessageUpdate("store:update", payload);
+
+  if (payload?.action === "purchase_success") {
+    const resp = payload.data as CheckoutResponse;
+    toast.success("Payment successful!", {
+      description: `Order #${resp?.order?.id} - ${formatCents(resp?.order?.total_price || 0)}`,
+      duration: 8000,
+    });
+  }
+  if (payload?.action === "purchase_failure") {
+    const resp = payload.data as CheckoutResponse;
+    toast.error("Payment failed", {
+      description: resp?.message ?? "Please try again.",
+      duration: 8000,
+    });
+  }
+};
+
+const handleNotification = (payload: AppNotification) => {
+  applyWsUpdate("notification", payload);
+  playNotificationSound();
+  toast(payload.message, {
+    duration: 6000,
+    action: payload.route
+      ? {
+          label: "View",
+          onClick: () => {
+            window.location.assign(payload.route);
+          },
+        }
+      : undefined,
+  });
+};
+
+const handleGlobalChat = (payload: any, currentUserIdRef: MutableRefObject<string | null>) => {
+  applyWsUpdate("global:chat", payload);
+  if (String(payload.user_id) !== String(currentUserIdRef.current)) {
+    playChatSound();
+  }
+};
+
+const handleInboxUpdate = (payload: WebSocketMessage["payload"]) => {
+  const wasActiveDeleted =
+    payload?.action === "conversation_deleted" &&
+    payload?.data?.id &&
+    String(_activeConversationId) === String(payload.data.id);
+
+  applyMessageUpdate("inbox:update", payload);
+
+  if (wasActiveDeleted) {
+    toast.error("You are no longer in this conversation");
+  }
+};
+
+const handleInboxMessage = (payload: any, currentUserIdRef: MutableRefObject<string | null>) => {
+  applyWsUpdate("inbox:message", payload);
+  if (String(payload?.sender_id ?? "") !== String(currentUserIdRef.current)) {
+    playMessageSound();
+  }
+};
+
+const handleConfigUpdate = (payload: WebSocketMessage["payload"]) => {
+  applyMessageUpdate("config:update", payload);
+  window.dispatchEvent(
+    new CustomEvent("config:live:event", {
+      detail: { action: payload?.action, data: payload?.data },
+    })
+  );
+};
+
+const handleRecoveryAccepted = (
+  payload: any,
+  setCurrentUser: Setter<User | null>,
+  setAccessToken: ValueSetter<string | null>,
+  setRefreshToken: ValueSetter<string | null>
+) => {
+  const auth = payload?.data?.auth;
+  if (!auth?.access_token || !auth?.user) return;
+  setAccessToken(auth.access_token);
+  if (auth.refresh_token) {
+    setRefreshToken(auth.refresh_token);
+  }
+  setCurrentUser(auth.user);
+  toast.success("Your recovery request was accepted");
+  window.dispatchEvent(new CustomEvent("recovery_request:accepted", { detail: payload }));
+};
+
 /**
- * Hook to manage resource subscriptions and listen for backend propagated changes
- * When the backend changes a resource, it propagates only to clients that have viewed it
+ * Hook to manage resource subscriptions and listen for backend propagated changes.
+ * Pure atom updates are registered next to their atoms and applied through wsRegistry.
  */
 export const useWebSocketSync = () => {
-  const setForumCategories = useSetAtom(forumCategoriesAtom);
-  const setCurrentThread = useSetAtom(currentThreadAtom);
-  const setThreadComments = useSetAtom(threadCommentsAtom);
   const setSocket = useSetAtom(socketAtom);
-  const setOnlineUsers = useSetAtom(onlineUsersAtom);
   const setPendingTpRoute = useSetAtom(pendingTpRouteAtom);
   const setPendingTpUser = useSetAtom(pendingTpUserAtom);
-  const setCursorPositions = useSetAtom(cursorPositionsAtom);
   const setCurrentUser = useSetAtom(currentUserAtom);
   const setAccessToken = useSetAtom(accessTokenAtom);
   const setRefreshToken = useSetAtom(refreshTokenAtom);
-  const setMediaState = useSetAtom(mediaStateAtom);
   const wsUrl = useAtomValue(wsBaseUrlAtom);
-  // Tracks all active subscriptions so they can be replayed on reconnect
+
+  // Tracks all active subscriptions so they can be replayed on reconnect.
   const subscriptionsRef = useRef<Set<string>>(new Set());
   const currentUser = useAtomValue(currentUserAtom);
-  // Keep refs so the stable ws.onmessage callback always has the latest user info
   const currentUserIdRef = useRef<string | null>(null);
-  const currentUserPermissionsRef = useRef<string[] | null>(null);
   currentUserIdRef.current = currentUser?.id ?? null;
-  currentUserPermissionsRef.current = currentUser?.permissions ?? null;
 
-  // Live thread feed atoms - the WS handler pushes broadcast events into these
-  const setCategoryFeedThreads = useSetAtom(categoryFeedThreadsAtom);
-  const setUserFeedThreads = useSetAtom(userFeedThreadsAtom);
-  const setAllFeedThreads = useSetAtom(allFeedThreadsAtom);
-  const activeCategoryFeedId = useAtomValue(activeCategoryFeedIdAtom);
-  const activeUserFeedId = useAtomValue(activeUserFeedIdAtom);
-  const activeAllFeedId = useAtomValue(activeAllFeedIdAtom);
-  // Refs so the stable onmessage closure always reads current values
-  const activeCategoryFeedIdRef = useRef<string | null>(null);
-  const activeUserFeedIdRef = useRef<string | null>(null);
-  const activeAllFeedIdRef = useRef<string | null>(null);
-  activeCategoryFeedIdRef.current = activeCategoryFeedId;
-  activeUserFeedIdRef.current = activeUserFeedId;
-  activeAllFeedIdRef.current = activeAllFeedId;
-
-  // Global chat
-  const setGlobalChatMessages = useSetAtom(globalChatMessagesAtom);
-
-  // Inbox
-  const setInboxMessages = useSetAtom(inboxMessagesAtom);
-  const setInboxConversations = useSetAtom(inboxConversationsAtom);
-  const setInboxUnreadCount = useSetAtom(inboxUnreadCountAtom);
   const activeConversationId = useAtomValue(activeConversationIdAtom);
-  const activeConversationIdRef = useRef<string | null>(null);
-  const setActiveConversationId = useSetAtom(activeConversationIdAtom);
-  activeConversationIdRef.current = activeConversationId;
-  // Keep module-level var in sync so all setupWebSocket closures see the latest value.
   _activeConversationId = activeConversationId;
-
-  // Notifications
-  const setNotifications = useSetAtom(notificationsAtom);
-  // Site config
-  const setBrandingWs = useSetAtom(brandingAtom);
-  const setFooterWs = useSetAtom(footerConfigAtom);
-  const setSeoWs = useSetAtom(seoAtom);
-
-  // Store
-  const setProducts = useSetAtom(productsAtom);
-  const setStoreCategories = useSetAtom(productCategoriesAtom);
-  const setStoreCartItems = useSetAtom(storeCartItemsAtom);
-  const setOrders = useSetAtom(ordersAtom);
-  const setCurrentOrder = useSetAtom(currentOrderAtom);
-
-  // Voice
-  const setVoicePermissions = useSetAtom(voicePermissionsAtom);
-
-  // Activity events
-  const setActivityEvents = useSetAtom(activityEventsAtom);
 
   // read token so the WS connection is authenticated server-side
   const accessToken = useAtomValue(accessTokenAtom);
@@ -235,212 +423,40 @@ export const useWebSocketSync = () => {
           const parsed = await parseWebSocketMessage(ws, event.data);
           if (!parsed) return;
           const { message, payload } = parsed;
+          const type = message.type;
 
-          // Handle generic WS error and rate-limit notices
-          if (message.type === "error") {
+          if (type === "error") {
             const errPayload = payload as { message?: string; action?: string };
             if (errPayload.message) {
-              toast.error(errPayload.message, {
-                duration: 5000,
-              });
+              toast.error(errPayload.message, { duration: 5000 });
             }
             return;
           }
 
-          if (message.type === "mediascraper:jobs") {
-            const { active_jobs, cache_hits_1h, new_scrapes_1h } = payload as {
-              active_jobs?: number;
-              cache_hits_1h?: number;
-              new_scrapes_1h?: number;
-            };
-            if (active_jobs !== undefined) {
-              window.dispatchEvent(
-                new CustomEvent("mediascraper:jobs", {
-                  detail: { active_jobs, cache_hits_1h, new_scrapes_1h },
-                })
-              );
-            }
+          if (dispatchEventBusMessage(type, payload)) return;
+
+          if (type === "user:update") {
+            handleUserUpdate(
+              payload,
+              currentUserIdRef,
+              setCurrentUser,
+              setAccessToken,
+              setRefreshToken
+            );
             return;
           }
 
-          if (message.type === "mediascraper:result") {
-            window.dispatchEvent(new CustomEvent("mediascraper:result", { detail: payload }));
-            return;
-          }
-          if (message.type === "mediascraper:started") {
-            window.dispatchEvent(new CustomEvent("mediascraper:started", { detail: payload }));
-            return;
-          }
-          if (message.type === "mediascraper:pending") {
-            window.dispatchEvent(new CustomEvent("mediascraper:pending", { detail: payload }));
-            return;
-          }
-
-          if (message.type === "grengo:job_update") {
-            window.dispatchEvent(new CustomEvent("grengo:job_update", { detail: payload }));
-          }
-          if (message.type === "grengo:action_ack") {
-            window.dispatchEvent(new CustomEvent("grengo:action_ack", { detail: payload }));
-          }
-          if (message.type === "grengo:stats_update") {
-            window.dispatchEvent(new CustomEvent("grengo:stats_update", { detail: payload }));
-          }
-          if (message.type === "grengo:storage_update") {
-            window.dispatchEvent(new CustomEvent("grengo:storage_update", { detail: payload }));
-          }
-          if (message.type === "grengo:hardware_update") {
-            window.dispatchEvent(new CustomEvent("grengo:hardware_update", { detail: payload }));
-          }
-          if (message.type === "logs:stream") {
-            window.dispatchEvent(new CustomEvent("logs:stream", { detail: payload }));
-            return;
-          }
-          if (
-            message.type === "grengo:job_update" ||
-            message.type === "grengo:action_ack" ||
-            message.type === "grengo:stats_update" ||
-            message.type === "grengo:storage_update" ||
-            message.type === "grengo:hardware_update"
-          ) {
-            return;
-          }
-
-          if (message.type === "provisioning:progress") {
-            window.dispatchEvent(new CustomEvent("provisioning:progress", { detail: payload }));
-            return;
-          }
-          if (message.type === "provisioning:status") {
-            window.dispatchEvent(new CustomEvent("provisioning:status", { detail: payload }));
-            return;
-          }
-
-          // Handle user update propagation
-          if (message.type === "user:update") {
-            const { action: userAction, data: userData } = payload;
-
-            // Lightweight permission/role push
-            // Sent directly to the user's client (no subscription needed).
-            // Only contains id, roles, permissions, new_token - merge into
-            // currentUserAtom so derived atoms react instantly.
-            if (userAction === "permissions_changed" && userData) {
-              const myId = currentUserIdRef.current;
-              if (myId && String(userData.id) === String(myId)) {
-                setCurrentUser(prev => {
-                  if (!prev) return prev;
-                  return {
-                    ...prev,
-                    roles: userData.roles ?? prev.roles,
-                    permissions: userData.permissions ?? prev.permissions,
-                  };
-                });
-                if (userData.new_token) setAccessToken(userData.new_token);
-              }
-              // Also notify profile pages displaying this user
-              window.dispatchEvent(
-                new CustomEvent("user:profile:updated", {
-                  detail: {
-                    userId: String(userData.id),
-                    user: {
-                      roles: userData.roles,
-                      permissions: userData.permissions,
-                    },
-                  },
-                })
-              );
-            }
-
-            // Full user object push (profile edits, avatar, suspend…)
-            if (payload?.data?.user) {
-              const updatedUser = payload.data.user as User;
-              const newToken = payload.data.new_token as string | undefined;
-
-              if (payload?.data?.mfa_challenge_triggered) {
-                if (
-                  currentUserIdRef.current &&
-                  String(updatedUser.id) === String(currentUserIdRef.current)
-                ) {
-                  window.dispatchEvent(
-                    new CustomEvent("auth:mfa-required", {
-                      detail: { reasonCode: payload?.data?.mfa_reason_code },
-                    })
-                  );
-                }
-              }
-
-              // Notify profile pages displaying this user
-              window.dispatchEvent(
-                new CustomEvent("user:profile:updated", {
-                  detail: {
-                    userId: String(updatedUser.id),
-                    user: updatedUser,
-                  },
-                })
-              );
-
-              // Apply session changes if this is the logged-in user
-              const myId = currentUserIdRef.current;
-              if (myId && String(updatedUser.id) === String(myId)) {
-                setCurrentUser(updatedUser);
-                if (newToken) setAccessToken(newToken);
-                if (updatedUser.is_suspended) {
-                  setAccessToken(null);
-                  setRefreshToken(null);
-                  setCurrentUser(null);
-                }
-              }
-            }
-
-            // Uploads changed - notify the profile uploads tab
-            if (userAction === "user_updated" && (userData as any)?.action === "uploads_changed") {
-              const { id } = payload as { id?: number };
-              window.dispatchEvent(
-                new CustomEvent("user:uploads:changed", {
-                  detail: { userId: String(id ?? 0) },
-                })
-              );
-            }
-          }
-
-          // Handle presence update
-          if (message.type === "presence:update") {
-            const { users } = payload;
-            if (Array.isArray(users)) {
-              setOnlineUsers(users);
-            }
-          }
-
-          // Handle cursor position update from another client on same route
-          if (message.type === "cursor:update") {
-            const cp = payload as CursorPosition;
-            if (cp && typeof cp.user_id === "number") {
-              setCursorPositions(prev => {
-                const next = new Map(prev);
-                next.set(cp.user_id, { ...cp, updatedAt: Date.now() });
-                return next;
-              });
-            }
-          }
-
-          // Handle incoming teleport request - navigate this client to the given route
-          if (message.type === "tp") {
+          if (type === "tp") {
             const route = payload?.route;
             if (typeof route === "string" && route) {
               setPendingTpRoute(route);
-              if ((message as any).user_id) setPendingTpUser((message as any).user_id as number);
+              const userId = (message as any).user_id ?? (message as any).userId;
+              if (userId) setPendingTpUser(userId);
             }
+            return;
           }
 
-          // Handle media queue sync
-          if (message.type === "media:sync") {
-            setMediaState(payload as any);
-          }
-
-          if (message.type === "media:sfx") {
-            window.dispatchEvent(new CustomEvent("media:sfx", { detail: payload?.sfx_type }));
-          }
-
-          // MFA Required
-          if (message.type === "mfa:required") {
+          if (type === "mfa:required") {
             window.dispatchEvent(
               new CustomEvent("auth:mfa-required", {
                 detail: {
@@ -449,758 +465,50 @@ export const useWebSocketSync = () => {
                 },
               })
             );
+            return;
           }
 
-          // Handle forum update propagation
-          if (message.type === "forum:update") {
-            const { action, id, data } = payload;
-            console.log(`Received forum propagation: ${action} for ${id ?? data?.id}`);
-
-            // Handle thread updates
-            if (action === "thread_updated" || action === "thread_created") {
-              setCurrentThread(prev => {
-                if (prev && (prev.id === String(data.id) || prev.id === data.id)) {
-                  return {
-                    ...prev,
-                    title: data.title || prev.title,
-                    content: data.content || prev.content,
-                    updated_at: data.updated_at || prev.updated_at,
-                    view_count: data.view_count ?? prev.view_count,
-                    reply_count: data.reply_count ?? prev.reply_count,
-                  };
-                }
-                return prev;
-              });
-            }
-
-            // Live feed: thread created (broadcast to all clients)
-            if (action === "thread_created" && data) {
-              const thread = data as ForumThread;
-              // Category feed
-              if (
-                activeCategoryFeedIdRef.current &&
-                String(thread.category_id) === activeCategoryFeedIdRef.current
-              ) {
-                setCategoryFeedThreads(prev => {
-                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
-                  return [...prev, thread]; // newest at end => bottom of the chat feed
-                });
-              }
-              // User feed
-              if (
-                activeUserFeedIdRef.current &&
-                String(thread.user_id) === activeUserFeedIdRef.current
-              ) {
-                setUserFeedThreads(prev => {
-                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
-                  return [...prev, thread];
-                });
-              }
-              // All threads feed
-              if (activeAllFeedIdRef.current) {
-                setAllFeedThreads(prev => {
-                  if (prev.some(t => String(t.id) === String(thread.id))) return prev;
-                  return [...prev, thread];
-                });
-              }
-            }
-
-            // Live feed: thread updated (metadata refresh in both feeds)
-            if (action === "thread_updated" && data) {
-              const update = (prev: ForumThread[]) =>
-                prev.map(t => (String(t.id) === String(data.id) ? { ...t, ...data } : t));
-              setCategoryFeedThreads(update);
-              setUserFeedThreads(update);
-              setAllFeedThreads(update);
-            }
-
-            // Handle thread deletion
-            if (action === "thread_deleted") {
-              setCurrentThread(prev => {
-                if (prev && String(prev.id) === String(id)) {
-                  return null;
-                }
-                return prev;
-              });
-            }
-
-            // Live feed: thread deleted (broadcast to all clients)
-            if (action === "thread_deleted" && id) {
-              const remove = (prev: ForumThread[]) => prev.filter(t => String(t.id) !== String(id));
-              setCategoryFeedThreads(remove);
-              setUserFeedThreads(remove);
-              setAllFeedThreads(remove);
-            }
-
-            // Handle comment operations
-            if (action === "comment_created") {
-              setThreadComments(prev => {
-                // Add new comment if it's not already in the list
-                const newComment = data.new_comment;
-                const exists = prev.some(p => String(p.id) === String(newComment.id));
-                if (!exists) {
-                  // Enrich permissions for the receiving client
-                  const userId = currentUserIdRef.current;
-                  const perms = currentUserPermissionsRef.current;
-                  const isOwner = userId != null && String(newComment.user_id) === String(userId);
-                  const enriched = {
-                    ...newComment,
-                    can_delete:
-                      isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
-                    can_edit: isOwner || (perms?.includes("forum.thread-comment-delete") ?? false),
-                    can_like_comments: true,
-                  };
-
-                  // Notify the viewing user of a new comment from someone else
-                  if (!isOwner) {
-                    const preview =
-                      newComment.content?.length > 80
-                        ? `${newComment.content.slice(0, 80)}…`
-                        : newComment.content;
-                    toast(`${newComment.author_name || "Someone"} commented`, {
-                      description: preview,
-                      duration: 5000,
-                    });
-                  }
-
-                  return [...prev, enriched];
-                }
-                return prev;
-              });
-            }
-
-            if (action === "comment_deleted") {
-              setThreadComments(prev => prev.filter(p => String(p.id) !== String(data.comment_id)));
-            }
-
-            if (action === "comment_updated") {
-              setThreadComments(prev =>
-                prev.map(p =>
-                  String(p.id) === String(data.comment_id)
-                    ? {
-                        ...p,
-                        content: data.content || p.content,
-                        updated_at: data.updated_at || p.updated_at,
-                      }
-                    : p
-                )
-              );
-            }
-            if (action === "comment_liked") {
-              const actingUserId = String(data.user_id);
-              setThreadComments(prev =>
-                prev.map(p =>
-                  String(p.id) === String(data.comment_id)
-                    ? {
-                        ...p,
-                        likes: data.likes ?? p.likes + 1,
-                        is_liked: actingUserId === currentUserIdRef.current ? true : p.is_liked,
-                      }
-                    : p
-                )
-              );
-            }
-
-            if (action === "comment_unliked") {
-              const actingUserId = String(data.user_id);
-              setThreadComments(prev =>
-                prev.map(p =>
-                  String(p.id) === String(data.comment_id)
-                    ? {
-                        ...p,
-                        likes: Math.max(0, data.likes ?? p.likes - 1),
-                        is_liked: actingUserId === currentUserIdRef.current ? false : p.is_liked,
-                      }
-                    : p
-                )
-              );
-            }
-
-            if (action === "thread_liked") {
-              const actingUserId = String(data.user_id);
-              setCurrentThread(prev => {
-                if (prev && String(prev.id) === String(data.thread_id)) {
-                  return {
-                    ...prev,
-                    likes: data.likes ?? (prev.likes || 0) + 1,
-                    is_liked: actingUserId === currentUserIdRef.current ? true : prev.is_liked,
-                  };
-                }
-                return prev;
-              });
-            }
-
-            if (action === "thread_unliked") {
-              const actingUserId = String(data.user_id);
-              setCurrentThread(prev => {
-                if (prev && String(prev.id) === String(data.thread_id)) {
-                  return {
-                    ...prev,
-                    likes: Math.max(0, data.likes ?? (prev.likes || 1) - 1),
-                    is_liked: actingUserId === currentUserIdRef.current ? false : prev.is_liked,
-                  };
-                }
-                return prev;
-              });
-            }
-            setForumCategories(prevCategories => {
-              switch (action) {
-                case "category_created": {
-                  // Add new category if not already present
-                  const exists = prevCategories.some(c => c.id === data.id);
-                  if (exists) return prevCategories;
-
-                  // Subscribe to this category so we receive future updates (e.g. deletion)
-                  if (data.id) {
-                    const key = `forum_category:${data.id}`;
-                    subscriptionsRef.current.add(key);
-                    if (ws.readyState === WebSocket.OPEN) {
-                      sendWebSocketMessage(ws, {
-                        type: "subscribe",
-                        payload: {
-                          resource_type: "forum_category",
-                          resource_id: data.id,
-                        },
-                      });
-                    }
-                  }
-
-                  const newCategory: ForumCategory = {
-                    id: data.id,
-                    name: data.name,
-                    description: data.description,
-                    is_locked: data.is_locked || false,
-                    is_pinned: data.is_pinned || false,
-                    display_order: data.display_order || 0,
-                    thread_count: data.thread_count || 0,
-                    created_at: data.created_at,
-                    updated_at: data.updated_at,
-                    threads: [],
-                  };
-                  return [...prevCategories, newCategory];
-                }
-
-                case "category_deleted": {
-                  return prevCategories.filter(c => String(c.id) !== String(id ?? data?.id));
-                }
-
-                case "category_updated": {
-                  return prevCategories.map(c =>
-                    String(c.id) === String(id ?? data?.id)
-                      ? {
-                          ...c,
-                          name: data.name || c.name,
-                          description: data.description || c.description,
-                          is_locked: data.is_locked ?? c.is_locked,
-                          thread_count: data.thread_count ?? c.thread_count,
-                          updated_at: data.updated_at || c.updated_at,
-                          threads: c.threads,
-                        }
-                      : c
-                  );
-                }
-
-                case "category_threads_updated": {
-                  return prevCategories.map(c =>
-                    String(c.id) === String(id ?? data?.id)
-                      ? {
-                          ...c,
-                          threads: data.threads ?? c.threads,
-                          updated_at: new Date().toISOString(),
-                        }
-                      : c
-                  );
-                }
-
-                case "thread_created": {
-                  // Broadcast fallback: update category list directly
-                  if (!data || !data.category_id) return prevCategories;
-                  const catId = String(data.category_id);
-                  return prevCategories.map(c => {
-                    if (String(c.id) !== catId) return c;
-                    const alreadyExists = (c.threads || []).some(
-                      t => String(t.id) === String(data.id)
-                    );
-                    if (alreadyExists) return c;
-                    return {
-                      ...c,
-                      threads: [data, ...(c.threads || [])].slice(0, 2),
-                      thread_count: (c.thread_count || 0) + 1,
-                    };
-                  });
-                }
-
-                case "thread_deleted": {
-                  // Broadcast fallback: remove deleted thread from all categories
-                  return prevCategories.map(c => {
-                    const filtered = (c.threads || []).filter(t => String(t.id) !== String(id));
-                    if (filtered.length === (c.threads || []).length) return c;
-                    return {
-                      ...c,
-                      threads: filtered,
-                      thread_count: Math.max(0, (c.thread_count || 0) - 1),
-                    };
-                  });
-                }
-
-                default:
-                  return prevCategories;
-              }
-            });
+          if (type === "forum:update") {
+            handleForumUpdate(ws, payload, subscriptionsRef, currentUserIdRef);
+            return;
           }
 
-          // Global chat
-          if (message.type === "global:chat") {
-            const chatMsg = payload as GlobalChatMessage;
-            // Play sound only for messages from other users
-            if (String(chatMsg.user_id) !== String(currentUserIdRef.current)) {
-              playChatSound();
-            }
-            setGlobalChatMessages(prev => {
-              const msgs = [...prev, chatMsg];
-              return msgs.slice(-80);
-            });
+          if (type === "global:chat") {
+            handleGlobalChat(payload, currentUserIdRef);
+            return;
           }
 
-          if (message.type === "global:chat:history") {
-            const messages = (payload as any)?.messages;
-            if (Array.isArray(messages)) {
-              setGlobalChatMessages(messages);
-            }
+          if (type === "store:update") {
+            handleStoreUpdate(payload);
+            return;
           }
 
-          // Inbox
-          if (message.type === "inbox:update") {
-            const { action: inboxAction, data: inboxData } = payload as any;
-            if (inboxAction === "conversation_created" && inboxData) {
-              setInboxConversations(prev => {
-                if (prev.some(c => String(c.id) === String(inboxData.id))) return prev;
-                return [inboxData, ...prev];
-              });
-            }
-            if (inboxAction === "conversation_deleted" && inboxData) {
-              setInboxConversations(prev =>
-                prev.filter(c => String(c.id) !== String(inboxData.id))
-              );
-              if (String(_activeConversationId) === String(inboxData.id)) {
-                setActiveConversationId(null);
-                toast.error("You are no longer in this conversation");
-              }
-            }
-            if (inboxAction === "participant_removed" && inboxData) {
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === String(inboxData.conversation_id)
-                    ? {
-                        ...c,
-                        participants: c.participants?.filter(
-                          p => String(p.id) !== String(inboxData.user_id)
-                        ),
-                      }
-                    : c
-                )
-              );
-            }
-            if (inboxAction === "participant_added" && inboxData) {
-              setInboxConversations(prev =>
-                prev.map(c => {
-                  if (String(c.id) === String(inboxData.conversation_id)) {
-                    const existing = c.participants?.find(
-                      p => String(p.id) === String(inboxData.participant.id)
-                    );
-                    if (existing) return c;
-                    return {
-                      ...c,
-                      participants: [...(c.participants || []), inboxData.participant],
-                    };
-                  }
-                  return c;
-                })
-              );
-            }
-            if (inboxAction === "participant_muted" && inboxData) {
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === String(inboxData.conversation_id)
-                    ? {
-                        ...c,
-                        participants: c.participants?.map(p =>
-                          String(p.id) === String(inboxData.user_id)
-                            ? { ...p, is_muted: inboxData.is_muted }
-                            : p
-                        ),
-                      }
-                    : c
-                )
-              );
-            }
-            if (inboxAction === "participant_role_changed" && inboxData) {
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === String(inboxData.conversation_id)
-                    ? {
-                        ...c,
-                        participants: c.participants?.map(p =>
-                          String(p.id) === String(inboxData.user_id)
-                            ? { ...p, role: inboxData.role }
-                            : p
-                        ),
-                      }
-                    : c
-                )
-              );
-            }
-            if (inboxAction === "conversation_locked" && inboxData) {
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === String(inboxData.conversation_id)
-                    ? { ...c, is_locked: inboxData.is_locked }
-                    : c
-                )
-              );
-            }
-            if (inboxAction === "message_created" && inboxData) {
-              const convStr = String(inboxData.conversation_id);
-              const activeId = _activeConversationId;
-              // Always append to the message feed - the subscription to
-              // inbox_conversation:{id} ensures we only receive events for
-              // the conversation currently open, just like thread comments.
-              // No extra activeId check needed; the backend only pushes to
-              // subscribers of that specific conversation.
-              setInboxMessages(prev => {
-                if (prev.some(m => String(m.id) === String(inboxData.id))) return prev;
-                return [...prev, inboxData];
-              });
-              // Always update sidebar: bump last_message + unread count
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === convStr
-                    ? {
-                        ...c,
-                        last_message: inboxData,
-                        unread_count:
-                          convStr !== activeId &&
-                          String(inboxData.sender_id) !== String(currentUserIdRef.current)
-                            ? (c.unread_count ?? 0) + 1
-                            : convStr === activeId
-                              ? 0
-                              : c.unread_count,
-                      }
-                    : c
-                )
-              );
-            }
+          if (type === "notification") {
+            handleNotification(payload as AppNotification);
+            return;
           }
 
-          if (message.type === "inbox:message") {
-            // Direct push to recipient - no subscription required.
-            // Bump global badge and update the sidebar so the conversation
-            // list stays current even when no specific chat is open.
-            const msgPayload = payload as any;
-            const msgSenderId = String(msgPayload?.sender_id ?? "");
-            const isFromCurrentUser = msgSenderId === String(currentUserIdRef.current);
-            const inboxMsgConvId = String(msgPayload?.conversation_id ?? "");
-            const isActiveConv = inboxMsgConvId && inboxMsgConvId === String(_activeConversationId);
-
-            if (!isFromCurrentUser) {
-              playMessageSound();
-            }
-
-            if (!isActiveConv && !isFromCurrentUser) {
-              setInboxUnreadCount(prev => prev + 1);
-            }
-            // Always refresh last_message in the sidebar; only bump
-            // unread_count when the conversation is not currently open AND it's not from the current user.
-            if (inboxMsgConvId) {
-              setInboxConversations(prev =>
-                prev.map(c =>
-                  String(c.id) === inboxMsgConvId
-                    ? {
-                        ...c,
-                        last_message: msgPayload,
-                        unread_count:
-                          isActiveConv || isFromCurrentUser
-                            ? isActiveConv
-                              ? 0
-                              : c.unread_count
-                            : (c.unread_count ?? 0) + 1,
-                      }
-                    : c
-                )
-              );
-            }
+          if (type === "inbox:update") {
+            handleInboxUpdate(payload);
+            return;
           }
 
-          // Store
-          if (message.type === "store:update") {
-            const { action, data } = payload as { action: string; data?: any };
-
-            if (action === "category_created" && data) {
-              setStoreCategories(prev => {
-                if (prev.some(c => String(c.id) === String(data.id))) return prev;
-                return [...prev, data as StoreCategory];
-              });
-            }
-            if (action === "category_updated" && data) {
-              setStoreCategories(prev =>
-                prev.map(c => (String(c.id) === String(data.id) ? { ...c, ...data } : c))
-              );
-            }
-            if (action === "category_deleted" && data?.id) {
-              setStoreCategories(prev => prev.filter(c => String(c.id) !== String(data.id)));
-            }
-
-            if (action === "product_created" && data) {
-              setProducts(prev => {
-                if (prev.some(p => String(p.id) === String(data.id))) return prev;
-                return [...prev, data as Product];
-              });
-            }
-            if (action === "product_updated" && data) {
-              setProducts(prev =>
-                prev.map(p => (String(p.id) === String(data.id) ? { ...p, ...data } : p))
-              );
-            }
-            if (action === "product_deleted" && data?.id) {
-              setProducts(prev => prev.filter(p => String(p.id) !== String(data.id)));
-            }
-
-            // Purchase outcomes - targeted at the purchasing user only
-            if (action === "purchase_success") {
-              const resp = data as CheckoutResponse;
-              toast.success("Payment successful!", {
-                description: `Order #${resp?.order?.id} — ${formatCents(
-                  resp?.order?.total_price || 0
-                )}`,
-                duration: 8000,
-              });
-              // Clear local cart after backend confirms success
-              setStoreCartItems([]);
-              if (resp?.order) {
-                const order = { ...resp.order, payment: resp.payment } as Order;
-                setOrders(prev => {
-                  const exists = prev.some(o => String(o.id) === String(order.id));
-                  return exists
-                    ? prev.map(o => (String(o.id) === String(order.id) ? { ...o, ...order } : o))
-                    : [order, ...prev];
-                });
-                setCurrentOrder(prev =>
-                  prev && String(prev.id) === String(order.id) ? { ...prev, ...order } : prev
-                );
-              }
-            }
-            if (action === "purchase_failure") {
-              const resp = data as CheckoutResponse;
-              toast.error("Payment failed", {
-                description: resp?.message ?? "Please try again.",
-                duration: 8000,
-              });
-            }
+          if (type === "inbox:message") {
+            handleInboxMessage(payload, currentUserIdRef);
+            return;
           }
 
-          // Orders
-          if (message.type === "order:update") {
-            const { action, data } = payload as {
-              action: string;
-              data?: Order & { id?: string | number };
-            };
-            const orderId = data?.id;
-
-            if ((action === "order_created" || action === "order_updated") && data?.id) {
-              const nextOrder = data as Order;
-              setOrders(prev => {
-                const exists = prev.some(o => String(o.id) === String(nextOrder.id));
-                if (exists) {
-                  return prev.map(o =>
-                    String(o.id) === String(nextOrder.id) ? { ...o, ...nextOrder } : o
-                  );
-                }
-                return [nextOrder, ...prev];
-              });
-              setCurrentOrder(prev =>
-                prev && String(prev.id) === String(nextOrder.id) ? { ...prev, ...nextOrder } : prev
-              );
-            }
-
-            if (action === "order_deleted" && orderId) {
-              setOrders(prev => prev.filter(o => String(o.id) !== String(orderId)));
-              setCurrentOrder(prev => (prev && String(prev.id) === String(orderId) ? null : prev));
-            }
+          if (type === "config:update") {
+            handleConfigUpdate(payload);
+            return;
           }
 
-          if (message.type === "recovery_request:update") {
-            window.dispatchEvent(
-              new CustomEvent("recovery_request:update", {
-                detail: payload,
-              })
-            );
+          if (type === "recovery_request:accepted") {
+            handleRecoveryAccepted(payload, setCurrentUser, setAccessToken, setRefreshToken);
+            return;
           }
 
-          if (message.type === "recovery_request:accepted") {
-            const auth = (payload as any)?.data?.auth;
-            if (auth?.access_token && auth?.user) {
-              setAccessToken(auth.access_token);
-              if (auth.refresh_token) {
-                setRefreshToken(auth.refresh_token);
-              }
-              setCurrentUser(auth.user);
-              toast.success("Your recovery request was accepted");
-              window.dispatchEvent(
-                new CustomEvent("recovery_request:accepted", {
-                  detail: payload,
-                })
-              );
-            }
-          }
-
-          // Notifications
-          if (message.type === "notification") {
-            const notif = payload as AppNotification;
-            setNotifications(prev => [notif, ...prev]);
-            playNotificationSound();
-            toast(notif.message, {
-              duration: 6000,
-              action: notif.route
-                ? {
-                    label: "View",
-                    onClick: () => {
-                      window.location.assign(notif.route);
-                    },
-                  }
-                : undefined,
-            });
-          }
-
-          // Notification bootstrap (on connect)
-          if (message.type === "notification:sync") {
-            const { notifications: notifs } = payload as {
-              notifications?: AppNotification[];
-            };
-            if (Array.isArray(notifs) && notifs.length > 0) {
-              // Only seed the atom when the bell hasn't loaded yet to avoid
-              // overwriting a user-navigated paginated view.
-              setNotifications(prev => (prev.length === 0 ? notifs : prev));
-            }
-          }
-
-          // Notification read / delete sync
-          if (message.type === "notification:update") {
-            const { action: na, id: nid } = payload as {
-              action: string;
-              id?: number;
-            };
-            if (na === "notification_read" && nid) {
-              setNotifications(prev =>
-                prev.map(n => (String(n.id) === String(nid) ? { ...n, is_read: true } : n))
-              );
-            }
-            if (na === "notification_all_read") {
-              setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-            }
-            if (na === "notification_deleted" && nid) {
-              setNotifications(prev => prev.filter(n => String(n.id) !== String(nid)));
-            }
-            if (na === "notification_all_deleted") {
-              setNotifications([]);
-            }
-          }
-
-          // Cart
-          if (message.type === "cart:update") {
-            const { data: cartData } = payload as {
-              action: string;
-              data?: CartItem[];
-            };
-            if (Array.isArray(cartData)) {
-              setStoreCartItems(cartData);
-            }
-          }
-
-          // Site config
-          if (message.type === "config:update") {
-            const { action: ca, data: cd } = payload as {
-              action: string;
-              data?: any;
-            };
-            if (ca === "branding_updated" && cd) setBrandingWs(cd);
-            if (ca === "seo_updated" && cd) setSeoWs(cd);
-            if (ca === "footer_updated" && cd) setFooterWs(cd);
-            // Page section/item changes - let page components re-fetch
-            window.dispatchEvent(
-              new CustomEvent("config:live:event", {
-                detail: { action: ca, data: cd },
-              })
-            );
-          }
-
-          // Voice Controls
-          if (message.type === "voice:control") {
-            const vp = payload as {
-              route: string;
-              action: string;
-              target_user_id?: number;
-            };
-            setVoicePermissions(prev => {
-              const next = { ...prev };
-              if (prev.route !== vp.route) {
-                next.route = vp.route;
-                next.mutedUsers = {};
-                next.kickedUsers = {};
-                next.voiceEnabled = true;
-              }
-              if (vp.action === "enable") next.voiceEnabled = true;
-              if (vp.action === "disable") next.voiceEnabled = false;
-              if (vp.action === "mute" && vp.target_user_id) {
-                next.mutedUsers = {
-                  ...next.mutedUsers,
-                  [vp.target_user_id]: true,
-                };
-              }
-              if (vp.action === "unmute" && vp.target_user_id) {
-                const newMuted = { ...next.mutedUsers };
-                delete newMuted[vp.target_user_id];
-                next.mutedUsers = newMuted;
-              }
-              if (vp.action === "kick" && vp.target_user_id) {
-                next.kickedUsers = {
-                  ...next.kickedUsers,
-                  [vp.target_user_id]: true,
-                };
-                next.mutedUsers = {
-                  ...next.mutedUsers,
-                  [vp.target_user_id]: true,
-                };
-              }
-              return next;
-            });
-          }
-
-          // CMS pages
-          if (message.type === "page:update") {
-            const { action: pa, data: pd } = payload as {
-              action: string;
-              data?: any;
-            };
-            window.dispatchEvent(
-              new CustomEvent("page:live:event", {
-                detail: { action: pa, data: pd },
-              })
-            );
-          }
-
-          // Activity events
-          if (message.type === "events:update") {
-            const { data: evtData } = payload as {
-              action: string;
-              data?: ActivityEvent;
-            };
-            if (evtData) {
-              setActivityEvents(prev => {
-                if (prev.some(e => e.id === evtData.id)) return prev;
-                return [...prev, evtData];
-              });
-            }
-          }
+          applyMessageUpdate(type, payload);
         } catch (error) {
           console.error("Error processing WebSocket message:", error);
         }
@@ -1230,30 +538,12 @@ export const useWebSocketSync = () => {
       }, 3000);
     }
   }, [
-    setForumCategories,
-    setCurrentThread,
     setSocket,
-    setOnlineUsers,
+    setPendingTpRoute,
+    setPendingTpUser,
     setCurrentUser,
     setAccessToken,
     setRefreshToken,
-    setCategoryFeedThreads,
-    setUserFeedThreads,
-    setGlobalChatMessages,
-    setInboxMessages,
-    setInboxConversations,
-    setInboxUnreadCount,
-    setNotifications,
-    setProducts,
-    setStoreCategories,
-    setStoreCartItems,
-    setOrders,
-    setCurrentOrder,
-    setCursorPositions,
-    setActivityEvents,
-    setBrandingWs,
-    setFooterWs,
-    setSeoWs,
     wsUrl,
   ]);
 
@@ -1264,7 +554,7 @@ export const useWebSocketSync = () => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const prevAuthRef = useRef(isAuthenticated);
   useEffect(() => {
-    // Only reconnect when auth state actually flips (logged-in ↔ logged-out).
+    // Only reconnect when auth state actually flips (logged-in <-> logged-out).
     if (prevAuthRef.current === isAuthenticated) return;
     prevAuthRef.current = isAuthenticated;
     if (!_globalWs) return;
@@ -1273,8 +563,8 @@ export const useWebSocketSync = () => {
   }, [isAuthenticated]);
 
   /**
-   * Subscribe to a specific resource so client receives propagated updates
-   * Backend tracks this subscription and sends updates for changes to that resource
+   * Subscribe to a specific resource so client receives propagated updates.
+   * Backend tracks this subscription and sends updates for changes to that resource.
    */
   const subscribe = useCallback((resourceType: string, resourceId: number | string) => {
     const key = `${resourceType}:${resourceId}`;
