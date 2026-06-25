@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
@@ -31,8 +31,9 @@ import UserAvatar from "../../user/UserAvatar";
 import UserInlineCard from "../../user/UserInlineCard";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "./PresencePanel.css";
-import PhysicsControls from "./PhysicsControls";
-import VoicePanel from "./VoicePanel";
+// Lazy-loaded: opened only on user interaction, so no reason to bloat the initial payload.
+const PhysicsControls = lazy(() => import("./PhysicsControls"));
+const VoicePanel = lazy(() => import("./VoicePanel"));
 
 /**
  * Extensible per-row action. Add new actions to the rowActions array below.
@@ -676,7 +677,9 @@ const PresencePanel = () => {
           className="pp-scroll pp-scroll--flush"
         >
           {hasOpenedVoice && (
-            <VoicePanel voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile} />
+            <Suspense fallback={null}>
+              <VoicePanel voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile} />
+            </Suspense>
           )}
         </div>
 
@@ -687,7 +690,11 @@ const PresencePanel = () => {
           }}
           className="pp-scroll"
         >
-          {activeTab === "physics" && <PhysicsControls />}
+          {activeTab === "physics" && (
+            <Suspense fallback={null}>
+              <PhysicsControls />
+            </Suspense>
+          )}
         </div>
 
         <div

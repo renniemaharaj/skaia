@@ -59,7 +59,14 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <SideRouteShell title="User Settings" backLabel="Exit">
-        <div style={{ textAlign: "center" }}>Loading settings...</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "8px 0" }}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div className="skeleton" style={{ width: "30%", height: 12, borderRadius: 4 }} />
+              <div className="skeleton" style={{ width: "100%", height: 36, borderRadius: 6 }} />
+            </div>
+          ))}
+        </div>
       </SideRouteShell>
     );
   }

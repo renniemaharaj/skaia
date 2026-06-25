@@ -2,7 +2,7 @@ import { useAtomValue, useSetAtom, getDefaultStore } from "jotai";
 import { useAtom } from "jotai";
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../atoms/auth";
@@ -19,14 +19,6 @@ import "./Layout.css";
 import { Toaster, toast } from "sonner";
 import { physicsSettingsAtom } from "../atoms/physics";
 import CursorOverlay from "../components/page/layout/CursorOverlay";
-import PresencePanel from "../components/page/layout/PresencePanel";
-import GlobalUploader from "../components/ui/GlobalUploader";
-import GravityParticles from "../components/ui/GravityParticles";
-import {
-  CenterAnchoredSystem,
-  TextGravityRenderer,
-} from "../components/ui/GravityParticles/GravityRenderers";
-import Particles from "../components/ui/Particles/Particles";
 import { PromptContainer } from "../components/ui/Prompt";
 import type { Role } from "../components/user/types";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
@@ -38,6 +30,24 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
+
+// Heavy ambient/overlay widgets — lazy-loaded so they never block the
+// critical paint path.  Null fallbacks are intentional: these are decorative
+// overlays and showing a spinner in their place would be jarring.
+const PresencePanel = lazy(() => import("../components/page/layout/PresencePanel"));
+const GlobalUploader = lazy(() => import("../components/ui/GlobalUploader"));
+const GravityParticles = lazy(() => import("../components/ui/GravityParticles"));
+const CenterAnchoredSystem = lazy(() =>
+  import("../components/ui/GravityParticles/GravityRenderers").then(m => ({
+    default: m.CenterAnchoredSystem,
+  }))
+);
+const TextGravityRenderer = lazy(() =>
+  import("../components/ui/GravityParticles/GravityRenderers").then(m => ({
+    default: m.TextGravityRenderer,
+  }))
+);
+const Particles = lazy(() => import("../components/ui/Particles/Particles"));
 
 /**
  * Isolated wrapper that subscribes to cursorPositionsAtom so that cursor
@@ -575,53 +585,57 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       )}
       {seo?.particle_style === "gravity" && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: -1,
-            pointerEvents: "none",
-          }}
-        >
-          <GravityParticlesWithCursors
-            particleCount={150}
-            physicsSettings={{
-              rendererType: physicsSettings.rendererType,
-              rendererText: physicsSettings.rendererText,
+        <Suspense fallback={null}>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: -1,
+              pointerEvents: "none",
             }}
-          />
-        </div>
+          >
+            <GravityParticlesWithCursors
+              particleCount={150}
+              physicsSettings={{
+                rendererType: physicsSettings.rendererType,
+                rendererText: physicsSettings.rendererText,
+              }}
+            />
+          </div>
+        </Suspense>
       )}
 
       {(seo?.particle_style === "default" || !seo?.particle_style) && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            zIndex: -1,
-            pointerEvents: "none",
-          }}
-        >
-          <Particles
-            particleColors={isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]}
-            particleCount={200}
-            particleSpread={10}
-            speed={0.1}
-            moveParticlesOnHover={true}
-            particleHoverFactor={1}
-            alphaParticles={true}
-            particleBaseSize={100}
-            sizeRandomness={1}
-            cameraDistance={20}
-            disableRotation={false}
-          />
-        </div>
+        <Suspense fallback={null}>
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: -1,
+              pointerEvents: "none",
+            }}
+          >
+            <Particles
+              particleColors={isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]}
+              particleCount={200}
+              particleSpread={10}
+              speed={0.1}
+              moveParticlesOnHover={true}
+              particleHoverFactor={1}
+              alphaParticles={true}
+              particleBaseSize={100}
+              sizeRandomness={1}
+              cameraDistance={20}
+              disableRotation={false}
+            />
+          </div>
+        </Suspense>
       )}
       <Header
         cartCount={cartCount}
@@ -634,7 +648,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       />
       <main className="layout-main">{children}</main>
       {effectiveLayoutMode === "web" && <Footer />}
-      {(features?.presence ?? true) ? <PresencePanel /> : null}
+      {(features?.presence ?? true) ? (
+        <Suspense fallback={null}>
+          <PresencePanel />
+        </Suspense>
+      ) : null}
       <CursorOverlay />
       <Toaster
         position="bottom-right"
@@ -642,7 +660,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         closeButton
         theme={isDarkMode ? "dark" : "light"}
       />
-      <GlobalUploader />
+      <Suspense fallback={null}>
+        <GlobalUploader />
+      </Suspense>
       <PromptContainer />
     </div>
   );

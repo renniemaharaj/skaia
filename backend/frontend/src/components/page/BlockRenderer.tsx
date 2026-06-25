@@ -2,7 +2,16 @@ import type { PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  Suspense,
+  lazy,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   SectionMoveContext,
   getSectionAnimation,
@@ -13,18 +22,25 @@ import {
 } from "./EditControls";
 import { CTABlock } from "./blocks/CTABlock";
 import { CardGroupBlock } from "./blocks/CardGroupBlock";
-import { CodeEditorBlock } from "./blocks/CodeEditorBlock";
 import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
 import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
 import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
 import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
 import { FeatureGridBlock } from "./blocks/FeatureGridBlock";
 import { HeroBlock } from "./blocks/HeroBlock";
-import { ImageGalleryBlock } from "./blocks/ImageGalleryBlock";
 import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
 import { RichTextBlock } from "./blocks/RichTextBlock";
 import { SocialLinksBlock } from "./blocks/SocialLinksBlock";
 import { StatCardsBlock } from "./blocks/StatCardsBlock";
+
+// Heavy blocks — lazy-loaded so they don't bloat the initial bundle.
+// Each will suspend (and show a skeleton fallback) only until its chunk lands.
+const ImageGalleryBlock = lazy(() =>
+  import("./blocks/ImageGalleryBlock").then(m => ({ default: m.ImageGalleryBlock }))
+);
+const CodeEditorBlock = lazy(() =>
+  import("./blocks/CodeEditorBlock").then(m => ({ default: m.CodeEditorBlock }))
+);
 
 interface BlockRendererProps {
   sections: PageSection[];
@@ -38,10 +54,11 @@ interface BlockRendererProps {
   onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
 }
 
-/** Maps section_type => block component. */
+/** Maps section_type => block component. Typed as ComponentType so lazy()
+ *  wrappers (which return LazyExoticComponent) are accepted without casting. */
 const BLOCK_MAP: Record<
   string,
-  React.FC<{
+  React.ComponentType<{
     section: PageSection;
     canEdit: boolean;
     onUpdate: (s: PageSection) => void;
@@ -86,6 +103,14 @@ interface SectionBlockProps {
   onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
 }
+
+/** Minimal skeleton shown while a heavy block chunk is fetching. */
+const SectionBlockSkeleton = () => (
+  <div
+    className="skeleton"
+    style={{ width: "100%", height: 80, borderRadius: 8, margin: "4px 0" }}
+  />
+);
 
 const SectionBlock = memo(function SectionBlock({
   section,
@@ -173,15 +198,17 @@ const SectionBlock = memo(function SectionBlock({
         data-in-view={inView ? "" : undefined}
         data-out-view={outView && !inView ? "" : undefined}
       >
-        <Block
-          section={section}
-          canEdit={canEdit}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-          onItemCreate={onItemCreate}
-          onItemUpdate={onItemUpdate}
-          onItemDelete={onItemDelete}
-        />
+        <Suspense fallback={<SectionBlockSkeleton />}>
+          <Block
+            section={section}
+            canEdit={canEdit}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+            onItemCreate={onItemCreate}
+            onItemUpdate={onItemUpdate}
+            onItemDelete={onItemDelete}
+          />
+        </Suspense>
       </div>
     </SectionMoveContext.Provider>
   );
