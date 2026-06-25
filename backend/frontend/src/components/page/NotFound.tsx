@@ -1,26 +1,27 @@
 import { AlertCircle, Home } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import "../../styles/NotFound.css";
+import { ContentFlatCard } from "../cards/ContentFlatCard";
+import "../auth/Auth.css";
 
 export const NotFound: React.FC = () => {
   return (
-    <div className="not-found-container">
-      <ContentStandOutCard className="not-found-content">
-        <div className="not-found-icon">
-          <AlertCircle size={80} />
-        </div>
-        <h1>404</h1>
-        <h2>Page Not Found</h2>
-        <p>Sorry, we couldn't find the page you're looking for.</p>
-        <p className="secondary-text">
-          The route you're trying to access doesn't exist. Let's get you back on track!
-        </p>
-        <Link to="/" className="btn btn-primary btn-lg">
-          <Home size={20} />
-          Return to Home
-        </Link>
-      </ContentStandOutCard>
+    <div className="auth-page">
+      <div className="auth-container">
+        <ContentFlatCard className="auth-card auth-card--challenge">
+          <div className="section__header">
+            <AlertCircle size={24} className="section__header-icon" aria-hidden="true" />
+            <span className="section__header-eyebrow">404</span>
+            <h1>Page Not Found</h1>
+            <p>The route you're trying to access doesn't exist or has been moved.</p>
+          </div>
+          <div className="section__content ui-actions ui-actions--center">
+            <Link to="/" className="btn btn-primary">
+              <Home size={20} />
+              Return to Home
+            </Link>
+          </div>
+        </ContentFlatCard>
+      </div>
     </div>
   );
 };

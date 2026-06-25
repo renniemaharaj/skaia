@@ -1,8 +1,8 @@
 import { AlertCircle, ArrowLeft, Home, ServerCog } from "lucide-react";
 import type React from "react";
 import { useNavigate } from "react-router-dom";
-import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
-import "./ErrorPage.css";
+import { ContentFlatCard } from "../components/cards/ContentFlatCard";
+import "../components/auth/Auth.css";
 
 interface ErrorPageProps {
   errorCode?: number;
@@ -31,39 +31,44 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
   const handleHome = () => navigate("/");
 
   return (
-    <div className="error-page">
-      <ContentStandOutCard className="error-page-content">
-        <div className="error-icon">
-          {errorCode === 503 ? (
-            <ServerCog size={64} className="animate-pulse" />
-          ) : (
-            <AlertCircle size={64} />
-          )}
-        </div>
+    <div className="auth-page">
+      <div className="auth-container">
+        <ContentFlatCard className="auth-card auth-card--challenge">
+          <div className="section__header">
+            {errorCode === 503 ? (
+              <ServerCog
+                size={24}
+                className="section__header-icon animate-pulse"
+                aria-hidden="true"
+              />
+            ) : (
+              <AlertCircle size={24} className="section__header-icon" aria-hidden="true" />
+            )}
+            <span className="section__header-eyebrow">Error {errorCode}</span>
+            <h1>{errorTitle}</h1>
+            <p>{errorMessage}</p>
+          </div>
 
-        {errorCode !== 503 && <div className="error-code">{errorCode}</div>}
+          <div className="section__content">
+            {details}
 
-        <h1 className="error-title">{errorTitle}</h1>
-
-        <p className="error-message">{errorMessage}</p>
-
-        {details && <div className="error-details">{details}</div>}
-
-        <div className="ui-actions ui-actions--center ui-actions--stack-sm">
-          {showBackButton && (
-            <button type="button" className="btn btn-ghost" onClick={handleBack}>
-              <ArrowLeft size={16} />
-              Go Back
-            </button>
-          )}
-          {showHomeButton && (
-            <button type="button" className="btn btn-primary" onClick={handleHome}>
-              <Home size={16} />
-              Return Home
-            </button>
-          )}
-        </div>
-      </ContentStandOutCard>
+            <div className="ui-actions ui-actions--center ui-actions--stack-sm">
+              {showBackButton && (
+                <button type="button" className="btn btn-ghost" onClick={handleBack}>
+                  <ArrowLeft size={16} />
+                  Go Back
+                </button>
+              )}
+              {showHomeButton && (
+                <button type="button" className="btn btn-primary" onClick={handleHome}>
+                  <Home size={16} />
+                  Return Home
+                </button>
+              )}
+            </div>
+          </div>
+        </ContentFlatCard>
+      </div>
     </div>
   );
 };

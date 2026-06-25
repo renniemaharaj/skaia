@@ -1,6 +1,7 @@
 import { Lock, ShieldCheck } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
 import Button from "../components/input/Button";
 import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import ErrorPage from "./ErrorPage";
@@ -78,21 +79,11 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
 
   const detailsNode = (
     <div className="rate-limited-details">
-      <p style={{ margin: 0 }}>
+      <p>
         {timeLeft > 0
           ? `Please wait ${formatTime(timeLeft)} before trying again.`
           : "Please wait while the rate-limit window clears."}
       </p>
-
-      {/* DEFCON Info is now rendered as a fixed tile at the root level of the component */}
-
-      <div
-        style={{
-          height: "1px",
-          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)",
-          margin: "1.5rem 0",
-        }}
-      />
 
       {canRequestPriorityAccess && !showOverride && (
         <button
@@ -106,10 +97,8 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
 
       {canRequestPriorityAccess && showOverride && (
         <form onSubmit={handleTotpSubmit} className="rate-limited-form compact-form-card">
-          <div className="form-group" style={{ marginBottom: "0.5rem", textAlign: "left" }}>
-            <label htmlFor="totp_code" style={{ fontSize: "0.8rem", opacity: 0.8 }}>
-              Priority Override Code
-            </label>
+          <ContentStandOutCard className="form-group" emphasis="group">
+            <label htmlFor="totp_code">Priority Override Code</label>
             <p className="form-help">Enter the six-digit administrator verification code.</p>
             <div className="input-wrapper">
               <ShieldCheck size={18} className="input-icon" />
@@ -124,10 +113,9 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
                 onChange={e => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 required
                 disabled={isSubmitting}
-                style={{ paddingLeft: "36px", letterSpacing: "0.1em" }}
               />
             </div>
-          </div>
+          </ContentStandOutCard>
 
           <Button
             type="submit"
@@ -136,11 +124,23 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
             loading={isSubmitting}
             disabled={totpCode.length < 6}
             block
-            style={{ marginTop: "0.5rem", padding: "0.6rem" }}
           >
             Authorize Bypass
           </Button>
         </form>
+      )}
+
+      {defconInfo && (
+        <div className="section__header" style={{ alignSelf: "stretch", marginTop: "1rem" }}>
+          <ShieldCheck size={24} className="section__header-icon" aria-hidden="true" />
+          <span className="section__header-eyebrow">Rate limit telemetry</span>
+          <h2>Traffic guard status</h2>
+          <p>
+            Active jails: {defconInfo.ips_jailed} · Tracked signatures:{" "}
+            {defconInfo.distinct_ips_tracked} · Cleared citizens: {defconInfo.citizens} · Dynamic
+            threshold: {defconInfo.limiter_state} req/m
+          </p>
+        </div>
       )}
     </div>
   );
@@ -155,77 +155,6 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
         showBackButton={false}
         showHomeButton={false}
       />
-      {defconInfo && (
-        <div
-          className="defcon-telemetry-tile"
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            width: "260px",
-            padding: "1rem",
-            background: "var(--bg-secondary, rgba(0, 0, 0, 0.8))",
-            border: "1px solid var(--border-color, rgba(255, 60, 60, 0.3))",
-            borderRadius: "6px",
-            fontSize: "0.85rem",
-            textAlign: "left",
-            fontFamily: "var(--font-mono, monospace)",
-            boxShadow: "var(--shadow-xl, 0 8px 32px rgba(0,0,0,0.5))",
-            backdropFilter: "blur(10px)",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "1rem",
-              fontWeight: 700,
-              color: "var(--text-primary, rgba(255, 80, 80, 0.9))",
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              borderBottom: "1px dashed var(--border-color, rgba(255, 60, 60, 0.3))",
-              paddingBottom: "0.5rem",
-            }}
-          >
-            [ DEFCON THREAT TELEMETRY ]
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>
-              › Active Jails:
-            </span>
-            <strong style={{ color: "var(--text-primary, #fff)" }}>{defconInfo.ips_jailed}</strong>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>
-              › Tracked Signatures:
-            </span>
-            <strong style={{ color: "var(--text-primary, #e0e0e0)" }}>
-              {defconInfo.distinct_ips_tracked}
-            </strong>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>
-              › Cleared Citizens:
-            </span>
-            <strong style={{ color: "var(--text-primary, #55ff55)" }}>{defconInfo.citizens}</strong>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginTop: "1rem",
-              paddingTop: "1rem",
-              borderTop: "1px dashed var(--border-color, rgba(255, 60, 60, 0.2))",
-            }}
-          >
-            <span style={{ color: "var(--text-secondary, rgba(255,255,255,0.6))" }}>
-              › Dynamic Threshold:
-            </span>
-            <strong style={{ color: "var(--text-primary, #ffaa00)" }}>
-              {defconInfo.limiter_state} req/m
-            </strong>
-          </div>
-        </div>
-      )}
     </>
   );
 };
