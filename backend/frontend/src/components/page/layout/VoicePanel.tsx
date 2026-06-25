@@ -17,6 +17,7 @@ import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom } from "../../../atoms/presence";
 import { voicePermissionsAtom } from "../../../atoms/voice";
 import { getSoundVolume } from "../../../utils/sound";
+import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
@@ -317,16 +318,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       pos = await transitionPlayerRef.current.getCurrentTime();
     }
 
-    socket?.send(
-      JSON.stringify({
+    if (socket) {
+      sendWebSocketMessage(socket, {
         type: "media:transition",
         payload: {
           route: location.pathname,
           item_id: mediaStateRef.current.queue[0].id,
           position: pos,
         },
-      })
-    );
+      });
+    }
     transitioningItemIdRef.current = null;
   }, [socket, location.pathname]);
 
@@ -451,16 +452,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     const vid = extractYouTubeId(inputUrl);
     if (!vid) {
       if (searchResults.length > 0) {
-        socket?.send(
-          JSON.stringify({
+        if (socket) {
+          sendWebSocketMessage(socket, {
             type: "media:add",
             payload: {
               route: location.pathname,
               video_id: searchResults[0].id,
               loop: false,
             },
-          })
-        );
+          });
+        }
         setInputUrl("");
         setSearchResults([]);
       } else {
@@ -468,32 +469,32 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       }
       return;
     }
-    socket?.send(
-      JSON.stringify({
+    if (socket) {
+      sendWebSocketMessage(socket, {
         type: "media:add",
         payload: { route: location.pathname, video_id: vid, loop: false },
-      })
-    );
+      });
+    }
     setInputUrl("");
     setSearchResults([]);
   };
 
   const handleRemoveMedia = (itemId: string) => {
-    socket?.send(
-      JSON.stringify({
+    if (socket) {
+      sendWebSocketMessage(socket, {
         type: "media:remove",
         payload: { route: location.pathname, item_id: itemId },
-      })
-    );
+      });
+    }
   };
 
   const handleClearHistory = () => {
-    socket?.send(
-      JSON.stringify({
+    if (socket) {
+      sendWebSocketMessage(socket, {
         type: "media:history:clear",
         payload: { route: location.pathname },
-      })
-    );
+      });
+    }
   };
 
   const handlePauseToggle = async () => {
@@ -501,12 +502,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (playerRef.current) {
       position = await playerRef.current.getCurrentTime();
     }
-    socket?.send(
-      JSON.stringify({
+    if (socket) {
+      sendWebSocketMessage(socket, {
         type: "media:action",
         payload: { route: location.pathname, position },
-      })
-    );
+      });
+    }
   };
 
   const [retiredItems, setRetiredItems] = useState<any[]>([]);
@@ -530,15 +531,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
   const handleEnded = useCallback(() => {
     if (mediaState?.queue && mediaState.queue.length > 0) {
-      socket?.send(
-        JSON.stringify({
+      if (socket) {
+        sendWebSocketMessage(socket, {
           type: "media:ended",
           payload: {
             route: location.pathname,
             item_id: mediaState.queue[0].id,
           },
-        })
-      );
+        });
+      }
     }
   }, [mediaState, socket, location.pathname]);
 
@@ -916,16 +917,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                   key={res.id}
                   className="vp-search-result-item"
                   onClick={() => {
-                    socket?.send(
-                      JSON.stringify({
+                    if (socket) {
+                      sendWebSocketMessage(socket, {
                         type: "media:add",
                         payload: {
                           route: location.pathname,
                           video_id: res.id,
                           loop: false,
                         },
-                      })
-                    );
+                      });
+                    }
                     setInputUrl("");
                     setSearchResults([]);
                   }}
@@ -1057,15 +1058,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                             ) : (
                               <button
                                 onClick={() => {
-                                  socket?.send(
-                                    JSON.stringify({
+                                  if (socket) {
+                                    sendWebSocketMessage(socket, {
                                       type: "media:transition:start",
                                       payload: {
                                         route: location.pathname,
                                         item_id: item.id,
                                       },
-                                    })
-                                  );
+                                    });
+                                  }
                                 }}
                                 className="btn btn-ghost"
                                 style={{
@@ -1097,16 +1098,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                           {index === 0 && transitioningItemId !== item.id && (
                             <button
                               onClick={() => {
-                                socket?.send(
-                                  JSON.stringify({
+                                if (socket) {
+                                  sendWebSocketMessage(socket, {
                                     type: "media:transition",
                                     payload: {
                                       route: location.pathname,
                                       item_id: mediaState.queue[0].id,
                                       position: 0,
                                     },
-                                  })
-                                );
+                                  });
+                                }
                               }}
                               className="btn btn-ghost"
                               style={{
@@ -1200,16 +1201,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                             src={`https://img.youtube.com/vi/${item.video_id}/default.jpg`}
                             title={`${item.user_name} - ${new Date(item.created_at).toLocaleTimeString()}`}
                             onClick={() => {
-                              socket?.send(
-                                JSON.stringify({
+                              if (socket) {
+                                sendWebSocketMessage(socket, {
                                   type: "media:add",
                                   payload: {
                                     route: location.pathname,
                                     video_id: item.video_id,
                                     loop: false,
                                   },
-                                })
-                              );
+                                });
+                              }
                             }}
                           />
                         ))}
@@ -1237,12 +1238,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         <button
                           onClick={e => {
                             e.stopPropagation();
-                            socket?.send(
-                              JSON.stringify({
+                            if (socket) {
+                              sendWebSocketMessage(socket, {
                                 type: "media:remove",
                                 payload: { route: location.pathname, item_id: item.id },
-                              })
-                            );
+                              });
+                            }
                           }}
                           className="btn btn-ghost"
                           style={{
@@ -1259,16 +1260,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         </button>
                         <button
                           onClick={() => {
-                            socket?.send(
-                              JSON.stringify({
+                            if (socket) {
+                              sendWebSocketMessage(socket, {
                                 type: "media:add",
                                 payload: {
                                   route: location.pathname,
                                   video_id: item.video_id,
                                   loop: false,
                                 },
-                              })
-                            );
+                              });
+                            }
                           }}
                           className="btn btn-ghost"
                           style={{ padding: "0.25rem", borderRadius: "50%" }}
@@ -1298,15 +1299,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 type="checkbox"
                 checked={permissions.voiceEnabled}
                 onChange={() => {
-                  socket?.send(
-                    JSON.stringify({
+                  if (socket) {
+                    sendWebSocketMessage(socket, {
                       type: "voice:control",
                       payload: {
                         route: location.pathname,
                         action: permissions.voiceEnabled ? "disable" : "enable",
                       },
-                    })
-                  );
+                    });
+                  }
                 }}
               />
               <div className="vp-switch-track vp-switch-track--danger">

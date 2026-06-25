@@ -6,6 +6,14 @@ import (
 	"github.com/skaia/backend/models"
 )
 
+const (
+	WebSocketEncodingJSON  = "json"
+	WebSocketEncodingProto = "proto"
+
+	WebSocketSubprotocolJSON  = "skaia.json.v1"
+	WebSocketSubprotocolProto = "skaia.proto.v1"
+)
+
 // MessageType defines the type of WebSocket message.
 type MessageType string
 

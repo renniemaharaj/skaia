@@ -25,6 +25,7 @@ import { mediaStateAtom } from "../../../atoms/media";
 import { type OnlineUser, onlineUsersAtom, pendingTpUserAtom } from "../../../atoms/presence";
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
+import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import ComposerInput from "../../input/Input";
 import UserAvatar from "../../user/UserAvatar";
 import UserInlineCard from "../../user/UserInlineCard";
@@ -195,13 +196,11 @@ const PresencePanel = () => {
         (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
       handler: u => {
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
-        socket.send(
-          JSON.stringify({
-            type: "tp",
-            user_id: currentUser?.id ? Number(currentUser.id) : 0,
-            payload: { target_user_id: u.user_id, route: location.pathname },
-          })
-        );
+        sendWebSocketMessage(socket, {
+          type: "tp",
+          user_id: currentUser?.id ? Number(currentUser.id) : 0,
+          payload: { target_user_id: u.user_id, route: location.pathname },
+        });
         toast(`${u.user_name || "User"} summoned`, {
           description: `Teleporting them to ${location.pathname}`,
           duration: 4000,
@@ -619,12 +618,10 @@ const PresencePanel = () => {
             <ComposerInput
               handleSend={msg => {
                 if (!socket || socket.readyState !== WebSocket.OPEN) return;
-                socket.send(
-                  JSON.stringify({
-                    type: "global:chat",
-                    payload: { content: msg },
-                  })
-                );
+                sendWebSocketMessage(socket, {
+                  type: "global:chat",
+                  payload: { content: msg },
+                });
               }}
               placeholder="Say something…"
               maxLength={500}

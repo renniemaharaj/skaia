@@ -405,7 +405,7 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			ResourceID: id,
 			IP:         ievents.ClientIP(r),
 			Fn: func() {
-				h.hub.BroadcastPageExceptUser(userID, "page_updated", updated)
+				h.hub.BroadcastPageExceptUser(userID, "page_updated", pageUpdatePatch(updated))
 			},
 		})
 	} else {
@@ -417,9 +417,25 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			ResourceID: id,
 			IP:         ievents.ClientIP(r),
 			Fn: func() {
-				h.hub.BroadcastPageExceptUser(userID, "page_updated", p)
+				h.hub.BroadcastPageExceptUser(userID, "page_updated", pageUpdatePatch(&p))
 			},
 		})
+	}
+}
+
+func pageUpdatePatch(p *models.Page) map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return map[string]interface{}{
+		"id":          p.ID,
+		"slug":        p.Slug,
+		"title":       p.Title,
+		"description": p.Description,
+		"visibility":  p.Visibility,
+		"owner_id":    p.OwnerID,
+		"updated_at":  p.UpdatedAt,
+		"partial":     true,
 	}
 }
 

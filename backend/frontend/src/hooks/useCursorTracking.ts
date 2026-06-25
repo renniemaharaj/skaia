@@ -1,6 +1,7 @@
 import { useAtomValue } from "jotai";
 import { useEffect, useRef } from "react";
 import { currentUserAtom, socketAtom } from "../atoms/auth";
+import { sendWebSocketMessage } from "../utils/wsProtobuf";
 
 const THROTTLE_MS = 50; // ~20 fps
 
@@ -36,13 +37,11 @@ export const useCursorTracking = () => {
       const y = (clientY + container.scrollTop) / container.scrollHeight;
       const uid = userRef.current?.id ? Number(userRef.current.id) : 0;
 
-      ws.send(
-        JSON.stringify({
-          type: "cursor:update",
-          user_id: uid,
-          payload: { x, y },
-        })
-      );
+      sendWebSocketMessage(ws, {
+        type: "cursor:update",
+        user_id: uid,
+        payload: { x, y },
+      });
     };
 
     const handleMouseMove = (e: MouseEvent) => {

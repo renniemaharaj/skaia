@@ -27,6 +27,7 @@ import { useAtomValue } from "jotai";
 import { socketAtom } from "../../atoms/auth";
 import { uploader } from "../../atoms/uploadAtom";
 import { sendGrengoJobAction, useWebSocketSync } from "../../hooks/useWebSocketSync";
+import { sendWebSocketMessage } from "../../utils/wsProtobuf";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import Select from "../input/Select";
 import "../ui/GlassMenu.css";
@@ -482,12 +483,10 @@ export default function GrengoDashboard() {
   useEffect(() => {
     if (isConsoleOpen && sessionValid && socket && socket.readyState === WebSocket.OPEN) {
       // Send websocket subscribe request for "log" resource type
-      socket.send(
-        JSON.stringify({
-          type: "subscribe",
-          payload: { resource_type: "log", resource_id: 0 },
-        })
-      );
+      sendWebSocketMessage(socket, {
+        type: "subscribe",
+        payload: { resource_type: "log", resource_id: 0 },
+      });
     }
   }, [isConsoleOpen, sessionValid, socket]);
 

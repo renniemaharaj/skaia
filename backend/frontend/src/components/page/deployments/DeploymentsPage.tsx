@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { socketAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
+import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
 import { Console, type ConsoleLine } from "../../ui/Console";
 import { customConfirm } from "../../ui/Prompt";
@@ -159,12 +160,10 @@ export function DeploymentsPage() {
   useEffect(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || instances.length === 0) return;
     for (const inst of instances) {
-      socket.send(
-        JSON.stringify({
-          type: "subscribe",
-          payload: { resource_type: "provisioning_logs", resource_id: inst.id },
-        })
-      );
+      sendWebSocketMessage(socket, {
+        type: "subscribe",
+        payload: { resource_type: "provisioning_logs", resource_id: inst.id },
+      });
     }
   }, [socket, instances]);
 
@@ -304,12 +303,10 @@ export function DeploymentsPage() {
       if (newSet.has(id)) {
         newSet.delete(id);
         if (socket && socket.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({
-              type: "unsubscribe",
-              payload: { resource_type: "provisioning_logs", resource_id: id },
-            })
-          );
+          sendWebSocketMessage(socket, {
+            type: "unsubscribe",
+            payload: { resource_type: "provisioning_logs", resource_id: id },
+          });
         }
       } else {
         newSet.add(id);
@@ -321,12 +318,10 @@ export function DeploymentsPage() {
           fetchInstanceLogs(id);
         }
         if (socket && socket.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({
-              type: "subscribe",
-              payload: { resource_type: "provisioning_logs", resource_id: id },
-            })
-          );
+          sendWebSocketMessage(socket, {
+            type: "subscribe",
+            payload: { resource_type: "provisioning_logs", resource_id: id },
+          });
         }
       }
       return newSet;

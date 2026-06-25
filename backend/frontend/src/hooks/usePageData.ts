@@ -233,6 +233,15 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       if (!slug) return;
 
       if (action === "page_updated" && (data?.slug === slug || data?.id === page?.id)) {
+        if (data?.partial) {
+          if (suppressRef.current) {
+            pendingDataRef.current = null;
+            setPendingIncoming(true);
+          } else {
+            refresh(slug);
+          }
+          return;
+        }
         if (suppressRef.current) {
           // Hold the incoming update - store the data and apply when editing ends.
           pendingDataRef.current = data;

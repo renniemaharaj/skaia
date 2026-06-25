@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package skaia.ws;
+
+option go_package = "github.com/skaia/grpc/ws;ws";
+
+message WebSocketMessage {
+  string type = 1;
+  int64 user_id = 2;
+  bytes payload = 3;
+}

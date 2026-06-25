@@ -3,12 +3,14 @@ package ws
 import (
 	"encoding/json"
 	"errors"
-	log "github.com/skaia/backend/internal/syslog"
 	"io"
 	"strconv"
 	"time"
 
 	"github.com/gorilla/websocket"
+	log "github.com/skaia/backend/internal/syslog"
+	wspb "github.com/skaia/grpc/ws"
+	"google.golang.org/protobuf/proto"
 )
 
 // Client represents a single WebSocket connection managed by the Hub.
@@ -17,6 +19,7 @@ type Client struct {
 	Conn        *websocket.Conn
 	Send        chan *Message
 	AudioSend   chan []byte
+	Encoding    string
 	ClientID    int64 // unique per connection, assigned by Hub at registration
 	UserID      int64
 	Permissions []string
@@ -89,6 +92,14 @@ func (c *Client) ReadPump() {
 				case c.Hub.audioUpdates <- AudioBroadcast{Client: c, Type: frameType, Data: data[1:]}:
 				default:
 				}
+				continue
+			}
+			if c.Encoding == WebSocketEncodingProto {
+				msg, err := decodeProtoMessage(data)
+				if err != nil {
+					return
+				}
+				c.handleMessage(msg)
 			}
 			continue
 		}
@@ -97,41 +108,64 @@ func (c *Client) ReadPump() {
 		if err := json.NewDecoder(reader).Decode(&msg); err != nil {
 			return
 		}
+		c.handleMessage(msg)
+	}
+}
 
-		// user identity is set at connection time from JWT; never trust the client
-		switch msg.Type {
-		case Subscribe:
-			c.handleSubscribe(msg)
-		case Unsubscribe:
-			c.handleUnsubscribe(msg)
-		case Presence:
-			if c.presenceLimit.allow() {
-				c.handlePresence(msg)
-			}
-		case Tp:
-			c.handleTp(msg)
-		case GlobalChat:
-			if c.allowChat() {
-				c.handleGlobalChat(msg)
-			} else {
-				c.sendClientError("You are sending global chat messages too quickly.", c.chatRetryAfter())
-			}
-		case Cursor:
-			if c.cursorLimit.allow() {
-				c.handleCursor(msg)
-			}
-		case Ping:
-			// nothing - client keepalive only
-		case VoiceControl:
-			c.handleVoiceControlMsg(msg)
-		case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
-			c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
-		case GrengoJobAction:
-			c.handleGrengoJobAction(msg)
-		default:
-			if c.broadcastLimit.allow() {
-				c.Hub.Broadcast(&msg)
-			}
+func decodeProtoMessage(data []byte) (Message, error) {
+	var pb wspb.WebSocketMessage
+	if err := proto.Unmarshal(data, &pb); err != nil {
+		return Message{}, err
+	}
+	return Message{
+		Type:    MessageType(pb.GetType()),
+		UserID:  pb.GetUserId(),
+		Payload: json.RawMessage(pb.GetPayload()),
+	}, nil
+}
+
+func encodeProtoMessage(msg *Message) ([]byte, error) {
+	return proto.Marshal(&wspb.WebSocketMessage{
+		Type:    string(msg.Type),
+		UserId:  msg.UserID,
+		Payload: []byte(msg.Payload),
+	})
+}
+
+func (c *Client) handleMessage(msg Message) {
+	// user identity is set at connection time from JWT; never trust the client
+	switch msg.Type {
+	case Subscribe:
+		c.handleSubscribe(msg)
+	case Unsubscribe:
+		c.handleUnsubscribe(msg)
+	case Presence:
+		if c.presenceLimit.allow() {
+			c.handlePresence(msg)
+		}
+	case Tp:
+		c.handleTp(msg)
+	case GlobalChat:
+		if c.allowChat() {
+			c.handleGlobalChat(msg)
+		} else {
+			c.sendClientError("You are sending global chat messages too quickly.", c.chatRetryAfter())
+		}
+	case Cursor:
+		if c.cursorLimit.allow() {
+			c.handleCursor(msg)
+		}
+	case Ping:
+		// nothing - client keepalive only
+	case VoiceControl:
+		c.handleVoiceControlMsg(msg)
+	case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
+		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
+	case GrengoJobAction:
+		c.handleGrengoJobAction(msg)
+	default:
+		if c.broadcastLimit.allow() {
+			c.Hub.Broadcast(&msg)
 		}
 	}
 }
@@ -188,6 +222,16 @@ func (c *Client) WritePump() {
 				return
 			}
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if c.Encoding == WebSocketEncodingProto {
+				data, err := encodeProtoMessage(msg)
+				if err != nil {
+					return
+				}
+				if err := c.Conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
+					return
+				}
+				continue
+			}
 			w, err := c.Conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return

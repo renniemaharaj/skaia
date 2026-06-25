@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { currentUserAtom, socketAtom } from "../atoms/auth";
 import { playerMutedAtom } from "../atoms/media";
 import { getGuestSessionId } from "../utils/guestSession";
+import { sendWebSocketMessage } from "../utils/wsProtobuf";
 
 /**
  * Sends a presence announcement to the server whenever the route changes or
@@ -30,19 +31,17 @@ export const usePresence = (enabled = true) => {
   const sendPresence = (ws: WebSocket) => {
     if (ws.readyState !== WebSocket.OPEN) return;
     const user = userRef.current;
-    ws.send(
-      JSON.stringify({
-        type: "presence",
-        user_id: user?.id ? Number(user.id) : 0,
-        payload: {
-          route: routeRef.current,
-          user_name: user?.display_name || user?.username || "",
-          avatar: user?.avatar_url ?? "",
-          is_muted: muteRef.current,
-          guest_session_id: user ? "" : getGuestSessionId(),
-        },
-      })
-    );
+    sendWebSocketMessage(ws, {
+      type: "presence",
+      user_id: user?.id ? Number(user.id) : 0,
+      payload: {
+        route: routeRef.current,
+        user_name: user?.display_name || user?.username || "",
+        avatar: user?.avatar_url ?? "",
+        is_muted: muteRef.current,
+        guest_session_id: user ? "" : getGuestSessionId(),
+      },
+    });
   };
 
   // Announce on route change (socket already open)

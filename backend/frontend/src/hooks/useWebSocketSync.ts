@@ -43,6 +43,13 @@ import {
 import { voicePermissionsAtom } from "../atoms/voice";
 import { formatCents } from "../utils/money";
 import { playChatSound, playMessageSound, playNotificationSound } from "../utils/sound";
+import {
+  WS_JSON_SUBPROTOCOL,
+  WS_PROTO_SUBPROTOCOL,
+  decodeWebSocketProto,
+  sendWebSocketMessage,
+  shouldUseProtobufWebSocket,
+} from "../utils/wsProtobuf";
 
 import {
   type CartItem,
@@ -76,6 +83,31 @@ let _globalConnecting = false;
 // Module-level mirror of activeConversationIdAtom so the singleton onmessage
 // closure always has the latest value even across multiple hook instances.
 let _activeConversationId: string | null = null;
+
+const appendWsParam = (url: string, key: string, value: string) =>
+  `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
+
+const isAudioFrame = (buffer: ArrayBuffer) => {
+  const first = new Uint8Array(buffer)[0];
+  return first === 0x01 || first === 0x02 || first === 0x03;
+};
+
+const parseWebSocketMessage = async (ws: WebSocket, data: MessageEvent["data"]) => {
+  if (data instanceof Blob || data instanceof ArrayBuffer) {
+    const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
+    if (ws.protocol === WS_PROTO_SUBPROTOCOL && !isAudioFrame(buffer)) {
+      const message = await decodeWebSocketProto(buffer);
+      return { message, payload: message.payload };
+    }
+    window.dispatchEvent(new CustomEvent("voice:binary", { detail: data }));
+    return null;
+  }
+
+  const message: WebSocketMessage = JSON.parse(data);
+  const payload =
+    typeof message.payload === "string" ? JSON.parse(message.payload) : message.payload;
+  return { message, payload };
+};
 
 /**
  * Hook to manage resource subscriptions and listen for backend propagated changes
@@ -170,8 +202,16 @@ export const useWebSocketSync = () => {
     _globalConnecting = true;
     try {
       const token = accessTokenRef.current;
-      const url = token ? `${wsUrl}?token=${encodeURIComponent(token)}` : wsUrl;
-      const ws = new WebSocket(url);
+      const useProto = shouldUseProtobufWebSocket();
+      let url = token ? appendWsParam(wsUrl, "token", token) : wsUrl;
+      if (useProto) {
+        url = appendWsParam(url, "encoding", "proto");
+      }
+      const protocols = useProto
+        ? [WS_PROTO_SUBPROTOCOL, WS_JSON_SUBPROTOCOL]
+        : [WS_JSON_SUBPROTOCOL];
+      const ws = new WebSocket(url, protocols);
+      ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
         _globalConnecting = false;
@@ -182,27 +222,19 @@ export const useWebSocketSync = () => {
         // Re-subscribe to all tracked resources after (re)connect
         for (const key of subscriptionsRef.current) {
           const [resourceType, resourceId] = key.split(":");
-          ws.send(
-            JSON.stringify({
-              type: "subscribe",
-              payload: { resource_type: resourceType, resource_id: resourceId },
-            })
-          );
+          sendWebSocketMessage(ws, {
+            type: "subscribe",
+            payload: { resource_type: resourceType, resource_id: resourceId },
+          });
           console.log(`[reconnect] Re-subscribed to ${key}`);
         }
       };
 
-      ws.onmessage = event => {
+      ws.onmessage = async event => {
         try {
-          if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
-            window.dispatchEvent(new CustomEvent("voice:binary", { detail: event.data }));
-            return;
-          }
-
-          const message: WebSocketMessage = JSON.parse(event.data);
-          // Parse payload since it's a JSON-encoded string from backend
-          const payload =
-            typeof message.payload === "string" ? JSON.parse(message.payload) : message.payload;
+          const parsed = await parseWebSocketMessage(ws, event.data);
+          if (!parsed) return;
+          const { message, payload } = parsed;
 
           // Handle generic WS error and rate-limit notices
           if (message.type === "error") {
@@ -623,15 +655,13 @@ export const useWebSocketSync = () => {
                     const key = `forum_category:${data.id}`;
                     subscriptionsRef.current.add(key);
                     if (ws.readyState === WebSocket.OPEN) {
-                      ws.send(
-                        JSON.stringify({
-                          type: "subscribe",
-                          payload: {
-                            resource_type: "forum_category",
-                            resource_id: data.id,
-                          },
-                        })
-                      );
+                      sendWebSocketMessage(ws, {
+                        type: "subscribe",
+                        payload: {
+                          resource_type: "forum_category",
+                          resource_id: data.id,
+                        },
+                      });
                     }
                   }
 
@@ -1268,8 +1298,7 @@ export const useWebSocketSync = () => {
         resource_id: resourceId,
       },
     };
-    _globalWs.send(JSON.stringify(subscription));
-    console.log(`[subscribe] Sent subscribe message for ${key}`, subscription);
+    sendWebSocketMessage(_globalWs, subscription);
   }, []);
 
   /**
@@ -1287,7 +1316,7 @@ export const useWebSocketSync = () => {
           resource_id: resourceId,
         },
       };
-      _globalWs.send(JSON.stringify(unsubscription));
+      sendWebSocketMessage(_globalWs, unsubscription);
       console.log(`Unsubscribed from ${key}`);
     }
   }, []);
@@ -1299,7 +1328,7 @@ export const useWebSocketSync = () => {
     // Heartbeat: keep the connection alive and detect silent drops
     const heartbeatInterval = setInterval(() => {
       if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
-        _globalWs.send(JSON.stringify({ type: "ping" }));
+        sendWebSocketMessage(_globalWs, { type: "ping" });
       } else if (!_globalWs || _globalWs.readyState === WebSocket.CLOSED) {
         setupWebSocket();
       }
@@ -1348,12 +1377,10 @@ export const sendGrengoJobAction = (
   });
 
   if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
-    _globalWs.send(
-      JSON.stringify({
-        type: "grengo:action",
-        payload: { request_id: requestId, action, name, command, args },
-      })
-    );
+    sendWebSocketMessage(_globalWs, {
+      type: "grengo:action",
+      payload: { request_id: requestId, action, name, command, args },
+    });
   } else {
     window.dispatchEvent(
       new CustomEvent("grengo:action_ack", {
