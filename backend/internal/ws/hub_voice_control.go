@@ -13,7 +13,7 @@ type VoiceControlAction struct {
 
 // handleVoiceControl updates the admin permissions for voice chat on a specific route.
 func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
-	if vc.Client == nil || !vc.Client.hasPermission("home.manage") {
+	if vc.Client == nil || !vc.Client.HasPermission("home.manage") {
 		return
 	}
 	if vc.Payload.Route == "" {

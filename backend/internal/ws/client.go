@@ -97,6 +97,8 @@ func (c *Client) ReadPump() {
 			if c.Encoding == WebSocketEncodingProto {
 				msg, err := decodeProtoMessage(data)
 				if err != nil {
+					// Malformed proto frames are treated as fatal so a bad client
+					// cannot keep a half-valid binary connection alive.
 					return
 				}
 				c.handleMessage(msg)
@@ -117,6 +119,9 @@ func decodeProtoMessage(data []byte) (Message, error) {
 	if err := proto.Unmarshal(data, &pb); err != nil {
 		return Message{}, err
 	}
+	// NOTE: pb.Payload currently contains JSON bytes inside the protobuf
+	// envelope. When ServerPayload is introduced, these bytes will be binary
+	// protobuf and Message.Payload will need to stop assuming json.RawMessage.
 	return Message{
 		Type:    MessageType(pb.GetType()),
 		UserID:  pb.GetUserId(),
@@ -243,7 +248,7 @@ func (c *Client) WritePump() {
 			w.Close()
 		case audioData, ok := <-c.AudioSend:
 			if !ok {
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				// Send's close path owns the websocket Close frame.
 				return
 			}
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
@@ -371,7 +376,7 @@ func (c *Client) handleVoiceControlMsg(msg Message) {
 	if p.Route == "" || p.Action == "" {
 		return
 	}
-	if !c.hasPermission("home.manage") {
+	if !c.HasPermission("home.manage") {
 		c.sendClientErrorAction("forbidden", "You do not have permission to manage route voice chat.", 0)
 		return
 	}
@@ -379,15 +384,6 @@ func (c *Client) handleVoiceControlMsg(msg Message) {
 	case c.Hub.voiceControl <- VoiceControlAction{Client: c, Payload: p}:
 	default:
 	}
-}
-
-func (c *Client) hasPermission(permission string) bool {
-	for _, p := range c.Permissions {
-		if p == permission {
-			return true
-		}
-	}
-	return false
 }
 
 // handleGlobalChat validates and enqueues a global chat message from this client.
