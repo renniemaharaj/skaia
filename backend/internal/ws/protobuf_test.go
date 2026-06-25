@@ -65,3 +65,67 @@ func TestProtoServerMessageEncode(t *testing.T) {
 		t.Fatalf("payload = %s, want %s", out.GetPayload(), in.Payload)
 	}
 }
+
+func TestHandleVoiceSignalRelaysToTargetOnly(t *testing.T) {
+	h := NewHub()
+	sender := &Client{UserID: 42, SessionID: 1, Route: "/room", Send: make(chan []byte, 1)}
+	target := &Client{UserID: 7, SessionID: 1, Route: "/room", Send: make(chan []byte, 1)}
+	other := &Client{UserID: 9, SessionID: 1, Route: "/room", Send: make(chan []byte, 1)}
+	h.clients[sender] = true
+	h.clients[target] = true
+	h.clients[other] = true
+
+	h.handleVoiceSignal(sender, VoiceSignalPayload{
+		Route:        "/room",
+		TargetUserID: 7,
+		Kind:         "offer",
+		SDP:          "v=0",
+	})
+
+	select {
+	case data := <-target.Send:
+		msg, err := decodeProtoMessage(data)
+		if err != nil {
+			t.Fatalf("decode queued signal: %v", err)
+		}
+		if msg.Type != VoiceSignal {
+			t.Fatalf("type = %s, want %s", msg.Type, VoiceSignal)
+		}
+		var payload VoiceSignalPayload
+		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+			t.Fatalf("unmarshal signal payload: %v", err)
+		}
+		if payload.SenderUserID != 42 || payload.TargetUserID != 7 {
+			t.Fatalf("payload = %+v, want sender 42 target 7", payload)
+		}
+	default:
+		t.Fatal("target did not receive voice signal")
+	}
+
+	select {
+	case <-other.Send:
+		t.Fatal("non-target received voice signal")
+	default:
+	}
+}
+
+func TestHandleVoiceSignalRejectsCrossRoute(t *testing.T) {
+	h := NewHub()
+	sender := &Client{UserID: 42, SessionID: 1, Route: "/room-a", Send: make(chan []byte, 1)}
+	target := &Client{UserID: 7, SessionID: 1, Route: "/room-b", Send: make(chan []byte, 1)}
+	h.clients[sender] = true
+	h.clients[target] = true
+
+	h.handleVoiceSignal(sender, VoiceSignalPayload{
+		Route:        "/room-b",
+		TargetUserID: 7,
+		Kind:         "offer",
+		SDP:          "v=0",
+	})
+
+	select {
+	case <-target.Send:
+		t.Fatal("cross-route signal was delivered")
+	default:
+	}
+}

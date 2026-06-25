@@ -18,7 +18,7 @@ const maxMessageSize = 1 << 20
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	Subprotocols:    []string{WebSocketSubprotocolProto, WebSocketSubprotocolJSON},
+	Subprotocols:    []string{WebSocketSubprotocolProto},
 	CheckOrigin:     checkOrigin,
 }
 
@@ -99,7 +99,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	}
 
 	conn.SetReadLimit(maxMessageSize)
-	encoding := negotiateEncoding(r, conn)
 
 	chatRate := 5.0
 	chatBurst := 5.0
@@ -113,8 +112,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		Hub:            hub,
 		Conn:           conn,
 		Send:           make(chan []byte, 256),
-		AudioSend:      make(chan []byte, 256),
-		Encoding:       encoding,
 		UserID:         userID,
 		UserName:       userName,
 		Permissions:    permissions,
@@ -129,19 +126,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 
 	go client.ReadPump()
 	go client.WritePump()
-}
-
-func negotiateEncoding(r *http.Request, conn *websocket.Conn) string {
-	switch conn.Subprotocol() {
-	case WebSocketSubprotocolProto:
-		return WebSocketEncodingProto
-	case WebSocketSubprotocolJSON:
-		return WebSocketEncodingJSON
-	}
-	if strings.EqualFold(r.URL.Query().Get("encoding"), WebSocketEncodingProto) {
-		return WebSocketEncodingProto
-	}
-	return WebSocketEncodingJSON
 }
 
 func envIntDefault(key string, def int) int {

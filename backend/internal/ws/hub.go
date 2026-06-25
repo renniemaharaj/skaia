@@ -73,13 +73,6 @@ type CursorBroadcast struct {
 	Y      float64
 }
 
-// AudioBroadcast carries a binary audio frame from a client to be relayed to others on the same route.
-type AudioBroadcast struct {
-	Client *Client
-	Type   byte
-	Data   []byte
-}
-
 // VoicePermissions holds the admin state for voice chat on a specific route.
 type VoicePermissions struct {
 	VoiceEnabled bool
@@ -163,7 +156,6 @@ type Hub struct {
 	teleport        chan TeleportRequest
 	cursorUpdates   chan CursorBroadcast
 	globalChat      chan GlobalChatMessage
-	audioUpdates    chan AudioBroadcast
 	voiceControl    chan VoiceControlAction
 	mediaUpdates    chan MediaUpdateAction
 	grengoActions   chan []byte
@@ -227,7 +219,6 @@ func NewHub() *Hub {
 		teleport:        make(chan TeleportRequest, 256),
 		globalChat:      make(chan GlobalChatMessage, 1024),
 		cursorUpdates:   make(chan CursorBroadcast, 2048),
-		audioUpdates:    make(chan AudioBroadcast, 4096),
 		voiceControl:    make(chan VoiceControlAction, 256),
 		mediaUpdates:    make(chan MediaUpdateAction, 256),
 		grengoActions:   make(chan []byte, 1024),
@@ -345,8 +336,6 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleCursorBroadcast(cu) })
 		case cm := <-h.globalChat:
 			h.dispatch(func() { h.handleGlobalChat(cm) })
-		case ab := <-h.audioUpdates:
-			h.dispatch(func() { h.handleAudioBroadcast(ab) })
 		case vc := <-h.voiceControl:
 			h.dispatch(func() { h.handleVoiceControl(vc) })
 		case mu := <-h.mediaUpdates:

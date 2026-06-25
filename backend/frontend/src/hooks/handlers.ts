@@ -36,6 +36,7 @@ const EVENT_BUS_TYPES = new Set([
   "provisioning:progress",
   "provisioning:status",
   "recovery_request:update",
+  "voice:signal",
 ]);
 
 const registryPayload = (payload: WebSocketMessage["payload"]) => payload?.data ?? payload;

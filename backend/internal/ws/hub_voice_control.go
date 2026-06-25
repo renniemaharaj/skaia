@@ -69,3 +69,66 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 		}
 	}
 }
+
+func (c *Client) handleVoiceSignal(msg Message) {
+	var payload VoiceSignalPayload
+	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+		return
+	}
+	c.Hub.handleVoiceSignal(c, payload)
+}
+
+func (h *Hub) handleVoiceSignal(sender *Client, payload VoiceSignalPayload) {
+	if sender == nil || payload.Route == "" || payload.TargetUserID == 0 {
+		return
+	}
+	if payload.Route != sender.Route {
+		return
+	}
+	switch payload.Kind {
+	case "offer", "answer", "candidate", "leave":
+	default:
+		return
+	}
+
+	senderID := presenceID(sender)
+	h.voiceMu.RLock()
+	vp, ok := h.voiceRoutes[payload.Route]
+	voiceEnabled := true
+	muted := false
+	kicked := false
+	if ok {
+		voiceEnabled = vp.VoiceEnabled
+		muted = vp.MutedUsers[senderID]
+		kicked = vp.KickedUsers[senderID]
+	}
+	h.voiceMu.RUnlock()
+	if !voiceEnabled || muted || kicked {
+		return
+	}
+
+	payload.SenderUserID = senderID
+	outPayload, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	msg := &Message{Type: VoiceSignal, UserID: senderID, Payload: outPayload}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	for client := range h.clients {
+		if client == sender || client.SessionID != sender.SessionID || client.Route != payload.Route {
+			continue
+		}
+		if presenceID(client) == payload.TargetUserID {
+			client.queueMessage(msg)
+		}
+	}
+}
+
+func presenceID(client *Client) int64 {
+	if client.UserID == 0 {
+		return -client.ClientID
+	}
+	return client.UserID
+}

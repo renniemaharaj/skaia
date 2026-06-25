@@ -16,6 +16,7 @@ import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/a
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom } from "../../../atoms/presence";
 import { voicePermissionsAtom } from "../../../atoms/voice";
+import { getGuestSessionId } from "../../../utils/guestSession";
 import { getSoundVolume } from "../../../utils/sound";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
@@ -25,30 +26,6 @@ import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import "./VoicePanel.css";
 import { useLocation } from "react-router-dom";
-
-const voiceMimeTypes = [
-  "audio/webm;codecs=opus",
-  "audio/webm",
-  "audio/ogg;codecs=opus",
-  "audio/mp4;codecs=mp4a.40.2",
-  "audio/mp4",
-];
-
-function getSupportedRecorderMimeType(): string | undefined {
-  if (!("MediaRecorder" in window)) {
-    return undefined;
-  }
-
-  return voiceMimeTypes.find(mimeType => MediaRecorder.isTypeSupported(mimeType));
-}
-
-function getSupportedPlaybackMimeType(): string | undefined {
-  if (!("MediaSource" in window)) {
-    return undefined;
-  }
-
-  return voiceMimeTypes.find(mimeType => MediaSource.isTypeSupported(mimeType));
-}
 
 function getMicrophoneErrorMessage(err: unknown): string {
   if (err instanceof DOMException) {
@@ -66,96 +43,13 @@ function getMicrophoneErrorMessage(err: unknown): string {
   return "Could not access microphone.";
 }
 
-interface VoiceStreamPlayer {
-  audio: HTMLAudioElement;
-  mediaSource: MediaSource;
-  objectUrl: string;
-  sourceBuffer: SourceBuffer | null;
-  queue: Uint8Array[];
-  pump: () => void;
-}
-
-function createVoiceStreamPlayer(
-  audioContext: AudioContext,
-  gainNode: GainNode,
-  onError: () => void
-): VoiceStreamPlayer | null {
-  const playbackMimeType = getSupportedPlaybackMimeType();
-  if (!playbackMimeType) {
-    return null;
-  }
-
-  let player: VoiceStreamPlayer;
-  const mediaSource = new MediaSource();
-  const audio = new Audio();
-  const objectUrl = URL.createObjectURL(mediaSource);
-
-  audio.autoplay = true;
-  audio.src = objectUrl;
-  audio.preload = "auto";
-  audio.crossOrigin = "anonymous";
-  audioContext.createMediaElementSource(audio).connect(gainNode);
-
-  audio.addEventListener("timeupdate", () => {
-    if (audio.buffered.length > 0) {
-      const latestTime = audio.buffered.end(audio.buffered.length - 1);
-      const lag = latestTime - audio.currentTime;
-      if (lag > 2.0) {
-        audio.currentTime = latestTime - 0.2;
-      } else if (lag > 0.5) {
-        audio.playbackRate = 1.2;
-      } else {
-        audio.playbackRate = 1.0;
-      }
-    }
-  });
-
-  const pump = () => {
-    const sourceBuffer = player.sourceBuffer;
-    if (!sourceBuffer || sourceBuffer.updating || player.queue.length === 0) {
-      return;
-    }
-
-    const chunk = player.queue.shift();
-    if (!chunk) return;
-
-    try {
-      const buffer = chunk.buffer.slice(
-        chunk.byteOffset,
-        chunk.byteOffset + chunk.byteLength
-      ) as ArrayBuffer;
-      sourceBuffer.appendBuffer(buffer);
-    } catch (e) {
-      console.warn("Audio buffer error, clearing queue", e);
-      player.queue = [];
-      onError();
-    }
-  };
-
-  player = {
-    audio,
-    mediaSource,
-    objectUrl,
-    sourceBuffer: null,
-    queue: [],
-    pump,
-  };
-
-  mediaSource.addEventListener("sourceopen", () => {
-    if (player.sourceBuffer) return;
-
-    try {
-      const sourceBuffer = mediaSource.addSourceBuffer(playbackMimeType);
-      sourceBuffer.mode = "sequence";
-      sourceBuffer.addEventListener("updateend", pump);
-      player.sourceBuffer = sourceBuffer;
-      pump();
-    } catch {
-      URL.revokeObjectURL(objectUrl);
-    }
-  });
-
-  return player;
+interface VoiceSignalPayload {
+  route: string;
+  target_user_id: number;
+  sender_user_id?: number;
+  kind: "offer" | "answer" | "candidate" | "leave";
+  sdp?: string;
+  candidate?: RTCIceCandidateInit;
 }
 
 interface VoicePanelProps {
@@ -165,6 +59,8 @@ interface VoicePanelProps {
 
 export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: VoicePanelProps = {}) {
   const [globalVolume, setGlobalVolume] = useState(() => getSoundVolume());
+  const globalVolumeRef = useRef(globalVolume);
+  globalVolumeRef.current = globalVolume;
   const [isPlayerMuted, setIsPlayerMuted] = useAtom(playerMutedAtom);
   const [historyViewMode, setHistoryViewMode] = useState<"list" | "playlists">("list");
 
@@ -186,8 +82,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const playerRef = useRef<YouTubePlayerRef>(null);
 
   const [micActive, setMicActive] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const remoteAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   const [remoteMicUsers, setRemoteMicUsers] = useState<string[]>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
@@ -206,13 +103,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     const timer = setInterval(() => setNow(Date.now()), 150);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (socket?.readyState === WebSocket.OPEN && permissions.voiceEnabled) {
-      const buffer = new Uint8Array([0x03]);
-      socket.send(buffer.buffer);
-    }
-  }, [socket, permissions.voiceEnabled, location.pathname]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -543,21 +433,136 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     }
   }, [mediaState, socket, location.pathname]);
 
-  const voicePlayersRef = useRef<Map<string, VoiceStreamPlayer>>(new Map());
   const isMutedByAdmin = currentUser && permissions.mutedUsers[Number(currentUser.id)];
   const isKicked = currentUser && permissions.kickedUsers[Number(currentUser.id)];
 
   const canSpeak = permissions.voiceEnabled && !isMutedByAdmin && !isKicked;
+  const myPresenceId =
+    currentUser?.id != null
+      ? Number(currentUser.id)
+      : (onlineUsers.find(user => user.guest_session_id === getGuestSessionId())?.user_id ?? 0);
+
+  const sendVoiceSignal = useCallback(
+    (targetUserId: number, payload: Omit<VoiceSignalPayload, "route" | "target_user_id">) => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      sendWebSocketMessage(socket, {
+        type: "voice:signal",
+        payload: {
+          route: location.pathname,
+          target_user_id: targetUserId,
+          ...payload,
+        },
+      });
+    },
+    [socket, location.pathname]
+  );
+
+  const closePeer = useCallback(
+    (peerId: string, notify = true) => {
+      const pc = peerConnectionsRef.current.get(peerId);
+      if (pc) {
+        pc.ontrack = null;
+        pc.onicecandidate = null;
+        pc.onnegotiationneeded = null;
+        pc.close();
+        peerConnectionsRef.current.delete(peerId);
+      }
+
+      const audio = remoteAudioRefs.current.get(peerId);
+      if (audio) {
+        audio.pause();
+        audio.srcObject = null;
+        remoteAudioRefs.current.delete(peerId);
+      }
+
+      setRemoteMicUsers(Array.from(remoteAudioRefs.current.keys()));
+      const numericPeerId = Number(peerId);
+      if (notify && Number.isFinite(numericPeerId)) {
+        sendVoiceSignal(numericPeerId, { kind: "leave" });
+      }
+    },
+    [sendVoiceSignal]
+  );
+
+  const createPeerConnection = useCallback(
+    (peerId: number) => {
+      const key = String(peerId);
+      const existing = peerConnectionsRef.current.get(key);
+      if (existing) return existing;
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+      peerConnectionsRef.current.set(key, pc);
+
+      streamRef.current?.getTracks().forEach(track => {
+        const alreadyAdded = pc.getSenders().some(sender => sender.track === track);
+        if (!alreadyAdded && streamRef.current) {
+          pc.addTrack(track, streamRef.current);
+        }
+      });
+
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          sendVoiceSignal(peerId, {
+            kind: "candidate",
+            candidate: event.candidate.toJSON(),
+          });
+        }
+      };
+
+      pc.ontrack = event => {
+        const [stream] = event.streams;
+        if (!stream) return;
+
+        let audio = remoteAudioRefs.current.get(key);
+        if (!audio) {
+          audio = new Audio();
+          audio.autoplay = true;
+          audio.setAttribute("playsinline", "true");
+          audio.volume = globalVolumeRef.current;
+          remoteAudioRefs.current.set(key, audio);
+          setRemoteMicUsers(Array.from(remoteAudioRefs.current.keys()));
+        }
+        audio.srcObject = stream;
+        window.dispatchEvent(new CustomEvent("voice:speaking", { detail: key }));
+        void audio.play().catch(() => {
+          // Browser autoplay policy may require a local click before remote audio starts.
+        });
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
+          closePeer(key, false);
+        }
+      };
+
+      return pc;
+    },
+    [closePeer, sendVoiceSignal]
+  );
+
+  const startOffer = useCallback(
+    async (peerId: number) => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      const pc = createPeerConnection(peerId);
+      if (pc.signalingState !== "stable") return;
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendVoiceSignal(peerId, { kind: "offer", sdp: offer.sdp });
+    },
+    [createPeerConnection, sendVoiceSignal, socket]
+  );
 
   const toggleMic = async () => {
     if (micActive) {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
-      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
         streamRef.current = null;
+      }
+      for (const peerId of peerConnectionsRef.current.keys()) {
+        closePeer(peerId);
       }
       setMicActive(false);
       return;
@@ -573,9 +578,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       return;
     }
 
-    const recorderMimeType = getSupportedRecorderMimeType();
-    if (!recorderMimeType) {
-      toast.error("This browser cannot record voice chat.");
+    if (!("RTCPeerConnection" in window)) {
+      toast.error("This browser cannot use WebRTC voice chat.");
       return;
     }
 
@@ -587,50 +591,31 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: recorderMimeType,
-      });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = async e => {
-        if (e.data.size > 0 && socket?.readyState === WebSocket.OPEN) {
-          const buffer = await e.data.arrayBuffer();
-          const frame = new Uint8Array(1 + buffer.byteLength);
-          frame[0] = 0x01; // Audio Frame
-          frame.set(new Uint8Array(buffer), 1);
-          socket.send(frame.buffer);
-          if (currentUser) {
-            window.dispatchEvent(
-              new CustomEvent("voice:speaking", {
-                detail: String(currentUser.id),
-              })
-            );
-          }
-        }
-      };
-
-      mediaRecorder.start(100); // 100ms chunks
       setMicActive(true);
+      for (const user of onlineUsers) {
+        if (user.route === location.pathname && user.user_id !== myPresenceId) {
+          void startOffer(user.user_id);
+        }
+      }
     } catch (err) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
         streamRef.current = null;
       }
-      mediaRecorderRef.current = null;
       toast.error(getMicrophoneErrorMessage(err));
     }
   };
 
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current) {
-        mediaRecorderRef.current.stop();
-      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
       }
+      for (const peerId of peerConnectionsRef.current.keys()) {
+        closePeer(peerId, false);
+      }
     };
-  }, []);
+  }, [closePeer]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -641,81 +626,66 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (audioContext && gainNode) {
       gainNode.gain.setTargetAtTime(globalVolume, audioContext.currentTime, 0.03);
     }
+    for (const audio of remoteAudioRefs.current.values()) {
+      audio.volume = globalVolume;
+    }
   }, [globalVolume]);
 
   useEffect(() => {
-    const handleVoiceBinary = async (event: Event) => {
-      const detail = (event as CustomEvent<Blob | ArrayBuffer>).detail;
-      const buffer = detail instanceof Blob ? await detail.arrayBuffer() : detail;
-      if (!buffer || buffer.byteLength < 9) return;
-
-      const view = new DataView(buffer);
-      const frameType = view.getUint8(0);
-
-      if (frameType === 0x03) {
-        if (
-          micActive &&
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state === "recording"
-        ) {
-          try {
-            mediaRecorderRef.current.stop();
-            mediaRecorderRef.current.start(100);
-          } catch (e) {}
-        }
+    const handleVoiceSignal = async (event: Event) => {
+      const signal = (event as CustomEvent<VoiceSignalPayload>).detail;
+      const peerId = signal.sender_user_id;
+      if (!peerId || signal.route !== location.pathname || signal.target_user_id !== myPresenceId) {
         return;
       }
 
-      if (frameType !== 0x01 && frameType !== 0x02) return;
-
-      const senderID = view.getBigInt64(1, true).toString();
-      window.dispatchEvent(new CustomEvent("voice:speaking", { detail: senderID }));
-
-      const payload = new Uint8Array(buffer.slice(9));
-      const { audioContext, gainNode } = ensureAudioGraph();
-      if (!audioContext || !gainNode) return;
-
-      if (audioContext.state === "suspended") {
-        void audioContext.resume();
+      if (signal.kind === "leave") {
+        closePeer(String(peerId), false);
+        return;
       }
 
-      let player = voicePlayersRef.current.get(senderID);
-      if (!player) {
-        player =
-          createVoiceStreamPlayer(audioContext, gainNode, () => {
-            if (socket?.readyState === WebSocket.OPEN) {
-              socket.send(new Uint8Array([0x03]).buffer);
-            }
-            voicePlayersRef.current.delete(senderID);
-            setRemoteMicUsers(Array.from(voicePlayersRef.current.keys()));
-          }) || undefined;
-        if (!player) {
-          toast.error("This browser cannot play the incoming voice stream.");
-          return;
-        }
-        voicePlayersRef.current.set(senderID, player);
-        setRemoteMicUsers(Array.from(voicePlayersRef.current.keys()));
+      const pc = createPeerConnection(peerId);
+      if (signal.kind === "offer" && signal.sdp) {
+        await pc.setRemoteDescription({ type: "offer", sdp: signal.sdp });
+        streamRef.current?.getTracks().forEach(track => {
+          const alreadyAdded = pc.getSenders().some(sender => sender.track === track);
+          if (!alreadyAdded && streamRef.current) {
+            pc.addTrack(track, streamRef.current);
+          }
+        });
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        sendVoiceSignal(peerId, { kind: "answer", sdp: answer.sdp });
+        return;
       }
 
-      player.queue.push(payload);
-      player.pump();
-      void player.audio.play().catch(() => {
-        // Browser autoplay policy may require a local click before remote audio starts.
-      });
+      if (signal.kind === "answer" && signal.sdp) {
+        await pc.setRemoteDescription({ type: "answer", sdp: signal.sdp });
+        return;
+      }
+
+      if (signal.kind === "candidate" && signal.candidate) {
+        await pc.addIceCandidate(signal.candidate);
+      }
     };
 
-    window.addEventListener("voice:binary", handleVoiceBinary);
+    window.addEventListener("voice:signal", handleVoiceSignal);
     return () => {
-      window.removeEventListener("voice:binary", handleVoiceBinary);
-      for (const player of voicePlayersRef.current.values()) {
-        player.audio.pause();
-        player.audio.removeAttribute("src");
-        URL.revokeObjectURL(player.objectUrl);
+      window.removeEventListener("voice:signal", handleVoiceSignal);
+      for (const peerId of peerConnectionsRef.current.keys()) {
+        closePeer(peerId, false);
       }
-      voicePlayersRef.current.clear();
       setRemoteMicUsers([]);
     };
-  }, [ensureAudioGraph]);
+  }, [closePeer, createPeerConnection, location.pathname, myPresenceId, sendVoiceSignal]);
+
+  useEffect(() => {
+    if (!micActive || !canSpeak || !myPresenceId) return;
+    for (const user of onlineUsers) {
+      if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
+      void startOffer(user.user_id);
+    }
+  }, [canSpeak, location.pathname, micActive, myPresenceId, onlineUsers, startOffer]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   if (micActive && currentUser?.id) {

@@ -1,7 +1,6 @@
 import protobuf from "protobufjs";
 
 export const WS_PROTO_SUBPROTOCOL = "skaia.proto.v1";
-export const WS_JSON_SUBPROTOCOL = "skaia.json.v1";
 
 interface OutgoingWebSocketMessage {
   type: string;
@@ -52,14 +51,6 @@ const serverMessageType = root.lookupType("skaia.ws.ServerMessage");
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
-export const shouldUseProtobufWebSocket = () => {
-  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_WS_ENCODING === "proto") {
-    return true;
-  }
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem("skaia.ws.encoding") === "proto";
-};
-
 export const encodeWebSocketProto = (
   message: OutgoingWebSocketMessage
 ): Uint8Array<ArrayBuffer> => {
@@ -99,12 +90,7 @@ export const decodeWebSocketProto = async (
 };
 
 export const sendWebSocketMessage = (ws: WebSocket, message: OutgoingWebSocketMessage) => {
-  if (ws.protocol === WS_PROTO_SUBPROTOCOL) {
-    const encoded = encodeWebSocketProto(message);
-    ws.send(encoded);
-    return;
-  }
-  ws.send(JSON.stringify(message));
+  ws.send(encodeWebSocketProto(message));
 };
 
 const encodePayload = (payload: unknown): Uint8Array => {

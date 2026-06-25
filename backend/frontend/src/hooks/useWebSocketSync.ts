@@ -12,7 +12,6 @@ import { wsBaseUrlAtom } from "../atoms/config";
 import { activeConversationIdAtom } from "../atoms/inbox";
 import { pendingTpRouteAtom, pendingTpUserAtom } from "../atoms/presence";
 import {
-  type WebSocketMessage,
   applyMessageUpdate,
   dispatchEventBusMessage,
   handleConfigUpdate,
@@ -27,11 +26,9 @@ import {
 } from "./handlers";
 import "../utils/wsResources";
 import {
-  WS_JSON_SUBPROTOCOL,
   WS_PROTO_SUBPROTOCOL,
   decodeWebSocketProto,
   sendWebSocketMessage,
-  shouldUseProtobufWebSocket,
 } from "../utils/wsProtobuf";
 
 /**
@@ -45,26 +42,14 @@ let _globalConnecting = false;
 const appendWsParam = (url: string, key: string, value: string) =>
   `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
 
-const isAudioFrame = (buffer: ArrayBuffer) => {
-  const first = new Uint8Array(buffer)[0];
-  return first === 0x01 || first === 0x02 || first === 0x03;
-};
-
-const parseWebSocketMessage = async (ws: WebSocket, data: MessageEvent["data"]) => {
+const parseWebSocketMessage = async (data: MessageEvent["data"]) => {
   if (data instanceof Blob || data instanceof ArrayBuffer) {
     const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
-    if (ws.protocol === WS_PROTO_SUBPROTOCOL && !isAudioFrame(buffer)) {
-      const message = await decodeWebSocketProto(buffer);
-      return { message, payload: message.payload };
-    }
-    window.dispatchEvent(new CustomEvent("voice:binary", { detail: data }));
-    return null;
+    const message = await decodeWebSocketProto(buffer);
+    return { message, payload: message.payload as any };
   }
 
-  const message: WebSocketMessage = JSON.parse(data);
-  const payload =
-    typeof message.payload === "string" ? JSON.parse(message.payload) : message.payload;
-  return { message, payload };
+  throw new Error("WebSocket text frames are not supported");
 };
 
 /**
@@ -105,15 +90,8 @@ export const useWebSocketSync = () => {
     _globalConnecting = true;
     try {
       const token = accessTokenRef.current;
-      const useProto = shouldUseProtobufWebSocket();
-      let url = token ? appendWsParam(wsUrl, "token", token) : wsUrl;
-      if (useProto) {
-        url = appendWsParam(url, "encoding", "proto");
-      }
-      const protocols = useProto
-        ? [WS_PROTO_SUBPROTOCOL, WS_JSON_SUBPROTOCOL]
-        : [WS_JSON_SUBPROTOCOL];
-      const ws = new WebSocket(url, protocols);
+      const url = token ? appendWsParam(wsUrl, "token", token) : wsUrl;
+      const ws = new WebSocket(url, [WS_PROTO_SUBPROTOCOL]);
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
@@ -135,8 +113,7 @@ export const useWebSocketSync = () => {
 
       ws.onmessage = async event => {
         try {
-          const parsed = await parseWebSocketMessage(ws, event.data);
-          if (!parsed) return;
+          const parsed = await parseWebSocketMessage(event.data);
           const { message, payload } = parsed;
           const type = message.type;
 

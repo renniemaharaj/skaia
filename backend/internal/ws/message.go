@@ -6,13 +6,7 @@ import (
 	"github.com/skaia/backend/models"
 )
 
-const (
-	WebSocketEncodingJSON  = "json"
-	WebSocketEncodingProto = "proto"
-
-	WebSocketSubprotocolJSON  = "skaia.json.v1"
-	WebSocketSubprotocolProto = "skaia.proto.v1"
-)
+const WebSocketSubprotocolProto = "skaia.proto.v1"
 
 // MessageType defines the type of WebSocket message.
 type MessageType string
@@ -47,6 +41,7 @@ const (
 	Cursor                  MessageType = "cursor:update"             // client => server => same-route clients: cursor position
 	EventsUpdate            MessageType = "events:update"             // server => admin clients: new audit event
 	VoiceControl            MessageType = "voice:control"             // client => server => client: admin voice chat controls
+	VoiceSignal             MessageType = "voice:signal"              // client => server => target: WebRTC signaling
 	MediaAdd                MessageType = "media:add"                 // client => server: add youtube video
 	MediaRemove             MessageType = "media:remove"              // client => server: remove queue item
 	MediaAction             MessageType = "media:action"              // client => server: pause/resume queue
@@ -130,6 +125,17 @@ type VoiceControlPayload struct {
 	Route        string `json:"route"`
 	Action       string `json:"action"` // "mute", "unmute", "kick", "enable", "disable"
 	TargetUserID int64  `json:"target_user_id,omitempty"`
+}
+
+// VoiceSignalPayload carries WebRTC signaling data. Media bytes never travel
+// through the WebSocket; this payload only establishes/repairs peer connections.
+type VoiceSignalPayload struct {
+	Route        string          `json:"route"`
+	TargetUserID int64           `json:"target_user_id"`
+	SenderUserID int64           `json:"sender_user_id,omitempty"`
+	Kind         string          `json:"kind"` // "offer", "answer", "candidate", "leave"
+	SDP          string          `json:"sdp,omitempty"`
+	Candidate    json.RawMessage `json:"candidate,omitempty"`
 }
 
 // MediaItem represents a single video in the queue or history.

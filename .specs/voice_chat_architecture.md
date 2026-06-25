@@ -1,51 +1,59 @@
 # Voice Chat Architecture
 
 ## Overview
-This specification defines the low-latency audio streaming architecture for the presence-based voice chat feature. To avoid introducing the complexities and connection overhead of WebRTC NAT traversal (TURN/STUN), we will route audio through the existing Go WebSocket backend as binary frames.
 
-## Connection & Payload Format
-Voice data will be multiplexed over the existing WebSocket connection (`/ws`). The Gorilla WebSocket `ReadPump` will be refactored to distinguish between `websocket.TextMessage` (existing JSON control plane) and `websocket.BinaryMessage` (audio/media plane).
+Presence-based voice uses WebRTC for realtime media transport. The application
+WebSocket remains the control plane only: it carries protobuf envelopes for
+presence, media queue state, admin voice controls, and WebRTC signaling.
 
-### Binary Frame Structure
-To minimize overhead, binary frames will use a strict, compact byte layout.
+## Transport Contract
 
-**Client to Server (Upstream):**
-- **Byte 0**: Frame Type
-  - `0x01`: Microphone Audio Data (Opus encoded)
-  - `0x02`: Media/Music Audio Data (Opus encoded)
-- **Byte 1-N**: Payload (Audio bytes)
+- `/ws` uses only the `skaia.proto.v1` subprotocol.
+- WebSocket binary frames are protobuf envelopes. They must never be inspected as
+  media bytes by leading byte.
+- Voice/audio/video/screen media bytes use WebRTC `RTCPeerConnection` tracks.
+- WebSocket `voice:signal` messages carry SDP offers, SDP answers, ICE
+  candidates, and leave notifications.
 
-**Server to Client (Downstream):**
-- **Byte 0**: Frame Type (matches Upstream)
-- **Byte 1-8**: Sender `UserID` (int64, Little Endian). For guests, this is `-ClientID`.
-- **Byte 9-N**: Payload (Audio bytes)
+## Signaling Payload
 
-## Backend Routing
-Audio packets must be routed with minimal latency.
-1. **Hub Channel**: A new high-capacity channel `audioUpdates chan AudioBroadcast` will be added to `Hub`.
-2. **AudioBroadcast Struct**:
-   ```go
-   type AudioBroadcast struct {
-       Sender *Client
-       Type   byte
-       Data   []byte
-   }
-   ```
-3. **Dispatch**: In the `Hub.Run` loop, `audioUpdates` will be processed. The Hub will iterate through clients on the **same presence route** as the sender.
-4. **Permissions**: Before broadcasting, the Hub will check an in-memory map of `VoicePermissions` for the route to ensure the sender is not muted or kicked by an admin.
-5. **Send Buffer**: To prevent slow clients from blocking the audio pipeline, audio writes will use a non-blocking select on a dedicated `Client.AudioSend` channel, or drop the frame if the buffer is full.
+```json
+{
+  "route": "/current/path",
+  "target_user_id": 123,
+  "sender_user_id": 456,
+  "kind": "offer|answer|candidate|leave",
+  "sdp": "optional SDP",
+  "candidate": { "optional": "RTCIceCandidateInit" }
+}
+```
 
-## Admin Controls
-Admin state (Muted Users, Route Voice Disabled) will be managed via the standard JSON control plane (e.g., `Message` Type `voice:control`).
-When a route is voice-disabled, the backend will silently drop all incoming audio frames for that route.
-The backend must authorize `voice:control` messages against the authenticated WebSocket client's JWT permissions. The initial control surface uses `home.manage`.
+The backend sets `sender_user_id` from authenticated or guest presence identity
+and relays only to the requested target in the same session and route.
 
-## Client-Side (Frontend)
-1. **Capture**: Use `navigator.mediaDevices.getUserMedia({ audio: true })`.
-2. **Encoding**: Use `MediaRecorder` or WebAudio API with Opus encoding to generate small binary chunks (e.g., 20ms-50ms).
-3. **Transmission**: Send chunks as `ArrayBuffer` via the existing WebSocket instance.
-4. **Playback**: Use `AudioContext` with a global `GainNode` and per-sender `MediaSource` queues for incoming WebM/Opus chunks.
-5. **Volume Control**: A global GainNode will sit between the decoded streams and the audio destination to implement the global user volume control.
+## Permissions
 
-## Extensibility
-The frame type `0x02` is reserved for media (music/podcasts). This allows the frontend to apply different spatialization or volume rules to background music versus voice chat.
+Admin state remains on `voice:control` and is enforced server-side for signaling:
+
+- route disabled: drop signaling
+- sender muted: drop signaling
+- sender kicked: drop signaling
+- cross-route signaling: drop signaling
+
+The backend does not trust client-provided sender identity.
+
+## Client Behavior
+
+1. Capture microphone audio with `navigator.mediaDevices.getUserMedia`.
+2. Create `RTCPeerConnection` objects for same-route peers discovered through
+   presence.
+3. Send offers, answers, and ICE candidates through `voice:signal`.
+4. Attach remote tracks to local audio elements.
+5. Tear down peer connections on microphone off, route changes, disconnects, or
+   leave signaling.
+
+## Future Extension
+
+Video and screen capture should be added as additional WebRTC tracks using the
+same signaling channel. Keep `/ws` free of media payload bytes so protobuf
+control frames remain unambiguous.

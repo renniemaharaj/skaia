@@ -18,8 +18,6 @@ type Client struct {
 	Hub         *Hub
 	Conn        *websocket.Conn
 	Send        chan []byte
-	AudioSend   chan []byte
-	Encoding    string
 	ClientID    int64 // unique per connection, assigned by Hub at registration
 	UserID      int64
 	Permissions []string
@@ -80,38 +78,26 @@ func (c *Client) ReadPump() {
 			return
 		}
 
-		if messageType == websocket.BinaryMessage {
-			data, err := io.ReadAll(reader)
-			if err != nil || len(data) == 0 {
-				continue
-			}
-			// Route to Hub audioUpdates if type is known
-			frameType := data[0]
-			if frameType == 0x01 || frameType == 0x02 || frameType == 0x03 {
-				select {
-				case c.Hub.audioUpdates <- AudioBroadcast{Client: c, Type: frameType, Data: data[1:]}:
-				default:
-				}
-				continue
-			}
-			if c.Encoding == WebSocketEncodingProto {
-				msg, err := decodeProtoMessage(data)
-				if err != nil {
-					// Malformed proto frames are treated as fatal so a bad client
-					// cannot keep a half-valid binary connection alive.
-					return
-				}
-				c.handleMessage(msg)
-			}
-			continue
+		if messageType != websocket.BinaryMessage {
+			return
 		}
 
-		var msg Message
-		if err := json.NewDecoder(reader).Decode(&msg); err != nil {
+		msg, err := decodeProtoMessageFromReader(reader)
+		if err != nil {
+			// Malformed proto frames are treated as fatal so a bad client
+			// cannot keep a half-valid binary connection alive.
 			return
 		}
 		c.handleMessage(msg)
 	}
+}
+
+func decodeProtoMessageFromReader(reader io.Reader) (Message, error) {
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return Message{}, err
+	}
+	return decodeProtoMessage(data)
 }
 
 func decodeProtoMessage(data []byte) (Message, error) {
@@ -146,10 +132,7 @@ func encodeProtoServerMessage(msg *Message) ([]byte, error) {
 }
 
 func (c *Client) encodeOutboundMessage(msg *Message) ([]byte, error) {
-	if c.Encoding == WebSocketEncodingProto {
-		return encodeProtoServerMessage(msg)
-	}
-	return json.Marshal(msg)
+	return encodeProtoServerMessage(msg)
 }
 
 func (c *Client) queueMessage(msg *Message) bool {
@@ -192,6 +175,8 @@ func (c *Client) handleMessage(msg Message) {
 		// nothing - client keepalive only
 	case VoiceControl:
 		c.handleVoiceControlMsg(msg)
+	case VoiceSignal:
+		c.handleVoiceSignal(msg)
 	case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
 		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 	case GrengoJobAction:
@@ -254,22 +239,7 @@ func (c *Client) WritePump() {
 				return
 			}
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if c.Encoding == WebSocketEncodingProto {
-				if err := c.Conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
-					return
-				}
-				continue
-			}
-			if err := c.Conn.WriteMessage(websocket.TextMessage, data); err != nil {
-				return
-			}
-		case audioData, ok := <-c.AudioSend:
-			if !ok {
-				// Send's close path owns the websocket Close frame.
-				return
-			}
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.Conn.WriteMessage(websocket.BinaryMessage, audioData); err != nil {
+			if err := c.Conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 				return
 			}
 		case <-ticker.C:

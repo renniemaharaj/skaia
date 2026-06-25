@@ -3,7 +3,7 @@
 ## Scope
 
 Single WebSocket connection, message registry, delivery modes, subscription keys,
-binary media/audio frames, and frontend atom convergence.
+WebRTC signaling, and frontend atom convergence.
 
 ## Load when
 
@@ -21,8 +21,12 @@ limit/error WS messages.
 
 - One singleton WebSocket per browser context.
 - URL is `wsBaseUrlAtom` with optional `?token=<JWT>`.
-- Text frames are JSON: `{ type: string, payload: JSON|string }`.
-- Binary frames are routed to `voice:binary` in the frontend; see
+- WebSocket frames are binary protobuf envelopes using subprotocol
+  `skaia.proto.v1`; there is no JSON subprotocol fallback.
+- Payload bytes inside the protobuf envelope are JSON for the current message
+  registry.
+- Voice/audio/video/screen media bytes do not travel through `/ws`; WebSocket
+  carries only `voice:signal` SDP/ICE control messages for WebRTC. See
   `voice_chat_architecture.md`.
 - Reconnect uses a 3 second timer and replays all tracked subscriptions.
 - Auth changes close/reopen the socket; permission-only token pushes patch atoms.
@@ -48,6 +52,7 @@ limit/error WS messages.
 | `cursor:update` | `{ x, y }` | Same-route cursor |
 | `tp` | `{ target_user_id, route }` | Admin teleport |
 | `voice:control` | control payload | Admin voice state, authorized by backend |
+| `voice:signal` | WebRTC signaling payload | Same-route peer connection setup |
 | `media:*` | media control payloads | Shared media state/sfx |
 
 ## Server => Client Messages
@@ -71,6 +76,7 @@ limit/error WS messages.
 | `global:chat` | `GlobalChatMessage` | append chat |
 | `global:chat:history` | `{ messages }` | replace chat history |
 | `tp` | `{ route }` | pending teleport |
+| `voice:signal` | `{ route, target_user_id, sender_user_id, kind, sdp?, candidate? }` | WebRTC offer/answer/ICE event |
 | `media:sync` | media state | media atom |
 | `media:sfx` | `{ sfx_type }` | local sfx event |
 | `mfa:required` | none | auth challenge event |
