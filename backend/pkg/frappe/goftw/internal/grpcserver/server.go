@@ -7,10 +7,10 @@ import (
 	"net"
 	"os"
 
+	pb "github.com/skaia/grpc/skaia"
 	"goftw/internal/bench"
 	"goftw/internal/entity"
 	"goftw/internal/environ"
-	pb "github.com/skaia/grpc/skaia"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -37,13 +37,13 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 		branch = s.Bench.Branch
 	}
 	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Initializing bench with branch: %s\n", branch)})
-	
+
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	os.Stderr = w
-	
+
 	go func() {
 		buf := make([]byte, 1024)
 		for {
@@ -56,14 +56,14 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 			}
 		}
 	}()
-	
+
 	defer func() {
 		w.Close()
 		os.Stdout = oldStdout
 		os.Stderr = oldStderr
 	}()
 	err := s.Bench.Initialize(branch)
-	
+
 	if err != nil {
 		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Bench init failed: %v\n", err)})
 		return err
@@ -74,13 +74,13 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 
 func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFTWService_CheckoutSitesServer) error {
 	stream.Send(&pb.LogStreamResponse{Output: "[API] Checking out sites...\n"})
-	
+
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	os.Stderr = w
-	
+
 	go func() {
 		buf := make([]byte, 1024)
 		for {
@@ -93,7 +93,7 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 			}
 		}
 	}()
-	
+
 	defer func() {
 		w.Close()
 		os.Stdout = oldStdout
@@ -106,9 +106,13 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 	}
 	dbUser := os.Getenv("MARIADB_ROOT_USERNAME")
 	dbPass := os.Getenv("MARIADB_ROOT_PASSWORD")
-	if dbUser == "" { dbUser = "root" }
-	if dbPass == "" { dbPass = "root" }
-	
+	if dbUser == "" {
+		dbUser = "root"
+	}
+	if dbPass == "" {
+		dbPass = "root"
+	}
+
 	if err := s.Bench.CheckoutSites(instanceCfx, dbUser, dbPass); err != nil {
 		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Checkout sites failed: %v\n", err)})
 		return err
@@ -119,13 +123,13 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 
 func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.GoFTWService_StartDeploymentServer) error {
 	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Starting deployment mode: %s\n", req.Deployment)})
-	
+
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	os.Stderr = w
-	
+
 	go func() {
 		buf := make([]byte, 1024)
 		for {
@@ -138,7 +142,7 @@ func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.
 			}
 		}
 	}()
-	
+
 	defer func() {
 		w.Close()
 		os.Stdout = oldStdout
@@ -210,9 +214,10 @@ func (s *GoFTWServer) ReloadNginx(ctx context.Context, req *pb.ReloadNginxReques
 }
 
 func (s *GoFTWServer) GetApps(ctx context.Context, req *pb.GetAppsRequest) (*pb.GetAppsResponse, error) {
-	apps, err := s.Bench.ListApps()
-	if err != nil {
-		return nil, err
+	catalog := bench.GetAppsForReact()
+	apps := make([]string, 0, len(catalog))
+	for _, app := range catalog {
+		apps = append(apps, app.Name)
 	}
 	return &pb.GetAppsResponse{Apps: apps}, nil
 }
@@ -238,7 +243,7 @@ func StartServer(port string, b *bench.Bench) {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterGoFTWServiceServer(grpcServer, &GoFTWServer{Bench: b})
-	
+
 	reflection.Register(grpcServer)
 
 	log.Printf("Starting gRPC GoFTWService server on %s", port)

@@ -83,9 +83,11 @@ export function DeploymentsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [logCap, setLogCap] = useState(500);
   const logCapRef = useRef(logCap);
-  const [openAppsMenu, setOpenAppsMenu] = useState<{ id: number; x: number; y: number } | null>(
-    null
-  );
+  const [openAppsMenu, setOpenAppsMenu] = useState<{
+    id: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const [stats, setStats] = useState<ContainerStats[]>([]);
   type AppForReact = { name: string; description: string };
   const [availableApps, setAvailableApps] = useState<AppForReact[]>([]);
@@ -260,6 +262,7 @@ export function DeploymentsPage() {
         body: JSON.stringify({ app }),
       });
       toast.success(`App ${app} queued for installation. Check logs.`);
+      fetchInstances();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to install app");
     }
@@ -271,6 +274,7 @@ export function DeploymentsPage() {
         method: "DELETE",
       });
       toast.success(`App ${app} queued for uninstallation. Check logs.`);
+      fetchInstances();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to uninstall app");
     }
@@ -464,7 +468,11 @@ export function DeploymentsPage() {
                     setOpenAppsMenu(null);
                   } else {
                     const rect = e.currentTarget.getBoundingClientRect();
-                    setOpenAppsMenu({ id: inst.id, x: rect.right, y: rect.bottom });
+                    setOpenAppsMenu({
+                      id: inst.id,
+                      x: rect.right,
+                      y: rect.bottom,
+                    });
                   }
                 }}
                 title="Manage Apps"
@@ -537,7 +545,12 @@ export function DeploymentsPage() {
               lines={consoleLines}
               title={
                 <div
-                  style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px" }}
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: "16px",
+                  }}
                 >
                   <span>
                     Live Logs: <span style={{ fontWeight: 400 }}>Instance #{inst.id}</span>
@@ -772,6 +785,7 @@ export function DeploymentsPage() {
             availableApps.length === 0
               ? [{ title: "No apps available", disabled: true }]
               : availableApps.map(app => {
+                  console.log("Available app:", app.name, app.description);
                   const inst = instances.find(i => i.id === openAppsMenu.id);
                   const isInstalled = inst?.config_payload?.apps?.includes(app.name) || false;
 
@@ -813,9 +827,19 @@ export function DeploymentsPage() {
                       {
                         key: "desc",
                         title: (
-                          <div style={{ whiteSpace: "normal", lineHeight: 1.4, maxWidth: "200px" }}>
+                          <div
+                            style={{
+                              whiteSpace: "normal",
+                              lineHeight: 1.4,
+                              maxWidth: "200px",
+                            }}
+                          >
                             <span
-                              style={{ fontWeight: 600, display: "block", marginBottom: "4px" }}
+                              style={{
+                                fontWeight: 600,
+                                display: "block",
+                                marginBottom: "4px",
+                              }}
                             >
                               {app.name}
                             </span>

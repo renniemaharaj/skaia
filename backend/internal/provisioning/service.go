@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -387,6 +388,56 @@ func (s *service) GetAvailableApps() ([]map[string]interface{}, error) {
 	return apps, nil
 }
 
+func (s *service) updateInstanceAppList(id int64, appName string, installed bool) error {
+	inst, err := s.repo.GetInstanceByID(id)
+	if err != nil {
+		return err
+	}
+
+	var configMap map[string]interface{}
+	if len(inst.ConfigPayload) > 0 {
+		_ = json.Unmarshal(inst.ConfigPayload, &configMap)
+	}
+	if configMap == nil {
+		configMap = make(map[string]interface{})
+	}
+
+	appSet := map[string]bool{}
+	if rawApps, ok := configMap["apps"].([]interface{}); ok {
+		for _, raw := range rawApps {
+			if app, ok := raw.(string); ok && app != "" {
+				appSet[app] = true
+			}
+		}
+	}
+	if rawApps, ok := configMap["apps"].([]string); ok {
+		for _, app := range rawApps {
+			if app != "" {
+				appSet[app] = true
+			}
+		}
+	}
+
+	if installed {
+		appSet[appName] = true
+	} else {
+		delete(appSet, appName)
+	}
+
+	apps := make([]string, 0, len(appSet))
+	for app := range appSet {
+		apps = append(apps, app)
+	}
+	sort.Strings(apps)
+	configMap["apps"] = apps
+
+	payload, err := json.Marshal(configMap)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateInstanceConfig(id, payload)
+}
+
 func (s *service) InstallApp(id int64, appName string) error {
 	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
 	s.logGroup.Join(l)
@@ -427,6 +478,10 @@ func (s *service) InstallApp(id int64, appName string) error {
 	}
 
 	l.Success(fmt.Sprintf("Successfully installed app %s", appName))
+	if err := s.updateInstanceAppList(id, appName, true); err != nil {
+		l.Error(fmt.Sprintf("Failed to update app list for %s: %v", appName, err))
+		return err
+	}
 	return nil
 }
 
@@ -470,6 +525,10 @@ func (s *service) UninstallApp(id int64, appName string) error {
 	}
 
 	l.Success(fmt.Sprintf("Successfully uninstalled app %s", appName))
+	if err := s.updateInstanceAppList(id, appName, false); err != nil {
+		l.Error(fmt.Sprintf("Failed to update app list for %s: %v", appName, err))
+		return err
+	}
 	return nil
 }
 
