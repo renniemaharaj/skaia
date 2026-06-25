@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: grengo.proto
+// source: proto/grengo.proto
 
 package grengo
 
@@ -29,7 +29,7 @@ type EmptyRequest struct {
 
 func (x *EmptyRequest) Reset() {
 	*x = EmptyRequest{}
-	mi := &file_grengo_proto_msgTypes[0]
+	mi := &file_proto_grengo_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +41,7 @@ func (x *EmptyRequest) String() string {
 func (*EmptyRequest) ProtoMessage() {}
 
 func (x *EmptyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[0]
+	mi := &file_proto_grengo_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,7 +54,7 @@ func (x *EmptyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmptyRequest.ProtoReflect.Descriptor instead.
 func (*EmptyRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{0}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{0}
 }
 
 type EmptyResponse struct {
@@ -65,7 +65,7 @@ type EmptyResponse struct {
 
 func (x *EmptyResponse) Reset() {
 	*x = EmptyResponse{}
-	mi := &file_grengo_proto_msgTypes[1]
+	mi := &file_proto_grengo_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -77,7 +77,7 @@ func (x *EmptyResponse) String() string {
 func (*EmptyResponse) ProtoMessage() {}
 
 func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[1]
+	mi := &file_proto_grengo_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -90,7 +90,7 @@ func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmptyResponse.ProtoReflect.Descriptor instead.
 func (*EmptyResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{1}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{1}
 }
 
 type SiteRequest struct {
@@ -102,7 +102,7 @@ type SiteRequest struct {
 
 func (x *SiteRequest) Reset() {
 	*x = SiteRequest{}
-	mi := &file_grengo_proto_msgTypes[2]
+	mi := &file_proto_grengo_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -114,7 +114,7 @@ func (x *SiteRequest) String() string {
 func (*SiteRequest) ProtoMessage() {}
 
 func (x *SiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[2]
+	mi := &file_proto_grengo_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -127,7 +127,7 @@ func (x *SiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SiteRequest.ProtoReflect.Descriptor instead.
 func (*SiteRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{2}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SiteRequest) GetName() string {
@@ -145,7 +145,7 @@ type ListSitesRequest struct {
 
 func (x *ListSitesRequest) Reset() {
 	*x = ListSitesRequest{}
-	mi := &file_grengo_proto_msgTypes[3]
+	mi := &file_proto_grengo_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -157,7 +157,7 @@ func (x *ListSitesRequest) String() string {
 func (*ListSitesRequest) ProtoMessage() {}
 
 func (x *ListSitesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[3]
+	mi := &file_proto_grengo_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -170,7 +170,7 @@ func (x *ListSitesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSitesRequest.ProtoReflect.Descriptor instead.
 func (*ListSitesRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{3}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{3}
 }
 
 type ListSitesResponse struct {
@@ -182,7 +182,7 @@ type ListSitesResponse struct {
 
 func (x *ListSitesResponse) Reset() {
 	*x = ListSitesResponse{}
-	mi := &file_grengo_proto_msgTypes[4]
+	mi := &file_proto_grengo_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -194,7 +194,7 @@ func (x *ListSitesResponse) String() string {
 func (*ListSitesResponse) ProtoMessage() {}
 
 func (x *ListSitesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[4]
+	mi := &file_proto_grengo_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -207,7 +207,7 @@ func (x *ListSitesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSitesResponse.ProtoReflect.Descriptor instead.
 func (*ListSitesResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{4}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListSitesResponse) GetSitesJson() string {
@@ -227,7 +227,7 @@ type ExecRequest struct {
 
 func (x *ExecRequest) Reset() {
 	*x = ExecRequest{}
-	mi := &file_grengo_proto_msgTypes[5]
+	mi := &file_proto_grengo_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -239,7 +239,7 @@ func (x *ExecRequest) String() string {
 func (*ExecRequest) ProtoMessage() {}
 
 func (x *ExecRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[5]
+	mi := &file_proto_grengo_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -252,7 +252,7 @@ func (x *ExecRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecRequest.ProtoReflect.Descriptor instead.
 func (*ExecRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{5}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ExecRequest) GetCommand() string {
@@ -281,7 +281,7 @@ type ExecResponse struct {
 
 func (x *ExecResponse) Reset() {
 	*x = ExecResponse{}
-	mi := &file_grengo_proto_msgTypes[6]
+	mi := &file_proto_grengo_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -293,7 +293,7 @@ func (x *ExecResponse) String() string {
 func (*ExecResponse) ProtoMessage() {}
 
 func (x *ExecResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[6]
+	mi := &file_proto_grengo_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -306,7 +306,7 @@ func (x *ExecResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecResponse.ProtoReflect.Descriptor instead.
 func (*ExecResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{6}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ExecResponse) GetOk() bool {
@@ -354,7 +354,7 @@ type CreateSiteRequest struct {
 
 func (x *CreateSiteRequest) Reset() {
 	*x = CreateSiteRequest{}
-	mi := &file_grengo_proto_msgTypes[7]
+	mi := &file_proto_grengo_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -366,7 +366,7 @@ func (x *CreateSiteRequest) String() string {
 func (*CreateSiteRequest) ProtoMessage() {}
 
 func (x *CreateSiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[7]
+	mi := &file_proto_grengo_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -379,7 +379,7 @@ func (x *CreateSiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSiteRequest.ProtoReflect.Descriptor instead.
 func (*CreateSiteRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{7}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateSiteRequest) GetName() string {
@@ -453,7 +453,7 @@ type CreateSiteResponse struct {
 
 func (x *CreateSiteResponse) Reset() {
 	*x = CreateSiteResponse{}
-	mi := &file_grengo_proto_msgTypes[8]
+	mi := &file_proto_grengo_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -465,7 +465,7 @@ func (x *CreateSiteResponse) String() string {
 func (*CreateSiteResponse) ProtoMessage() {}
 
 func (x *CreateSiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[8]
+	mi := &file_proto_grengo_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -478,7 +478,7 @@ func (x *CreateSiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateSiteResponse.ProtoReflect.Descriptor instead.
 func (*CreateSiteResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{8}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{8}
 }
 
 type ProvisionFrappeRequest struct {
@@ -490,7 +490,7 @@ type ProvisionFrappeRequest struct {
 
 func (x *ProvisionFrappeRequest) Reset() {
 	*x = ProvisionFrappeRequest{}
-	mi := &file_grengo_proto_msgTypes[9]
+	mi := &file_proto_grengo_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -502,7 +502,7 @@ func (x *ProvisionFrappeRequest) String() string {
 func (*ProvisionFrappeRequest) ProtoMessage() {}
 
 func (x *ProvisionFrappeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[9]
+	mi := &file_proto_grengo_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -515,7 +515,7 @@ func (x *ProvisionFrappeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProvisionFrappeRequest.ProtoReflect.Descriptor instead.
 func (*ProvisionFrappeRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{9}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProvisionFrappeRequest) GetSiteName() string {
@@ -534,7 +534,7 @@ type LogStreamResponse struct {
 
 func (x *LogStreamResponse) Reset() {
 	*x = LogStreamResponse{}
-	mi := &file_grengo_proto_msgTypes[10]
+	mi := &file_proto_grengo_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -546,7 +546,7 @@ func (x *LogStreamResponse) String() string {
 func (*LogStreamResponse) ProtoMessage() {}
 
 func (x *LogStreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[10]
+	mi := &file_proto_grengo_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -559,7 +559,7 @@ func (x *LogStreamResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogStreamResponse.ProtoReflect.Descriptor instead.
 func (*LogStreamResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{10}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *LogStreamResponse) GetOutput() string {
@@ -578,7 +578,7 @@ type GetSiteEnvResponse struct {
 
 func (x *GetSiteEnvResponse) Reset() {
 	*x = GetSiteEnvResponse{}
-	mi := &file_grengo_proto_msgTypes[11]
+	mi := &file_proto_grengo_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -590,7 +590,7 @@ func (x *GetSiteEnvResponse) String() string {
 func (*GetSiteEnvResponse) ProtoMessage() {}
 
 func (x *GetSiteEnvResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[11]
+	mi := &file_proto_grengo_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -603,7 +603,7 @@ func (x *GetSiteEnvResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSiteEnvResponse.ProtoReflect.Descriptor instead.
 func (*GetSiteEnvResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{11}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetSiteEnvResponse) GetContent() string {
@@ -623,7 +623,7 @@ type UpdateSiteEnvRequest struct {
 
 func (x *UpdateSiteEnvRequest) Reset() {
 	*x = UpdateSiteEnvRequest{}
-	mi := &file_grengo_proto_msgTypes[12]
+	mi := &file_proto_grengo_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -635,7 +635,7 @@ func (x *UpdateSiteEnvRequest) String() string {
 func (*UpdateSiteEnvRequest) ProtoMessage() {}
 
 func (x *UpdateSiteEnvRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[12]
+	mi := &file_proto_grengo_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -648,7 +648,7 @@ func (x *UpdateSiteEnvRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateSiteEnvRequest.ProtoReflect.Descriptor instead.
 func (*UpdateSiteEnvRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{12}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateSiteEnvRequest) GetName() string {
@@ -674,7 +674,7 @@ type StatsResponse struct {
 
 func (x *StatsResponse) Reset() {
 	*x = StatsResponse{}
-	mi := &file_grengo_proto_msgTypes[13]
+	mi := &file_proto_grengo_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -686,7 +686,7 @@ func (x *StatsResponse) String() string {
 func (*StatsResponse) ProtoMessage() {}
 
 func (x *StatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[13]
+	mi := &file_proto_grengo_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -699,7 +699,7 @@ func (x *StatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatsResponse.ProtoReflect.Descriptor instead.
 func (*StatsResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{13}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *StatsResponse) GetStatsJson() string {
@@ -718,7 +718,7 @@ type StorageResponse struct {
 
 func (x *StorageResponse) Reset() {
 	*x = StorageResponse{}
-	mi := &file_grengo_proto_msgTypes[14]
+	mi := &file_proto_grengo_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -730,7 +730,7 @@ func (x *StorageResponse) String() string {
 func (*StorageResponse) ProtoMessage() {}
 
 func (x *StorageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[14]
+	mi := &file_proto_grengo_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -743,7 +743,7 @@ func (x *StorageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StorageResponse.ProtoReflect.Descriptor instead.
 func (*StorageResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{14}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *StorageResponse) GetStorageJson() string {
@@ -762,7 +762,7 @@ type SysInfoResponse struct {
 
 func (x *SysInfoResponse) Reset() {
 	*x = SysInfoResponse{}
-	mi := &file_grengo_proto_msgTypes[15]
+	mi := &file_proto_grengo_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +774,7 @@ func (x *SysInfoResponse) String() string {
 func (*SysInfoResponse) ProtoMessage() {}
 
 func (x *SysInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[15]
+	mi := &file_proto_grengo_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +787,7 @@ func (x *SysInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SysInfoResponse.ProtoReflect.Descriptor instead.
 func (*SysInfoResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{15}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SysInfoResponse) GetSysinfoJson() string {
@@ -806,7 +806,7 @@ type HardwareResponse struct {
 
 func (x *HardwareResponse) Reset() {
 	*x = HardwareResponse{}
-	mi := &file_grengo_proto_msgTypes[16]
+	mi := &file_proto_grengo_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -818,7 +818,7 @@ func (x *HardwareResponse) String() string {
 func (*HardwareResponse) ProtoMessage() {}
 
 func (x *HardwareResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[16]
+	mi := &file_proto_grengo_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -831,7 +831,7 @@ func (x *HardwareResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HardwareResponse.ProtoReflect.Descriptor instead.
 func (*HardwareResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{16}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *HardwareResponse) GetHardwareJson() string {
@@ -850,7 +850,7 @@ type ExportSiteResponse struct {
 
 func (x *ExportSiteResponse) Reset() {
 	*x = ExportSiteResponse{}
-	mi := &file_grengo_proto_msgTypes[17]
+	mi := &file_proto_grengo_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -862,7 +862,7 @@ func (x *ExportSiteResponse) String() string {
 func (*ExportSiteResponse) ProtoMessage() {}
 
 func (x *ExportSiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[17]
+	mi := &file_proto_grengo_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -875,7 +875,7 @@ func (x *ExportSiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportSiteResponse.ProtoReflect.Descriptor instead.
 func (*ExportSiteResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{17}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ExportSiteResponse) GetFilename() string {
@@ -896,7 +896,7 @@ type ImportSiteRequest struct {
 
 func (x *ImportSiteRequest) Reset() {
 	*x = ImportSiteRequest{}
-	mi := &file_grengo_proto_msgTypes[18]
+	mi := &file_proto_grengo_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -908,7 +908,7 @@ func (x *ImportSiteRequest) String() string {
 func (*ImportSiteRequest) ProtoMessage() {}
 
 func (x *ImportSiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[18]
+	mi := &file_proto_grengo_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -921,7 +921,7 @@ func (x *ImportSiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportSiteRequest.ProtoReflect.Descriptor instead.
 func (*ImportSiteRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{18}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ImportSiteRequest) GetArchivePath() string {
@@ -954,7 +954,7 @@ type ImportSiteResponse struct {
 
 func (x *ImportSiteResponse) Reset() {
 	*x = ImportSiteResponse{}
-	mi := &file_grengo_proto_msgTypes[19]
+	mi := &file_proto_grengo_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -966,7 +966,7 @@ func (x *ImportSiteResponse) String() string {
 func (*ImportSiteResponse) ProtoMessage() {}
 
 func (x *ImportSiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[19]
+	mi := &file_proto_grengo_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +979,7 @@ func (x *ImportSiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportSiteResponse.ProtoReflect.Descriptor instead.
 func (*ImportSiteResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{19}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ImportSiteResponse) GetFilename() string {
@@ -999,7 +999,7 @@ type MigrateSiteRequest struct {
 
 func (x *MigrateSiteRequest) Reset() {
 	*x = MigrateSiteRequest{}
-	mi := &file_grengo_proto_msgTypes[20]
+	mi := &file_proto_grengo_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1011,7 +1011,7 @@ func (x *MigrateSiteRequest) String() string {
 func (*MigrateSiteRequest) ProtoMessage() {}
 
 func (x *MigrateSiteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[20]
+	mi := &file_proto_grengo_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1024,7 +1024,7 @@ func (x *MigrateSiteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrateSiteRequest.ProtoReflect.Descriptor instead.
 func (*MigrateSiteRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{20}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *MigrateSiteRequest) GetName() string {
@@ -1050,7 +1050,7 @@ type MigrateSiteResponse struct {
 
 func (x *MigrateSiteResponse) Reset() {
 	*x = MigrateSiteResponse{}
-	mi := &file_grengo_proto_msgTypes[21]
+	mi := &file_proto_grengo_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1062,7 +1062,7 @@ func (x *MigrateSiteResponse) String() string {
 func (*MigrateSiteResponse) ProtoMessage() {}
 
 func (x *MigrateSiteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[21]
+	mi := &file_proto_grengo_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1075,7 +1075,7 @@ func (x *MigrateSiteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrateSiteResponse.ProtoReflect.Descriptor instead.
 func (*MigrateSiteResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{21}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *MigrateSiteResponse) GetResultJson() string {
@@ -1094,7 +1094,7 @@ type MigrateAllRequest struct {
 
 func (x *MigrateAllRequest) Reset() {
 	*x = MigrateAllRequest{}
-	mi := &file_grengo_proto_msgTypes[22]
+	mi := &file_proto_grengo_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1106,7 +1106,7 @@ func (x *MigrateAllRequest) String() string {
 func (*MigrateAllRequest) ProtoMessage() {}
 
 func (x *MigrateAllRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[22]
+	mi := &file_proto_grengo_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1119,7 +1119,7 @@ func (x *MigrateAllRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrateAllRequest.ProtoReflect.Descriptor instead.
 func (*MigrateAllRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{22}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *MigrateAllRequest) GetRebuild() bool {
@@ -1138,7 +1138,7 @@ type MigrateAllResponse struct {
 
 func (x *MigrateAllResponse) Reset() {
 	*x = MigrateAllResponse{}
-	mi := &file_grengo_proto_msgTypes[23]
+	mi := &file_proto_grengo_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1150,7 +1150,7 @@ func (x *MigrateAllResponse) String() string {
 func (*MigrateAllResponse) ProtoMessage() {}
 
 func (x *MigrateAllResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[23]
+	mi := &file_proto_grengo_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1163,7 +1163,7 @@ func (x *MigrateAllResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MigrateAllResponse.ProtoReflect.Descriptor instead.
 func (*MigrateAllResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{23}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *MigrateAllResponse) GetResultJson() string {
@@ -1182,7 +1182,7 @@ type ExportNodeResponse struct {
 
 func (x *ExportNodeResponse) Reset() {
 	*x = ExportNodeResponse{}
-	mi := &file_grengo_proto_msgTypes[24]
+	mi := &file_proto_grengo_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1194,7 +1194,7 @@ func (x *ExportNodeResponse) String() string {
 func (*ExportNodeResponse) ProtoMessage() {}
 
 func (x *ExportNodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[24]
+	mi := &file_proto_grengo_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1207,7 +1207,7 @@ func (x *ExportNodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportNodeResponse.ProtoReflect.Descriptor instead.
 func (*ExportNodeResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{24}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ExportNodeResponse) GetFilename() string {
@@ -1226,7 +1226,7 @@ type ImportNodeRequest struct {
 
 func (x *ImportNodeRequest) Reset() {
 	*x = ImportNodeRequest{}
-	mi := &file_grengo_proto_msgTypes[25]
+	mi := &file_proto_grengo_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1238,7 +1238,7 @@ func (x *ImportNodeRequest) String() string {
 func (*ImportNodeRequest) ProtoMessage() {}
 
 func (x *ImportNodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[25]
+	mi := &file_proto_grengo_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1251,7 +1251,7 @@ func (x *ImportNodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportNodeRequest.ProtoReflect.Descriptor instead.
 func (*ImportNodeRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{25}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ImportNodeRequest) GetArchivePath() string {
@@ -1270,7 +1270,7 @@ type ImportNodeResponse struct {
 
 func (x *ImportNodeResponse) Reset() {
 	*x = ImportNodeResponse{}
-	mi := &file_grengo_proto_msgTypes[26]
+	mi := &file_proto_grengo_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1282,7 +1282,7 @@ func (x *ImportNodeResponse) String() string {
 func (*ImportNodeResponse) ProtoMessage() {}
 
 func (x *ImportNodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[26]
+	mi := &file_proto_grengo_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1295,7 +1295,7 @@ func (x *ImportNodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportNodeResponse.ProtoReflect.Descriptor instead.
 func (*ImportNodeResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{26}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ImportNodeResponse) GetFilename() string {
@@ -1314,7 +1314,7 @@ type ListExportsResponse struct {
 
 func (x *ListExportsResponse) Reset() {
 	*x = ListExportsResponse{}
-	mi := &file_grengo_proto_msgTypes[27]
+	mi := &file_proto_grengo_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1326,7 +1326,7 @@ func (x *ListExportsResponse) String() string {
 func (*ListExportsResponse) ProtoMessage() {}
 
 func (x *ListExportsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[27]
+	mi := &file_proto_grengo_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1339,7 +1339,7 @@ func (x *ListExportsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExportsResponse.ProtoReflect.Descriptor instead.
 func (*ListExportsResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{27}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListExportsResponse) GetExportsJson() string {
@@ -1358,7 +1358,7 @@ type DownloadExportRequest struct {
 
 func (x *DownloadExportRequest) Reset() {
 	*x = DownloadExportRequest{}
-	mi := &file_grengo_proto_msgTypes[28]
+	mi := &file_proto_grengo_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1370,7 +1370,7 @@ func (x *DownloadExportRequest) String() string {
 func (*DownloadExportRequest) ProtoMessage() {}
 
 func (x *DownloadExportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[28]
+	mi := &file_proto_grengo_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,7 +1383,7 @@ func (x *DownloadExportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadExportRequest.ProtoReflect.Descriptor instead.
 func (*DownloadExportRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{28}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DownloadExportRequest) GetFilename() string {
@@ -1402,7 +1402,7 @@ type DeleteExportRequest struct {
 
 func (x *DeleteExportRequest) Reset() {
 	*x = DeleteExportRequest{}
-	mi := &file_grengo_proto_msgTypes[29]
+	mi := &file_proto_grengo_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1414,7 +1414,7 @@ func (x *DeleteExportRequest) String() string {
 func (*DeleteExportRequest) ProtoMessage() {}
 
 func (x *DeleteExportRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[29]
+	mi := &file_proto_grengo_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1427,7 +1427,7 @@ func (x *DeleteExportRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteExportRequest.ProtoReflect.Descriptor instead.
 func (*DeleteExportRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{29}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *DeleteExportRequest) GetFilename() string {
@@ -1446,7 +1446,7 @@ type FileChunk struct {
 
 func (x *FileChunk) Reset() {
 	*x = FileChunk{}
-	mi := &file_grengo_proto_msgTypes[30]
+	mi := &file_proto_grengo_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1458,7 +1458,7 @@ func (x *FileChunk) String() string {
 func (*FileChunk) ProtoMessage() {}
 
 func (x *FileChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[30]
+	mi := &file_proto_grengo_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1471,7 +1471,7 @@ func (x *FileChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileChunk.ProtoReflect.Descriptor instead.
 func (*FileChunk) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{30}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *FileChunk) GetChunk() []byte {
@@ -1490,7 +1490,7 @@ type ListJobsResponse struct {
 
 func (x *ListJobsResponse) Reset() {
 	*x = ListJobsResponse{}
-	mi := &file_grengo_proto_msgTypes[31]
+	mi := &file_proto_grengo_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1502,7 +1502,7 @@ func (x *ListJobsResponse) String() string {
 func (*ListJobsResponse) ProtoMessage() {}
 
 func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[31]
+	mi := &file_proto_grengo_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1515,7 @@ func (x *ListJobsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListJobsResponse.ProtoReflect.Descriptor instead.
 func (*ListJobsResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{31}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListJobsResponse) GetJobsJson() string {
@@ -1534,7 +1534,7 @@ type GetJobRequest struct {
 
 func (x *GetJobRequest) Reset() {
 	*x = GetJobRequest{}
-	mi := &file_grengo_proto_msgTypes[32]
+	mi := &file_proto_grengo_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1546,7 @@ func (x *GetJobRequest) String() string {
 func (*GetJobRequest) ProtoMessage() {}
 
 func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[32]
+	mi := &file_proto_grengo_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1559,7 +1559,7 @@ func (x *GetJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobRequest.ProtoReflect.Descriptor instead.
 func (*GetJobRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{32}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *GetJobRequest) GetId() string {
@@ -1578,7 +1578,7 @@ type GetJobResponse struct {
 
 func (x *GetJobResponse) Reset() {
 	*x = GetJobResponse{}
-	mi := &file_grengo_proto_msgTypes[33]
+	mi := &file_proto_grengo_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1590,7 +1590,7 @@ func (x *GetJobResponse) String() string {
 func (*GetJobResponse) ProtoMessage() {}
 
 func (x *GetJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[33]
+	mi := &file_proto_grengo_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1603,7 +1603,7 @@ func (x *GetJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobResponse.ProtoReflect.Descriptor instead.
 func (*GetJobResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{33}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *GetJobResponse) GetJobJson() string {
@@ -1622,7 +1622,7 @@ type DownloadJobRequest struct {
 
 func (x *DownloadJobRequest) Reset() {
 	*x = DownloadJobRequest{}
-	mi := &file_grengo_proto_msgTypes[34]
+	mi := &file_proto_grengo_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1634,7 +1634,7 @@ func (x *DownloadJobRequest) String() string {
 func (*DownloadJobRequest) ProtoMessage() {}
 
 func (x *DownloadJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[34]
+	mi := &file_proto_grengo_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1647,7 +1647,7 @@ func (x *DownloadJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadJobRequest.ProtoReflect.Descriptor instead.
 func (*DownloadJobRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{34}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *DownloadJobRequest) GetId() string {
@@ -1666,7 +1666,7 @@ type JobEvent struct {
 
 func (x *JobEvent) Reset() {
 	*x = JobEvent{}
-	mi := &file_grengo_proto_msgTypes[35]
+	mi := &file_proto_grengo_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1678,7 +1678,7 @@ func (x *JobEvent) String() string {
 func (*JobEvent) ProtoMessage() {}
 
 func (x *JobEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[35]
+	mi := &file_proto_grengo_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1691,7 +1691,7 @@ func (x *JobEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobEvent.ProtoReflect.Descriptor instead.
 func (*JobEvent) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{35}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *JobEvent) GetEventJson() string {
@@ -1710,7 +1710,7 @@ type SendActionRequest struct {
 
 func (x *SendActionRequest) Reset() {
 	*x = SendActionRequest{}
-	mi := &file_grengo_proto_msgTypes[36]
+	mi := &file_proto_grengo_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1722,7 +1722,7 @@ func (x *SendActionRequest) String() string {
 func (*SendActionRequest) ProtoMessage() {}
 
 func (x *SendActionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[36]
+	mi := &file_proto_grengo_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1735,7 +1735,7 @@ func (x *SendActionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendActionRequest.ProtoReflect.Descriptor instead.
 func (*SendActionRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{36}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *SendActionRequest) GetAction() []byte {
@@ -1756,7 +1756,7 @@ type SendActionResponse struct {
 
 func (x *SendActionResponse) Reset() {
 	*x = SendActionResponse{}
-	mi := &file_grengo_proto_msgTypes[37]
+	mi := &file_proto_grengo_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1768,7 +1768,7 @@ func (x *SendActionResponse) String() string {
 func (*SendActionResponse) ProtoMessage() {}
 
 func (x *SendActionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[37]
+	mi := &file_proto_grengo_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1781,7 +1781,7 @@ func (x *SendActionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendActionResponse.ProtoReflect.Descriptor instead.
 func (*SendActionResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{37}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *SendActionResponse) GetAccepted() bool {
@@ -1814,7 +1814,7 @@ type PasscodeStatusResponse struct {
 
 func (x *PasscodeStatusResponse) Reset() {
 	*x = PasscodeStatusResponse{}
-	mi := &file_grengo_proto_msgTypes[38]
+	mi := &file_proto_grengo_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1826,7 +1826,7 @@ func (x *PasscodeStatusResponse) String() string {
 func (*PasscodeStatusResponse) ProtoMessage() {}
 
 func (x *PasscodeStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[38]
+	mi := &file_proto_grengo_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1839,7 +1839,7 @@ func (x *PasscodeStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PasscodeStatusResponse.ProtoReflect.Descriptor instead.
 func (*PasscodeStatusResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{38}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *PasscodeStatusResponse) GetConfigured() bool {
@@ -1859,7 +1859,7 @@ type VerifyPasscodeRequest struct {
 
 func (x *VerifyPasscodeRequest) Reset() {
 	*x = VerifyPasscodeRequest{}
-	mi := &file_grengo_proto_msgTypes[39]
+	mi := &file_proto_grengo_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1871,7 +1871,7 @@ func (x *VerifyPasscodeRequest) String() string {
 func (*VerifyPasscodeRequest) ProtoMessage() {}
 
 func (x *VerifyPasscodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[39]
+	mi := &file_proto_grengo_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1884,7 +1884,7 @@ func (x *VerifyPasscodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasscodeRequest.ProtoReflect.Descriptor instead.
 func (*VerifyPasscodeRequest) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{39}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *VerifyPasscodeRequest) GetP1() string {
@@ -1910,7 +1910,7 @@ type VerifyPasscodeResponse struct {
 
 func (x *VerifyPasscodeResponse) Reset() {
 	*x = VerifyPasscodeResponse{}
-	mi := &file_grengo_proto_msgTypes[40]
+	mi := &file_proto_grengo_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1922,7 +1922,7 @@ func (x *VerifyPasscodeResponse) String() string {
 func (*VerifyPasscodeResponse) ProtoMessage() {}
 
 func (x *VerifyPasscodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_grengo_proto_msgTypes[40]
+	mi := &file_proto_grengo_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1935,7 +1935,7 @@ func (x *VerifyPasscodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasscodeResponse.ProtoReflect.Descriptor instead.
 func (*VerifyPasscodeResponse) Descriptor() ([]byte, []int) {
-	return file_grengo_proto_rawDescGZIP(), []int{40}
+	return file_proto_grengo_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *VerifyPasscodeResponse) GetValid() bool {
@@ -1945,11 +1945,11 @@ func (x *VerifyPasscodeResponse) GetValid() bool {
 	return false
 }
 
-var File_grengo_proto protoreflect.FileDescriptor
+var File_proto_grengo_proto protoreflect.FileDescriptor
 
-const file_grengo_proto_rawDesc = "" +
+const file_proto_grengo_proto_rawDesc = "" +
 	"\n" +
-	"\fgrengo.proto\x12\vgrengo.grpc\"\x0e\n" +
+	"\x12proto/grengo.proto\x12\vgrengo.grpc\"\x0e\n" +
 	"\fEmptyRequest\"\x0f\n" +
 	"\rEmptyResponse\"!\n" +
 	"\vSiteRequest\x12\x12\n" +
@@ -2104,19 +2104,19 @@ const file_grengo_proto_rawDesc = "" +
 	"\x0eVerifyPasscode\x12\".grengo.grpc.VerifyPasscodeRequest\x1a#.grengo.grpc.VerifyPasscodeResponseB\x1eZ\x1cgithub.com/skaia/grpc/grengob\x06proto3"
 
 var (
-	file_grengo_proto_rawDescOnce sync.Once
-	file_grengo_proto_rawDescData []byte
+	file_proto_grengo_proto_rawDescOnce sync.Once
+	file_proto_grengo_proto_rawDescData []byte
 )
 
-func file_grengo_proto_rawDescGZIP() []byte {
-	file_grengo_proto_rawDescOnce.Do(func() {
-		file_grengo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_grengo_proto_rawDesc), len(file_grengo_proto_rawDesc)))
+func file_proto_grengo_proto_rawDescGZIP() []byte {
+	file_proto_grengo_proto_rawDescOnce.Do(func() {
+		file_proto_grengo_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_grengo_proto_rawDesc), len(file_proto_grengo_proto_rawDesc)))
 	})
-	return file_grengo_proto_rawDescData
+	return file_proto_grengo_proto_rawDescData
 }
 
-var file_grengo_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
-var file_grengo_proto_goTypes = []any{
+var file_proto_grengo_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
+var file_proto_grengo_proto_goTypes = []any{
 	(*EmptyRequest)(nil),           // 0: grengo.grpc.EmptyRequest
 	(*EmptyResponse)(nil),          // 1: grengo.grpc.EmptyResponse
 	(*SiteRequest)(nil),            // 2: grengo.grpc.SiteRequest
@@ -2159,7 +2159,7 @@ var file_grengo_proto_goTypes = []any{
 	(*VerifyPasscodeRequest)(nil),  // 39: grengo.grpc.VerifyPasscodeRequest
 	(*VerifyPasscodeResponse)(nil), // 40: grengo.grpc.VerifyPasscodeResponse
 }
-var file_grengo_proto_depIdxs = []int32{
+var file_proto_grengo_proto_depIdxs = []int32{
 	3,  // 0: grengo.grpc.GrengoService.ListSites:input_type -> grengo.grpc.ListSitesRequest
 	5,  // 1: grengo.grpc.GrengoService.Exec:input_type -> grengo.grpc.ExecRequest
 	7,  // 2: grengo.grpc.GrengoService.CreateSite:input_type -> grengo.grpc.CreateSiteRequest
@@ -2235,26 +2235,26 @@ var file_grengo_proto_depIdxs = []int32{
 	0,  // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_grengo_proto_init() }
-func file_grengo_proto_init() {
-	if File_grengo_proto != nil {
+func init() { file_proto_grengo_proto_init() }
+func file_proto_grengo_proto_init() {
+	if File_proto_grengo_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_grengo_proto_rawDesc), len(file_grengo_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_grengo_proto_rawDesc), len(file_proto_grengo_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_grengo_proto_goTypes,
-		DependencyIndexes: file_grengo_proto_depIdxs,
-		MessageInfos:      file_grengo_proto_msgTypes,
+		GoTypes:           file_proto_grengo_proto_goTypes,
+		DependencyIndexes: file_proto_grengo_proto_depIdxs,
+		MessageInfos:      file_proto_grengo_proto_msgTypes,
 	}.Build()
-	File_grengo_proto = out.File
-	file_grengo_proto_goTypes = nil
-	file_grengo_proto_depIdxs = nil
+	File_proto_grengo_proto = out.File
+	file_proto_grengo_proto_goTypes = nil
+	file_proto_grengo_proto_depIdxs = nil
 }

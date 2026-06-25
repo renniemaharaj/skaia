@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.34.1
-// source: grengo.proto
+// source: proto/grengo.proto
 
 package grengo
 
@@ -1401,5 +1401,5 @@ var GrengoService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "grengo.proto",
+	Metadata: "proto/grengo.proto",
 }
