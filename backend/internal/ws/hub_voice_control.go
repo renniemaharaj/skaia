@@ -65,10 +65,7 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client.Route == vc.Payload.Route {
-			select {
-			case client.Send <- msg:
-			default:
-			}
+			client.queueMessage(msg)
 		}
 	}
 }

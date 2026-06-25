@@ -112,7 +112,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	client := &Client{
 		Hub:            hub,
 		Conn:           conn,
-		Send:           make(chan *Message, 256),
+		Send:           make(chan []byte, 256),
 		AudioSend:      make(chan []byte, 256),
 		Encoding:       encoding,
 		UserID:         userID,

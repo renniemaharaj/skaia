@@ -95,9 +95,9 @@ func TestHandleVoiceControlRequiresManagePermission(t *testing.T) {
 		UserID:      1,
 		Route:       "/room",
 		Permissions: []string{"home.manage"},
-		Send:        make(chan *Message, 1),
+		Send:        make(chan []byte, 1),
 	}
-	viewer := &Client{UserID: 2, Route: "/room", Send: make(chan *Message, 1)}
+	viewer := &Client{UserID: 2, Route: "/room", Send: make(chan []byte, 1)}
 	h.clients[admin] = true
 	h.clients[viewer] = true
 
@@ -114,7 +114,11 @@ func TestHandleVoiceControlRequiresManagePermission(t *testing.T) {
 	}
 
 	select {
-	case msg := <-viewer.Send:
+	case data := <-viewer.Send:
+		var msg Message
+		if err := json.Unmarshal(data, &msg); err != nil {
+			t.Fatalf("unmarshal queued message: %v", err)
+		}
 		if msg.Type != VoiceControl {
 			t.Fatalf("message type = %s, want %s", msg.Type, VoiceControl)
 		}
@@ -132,7 +136,7 @@ func TestHandleVoiceControlRequiresManagePermission(t *testing.T) {
 
 func TestHandleVoiceControlRejectsNonAdmin(t *testing.T) {
 	h := NewHub()
-	client := &Client{UserID: 1, Route: "/room", Send: make(chan *Message, 1)}
+	client := &Client{UserID: 1, Route: "/room", Send: make(chan []byte, 1)}
 	h.clients[client] = true
 
 	h.handleVoiceControl(VoiceControlAction{

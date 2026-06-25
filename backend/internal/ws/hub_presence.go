@@ -64,10 +64,7 @@ func (h *Hub) doPresenceBroadcast() {
 		msg := &Message{Type: PresenceSync, Payload: payload}
 
 		for _, client := range sd.clients {
-			select {
-			case client.Send <- msg:
-			default:
-			}
+			client.queueMessage(msg)
 		}
 	}
 }
@@ -89,9 +86,7 @@ func (h *Hub) handleTeleport(req TeleportRequest) {
 			presenceID = client.UserID
 		}
 		if presenceID == req.TargetUserID {
-			select {
-			case client.Send <- msg:
-			default:
+			if !client.queueMessage(msg) {
 				log.Printf("ws: tp send buffer full for userID=%d", client.UserID)
 			}
 		}
@@ -131,9 +126,6 @@ func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
 			client.Route != sender.Route {
 			continue
 		}
-		select {
-		case client.Send <- msg:
-		default:
-		}
+		client.queueMessage(msg)
 	}
 }

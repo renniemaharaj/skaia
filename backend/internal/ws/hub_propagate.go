@@ -163,9 +163,7 @@ func (h *Hub) PropagateToAll(resourceType string, data interface{}, action strin
 			continue
 		}
 		for _, client := range clients {
-			select {
-			case client.Send <- msg:
-			default:
+			if !client.queueMessage(msg) {
 				log.Printf("ws: send buffer full, dropping message for userID=%d", client.UserID)
 			}
 		}
@@ -191,9 +189,7 @@ func (h *Hub) propagate(resourceType string, resourceID int64, msgType MessageTy
 	msg := &Message{Type: msgType, Payload: payload}
 
 	for _, client := range clients {
-		select {
-		case client.Send <- msg:
-		default:
+		if !client.queueMessage(msg) {
 			log.Printf("ws: send buffer full, dropping message for userID=%d", client.UserID)
 		}
 	}

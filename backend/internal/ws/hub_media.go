@@ -172,10 +172,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		h.mu.RLock()
 		for client := range h.clients {
 			if client.Route == route && client.ClientID != mu.Client.ClientID {
-				select {
-				case client.Send <- &mu.Message:
-				default:
-				}
+				client.queueMessage(&mu.Message)
 			}
 		}
 		h.mu.RUnlock()
@@ -214,11 +211,7 @@ func (h *Hub) broadcastMediaSync(route string) {
 	h.mu.RLock()
 	for client := range h.clients {
 		if client.Route == route {
-			select {
-			case client.Send <- msg:
-			default:
-				// ignore if buffer full
-			}
+			client.queueMessage(msg)
 		}
 	}
 	h.mu.RUnlock()
@@ -244,10 +237,7 @@ func (h *Hub) sendMediaSyncToClient(client *Client) {
 	}
 	msg := &Message{Type: MediaSync, Payload: payload}
 
-	select {
-	case client.Send <- msg:
-	default:
-	}
+	client.queueMessage(msg)
 }
 
 // cleanupInactiveMedia removes media state for routes that have been paused/empty and inactive for over 2 hours.
@@ -276,7 +266,7 @@ func (h *Hub) getOrCreateMediaState(route string) *MediaState {
 	// Not found, lock for write
 	h.mediaMu.Lock()
 	defer h.mediaMu.Unlock()
-	
+
 	// Double-check
 	state, exists = h.mediaRoutes[route]
 	if exists {

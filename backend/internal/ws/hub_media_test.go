@@ -7,7 +7,7 @@ import (
 
 func TestHandleMediaTransitionStartAndComplete(t *testing.T) {
 	h := NewHub()
-	client := &Client{UserID: 1, UserName: "Admin", Route: "/room", Send: make(chan *Message, 1)}
+	client := &Client{UserID: 1, UserName: "Admin", Route: "/room", Send: make(chan []byte, 1)}
 
 	h.mediaRoutes["/room"] = &MediaState{
 		Route: "/room",
@@ -57,7 +57,7 @@ func TestHandleMediaTransitionStartAndComplete(t *testing.T) {
 
 func TestHandleMediaUpdateRejectsCrossRouteActions(t *testing.T) {
 	h := NewHub()
-	client := &Client{UserID: 1, UserName: "User", Route: "/room-a", Send: make(chan *Message, 1)}
+	client := &Client{UserID: 1, UserName: "User", Route: "/room-a", Send: make(chan []byte, 1)}
 
 	payload, err := json.Marshal(MediaClientAction{Route: "/room-b", VideoID: "aaaaaaaaaaa"})
 	if err != nil {

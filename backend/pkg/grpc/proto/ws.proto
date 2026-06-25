@@ -9,3 +9,9 @@ message WebSocketMessage {
   int64 user_id = 2;
   bytes payload = 3;
 }
+
+message ServerMessage {
+  string type = 1;
+  int64 user_id = 2;
+  bytes payload = 3;
+}

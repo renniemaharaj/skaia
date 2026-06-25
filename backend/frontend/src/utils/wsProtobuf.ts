@@ -19,7 +19,7 @@ interface LongLike {
   toNumber(): number;
 }
 
-const envelopeType = protobuf.Root.fromJSON({
+const root = protobuf.Root.fromJSON({
   nested: {
     skaia: {
       nested: {
@@ -32,12 +32,22 @@ const envelopeType = protobuf.Root.fromJSON({
                 payload: { type: "bytes", id: 3 },
               },
             },
+            ServerMessage: {
+              fields: {
+                type: { type: "string", id: 1 },
+                userId: { type: "int64", id: 2 },
+                payload: { type: "bytes", id: 3 },
+              },
+            },
           },
         },
       },
     },
   },
-}).lookupType("skaia.ws.WebSocketMessage");
+});
+
+const clientMessageType = root.lookupType("skaia.ws.WebSocketMessage");
+const serverMessageType = root.lookupType("skaia.ws.ServerMessage");
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -55,7 +65,7 @@ export const encodeWebSocketProto = (
   message: OutgoingWebSocketMessage
 ): Uint8Array<ArrayBuffer> => {
   const payload = encodePayload(message.payload);
-  const err = envelopeType.verify({
+  const err = clientMessageType.verify({
     type: message.type,
     userId: message.user_id ?? 0,
     payload,
@@ -63,7 +73,7 @@ export const encodeWebSocketProto = (
   if (err) {
     throw new Error(err);
   }
-  const encoded = envelopeType
+  const encoded = clientMessageType
     .encode({ type: message.type, userId: message.user_id ?? 0, payload })
     .finish();
 
@@ -81,9 +91,7 @@ export const decodeWebSocketProto = async (
   payload: unknown;
 }> => {
   const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
-  const decoded = envelopeType.decode(new Uint8Array(buffer)) as ProtobufEnvelope;
-  console.log("Encoded WebSocket proto message:", buffer);
-  console.log("Decoded WebSocket proto message:", decoded);
+  const decoded = serverMessageType.decode(new Uint8Array(buffer)) as ProtobufEnvelope;
   return {
     type: decoded.type ?? "",
     user_id: toNumber(decoded.userId),
@@ -95,7 +103,6 @@ export const sendWebSocketMessage = (ws: WebSocket, message: OutgoingWebSocketMe
   if (ws.protocol === WS_PROTO_SUBPROTOCOL) {
     const encoded = encodeWebSocketProto(message);
     ws.send(encoded);
-    console.log("Sent WebSocket proto message:", encoded);
     return;
   }
   ws.send(JSON.stringify(message));

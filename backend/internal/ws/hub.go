@@ -409,10 +409,7 @@ func (h *Hub) BroadcastToPermission(permission string, msg *Message) {
 		if !client.HasPermission(permission) {
 			continue
 		}
-		select {
-		case client.Send <- msg:
-		default:
-		}
+		client.queueMessage(msg)
 	}
 }
 
@@ -427,11 +424,7 @@ func (h *Hub) BroadcastExceptUser(userID int64, msg *Message) {
 		if client.UserID == userID {
 			continue
 		}
-		select {
-		case client.Send <- msg:
-		default:
-			// Buffer full - skip this client.
-		}
+		client.queueMessage(msg)
 	}
 }
 
@@ -451,9 +444,7 @@ func (h *Hub) BroadcastToSubscribers(resourceType string, resourceID int64, msg 
 		// subscribers are already authorized when they subscribe. To be safe, we check here
 		// if the message implies high privileges. But to be flexible, we'll just broadcast
 		// to the subscribers.
-		select {
-		case client.Send <- msg:
-		default:
+		if !client.queueMessage(msg) {
 			log.Printf("ws: send buffer full, dropping message for userID=%d", client.UserID)
 		}
 	}
@@ -490,9 +481,7 @@ func (h *Hub) SendToUser(userID int64, msg *Message) {
 	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client.UserID == userID {
-			select {
-			case client.Send <- msg:
-			default:
+			if !client.queueMessage(msg) {
 				log.Printf("ws: send buffer full for userID=%d", userID)
 			}
 		}
@@ -512,13 +501,12 @@ func (h *Hub) SendToGuestSession(guestSessionID string, msg *Message) bool {
 		if client.UserID != 0 || client.GuestSessionID != guestSessionID {
 			continue
 		}
-		select {
-		case client.Send <- msg:
+		if client.queueMessage(msg) {
 			if msg.Type == RecoveryRequestAccepted {
 				client.RecoveryAccepted = true
 			}
 			delivered = true
-		default:
+		} else {
 			log.Printf("ws: send buffer full for guest session %s", guestSessionID)
 		}
 	}

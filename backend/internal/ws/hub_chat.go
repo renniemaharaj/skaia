@@ -31,10 +31,9 @@ func (h *Hub) handleGlobalChat(cm GlobalChatMessage) {
 		if client.SessionID != cm.SessionID {
 			continue
 		}
-		select {
-		case client.Send <- msg:
-		default:
+		if !client.queueMessage(msg) {
 			// Buffer full - skip. Client will be reaped by its write deadline.
+			continue
 		}
 	}
 }
@@ -52,10 +51,7 @@ func (h *Hub) sendChatHistory(client *Client) {
 
 	payload, _ := json.Marshal(map[string]interface{}{"messages": history})
 	msg := &Message{Type: GlobalChatHistory, Payload: payload}
-	select {
-	case client.Send <- msg:
-	default:
-	}
+	client.queueMessage(msg)
 }
 
 // sendNotificationBootstrap delivers the user's recent notifications to a
@@ -70,8 +66,5 @@ func (h *Hub) sendNotificationBootstrap(client *Client) {
 	}
 	payload, _ := json.Marshal(data)
 	msg := &Message{Type: NotificationSync, Payload: payload}
-	select {
-	case client.Send <- msg:
-	default:
-	}
+	client.queueMessage(msg)
 }

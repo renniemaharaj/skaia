@@ -17,7 +17,7 @@ import (
 type Client struct {
 	Hub         *Hub
 	Conn        *websocket.Conn
-	Send        chan *Message
+	Send        chan []byte
 	AudioSend   chan []byte
 	Encoding    string
 	ClientID    int64 // unique per connection, assigned by Hub at registration
@@ -119,9 +119,9 @@ func decodeProtoMessage(data []byte) (Message, error) {
 	if err := proto.Unmarshal(data, &pb); err != nil {
 		return Message{}, err
 	}
-	// NOTE: pb.Payload currently contains JSON bytes inside the protobuf
-	// envelope. When ServerPayload is introduced, these bytes will be binary
-	// protobuf and Message.Payload will need to stop assuming json.RawMessage.
+	// NOTE: inbound payloads still contain JSON bytes inside the protobuf
+	// envelope. Typed client messages will let Message.Payload stop assuming
+	// json.RawMessage.
 	return Message{
 		Type:    MessageType(pb.GetType()),
 		UserID:  pb.GetUserId(),
@@ -135,6 +135,34 @@ func encodeProtoMessage(msg *Message) ([]byte, error) {
 		UserId:  msg.UserID,
 		Payload: []byte(msg.Payload),
 	})
+}
+
+func encodeProtoServerMessage(msg *Message) ([]byte, error) {
+	return proto.Marshal(&wspb.ServerMessage{
+		Type:    string(msg.Type),
+		UserId:  msg.UserID,
+		Payload: []byte(msg.Payload),
+	})
+}
+
+func (c *Client) encodeOutboundMessage(msg *Message) ([]byte, error) {
+	if c.Encoding == WebSocketEncodingProto {
+		return encodeProtoServerMessage(msg)
+	}
+	return json.Marshal(msg)
+}
+
+func (c *Client) queueMessage(msg *Message) bool {
+	data, err := c.encodeOutboundMessage(msg)
+	if err != nil {
+		return false
+	}
+	select {
+	case c.Send <- data:
+		return true
+	default:
+		return false
+	}
 }
 
 func (c *Client) handleMessage(msg Message) {
@@ -202,14 +230,13 @@ func (c *Client) handleGrengoJobAction(msg Message) {
 		if marshalErr != nil {
 			return
 		}
-		select {
-		case c.Send <- &Message{Type: GrengoActionAck, Payload: data}:
-		default:
+		if !c.queueMessage(&Message{Type: GrengoActionAck, Payload: data}) {
+			return
 		}
 	}()
 }
 
-// WritePump pumps outbound messages from the hub to the connection and
+// WritePump pumps encoded outbound messages from the hub to the connection and
 // periodically sends WebSocket pings. If a ping fails or the send channel
 // is closed, the connection is torn down.
 func (c *Client) WritePump() {
@@ -220,7 +247,7 @@ func (c *Client) WritePump() {
 	}()
 	for {
 		select {
-		case msg, ok := <-c.Send:
+		case data, ok := <-c.Send:
 			if !ok {
 				// Hub closed the channel.
 				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
@@ -228,24 +255,14 @@ func (c *Client) WritePump() {
 			}
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if c.Encoding == WebSocketEncodingProto {
-				data, err := encodeProtoMessage(msg)
-				if err != nil {
-					return
-				}
 				if err := c.Conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 					return
 				}
 				continue
 			}
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
+			if err := c.Conn.WriteMessage(websocket.TextMessage, data); err != nil {
 				return
 			}
-			if err := json.NewEncoder(w).Encode(msg); err != nil {
-				w.Close()
-				return
-			}
-			w.Close()
 		case audioData, ok := <-c.AudioSend:
 			if !ok {
 				// Send's close path owns the websocket Close frame.
@@ -479,10 +496,7 @@ func (c *Client) sendClientErrorAction(action string, message string, retryAfter
 	if err != nil {
 		return
 	}
-	select {
-	case c.Send <- &Message{Type: ErrorMessage, Payload: payload}:
-	default:
-	}
+	c.queueMessage(&Message{Type: ErrorMessage, Payload: payload})
 }
 
 // subscriptionKey returns the canonical map key for a resource subscription.

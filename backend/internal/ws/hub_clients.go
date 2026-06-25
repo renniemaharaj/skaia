@@ -198,10 +198,6 @@ func (h *Hub) handleBroadcast(msg *Message) {
 	defer h.mu.RUnlock()
 
 	for client := range h.clients {
-		select {
-		case client.Send <- msg:
-		default:
-			// Buffer full - skip. Client will be reaped by its write deadline.
-		}
+		client.queueMessage(msg)
 	}
 }
