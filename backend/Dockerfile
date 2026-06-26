@@ -33,7 +33,6 @@ WORKDIR /app
 
 COPY --from=builder /app/backend /app/backend
 COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
-COPY --from=builder /app/pkg/frappe /app/pkg/frappe
 
 # make sure the compiled binary can be executed
 RUN chmod +x /app/backend

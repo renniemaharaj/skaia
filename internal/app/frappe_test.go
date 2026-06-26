@@ -49,14 +49,14 @@ func TestRenderFrappeCompose(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := renderFrappeCompose(templatePath, "/project/backend/pkg/frappe", "/tmp/instance.json", "v16", 2, 8161, 3162)
+	got, err := renderFrappeCompose(templatePath, "/project/pkg/frappe", "/tmp/instance.json", "v16", 2, 8161, 3162)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(got, "__") {
 		t.Fatalf("rendered compose still contains placeholder: %s", got)
 	}
-	for _, want := range []string{"/project/backend/pkg/frappe", "/tmp/instance.json", "v16-2", "\"8161:80\"", "\"3162:3001\""} {
+	for _, want := range []string{"/project/pkg/frappe", "/tmp/instance.json", "v16-2", "\"8161:80\"", "\"3162:3001\""} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("rendered compose missing %q: %s", want, got)
 		}

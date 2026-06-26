@@ -76,7 +76,7 @@ func cmdFrappeProvision(siteName string, version string) {
 	}
 
 	projectRoot := ProjectRoot()
-	frappeContext := filepath.Join(projectRoot, "backend", "pkg", "frappe")
+	frappeContext := filepath.Join(projectRoot, "pkg", "frappe")
 	if _, err := os.Stat(filepath.Join(frappeContext, "Dockerfile")); err != nil {
 		die("Frappe Docker build context not found at %s: %v", frappeContext, err)
 	}
