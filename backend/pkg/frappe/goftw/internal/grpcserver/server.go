@@ -6,7 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
-
+	"sync"
+	
 	pb "github.com/skaia/grpc/skaia"
 	"goftw/internal/bench"
 	"goftw/internal/entity"
@@ -22,13 +23,37 @@ type GoFTWServer struct {
 
 type grpcLogStreamWriter struct {
 	send func(*pb.LogStreamResponse) error
+	mu   sync.Mutex
 }
 
 func (w *grpcLogStreamWriter) Write(p []byte) (n int, err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	err = w.send(&pb.LogStreamResponse{
 		Output: string(p),
 	})
 	return len(p), err
+}
+
+type safeStreamWrapper struct {
+	mu     sync.Mutex
+	send   func(*pb.LogStreamResponse) error
+	closed bool
+}
+
+func (s *safeStreamWrapper) Send(msg *pb.LogStreamResponse) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return nil
+	}
+	return s.send(msg)
+}
+
+func (s *safeStreamWrapper) Close() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.closed = true
 }
 
 func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService_SetupInitServer) error {
@@ -36,7 +61,11 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 	if branch == "" {
 		branch = s.Bench.Branch
 	}
-	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Initializing bench with branch: %s\n", branch)})
+	
+	safeStream := &safeStreamWrapper{send: stream.Send}
+	defer safeStream.Close()
+
+	safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Initializing bench with branch: %s\n", branch)})
 
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
@@ -49,7 +78,7 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 		for {
 			n, err := r.Read(buf)
 			if n > 0 {
-				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+				safeStream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
 			}
 			if err != nil {
 				break
@@ -65,15 +94,18 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 	err := s.Bench.Initialize(branch)
 
 	if err != nil {
-		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Bench init failed: %v\n", err)})
+		safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Bench init failed: %v\n", err)})
 		return err
 	}
-	stream.Send(&pb.LogStreamResponse{Output: "[API] Bench initialized successfully\n"})
+	safeStream.Send(&pb.LogStreamResponse{Output: "[API] Bench initialized successfully\n"})
 	return nil
 }
 
 func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFTWService_CheckoutSitesServer) error {
-	stream.Send(&pb.LogStreamResponse{Output: "[API] Checking out sites...\n"})
+	safeStream := &safeStreamWrapper{send: stream.Send}
+	defer safeStream.Close()
+
+	safeStream.Send(&pb.LogStreamResponse{Output: "[API] Checking out sites...\n"})
 
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
@@ -86,7 +118,7 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 		for {
 			n, err := r.Read(buf)
 			if n > 0 {
-				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+				safeStream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
 			}
 			if err != nil {
 				break
@@ -114,15 +146,18 @@ func (s *GoFTWServer) CheckoutSites(req *pb.CheckoutSitesRequest, stream pb.GoFT
 	}
 
 	if err := s.Bench.CheckoutSites(instanceCfx, dbUser, dbPass); err != nil {
-		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Checkout sites failed: %v\n", err)})
+		safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Checkout sites failed: %v\n", err)})
 		return err
 	}
-	stream.Send(&pb.LogStreamResponse{Output: "[API] CheckoutSites completed successfully\n"})
+	safeStream.Send(&pb.LogStreamResponse{Output: "[API] CheckoutSites completed successfully\n"})
 	return nil
 }
 
 func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.GoFTWService_StartDeploymentServer) error {
-	stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Starting deployment mode: %s\n", req.Deployment)})
+	safeStream := &safeStreamWrapper{send: stream.Send}
+	defer safeStream.Close()
+
+	safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[API] Starting deployment mode: %s\n", req.Deployment)})
 
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
@@ -135,7 +170,7 @@ func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.
 		for {
 			n, err := r.Read(buf)
 			if n > 0 {
-				stream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
+				safeStream.Send(&pb.LogStreamResponse{Output: string(buf[:n])})
 			}
 			if err != nil {
 				break
@@ -152,16 +187,16 @@ func (s *GoFTWServer) StartDeployment(req *pb.StartDeploymentRequest, stream pb.
 	switch req.Deployment {
 	case "production":
 		if err := s.Bench.RunSupervisorNginx(); err != nil {
-			stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Production mode failed: %v\n", err)})
+			safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Production mode failed: %v\n", err)})
 			return err
 		}
 	default:
 		if err := s.Bench.StartBench(); err != nil {
-			stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Development mode failed: %v\n", err)})
+			safeStream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("[ERROR] Development mode failed: %v\n", err)})
 			return err
 		}
 	}
-	stream.Send(&pb.LogStreamResponse{Output: "[API] Deployment started successfully\n"})
+	safeStream.Send(&pb.LogStreamResponse{Output: "[API] Deployment started successfully\n"})
 	return nil
 }
 

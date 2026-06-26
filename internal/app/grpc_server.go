@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -113,16 +114,25 @@ func (s *GrengoServer) CreateSite(ctx context.Context, req *pb.CreateSiteRequest
 // Implement ProvisionFrappe which streams logs
 type grpcLogWriter struct {
 	stream pb.GrengoService_ProvisionFrappeServer
+	mu     sync.Mutex
 }
 
 func (w *grpcLogWriter) Write(p []byte) (n int, err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	w.stream.Send(&pb.LogStreamResponse{Output: string(p)})
 	return len(p), nil
 }
 
 func (s *GrengoServer) ProvisionFrappe(req *pb.ProvisionFrappeRequest, stream pb.GrengoService_ProvisionFrappeServer) error {
-	writer := &grpcLogWriter{stream: stream}
-	result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, "frappe-provision", req.SiteName)
+	writer := &grpcLogWriter{stream: stream, mu: sync.Mutex{}}
+	
+	args := []string{"frappe-provision", req.SiteName}
+	if req.Version != "" && req.Version != "16" {
+		args = append(args, "--version", req.Version)
+	}
+
+	result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(writer, args...)
 	if err != nil {
 		stream.Send(&pb.LogStreamResponse{Output: fmt.Sprintf("ERROR: %v\n", err)})
 	} else if result.ExitCode != 0 {

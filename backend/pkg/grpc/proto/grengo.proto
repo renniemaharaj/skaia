@@ -92,6 +92,7 @@ message CreateSiteResponse {}
 
 message ProvisionFrappeRequest {
   string site_name = 1;
+  string version = 2;
 }
 
 message LogStreamResponse {

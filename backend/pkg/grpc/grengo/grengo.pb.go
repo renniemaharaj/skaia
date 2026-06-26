@@ -484,6 +484,7 @@ func (*CreateSiteResponse) Descriptor() ([]byte, []int) {
 type ProvisionFrappeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SiteName      string                 `protobuf:"bytes,1,opt,name=site_name,json=siteName,proto3" json:"site_name,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -521,6 +522,13 @@ func (*ProvisionFrappeRequest) Descriptor() ([]byte, []int) {
 func (x *ProvisionFrappeRequest) GetSiteName() string {
 	if x != nil {
 		return x.SiteName
+	}
+	return ""
+}
+
+func (x *ProvisionFrappeRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
 	}
 	return ""
 }
@@ -1977,9 +1985,10 @@ const file_proto_grengo_proto_rawDesc = "" +
 	"\x0fsession_timeout\x18\a \x01(\tR\x0esessionTimeout\x12 \n" +
 	"\venvironment\x18\b \x01(\tR\venvironment\x12\x1a\n" +
 	"\bfeatures\x18\t \x01(\tR\bfeatures\"\x14\n" +
-	"\x12CreateSiteResponse\"5\n" +
+	"\x12CreateSiteResponse\"O\n" +
 	"\x16ProvisionFrappeRequest\x12\x1b\n" +
-	"\tsite_name\x18\x01 \x01(\tR\bsiteName\"+\n" +
+	"\tsite_name\x18\x01 \x01(\tR\bsiteName\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"+\n" +
 	"\x11LogStreamResponse\x12\x16\n" +
 	"\x06output\x18\x01 \x01(\tR\x06output\".\n" +
 	"\x12GetSiteEnvResponse\x12\x18\n" +

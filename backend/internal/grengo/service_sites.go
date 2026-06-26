@@ -109,13 +109,14 @@ func (s *Service) CreateSite(p CreateSiteParams) error {
 
 // ProvisionFrappe provisions a new multi-tenant Frappe site using grengo on the host
 func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
-	_, err := s.provisionFrappeStream(siteName, onLog)
+	_, err := s.provisionFrappeStream(siteName, "", onLog)
 	return err
 }
 
-func (s *Service) provisionFrappeStream(siteName string, onLog func(string)) (string, error) {
+func (s *Service) provisionFrappeStream(siteName, version string, onLog func(string)) (string, error) {
 	stream, err := s.client.ProvisionFrappe(context.Background(), &pb.ProvisionFrappeRequest{
 		SiteName: siteName,
+		Version:  version,
 	})
 	if err != nil {
 		return "", fmt.Errorf("grengo API: %w", err)
@@ -148,6 +149,8 @@ func (s *Service) provisionFrappeStream(siteName string, onLog func(string)) (st
 		}
 
 		pending += resp.Output
+		// Convert \r to \n so progress bars (like buildkit) are emitted line-by-line
+		pending = strings.ReplaceAll(pending, "\r", "\n")
 		parts := strings.Split(pending, "\n")
 		pending = parts[len(parts)-1]
 		for _, line := range parts[:len(parts)-1] {
@@ -175,60 +178,10 @@ func (s *Service) ProvisionFrappeVersion(siteName, version string, onLog func(st
 	if version == "" {
 		version = "16"
 	}
-	output := ""
-	if version == "16" {
-		var err error
-		output, err = s.provisionFrappeStream(siteName, onLog)
-		if err != nil {
-			return nil, err
-		}
-		// The legacy v16 stream does not emit FRAPPE_CLUSTER_* metadata.
-		// Synthesize a result with the well-known cluster defaults so that
-		// the caller can persist the gRPC endpoint in the instance config.
-		out := &FrappeProvisionResult{Version: version}
-		for _, line := range strings.Split(output, "\n") {
-			key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
-			if !ok {
-				continue
-			}
-			switch key {
-			case "FRAPPE_CLUSTER_VERSION":
-				out.Version = value
-			case "FRAPPE_CLUSTER_ID":
-				out.Cluster = value
-			case "FRAPPE_HTTP_PORT":
-				fmt.Sscanf(value, "%d", &out.HTTPPort)
-			case "FRAPPE_GRPC_PORT":
-				fmt.Sscanf(value, "%d", &out.GRPCPort)
-			}
-		}
-		// If the stream didn't include cluster metadata, fill in the legacy defaults.
-		if out.Cluster == "" {
-			out.Cluster = "1"
-		}
-		if out.GRPCPort == 0 {
-			out.GRPCPort = 3001
-		}
-		if out.HTTPPort == 0 {
-			out.HTTPPort = 8000
-		}
-		return out, nil
-	} else {
-		result, err := s.exec("frappe-provision", siteName, "--version", version)
-		if err != nil {
-			return nil, err
-		}
-		if onLog != nil && result.Output != "" {
-			for _, line := range strings.Split(result.Output, "\n") {
-				if strings.TrimSpace(line) != "" {
-					onLog(line)
-				}
-			}
-		}
-		if !result.OK {
-			return nil, fmt.Errorf("grengo frappe-provision failed (exit %d): %s", result.ExitCode, result.Output)
-		}
-		output = result.Output
+	
+	output, err := s.provisionFrappeStream(siteName, version, onLog)
+	if err != nil {
+		return nil, err
 	}
 
 	out := &FrappeProvisionResult{Version: version}
@@ -248,6 +201,17 @@ func (s *Service) ProvisionFrappeVersion(siteName, version string, onLog func(st
 			fmt.Sscanf(value, "%d", &out.GRPCPort)
 		}
 	}
+
+	if out.Cluster == "" {
+		out.Cluster = "1"
+	}
+	if out.GRPCPort == 0 {
+		out.GRPCPort = 3001
+	}
+	if out.HTTPPort == 0 {
+		out.HTTPPort = 8000
+	}
+
 	return out, nil
 }
 
