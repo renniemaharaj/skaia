@@ -12,9 +12,9 @@ while read -r mod; do
   cd - > /dev/null
 done < <(find . -type d \( -name node_modules -o -name postgres_data -o -name redis_data -o -name pgadmin_data -o -name .git \) -prune -o -name "go.mod" -print)
 
-cd backend/frontend
+cd frontend
 npm run lint
 npm run format
 git add .
 npm run build
-cd ../..
+cd ..

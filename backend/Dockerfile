@@ -11,13 +11,7 @@ COPY pkg/conveyor/ ./pkg/conveyor/
 COPY pkg/grouplogs/ ./pkg/grouplogs/
 COPY pkg/grpc/ ./pkg/grpc/
 RUN go mod download
-
-# copy the entire repository (including frontend) so we can build the SPA
 COPY . .
-
-# build the frontend assets
-WORKDIR /app/frontend
-RUN npm ci && npm run build
 
 # compile the backend binary
 WORKDIR /app
@@ -38,7 +32,6 @@ RUN apk --no-cache add ca-certificates su-exec nodejs chromium docker docker-cli
 WORKDIR /app
 
 COPY --from=builder /app/backend /app/backend
-COPY --from=builder /app/frontend/dist /app/frontend/dist
 COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
 COPY --from=builder /app/pkg/frappe /app/pkg/frappe
 

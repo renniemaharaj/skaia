@@ -53,8 +53,8 @@ func apiWebhookGithub(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// Code inside backend/frontend/ is frontend
-			if strings.HasPrefix(file, "backend/frontend/") {
+			// Code inside frontend/ is frontend
+			if strings.HasPrefix(file, "frontend/") {
 				hasFrontendCode = true
 				continue
 			}

@@ -14,19 +14,27 @@ func cmdBuild() {
 	log("Image %s built", Image())
 }
 
-// cmdRebuildFrontend builds the SPA once and hot-copies it into running backend containers.
-func cmdRebuildFrontend(target string) {
-	if target == "" {
-		target = "all"
-	}
-
-	frontendDir := filepath.Join(ProjectRoot(), "backend", "frontend")
+func buildFrontend() string {
+	frontendDir := filepath.Join(ProjectRoot(), "frontend")
 	distDir := filepath.Join(frontendDir, "dist")
 	if _, err := os.Stat(filepath.Join(frontendDir, "package.json")); err != nil {
 		die("Frontend package not found in %s: %v", frontendDir, err)
 	}
 
 	log("Building frontend from %s …", frontendDir)
+	
+	// Run npm ci if node_modules doesn't exist
+	if _, err := os.Stat(filepath.Join(frontendDir, "node_modules")); os.IsNotExist(err) {
+		cmdCi := exec.Command("npm", "ci")
+		cmdCi.Dir = frontendDir
+		cmdCi.Stdout = os.Stdout
+		cmdCi.Stderr = os.Stderr
+		cmdCi.Stdin = os.Stdin
+		if err := cmdCi.Run(); err != nil {
+			die("Frontend npm ci failed: %v", err)
+		}
+	}
+
 	cmd := exec.Command("npm", "run", "build")
 	cmd.Dir = frontendDir
 	cmd.Stdout = os.Stdout
@@ -38,6 +46,16 @@ func cmdRebuildFrontend(target string) {
 	if _, err := os.Stat(filepath.Join(distDir, "index.html")); err != nil {
 		die("Frontend build did not produce %s: %v", filepath.Join(distDir, "index.html"), err)
 	}
+	return distDir
+}
+
+// cmdRebuildFrontend builds the SPA once and hot-copies it into running backend containers.
+func cmdRebuildFrontend(target string) {
+	if target == "" {
+		target = "all"
+	}
+
+	distDir := buildFrontend()
 
 	targets := frontendRebuildTargets(target)
 	if len(targets) == 0 {

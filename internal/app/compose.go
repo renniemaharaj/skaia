@@ -70,6 +70,10 @@ func cmdComposeUp(follow bool, build bool) {
 	}
 	log("All services started (%d client(s))", started)
 
+	if started > 0 {
+		cmdShipFrontend()
+	}
+
 	if follow {
 		log("Following logs (ctrl-c to stop)…")
 		if err := dockerComposeLogs(composeFile(), "--follow", "--tail", "100"); err != nil {
