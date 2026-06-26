@@ -111,6 +111,22 @@ func (s *GrengoServer) CreateSite(ctx context.Context, req *pb.CreateSiteRequest
 	return &pb.CreateSiteResponse{}, nil
 }
 
+func (s *GrengoServer) GetFrappeApps(ctx context.Context, req *pb.EmptyRequest) (*pb.GetFrappeAppsResponse, error) {
+	return &pb.GetFrappeAppsResponse{
+		Apps: []*pb.FrappeApp{
+			{Name: "erpnext", Description: "ERPNext is a comprehensive open source ERP system for businesses.", Version: "15.0.0"},
+			{Name: "builder", Description: "Builder helps you visually design and customize Frappe apps.", Version: "1.0.0"},
+			{Name: "frappe", Description: "Frappe Framework is a full-stack web application framework in Python & JS.", Version: "15.0.0"},
+			{Name: "hrms", Description: "HRMS provides human resource management features like payroll, leave, and attendance.", Version: "15.0.0"},
+			{Name: "lending", Description: "Lending app for managing loan requests, approvals, and repayments.", Version: "1.0.0"},
+			{Name: "helpdesk", Description: "Helpdesk app to manage support tickets and customer queries.", Version: "1.0.0"},
+			{Name: "crm", Description: "CRM app to manage leads, opportunities, and customer relationships.", Version: "1.0.0"},
+			{Name: "insights", Description: "Insights provides analytics and reporting tools within the Frappe ecosystem.", Version: "1.0.0"},
+			{Name: "blog", Description: "Blog app for publishing articles and managing content.", Version: "1.0.0"},
+		},
+	}, nil
+}
+
 // Implement ProvisionFrappe which streams logs
 type grpcLogWriter struct {
 	stream pb.GrengoService_ProvisionFrappeServer

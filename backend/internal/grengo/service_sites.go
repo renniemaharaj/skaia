@@ -10,6 +10,12 @@ import (
 	pb "github.com/skaia/grpc/grengo"
 )
 
+type FrappeApp struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
+}
+
 // SiteInfo describes a single client visible to the dashboard.
 type SiteInfo struct {
 	Name     string   `json:"name"`
@@ -77,6 +83,22 @@ func (s *Service) exec(command string, args ...string) (*execResponse, error) {
 		return nil, fmt.Errorf("grengo API: %s", result.Error)
 	}
 	return result, nil
+}
+
+func (s *Service) GetFrappeApps() ([]FrappeApp, error) {
+	resp, err := s.client.GetFrappeApps(context.Background(), &pb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	var apps []FrappeApp
+	for _, app := range resp.Apps {
+		apps = append(apps, FrappeApp{
+			Name:        app.Name,
+			Description: app.Description,
+			Version:     app.Version,
+		})
+	}
+	return apps, nil
 }
 
 func (s *Service) execOK(command string, args ...string) error {

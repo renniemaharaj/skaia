@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	pb "github.com/skaia/grpc/skaia"
 	"google.golang.org/grpc"
@@ -391,24 +390,17 @@ func (s *service) isFrappe(id int64) (bool, error) {
 }
 
 func (s *service) GetAvailableApps() ([]map[string]interface{}, error) {
-	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	catalog, err := s.grengo.GetFrappeApps()
 	if err != nil {
-		return nil, fmt.Errorf("gRPC dial failed: %w", err)
+		return nil, err
 	}
-	defer conn.Close()
-
-	c := pb.NewGoFTWServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	resp, err := c.GetApps(ctx, &pb.GetAppsRequest{})
-	if err != nil {
-		return nil, fmt.Errorf("gRPC GetApps failed: %w", err)
-	}
-
 	var apps []map[string]interface{}
-	for _, appName := range resp.Apps {
-		apps = append(apps, map[string]interface{}{"name": appName})
+	for _, app := range catalog {
+		apps = append(apps, map[string]interface{}{
+			"name":        app.Name,
+			"description": app.Description,
+			"version":     app.Version,
+		})
 	}
 	return apps, nil
 }

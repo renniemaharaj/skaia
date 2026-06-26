@@ -23,6 +23,7 @@ const (
 	GrengoService_Exec_FullMethodName            = "/grengo.grpc.GrengoService/Exec"
 	GrengoService_CreateSite_FullMethodName      = "/grengo.grpc.GrengoService/CreateSite"
 	GrengoService_ProvisionFrappe_FullMethodName = "/grengo.grpc.GrengoService/ProvisionFrappe"
+	GrengoService_GetFrappeApps_FullMethodName   = "/grengo.grpc.GrengoService/GetFrappeApps"
 	GrengoService_DeleteSite_FullMethodName      = "/grengo.grpc.GrengoService/DeleteSite"
 	GrengoService_StartSite_FullMethodName       = "/grengo.grpc.GrengoService/StartSite"
 	GrengoService_StopSite_FullMethodName        = "/grengo.grpc.GrengoService/StopSite"
@@ -64,6 +65,7 @@ type GrengoServiceClient interface {
 	Exec(ctx context.Context, in *ExecRequest, opts ...grpc.CallOption) (*ExecResponse, error)
 	CreateSite(ctx context.Context, in *CreateSiteRequest, opts ...grpc.CallOption) (*CreateSiteResponse, error)
 	ProvisionFrappe(ctx context.Context, in *ProvisionFrappeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)
+	GetFrappeApps(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetFrappeAppsResponse, error)
 	DeleteSite(ctx context.Context, in *SiteRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	StartSite(ctx context.Context, in *SiteRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	StopSite(ctx context.Context, in *SiteRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
@@ -158,6 +160,16 @@ func (c *grengoServiceClient) ProvisionFrappe(ctx context.Context, in *Provision
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GrengoService_ProvisionFrappeClient = grpc.ServerStreamingClient[LogStreamResponse]
+
+func (c *grengoServiceClient) GetFrappeApps(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*GetFrappeAppsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetFrappeAppsResponse)
+	err := c.cc.Invoke(ctx, GrengoService_GetFrappeApps_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 func (c *grengoServiceClient) DeleteSite(ctx context.Context, in *SiteRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -504,6 +516,7 @@ type GrengoServiceServer interface {
 	Exec(context.Context, *ExecRequest) (*ExecResponse, error)
 	CreateSite(context.Context, *CreateSiteRequest) (*CreateSiteResponse, error)
 	ProvisionFrappe(*ProvisionFrappeRequest, grpc.ServerStreamingServer[LogStreamResponse]) error
+	GetFrappeApps(context.Context, *EmptyRequest) (*GetFrappeAppsResponse, error)
 	DeleteSite(context.Context, *SiteRequest) (*EmptyResponse, error)
 	StartSite(context.Context, *SiteRequest) (*EmptyResponse, error)
 	StopSite(context.Context, *SiteRequest) (*EmptyResponse, error)
@@ -561,6 +574,9 @@ func (UnimplementedGrengoServiceServer) CreateSite(context.Context, *CreateSiteR
 }
 func (UnimplementedGrengoServiceServer) ProvisionFrappe(*ProvisionFrappeRequest, grpc.ServerStreamingServer[LogStreamResponse]) error {
 	return status.Error(codes.Unimplemented, "method ProvisionFrappe not implemented")
+}
+func (UnimplementedGrengoServiceServer) GetFrappeApps(context.Context, *EmptyRequest) (*GetFrappeAppsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFrappeApps not implemented")
 }
 func (UnimplementedGrengoServiceServer) DeleteSite(context.Context, *SiteRequest) (*EmptyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteSite not implemented")
@@ -737,6 +753,24 @@ func _GrengoService_ProvisionFrappe_Handler(srv interface{}, stream grpc.ServerS
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type GrengoService_ProvisionFrappeServer = grpc.ServerStreamingServer[LogStreamResponse]
+
+func _GrengoService_GetFrappeApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GrengoServiceServer).GetFrappeApps(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GrengoService_GetFrappeApps_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GrengoServiceServer).GetFrappeApps(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
 
 func _GrengoService_DeleteSite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SiteRequest)
@@ -1268,6 +1302,10 @@ var GrengoService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateSite",
 			Handler:    _GrengoService_CreateSite_Handler,
+		},
+		{
+			MethodName: "GetFrappeApps",
+			Handler:    _GrengoService_GetFrappeApps_Handler,
 		},
 		{
 			MethodName: "DeleteSite",

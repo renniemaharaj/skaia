@@ -16,6 +16,7 @@ import { socketAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
+import Select from "../../input/Select";
 import { Console, type ConsoleLine } from "../../ui/Console";
 import { customConfirm } from "../../ui/Prompt";
 import type { TableColumn } from "../../ui/TableView/TableView";
@@ -90,7 +91,7 @@ export function DeploymentsPage() {
     y: number;
   } | null>(null);
   const [stats, setStats] = useState<ContainerStats[]>([]);
-  type AppForReact = { name: string; description: string };
+  type AppForReact = { name: string; description: string; version?: string };
   const [availableApps, setAvailableApps] = useState<AppForReact[]>([]);
 
   useEffect(() => {
@@ -609,18 +610,6 @@ export function DeploymentsPage() {
             <p className="modal-subtitle">
               Select an available blueprint to provision a new instance.
             </p>
-            <div className="deployments-version-field">
-              <label htmlFor="frappe-version">Frappe version</label>
-              <select
-                id="frappe-version"
-                value={selectedFrappeVersion}
-                onChange={e => setSelectedFrappeVersion(e.target.value as "15" | "16" | "17-dev")}
-              >
-                <option value="16">Stable 16</option>
-                <option value="15">Stable 15</option>
-                <option value="17-dev">Dev 17</option>
-              </select>
-            </div>
             {blueprints.length === 0 ? (
               <p className="orders-empty-state">No active blueprints currently available.</p>
             ) : (
@@ -630,6 +619,23 @@ export function DeploymentsPage() {
                     <div>
                       <h4>{bp.name}</h4>
                       <p>{bp.description}</p>
+                      {bp.name.toLowerCase().includes("frappe") && (
+                        <div style={{ marginTop: "1rem" }}>
+                          <Select
+                            size="sm"
+                            block
+                            value={selectedFrappeVersion}
+                            onChange={e =>
+                              setSelectedFrappeVersion(e.target.value as "15" | "16" | "17-dev")
+                            }
+                            options={[
+                              { value: "16", label: "Stable 16" },
+                              { value: "15", label: "Stable 15" },
+                              { value: "17-dev", label: "Dev 17" },
+                            ]}
+                          />
+                        </div>
+                      )}
                     </div>
                     <Button
                       size="sm"
@@ -857,7 +863,19 @@ export function DeploymentsPage() {
                                 marginBottom: "4px",
                               }}
                             >
-                              {app.name}
+                              {app.name}{" "}
+                              {app.version && (
+                                <span
+                                  style={{
+                                    fontWeight: 400,
+                                    opacity: 0.7,
+                                    fontSize: "0.8em",
+                                    marginLeft: "4px",
+                                  }}
+                                >
+                                  v{app.version}
+                                </span>
+                              )}
                             </span>
                             <span style={{ color: "var(--text-muted)" }}>{app.description}</span>
                           </div>

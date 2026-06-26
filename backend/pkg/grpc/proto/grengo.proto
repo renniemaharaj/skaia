@@ -10,6 +10,7 @@ service GrengoService {
   rpc Exec (ExecRequest) returns (ExecResponse);
   rpc CreateSite (CreateSiteRequest) returns (CreateSiteResponse);
   rpc ProvisionFrappe (ProvisionFrappeRequest) returns (stream LogStreamResponse);
+  rpc GetFrappeApps (EmptyRequest) returns (GetFrappeAppsResponse);
   rpc DeleteSite (SiteRequest) returns (EmptyResponse);
   rpc StartSite (SiteRequest) returns (EmptyResponse);
   rpc StopSite (SiteRequest) returns (EmptyResponse);
@@ -97,6 +98,17 @@ message ProvisionFrappeRequest {
 
 message LogStreamResponse {
   string output = 1;
+}
+
+message FrappeApp {
+  string name = 1;
+  string description = 2;
+  string version = 3;
+}
+
+
+message GetFrappeAppsResponse {
+  repeated FrappeApp apps = 1;
 }
 
 message GetSiteEnvResponse {
