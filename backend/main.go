@@ -135,6 +135,18 @@ func envInt(key string, def int) int {
 	return n
 }
 
+func deriveGrengoDSN(dsn string) string {
+	if dsn == "" {
+		return ""
+	}
+	u, err := url.Parse(dsn)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return ""
+	}
+	u.Path = "/grengo"
+	return u.String()
+}
+
 func main() {
 	if err := database.Init(); err != nil {
 		log.Fatalf("database init: %v", err)
@@ -370,6 +382,15 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return p
 		}
 		p := httputil.NewSingleHostReverseProxy(targetURL)
+		defaultDirector := p.Director
+		p.Director = func(r *http.Request) {
+			originalHost := r.Host
+			defaultDirector(r)
+			if originalHost != "" {
+				r.Host = originalHost
+				r.Header.Set("X-Forwarded-Host", originalHost)
+			}
+		}
 		p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 			log.Printf("[proxy] upstream %s unreachable: %v", key, err)
 			http.Error(w, `{"error":"upstream unavailable"}`, http.StatusBadGateway)
@@ -378,10 +399,62 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		return p
 	}
 
+	lookupGrengoFrappePorts := func(siteName string) (int, int, bool) {
+		dsn := os.Getenv("GRENGO_DATABASE_URL")
+		if dsn == "" {
+			dsn = deriveGrengoDSN(os.Getenv("DATABASE_URL"))
+		}
+		if dsn == "" || siteName == "" {
+			return 0, 0, false
+		}
+		grengoDB, err := sql.Open("postgres", dsn)
+		if err != nil {
+			log.Printf("[frappe-proxy] grengo DB open failed: %v", err)
+			return 0, 0, false
+		}
+		defer grengoDB.Close()
+
+		var httpPort, grpcPort int
+		err = grengoDB.QueryRow(`
+			SELECT fc.http_port, fc.grpc_port
+			FROM frappe_sites fs
+			JOIN frappe_clusters fc ON fc.id = fs.cluster_id
+			WHERE fs.site_name = $1
+			ORDER BY fs.updated_at DESC
+			LIMIT 1
+		`, siteName).Scan(&httpPort, &grpcPort)
+		if err != nil {
+			log.Printf("[frappe-proxy] grengo allocation lookup for %s failed: %v", siteName, err)
+			return 0, 0, false
+		}
+		return httpPort, grpcPort, httpPort > 0
+	}
+
+	persistFrappePorts := func(id int64, cfg map[string]interface{}, httpPort, grpcPort int) {
+		if httpPort <= 0 {
+			return
+		}
+		cfg["frappe_http_port"] = httpPort
+		if grpcPort > 0 {
+			cfg["frappe_grpc_port"] = grpcPort
+		}
+		payload, err := json.Marshal(cfg)
+		if err != nil {
+			log.Printf("[frappe-proxy] failed to marshal recovered ports for instance %d: %v", id, err)
+			return
+		}
+		if _, err := database.DB.Exec(
+			"UPDATE provisioned_instances SET config_payload = $1, updated_at = NOW() WHERE id = $2",
+			payload, id,
+		); err != nil {
+			log.Printf("[frappe-proxy] failed to persist recovered ports for instance %d: %v", id, err)
+		}
+	}
+
 	// frappeHTTPPort resolves the allocated Frappe HTTP port for an instance.
-	// Returns (port, true) only when the port has been recorded in config_payload
-	// by the provisioning worker. Returns (0, false) when provisioning is still
-	// in progress or the instance does not exist.
+	// New instances store the host port in config_payload after provisioning.
+	// Older local rows may have zeroed Frappe ports even though the shared
+	// legacy cluster is live on the host.
 	frappeHTTPPort := func(id int64) (int, bool) {
 		var payload []byte
 		if err := database.DB.QueryRow(
@@ -394,10 +467,31 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return 0, false
 		}
 		rawPort, ok := cfg["frappe_http_port"].(float64)
-		if !ok || rawPort <= 0 {
-			return 0, false
+		if ok && rawPort > 0 {
+			return int(rawPort), true
 		}
-		return int(rawPort), true
+
+		siteName, _ := cfg["site_name"].(string)
+		if siteName == "" {
+			siteName = utils.GetFrappeSiteName(id)
+			cfg["site_name"] = siteName
+		}
+
+		if httpPort, grpcPort, ok := lookupGrengoFrappePorts(siteName); ok {
+			persistFrappePorts(id, cfg, httpPort, grpcPort)
+			return httpPort, true
+		}
+
+		// Legacy Frappe provisioning used a single shared local cluster exposed
+		// at host port 8000 and left frappe_http_port as 0 in older instance rows.
+		if _, isFrappe := cfg["frappe_version"].(string); isFrappe && strings.HasSuffix(siteName, ".localhost") {
+			httpPort := envInt("FRAPPE_LEGACY_HTTP_PORT", 8000)
+			grpcPort := envInt("FRAPPE_LEGACY_GRPC_PORT", 3001)
+			persistFrappePorts(id, cfg, httpPort, grpcPort)
+			return httpPort, true
+		}
+
+		return 0, false
 	}
 
 	// Intercept Frappe sites (e.g. site1.domain.com) and proxy directly to Frappe cluster
@@ -873,7 +967,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		if isFrappe {
 			if siteName == "" {
-				siteName = fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
+				siteName = utils.GetFrappeSiteName(id)
 			}
 			// Frappe does not support sub-path proxying. Redirect to the subdomain.
 			scheme := "http"

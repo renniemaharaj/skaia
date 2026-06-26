@@ -109,23 +109,24 @@ func (s *Service) CreateSite(p CreateSiteParams) error {
 
 // ProvisionFrappe provisions a new multi-tenant Frappe site using grengo on the host
 func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
+	_, err := s.provisionFrappeStream(siteName, onLog)
+	return err
+}
+
+func (s *Service) provisionFrappeStream(siteName string, onLog func(string)) (string, error) {
 	stream, err := s.client.ProvisionFrappe(context.Background(), &pb.ProvisionFrappeRequest{
 		SiteName: siteName,
 	})
 	if err != nil {
-		return fmt.Errorf("grengo API: %w", err)
+		return "", fmt.Errorf("grengo API: %w", err)
 	}
 
-	for {
-		resp, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("reading stream: %w", err)
-		}
-
-		line := resp.Output
+	var output strings.Builder
+	var pending string
+	emit := func(line string) error {
+		line = strings.TrimRight(line, "\r")
+		output.WriteString(line)
+		output.WriteByte('\n')
 		if len(line) > 16 && line[:16] == "ERROR: exit code" {
 			return fmt.Errorf("grengo frappe-provision failed: %s", line)
 		} else if len(line) > 7 && line[:7] == "ERROR: " {
@@ -134,8 +135,33 @@ func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
 		if onLog != nil {
 			onLog(line)
 		}
+		return nil
 	}
-	return nil
+
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return output.String(), fmt.Errorf("reading stream: %w", err)
+		}
+
+		pending += resp.Output
+		parts := strings.Split(pending, "\n")
+		pending = parts[len(parts)-1]
+		for _, line := range parts[:len(parts)-1] {
+			if err := emit(line); err != nil {
+				return output.String(), err
+			}
+		}
+	}
+	if strings.TrimSpace(pending) != "" {
+		if err := emit(pending); err != nil {
+			return output.String(), err
+		}
+	}
+	return output.String(), nil
 }
 
 type FrappeProvisionResult struct {
@@ -149,19 +175,64 @@ func (s *Service) ProvisionFrappeVersion(siteName, version string, onLog func(st
 	if version == "" {
 		version = "16"
 	}
-	result, err := s.exec("frappe-provision", siteName, "--version", version)
-	if err != nil {
-		return nil, err
-	}
-	if onLog != nil && result.Output != "" {
-		onLog(result.Output)
-	}
-	if !result.OK {
-		return nil, fmt.Errorf("grengo frappe-provision failed (exit %d): %s", result.ExitCode, result.Output)
+	output := ""
+	if version == "16" {
+		var err error
+		output, err = s.provisionFrappeStream(siteName, onLog)
+		if err != nil {
+			return nil, err
+		}
+		// The legacy v16 stream does not emit FRAPPE_CLUSTER_* metadata.
+		// Synthesize a result with the well-known cluster defaults so that
+		// the caller can persist the gRPC endpoint in the instance config.
+		out := &FrappeProvisionResult{Version: version}
+		for _, line := range strings.Split(output, "\n") {
+			key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+			if !ok {
+				continue
+			}
+			switch key {
+			case "FRAPPE_CLUSTER_VERSION":
+				out.Version = value
+			case "FRAPPE_CLUSTER_ID":
+				out.Cluster = value
+			case "FRAPPE_HTTP_PORT":
+				fmt.Sscanf(value, "%d", &out.HTTPPort)
+			case "FRAPPE_GRPC_PORT":
+				fmt.Sscanf(value, "%d", &out.GRPCPort)
+			}
+		}
+		// If the stream didn't include cluster metadata, fill in the legacy defaults.
+		if out.Cluster == "" {
+			out.Cluster = "1"
+		}
+		if out.GRPCPort == 0 {
+			out.GRPCPort = 3001
+		}
+		if out.HTTPPort == 0 {
+			out.HTTPPort = 8000
+		}
+		return out, nil
+	} else {
+		result, err := s.exec("frappe-provision", siteName, "--version", version)
+		if err != nil {
+			return nil, err
+		}
+		if onLog != nil && result.Output != "" {
+			for _, line := range strings.Split(result.Output, "\n") {
+				if strings.TrimSpace(line) != "" {
+					onLog(line)
+				}
+			}
+		}
+		if !result.OK {
+			return nil, fmt.Errorf("grengo frappe-provision failed (exit %d): %s", result.ExitCode, result.Output)
+		}
+		output = result.Output
 	}
 
 	out := &FrappeProvisionResult{Version: version}
-	for _, line := range strings.Split(result.Output, "\n") {
+	for _, line := range strings.Split(output, "\n") {
 		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
 		if !ok {
 			continue

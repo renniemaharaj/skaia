@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	log "github.com/skaia/backend/internal/syslog"
 	"github.com/skaia/backend/internal/utils"
 )
 
@@ -145,6 +146,7 @@ func (h *Handler) InstallApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.svc.InstallApp(id, req.App); err != nil {
+		log.Printf("[ERROR] InstallApp(instance=%d app=%s): %v", id, req.App, err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -158,6 +160,7 @@ func (h *Handler) UninstallApp(w http.ResponseWriter, r *http.Request) {
 	app := chi.URLParam(r, "app")
 
 	if err := h.svc.UninstallApp(id, app); err != nil {
+		log.Printf("[ERROR] UninstallApp(instance=%d app=%s): %v", id, app, err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

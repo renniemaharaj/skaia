@@ -14,18 +14,29 @@ const maxFrappeSitesPerCluster = 50
 type frappeVersionSpec struct {
 	ID          string
 	Branch      string
-	PythonImage string
-	NodeMajor   int
+	ComposeFile string
 }
 
 func frappeVersion(version string) (frappeVersionSpec, error) {
 	switch strings.ToLower(strings.TrimSpace(version)) {
 	case "", "16", "version-16":
-		return frappeVersionSpec{ID: "16", Branch: "version-16", PythonImage: "python:3.12-bookworm", NodeMajor: 20}, nil
+		return frappeVersionSpec{
+			ID:          "16",
+			Branch:      "version-16",
+			ComposeFile: "compose.v16.yml",
+		}, nil
 	case "15", "version-15":
-		return frappeVersionSpec{ID: "15", Branch: "version-15", PythonImage: "python:3.11-bookworm", NodeMajor: 18}, nil
+		return frappeVersionSpec{
+			ID:          "15",
+			Branch:      "version-15",
+			ComposeFile: "compose.v15.yml",
+		}, nil
 	case "17", "17-dev", "dev", "develop":
-		return frappeVersionSpec{ID: "17-dev", Branch: "develop", PythonImage: "python:3.14.2-trixie", NodeMajor: 24}, nil
+		return frappeVersionSpec{
+			ID:          "17-dev",
+			Branch:      "develop",
+			ComposeFile: "compose.v17-dev.yml",
+		}, nil
 	default:
 		return frappeVersionSpec{}, fmt.Errorf("unsupported Frappe version %q; use 15, 16, or 17-dev", version)
 	}
@@ -69,6 +80,10 @@ func cmdFrappeProvision(siteName string, version string) {
 	if _, err := os.Stat(filepath.Join(frappeContext, "Dockerfile")); err != nil {
 		die("Frappe Docker build context not found at %s: %v", frappeContext, err)
 	}
+	templatePath := filepath.Join(frappeContext, spec.ComposeFile)
+	if _, err := os.Stat(templatePath); err != nil {
+		die("Frappe compose template not found at %s: %v", templatePath, err)
+	}
 
 	httpPort := 8000 + (clusterID - 1) + versionPortOffset(spec.ID)
 	grpcPort := 3001 + (clusterID - 1) + versionPortOffset(spec.ID)
@@ -77,7 +92,7 @@ func cmdFrappeProvision(siteName string, version string) {
 		"deployment":           "production",
 		"server_name":          "localhost",
 		"instance_sites":       []any{},
-		"drop_abandoned_sites": true,
+		"drop_abandoned_sites": false,
 		"run_sites_manager":    true,
 		"frappe_branch":        spec.Branch,
 	}
@@ -87,65 +102,12 @@ func cmdFrappeProvision(siteName string, version string) {
 		die("failed to write instance.json: %v", err)
 	}
 
-	composeContent := `
-services:
-  mariadb:
-    image: mariadb:11
-    container_name: skaia_frappe_mariadb_%s_%d
-    environment:
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_USER: frappe
-      MARIADB_PASSWORD: frappe
-      MARIADB_DATABASE: frappe
-
-  redis:
-    image: redis:7-alpine
-    container_name: skaia_frappe_redis_%s_%d
-
-  frappe:
-    build:
-      context: %s/backend/pkg/frappe
-      args:
-        FRAPPE_BRANCH: %s
-        PYTHON_IMAGE: %s
-        NODE_MAJOR: "%d"
-    container_name: skaia_frappe_cluster_%s_%d
-    ports:
-      - "%d:80"
-      - "%d:3001"
-    environment:
-      INSTANCE_JSON_SOURCE: /instance.cluster.json
-      MARIADB_HOST: mariadb
-      MARIADB_PORT: 3306
-      MARIADB_ROOT_USERNAME: root
-      MARIADB_ROOT_PASSWORD: root
-      REDIS_CACHE: redis://redis:6379
-      REDIS_QUEUE: redis://redis:6379
-      REDIS_SOCKETIO: redis://redis:6379
-      WAIT_FOR_DB: 1
-      WAIT_FOR_REDIS: 1
-    depends_on:
-      - mariadb
-      - redis
-    volumes:
-      - %s:/instance.cluster.json:ro
-    networks:
-      - default
-      - skaia-network
-
-networks:
-  skaia-network:
-    external: true
-`
 	composePath := filepath.Join(clusterDir, "docker-compose.yml")
 	safeVersion := strings.ReplaceAll(spec.ID, "-", "_")
-	formattedCompose := fmt.Sprintf(composeContent,
-		safeVersion, clusterID,
-		safeVersion, clusterID,
-		projectRoot, spec.Branch, spec.PythonImage, spec.NodeMajor, safeVersion, clusterID,
-		httpPort, grpcPort,
-		instancePath,
-	)
+	formattedCompose, err := renderFrappeCompose(templatePath, frappeContext, instancePath, safeVersion, clusterID, httpPort, grpcPort)
+	if err != nil {
+		die("failed to render %s: %v", spec.ComposeFile, err)
+	}
 	if err := os.WriteFile(composePath, []byte(formattedCompose), 0644); err != nil {
 		die("failed to write docker-compose.yml: %v", err)
 	}
@@ -200,6 +162,22 @@ func stringSliceContains(values []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func renderFrappeCompose(templatePath, frappeContext, instancePath, safeVersion string, clusterID, httpPort, grpcPort int) (string, error) {
+	data, err := os.ReadFile(templatePath)
+	if err != nil {
+		return "", err
+	}
+	replacer := strings.NewReplacer(
+		"__FRAPPE_CONTEXT__", frappeContext,
+		"__INSTANCE_PATH__", instancePath,
+		"__SAFE_VERSION__", safeVersion,
+		"__CLUSTER_ID__", fmt.Sprintf("%d", clusterID),
+		"__HTTP_PORT__", fmt.Sprintf("%d", httpPort),
+		"__GRPC_PORT__", fmt.Sprintf("%d", grpcPort),
+	)
+	return replacer.Replace(string(data)), nil
 }
 
 func cmdFrappeRebuild() {

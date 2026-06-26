@@ -173,6 +173,7 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 			return nil, err
 		}
 		configMap["frappe_version"] = frappeVersion
+		configMap["site_name"] = utils.GetFrappeSiteName(created.ID)
 	}
 
 	newPayload, _ := json.Marshal(configMap)
@@ -207,7 +208,7 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 		}()
 		p := param.(jobPayload)
 
-		l := logger.New().Prefix(fmt.Sprintf("%d", p.ID)).Subscribable(true)
+		l := logger.New().Prefix(fmt.Sprintf("%d", p.ID)).JsonMode(true).Subscribable(true)
 		s.logGroup.Join(l)
 		defer s.logGroup.Remove(l)
 
@@ -365,7 +366,7 @@ func (s *service) RestartInstance(id int64) error {
 	})
 
 	// Log to websocket
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 	l.Info("Instance restarted successfully")
@@ -488,24 +489,39 @@ func (s *service) updateInstanceFrappeCluster(id int64, result *igrengo.FrappePr
 func (s *service) frappeGRPCEndpoint(id int64) string {
 	inst, err := s.repo.GetInstanceByID(id)
 	if err != nil {
-		return "skaia_frappe_cluster_16_1:3001"
+		// Default fallback to the primary cluster container.
+		return "skaia_frappe_cluster_1:3001"
 	}
 	var configMap map[string]interface{}
 	_ = json.Unmarshal(inst.ConfigPayload, &configMap)
+	// Prefer the host-mapped gRPC port stored at provisioning time.
 	if raw, ok := configMap["frappe_grpc_port"].(float64); ok && raw > 0 {
 		return fmt.Sprintf("host.docker.internal:%d", int(raw))
 	}
-	return "skaia_frappe_cluster_16_1:3001"
+	// Fall back to the well-known cluster container on the shared Docker network.
+	return "skaia_frappe_cluster_1:3001"
+}
+
+func (s *service) frappeSiteName(id int64) string {
+	inst, err := s.repo.GetInstanceByID(id)
+	if err == nil && inst != nil {
+		var configMap map[string]interface{}
+		_ = json.Unmarshal(inst.ConfigPayload, &configMap)
+		if siteName, ok := configMap["site_name"].(string); ok && siteName != "" {
+			return siteName
+		}
+	}
+	return utils.GetFrappeSiteName(id)
 }
 
 func (s *service) InstallApp(id int64, appName string) error {
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 
 	l.Info(fmt.Sprintf("Installing app %s...", appName))
 
-	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
+	siteName := s.frappeSiteName(id)
 
 	conn, err := grpc.NewClient(s.frappeGRPCEndpoint(id), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -546,13 +562,13 @@ func (s *service) InstallApp(id int64, appName string) error {
 }
 
 func (s *service) UninstallApp(id int64, appName string) error {
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
+	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 
 	l.Info(fmt.Sprintf("Uninstalling app %s...", appName))
 
-	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
+	siteName := s.frappeSiteName(id)
 
 	conn, err := grpc.NewClient(s.frappeGRPCEndpoint(id), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -621,13 +637,24 @@ func (s *service) GetInstanceLogs(id int64) ([]logger.Line, error) {
 				continue
 			}
 			for scanner.Scan() {
+				raw := scanner.Text()
 				var line logger.Line
 				// Only parse if it looks like JSON to avoid errors on non-JSON lines
-				if err := json.Unmarshal(scanner.Bytes(), &line); err == nil {
+				if err := json.Unmarshal([]byte(raw), &line); err == nil {
 					if line.Prefix == fmt.Sprintf("%d", id) {
 						logs = append(logs, line)
 					}
+				} else if line, ok := parsePlainGrouplogLine(raw); ok && line.Prefix == fmt.Sprintf("%d", id) {
+					logs = append(logs, line)
 				}
+			}
+			if err := scanner.Err(); err != nil {
+				logs = append(logs, logger.Line{
+					Prefix: fmt.Sprintf("%d", id),
+					Msg:    fmt.Sprintf("Error reading log file %s: %v", f, err),
+					Level:  "ERROR",
+					Time:   "historical",
+				})
 			}
 			file.Close()
 		}
@@ -660,6 +687,33 @@ func (s *service) GetInstanceLogs(id int64) ([]logger.Line, error) {
 	}
 
 	return logs, nil
+}
+
+func parsePlainGrouplogLine(raw string) (logger.Line, bool) {
+	if len(raw) < 25 {
+		return logger.Line{}, false
+	}
+	idx := strings.Index(raw[23:], ": ")
+	if idx == -1 {
+		return logger.Line{}, false
+	}
+	idx += 23
+	ts := raw[:idx]
+	rest := raw[idx+2:]
+	level, rest, ok := strings.Cut(rest, " [")
+	if !ok {
+		return logger.Line{}, false
+	}
+	prefix, msg, ok := strings.Cut(rest, "] ")
+	if !ok {
+		return logger.Line{}, false
+	}
+	return logger.Line{
+		Time:   ts,
+		Level:  strings.TrimSpace(level),
+		Prefix: prefix,
+		Msg:    msg,
+	}, true
 }
 
 func (s *service) TearDownInstance(id int64) error {

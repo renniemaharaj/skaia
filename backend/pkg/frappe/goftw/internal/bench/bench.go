@@ -81,13 +81,19 @@ func (b *Bench) Initialize(frappeBranch string) error {
 		// Also check if it's a valid bench by looking for the 'apps' directory
 		if _, err := os.Stat(filepath.Join(benchPath, "apps")); err == nil {
 			fmt.Printf("[INFO] Bench already exists at '%s', reusing it.\n", benchPath)
-			
-			// Auto-heal: verify and reinstall dependencies for existing apps in case of a corrupted previous build
-			fmt.Printf("[INFO] Running bench setup requirements to heal any corrupted modules...\n")
-			healCmd := fmt.Sprintf("cd %s && bench setup requirements && bench build", benchPath)
-			if err := whoiam.ExecRunPrintIO("sh", "-c", healCmd); err != nil {
-				fmt.Printf("[WARN] Auto-healing failed: %v\n", err)
-				// We don't fail outright since it might just be a minor warning, but we log it.
+
+			// If the mounted bench already has a virtualenv, reuse it instead of
+			// running an automatic requirements repair against upstream metadata.
+			venvPython := filepath.Join(benchPath, "env", "bin", "python")
+			if _, err := os.Stat(venvPython); err == nil {
+				fmt.Printf("[INFO] Existing virtualenv detected at %s; skipping auto-heal.\n", venvPython)
+			} else {
+				fmt.Printf("[INFO] Existing bench has no virtualenv; running bench setup requirements...\n")
+				healCmd := fmt.Sprintf("cd %s && bench setup requirements && bench build", benchPath)
+				if err := whoiam.ExecRunPrintIO("sh", "-c", healCmd); err != nil {
+					fmt.Printf("[WARN] Auto-healing failed: %v\n", err)
+					// Not fatal — log and continue.
+				}
 			}
 
 			if err := b.CopyCommonSitesConfig(); err != nil {

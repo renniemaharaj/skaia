@@ -7,6 +7,7 @@ export interface ConsoleLine {
   id?: string | number;
   text: string;
   prefix?: string;
+  level?: string;
 }
 
 interface ConsoleProps {
@@ -265,33 +266,18 @@ export function Console({
             {lines.map((line, i) => {
               let colorClass = "";
               const combinedText = `${line.prefix || ""} ${line.text}`;
-              if (
-                combinedText.includes("[ERROR]") ||
-                combinedText.includes("✗") ||
-                combinedText.includes("error") ||
-                combinedText.includes("ERROR")
-              )
+              const level = line.level?.toLowerCase();
+              if (level === "error" || level === "fatal" || level === "panic")
                 colorClass = "log-error";
-              else if (
-                combinedText.includes("[WARN]") ||
-                combinedText.includes("warn") ||
-                combinedText.includes("WARN")
-              )
+              else if (level === "warning" || level === "warn") colorClass = "log-warn";
+              else if (level === "success") colorClass = "log-success";
+              else if (level === "info" || level === "print") colorClass = "log-info";
+              else if (/\[(ERROR|FATAL|PANIC)\]|\b(ERROR|FATAL|PANIC)\b/.test(combinedText))
+                colorClass = "log-error";
+              else if (/\[(WARN|WARNING)\]|\b(WARN|WARNING)\b/.test(combinedText))
                 colorClass = "log-warn";
-              else if (
-                combinedText.includes("[SUCCESS]") ||
-                combinedText.includes("success") ||
-                combinedText.includes("SUCCESS") ||
-                combinedText.includes("successfully") ||
-                combinedText.includes("✓")
-              )
-                colorClass = "log-success";
-              else if (
-                combinedText.includes("[INFO]") ||
-                combinedText.includes("info") ||
-                combinedText.includes("INFO")
-              )
-                colorClass = "log-info";
+              else if (/\[SUCCESS\]|\bSUCCESS\b/.test(combinedText)) colorClass = "log-success";
+              else if (/\[INFO\]|\bINFO\b/.test(combinedText)) colorClass = "log-info";
 
               return (
                 <div key={line.id || i} className="conp">

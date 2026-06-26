@@ -1,0 +1,55 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: skaia_frappe_mariadb_v15___CLUSTER_ID__
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: frappe
+      MARIADB_PASSWORD: frappe
+      MARIADB_DATABASE: frappe
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: skaia_frappe_redis_v15___CLUSTER_ID__
+
+  frappe:
+    build:
+      context: __FRAPPE_CONTEXT__
+      dockerfile: Dockerfile
+      args:
+        GO_IMAGE: golang:1.25-alpine
+        PYTHON_IMAGE: python:3.11-bookworm
+        NODE_IMAGE: node:18-bookworm
+        FRAPPE_BRANCH: version-15
+        BENCH_VERSION: 5.22.6
+        GUNICORN_VERSION: 23.0.0
+        SUPERVISOR_VERSION: 4.2.5
+        PNPM_VERSION: 10.24.0
+    container_name: skaia_frappe_cluster_v15___CLUSTER_ID__
+    ports:
+      - "__HTTP_PORT__:80"
+      - "__GRPC_PORT__:3001"
+    environment:
+      INSTANCE_JSON_SOURCE: /instance.cluster.json
+      MARIADB_HOST: mariadb
+      MARIADB_PORT: 3306
+      MARIADB_ROOT_USERNAME: root
+      MARIADB_ROOT_PASSWORD: root
+      REDIS_CACHE: redis://redis:6379
+      REDIS_QUEUE: redis://redis:6379
+      REDIS_SOCKETIO: redis://redis:6379
+      WAIT_FOR_DB: 1
+      WAIT_FOR_REDIS: 1
+    depends_on:
+      - mariadb
+      - redis
+    volumes:
+      - __INSTANCE_PATH__:/instance.cluster.json:ro
+    networks:
+      - default
+      - skaia-network
+
+networks:
+  skaia-network:
+    external: true

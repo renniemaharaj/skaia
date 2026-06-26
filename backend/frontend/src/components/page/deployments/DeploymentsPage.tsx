@@ -508,7 +508,8 @@ export function DeploymentsPage() {
 
     const consoleLines: ConsoleLine[] = instanceLogs.map((log, i) => ({
       id: i,
-      prefix: log.time !== "historical" ? `[${log.time}] [${log.level || "info"}]` : "",
+      prefix: `[${log.time || "historical"}] [${(log.level || "info").toUpperCase()}] [worker]`,
+      level: log.level || "info",
       text:
         log.msg +
         (log.file && log.func && log.time !== "historical"

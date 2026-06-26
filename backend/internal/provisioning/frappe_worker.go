@@ -3,6 +3,7 @@ package provisioning
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/renniemaharaj/grouplogs/pkg/logger"
 	igrengo "github.com/skaia/backend/internal/grengo"
@@ -15,10 +16,13 @@ func FrappeProvisionWorker(instanceID int64, configPayload []byte, l *logger.Log
 		return nil, fmt.Errorf("grengo service is nil")
 	}
 
-	siteName := fmt.Sprintf("site%d.%s", instanceID, utils.GetFrappeDomain())
+	siteName := utils.GetFrappeSiteName(instanceID)
 	version := "16"
 	var config map[string]interface{}
 	_ = json.Unmarshal(configPayload, &config)
+	if rawSiteName, ok := config["site_name"].(string); ok && rawSiteName != "" {
+		siteName = rawSiteName
+	}
 	if rawVersion, ok := config["frappe_version"].(string); ok && rawVersion != "" {
 		version = rawVersion
 	}
@@ -26,7 +30,7 @@ func FrappeProvisionWorker(instanceID int64, configPayload []byte, l *logger.Log
 
 	result, err := grengo.ProvisionFrappeVersion(siteName, version, func(line string) {
 		if line != "" {
-			l.Info(line)
+			logProvisionLine(l, line)
 		}
 	})
 	if err != nil {
@@ -39,4 +43,30 @@ func FrappeProvisionWorker(instanceID int64, configPayload []byte, l *logger.Log
 
 	l.Success("Frappe Framework multi-tenant site successfully provisioned via Grengo and is now RUNNING.")
 	return result, nil
+}
+
+func logProvisionLine(l *logger.Logger, line string) {
+	for _, raw := range strings.Split(line, "\n") {
+		msg := strings.TrimSpace(raw)
+		if msg == "" {
+			continue
+		}
+		lower := strings.ToLower(msg)
+		switch {
+		case strings.HasPrefix(lower, "error:") ||
+			strings.HasPrefix(lower, "fatal:") ||
+			strings.HasPrefix(lower, "panic:") ||
+			strings.Contains(lower, " exit code ") ||
+			strings.Contains(lower, " failed"):
+			l.Error(msg)
+		case strings.HasPrefix(lower, "warning:") || strings.HasPrefix(lower, "warn:"):
+			l.Warning(msg)
+		case strings.Contains(lower, "successfully") ||
+			strings.Contains(lower, "success") ||
+			strings.Contains(lower, " is now running"):
+			l.Success(msg)
+		default:
+			l.Info(msg)
+		}
+	}
 }

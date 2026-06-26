@@ -4,5 +4,5 @@
     "instance_sites": [],
     "drop_abandoned_sites": true,
     "run_sites_manager": true,
-    "frappe_branch": "develop"
+    "frappe_branch": "version-16"
 }
