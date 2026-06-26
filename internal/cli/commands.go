@@ -38,6 +38,6 @@ type Commands struct {
 	PasscodeVerify  func([]string)
 	PasscodeClear   func()
 	PasscodeStatus  func()
-	FrappeProvision func(siteName string)
+	FrappeProvision func(siteName, version string)
 	FrappeRebuild   func()
 }

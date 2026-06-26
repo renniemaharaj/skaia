@@ -81,6 +81,7 @@ export function DeploymentsPage() {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("deployments", "list");
   const [showNewModal, setShowNewModal] = useState(false);
+  const [selectedFrappeVersion, setSelectedFrappeVersion] = useState<"15" | "16" | "17-dev">("16");
   const [logCap, setLogCap] = useState(500);
   const logCapRef = useRef(logCap);
   const [openAppsMenu, setOpenAppsMenu] = useState<{
@@ -196,7 +197,9 @@ export function DeploymentsPage() {
         method: "POST",
         body: JSON.stringify({
           blueprint_id: blueprintId,
-          version_tag: "latest",
+          version_tag: blueprintName.toLowerCase().includes("frappe")
+            ? selectedFrappeVersion
+            : "latest",
           config_payload: "e30=", // base64 {}
         }),
       });
@@ -605,6 +608,18 @@ export function DeploymentsPage() {
             <p className="modal-subtitle">
               Select an available blueprint to provision a new instance.
             </p>
+            <div className="deployments-version-field">
+              <label htmlFor="frappe-version">Frappe version</label>
+              <select
+                id="frappe-version"
+                value={selectedFrappeVersion}
+                onChange={e => setSelectedFrappeVersion(e.target.value as "15" | "16" | "17-dev")}
+              >
+                <option value="16">Stable 16</option>
+                <option value="15">Stable 15</option>
+                <option value="17-dev">Dev 17</option>
+              </select>
+            </div>
             {blueprints.length === 0 ? (
               <p className="orders-empty-state">No active blueprints currently available.</p>
             ) : (

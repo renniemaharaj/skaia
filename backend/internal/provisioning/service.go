@@ -61,6 +61,19 @@ type ProvisionRequest struct {
 	ConfigPayload []byte `json:"config_payload"`
 }
 
+func normalizeFrappeVersion(version string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(version)) {
+	case "", "16", "version-16":
+		return "16", nil
+	case "15", "version-15":
+		return "15", nil
+	case "17", "17-dev", "dev", "develop":
+		return "17-dev", nil
+	default:
+		return "", fmt.Errorf("unsupported Frappe version %q; use 15, 16, or 17-dev", version)
+	}
+}
+
 func NewService(repo Repository, manager *conveyor.Manager, hub *ws.Hub, grengo *igrengo.Service) Service {
 	g := logger.NewGroup()
 	sub := g.Delegate.Subscribe()
@@ -154,6 +167,13 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 
 	configMap["url"] = fmt.Sprintf("%s/instances/%d", baseDomain, created.ID)
 	configMap["port"] = port
+	if bp.Name != "Superset" && bp.Name != "superset" && bp.Name != "Apache Superset" {
+		frappeVersion, err := normalizeFrappeVersion(req.VersionTag)
+		if err != nil {
+			return nil, err
+		}
+		configMap["frappe_version"] = frappeVersion
+	}
 
 	newPayload, _ := json.Marshal(configMap)
 	created.ConfigPayload = newPayload
@@ -197,7 +217,11 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 		if p.BlueprintName == "Superset" || p.BlueprintName == "superset" || p.BlueprintName == "Apache Superset" {
 			err = SupersetProvisionWorker(p.ID, p.ConfigPayload, l)
 		} else {
-			err = FrappeProvisionWorker(p.ID, p.ConfigPayload, l, s.grengo)
+			var result *igrengo.FrappeProvisionResult
+			result, err = FrappeProvisionWorker(p.ID, p.ConfigPayload, l, s.grengo)
+			if err == nil && result != nil {
+				_ = s.updateInstanceFrappeCluster(p.ID, result)
+			}
 		}
 
 		if err == nil {
@@ -438,6 +462,42 @@ func (s *service) updateInstanceAppList(id int64, appName string, installed bool
 	return s.repo.UpdateInstanceConfig(id, payload)
 }
 
+func (s *service) updateInstanceFrappeCluster(id int64, result *igrengo.FrappeProvisionResult) error {
+	inst, err := s.repo.GetInstanceByID(id)
+	if err != nil {
+		return err
+	}
+	var configMap map[string]interface{}
+	if len(inst.ConfigPayload) > 0 {
+		_ = json.Unmarshal(inst.ConfigPayload, &configMap)
+	}
+	if configMap == nil {
+		configMap = make(map[string]interface{})
+	}
+	configMap["frappe_version"] = result.Version
+	configMap["frappe_cluster_id"] = result.Cluster
+	configMap["frappe_http_port"] = result.HTTPPort
+	configMap["frappe_grpc_port"] = result.GRPCPort
+	payload, err := json.Marshal(configMap)
+	if err != nil {
+		return err
+	}
+	return s.repo.UpdateInstanceConfig(id, payload)
+}
+
+func (s *service) frappeGRPCEndpoint(id int64) string {
+	inst, err := s.repo.GetInstanceByID(id)
+	if err != nil {
+		return "skaia_frappe_cluster_16_1:3001"
+	}
+	var configMap map[string]interface{}
+	_ = json.Unmarshal(inst.ConfigPayload, &configMap)
+	if raw, ok := configMap["frappe_grpc_port"].(float64); ok && raw > 0 {
+		return fmt.Sprintf("host.docker.internal:%d", int(raw))
+	}
+	return "skaia_frappe_cluster_16_1:3001"
+}
+
 func (s *service) InstallApp(id int64, appName string) error {
 	l := logger.New().Prefix(fmt.Sprintf("%d", id)).Subscribable(true)
 	s.logGroup.Join(l)
@@ -447,7 +507,7 @@ func (s *service) InstallApp(id int64, appName string) error {
 
 	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
 
-	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(s.frappeGRPCEndpoint(id), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
 		return err
@@ -494,7 +554,7 @@ func (s *service) UninstallApp(id int64, appName string) error {
 
 	siteName := fmt.Sprintf("site%d.%s", id, utils.GetFrappeDomain())
 
-	conn, err := grpc.NewClient("skaia_frappe_cluster_1:3001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(s.frappeGRPCEndpoint(id), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		l.Error(fmt.Sprintf("gRPC dial failed: %v", err))
 		return err

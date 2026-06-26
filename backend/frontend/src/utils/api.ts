@@ -5,6 +5,7 @@ import { apiBaseUrlAtom } from "../atoms/config";
 import { createRequestBatcher } from "./requestBatcher";
 
 const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
+const API_READ_COALESCE_WINDOW_MS = 8;
 
 export interface RateLimitDefconInfo {
   ips_jailed?: number;
@@ -155,10 +156,65 @@ function mergeHeaders(base: HeadersInit, extra?: HeadersInit): Headers {
   return headers;
 }
 
+interface PendingAPIRead<T> {
+  promise: Promise<T>;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+const pendingAPIReads = new Map<string, PendingAPIRead<unknown>>();
+
+function normalizedMethod(options: RequestInit): string {
+  return (options.method || "GET").toUpperCase();
+}
+
+function shouldCoalesceRead(options: RequestInit): boolean {
+  const method = normalizedMethod(options);
+  return (method === "GET" || method === "HEAD") && !options.body && !options.signal;
+}
+
+function headersKey(headers?: HeadersInit): string {
+  if (!headers) return "";
+  const normalized = new Headers(headers);
+  const values: string[] = [];
+  normalized.forEach((value, key) => {
+    values.push(`${key}:${value}`);
+  });
+  return values.sort().join("|");
+}
+
+function requestCoalesceKey(endpoint: string, options: RequestInit): string {
+  return [normalizedMethod(options), endpoint, headersKey(options.headers)].join(" ");
+}
+
 /**
  * Make authenticated API request
  */
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if (shouldCoalesceRead(options)) {
+    const key = requestCoalesceKey(endpoint, options);
+    const existing = pendingAPIReads.get(key);
+    if (existing) {
+      return existing.promise as Promise<T>;
+    }
+
+    let resolve!: (value: T) => void;
+    let reject!: (reason: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    const timer = setTimeout(() => {
+      pendingAPIReads.delete(key);
+      void performApiRequest<T>(endpoint, options).then(resolve, reject);
+    }, API_READ_COALESCE_WINDOW_MS);
+    pendingAPIReads.set(key, { promise, timer });
+    return promise;
+  }
+
+  return performApiRequest<T>(endpoint, options);
+}
+
+async function performApiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const isFormData = options.body instanceof FormData;

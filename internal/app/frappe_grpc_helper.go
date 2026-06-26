@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func grpcFrappeProvision(siteName string) {
-	fmt.Println("Waiting for Frappe GoFTW gRPC API to be ready on port 3001...")
-	grpcURL := "127.0.0.1:3001"
-	
+func grpcFrappeProvision(siteName, branch string, grpcPort int) {
+	fmt.Printf("Waiting for Frappe GoFTW gRPC API to be ready on port %d...\n", grpcPort)
+	grpcURL := fmt.Sprintf("127.0.0.1:%d", grpcPort)
+
 	var conn *grpc.ClientConn
 	var client pb.GoFTWServiceClient
 	var err error
@@ -37,13 +37,13 @@ func grpcFrappeProvision(siteName string) {
 		die("Timed out connecting to Frappe GoFTW gRPC API: %v", err)
 	}
 	defer conn.Close()
-	
+
 	fmt.Println("Orchestrating Frappe global cluster setup via gRPC API (streams logs)...")
 
 	ctx := context.Background()
 
 	// 1. Setup Init
-	initStream, err := client.SetupInit(ctx, &pb.SetupInitRequest{Branch: "develop"})
+	initStream, err := client.SetupInit(ctx, &pb.SetupInitRequest{Branch: branch})
 	if err != nil {
 		die("SetupInit failed: %v", err)
 	}

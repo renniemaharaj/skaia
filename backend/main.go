@@ -360,6 +360,46 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	r := chi.NewRouter()
 
+	// proxyFor returns a cached reverse proxy for the given target URL string.
+	// The proxy has an ErrorHandler so upstream connection failures produce a
+	// clean 502 instead of Go's default empty response (which Nginx surfaces as 503).
+	proxyCache := make(map[string]*httputil.ReverseProxy)
+	proxyFor := func(targetURL *url.URL) *httputil.ReverseProxy {
+		key := targetURL.String()
+		if p, ok := proxyCache[key]; ok {
+			return p
+		}
+		p := httputil.NewSingleHostReverseProxy(targetURL)
+		p.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+			log.Printf("[proxy] upstream %s unreachable: %v", key, err)
+			http.Error(w, `{"error":"upstream unavailable"}`, http.StatusBadGateway)
+		}
+		proxyCache[key] = p
+		return p
+	}
+
+	// frappeHTTPPort resolves the allocated Frappe HTTP port for an instance.
+	// Returns (port, true) only when the port has been recorded in config_payload
+	// by the provisioning worker. Returns (0, false) when provisioning is still
+	// in progress or the instance does not exist.
+	frappeHTTPPort := func(id int64) (int, bool) {
+		var payload []byte
+		if err := database.DB.QueryRow(
+			"SELECT config_payload FROM provisioned_instances WHERE id = $1", id,
+		).Scan(&payload); err != nil {
+			return 0, false
+		}
+		var cfg map[string]interface{}
+		if json.Unmarshal(payload, &cfg) != nil {
+			return 0, false
+		}
+		rawPort, ok := cfg["frappe_http_port"].(float64)
+		if !ok || rawPort <= 0 {
+			return 0, false
+		}
+		return int(rawPort), true
+	}
+
 	// Intercept Frappe sites (e.g. site1.domain.com) and proxy directly to Frappe cluster
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -371,9 +411,19 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			if strings.HasSuffix(host, "."+domain) {
 				subdomain := strings.TrimSuffix(host, "."+domain)
 				if strings.HasPrefix(subdomain, "site") {
-					targetURL, _ := url.Parse("http://host.docker.internal:8000")
-					proxy := httputil.NewSingleHostReverseProxy(targetURL)
-					proxy.ServeHTTP(w, req)
+					id, err := strconv.ParseInt(strings.TrimPrefix(subdomain, "site"), 10, 64)
+					if err != nil {
+						http.NotFound(w, req)
+						return
+					}
+					httpPort, ok := frappeHTTPPort(id)
+					if !ok {
+						// Port not yet recorded — instance is likely still provisioning.
+						http.Error(w, `{"error":"instance not ready","armed":true}`, http.StatusServiceUnavailable)
+						return
+					}
+					targetURL, _ := url.Parse(fmt.Sprintf("http://host.docker.internal:%d", httpPort))
+					proxyFor(targetURL).ServeHTTP(w, req)
 					return
 				}
 			}
@@ -838,8 +888,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		targetURL, _ := url.Parse(fmt.Sprintf("http://host.docker.internal:%d", int(targetPort)))
 		log.Printf("[DEBUG] Proxying to non-Frappe instance: targetPort=%v, targetURL=%v", targetPort, targetURL)
 
-		proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
 		// Remove the /instances/{id} prefix
 		prefix := fmt.Sprintf("/instances/%d", id)
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, prefix)
@@ -847,7 +895,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			req.URL.Path = "/"
 		}
 
-		proxy.ServeHTTP(w, req)
+		proxyFor(targetURL).ServeHTTP(w, req)
 	}))
 
 	// SPA fallback

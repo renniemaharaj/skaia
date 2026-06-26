@@ -1,3 +1,5 @@
+ARG PYTHON_IMAGE=python:3.14.2-trixie
+
 # Stage 1: Go builder
 FROM golang:1.25-alpine AS go-builder
 
@@ -6,12 +8,13 @@ COPY goftw /app/goftw
 WORKDIR /app/goftw/cmd
 RUN go build -mod=vendor -o /goftw-entry
 
-
 # Stage 2: Runtime
-FROM python:3.14.2-trixie
+FROM ${PYTHON_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV FRAPPE_BRANCH=develop
+ARG FRAPPE_BRANCH=develop
+ARG NODE_MAJOR=24
+ENV FRAPPE_BRANCH=${FRAPPE_BRANCH}
 
 # System deps (stable, cache-friendly)
 # COST OPTIMIZATION: Minimal deps for demo micro instance
@@ -26,8 +29,8 @@ RUN apt-get update && apt-get install -y \
 # MariaDB utf8mb4
 RUN echo "[mysqld]\ncharacter-set-client-handshake = FALSE\ncharacter-set-server = utf8mb4\ncollation-server = utf8mb4_unicode_ci\n\n[mysql]\ndefault-character-set = utf8mb4\n" > /etc/mysql/my.cnf
 
-# Node 24 + yarn + pnpm
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+# Node + yarn + pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g corepack \
     && corepack enable \

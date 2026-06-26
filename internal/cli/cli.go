@@ -115,8 +115,6 @@ func runBuild(_ []string, c Commands) {
 	c.Build()
 }
 
-
-
 func runShip(rest []string, c Commands) {
 	sub := requireArg(rest, "ship frontend", c)
 	if sub == "frontend" {
@@ -307,7 +305,14 @@ func outputFlag(args []string) string {
 
 func runFrappeProvision(rest []string, c Commands) {
 	siteName := requireArg(rest, "frappe-provision <site_name>", c)
-	c.FrappeProvision(siteName)
+	version := "16"
+	for i := 1; i < len(rest); i++ {
+		if (rest[i] == "--version" || rest[i] == "--frappe-version") && i+1 < len(rest) {
+			version = rest[i+1]
+			i++
+		}
+	}
+	c.FrappeProvision(siteName, version)
 }
 
 func runFrappeRebuild(_ []string, c Commands) {

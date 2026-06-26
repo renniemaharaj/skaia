@@ -66,6 +66,11 @@ func cmdAPIStart(port int) {
 
 	hardware.InitAndWatch()
 	go broadcastStatsAndStorageLoop()
+	if err := newGrengoService().EnsureReady(); err != nil {
+		warn("Grengo management DB unavailable: %v", err)
+	} else {
+		migrateFallbackPasscodeIfPossible()
+	}
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(passcodeInterceptor),

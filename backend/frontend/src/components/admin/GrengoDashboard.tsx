@@ -265,10 +265,6 @@ export default function GrengoDashboard() {
     }
   }, [grengoRequest]);
 
-  useEffect(() => {
-    if (sessionValid) fetchSites();
-  }, [sessionValid, fetchSites]);
-
   // Fetch exports
 
   const fetchExports = useCallback(async () => {
@@ -283,10 +279,6 @@ export default function GrengoDashboard() {
       setFetchingExports(false);
     }
   }, [grengoRequest]);
-
-  useEffect(() => {
-    if (sessionValid) fetchExports();
-  }, [sessionValid, fetchExports]);
 
   // Fetch jobs
 
@@ -309,7 +301,6 @@ export default function GrengoDashboard() {
 
   useEffect(() => {
     if (sessionValid) {
-      fetchJobs();
       const handleJobUpdate = (e: Event) => {
         const job = (e as CustomEvent).detail;
         setActiveJobs(prev => {
@@ -332,7 +323,7 @@ export default function GrengoDashboard() {
       window.addEventListener("grengo:job_update", handleJobUpdate);
       return () => window.removeEventListener("grengo:job_update", handleJobUpdate);
     }
-  }, [sessionValid, fetchJobs]);
+  }, [sessionValid, fetchExports]);
 
   // Fetch stats
 
@@ -350,7 +341,6 @@ export default function GrengoDashboard() {
 
   useEffect(() => {
     if (sessionValid) {
-      fetchStats();
       const handleStatsUpdate = (e: Event) => {
         const detail = (e as CustomEvent).detail;
         setStats(Array.isArray(detail) ? detail : []);
@@ -368,7 +358,7 @@ export default function GrengoDashboard() {
         window.removeEventListener("grengo:hardware_update", handleHardwareUpdate);
       };
     }
-  }, [sessionValid, fetchStats]);
+  }, [sessionValid]);
 
   // Fetch storage
 
@@ -383,7 +373,6 @@ export default function GrengoDashboard() {
 
   useEffect(() => {
     if (sessionValid) {
-      fetchStorage();
       const handleStorageUpdate = (e: Event) => {
         const detail = (e as CustomEvent).detail;
         setStorage(detail ?? null);
@@ -391,7 +380,7 @@ export default function GrengoDashboard() {
       window.addEventListener("grengo:storage_update", handleStorageUpdate);
       return () => window.removeEventListener("grengo:storage_update", handleStorageUpdate);
     }
-  }, [sessionValid, fetchStorage]);
+  }, [sessionValid]);
 
   // Fetch sysinfo
 
@@ -405,8 +394,16 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   useEffect(() => {
-    if (sessionValid) fetchSysInfo();
-  }, [sessionValid, fetchSysInfo]);
+    if (!sessionValid) return;
+    void Promise.allSettled([
+      fetchSites(),
+      fetchExports(),
+      fetchJobs(),
+      fetchStats(),
+      fetchStorage(),
+      fetchSysInfo(),
+    ]);
+  }, [sessionValid, fetchSites, fetchExports, fetchJobs, fetchStats, fetchStorage, fetchSysInfo]);
 
   // Compose actions
 

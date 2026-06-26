@@ -83,6 +83,14 @@ func cmdMigrate(name string, rebuild bool) {
 	if !clientExists(name) {
 		die("Client '%s' not found", name)
 	}
+	cmdMigrateGrengo()
+	cmdMigrateClient(name, rebuild)
+}
+
+func cmdMigrateClient(name string, rebuild bool) {
+	if !clientExists(name) {
+		die("Client '%s' not found", name)
+	}
 
 	// Sync env defaults - add any missing keys from the registry.
 	if n := syncEnvDefaults(name); n > 0 {
@@ -114,6 +122,14 @@ func cmdMigrate(name string, rebuild bool) {
 	log("Applying migrations to '%s'…", dbName)
 	runMigrations(dbName, env)
 	log("Migrate complete for '%s'", name)
+}
+
+func cmdMigrateGrengo() {
+	log("Applying grengo management migrations…")
+	if err := newGrengoService().EnsureReady(); err != nil {
+		die("Grengo management migration failed: %v", err)
+	}
+	log("Grengo management migrations complete")
 }
 
 // cmdMigrateRebuild performs a full data-only dump => drop => recreate => migrate =>
@@ -164,6 +180,8 @@ func cmdMigrateRebuild(name, dbName string, env SharedEnv) {
 
 // cmdMigrateAll runs migrate for every client on this node.
 func cmdMigrateAll(rebuild bool) {
+	cmdMigrateGrengo()
+
 	entries, err := os.ReadDir(backendsDir())
 	if err != nil || len(entries) == 0 {
 		die("No clients found")
@@ -177,7 +195,7 @@ func cmdMigrateAll(rebuild bool) {
 		}
 		fmt.Println()
 		log("── Migrating %s ──", e.Name())
-		cmdMigrate(e.Name(), rebuild)
+		cmdMigrateClient(e.Name(), rebuild)
 	}
 }
 

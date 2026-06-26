@@ -42,6 +42,14 @@ func ExtractTokenMiddleware(next http.Handler) http.Handler {
 				r = r.WithContext(ctx)
 			}
 		}
+		if _, ok := r.Context().Value(ictx.CtxKeyClaims).(*ijwt.Claims); !ok {
+			if claims, ok := claimsFromAPIKey(r.Context(), apiKeyFromRequestHeaders(r.Header, authHeader)); ok {
+				ctx := context.WithValue(r.Context(), ictx.CtxKeyClaims, claims)
+				ctx = context.WithValue(ctx, ictx.CtxKeyUserID, claims.UserID)
+				ctx = context.WithValue(ctx, ictx.CtxKeyUserRoles, claims.Roles)
+				r = r.WithContext(ctx)
+			}
+		}
 
 		next.ServeHTTP(w, r)
 	})

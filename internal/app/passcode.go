@@ -16,7 +16,7 @@ func pcodePath() string {
 	return repo.New(ProjectRoot()).PCodeFile()
 }
 
-// cmdPasscodeSet hashes a two-part passcode and writes it to .pcode.
+// cmdPasscodeSet hashes a two-part passcode and stores it in the grengo DB.
 //
 // Usage:
 //
@@ -54,11 +54,16 @@ func cmdPasscodeSet(args []string) {
 	// Store as: hex(salt):hex(hash)
 	content := hex.EncodeToString(salt) + ":" + hex.EncodeToString(hash)
 
-	if err := os.WriteFile(pcodePath(), []byte(content), 0600); err != nil {
-		die("Failed to write .pcode: %v", err)
+	if err := newGrengoService().StorePasscode(content); err != nil {
+		warn("Failed to store passcode in grengo DB: %v", err)
+		if err := os.WriteFile(pcodePath(), []byte(content), 0600); err != nil {
+			die("Failed to write fallback .pcode: %v", err)
+		}
+		log("Passcode set => grengo DB unavailable, fallback %s", pcodePath())
+	} else {
+		_ = os.Remove(pcodePath())
+		log("Passcode set => grengo database")
 	}
-
-	log("Passcode set => %s", pcodePath())
 	info("The grengo API is now accessible with this passcode pair.")
 }
 
@@ -83,23 +88,74 @@ func cmdPasscodeVerify(args []string) {
 	log("Passcode verified ✓")
 }
 
-// cmdPasscodeClear removes the .pcode file, disabling grengo API access.
+// cmdPasscodeClear removes the stored passcode, disabling grengo API access.
 func cmdPasscodeClear() {
 	path := pcodePath()
+	dbErr := newGrengoService().ClearPasscode()
+	fileExists := true
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		info("No passcode configured")
+		fileExists = false
+	}
+	if dbErr != nil && !fileExists {
+		die("Failed to clear grengo DB passcode: %v", dbErr)
 		return
 	}
-	if err := os.Remove(path); err != nil {
-		die("Failed to remove .pcode: %v", err)
+	if fileExists {
+		if err := os.Remove(path); err != nil {
+			die("Failed to remove fallback .pcode: %v", err)
+		}
+	}
+	if dbErr != nil {
+		warn("Fallback passcode cleared, but grengo DB passcode could not be cleared: %v", dbErr)
+		warn("API access may still be enabled when the grengo DB is available")
+		return
 	}
 	log("Passcode cleared — grengo API access is now disabled")
+}
+
+func storedPasscodePayload() (string, error) {
+	if value, err := newGrengoService().LoadPasscode(); err == nil && strings.TrimSpace(value) != "" {
+		return strings.TrimSpace(value), nil
+	}
+	raw, err := os.ReadFile(pcodePath())
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(raw)), nil
+}
+
+func removeFallbackPasscode() {
+	if _, err := os.Stat(pcodePath()); err == nil {
+		if err := os.Remove(pcodePath()); err != nil {
+			warn("Failed to remove fallback .pcode: %v", err)
+		}
+	}
+}
+
+func migrateFallbackPasscodeIfPossible() {
+	raw, err := os.ReadFile(pcodePath())
+	if err != nil {
+		return
+	}
+	content := strings.TrimSpace(string(raw))
+	if content == "" {
+		return
+	}
+	if err := newGrengoService().StorePasscode(content); err != nil {
+		return
+	}
+	removeFallbackPasscode()
+}
+
+func passcodePayloadConfigured() bool {
+	payload, err := storedPasscodePayload()
+	return err == nil && strings.TrimSpace(payload) != ""
 }
 
 // cmdPasscodeStatus prints whether a passcode is currently configured.
 func cmdPasscodeStatus() {
 	if passcodeConfigured() {
-		log("Passcode is configured (%s)", pcodePath())
+		log("Passcode is configured")
 	} else {
 		info("No passcode configured — grengo API is disabled")
 		info("Set one with: grengo passcode set")
@@ -116,14 +172,14 @@ func hashPasscode(salt []byte, p1, p2 string) []byte {
 	return h.Sum(nil)
 }
 
-// verifyPasscode reads .pcode and compares the stored hash against the input pair.
+// verifyPasscode reads the grengo DB passcode and compares it against the input pair.
 func verifyPasscode(p1, p2 string) bool {
-	raw, err := os.ReadFile(pcodePath())
+	raw, err := storedPasscodePayload()
 	if err != nil {
 		return false
 	}
 
-	parts := strings.SplitN(string(raw), ":", 2)
+	parts := strings.SplitN(raw, ":", 2)
 	if len(parts) != 2 {
 		return false
 	}
@@ -150,8 +206,7 @@ func verifyPasscode(p1, p2 string) bool {
 	return diff == 0
 }
 
-// passcodeConfigured returns true when .pcode exists and is non-empty.
+// passcodeConfigured returns true when a DB or fallback file passcode exists.
 func passcodeConfigured() bool {
-	fi, err := os.Stat(pcodePath())
-	return err == nil && fi.Size() > 0
+	return passcodePayloadConfigured()
 }

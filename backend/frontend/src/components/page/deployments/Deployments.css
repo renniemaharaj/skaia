@@ -93,6 +93,28 @@
   gap: 1rem;
 }
 
+.deployments-version-field {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  max-width: 220px;
+}
+
+.deployments-version-field label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.deployments-version-field select {
+  height: 36px;
+  padding: 0 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .blueprint-card {
   display: flex;
   flex-direction: column;

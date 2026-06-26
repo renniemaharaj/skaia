@@ -56,6 +56,7 @@ func apiExec(w http.ResponseWriter, r *http.Request) {
 func apiFrappeProvision(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		SiteName string `json:"site_name"`
+		Version  string `json:"version"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -77,7 +78,11 @@ func apiFrappeProvision(w http.ResponseWriter, r *http.Request) {
 		fw.f = f
 	}
 
-	result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(fw, "frappe-provision", req.SiteName)
+	args := []string{"frappe-provision", req.SiteName}
+	if req.Version != "" {
+		args = append(args, "--version", req.Version)
+	}
+	result, err := services.NewCommandRunner(ProjectRoot()).RunSelfStream(fw, args...)
 	if err != nil {
 		fmt.Fprintf(fw, "ERROR: %v\n", err)
 	} else if result.ExitCode != 0 {

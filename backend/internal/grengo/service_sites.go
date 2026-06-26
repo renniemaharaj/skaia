@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	pb "github.com/skaia/grpc/grengo"
 )
@@ -123,7 +124,7 @@ func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
 		if err != nil {
 			return fmt.Errorf("reading stream: %w", err)
 		}
-		
+
 		line := resp.Output
 		if len(line) > 16 && line[:16] == "ERROR: exit code" {
 			return fmt.Errorf("grengo frappe-provision failed: %s", line)
@@ -135,6 +136,48 @@ func (s *Service) ProvisionFrappe(siteName string, onLog func(string)) error {
 		}
 	}
 	return nil
+}
+
+type FrappeProvisionResult struct {
+	Version  string
+	Cluster  string
+	HTTPPort int
+	GRPCPort int
+}
+
+func (s *Service) ProvisionFrappeVersion(siteName, version string, onLog func(string)) (*FrappeProvisionResult, error) {
+	if version == "" {
+		version = "16"
+	}
+	result, err := s.exec("frappe-provision", siteName, "--version", version)
+	if err != nil {
+		return nil, err
+	}
+	if onLog != nil && result.Output != "" {
+		onLog(result.Output)
+	}
+	if !result.OK {
+		return nil, fmt.Errorf("grengo frappe-provision failed (exit %d): %s", result.ExitCode, result.Output)
+	}
+
+	out := &FrappeProvisionResult{Version: version}
+	for _, line := range strings.Split(result.Output, "\n") {
+		key, value, ok := strings.Cut(strings.TrimSpace(line), "=")
+		if !ok {
+			continue
+		}
+		switch key {
+		case "FRAPPE_CLUSTER_VERSION":
+			out.Version = value
+		case "FRAPPE_CLUSTER_ID":
+			out.Cluster = value
+		case "FRAPPE_HTTP_PORT":
+			fmt.Sscanf(value, "%d", &out.HTTPPort)
+		case "FRAPPE_GRPC_PORT":
+			fmt.Sscanf(value, "%d", &out.GRPCPort)
+		}
+	}
+	return out, nil
 }
 
 // DeleteSite removes a client via the grengo API.
