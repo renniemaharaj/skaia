@@ -41,7 +41,6 @@ type Service interface {
 	GetInstanceLogs(id int64) ([]logger.Line, error)
 	TearDownInstance(id int64) error
 	GetStats(ctx context.Context) (interface{}, error)
-	GetAvailableApps() ([]map[string]interface{}, error)
 	InstallApp(id int64, app string) error
 	UninstallApp(id int64, app string) error
 }
@@ -389,21 +388,6 @@ func (s *service) isFrappe(id int64) (bool, error) {
 	return true, nil
 }
 
-func (s *service) GetAvailableApps() ([]map[string]interface{}, error) {
-	catalog, err := s.grengo.GetFrappeApps()
-	if err != nil {
-		return nil, err
-	}
-	var apps []map[string]interface{}
-	for _, app := range catalog {
-		apps = append(apps, map[string]interface{}{
-			"name":        app.Name,
-			"description": app.Description,
-			"version":     app.Version,
-		})
-	}
-	return apps, nil
-}
 
 func (s *service) updateInstanceAppList(id int64, appName string, installed bool) error {
 	inst, err := s.repo.GetInstanceByID(id)

@@ -9,6 +9,7 @@ import (
 
 	"goftw/internal/entity"
 	"goftw/internal/fns"
+	internalExec "goftw/internal/fns"
 	"goftw/internal/utils"
 )
 
@@ -252,7 +253,11 @@ func (b *Bench) uninstallExtraApps(siteName string, current, expected []string) 
 // UninstallApp removes an app from a site
 func (b *Bench) UninstallApp(site, app string) error {
 	fmt.Printf("[APPS] Uninstalling app: %s from site: %s\n", app, site)
-	return b.ExecRunInBenchPrintIO("bench", "--site", site, "uninstall-app", app, "--yes")
+	err := b.ExecRunInBenchPrintIO("bench", "--site", site, "uninstall-app", app, "--yes")
+	if err == nil {
+		b.RestartFrappeServices()
+	}
+	return err
 }
 
 // InstallApp installs an app on a site
@@ -263,7 +268,11 @@ func (b *Bench) InstallApp(site, app string) error {
 		return err
 	}
 
-	return b.ExecRunInBenchPrintIO("bench", "--site", site, "install-app", app)
+	err := b.ExecRunInBenchPrintIO("bench", "--site", site, "install-app", app)
+	if err == nil {
+		b.RestartFrappeServices()
+	}
+	return err
 }
 
 // InstallAppStream installs an app on a site, streaming output to an io.Writer
@@ -281,5 +290,23 @@ func (b *Bench) InstallAppStream(w io.Writer, site, app string) error {
 		return fmt.Errorf("failed to install app %s on site %s: %w", app, site, err)
 	}
 
+	b.RestartFrappeServicesStream(w)
+
+	return nil
+}
+
+// RestartFrappeServices kills gunicorn and frappe workers, relying on supervisor or honcho to autorestart them
+func (b *Bench) RestartFrappeServices() error {
+	fmt.Println("[BENCH] Restarting Frappe services (killing workers for autorestart)...")
+	internalExec.ExecRunPrintIO("sudo", "pkill", "-TERM", "gunicorn")
+	internalExec.ExecRunPrintIO("pkill", "-TERM", "gunicorn")
+	internalExec.ExecRunPrintIO("sudo", "pkill", "-TERM", "-f", "frappe worker")
+	internalExec.ExecRunPrintIO("pkill", "-TERM", "-f", "frappe worker")
+	return nil
+}
+
+func (b *Bench) RestartFrappeServicesStream(w io.Writer) error {
+	fmt.Fprintf(w, "[BENCH] Restarting Frappe services (killing workers for autorestart)...\n")
+	b.RestartFrappeServices()
 	return nil
 }

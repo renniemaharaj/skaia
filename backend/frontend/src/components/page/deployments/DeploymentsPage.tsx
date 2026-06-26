@@ -17,6 +17,7 @@ import { apiRequest } from "../../../utils/api";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
 import Select from "../../input/Select";
+import Input from "../../input/Input";
 import { Console, type ConsoleLine } from "../../ui/Console";
 import { customConfirm } from "../../ui/Prompt";
 import type { TableColumn } from "../../ui/TableView/TableView";
@@ -92,7 +93,54 @@ export function DeploymentsPage() {
   } | null>(null);
   const [stats, setStats] = useState<ContainerStats[]>([]);
   type AppForReact = { name: string; description: string; version?: string };
-  const [availableApps, setAvailableApps] = useState<AppForReact[]>([]);
+  const availableApps: AppForReact[] = [
+    {
+      name: "erpnext",
+      description: "ERPNext is a comprehensive open source ERP system for businesses.",
+      version: "",
+    },
+    {
+      name: "builder",
+      description: "Builder helps you visually design and customize Frappe apps.",
+      version: "",
+    },
+    {
+      name: "frappe",
+      description: "Frappe Framework is a full-stack web application framework in Python & JS.",
+      version: "",
+    },
+    {
+      name: "hrms",
+      description:
+        "HRMS provides human resource management features like payroll, leave, and attendance.",
+      version: "",
+    },
+    {
+      name: "lending",
+      description: "Lending app for managing loan requests, approvals, and repayments.",
+      version: "",
+    },
+    {
+      name: "helpdesk",
+      description: "Helpdesk app to manage support tickets and customer queries.",
+      version: "",
+    },
+    {
+      name: "crm",
+      description: "CRM app to manage leads, opportunities, and customer relationships.",
+      version: "",
+    },
+    {
+      name: "insights",
+      description: "Insights provides analytics and reporting tools within the Frappe ecosystem.",
+      version: "",
+    },
+    {
+      name: "blog",
+      description: "Blog app for publishing articles and managing content.",
+      version: "",
+    },
+  ];
 
   useEffect(() => {
     logCapRef.current = logCap;
@@ -143,19 +191,7 @@ export function DeploymentsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const fetchAvailableApps = async () => {
-      try {
-        const data = await apiRequest<{ apps: AppForReact[] }>("/provisioning/available-apps");
-        if (data?.apps) {
-          setAvailableApps(data.apps);
-        }
-      } catch (err) {
-        console.error("Failed to fetch available apps", err);
-      }
-    };
-    fetchAvailableApps();
-  }, []);
+  // Available apps are now statically defined above
 
   // Handled inside Console component
 
@@ -259,11 +295,11 @@ export function DeploymentsPage() {
     }
   };
 
-  const installApp = async (id: number, app: string) => {
+  const installApp = async (id: number, app: string, version?: string) => {
     try {
       await apiRequest(`/provisioning/instances/${id}/apps`, {
         method: "POST",
-        body: JSON.stringify({ app }),
+        body: JSON.stringify({ app, version }),
       });
       toast.success(`App ${app} queued for installation. Check logs.`);
       fetchInstances();
@@ -854,30 +890,34 @@ export function DeploymentsPage() {
                               whiteSpace: "normal",
                               lineHeight: 1.4,
                               maxWidth: "200px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "8px",
                             }}
                           >
-                            <span
-                              style={{
-                                fontWeight: 600,
-                                display: "block",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              {app.name}{" "}
-                              {app.version && (
-                                <span
-                                  style={{
-                                    fontWeight: 400,
-                                    opacity: 0.7,
-                                    fontSize: "0.8em",
-                                    marginLeft: "4px",
-                                  }}
-                                >
-                                  v{app.version}
-                                </span>
-                              )}
-                            </span>
-                            <span style={{ color: "var(--text-muted)" }}>{app.description}</span>
+                            <div>
+                              <span
+                                style={{
+                                  fontWeight: 600,
+                                  display: "block",
+                                  marginBottom: "4px",
+                                }}
+                              >
+                                {app.name}{" "}
+                              </span>
+                              <span style={{ color: "var(--text-muted)", fontSize: "0.9em" }}>
+                                {app.description}
+                              </span>
+                            </div>
+                            {!isInstalled && (
+                              <Input
+                                placeholder="Version tag/branch (optional)"
+                                handleSend={val => {
+                                  installApp(openAppsMenu.id, app.name, val);
+                                  setOpenAppsMenu(null);
+                                }}
+                              />
+                            )}
                           </div>
                         ),
                       },

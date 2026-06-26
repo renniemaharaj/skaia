@@ -28,7 +28,6 @@ func (h *Handler) Mount(r chi.Router, middlewares ...func(http.Handler) http.Han
 		r.Post("/instances/{id}/start", h.StartInstance)
 		r.Post("/instances/{id}/stop", h.StopInstance)
 		r.Post("/instances/{id}/restart", h.RestartInstance)
-		r.Get("/available-apps", h.GetAvailableApps)
 		r.Post("/instances/{id}/apps", h.InstallApp)
 		r.Delete("/instances/{id}/apps/{app}", h.UninstallApp)
 		r.Get("/instances/{id}/logs", h.GetInstanceLogs)
@@ -117,19 +116,6 @@ func (h *Handler) RestartInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-}
-
-func (h *Handler) GetAvailableApps(w http.ResponseWriter, r *http.Request) {
-	apps, err := h.svc.GetAvailableApps()
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	if apps == nil {
-		apps = []map[string]interface{}{}
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"apps": apps})
 }
 
 func (h *Handler) InstallApp(w http.ResponseWriter, r *http.Request) {
