@@ -718,15 +718,19 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         }
       };
 
-      pc.onnegotiationneeded = async () => {
-        if (pc.signalingState !== "stable") return;
-        try {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          sendVoiceSignal(peerId, { kind: "offer", sdp: offer.sdp });
-        } catch (e) {
-          console.error("Negotiation error", e);
-        }
+      let negotiationTimeout: any;
+      pc.onnegotiationneeded = () => {
+        clearTimeout(negotiationTimeout);
+        negotiationTimeout = setTimeout(async () => {
+          if (pc.signalingState !== "stable") return;
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendVoiceSignal(peerId, { kind: "offer", sdp: offer.sdp });
+          } catch (e) {
+            console.error("Negotiation error", e);
+          }
+        }, 50);
       };
 
       pc.ontrack = event => {
@@ -737,6 +741,37 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           if (prev.some(s => s.stream.id === stream.id && s.peerId === key)) return prev;
           return [...prev, { peerId: key, stream, startedAt: new Date().toISOString() }];
         });
+
+        stream.onremovetrack = () => {
+          if (stream.getTracks().length === 0) {
+            setRemoteStreams(prev => prev.filter(s => s.stream.id !== stream.id));
+            const audioKey = `${key}-${stream.id}`;
+            const audio = remoteAudioRefs.current.get(audioKey);
+            if (audio) {
+              audio.pause();
+              audio.srcObject = null;
+              remoteAudioRefs.current.delete(audioKey);
+            }
+          } else {
+            // Force re-render to update streamsByPeer if a video track was removed
+            setRemoteStreams(prev => [...prev]);
+          }
+        };
+
+        event.track.onended = () => {
+          if (stream.getTracks().every(t => t.readyState === "ended")) {
+            setRemoteStreams(prev => prev.filter(s => s.stream.id !== stream.id));
+            const audioKey = `${key}-${stream.id}`;
+            const audio = remoteAudioRefs.current.get(audioKey);
+            if (audio) {
+              audio.pause();
+              audio.srcObject = null;
+              remoteAudioRefs.current.delete(audioKey);
+            }
+          } else {
+            setRemoteStreams(prev => [...prev]);
+          }
+        };
 
         if (event.track.kind === "audio") {
           const audioKey = `${key}-${stream.id}`;
@@ -856,7 +891,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       addStreamToPeers(stream);
       for (const user of onlineUsers) {
         if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          void startOffer(user.user_id);
+          if (!peerConnectionsRef.current.has(String(user.user_id))) {
+            void startOffer(user.user_id);
+          }
         }
       }
     } catch (err) {
@@ -907,7 +944,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       addStreamToPeers(stream);
       for (const user of onlineUsers) {
         if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          void startOffer(user.user_id);
+          if (!peerConnectionsRef.current.has(String(user.user_id))) {
+            void startOffer(user.user_id);
+          }
         }
       }
     } catch (err) {
@@ -960,7 +999,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       addStreamToPeers(stream);
       for (const user of onlineUsers) {
         if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          void startOffer(user.user_id);
+          if (!peerConnectionsRef.current.has(String(user.user_id))) {
+            void startOffer(user.user_id);
+          }
         }
       }
     } catch (err) {
@@ -1061,7 +1102,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (!canSpeak || !myPresenceId) return;
     for (const user of onlineUsers) {
       if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
-      void startOffer(user.user_id);
+      if (!peerConnectionsRef.current.has(String(user.user_id))) {
+        void startOffer(user.user_id);
+      }
     }
   }, [canSpeak, location.pathname, myPresenceId, onlineUsers, startOffer]);
 
@@ -1085,8 +1128,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       }
     >();
     remoteStreams.forEach(({ peerId, stream, startedAt }) => {
+      // Ignore audio-only streams from being listed as active video streams
+      const videoTracks = stream.getVideoTracks().filter(t => t.readyState !== "ended");
+      if (videoTracks.length === 0) return;
+
       // Best-effort detection for screen sharing vs camera
-      const isScreen = stream.getVideoTracks().some(t => {
+      const isScreen = videoTracks.some(t => {
         const s = t.getSettings() as any;
         return s.displaySurface || s.cursor;
       });
@@ -2014,10 +2061,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         if (!isPanelExpanded) return null; // Hide if presence panel is collapsed
 
         const enlarged = remoteStreams.find(s => `${s.peerId}-${s.stream.id}` === enlargedStreamId);
+        const hasActiveVideo =
+          enlarged && enlarged.stream.getVideoTracks().some(t => t.readyState !== "ended");
+
         const isMobile = typeof window !== "undefined" && window.innerWidth <= 720;
         const isSplitMode = !isMobile;
 
-        if (!enlarged) {
+        if (!enlarged || !hasActiveVideo) {
           if (isSplitMode) {
             return createPortal(
               <div
