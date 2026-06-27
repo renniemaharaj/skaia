@@ -24,6 +24,7 @@ type Client struct {
 	Send        chan []byte
 	ClientID    int64 // unique per connection, assigned by Hub at registration
 	UserID      int64
+	RealIP      string // extracted at connection time for ip hopping mitigation
 	Permissions []string
 	Roles       []string
 	SessionID   int64 // session bucket for chat, presence & cursor fan-out
@@ -223,8 +224,8 @@ func (c *Client) dispatchApiRequest(req *wspb.ApiRequest) {
 		return
 	}
 
-	if c.Conn != nil {
-		httpReq.RemoteAddr = c.Conn.RemoteAddr().String()
+	if c.RealIP != "" {
+		httpReq.Header.Set("X-Real-IP", c.RealIP)
 	}
 
 	for k, v := range req.Headers {

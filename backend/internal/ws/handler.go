@@ -114,6 +114,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		Send:           make(chan []byte, 256),
 		UserID:         userID,
 		UserName:       userName,
+		RealIP:         utils.RealIP(r),
 		Permissions:    permissions,
 		Roles:          roles,
 		chatLimit:      newRateBucket(chatRate, chatBurst),
