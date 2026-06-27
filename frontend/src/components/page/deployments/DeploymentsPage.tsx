@@ -656,7 +656,7 @@ export function DeploymentsPage() {
                       <h4>{bp.name}</h4>
                       <p>{bp.description}</p>
                       {bp.name.toLowerCase().includes("frappe") && (
-                        <div style={{ marginTop: "1rem" }}>
+                        <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
                           <Select
                             size="sm"
                             block
