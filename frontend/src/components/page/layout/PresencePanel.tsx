@@ -24,7 +24,6 @@ import { seoAtom } from "../../../atoms/config";
 import { mediaStateAtom } from "../../../atoms/media";
 import {
   type OnlineUser,
-  onlineUsersAtom,
   pendingTpUserAtom,
   presencePanelExpandedAtom,
   layoutChildrenAtom,
@@ -39,6 +38,7 @@ import ComposerInput from "../../input/Input";
 import UserAvatar from "../../user/UserAvatar";
 import UserInlineCard from "../../user/UserInlineCard";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
+import { usePresenceUsers } from "../../../hooks/usePresenceUsers";
 import "./PresencePanel.css";
 // Lazy-loaded: opened only on user interaction, so no reason to bloat the initial payload.
 const PhysicsControls = lazy(() => import("./PhysicsControls"));
@@ -269,7 +269,6 @@ const PresencePanel = () => {
   const [slowModeLoading, setSlowModeLoading] = useState(true);
   const prevChatLenRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const rawUsers = useAtomValue(onlineUsersAtom);
   const setPendingTpUser = useSetAtom(pendingTpUserAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const socket = useAtomValue(socketAtom);
@@ -308,32 +307,7 @@ const PresencePanel = () => {
     }
   }, [activeTab, socket]);
 
-  // Deduplicate authenticated users (positive id) by user_id, prefer entry with name.
-  // Guests have negative ids (unique per connection) - include as-is.
-  // Skip any stale user_id=0 entries.
-  const onlineUsers = (() => {
-    const seen = new Map<number, OnlineUser>();
-    for (const u of rawUsers) {
-      if (u.user_id === 0) continue;
-      if (u.user_id < 0) {
-        // guest - always unique, no dedup needed
-        seen.set(u.user_id, u);
-        continue;
-      }
-      const existing = seen.get(u.user_id);
-      if (!existing || (u.user_name && !existing.user_name)) {
-        seen.set(u.user_id, u);
-      }
-    }
-    return Array.from(seen.values()).slice(0, 100);
-  })();
-
-  // Users on the same route as the viewer
-  const here = onlineUsers.filter(u => u.route === location.pathname);
-  // All other online registered users
-  const elsewhere = onlineUsers.filter(u => u.route !== location.pathname);
-
-  const total = onlineUsers.length;
+  const { here, elsewhere, total } = usePresenceUsers();
 
   const resetDefcon = useCallback(async () => {
     if (defconResetting) return;

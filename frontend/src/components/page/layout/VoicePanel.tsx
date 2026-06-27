@@ -40,6 +40,7 @@ import type { YouTubePlayerRef } from "./YouTubePlayer";
 import "../../ui/MediaPreviewLightbox.css";
 import "./VoicePanel.css";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { normalizeRoute } from "../../../utils/route";
 
 function getMicrophoneErrorMessage(err: unknown): string {
   if (err instanceof DOMException) {
@@ -408,7 +409,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       sendWebSocketMessage(socket, {
         type: "media:transition",
         payload: {
-          route: location.pathname,
+          route: normalizeRoute(location.pathname),
           item_id: mediaStateRef.current.queue[0].id,
           position: pos,
         },
@@ -542,7 +543,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           sendWebSocketMessage(socket, {
             type: "media:add",
             payload: {
-              route: location.pathname,
+              route: normalizeRoute(location.pathname),
               video_id: searchResults[0].id,
               loop: false,
             },
@@ -558,7 +559,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (socket) {
       sendWebSocketMessage(socket, {
         type: "media:add",
-        payload: { route: location.pathname, video_id: vid, loop: false },
+        payload: { route: normalizeRoute(location.pathname), video_id: vid, loop: false },
       });
     }
     setInputUrl("");
@@ -569,7 +570,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (socket) {
       sendWebSocketMessage(socket, {
         type: "media:remove",
-        payload: { route: location.pathname, item_id: itemId },
+        payload: { route: normalizeRoute(location.pathname), item_id: itemId },
       });
     }
   };
@@ -578,7 +579,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (socket) {
       sendWebSocketMessage(socket, {
         type: "media:history:clear",
-        payload: { route: location.pathname },
+        payload: { route: normalizeRoute(location.pathname) },
       });
     }
   };
@@ -591,7 +592,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (socket) {
       sendWebSocketMessage(socket, {
         type: "media:action",
-        payload: { route: location.pathname, position },
+        payload: { route: normalizeRoute(location.pathname), position },
       });
     }
   };
@@ -621,7 +622,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         sendWebSocketMessage(socket, {
           type: "media:ended",
           payload: {
-            route: location.pathname,
+            route: normalizeRoute(location.pathname),
             item_id: mediaState.queue[0].id,
           },
         });
@@ -644,7 +645,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       sendWebSocketMessage(socket, {
         type: "voice:signal",
         payload: {
-          route: location.pathname,
+          route: normalizeRoute(location.pathname),
           target_user_id: targetUserId,
           ...payload,
         },
@@ -840,7 +841,11 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     const onVoiceSignal = async (event: Event) => {
       const signal = (event as CustomEvent<VoiceSignalPayload>).detail;
       const peerId = signal.sender_user_id;
-      if (!peerId || signal.route !== location.pathname || signal.target_user_id !== myPresenceId) {
+      if (
+        !peerId ||
+        normalizeRoute(signal.route) !== normalizeRoute(location.pathname) ||
+        signal.target_user_id !== myPresenceId
+      ) {
         return;
       }
       if (signal.kind === "leave") {
@@ -866,7 +871,11 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     const validUserIds = new Set<string>();
 
     for (const user of onlineUsers) {
-      if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
+      if (
+        normalizeRoute(user.route) !== normalizeRoute(location.pathname) ||
+        user.user_id === myPresenceId
+      )
+        continue;
       validUserIds.add(String(user.user_id));
 
       const peers = getActivePeerIds();
@@ -1378,7 +1387,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               {(() => {
                 const unmutedUsers = onlineUsers.filter(
-                  u => u.route === location.pathname && u.is_muted === false
+                  u =>
+                    normalizeRoute(u.route) === normalizeRoute(location.pathname) &&
+                    u.is_muted === false
                 );
                 const showLocal = !isPlayerMuted;
                 const totalUnmuted = new Set(unmutedUsers.map(u => String(u.user_id)));
@@ -1471,7 +1482,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                       sendWebSocketMessage(socket, {
                         type: "media:add",
                         payload: {
-                          route: location.pathname,
+                          route: normalizeRoute(location.pathname),
                           video_id: res.id,
                           loop: false,
                         },
@@ -1605,7 +1616,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                     sendWebSocketMessage(socket, {
                                       type: "media:transition:start",
                                       payload: {
-                                        route: location.pathname,
+                                        route: normalizeRoute(location.pathname),
                                         item_id: item.id,
                                       },
                                     });
@@ -1643,7 +1654,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                   sendWebSocketMessage(socket, {
                                     type: "media:transition",
                                     payload: {
-                                      route: location.pathname,
+                                      route: normalizeRoute(location.pathname),
                                       item_id: mediaState.queue[0].id,
                                       position: 0,
                                     },
@@ -1750,7 +1761,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                 sendWebSocketMessage(socket, {
                                   type: "media:add",
                                   payload: {
-                                    route: location.pathname,
+                                    route: normalizeRoute(location.pathname),
                                     video_id: item.video_id,
                                     loop: false,
                                   },
@@ -1787,7 +1798,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                               sendWebSocketMessage(socket, {
                                 type: "media:remove",
                                 payload: {
-                                  route: location.pathname,
+                                  route: normalizeRoute(location.pathname),
                                   item_id: item.id,
                                 },
                               });
@@ -1809,7 +1820,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                               sendWebSocketMessage(socket, {
                                 type: "media:add",
                                 payload: {
-                                  route: location.pathname,
+                                  route: normalizeRoute(location.pathname),
                                   video_id: item.video_id,
                                   loop: false,
                                 },
@@ -1847,7 +1858,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                     sendWebSocketMessage(socket, {
                       type: "voice:control",
                       payload: {
-                        route: location.pathname,
+                        route: normalizeRoute(location.pathname),
                         action: permissions.voiceEnabled ? "disable" : "enable",
                       },
                     });

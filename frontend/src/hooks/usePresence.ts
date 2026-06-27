@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { currentUserAtom, socketAtom } from "../atoms/auth";
 import { playerMutedAtom } from "../atoms/media";
 import { getGuestSessionId } from "../utils/guestSession";
+import { normalizeRoute } from "../utils/route";
 import { sendWebSocketMessage } from "../utils/wsProtobuf";
 
 /**
@@ -21,10 +22,10 @@ export const usePresence = (enabled = true) => {
   const isPlayerMuted = useAtomValue(playerMutedAtom);
   const location = useLocation();
   // Keep latest values accessible inside the stable send helper.
-  const routeRef = useRef(location.pathname);
+  const routeRef = useRef(normalizeRoute(location.pathname));
   const userRef = useRef(currentUser);
   const muteRef = useRef(isPlayerMuted);
-  routeRef.current = location.pathname;
+  routeRef.current = normalizeRoute(location.pathname);
   userRef.current = currentUser;
   muteRef.current = isPlayerMuted;
 
