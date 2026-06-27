@@ -520,29 +520,22 @@ const PresencePanel = () => {
         } as React.CSSProperties)
       : undefined;
 
-  const isSplitMode = expanded && !isMobile && !enlargedStreamId;
+  const isPanelSplit = expanded && !isMobile;
+  const isRoutingLayout = isPanelSplit && !enlargedStreamId;
   const setPresenceSplitMode = useSetAtom(isPresenceSplitModeAtom);
   const layoutChildren = useAtomValue(layoutChildrenAtom);
 
   useEffect(() => {
-    setPresenceSplitMode(isSplitMode);
+    setPresenceSplitMode(isRoutingLayout);
     return () => setPresenceSplitMode(false);
-  }, [isSplitMode, setPresenceSplitMode]);
+  }, [isRoutingLayout, setPresenceSplitMode]);
 
   return (
     <div
-      className={`presence-panel${expanded ? " presence-panel--expanded" : ""}${isSplitMode ? " pp-split-mode" : ""}`}
+      className={`presence-panel${expanded ? " presence-panel--expanded" : ""}${isPanelSplit ? " pp-split-mode" : ""}`}
       style={panelStyle as any}
       id="presence-panel-root"
     >
-      {isSplitMode && (
-        <div
-          className="pp-split-content-area layout-main"
-          style={{ flex: 1, position: "relative", overflow: "auto", padding: "0 24px" }}
-        >
-          {layoutChildren}
-        </div>
-      )}
       <div className="pp-wrapper">
         {/* Control bar: mode tabs + expand toggle */}
         <div className="pp-controls">
@@ -840,6 +833,15 @@ const PresencePanel = () => {
           </div>
         </div>
       </div>
+
+      {isRoutingLayout && (
+        <div
+          className="pp-split-content-area layout-main"
+          style={{ flex: 1, position: "relative", overflow: "auto", padding: "0 24px" }}
+        >
+          {layoutChildren}
+        </div>
+      )}
     </div>
   );
 };
