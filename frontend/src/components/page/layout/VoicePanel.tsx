@@ -57,14 +57,8 @@ function getMicrophoneErrorMessage(err: unknown): string {
   return "Could not access microphone.";
 }
 
-interface VoiceSignalPayload {
-  route: string;
-  target_user_id: number;
-  sender_user_id?: number;
-  kind: "offer" | "answer" | "candidate" | "leave";
-  sdp?: string;
-  candidate?: RTCIceCandidateInit;
-}
+import { useWebRTCManager } from "../../../lib/webrtc/useWebRTCManager";
+import { type VoiceSignalPayload } from "../../../lib/webrtc/WebRTCManager";
 
 interface VoicePanelProps {
   mediaOnly?: boolean;
@@ -216,15 +210,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
   const [micActive, setMicActive] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
-  const remoteAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [cameraActive, setCameraActive] = useState(false);
   const [screenActive, setScreenActive] = useState(false);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<
-    { peerId: string; stream: MediaStream; startedAt: string }[]
-  >([]);
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -251,7 +240,22 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         setSearchParams(newParams, { replace: true });
       }
     }
-  }, [enlargedStreamId]);
+  }, [enlargedStreamId, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const activeVideoId = mediaState?.queue?.[0]?.video_id;
+    if (activeVideoId) {
+      if (searchParams.get("v") !== activeVideoId) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("v", activeVideoId);
+        setSearchParams(newParams, { replace: true });
+      }
+    } else if (mediaState?.queue && searchParams.has("v")) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("v");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [mediaState?.queue, searchParams, setSearchParams]);
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
@@ -279,7 +283,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     return () => navigator.mediaDevices.removeEventListener("devicechange", updateDevices);
   }, [selectedAudioDeviceId, selectedVideoDeviceId]);
 
-  const [remoteMicUsers, setRemoteMicUsers] = useState<string[]>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -650,212 +653,34 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     [socket, location.pathname]
   );
 
-  const closePeer = useCallback(
-    (peerId: string, notify = true) => {
-      const pc = peerConnectionsRef.current.get(peerId);
-      if (pc) {
-        pc.ontrack = null;
-        pc.onicecandidate = null;
-        pc.onnegotiationneeded = null;
-        pc.close();
-        peerConnectionsRef.current.delete(peerId);
-      }
+  const {
+    remoteStreams,
+    remoteMicUsers,
+    handleSignal,
+    ensureConnection,
+    closePeer,
+    broadcastTracks,
+    removeTracks,
+    getActivePeerIds,
+    autoplayBlocked,
+    setAutoplayBlocked,
+    peerConnectionStates,
+  } = useWebRTCManager(Number(myPresenceId), sendVoiceSignal, globalVolume, isPlayerMuted);
 
-      const keysToRemove = Array.from(remoteAudioRefs.current.keys()).filter(k =>
-        k.startsWith(`${peerId}-`)
-      );
-      for (const k of keysToRemove) {
-        const audio = remoteAudioRefs.current.get(k);
-        if (audio) {
-          audio.pause();
-          audio.srcObject = null;
-          remoteAudioRefs.current.delete(k);
-        }
-      }
-
-      setRemoteStreams(prev => prev.filter(s => s.peerId !== peerId));
-      const activePeers = Array.from(remoteAudioRefs.current.keys()).map(k => k.split("-")[0]);
-      setRemoteMicUsers(Array.from(new Set(activePeers)));
-      const numericPeerId = Number(peerId);
-      if (notify && Number.isFinite(numericPeerId)) {
-        sendVoiceSignal(numericPeerId, { kind: "leave" });
-      }
-    },
-    [sendVoiceSignal]
-  );
-
-  const createPeerConnection = useCallback(
-    (peerId: number) => {
-      const key = String(peerId);
-      const existing = peerConnectionsRef.current.get(key);
-      if (existing) return existing;
-
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  useEffect(() => {
+    if (autoplayBlocked) {
+      toast("Browser blocked audio autoplay. Please interact with the page.", {
+        icon: "🔇",
+        duration: 5000,
       });
-      pc.addTransceiver("audio", { direction: "recvonly" });
-      pc.addTransceiver("video", { direction: "recvonly" });
-      peerConnectionsRef.current.set(key, pc);
-
-      const addLocalTracks = (stream: MediaStream | null) => {
-        if (!stream) return;
-        stream.getTracks().forEach(track => {
-          if (!pc.getSenders().some(s => s.track === track)) {
-            pc.addTrack(track, stream);
-          }
-        });
-      };
-      addLocalTracks(streamRef.current);
-      addLocalTracks(cameraStreamRef.current);
-      addLocalTracks(screenStreamRef.current);
-
-      pc.onicecandidate = event => {
-        if (event.candidate) {
-          sendVoiceSignal(peerId, {
-            kind: "candidate",
-            candidate: event.candidate.toJSON(),
-          });
-        }
-      };
-
-      let negotiationTimeout: any;
-      pc.onnegotiationneeded = () => {
-        clearTimeout(negotiationTimeout);
-        negotiationTimeout = setTimeout(async () => {
-          if (pc.signalingState !== "stable") return;
-          try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendVoiceSignal(peerId, { kind: "offer", sdp: offer.sdp });
-          } catch (e) {
-            console.error("Negotiation error", e);
-          }
-        }, 50);
-      };
-
-      pc.ontrack = event => {
-        const [stream] = event.streams;
-        if (!stream) return;
-
-        setRemoteStreams(prev => {
-          if (prev.some(s => s.stream.id === stream.id && s.peerId === key)) return prev;
-          return [...prev, { peerId: key, stream, startedAt: new Date().toISOString() }];
-        });
-
-        stream.onremovetrack = () => {
-          if (stream.getTracks().length === 0) {
-            setRemoteStreams(prev => prev.filter(s => s.stream.id !== stream.id));
-            const audioKey = `${key}-${stream.id}`;
-            const audio = remoteAudioRefs.current.get(audioKey);
-            if (audio) {
-              audio.pause();
-              audio.srcObject = null;
-              remoteAudioRefs.current.delete(audioKey);
-            }
-          } else {
-            // Force re-render to update streamsByPeer if a video track was removed
-            setRemoteStreams(prev => [...prev]);
-          }
-        };
-
-        event.track.onended = () => {
-          if (stream.getTracks().every(t => t.readyState === "ended")) {
-            setRemoteStreams(prev => prev.filter(s => s.stream.id !== stream.id));
-            const audioKey = `${key}-${stream.id}`;
-            const audio = remoteAudioRefs.current.get(audioKey);
-            if (audio) {
-              audio.pause();
-              audio.srcObject = null;
-              remoteAudioRefs.current.delete(audioKey);
-            }
-          } else {
-            setRemoteStreams(prev => [...prev]);
-          }
-        };
-
-        if (event.track.kind === "audio") {
-          const audioKey = `${key}-${stream.id}`;
-          let audio = remoteAudioRefs.current.get(audioKey);
-          if (!audio) {
-            audio = new Audio();
-            audio.autoplay = true;
-            audio.setAttribute("playsinline", "true");
-            audio.volume = globalVolumeRef.current;
-            remoteAudioRefs.current.set(audioKey, audio);
-            const activePeers = Array.from(remoteAudioRefs.current.keys()).map(
-              k => k.split("-")[0]
-            );
-            setRemoteMicUsers(Array.from(new Set(activePeers)));
-          }
-          if (audio.srcObject !== stream) {
-            audio.srcObject = stream;
-            void audio.play().catch(() => {});
-          }
-          window.dispatchEvent(new CustomEvent("voice:speaking", { detail: key }));
-
-          const updateAudioMuteState = () => {
-            if (audio) {
-              const hasVideo = stream.getVideoTracks().length > 0;
-              audio.muted = hasVideo || isPlayerMutedRef.current;
-            }
-          };
-          updateAudioMuteState();
-          stream.addEventListener("addtrack", updateAudioMuteState);
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
-          closePeer(key, false);
-        }
-      };
-
-      return pc;
-    },
-    [closePeer, sendVoiceSignal]
-  );
-
-  const startOffer = useCallback(
-    async (peerId: number) => {
-      if (!socket || socket.readyState !== WebSocket.OPEN) return;
-      const pc = createPeerConnection(peerId);
-      if (pc.signalingState !== "stable") return;
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      sendVoiceSignal(peerId, { kind: "offer", sdp: offer.sdp });
-    },
-    [createPeerConnection, sendVoiceSignal, socket]
-  );
-
-  const addStreamToPeers = (stream: MediaStream) => {
-    stream.getTracks().forEach(track => {
-      for (const pc of peerConnectionsRef.current.values()) {
-        const senders = pc.getSenders();
-        if (!senders.some(s => s.track === track)) {
-          pc.addTrack(track, stream);
-        }
-      }
-    });
-  };
-
-  const removeStreamFromPeers = (stream: MediaStream) => {
-    const tracks = stream.getTracks();
-    for (const pc of peerConnectionsRef.current.values()) {
-      const senders = pc.getSenders();
-      senders.forEach(sender => {
-        if (sender.track && tracks.includes(sender.track)) {
-          pc.removeTrack(sender);
-        }
-      });
+      setAutoplayBlocked(false);
     }
-    tracks.forEach(t => t.stop());
-  };
+  }, [autoplayBlocked, setAutoplayBlocked]);
 
   const toggleMic = async () => {
     if (micActive) {
       if (streamRef.current) {
-        removeStreamFromPeers(streamRef.current);
+        removeTracks(streamRef.current);
         streamRef.current = null;
       }
       setMicActive(false);
@@ -888,7 +713,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       });
       streamRef.current = stream;
       setMicActive(true);
-      addStreamToPeers(stream);
+      broadcastTracks(stream);
     } catch (err) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -902,8 +727,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     setSelectedAudioDeviceId(deviceId);
     if (micActive) {
       if (streamRef.current) {
-        removeStreamFromPeers(streamRef.current);
-        streamRef.current.getTracks().forEach(t => t.stop());
+        removeTracks(streamRef.current);
         streamRef.current = null;
       }
       try {
@@ -911,7 +735,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           audio: { deviceId: { exact: deviceId } },
         });
         streamRef.current = stream;
-        addStreamToPeers(stream);
+        broadcastTracks(stream);
       } catch (err) {
         setMicActive(false);
         toast.error("Could not switch microphone.");
@@ -922,7 +746,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const toggleCamera = async () => {
     if (cameraActive) {
       if (cameraStreamRef.current) {
-        removeStreamFromPeers(cameraStreamRef.current);
+        removeTracks(cameraStreamRef.current);
         cameraStreamRef.current = null;
       }
       setCameraActive(false);
@@ -934,7 +758,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       });
       cameraStreamRef.current = stream;
       setCameraActive(true);
-      addStreamToPeers(stream);
+      broadcastTracks(stream);
     } catch (err) {
       toast.error("Could not access camera.");
     }
@@ -944,8 +768,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     setSelectedVideoDeviceId(deviceId);
     if (cameraActive) {
       if (cameraStreamRef.current) {
-        removeStreamFromPeers(cameraStreamRef.current);
-        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        removeTracks(cameraStreamRef.current);
         cameraStreamRef.current = null;
       }
       try {
@@ -953,7 +776,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           video: { deviceId: { exact: deviceId } },
         });
         cameraStreamRef.current = stream;
-        addStreamToPeers(stream);
+        broadcastTracks(stream);
       } catch (err) {
         setCameraActive(false);
         toast.error("Could not switch camera.");
@@ -964,7 +787,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const toggleScreen = async () => {
     if (screenActive) {
       if (screenStreamRef.current) {
-        removeStreamFromPeers(screenStreamRef.current);
+        removeTracks(screenStreamRef.current);
         screenStreamRef.current = null;
       }
       setScreenActive(false);
@@ -976,13 +799,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         audio: true,
       });
       stream.getVideoTracks()[0].onended = () => {
-        if (screenStreamRef.current) removeStreamFromPeers(screenStreamRef.current);
+        if (screenStreamRef.current) removeTracks(screenStreamRef.current);
         screenStreamRef.current = null;
         setScreenActive(false);
       };
       screenStreamRef.current = stream;
       setScreenActive(true);
-      addStreamToPeers(stream);
+      broadcastTracks(stream);
     } catch (err) {
       toast.error("Could not share screen.");
     }
@@ -999,11 +822,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach(t => t.stop());
       }
-      for (const peerId of peerConnectionsRef.current.keys()) {
-        closePeer(peerId, false);
-      }
     };
-  }, [closePeer]);
+  }, []);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -1014,92 +834,60 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (audioContext && gainNode) {
       gainNode.gain.setTargetAtTime(globalVolume, audioContext.currentTime, 0.03);
     }
-    for (const audio of remoteAudioRefs.current.values()) {
-      audio.volume = globalVolume;
-      const stream = audio.srcObject as MediaStream;
-      if (stream) {
-        const hasVideo = stream.getVideoTracks().length > 0;
-        audio.muted = hasVideo || isPlayerMuted;
-      }
-    }
   }, [globalVolume, isPlayerMuted]);
 
   useEffect(() => {
-    const handleVoiceSignal = async (event: Event) => {
+    const onVoiceSignal = async (event: Event) => {
       const signal = (event as CustomEvent<VoiceSignalPayload>).detail;
       const peerId = signal.sender_user_id;
       if (!peerId || signal.route !== location.pathname || signal.target_user_id !== myPresenceId) {
         return;
       }
-
       if (signal.kind === "leave") {
         closePeer(String(peerId), false);
         return;
       }
-
-      const pc = createPeerConnection(peerId);
-      if (signal.kind === "offer" && signal.sdp) {
-        await pc.setRemoteDescription({ type: "offer", sdp: signal.sdp });
-        const addLocalTracks = (stream: MediaStream | null) => {
-          if (!stream) return;
-          stream.getTracks().forEach(track => {
-            if (!pc.getSenders().some(s => s.track === track)) {
-              pc.addTrack(track, stream);
-            }
-          });
-        };
-        addLocalTracks(streamRef.current);
-        addLocalTracks(cameraStreamRef.current);
-        addLocalTracks(screenStreamRef.current);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        sendVoiceSignal(peerId, { kind: "answer", sdp: answer.sdp });
-        return;
-      }
-
-      if (signal.kind === "answer" && signal.sdp) {
-        await pc.setRemoteDescription({ type: "answer", sdp: signal.sdp });
-        return;
-      }
-
-      if (signal.kind === "candidate" && signal.candidate) {
-        await pc.addIceCandidate(signal.candidate);
-      }
+      await handleSignal(peerId, signal, [
+        streamRef.current,
+        cameraStreamRef.current,
+        screenStreamRef.current,
+      ]);
     };
 
-    window.addEventListener("voice:signal", handleVoiceSignal);
+    window.addEventListener("voice:signal", onVoiceSignal);
     return () => {
-      window.removeEventListener("voice:signal", handleVoiceSignal);
-      for (const peerId of peerConnectionsRef.current.keys()) {
-        closePeer(peerId, false);
-      }
-      setRemoteMicUsers([]);
+      window.removeEventListener("voice:signal", onVoiceSignal);
     };
-  }, [closePeer, createPeerConnection, location.pathname, myPresenceId, sendVoiceSignal]);
+  }, [closePeer, handleSignal, location.pathname, myPresenceId]);
 
   useEffect(() => {
-    if (!canSpeak || !myPresenceId) return;
+    if (!myPresenceId) return;
 
     const validUserIds = new Set<string>();
 
     for (const user of onlineUsers) {
       if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
       validUserIds.add(String(user.user_id));
-      if (!peerConnectionsRef.current.has(String(user.user_id))) {
-        // Deterministic proactive connection: only the higher ID peer initiates.
-        // The lower ID peer will reactively create the connection when they receive the offer.
+
+      const peers = getActivePeerIds();
+      if (!peers.includes(String(user.user_id))) {
         if (myPresenceId > user.user_id) {
-          createPeerConnection(user.user_id);
+          ensureConnection(user.user_id, true, [
+            streamRef.current,
+            cameraStreamRef.current,
+            screenStreamRef.current,
+          ]);
         }
       }
     }
 
-    for (const peerId of peerConnectionsRef.current.keys()) {
+    const peers = getActivePeerIds();
+    for (const peerId of peers) {
       if (!validUserIds.has(peerId)) {
         closePeer(peerId, false);
       }
     }
-  }, [canSpeak, location.pathname, myPresenceId, onlineUsers, startOffer, closePeer]);
+  }, [location.pathname, myPresenceId, onlineUsers, ensureConnection, closePeer, getActivePeerIds]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   const activeCameraUserIds = new Set<string>();
@@ -1160,7 +948,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           className="ui-panel vp-settings-panel"
           style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>Audio Controls</h4>
             <button
               className="action-btn "
@@ -1232,6 +1026,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
                 if (!user) return null;
 
+                const connState =
+                  peerConnectionStates[uid] || (isCurrentUser ? "connected" : "connecting");
+                const stateColor =
+                  connState === "connected"
+                    ? "var(--success-color, #10b981)"
+                    : connState === "failed"
+                      ? "var(--error-color, #ef4444)"
+                      : "var(--warning-color, #f59e0b)"; // connecting, disconnected, new
+
                 return (
                   <UserProfileOverlay
                     key={uid}
@@ -1240,7 +1043,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                     fallbackAvatar={user.avatar || undefined}
                   >
                     <div
+                      title={`Connection: ${connState}`}
                       style={{
+                        position: "relative",
                         display: "flex",
                         borderRadius: "50%",
                         transition: "box-shadow 0.15s ease",
@@ -1250,6 +1055,21 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                       }}
                     >
                       <UserAvatar src={user.avatar || undefined} alt={user.user_name} size={28} />
+                      {!isCurrentUser && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: -2,
+                            right: -2,
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            backgroundColor: stateColor,
+                            border: "2px solid var(--surface-2)",
+                            zIndex: 2,
+                          }}
+                        />
+                      )}
                     </div>
                   </UserProfileOverlay>
                 );
@@ -1259,7 +1079,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         </div>
       )}
 
-      {!mediaOnly && (
+      {!mediaOnly && videoDevices.length > 0 && (
         <div
           className="ui-panel vp-settings-panel"
           style={{
@@ -1291,13 +1111,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             </label>
           </div>
 
-          {videoDevices.length > 0 && (
+          {videoDevices.length > 1 && (
             <Select
               size="sm"
               variant="minimal"
               value={selectedVideoDeviceId}
               onChange={e => handleVideoDeviceChange(e.target.value)}
-              options={videoDevices.map(d => ({ label: d.label || "Camera", value: d.deviceId }))}
+              options={videoDevices.map(d => ({
+                label: d.label || "Camera",
+                value: d.deviceId,
+              }))}
             />
           )}
 
@@ -1351,187 +1174,192 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         </div>
       )}
 
-      {!mediaOnly && (
-        <div
-          className="ui-panel vp-settings-panel"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            marginTop: "12px",
-          }}
-        >
-          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
-            <span className="vp-setting-label">
-              <MonitorUp
-                size={14}
-                className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
-              />
-              Screen Share
-            </span>
-            <label className="vp-switch">
-              <input
-                type="checkbox"
-                checked={screenActive}
-                onChange={toggleScreen}
-                disabled={!canSpeak}
-              />
-              <div className="vp-switch-track">
-                <div className="vp-switch-thumb" />
-              </div>
-            </label>
-          </div>
-
-          {activeScreenUserIds.size > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                paddingTop: "0.25rem",
-                borderTop: "1px solid var(--border-color)",
-              }}
-            >
-              {Array.from(activeScreenUserIds).map(uid => {
-                const isCurrentUser = uid === String(myPresenceId);
-                let user;
-                if (isCurrentUser && currentUser) {
-                  user = {
-                    user_name: currentUser.display_name || currentUser.username,
-                    avatar: currentUser.avatar_url,
-                  };
-                } else {
-                  user = onlineUsers.find(u => String(u.user_id) === uid);
-                }
-                if (!user) return null;
-
-                return (
-                  <UserProfileOverlay
-                    key={`screen-${uid}`}
-                    userId={uid}
-                    fallbackName={user.user_name}
-                    fallbackAvatar={user.avatar || undefined}
-                  >
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <UserAvatar
-                        src={user.avatar || undefined}
-                        alt={user.user_name}
-                        size={20}
-                        style={{
-                          border: "1px solid var(--primary)",
-                          padding: "1px",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    </div>
-                  </UserProfileOverlay>
-                );
-              })}
+      {!mediaOnly &&
+        typeof navigator !== "undefined" &&
+        navigator.mediaDevices &&
+        "getDisplayMedia" in navigator.mediaDevices && (
+          <div
+            className="ui-panel vp-settings-panel"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+              marginTop: "12px",
+            }}
+          >
+            <div className="vp-setting-row" style={{ marginBottom: 0 }}>
+              <span className="vp-setting-label">
+                <MonitorUp
+                  size={14}
+                  className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
+                />
+                Screen Share
+              </span>
+              <label className="vp-switch">
+                <input
+                  type="checkbox"
+                  checked={screenActive}
+                  onChange={toggleScreen}
+                  disabled={!canSpeak}
+                />
+                <div className="vp-switch-track">
+                  <div className="vp-switch-thumb" />
+                </div>
+              </label>
             </div>
-          )}
 
-          {streamsByPeer.length > 0 && (
-            <div
-              className="vp-queue-list"
-              style={{
-                marginTop: "12px",
-                borderTop: "1px solid var(--border-color)",
-                paddingTop: "12px",
-              }}
-            >
-              <div className="vp-queue-header">Active Streams</div>
-              <div className="vp-queue-scroll">
-                {streamsByPeer.map(({ peerId, screen, camera, startedAt, screenId, cameraId }) => {
-                  const u = onlineUsers.find(x => String(x.user_id) === peerId);
-                  const name = u?.user_name || `User ${peerId}`;
-                  const mainStream = screen || camera;
-                  const mainId = screenId || cameraId;
-                  if (!mainStream) return null;
+            {activeScreenUserIds.size > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  paddingTop: "0.25rem",
+                  borderTop: "1px solid var(--border-color)",
+                }}
+              >
+                {Array.from(activeScreenUserIds).map(uid => {
+                  const isCurrentUser = uid === String(myPresenceId);
+                  let user;
+                  if (isCurrentUser && currentUser) {
+                    user = {
+                      user_name: currentUser.display_name || currentUser.username,
+                      avatar: currentUser.avatar_url,
+                    };
+                  } else {
+                    user = onlineUsers.find(u => String(u.user_id) === uid);
+                  }
+                  if (!user) return null;
 
                   return (
-                    <div
-                      key={`${peerId}-${mainId}`}
-                      className="vp-queue-item"
-                      style={{
-                        flex: "0 0 160px",
-                        height: "90px",
-                        position: "relative",
-                      }}
-                      onClick={() => setEnlargedStreamId(`${peerId}-${mainId}`)}
+                    <UserProfileOverlay
+                      key={`screen-${uid}`}
+                      userId={uid}
+                      fallbackName={user.user_name}
+                      fallbackAvatar={user.avatar || undefined}
                     >
-                      <RemoteMedia stream={mainStream} volume={globalVolume} />
-                      {screen && camera && (
-                        <div
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <UserAvatar
+                          src={user.avatar || undefined}
+                          alt={user.user_name}
+                          size={20}
                           style={{
-                            position: "absolute",
-                            bottom: "24px",
-                            right: "4px",
-                            width: "48px",
-                            height: "36px",
-                            borderRadius: "4px",
-                            overflow: "hidden",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            backgroundColor: "#000",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
-                            zIndex: 2,
+                            border: "1px solid var(--primary)",
+                            padding: "1px",
+                            borderRadius: "50%",
                           }}
-                        >
-                          <RemoteMedia stream={camera} volume={0} objectFit="cover" />
-                        </div>
-                      )}
-                      <div
-                        className="vp-queue-item-info"
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          padding: "4px",
-                          paddingLeft: "6px",
-                          fontSize: "10px",
-                          bottom: 0,
-                          zIndex: 3,
-                        }}
-                      >
-                        <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            overflow: "hidden",
-                            flex: 1,
-                            gap: "4px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: "60px",
-                            }}
-                          >
-                            {name}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "9px",
-                              color: "var(--text-secondary)",
-                              opacity: 0.8,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            • {relativeTimeAgo(startedAt)}
-                          </span>
-                        </div>
+                        />
                       </div>
-                    </div>
+                    </UserProfileOverlay>
                   );
                 })}
               </div>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+
+            {streamsByPeer.length > 0 && (
+              <div
+                className="vp-queue-list"
+                style={{
+                  marginTop: "12px",
+                  borderTop: "1px solid var(--border-color)",
+                  paddingTop: "12px",
+                }}
+              >
+                <div className="vp-queue-header">Active Streams</div>
+                <div className="vp-queue-scroll">
+                  {streamsByPeer.map(
+                    ({ peerId, screen, camera, startedAt, screenId, cameraId }) => {
+                      const u = onlineUsers.find(x => String(x.user_id) === peerId);
+                      const name = u?.user_name || `User ${peerId}`;
+                      const mainStream = screen || camera;
+                      const mainId = screenId || cameraId;
+                      if (!mainStream) return null;
+
+                      return (
+                        <div
+                          key={`${peerId}-${mainId}`}
+                          className="vp-queue-item"
+                          style={{
+                            flex: "0 0 160px",
+                            height: "90px",
+                            position: "relative",
+                          }}
+                          onClick={() => setEnlargedStreamId(`${peerId}-${mainId}`)}
+                        >
+                          <RemoteMedia stream={mainStream} volume={globalVolume} />
+                          {screen && camera && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                bottom: "24px",
+                                right: "4px",
+                                width: "48px",
+                                height: "36px",
+                                borderRadius: "4px",
+                                overflow: "hidden",
+                                border: "1px solid rgba(255,255,255,0.2)",
+                                backgroundColor: "#000",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                                zIndex: 2,
+                              }}
+                            >
+                              <RemoteMedia stream={camera} volume={0} objectFit="cover" />
+                            </div>
+                          )}
+                          <div
+                            className="vp-queue-item-info"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              padding: "4px",
+                              paddingLeft: "6px",
+                              fontSize: "10px",
+                              bottom: 0,
+                              zIndex: 3,
+                            }}
+                          >
+                            <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                overflow: "hidden",
+                                flex: 1,
+                                gap: "4px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  maxWidth: "60px",
+                                }}
+                              >
+                                {name}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "9px",
+                                  color: "var(--text-secondary)",
+                                  opacity: 0.8,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                • {relativeTimeAgo(startedAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
       {!voiceOnly && (
         <div className="vp-media-section ui-panel">
