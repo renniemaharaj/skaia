@@ -640,6 +640,14 @@
     z-index: 2000;
   }
 
+  .presence-panel.presence-panel--expanded .pp-wrapper {
+    width: 100vw;
+    height: 100%;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
   .presence-panel.presence-panel--expanded .pp-controls {
     position: sticky;
     top: 0;
