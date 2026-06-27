@@ -266,16 +266,14 @@ const CursorOverlay = () => {
               fallbackAvatar={cursor.avatar || undefined}
               disableClick={true}
             >
-              <div>
-                <UserAvatar
-                  src={cursor.avatar || undefined}
-                  alt={cursor.user_name}
-                  size={24}
-                  initials={cursor.user_name?.[0]?.toUpperCase()}
-                  className="cursor-avatar-img"
-                  style={{ width: "100%", height: "100%", border: "none" }}
-                />
-              </div>
+              <UserAvatar
+                src={cursor.avatar || undefined}
+                alt={cursor.user_name}
+                size={26}
+                initials={cursor.user_name?.[0]?.toUpperCase()}
+                className="cursor-avatar-img"
+                style={{ width: "100%", height: "100%", border: "none", margin: 0 }}
+              />
             </UserProfileOverlay>
           </div>
         </div>
