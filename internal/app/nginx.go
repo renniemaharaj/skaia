@@ -252,7 +252,7 @@ proxy_cache_path /var/cache/nginx/uploads
     add_header X-Frame-Options        "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy     "camera=(), microphone=(self), geolocation=()" always;
+    add_header Permissions-Policy     "camera=(self), microphone=(self), geolocation=()" always;
 
 `)
 

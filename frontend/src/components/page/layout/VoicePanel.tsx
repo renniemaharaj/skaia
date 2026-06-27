@@ -19,9 +19,8 @@ import {
   ListVideo,
   Trash2,
   X,
-  Youtube,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
@@ -71,12 +70,80 @@ interface VoicePanelProps {
   voiceOnly?: boolean;
 }
 
+const DraggablePiP = ({ stream }: { stream: MediaStream }) => {
+  const [pos, setPos] = useState({ right: 24, bottom: 64 });
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef({
+    startX: 0,
+    startY: 0,
+    initialRight: 0,
+    initialBottom: 0,
+  });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialRight: pos.right,
+      initialBottom: pos.bottom,
+    };
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      setPos({
+        right: Math.max(0, dragRef.current.initialRight - dx),
+        bottom: Math.max(0, dragRef.current.initialBottom - dy),
+      });
+    };
+    const handleMouseUp = () => setDragging(false);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging]);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: pos.right,
+        bottom: pos.bottom,
+        width: "240px",
+        height: "180px",
+        borderRadius: "8px",
+        overflow: "hidden",
+        border: "1px solid rgba(255,255,255,0.2)",
+        backgroundColor: "#000",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+        cursor: dragging ? "grabbing" : "grab",
+        zIndex: 50,
+      }}
+      onMouseDown={handleMouseDown}
+    >
+      <RemoteMedia stream={stream} volume={0} objectFit="cover" />
+    </div>
+  );
+};
+
 const RemoteMedia = ({
   stream,
   volume,
   objectFit = "cover",
   isModal = false,
-}: { stream: MediaStream; volume: number; objectFit?: "cover" | "contain"; isModal?: boolean }) => {
+}: {
+  stream: MediaStream;
+  volume: number;
+  objectFit?: "cover" | "contain";
+  isModal?: boolean;
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasVideo, setHasVideo] = useState(stream.getVideoTracks().length > 0);
   const [isHovered, setIsHovered] = useState(false);
@@ -773,7 +840,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
       stream.getVideoTracks()[0].onended = () => {
         if (screenStreamRef.current) removeStreamFromPeers(screenStreamRef.current);
         screenStreamRef.current = null;
@@ -894,9 +964,48 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   ]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
-  if (micActive && currentUser?.id) {
-    activeMicUserIds.add(String(currentUser.id));
-  }
+  const activeCameraUserIds = new Set<string>();
+  const activeScreenUserIds = new Set<string>();
+
+  if (micActive && currentUser?.id) activeMicUserIds.add(String(currentUser.id));
+  if (cameraActive && currentUser?.id) activeCameraUserIds.add(String(currentUser.id));
+  if (screenActive && currentUser?.id) activeScreenUserIds.add(String(currentUser.id));
+
+  const streamsByPeer = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        screen?: MediaStream;
+        camera?: MediaStream;
+        startedAt: string;
+        screenId?: string;
+        cameraId?: string;
+      }
+    >();
+    remoteStreams.forEach(({ peerId, stream, startedAt }) => {
+      // Best-effort detection for screen sharing vs camera
+      const isScreen = stream.getVideoTracks().some(t => {
+        const s = t.getSettings() as any;
+        return s.displaySurface || s.cursor;
+      });
+      if (isScreen) activeScreenUserIds.add(peerId);
+      else if (stream.getVideoTracks().length > 0) activeCameraUserIds.add(peerId);
+
+      if (!map.has(peerId)) map.set(peerId, { startedAt });
+      const entry = map.get(peerId)!;
+      if (isScreen) {
+        entry.screen = stream;
+        entry.screenId = stream.id;
+      } else {
+        entry.camera = stream;
+        entry.cameraId = stream.id;
+      }
+    });
+    return Array.from(map.entries()).map(([peerId, data]) => ({
+      peerId,
+      ...data,
+    }));
+  }, [remoteStreams, activeScreenUserIds, activeCameraUserIds]);
 
   return (
     <div className={`vp-container ${mediaOnly ? "vp-container-media-only" : ""}`}>
@@ -916,7 +1025,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               ) : (
                 <MicOff size={14} className="vp-text-secondary" />
               )}
-              Microphone
+              Voice Chat
             </span>
             <label className="vp-switch">
               <input
@@ -987,7 +1096,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       {!mediaOnly && (
         <div
           className="ui-panel vp-settings-panel"
-          style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "12px" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "12px",
+          }}
         >
           <div className="vp-setting-row" style={{ marginBottom: 0 }}>
             <span className="vp-setting-label">
@@ -1011,7 +1125,55 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             </label>
           </div>
 
-          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
+          {activeCameraUserIds.size > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                paddingTop: "0.25rem",
+                borderTop: "1px solid var(--border-color)",
+              }}
+            >
+              {Array.from(activeCameraUserIds).map(uid => {
+                const isCurrentUser = uid === String(currentUser?.id);
+                let user;
+                if (isCurrentUser && currentUser) {
+                  user = {
+                    user_name: currentUser.display_name || currentUser.username,
+                    avatar: currentUser.avatar_url,
+                  };
+                } else {
+                  user = onlineUsers.find(u => String(u.user_id) === uid);
+                }
+                if (!user) return null;
+
+                return (
+                  <UserProfileOverlay
+                    key={`cam-${uid}`}
+                    userId={uid}
+                    fallbackName={user.user_name}
+                    fallbackAvatar={user.avatar || undefined}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <UserAvatar
+                        src={user.avatar || undefined}
+                        alt={user.user_name}
+                        size={20}
+                        style={{
+                          border: "1px solid var(--primary)",
+                          padding: "1px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    </div>
+                  </UserProfileOverlay>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="vp-setting-row" style={{ marginBottom: 0, marginTop: "8px" }}>
             <span className="vp-setting-label">
               <MonitorUp
                 size={14}
@@ -1031,7 +1193,56 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               </div>
             </label>
           </div>
-          {remoteStreams.length > 0 && (
+
+          {activeScreenUserIds.size > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                paddingTop: "0.25rem",
+                borderTop: "1px solid var(--border-color)",
+              }}
+            >
+              {Array.from(activeScreenUserIds).map(uid => {
+                const isCurrentUser = uid === String(currentUser?.id);
+                let user;
+                if (isCurrentUser && currentUser) {
+                  user = {
+                    user_name: currentUser.display_name || currentUser.username,
+                    avatar: currentUser.avatar_url,
+                  };
+                } else {
+                  user = onlineUsers.find(u => String(u.user_id) === uid);
+                }
+                if (!user) return null;
+
+                return (
+                  <UserProfileOverlay
+                    key={`screen-${uid}`}
+                    userId={uid}
+                    fallbackName={user.user_name}
+                    fallbackAvatar={user.avatar || undefined}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <UserAvatar
+                        src={user.avatar || undefined}
+                        alt={user.user_name}
+                        size={20}
+                        style={{
+                          border: "1px solid var(--primary)",
+                          padding: "1px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    </div>
+                  </UserProfileOverlay>
+                );
+              })}
+            </div>
+          )}
+
+          {streamsByPeer.length > 0 && (
             <div
               className="vp-queue-list"
               style={{
@@ -1042,17 +1253,44 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             >
               <div className="vp-queue-header">Active Streams</div>
               <div className="vp-queue-scroll">
-                {remoteStreams.map(({ peerId, stream, startedAt }) => {
+                {streamsByPeer.map(({ peerId, screen, camera, startedAt, screenId, cameraId }) => {
                   const u = onlineUsers.find(x => String(x.user_id) === peerId);
                   const name = u?.user_name || `User ${peerId}`;
+                  const mainStream = screen || camera;
+                  const mainId = screenId || cameraId;
+                  if (!mainStream) return null;
+
                   return (
                     <div
-                      key={`${peerId}-${stream.id}`}
+                      key={`${peerId}-${mainId}`}
                       className="vp-queue-item"
-                      style={{ flex: "0 0 160px", height: "90px" }}
-                      onClick={() => setEnlargedStreamId(`${peerId}-${stream.id}`)}
+                      style={{
+                        flex: "0 0 160px",
+                        height: "90px",
+                        position: "relative",
+                      }}
+                      onClick={() => setEnlargedStreamId(`${peerId}-${mainId}`)}
                     >
-                      <RemoteMedia stream={stream} volume={globalVolume} />
+                      <RemoteMedia stream={mainStream} volume={globalVolume} />
+                      {screen && camera && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "24px",
+                            right: "4px",
+                            width: "48px",
+                            height: "36px",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            backgroundColor: "#000",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                            zIndex: 2,
+                          }}
+                        >
+                          <RemoteMedia stream={camera} volume={0} objectFit="cover" />
+                        </div>
+                      )}
                       <div
                         className="vp-queue-item-info"
                         style={{
@@ -1063,6 +1301,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                           paddingLeft: "6px",
                           fontSize: "10px",
                           bottom: 0,
+                          zIndex: 3,
                         }}
                       >
                         <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
@@ -1131,7 +1370,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
                 if (totalUnmuted.size > 0) {
                   return (
-                    <div style={{ display: "flex", gap: "4px", marginRight: "8px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "4px",
+                        marginRight: "8px",
+                      }}
+                    >
                       {Array.from(totalUnmuted).map(uid => {
                         let user;
                         if (uid === String(currentUser?.id) && currentUser) {
@@ -1195,17 +1440,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             />
             <Button
               type="submit"
-              className="vp-play-btn yt-animate-btn"
-              variant="primary"
-              size="icon"
+              variant="secondary"
+              size="sm"
+              loading={isSearching}
               disabled={!inputUrl || isSearching}
               aria-label="Add media"
             >
-              {isSearching ? (
-                <span style={{ fontSize: "10px" }}>...</span>
-              ) : (
-                <Youtube size={16} className="yt-icon" />
-              )}
+              Search
             </Button>
           </form>
 
@@ -1482,7 +1723,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                   {mediaState.playlists.map(playlist => (
                     <div key={playlist.id} className="vp-playlist-card">
                       <div className="vp-playlist-header">
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
                           <Calendar size={10} />
                           {new Date(playlist.start_time).toLocaleString(undefined, {
                             month: "short",
@@ -1540,7 +1787,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                             if (socket) {
                               sendWebSocketMessage(socket, {
                                 type: "media:remove",
-                                payload: { route: location.pathname, item_id: item.id },
+                                payload: {
+                                  route: location.pathname,
+                                  item_id: item.id,
+                                },
                               });
                             }
                           }}
@@ -1637,13 +1887,22 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               onClick={e => e.stopPropagation()}
               onKeyDown={e => e.stopPropagation()}
             >
-              <div className="media-preview-frame">
+              <div className="media-preview-frame" style={{ position: "relative" }}>
                 <RemoteMedia
                   stream={enlarged.stream}
                   volume={globalVolume}
                   objectFit="contain"
                   isModal={true}
                 />
+                {(() => {
+                  const otherStreams = remoteStreams.filter(
+                    s => s.peerId === enlarged.peerId && s.stream.id !== enlarged.stream.id
+                  );
+                  if (otherStreams.length > 0) {
+                    return <DraggablePiP stream={otherStreams[0].stream} />;
+                  }
+                  return null;
+                })()}
               </div>
               <div className="up-upload-lightbox-bar">
                 <span className="up-upload-lightbox-name">
