@@ -9,13 +9,7 @@ import (
 func cmdDev() {
 	loadSharedEnv()
 
-	log("Starting infrastructure and backends for development...")
-	cmdComposeUp(false, false)
-
-	log("Starting grengo API server on port %d...", DefaultAPIPort)
-	go cmdAPIStart(DefaultAPIPort)
-
-	frontendDir := filepath.Join(ProjectRoot(), "backend", "frontend")
+	frontendDir := filepath.Join(ProjectRoot(), "frontend")
 	log("Starting Vite dev server in %s...", frontendDir)
 
 	cmd := exec.Command("npm", "run", "dev")

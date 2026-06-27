@@ -15,3 +15,21 @@ message ServerMessage {
   int64 user_id = 2;
   bytes payload = 3;
 }
+
+message ApiRequest {
+  uint64 request_id = 1;
+  string route = 2;
+  bytes body = 3;
+  string method = 4;
+  map<string, string> headers = 5;
+}
+
+message ApiResponse {
+  uint64 request_id = 1;
+  uint32 status = 2;
+  bytes body = 3;
+}
+
+message BatchEnvelope {
+  repeated ApiRequest requests = 1;
+}

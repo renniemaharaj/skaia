@@ -47,6 +47,9 @@ func cmdStart(name string) {
 		die("Client '%s' is disabled – enable it first", name)
 	}
 
+	log("Building frontend first to ensure valid state...")
+	distDir := buildFrontend()
+
 	ensureNetwork()
 	ensureImage()
 
@@ -55,6 +58,9 @@ func cmdStart(name string) {
 		die("Failed to start %s: %v", name, err)
 	}
 	log("%s started", name)
+
+	shipFrontendDist(name, distDir)
+	log("Frontend shipped to %s", name)
 }
 
 // cmdStop stops a client's backend container.

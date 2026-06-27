@@ -64,6 +64,7 @@ const (
 	LogsStream              MessageType = "logs:stream"               // server => subscribed clients: realtime log line
 	ProvisioningProgress    MessageType = "provisioning:progress"     // server => subscribed clients: live provisioning log line
 	ProvisioningStatus      MessageType = "provisioning:status"       // server => subscribed + admin clients: instance status changed
+	ApiRequest              MessageType = "api:request"               // client => server => client: multiplexed api requests
 	ErrorMessage            MessageType = "error"
 )
 

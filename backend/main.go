@@ -186,6 +186,7 @@ func main() {
 	ratelimit.InitCloudflare()
 
 	baseHandler := buildRouter(database.DB, hub, dispatcher, rdb, dsCompileCache, dsExecuteCache, dsCompileDispatcher, dsExecuteDispatcher, conveyorManager)
+	hub.ApiDispatcher = baseHandler
 
 	srv := &http.Server{
 		Addr:              ":" + port,

@@ -186,10 +186,147 @@ function requestCoalesceKey(endpoint: string, options: RequestInit): string {
   return [normalizedMethod(options), endpoint, headersKey(options.headers)].join(" ");
 }
 
+import { getGlobalWs } from "../hooks/useWebSocketSync";
+import { decodeApiResponse, encodeApiRequest, sendWebSocketMessage } from "./wsProtobuf";
+import type { ApiRequestProto } from "./wsProtobuf";
+
+interface PendingWsRequest<T> {
+  resolve: (value: T) => void;
+  reject: (reason: any) => void;
+}
+const pendingWsRequests = new Map<number, PendingWsRequest<any>>();
+let nextRequestId = 1;
+
+export function resolveWsApiResponse(rawPayload: Uint8Array) {
+  try {
+    const response = decodeApiResponse(rawPayload);
+    const reqId =
+      typeof response.requestId === "number"
+        ? response.requestId
+        : Number((response.requestId as any).toString());
+
+    const pending = pendingWsRequests.get(reqId);
+    if (!pending) return;
+    pendingWsRequests.delete(reqId);
+
+    if (response.status >= 400) {
+      let errorData;
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const text = new TextDecoder().decode(response.body);
+        errorData = JSON.parse(text);
+        errorMessage = errorData?.error || errorData?.message || errorMessage;
+      } catch {}
+      const err = new Error(errorMessage) as any;
+      err.status = response.status;
+      err.details = errorData;
+      pending.reject(err);
+      return;
+    }
+
+    try {
+      const text = new TextDecoder().decode(response.body);
+      if (!text) {
+        pending.resolve(null);
+        return;
+      }
+      try {
+        pending.resolve(JSON.parse(text));
+      } catch {
+        pending.resolve(text);
+      }
+    } catch (err) {
+      pending.resolve(null);
+    }
+  } catch (error) {
+    console.error("Failed to decode api response", error);
+  }
+}
+
+function queueWsRequest<T>(reqProto: ApiRequestProto): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    pendingWsRequests.set(reqProto.requestId, { resolve, reject });
+
+    const ws = getGlobalWs();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const payload = encodeApiRequest(reqProto);
+      sendWebSocketMessage(ws, {
+        type: "api:request",
+        payload: payload,
+      });
+    } else {
+      pendingWsRequests.delete(reqProto.requestId);
+      reject(new Error("WebSocket disconnected"));
+    }
+  });
+}
+
+export interface ExtendedRequestInit extends RequestInit {
+  batch?: boolean;
+}
+
 /**
  * Make authenticated API request
  */
-export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(
+  endpoint: string,
+  options: ExtendedRequestInit = {}
+): Promise<T> {
+  const method = normalizedMethod(options);
+  const ws = getGlobalWs();
+
+  const useWs =
+    ws &&
+    ws.readyState === WebSocket.OPEN &&
+    !options.signal &&
+    !(options.body instanceof FormData);
+
+  if (useWs) {
+    const reqId = nextRequestId++;
+    let bodyBytes = new Uint8Array();
+    if (typeof options.body === "string") {
+      bodyBytes = new TextEncoder().encode(options.body);
+    } else if (options.body instanceof Uint8Array) {
+      bodyBytes = options.body as any;
+    }
+
+    const headersObj: Record<string, string> = {};
+    const mergedHeaders = mergeHeaders(getAuthHeaders(true), options.headers);
+    mergedHeaders.forEach((val, key) => {
+      headersObj[key] = val;
+    });
+
+    const reqProto: ApiRequestProto = {
+      requestId: reqId,
+      route: endpoint,
+      method: method,
+      body: bodyBytes,
+      headers: headersObj,
+    };
+
+    if (shouldCoalesceRead(options)) {
+      const key = requestCoalesceKey(endpoint, options);
+      const existing = pendingAPIReads.get(key);
+      if (existing) {
+        return existing.promise as Promise<T>;
+      }
+
+      const promise = queueWsRequest<T>(reqProto);
+      pendingAPIReads.set(key, {
+        promise,
+        timer: setTimeout(() => pendingAPIReads.delete(key), API_READ_COALESCE_WINDOW_MS),
+      });
+
+      promise.finally(() => {
+        pendingAPIReads.delete(key);
+      });
+
+      return promise;
+    }
+
+    return queueWsRequest<T>(reqProto);
+  }
+
   if (shouldCoalesceRead(options)) {
     const key = requestCoalesceKey(endpoint, options);
     const existing = pendingAPIReads.get(key);

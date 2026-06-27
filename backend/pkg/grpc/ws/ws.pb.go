@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: proto/ws.proto
+// source: ws.proto
 
 package ws
 
@@ -32,7 +32,7 @@ type WebSocketMessage struct {
 
 func (x *WebSocketMessage) Reset() {
 	*x = WebSocketMessage{}
-	mi := &file_proto_ws_proto_msgTypes[0]
+	mi := &file_ws_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *WebSocketMessage) String() string {
 func (*WebSocketMessage) ProtoMessage() {}
 
 func (x *WebSocketMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ws_proto_msgTypes[0]
+	mi := &file_ws_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *WebSocketMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebSocketMessage.ProtoReflect.Descriptor instead.
 func (*WebSocketMessage) Descriptor() ([]byte, []int) {
-	return file_proto_ws_proto_rawDescGZIP(), []int{0}
+	return file_ws_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *WebSocketMessage) GetType() string {
@@ -92,7 +92,7 @@ type ServerMessage struct {
 
 func (x *ServerMessage) Reset() {
 	*x = ServerMessage{}
-	mi := &file_proto_ws_proto_msgTypes[1]
+	mi := &file_ws_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -104,7 +104,7 @@ func (x *ServerMessage) String() string {
 func (*ServerMessage) ProtoMessage() {}
 
 func (x *ServerMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ws_proto_msgTypes[1]
+	mi := &file_ws_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -117,7 +117,7 @@ func (x *ServerMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerMessage.ProtoReflect.Descriptor instead.
 func (*ServerMessage) Descriptor() ([]byte, []int) {
-	return file_proto_ws_proto_rawDescGZIP(), []int{1}
+	return file_ws_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ServerMessage) GetType() string {
@@ -141,11 +141,191 @@ func (x *ServerMessage) GetPayload() []byte {
 	return nil
 }
 
-var File_proto_ws_proto protoreflect.FileDescriptor
+type ApiRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     uint64                 `protobuf:"varint,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Route         string                 `protobuf:"bytes,2,opt,name=route,proto3" json:"route,omitempty"`
+	Body          []byte                 `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	Method        string                 `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
+	Headers       map[string]string      `protobuf:"bytes,5,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_proto_ws_proto_rawDesc = "" +
+func (x *ApiRequest) Reset() {
+	*x = ApiRequest{}
+	mi := &file_ws_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApiRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApiRequest) ProtoMessage() {}
+
+func (x *ApiRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ws_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApiRequest.ProtoReflect.Descriptor instead.
+func (*ApiRequest) Descriptor() ([]byte, []int) {
+	return file_ws_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ApiRequest) GetRequestId() uint64 {
+	if x != nil {
+		return x.RequestId
+	}
+	return 0
+}
+
+func (x *ApiRequest) GetRoute() string {
+	if x != nil {
+		return x.Route
+	}
+	return ""
+}
+
+func (x *ApiRequest) GetBody() []byte {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+func (x *ApiRequest) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *ApiRequest) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
+	}
+	return nil
+}
+
+type ApiResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestId     uint64                 `protobuf:"varint,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Status        uint32                 `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
+	Body          []byte                 `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApiResponse) Reset() {
+	*x = ApiResponse{}
+	mi := &file_ws_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApiResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApiResponse) ProtoMessage() {}
+
+func (x *ApiResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ws_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApiResponse.ProtoReflect.Descriptor instead.
+func (*ApiResponse) Descriptor() ([]byte, []int) {
+	return file_ws_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ApiResponse) GetRequestId() uint64 {
+	if x != nil {
+		return x.RequestId
+	}
+	return 0
+}
+
+func (x *ApiResponse) GetStatus() uint32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
+func (x *ApiResponse) GetBody() []byte {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+type BatchEnvelope struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Requests      []*ApiRequest          `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BatchEnvelope) Reset() {
+	*x = BatchEnvelope{}
+	mi := &file_ws_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BatchEnvelope) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BatchEnvelope) ProtoMessage() {}
+
+func (x *BatchEnvelope) ProtoReflect() protoreflect.Message {
+	mi := &file_ws_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BatchEnvelope.ProtoReflect.Descriptor instead.
+func (*BatchEnvelope) Descriptor() ([]byte, []int) {
+	return file_ws_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *BatchEnvelope) GetRequests() []*ApiRequest {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
+var File_ws_proto protoreflect.FileDescriptor
+
+const file_ws_proto_rawDesc = "" +
 	"\n" +
-	"\x0eproto/ws.proto\x12\bskaia.ws\"Y\n" +
+	"\bws.proto\x12\bskaia.ws\"Y\n" +
 	"\x10WebSocketMessage\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x18\n" +
@@ -153,53 +333,77 @@ const file_proto_ws_proto_rawDesc = "" +
 	"\rServerMessage\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x18\n" +
-	"\apayload\x18\x03 \x01(\fR\apayloadB\x1dZ\x1bgithub.com/skaia/grpc/ws;wsb\x06proto3"
+	"\apayload\x18\x03 \x01(\fR\apayload\"\xe6\x01\n" +
+	"\n" +
+	"ApiRequest\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\x04R\trequestId\x12\x14\n" +
+	"\x05route\x18\x02 \x01(\tR\x05route\x12\x12\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\x12\x16\n" +
+	"\x06method\x18\x04 \x01(\tR\x06method\x12;\n" +
+	"\aheaders\x18\x05 \x03(\v2!.skaia.ws.ApiRequest.HeadersEntryR\aheaders\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
+	"\vApiResponse\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x01 \x01(\x04R\trequestId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\rR\x06status\x12\x12\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\"A\n" +
+	"\rBatchEnvelope\x120\n" +
+	"\brequests\x18\x01 \x03(\v2\x14.skaia.ws.ApiRequestR\brequestsB\x1dZ\x1bgithub.com/skaia/grpc/ws;wsb\x06proto3"
 
 var (
-	file_proto_ws_proto_rawDescOnce sync.Once
-	file_proto_ws_proto_rawDescData []byte
+	file_ws_proto_rawDescOnce sync.Once
+	file_ws_proto_rawDescData []byte
 )
 
-func file_proto_ws_proto_rawDescGZIP() []byte {
-	file_proto_ws_proto_rawDescOnce.Do(func() {
-		file_proto_ws_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_ws_proto_rawDesc), len(file_proto_ws_proto_rawDesc)))
+func file_ws_proto_rawDescGZIP() []byte {
+	file_ws_proto_rawDescOnce.Do(func() {
+		file_ws_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ws_proto_rawDesc), len(file_ws_proto_rawDesc)))
 	})
-	return file_proto_ws_proto_rawDescData
+	return file_ws_proto_rawDescData
 }
 
-var file_proto_ws_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_proto_ws_proto_goTypes = []any{
+var file_ws_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_ws_proto_goTypes = []any{
 	(*WebSocketMessage)(nil), // 0: skaia.ws.WebSocketMessage
 	(*ServerMessage)(nil),    // 1: skaia.ws.ServerMessage
+	(*ApiRequest)(nil),       // 2: skaia.ws.ApiRequest
+	(*ApiResponse)(nil),      // 3: skaia.ws.ApiResponse
+	(*BatchEnvelope)(nil),    // 4: skaia.ws.BatchEnvelope
+	nil,                      // 5: skaia.ws.ApiRequest.HeadersEntry
 }
-var file_proto_ws_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+var file_ws_proto_depIdxs = []int32{
+	5, // 0: skaia.ws.ApiRequest.headers:type_name -> skaia.ws.ApiRequest.HeadersEntry
+	2, // 1: skaia.ws.BatchEnvelope.requests:type_name -> skaia.ws.ApiRequest
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_proto_ws_proto_init() }
-func file_proto_ws_proto_init() {
-	if File_proto_ws_proto != nil {
+func init() { file_ws_proto_init() }
+func file_ws_proto_init() {
+	if File_ws_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_ws_proto_rawDesc), len(file_proto_ws_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ws_proto_rawDesc), len(file_ws_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_ws_proto_goTypes,
-		DependencyIndexes: file_proto_ws_proto_depIdxs,
-		MessageInfos:      file_proto_ws_proto_msgTypes,
+		GoTypes:           file_ws_proto_goTypes,
+		DependencyIndexes: file_ws_proto_depIdxs,
+		MessageInfos:      file_ws_proto_msgTypes,
 	}.Build()
-	File_proto_ws_proto = out.File
-	file_proto_ws_proto_goTypes = nil
-	file_proto_ws_proto_depIdxs = nil
+	File_ws_proto = out.File
+	file_ws_proto_goTypes = nil
+	file_ws_proto_depIdxs = nil
 }

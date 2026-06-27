@@ -8,6 +8,9 @@ import (
 func cmdComposeUp(follow bool, build bool) {
 	loadSharedEnv()
 
+	// 0) Build frontend first so that if it fails, the site is not left in a crashed state
+	distDir := buildFrontend()
+
 	// 1) Optionally build backend image
 	if build {
 		cmdBuild()
@@ -71,7 +74,11 @@ func cmdComposeUp(follow bool, build bool) {
 	log("All services started (%d client(s))", started)
 
 	if started > 0 {
-		cmdShipFrontend()
+		targets := frontendRebuildTargets("all")
+		for _, name := range targets {
+			shipFrontendDist(name, distDir)
+		}
+		log("Frontend shipped to %d backend(s)", len(targets))
 	}
 
 	if follow {

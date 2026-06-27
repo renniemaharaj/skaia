@@ -38,6 +38,27 @@ const root = protobuf.Root.fromJSON({
                 payload: { type: "bytes", id: 3 },
               },
             },
+            ApiRequest: {
+              fields: {
+                requestId: { type: "uint64", id: 1 },
+                route: { type: "string", id: 2 },
+                body: { type: "bytes", id: 3 },
+                method: { type: "string", id: 4 },
+                headers: { keyType: "string", type: "string", id: 5 } as any,
+              },
+            },
+            ApiResponse: {
+              fields: {
+                requestId: { type: "uint64", id: 1 },
+                status: { type: "uint32", id: 2 },
+                body: { type: "bytes", id: 3 },
+              },
+            },
+            BatchEnvelope: {
+              fields: {
+                requests: { rule: "repeated", type: "ApiRequest", id: 1 },
+              },
+            },
           },
         },
       },
@@ -73,12 +94,39 @@ export const encodeWebSocketProto = (
   );
 };
 
+export interface ApiRequestProto {
+  requestId: number;
+  route: string;
+  body: Uint8Array;
+  method: string;
+  headers: Record<string, string>;
+}
+
+export interface ApiResponseProto {
+  requestId: number;
+  status: number;
+  body: Uint8Array;
+}
+
+const apiRequestType = root.lookupType("skaia.ws.ApiRequest");
+const apiResponseType = root.lookupType("skaia.ws.ApiResponse");
+
+export const encodeApiRequest = (request: ApiRequestProto): Uint8Array => {
+  const message = apiRequestType.create(request);
+  return apiRequestType.encode(message).finish();
+};
+
+export const decodeApiResponse = (payload: Uint8Array): ApiResponseProto => {
+  return apiResponseType.decode(payload) as unknown as ApiResponseProto;
+};
+
 export const decodeWebSocketProto = async (
   data: Blob | ArrayBuffer
 ): Promise<{
   type: string;
   user_id: number;
   payload: unknown;
+  rawPayload?: Uint8Array;
 }> => {
   const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
   const decoded = serverMessageType.decode(new Uint8Array(buffer)) as ProtobufEnvelope;
@@ -86,6 +134,7 @@ export const decodeWebSocketProto = async (
     type: decoded.type ?? "",
     user_id: toNumber(decoded.userId),
     payload: decodePayload(decoded.payload),
+    rawPayload: decoded.payload,
   };
 };
 

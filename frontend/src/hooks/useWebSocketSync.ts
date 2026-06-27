@@ -24,6 +24,7 @@ import {
   handleStoreUpdate,
   handleUserUpdate,
 } from "./handlers";
+import { resolveWsApiResponse } from "../utils/api";
 import "../utils/wsResources";
 import {
   WS_PROTO_SUBPROTOCOL,
@@ -39,6 +40,8 @@ import {
 let _globalWs: WebSocket | null = null;
 let _globalConnecting = false;
 
+export const getGlobalWs = () => _globalWs;
+
 const appendWsParam = (url: string, key: string, value: string) =>
   `${url}${url.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(value)}`;
 
@@ -46,7 +49,7 @@ const parseWebSocketMessage = async (data: MessageEvent["data"]) => {
   if (data instanceof Blob || data instanceof ArrayBuffer) {
     const buffer = data instanceof Blob ? await data.arrayBuffer() : data;
     const message = await decodeWebSocketProto(buffer);
-    return { message, payload: message.payload as any };
+    return { message, payload: message.payload as any, rawPayload: message.rawPayload };
   }
 
   throw new Error("WebSocket text frames are not supported");
@@ -128,6 +131,12 @@ export const useWebSocketSync = () => {
               }
               return;
             }
+
+            case "api:response":
+              if (parsed.rawPayload) {
+                resolveWsApiResponse(parsed.rawPayload);
+              }
+              return;
 
             case "user:update":
               handleUserUpdate(

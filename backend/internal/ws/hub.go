@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	log "github.com/skaia/backend/internal/syslog"
 	"os"
 	"strconv"
@@ -198,6 +199,8 @@ type Hub struct {
 	chatSlowModeInterval atomic.Int64 // seconds; 0 means use default burst rate
 
 	mediaRepo *MediaHistoryRepo
+
+	ApiDispatcher http.Handler
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.

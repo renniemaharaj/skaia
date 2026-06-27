@@ -1,10 +1,14 @@
 package ws
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -181,11 +185,68 @@ func (c *Client) handleMessage(msg Message) {
 		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 	case GrengoJobAction:
 		c.handleGrengoJobAction(msg)
+	case ApiRequest:
+		c.handleApiRequest(msg)
 	default:
 		if c.broadcastLimit.allow() {
 			c.Hub.Broadcast(&msg)
 		}
 	}
+}
+
+func (c *Client) handleApiRequest(msg Message) {
+	if c.Hub.ApiDispatcher == nil {
+		pkgLog.Printf("[DEBUG] ApiDispatcher is nil")
+		return
+	}
+
+	var req wspb.ApiRequest
+	if err := proto.Unmarshal(msg.Payload, &req); err != nil {
+		pkgLog.Printf("[ERROR] Failed to unmarshal ApiRequest: %v", err)
+		return
+	}
+
+	go c.dispatchApiRequest(&req)
+}
+
+func (c *Client) dispatchApiRequest(req *wspb.ApiRequest) {
+	route := req.Route
+	if !strings.HasPrefix(route, "/api") {
+		route = "/api" + route
+	}
+
+	pkgLog.Printf("[DEBUG] Dispatching WS API request: %s %s (requestId: %d)", req.Method, route, req.RequestId)
+
+	httpReq, err := http.NewRequest(req.Method, route, bytes.NewReader(req.Body))
+	if err != nil {
+		pkgLog.Printf("[ERROR] Failed to create http request for route %s: %v", route, err)
+		return
+	}
+
+	if c.Conn != nil {
+		httpReq.RemoteAddr = c.Conn.RemoteAddr().String()
+	}
+
+	for k, v := range req.Headers {
+		httpReq.Header.Set(k, v)
+	}
+
+	// Important: Do not carry over cookies from websocket upgrade directly, 
+	// because chi mux handles CORS/Auth via headers which frontend injects in the batch.
+	rec := httptest.NewRecorder()
+	c.Hub.ApiDispatcher.ServeHTTP(rec, httpReq)
+
+	res := &wspb.ApiResponse{
+		RequestId: req.RequestId,
+		Status:    uint32(rec.Code),
+		Body:      rec.Body.Bytes(),
+	}
+	resBytes, _ := proto.Marshal(res)
+
+	c.queueMessage(&Message{
+		Type:    "api:response",
+		Payload: resBytes,
+	})
 }
 
 func (c *Client) handleGrengoJobAction(msg Message) {
