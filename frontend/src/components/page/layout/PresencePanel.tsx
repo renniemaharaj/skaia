@@ -187,9 +187,10 @@ UserRow.displayName = "PresenceUserRow";
 interface ChatBubbleProps {
   msg: GlobalChatMessage;
   currentUserId?: string | number;
+  isContinuation?: boolean;
 }
 
-const ChatBubble = memo(({ msg, currentUserId }: ChatBubbleProps) => {
+const ChatBubble = memo(({ msg, currentUserId, isContinuation }: ChatBubbleProps) => {
   const isMe = !msg.is_guest && String(msg.user_id) === String(currentUserId);
   const time = formatLocalTime(msg.created_at);
   const isSystemEvent = msg.kind === "join" || msg.kind === "leave";
@@ -207,23 +208,38 @@ const ChatBubble = memo(({ msg, currentUserId }: ChatBubbleProps) => {
   if (isSystemEvent) {
     const Icon = msg.kind === "join" ? ArrowRight : ArrowLeft;
     return (
-      <div className="pp-chat-system">
-        <span className={`pp-chat-system__icon pp-chat-system__icon--${msg.kind}`}>
-          <Icon size={13} />
-        </span>
-        {userCard}
-        <span className="pp-chat-system__time">{time}</span>
+      <div className={`pp-chat-system${isContinuation ? " pp-chat-system--continuation" : ""}`}>
+        {!isContinuation && (
+          <div className="pp-chat-meta">
+            {userCard}
+            <span className="pp-chat-time">{time}</span>
+          </div>
+        )}
+        <div className="pp-chat-content pp-chat-system-content">
+          <span className={`pp-chat-system__icon pp-chat-system__icon--${msg.kind}`}>
+            <Icon size={13} />
+          </span>
+          <span className="pp-chat-system__text">{msg.kind === "join" ? "joined" : "left"}</span>
+          {isContinuation && <span className="pp-chat-time pp-chat-time--inline">{time}</span>}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`pp-chat-bubble${isMe ? " pp-chat-bubble--me" : ""}`}>
-      <div className="pp-chat-meta">
-        {userCard}
-        <span className="pp-chat-time">{time}</span>
-      </div>
-      <p className="pp-chat-content">{msg.content}</p>
+    <div
+      className={`pp-chat-bubble${isMe ? " pp-chat-bubble--me" : ""}${isContinuation ? " pp-chat-bubble--continuation" : ""}`}
+    >
+      {!isContinuation && (
+        <div className="pp-chat-meta">
+          {userCard}
+          <span className="pp-chat-time">{time}</span>
+        </div>
+      )}
+      <p className="pp-chat-content">
+        {isContinuation && <span className="pp-chat-time pp-chat-time--hover">{time}</span>}
+        {msg.content}
+      </p>
     </div>
   );
 });
@@ -673,9 +689,26 @@ const PresencePanel = () => {
           >
             <div className="pp-chat-feed">
               {chatMessages.length === 0 && <p className="pp-empty">No messages yet. Say hi!</p>}
-              {chatMessages.map(msg => (
-                <ChatBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />
-              ))}
+              {chatMessages.map((msg, idx) => {
+                const prevMsg = chatMessages[idx - 1];
+                const isSameUser =
+                  prevMsg &&
+                  String(prevMsg.user_id) === String(msg.user_id) &&
+                  prevMsg.is_guest === msg.is_guest;
+                const isRecent =
+                  prevMsg &&
+                  new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() <
+                    5 * 60 * 1000;
+                const isContinuation = isSameUser && isRecent;
+                return (
+                  <ChatBubble
+                    key={msg.id}
+                    msg={msg}
+                    currentUserId={currentUser?.id}
+                    isContinuation={isContinuation}
+                  />
+                );
+              })}
               <div ref={chatEndRef} />
             </div>
             <div className="pp-chat-input-row">
