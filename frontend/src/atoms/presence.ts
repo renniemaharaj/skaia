@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import type { ReactNode } from "react";
 import { registerResource } from "../utils/wsRegistry";
 
 export interface OnlineUser {
@@ -26,9 +27,7 @@ export const onlineUsersAtom = atom<OnlineUser[]>([]);
 /** Cursor positions of other users on the same route, keyed by user_id. */
 export const cursorPositionsAtom = atom<Map<number, CursorPosition>>(new Map());
 
-export const presencePanelExpandedAtom = atom(
-  !(typeof window !== "undefined" && window.innerWidth <= 720)
-);
+export const presencePanelExpandedAtom = atom(false);
 
 /**
  * Set by the WS sync hook when a "tp" (teleport) message is received.
@@ -38,6 +37,9 @@ export const pendingTpRouteAtom = atom<string | null>(null);
 
 /** Tracks the user ID we are teleporting to or who summoned us, for scroll syncing. */
 export const pendingTpUserAtom = atom<number | null>(null);
+
+export const layoutChildrenAtom = atom<ReactNode | null>(null);
+export const isPresenceSplitModeAtom = atom<boolean>(false);
 
 registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) => {
   console.log("presence:update", data);

@@ -863,12 +863,13 @@
   bottom: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--bg-color);
   border: none;
   z-index: 2000;
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  --store-category-sticky-top: 0px !important;
 }
 
 .presence-panel.pp-split-mode .pp-wrapper {

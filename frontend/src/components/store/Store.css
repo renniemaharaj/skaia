@@ -26,7 +26,7 @@
   background-color: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
   backdrop-filter: blur(12px);
   padding: 0.85rem 1.5rem 0.95rem;
-  margin: -40px calc(-50vw + 50%) 40px calc(-50vw + 50%);
+  margin: 0 0 40px 0;
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: var(--store-category-sticky-top);

@@ -9,8 +9,13 @@ import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from ".
 import { featuresAtom, seoAtom } from "../atoms/config";
 import { contextUserAtom } from "../atoms/contextUser";
 import { layoutModeAtom } from "../atoms/layoutMode";
-import { pendingTpRouteAtom, pendingTpUserAtom, cursorPositionsAtom } from "../atoms/presence";
-
+import {
+  pendingTpRouteAtom,
+  pendingTpUserAtom,
+  cursorPositionsAtom,
+  layoutChildrenAtom,
+  isPresenceSplitModeAtom,
+} from "../atoms/presence";
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
@@ -236,6 +241,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const clearTpRoute = useSetAtom(pendingTpRouteAtom);
   const pendingTpUser = useAtomValue(pendingTpUserAtom);
   const clearTpUser = useSetAtom(pendingTpUserAtom);
+
+  const setLayoutChildren = useSetAtom(layoutChildrenAtom);
+  const isPresenceSplitMode = useAtomValue(isPresenceSplitModeAtom);
+
+  useEffect(() => {
+    setLayoutChildren(children);
+  }, [children, setLayoutChildren]);
 
   const seo = useAtomValue(seoAtom);
   const physicsSettings = useAtomValue(physicsSettingsAtom);
@@ -646,7 +658,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           setLayoutMode(layoutMode === "application" ? "web" : "application")
         }
       />
-      <main className="layout-main">{children}</main>
+      <main className="layout-main">{!isPresenceSplitMode ? children : null}</main>
       {effectiveLayoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? (
         <Suspense fallback={null}>

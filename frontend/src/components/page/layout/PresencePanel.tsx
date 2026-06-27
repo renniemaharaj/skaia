@@ -27,8 +27,11 @@ import {
   onlineUsersAtom,
   pendingTpUserAtom,
   presencePanelExpandedAtom,
+  layoutChildrenAtom,
+  isPresenceSplitModeAtom,
 } from "../../../atoms/presence";
 import { enlargedStreamIdAtom } from "../../../atoms/voice";
+
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
@@ -517,14 +520,29 @@ const PresencePanel = () => {
         } as React.CSSProperties)
       : undefined;
 
-  const isSplitMode = expanded && !isMobile && enlargedStreamId;
+  const isSplitMode = expanded && !isMobile && !enlargedStreamId;
+  const setPresenceSplitMode = useSetAtom(isPresenceSplitModeAtom);
+  const layoutChildren = useAtomValue(layoutChildrenAtom);
+
+  useEffect(() => {
+    setPresenceSplitMode(isSplitMode);
+    return () => setPresenceSplitMode(false);
+  }, [isSplitMode, setPresenceSplitMode]);
 
   return (
     <div
       className={`presence-panel${expanded ? " presence-panel--expanded" : ""}${isSplitMode ? " pp-split-mode" : ""}`}
-      style={panelStyle}
+      style={panelStyle as any}
       id="presence-panel-root"
     >
+      {isSplitMode && (
+        <div
+          className="pp-split-content-area layout-main"
+          style={{ flex: 1, position: "relative", overflow: "auto", padding: "0 24px" }}
+        >
+          {layoutChildren}
+        </div>
+      )}
       <div className="pp-wrapper">
         {/* Control bar: mode tabs + expand toggle */}
         <div className="pp-controls">
