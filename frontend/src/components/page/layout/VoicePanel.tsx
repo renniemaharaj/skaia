@@ -889,13 +889,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       streamRef.current = stream;
       setMicActive(true);
       addStreamToPeers(stream);
-      for (const user of onlineUsers) {
-        if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          if (!peerConnectionsRef.current.has(String(user.user_id))) {
-            void startOffer(user.user_id);
-          }
-        }
-      }
     } catch (err) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -942,13 +935,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       cameraStreamRef.current = stream;
       setCameraActive(true);
       addStreamToPeers(stream);
-      for (const user of onlineUsers) {
-        if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          if (!peerConnectionsRef.current.has(String(user.user_id))) {
-            void startOffer(user.user_id);
-          }
-        }
-      }
     } catch (err) {
       toast.error("Could not access camera.");
     }
@@ -997,13 +983,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       screenStreamRef.current = stream;
       setScreenActive(true);
       addStreamToPeers(stream);
-      for (const user of onlineUsers) {
-        if (user.route === location.pathname && user.user_id !== myPresenceId) {
-          if (!peerConnectionsRef.current.has(String(user.user_id))) {
-            void startOffer(user.user_id);
-          }
-        }
-      }
     } catch (err) {
       toast.error("Could not share screen.");
     }
@@ -1100,21 +1079,35 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
   useEffect(() => {
     if (!canSpeak || !myPresenceId) return;
+
+    const validUserIds = new Set<string>();
+
     for (const user of onlineUsers) {
       if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
+      validUserIds.add(String(user.user_id));
       if (!peerConnectionsRef.current.has(String(user.user_id))) {
-        void startOffer(user.user_id);
+        // Deterministic proactive connection: only the higher ID peer initiates.
+        // The lower ID peer will reactively create the connection when they receive the offer.
+        if (myPresenceId > user.user_id) {
+          createPeerConnection(user.user_id);
+        }
       }
     }
-  }, [canSpeak, location.pathname, myPresenceId, onlineUsers, startOffer]);
+
+    for (const peerId of peerConnectionsRef.current.keys()) {
+      if (!validUserIds.has(peerId)) {
+        closePeer(peerId, false);
+      }
+    }
+  }, [canSpeak, location.pathname, myPresenceId, onlineUsers, startOffer, closePeer]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   const activeCameraUserIds = new Set<string>();
   const activeScreenUserIds = new Set<string>();
 
-  if (micActive && currentUser?.id) activeMicUserIds.add(String(currentUser.id));
-  if (cameraActive && currentUser?.id) activeCameraUserIds.add(String(currentUser.id));
-  if (screenActive && currentUser?.id) activeScreenUserIds.add(String(currentUser.id));
+  if (micActive && myPresenceId) activeMicUserIds.add(String(myPresenceId));
+  if (cameraActive && myPresenceId) activeCameraUserIds.add(String(myPresenceId));
+  if (screenActive && myPresenceId) activeScreenUserIds.add(String(myPresenceId));
 
   const streamsByPeer = useMemo(() => {
     const map = new Map<
@@ -1224,7 +1217,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               }}
             >
               {Array.from(activeMicUserIds).map(uid => {
-                const isCurrentUser = uid === String(currentUser?.id);
+                const isCurrentUser = uid === String(myPresenceId);
                 // The current user speaks if their local activeSpeakers was updated recently
                 const isSpeaking = now - (activeSpeakers[uid] || 0) < 300;
                 let user;
@@ -1319,7 +1312,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               }}
             >
               {Array.from(activeCameraUserIds).map(uid => {
-                const isCurrentUser = uid === String(currentUser?.id);
+                const isCurrentUser = uid === String(myPresenceId);
                 let user;
                 if (isCurrentUser && currentUser) {
                   user = {
@@ -1400,7 +1393,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               }}
             >
               {Array.from(activeScreenUserIds).map(uid => {
-                const isCurrentUser = uid === String(currentUser?.id);
+                const isCurrentUser = uid === String(myPresenceId);
                 let user;
                 if (isCurrentUser && currentUser) {
                   user = {
@@ -1561,7 +1554,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 );
                 const showLocal = !isPlayerMuted;
                 const totalUnmuted = new Set(unmutedUsers.map(u => String(u.user_id)));
-                if (showLocal && currentUser) totalUnmuted.add(String(currentUser.id));
+                if (showLocal && myPresenceId) totalUnmuted.add(String(myPresenceId));
 
                 if (totalUnmuted.size > 0) {
                   return (
@@ -1574,7 +1567,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                     >
                       {Array.from(totalUnmuted).map(uid => {
                         let user;
-                        if (uid === String(currentUser?.id) && currentUser) {
+                        if (uid === String(myPresenceId) && currentUser) {
                           user = {
                             user_name: currentUser.display_name || currentUser.username,
                             avatar: currentUser.avatar_url,
@@ -2141,7 +2134,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 />
                 {(() => {
                   const otherStreams = remoteStreams.filter(
-                    s => s.peerId === enlarged.peerId && s.stream.id !== enlarged.stream.id
+                    s =>
+                      s.peerId === enlarged.peerId &&
+                      s.stream.id !== enlarged.stream.id &&
+                      s.stream.getVideoTracks().some(t => t.readyState !== "ended")
                   );
                   if (otherStreams.length > 0) {
                     return <DraggablePiP stream={otherStreams[0].stream} />;
@@ -2198,7 +2194,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 />
                 {(() => {
                   const otherStreams = remoteStreams.filter(
-                    s => s.peerId === enlarged.peerId && s.stream.id !== enlarged.stream.id
+                    s =>
+                      s.peerId === enlarged.peerId &&
+                      s.stream.id !== enlarged.stream.id &&
+                      s.stream.getVideoTracks().some(t => t.readyState !== "ended")
                   );
                   if (otherStreams.length > 0) {
                     return <DraggablePiP stream={otherStreams[0].stream} />;
