@@ -1553,16 +1553,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                             (transitioningItemId === item.id ? (
                               <button
                                 onClick={completeTransition}
-                                className="btn btn-ghost"
+                                className="action-btn"
                                 style={{
-                                  padding: "0",
-                                  borderRadius: "50%",
                                   position: "relative",
-                                  width: "24px",
-                                  height: "24px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
                                   marginRight: "4px",
                                 }}
                                 title="Complete transition immediately"
@@ -1618,10 +1611,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                     });
                                   }
                                 }}
-                                className="btn btn-ghost"
+                                className="action-btn"
                                 style={{
-                                  padding: "0.25rem",
-                                  borderRadius: "50%",
                                   marginRight: "4px",
                                 }}
                                 title="Start transition"
@@ -1659,10 +1650,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                                   });
                                 }
                               }}
-                              className="btn btn-ghost"
+                              className="action-btn"
                               style={{
-                                padding: "0.25rem",
-                                borderRadius: "50%",
                                 marginRight: "4px",
                               }}
                               title="Play Now"
@@ -1804,14 +1793,11 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                               });
                             }
                           }}
-                          className="btn btn-ghost"
+                          className="action-btn danger"
                           style={{
-                            padding: "0.25rem",
-                            borderRadius: "50%",
                             position: "absolute",
                             top: 2,
                             right: 2,
-                            background: "rgba(255,0,0,0.7)",
                           }}
                           title="Remove from history"
                         >
@@ -1830,8 +1816,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                               });
                             }
                           }}
-                          className="btn btn-ghost"
-                          style={{ padding: "0.25rem", borderRadius: "50%" }}
+                          className="action-btn"
                           title="Play Again"
                         >
                           <Play size={14} />
