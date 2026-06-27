@@ -32,6 +32,7 @@ import { relativeTimeAgo } from "../../../utils/serverTime";
 import { getSoundVolume } from "../../../utils/sound";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
+import Select from "../../input/Select";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import YouTubePlayer from "./YouTubePlayer";
@@ -192,6 +193,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const globalVolumeRef = useRef(globalVolume);
   globalVolumeRef.current = globalVolume;
   const [isPlayerMuted, setIsPlayerMuted] = useAtom(playerMutedAtom);
+  const isPlayerMutedRef = useRef(isPlayerMuted);
+  isPlayerMutedRef.current = isPlayerMuted;
   const [historyViewMode, setHistoryViewMode] = useState<"list" | "playlists">("list");
 
   useEffect(() => {
@@ -223,6 +226,32 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     { peerId: string; stream: MediaStream; startedAt: string }[]
   >([]);
   const [enlargedStreamId, setEnlargedStreamId] = useState<string | null>(null);
+
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>("");
+  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>("");
+
+  useEffect(() => {
+    const updateDevices = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audios = devices.filter(d => d.kind === "audioinput");
+        const videos = devices.filter(d => d.kind === "videoinput");
+        setAudioDevices(audios);
+        setVideoDevices(videos);
+        if (audios.length > 0 && !selectedAudioDeviceId)
+          setSelectedAudioDeviceId(audios[0].deviceId);
+        if (videos.length > 0 && !selectedVideoDeviceId)
+          setSelectedVideoDeviceId(videos[0].deviceId);
+      } catch (err) {
+        console.error("Could not enumerate devices:", err);
+      }
+    };
+    updateDevices();
+    navigator.mediaDevices.addEventListener("devicechange", updateDevices);
+    return () => navigator.mediaDevices.removeEventListener("devicechange", updateDevices);
+  }, [selectedAudioDeviceId, selectedVideoDeviceId]);
 
   const [remoteMicUsers, setRemoteMicUsers] = useState<string[]>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
@@ -638,6 +667,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
+      pc.addTransceiver("audio", { direction: "recvonly" });
+      pc.addTransceiver("video", { direction: "recvonly" });
       peerConnectionsRef.current.set(key, pc);
 
       const addLocalTracks = (stream: MediaStream | null) => {
@@ -702,7 +733,10 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           window.dispatchEvent(new CustomEvent("voice:speaking", { detail: key }));
 
           const updateAudioMuteState = () => {
-            if (audio) audio.muted = stream.getVideoTracks().length > 0;
+            if (audio) {
+              const hasVideo = stream.getVideoTracks().length > 0;
+              audio.muted = hasVideo || isPlayerMutedRef.current;
+            }
           };
           updateAudioMuteState();
           stream.addEventListener("addtrack", updateAudioMuteState);
@@ -788,7 +822,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         await audioContext.resume();
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: selectedAudioDeviceId ? { deviceId: { exact: selectedAudioDeviceId } } : true,
+      });
       streamRef.current = stream;
       setMicActive(true);
       addStreamToPeers(stream);
@@ -806,6 +842,27 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     }
   };
 
+  const handleAudioDeviceChange = async (deviceId: string) => {
+    setSelectedAudioDeviceId(deviceId);
+    if (micActive) {
+      if (streamRef.current) {
+        removeStreamFromPeers(streamRef.current);
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { deviceId: { exact: deviceId } },
+        });
+        streamRef.current = stream;
+        addStreamToPeers(stream);
+      } catch (err) {
+        setMicActive(false);
+        toast.error("Could not switch microphone.");
+      }
+    }
+  };
+
   const toggleCamera = async () => {
     if (cameraActive) {
       if (cameraStreamRef.current) {
@@ -816,7 +873,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: selectedVideoDeviceId ? { deviceId: { exact: selectedVideoDeviceId } } : true,
+      });
       cameraStreamRef.current = stream;
       setCameraActive(true);
       addStreamToPeers(stream);
@@ -827,6 +886,27 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       }
     } catch (err) {
       toast.error("Could not access camera.");
+    }
+  };
+
+  const handleVideoDeviceChange = async (deviceId: string) => {
+    setSelectedVideoDeviceId(deviceId);
+    if (cameraActive) {
+      if (cameraStreamRef.current) {
+        removeStreamFromPeers(cameraStreamRef.current);
+        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        cameraStreamRef.current = null;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } },
+        });
+        cameraStreamRef.current = stream;
+        addStreamToPeers(stream);
+      } catch (err) {
+        setCameraActive(false);
+        toast.error("Could not switch camera.");
+      }
     }
   };
 
@@ -890,8 +970,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     }
     for (const audio of remoteAudioRefs.current.values()) {
       audio.volume = globalVolume;
+      const stream = audio.srcObject as MediaStream;
+      if (stream) {
+        const hasVideo = stream.getVideoTracks().length > 0;
+        audio.muted = hasVideo || isPlayerMuted;
+      }
     }
-  }, [globalVolume]);
+  }, [globalVolume, isPlayerMuted]);
 
   useEffect(() => {
     const handleVoiceSignal = async (event: Event) => {
@@ -947,21 +1032,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   }, [closePeer, createPeerConnection, location.pathname, myPresenceId, sendVoiceSignal]);
 
   useEffect(() => {
-    if ((!micActive && !cameraActive && !screenActive) || !canSpeak || !myPresenceId) return;
+    if (!canSpeak || !myPresenceId) return;
     for (const user of onlineUsers) {
       if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
       void startOffer(user.user_id);
     }
-  }, [
-    canSpeak,
-    location.pathname,
-    micActive,
-    cameraActive,
-    screenActive,
-    myPresenceId,
-    onlineUsers,
-    startOffer,
-  ]);
+  }, [canSpeak, location.pathname, myPresenceId, onlineUsers, startOffer]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   const activeCameraUserIds = new Set<string>();
@@ -1018,6 +1094,17 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
           className="ui-panel vp-settings-panel"
           style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
         >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>Audio Controls</h4>
+            <button
+              className="action-btn "
+              onClick={() => setIsPlayerMuted(!isPlayerMuted)}
+              title={isPlayerMuted ? "Unmute All" : "Mute All"}
+            >
+              {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+          </div>
+
           <div className="vp-setting-row" style={{ marginBottom: 0 }}>
             <span className="vp-setting-label">
               {micActive ? (
@@ -1039,6 +1126,19 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               </div>
             </label>
           </div>
+
+          {audioDevices.length > 0 && (
+            <Select
+              size="sm"
+              variant="minimal"
+              value={selectedAudioDeviceId}
+              onChange={e => handleAudioDeviceChange(e.target.value)}
+              options={audioDevices.map(d => ({
+                label: d.label || "Microphone",
+                value: d.deviceId,
+              }))}
+            />
+          )}
 
           {activeMicUserIds.size > 0 && (
             <div
@@ -1125,6 +1225,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             </label>
           </div>
 
+          {videoDevices.length > 0 && (
+            <Select
+              size="sm"
+              variant="minimal"
+              value={selectedVideoDeviceId}
+              onChange={e => handleVideoDeviceChange(e.target.value)}
+              options={videoDevices.map(d => ({ label: d.label || "Camera", value: d.deviceId }))}
+            />
+          )}
+
           {activeCameraUserIds.size > 0 && (
             <div
               style={{
@@ -1172,8 +1282,20 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               })}
             </div>
           )}
+        </div>
+      )}
 
-          <div className="vp-setting-row" style={{ marginBottom: 0, marginTop: "8px" }}>
+      {!mediaOnly && (
+        <div
+          className="ui-panel vp-settings-panel"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "12px",
+          }}
+        >
+          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
             <span className="vp-setting-label">
               <MonitorUp
                 size={14}
@@ -1410,13 +1532,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 }
                 return null;
               })()}
-              <button
-                className="action-btn "
-                onClick={() => setIsPlayerMuted(!isPlayerMuted)}
-                title={isPlayerMuted ? "Unmute Music" : "Mute Music"}
-              >
-                {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-              </button>
+
               {hasManagePermission && (
                 <button
                   className="btn btn-sm btn-ghost"
@@ -1689,28 +1805,28 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <HistoryIcon size={12} /> History
                 </span>
-                <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                <div className="directory-layout__view-toggle">
                   <button
-                    className={`action-btn ${historyViewMode === "list" ? "active" : ""}`}
+                    className={`directory-view-btn ${historyViewMode === "list" ? "active" : ""}`}
                     onClick={() => setHistoryViewMode("list")}
                     title="List View"
                   >
-                    <List size={12} />
+                    <List size={14} />
                   </button>
                   <button
-                    className={`action-btn ${historyViewMode === "playlists" ? "active" : ""}`}
+                    className={`directory-view-btn ${historyViewMode === "playlists" ? "active" : ""}`}
                     onClick={() => setHistoryViewMode("playlists")}
                     title="Playlist View"
                   >
-                    <LayoutGrid size={12} />
+                    <LayoutGrid size={14} />
                   </button>
                   {hasManagePermission && (
                     <button
-                      className="action-btn danger"
+                      className="directory-view-btn danger"
                       onClick={handleClearHistory}
                       title="Clear history"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                 </div>
