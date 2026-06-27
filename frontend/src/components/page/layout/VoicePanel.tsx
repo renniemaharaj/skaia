@@ -25,8 +25,8 @@ import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
-import { onlineUsersAtom } from "../../../atoms/presence";
-import { voicePermissionsAtom } from "../../../atoms/voice";
+import { onlineUsersAtom, presencePanelExpandedAtom } from "../../../atoms/presence";
+import { enlargedStreamIdAtom, voicePermissionsAtom } from "../../../atoms/voice";
 import { getGuestSessionId } from "../../../utils/guestSession";
 import { relativeTimeAgo } from "../../../utils/serverTime";
 import { getSoundVolume } from "../../../utils/sound";
@@ -39,7 +39,7 @@ import YouTubePlayer from "./YouTubePlayer";
 import type { YouTubePlayerRef } from "./YouTubePlayer";
 import "../../ui/MediaPreviewLightbox.css";
 import "./VoicePanel.css";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 function getMicrophoneErrorMessage(err: unknown): string {
   if (err instanceof DOMException) {
@@ -225,7 +225,33 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const [remoteStreams, setRemoteStreams] = useState<
     { peerId: string; stream: MediaStream; startedAt: string }[]
   >([]);
-  const [enlargedStreamId, setEnlargedStreamId] = useState<string | null>(null);
+  const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
+  const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const sid = searchParams.get("streamId");
+    if (sid && enlargedStreamId !== sid) {
+      setEnlargedStreamId(sid);
+      if (!isPanelExpanded) setIsPanelExpanded(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (enlargedStreamId) {
+      if (searchParams.get("streamId") !== enlargedStreamId) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("streamId", enlargedStreamId);
+        setSearchParams(newParams, { replace: true });
+      }
+    } else {
+      if (searchParams.has("streamId")) {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("streamId");
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [enlargedStreamId]);
 
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
@@ -1984,10 +2010,120 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       )}
 
       {(() => {
+        if (!enlargedStreamId) return null;
+        if (!isPanelExpanded) return null; // Hide if presence panel is collapsed
+
         const enlarged = remoteStreams.find(s => `${s.peerId}-${s.stream.id}` === enlargedStreamId);
-        if (!enlarged) return null;
+        const isMobile = typeof window !== "undefined" && window.innerWidth <= 720;
+        const isSplitMode = !isMobile;
+
+        if (!enlarged) {
+          if (isSplitMode) {
+            return createPortal(
+              <div
+                className="vp-stream-split-view"
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: "440px",
+                  width: "calc(100vw - 440px)",
+                  height: "100vh",
+                  background: "transparent",
+                  zIndex: 2001,
+                  display: "flex",
+                  flexDirection: "column",
+                  padding: "24px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#000",
+                    color: "#fff",
+                    gap: "16px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <VideoOff size={48} opacity={0.5} />
+                  <div style={{ fontSize: "16px", fontWeight: 500 }}>Stream ended or not found</div>
+                  <Button onClick={() => setEnlargedStreamId(null)}>Close</Button>
+                </div>
+              </div>,
+              document.body
+            );
+          }
+          return null;
+        }
+
         const u = onlineUsers.find(x => String(x.user_id) === enlarged.peerId);
         const name = u?.user_name || `User ${enlarged.peerId}`;
+
+        if (isSplitMode) {
+          return createPortal(
+            <div
+              className="vp-stream-split-view"
+              style={{
+                position: "fixed",
+                top: 0,
+                left: "440px",
+                width: "calc(100vw - 440px)",
+                height: "100vh",
+                background: "transparent",
+                zIndex: 2001, // Above presence panel's modal backdrop
+                display: "flex",
+                flexDirection: "column",
+                padding: "24px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+                <RemoteMedia
+                  stream={enlarged.stream}
+                  volume={globalVolume}
+                  objectFit="contain"
+                  isModal={true}
+                />
+                {(() => {
+                  const otherStreams = remoteStreams.filter(
+                    s => s.peerId === enlarged.peerId && s.stream.id !== enlarged.stream.id
+                  );
+                  if (otherStreams.length > 0) {
+                    return <DraggablePiP stream={otherStreams[0].stream} />;
+                  }
+                  return null;
+                })()}
+              </div>
+              <div className="up-upload-lightbox-bar">
+                <span className="up-upload-lightbox-name">
+                  <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
+                  <span style={{ marginLeft: "8px", marginRight: "8px" }}>{name}'s Stream</span>
+                  <span style={{ opacity: 0.7, fontSize: "0.9em" }}>
+                    {relativeTimeAgo(enlarged.startedAt)}
+                  </span>
+                </span>
+                <div className="thread-actions">
+                  <button
+                    type="button"
+                    className="action-btn view-btn"
+                    title="Close"
+                    onClick={() => setEnlargedStreamId(null)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          );
+        }
+
+        // Mobile fallback / non-split fallback
         return createPortal(
           <dialog
             open

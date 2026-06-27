@@ -26,6 +26,10 @@ export const onlineUsersAtom = atom<OnlineUser[]>([]);
 /** Cursor positions of other users on the same route, keyed by user_id. */
 export const cursorPositionsAtom = atom<Map<number, CursorPosition>>(new Map());
 
+export const presencePanelExpandedAtom = atom(
+  !(typeof window !== "undefined" && window.innerWidth <= 720)
+);
+
 /**
  * Set by the WS sync hook when a "tp" (teleport) message is received.
  * Consumed by Layout, which calls navigate() and resets this to null.

@@ -3,11 +3,14 @@
   bottom: 20px;
   right: 20px;
   z-index: 1000;
+  font-size: 0.82rem;
+}
+
+.pp-wrapper {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  font-size: 0.82rem;
 }
 
 /* Control bar */
@@ -842,4 +845,67 @@
 
 .pp-physics-input:focus {
   border-color: var(--primary-color);
+}
+
+/* Split Mode */
+.presence-panel.pp-split-mode {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  border: none;
+  z-index: 2000;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.presence-panel.pp-split-mode .pp-wrapper {
+  width: 440px; /* Increased width for comfortable messaging */
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  padding: 12px 20px 20px 20px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column-reverse; /* Put tabs at top or bottom? User says "fit inside the viewport". */
+  /* Let's keep normal layout but stretch it */
+  align-items: center;
+  gap: 12px;
+}
+
+.presence-panel.pp-split-mode .pp-controls {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+  bottom: auto;
+  right: auto;
+}
+
+.presence-panel.pp-split-mode .pp-body {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: none;
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.presence-panel.pp-split-mode .pp-scroll {
+  max-height: none;
+  flex: 1;
+}
+
+.presence-panel.pp-split-mode .pp-chat-feed {
+  max-height: none;
+  flex: 1;
 }

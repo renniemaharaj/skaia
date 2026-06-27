@@ -1,4 +1,4 @@
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,7 +22,13 @@ import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/a
 import { type GlobalChatMessage, globalChatMessagesAtom } from "../../../atoms/chat";
 import { seoAtom } from "../../../atoms/config";
 import { mediaStateAtom } from "../../../atoms/media";
-import { type OnlineUser, onlineUsersAtom, pendingTpUserAtom } from "../../../atoms/presence";
+import {
+  type OnlineUser,
+  onlineUsersAtom,
+  pendingTpUserAtom,
+  presencePanelExpandedAtom,
+} from "../../../atoms/presence";
+import { enlargedStreamIdAtom } from "../../../atoms/voice";
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
 import { formatLocalTime } from "../../../utils/serverTime";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
@@ -222,9 +228,8 @@ const ChatBubble = memo(({ msg, currentUserId }: ChatBubbleProps) => {
 ChatBubble.displayName = "PresenceChatBubble";
 
 const PresencePanel = () => {
-  const [expanded, setExpanded] = useState(
-    !(typeof window !== "undefined" && window.innerWidth <= 720)
-  );
+  const [expanded, setExpanded] = useAtom(presencePanelExpandedAtom);
+  const enlargedStreamId = useAtomValue(enlargedStreamIdAtom);
   const [activeTab, setActiveTab] = useState<"members" | "chat" | "voice" | "physics" | "defcon">(
     "members"
   );
@@ -512,297 +517,309 @@ const PresencePanel = () => {
         } as React.CSSProperties)
       : undefined;
 
+  const isSplitMode = expanded && !isMobile && enlargedStreamId;
+
   return (
     <div
-      className={`presence-panel${expanded ? " presence-panel--expanded" : ""}`}
+      className={`presence-panel${expanded ? " presence-panel--expanded" : ""}${isSplitMode ? " pp-split-mode" : ""}`}
       style={panelStyle}
+      id="presence-panel-root"
     >
-      {/* Control bar: mode tabs + expand toggle */}
-      <div className="pp-controls">
-        <div className="pp-tabs">
-          <button
-            type="button"
-            className={`pp-tab${activeTab === "members" ? " pp-tab--active" : ""}`}
-            onClick={() => setActiveTab("members")}
-            title="Online members"
-          >
-            <Users size={13} />
-            <span className="pp-count">{total}</span>
-          </button>
-          <button
-            type="button"
-            className={`pp-tab${activeTab === "chat" ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== "chat" ? " pp-tab--has-unread" : ""}`}
-            onClick={() => {
-              setActiveTab("chat");
-              setChatUnread(0);
-            }}
-            title="Global chat"
-          >
-            <MessageCircle size={13} />
-            {chatUnread > 0 && activeTab !== "chat" && (
-              <span className="pp-chat-badge">{chatUnread > 9 ? "9+" : chatUnread}</span>
+      <div className="pp-wrapper">
+        {/* Control bar: mode tabs + expand toggle */}
+        <div className="pp-controls">
+          <div className="pp-tabs">
+            <button
+              type="button"
+              className={`pp-tab${activeTab === "members" ? " pp-tab--active" : ""}`}
+              onClick={() => setActiveTab("members")}
+              title="Online members"
+            >
+              <Users size={13} />
+              <span className="pp-count">{total}</span>
+            </button>
+            <button
+              type="button"
+              className={`pp-tab${activeTab === "chat" ? " pp-tab--active" : ""}${chatUnread > 0 && activeTab !== "chat" ? " pp-tab--has-unread" : ""}`}
+              onClick={() => {
+                setActiveTab("chat");
+                setChatUnread(0);
+              }}
+              title="Global chat"
+            >
+              <MessageCircle size={13} />
+              {chatUnread > 0 && activeTab !== "chat" && (
+                <span className="pp-chat-badge">{chatUnread > 9 ? "9+" : chatUnread}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`pp-tab${activeTab === "voice" ? " pp-tab--active" : ""}`}
+              onClick={() => {
+                setHasOpenedVoice(true);
+                setActiveTab("voice");
+              }}
+              title="Voice & Media"
+            >
+              <Mic size={13} strokeWidth={2.5} />
+            </button>
+            {seo?.particle_style === "gravity" && (
+              <button
+                type="button"
+                className={`pp-tab${activeTab === "physics" ? " pp-tab--active" : ""}`}
+                onClick={() => setActiveTab("physics")}
+                title="Physics Engine Controls"
+              >
+                <Atom size={13} strokeWidth={2.5} />
+              </button>
             )}
-          </button>
+            {hasPermission("admin.general") && (
+              <button
+                type="button"
+                className={`pp-tab pp-tab--defcon${defconInfo?.threat_level ? ` defcon-threat--${defconInfo.threat_level}` : ""}${activeTab === "defcon" ? " pp-tab--active" : ""}`}
+                onClick={() => setActiveTab("defcon")}
+                title={`DEFCON Telemetry${defconInfo ? `: ${defconInfo.threat_level}` : ""}`}
+              >
+                <ShieldCheck size={13} strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+          {canManagePresenceSettings && (
+            <button
+              type="button"
+              className={`pp-chevron pp-slowmode-btn${slowModeEnabled ? " pp-slowmode-btn--active" : ""}`}
+              onClick={toggleSlowMode}
+              disabled={slowModeLoading}
+              title={
+                slowModeLoading
+                  ? "Loading…"
+                  : slowModeEnabled
+                    ? `Slow mode on — ${slowModeInterval}s`
+                    : "Enable slow mode"
+              }
+            >
+              <Gauge size={13} />
+            </button>
+          )}
           <button
             type="button"
-            className={`pp-tab${activeTab === "voice" ? " pp-tab--active" : ""}`}
-            onClick={() => {
-              setHasOpenedVoice(true);
-              setActiveTab("voice");
+            className="pp-chevron"
+            onClick={() => setExpanded(v => !v)}
+            title={expanded ? "Collapse" : "Expand"}
+          >
+            {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+          </button>
+        </div>
+
+        {/* Expanded panel */}
+        <div
+          className={`pp-body${expanded ? " pp-open" : ""}${activeTab === "chat" ? " pp-body--chat" : ""}${activeTab === "voice" ? " pp-body--voice" : ""}${activeTab === "voice" && isMediaActive ? " pp-body--voice-media-active" : ""}`}
+        >
+          <div
+            style={{ display: activeTab === "members" ? "block" : "none" }}
+            className="pp-scroll"
+          >
+            {here.length > 0 && (
+              <>
+                <p className="pp-section-label">On this page</p>
+                {here.map(u => (
+                  <UserRow
+                    key={u.user_id}
+                    u={u}
+                    currentUserId={currentUser?.id}
+                    rowActions={rowActions}
+                  />
+                ))}
+              </>
+            )}
+
+            {elsewhere.length > 0 && (
+              <>
+                <p className="pp-section-label pp-section-label--elsewhere">Elsewhere</p>
+                {elsewhere.map(u => (
+                  <UserRow
+                    key={u.user_id}
+                    u={u}
+                    dim
+                    currentUserId={currentUser?.id}
+                    rowActions={rowActions}
+                  />
+                ))}
+              </>
+            )}
+
+            {total === 0 && <p className="pp-empty">No one online right now.</p>}
+          </div>
+
+          <div
+            style={{
+              display: activeTab === "chat" ? "flex" : "none",
+              flexDirection: "column",
+              height: "100%",
+              minHeight: 0,
+              flex: 1,
             }}
-            title="Voice & Media"
           >
-            <Mic size={13} strokeWidth={2.5} />
-          </button>
-          {seo?.particle_style === "gravity" && (
-            <button
-              type="button"
-              className={`pp-tab${activeTab === "physics" ? " pp-tab--active" : ""}`}
-              onClick={() => setActiveTab("physics")}
-              title="Physics Engine Controls"
-            >
-              <Atom size={13} strokeWidth={2.5} />
-            </button>
-          )}
-          {hasPermission("admin.general") && (
-            <button
-              type="button"
-              className={`pp-tab pp-tab--defcon${defconInfo?.threat_level ? ` defcon-threat--${defconInfo.threat_level}` : ""}${activeTab === "defcon" ? " pp-tab--active" : ""}`}
-              onClick={() => setActiveTab("defcon")}
-              title={`DEFCON Telemetry${defconInfo ? `: ${defconInfo.threat_level}` : ""}`}
-            >
-              <ShieldCheck size={13} strokeWidth={2.5} />
-            </button>
-          )}
-        </div>
-        {canManagePresenceSettings && (
-          <button
-            type="button"
-            className={`pp-chevron pp-slowmode-btn${slowModeEnabled ? " pp-slowmode-btn--active" : ""}`}
-            onClick={toggleSlowMode}
-            disabled={slowModeLoading}
-            title={
-              slowModeLoading
-                ? "Loading…"
-                : slowModeEnabled
-                  ? `Slow mode on — ${slowModeInterval}s`
-                  : "Enable slow mode"
-            }
+            <div className="pp-chat-feed">
+              {chatMessages.length === 0 && <p className="pp-empty">No messages yet. Say hi!</p>}
+              {chatMessages.map(msg => (
+                <ChatBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div className="pp-chat-input-row">
+              <ComposerInput
+                handleSend={msg => {
+                  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+                  sendWebSocketMessage(socket, {
+                    type: "global:chat",
+                    payload: { content: msg },
+                  });
+                }}
+                placeholder="Say something…"
+                maxLength={500}
+                maxRows={3}
+                compact
+              />
+            </div>
+          </div>
+
+          <div
+            style={{ display: activeTab === "voice" ? "block" : "none" }}
+            className="pp-scroll pp-scroll--flush"
           >
-            <Gauge size={13} />
-          </button>
-        )}
-        <button
-          type="button"
-          className="pp-chevron"
-          onClick={() => setExpanded(v => !v)}
-          title={expanded ? "Collapse" : "Expand"}
-        >
-          {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
-        </button>
-      </div>
-
-      {/* Expanded panel */}
-      <div
-        className={`pp-body${expanded ? " pp-open" : ""}${activeTab === "chat" ? " pp-body--chat" : ""}${activeTab === "voice" ? " pp-body--voice" : ""}${activeTab === "voice" && isMediaActive ? " pp-body--voice-media-active" : ""}`}
-      >
-        <div style={{ display: activeTab === "members" ? "block" : "none" }} className="pp-scroll">
-          {here.length > 0 && (
-            <>
-              <p className="pp-section-label">On this page</p>
-              {here.map(u => (
-                <UserRow
-                  key={u.user_id}
-                  u={u}
-                  currentUserId={currentUser?.id}
-                  rowActions={rowActions}
+            {hasOpenedVoice && (
+              <Suspense fallback={null}>
+                <VoicePanel
+                  voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile}
                 />
-              ))}
-            </>
-          )}
-
-          {elsewhere.length > 0 && (
-            <>
-              <p className="pp-section-label pp-section-label--elsewhere">Elsewhere</p>
-              {elsewhere.map(u => (
-                <UserRow
-                  key={u.user_id}
-                  u={u}
-                  dim
-                  currentUserId={currentUser?.id}
-                  rowActions={rowActions}
-                />
-              ))}
-            </>
-          )}
-
-          {total === 0 && <p className="pp-empty">No one online right now.</p>}
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "chat" ? "flex" : "none",
-            flexDirection: "column",
-            height: "100%",
-            minHeight: 0,
-            flex: 1,
-          }}
-        >
-          <div className="pp-chat-feed">
-            {chatMessages.length === 0 && <p className="pp-empty">No messages yet. Say hi!</p>}
-            {chatMessages.map(msg => (
-              <ChatBubble key={msg.id} msg={msg} currentUserId={currentUser?.id} />
-            ))}
-            <div ref={chatEndRef} />
+              </Suspense>
+            )}
           </div>
-          <div className="pp-chat-input-row">
-            <ComposerInput
-              handleSend={msg => {
-                if (!socket || socket.readyState !== WebSocket.OPEN) return;
-                sendWebSocketMessage(socket, {
-                  type: "global:chat",
-                  payload: { content: msg },
-                });
-              }}
-              placeholder="Say something…"
-              maxLength={500}
-              maxRows={3}
-              compact
-            />
+
+          <div
+            style={{
+              display: activeTab === "physics" ? "flex" : "none",
+              flexDirection: "column",
+            }}
+            className="pp-scroll"
+          >
+            {activeTab === "physics" && (
+              <Suspense fallback={null}>
+                <PhysicsControls />
+              </Suspense>
+            )}
           </div>
-        </div>
 
-        <div
-          style={{ display: activeTab === "voice" ? "block" : "none" }}
-          className="pp-scroll pp-scroll--flush"
-        >
-          {hasOpenedVoice && (
-            <Suspense fallback={null}>
-              <VoicePanel voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile} />
-            </Suspense>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "physics" ? "flex" : "none",
-            flexDirection: "column",
-          }}
-          className="pp-scroll"
-        >
-          {activeTab === "physics" && (
-            <Suspense fallback={null}>
-              <PhysicsControls />
-            </Suspense>
-          )}
-        </div>
-
-        <div
-          style={{
-            display: activeTab === "defcon" ? "block" : "none",
-            padding: "1rem",
-          }}
-          className="pp-scroll"
-        >
-          {activeTab === "defcon" && defconInfo && (
-            <div
-              className={`defcon-telemetry-tile defcon-threat--${defconInfo.threat_level}`}
-              style={{
-                fontSize: "0.85rem",
-                fontFamily: "var(--font-mono, monospace)",
-                textAlign: "left",
-              }}
-            >
-              <div className="defcon-telemetry-header">
+          <div
+            style={{
+              display: activeTab === "defcon" ? "block" : "none",
+              padding: "1rem",
+            }}
+            className="pp-scroll"
+          >
+            {activeTab === "defcon" && defconInfo && (
+              <div
+                className={`defcon-telemetry-tile defcon-threat--${defconInfo.threat_level}`}
+                style={{
+                  fontSize: "0.85rem",
+                  fontFamily: "var(--font-mono, monospace)",
+                  textAlign: "left",
+                }}
+              >
+                <div className="defcon-telemetry-header">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flex: "1 1 100%",
+                    }}
+                  >
+                    <span>[ DEFCON THREAT TELEMETRY ]</span>
+                    <span className="defcon-threat-label" style={{ marginLeft: 0 }}>
+                      {defconInfo.threat_level}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`defcon-reset-toggle${defconResetting ? " defcon-reset-toggle--active" : ""}`}
+                    style={{ flex: "1 1 100%", justifyContent: "center" }}
+                    onClick={resetDefcon}
+                    disabled={defconResetting}
+                    title="Reset DEFCON telemetry"
+                    aria-label="Reset DEFCON telemetry"
+                  >
+                    <RotateCcw size={12} />
+                    <span>{defconResetting ? "Resetting" : "Reset"}</span>
+                  </button>
+                </div>
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
                     justifyContent: "space-between",
-                    flex: "1 1 100%",
+                    marginBottom: "1rem",
                   }}
                 >
-                  <span>[ DEFCON THREAT TELEMETRY ]</span>
-                  <span className="defcon-threat-label" style={{ marginLeft: 0 }}>
-                    {defconInfo.threat_level}
-                  </span>
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span>
+                  <strong style={{ color: "var(--text-primary, #fff)" }}>
+                    {defconInfo.ips_jailed}
+                  </strong>
                 </div>
-                <button
-                  type="button"
-                  className={`defcon-reset-toggle${defconResetting ? " defcon-reset-toggle--active" : ""}`}
-                  style={{ flex: "1 1 100%", justifyContent: "center" }}
-                  onClick={resetDefcon}
-                  disabled={defconResetting}
-                  title="Reset DEFCON telemetry"
-                  aria-label="Reset DEFCON telemetry"
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "1rem",
+                  }}
                 >
-                  <RotateCcw size={12} />
-                  <span>{defconResetting ? "Resetting" : "Reset"}</span>
-                </button>
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>
+                    › Tracked Signatures:
+                  </span>
+                  <strong style={{ color: "var(--text-primary, #fff)" }}>
+                    {defconInfo.distinct_ips_tracked}
+                  </strong>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span>
+                  <strong style={{ color: "var(--text-primary, #fff)" }}>
+                    {defconInfo.citizens}
+                  </strong>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: "1rem",
+                    paddingTop: "1rem",
+                    borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
+                  }}
+                >
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span>
+                  <strong style={{ color: "var(--text-primary, #fff)" }}>
+                    {defconInfo.limiter_state} req/m
+                  </strong>
+                </div>
               </div>
+            )}
+            {activeTab === "defcon" && !defconInfo && (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
+                  color: "var(--text-secondary)",
+                  fontSize: "0.85rem",
+                  textAlign: "center",
                 }}
               >
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span>
-                <strong style={{ color: "var(--text-primary, #fff)" }}>
-                  {defconInfo.ips_jailed}
-                </strong>
+                Loading telemetry...
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
-                }}
-              >
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Tracked Signatures:</span>
-                <strong style={{ color: "var(--text-primary, #fff)" }}>
-                  {defconInfo.distinct_ips_tracked}
-                </strong>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "1rem",
-                }}
-              >
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span>
-                <strong style={{ color: "var(--text-primary, #fff)" }}>
-                  {defconInfo.citizens}
-                </strong>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginTop: "1rem",
-                  paddingTop: "1rem",
-                  borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
-                }}
-              >
-                <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span>
-                <strong style={{ color: "var(--text-primary, #fff)" }}>
-                  {defconInfo.limiter_state} req/m
-                </strong>
-              </div>
-            </div>
-          )}
-          {activeTab === "defcon" && !defconInfo && (
-            <div
-              style={{
-                color: "var(--text-secondary)",
-                fontSize: "0.85rem",
-                textAlign: "center",
-              }}
-            >
-              Loading telemetry...
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

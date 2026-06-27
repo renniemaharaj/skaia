@@ -16,6 +16,8 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
   kickedUsers: {},
 });
 
+export const enlargedStreamIdAtom = atom<string | null>(null);
+
 registerResource(
   "voice:control",
   voicePermissionsAtom,
