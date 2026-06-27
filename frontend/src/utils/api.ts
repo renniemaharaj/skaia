@@ -279,7 +279,9 @@ export async function apiRequest<T>(
     ws &&
     ws.readyState === WebSocket.OPEN &&
     !options.signal &&
-    !(options.body instanceof FormData);
+    !(options.body instanceof FormData) &&
+    !(options.body instanceof Blob) &&
+    !(options.body instanceof ArrayBuffer);
 
   if (useWs) {
     const reqId = nextRequestId++;
