@@ -75,9 +75,11 @@ const RemoteMedia = ({
   stream,
   volume,
   objectFit = "cover",
-}: { stream: MediaStream; volume: number; objectFit?: "cover" | "contain" }) => {
+  isModal = false,
+}: { stream: MediaStream; volume: number; objectFit?: "cover" | "contain"; isModal?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasVideo, setHasVideo] = useState(stream.getVideoTracks().length > 0);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     if (videoRef.current && videoRef.current.srcObject !== stream) {
@@ -102,7 +104,7 @@ const RemoteMedia = ({
   }, [stream]);
 
   if (!hasVideo) {
-    return <video ref={videoRef} autoPlay playsInline style={{ display: "none" }} />;
+    return <video ref={videoRef} autoPlay playsInline muted style={{ display: "none" }} />;
   }
 
   return (
@@ -110,6 +112,9 @@ const RemoteMedia = ({
       ref={videoRef}
       autoPlay
       playsInline
+      muted={!isModal && !isHovered}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{ width: "100%", height: "100%", objectFit, display: "block" }}
     />
   );
@@ -534,15 +539,21 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         peerConnectionsRef.current.delete(peerId);
       }
 
-      const audio = remoteAudioRefs.current.get(peerId);
-      if (audio) {
-        audio.pause();
-        audio.srcObject = null;
-        remoteAudioRefs.current.delete(peerId);
+      const keysToRemove = Array.from(remoteAudioRefs.current.keys()).filter(k =>
+        k.startsWith(`${peerId}-`)
+      );
+      for (const k of keysToRemove) {
+        const audio = remoteAudioRefs.current.get(k);
+        if (audio) {
+          audio.pause();
+          audio.srcObject = null;
+          remoteAudioRefs.current.delete(k);
+        }
       }
 
       setRemoteStreams(prev => prev.filter(s => s.peerId !== peerId));
-      setRemoteMicUsers(Array.from(remoteAudioRefs.current.keys()));
+      const activePeers = Array.from(remoteAudioRefs.current.keys()).map(k => k.split("-")[0]);
+      setRemoteMicUsers(Array.from(new Set(activePeers)));
       const numericPeerId = Number(peerId);
       if (notify && Number.isFinite(numericPeerId)) {
         sendVoiceSignal(numericPeerId, { kind: "leave" });
@@ -604,20 +615,30 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         });
 
         if (event.track.kind === "audio") {
-          let audio = remoteAudioRefs.current.get(key);
+          const audioKey = `${key}-${stream.id}`;
+          let audio = remoteAudioRefs.current.get(audioKey);
           if (!audio) {
             audio = new Audio();
             audio.autoplay = true;
             audio.setAttribute("playsinline", "true");
             audio.volume = globalVolumeRef.current;
-            remoteAudioRefs.current.set(key, audio);
-            setRemoteMicUsers(Array.from(remoteAudioRefs.current.keys()));
+            remoteAudioRefs.current.set(audioKey, audio);
+            const activePeers = Array.from(remoteAudioRefs.current.keys()).map(
+              k => k.split("-")[0]
+            );
+            setRemoteMicUsers(Array.from(new Set(activePeers)));
           }
           if (audio.srcObject !== stream) {
             audio.srcObject = stream;
             void audio.play().catch(() => {});
           }
           window.dispatchEvent(new CustomEvent("voice:speaking", { detail: key }));
+
+          const updateAudioMuteState = () => {
+            if (audio) audio.muted = stream.getVideoTracks().length > 0;
+          };
+          updateAudioMuteState();
+          stream.addEventListener("addtrack", updateAudioMuteState);
         }
       };
 
@@ -856,12 +877,21 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   }, [closePeer, createPeerConnection, location.pathname, myPresenceId, sendVoiceSignal]);
 
   useEffect(() => {
-    if (!micActive || !canSpeak || !myPresenceId) return;
+    if ((!micActive && !cameraActive && !screenActive) || !canSpeak || !myPresenceId) return;
     for (const user of onlineUsers) {
       if (user.route !== location.pathname || user.user_id === myPresenceId) continue;
       void startOffer(user.user_id);
     }
-  }, [canSpeak, location.pathname, micActive, myPresenceId, onlineUsers, startOffer]);
+  }, [
+    canSpeak,
+    location.pathname,
+    micActive,
+    cameraActive,
+    screenActive,
+    myPresenceId,
+    onlineUsers,
+    startOffer,
+  ]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   if (micActive && currentUser?.id) {
@@ -1037,25 +1067,33 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                       >
                         <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
                         <div
-                          style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            overflow: "hidden",
+                            flex: 1,
+                            gap: "4px",
+                          }}
                         >
                           <span
                             style={{
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
+                              maxWidth: "60px",
                             }}
                           >
                             {name}
                           </span>
                           <span
                             style={{
-                              fontSize: "8px",
+                              fontSize: "9px",
                               color: "var(--text-secondary)",
                               opacity: 0.8,
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            {relativeTimeAgo(startedAt)}
+                            • {relativeTimeAgo(startedAt)}
                           </span>
                         </div>
                       </div>
@@ -1600,7 +1638,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               onKeyDown={e => e.stopPropagation()}
             >
               <div className="media-preview-frame">
-                <RemoteMedia stream={enlarged.stream} volume={globalVolume} objectFit="contain" />
+                <RemoteMedia
+                  stream={enlarged.stream}
+                  volume={globalVolume}
+                  objectFit="contain"
+                  isModal={true}
+                />
               </div>
               <div className="up-upload-lightbox-bar">
                 <span className="up-upload-lightbox-name">
