@@ -14,8 +14,9 @@ import {
   pendingTpUserAtom,
   cursorPositionsAtom,
   layoutChildrenAtom,
-  isPresenceSplitModeAtom,
+  presencePanelExpandedAtom,
 } from "../atoms/presence";
+import { enlargedStreamIdAtom } from "../atoms/voice";
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
@@ -243,7 +244,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const clearTpUser = useSetAtom(pendingTpUserAtom);
 
   const setLayoutChildren = useSetAtom(layoutChildrenAtom);
-  const isPresenceSplitMode = useAtomValue(isPresenceSplitModeAtom);
+  const expanded = useAtomValue(presencePanelExpandedAtom);
+  const enlargedStreamId = useAtomValue(enlargedStreamIdAtom);
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 720;
+  const isPresenceSplitMode = expanded && !isMobile && !enlargedStreamId;
 
   useEffect(() => {
     setLayoutChildren(children);

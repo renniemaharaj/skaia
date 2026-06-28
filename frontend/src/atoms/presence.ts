@@ -44,7 +44,6 @@ export const pendingTpRouteAtom = atom<string | null>(null);
 export const pendingTpUserAtom = atom<number | null>(null);
 
 export const layoutChildrenAtom = atom<ReactNode | null>(null);
-export const isPresenceSplitModeAtom = atom<boolean>(false);
 
 registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) => {
   console.log("presence:update", data);

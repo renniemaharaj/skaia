@@ -27,7 +27,6 @@ import {
   pendingTpUserAtom,
   presencePanelExpandedAtom,
   layoutChildrenAtom,
-  isPresenceSplitModeAtom,
   presenceActiveTabAtom,
   presencePanelWidthAtom,
 } from "../../../atoms/presence";
@@ -547,13 +546,7 @@ const PresencePanel = () => {
       : {}),
     ...(isPanelSplit ? { "--presence-panel-width": `${panelWidth}px` } : {}),
   } as React.CSSProperties;
-  const setPresenceSplitMode = useSetAtom(isPresenceSplitModeAtom);
   const layoutChildren = useAtomValue(layoutChildrenAtom);
-
-  useEffect(() => {
-    setPresenceSplitMode(isRoutingLayout);
-    return () => setPresenceSplitMode(false);
-  }, [isRoutingLayout, setPresenceSplitMode]);
 
   return (
     <div
