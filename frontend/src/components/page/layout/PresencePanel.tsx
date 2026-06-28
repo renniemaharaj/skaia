@@ -28,6 +28,8 @@ import {
   presencePanelExpandedAtom,
   layoutChildrenAtom,
   isPresenceSplitModeAtom,
+  presenceActiveTabAtom,
+  presencePanelWidthAtom,
 } from "../../../atoms/presence";
 import { enlargedStreamIdAtom } from "../../../atoms/voice";
 
@@ -249,9 +251,7 @@ ChatBubble.displayName = "PresenceChatBubble";
 const PresencePanel = () => {
   const [expanded, setExpanded] = useAtom(presencePanelExpandedAtom);
   const enlargedStreamId = useAtomValue(enlargedStreamIdAtom);
-  const [activeTab, setActiveTab] = useState<"members" | "chat" | "voice" | "physics" | "defcon">(
-    "members"
-  );
+  const [activeTab, setActiveTab] = useAtom(presenceActiveTabAtom);
   const [defconInfo, setDefconInfo] = useState<DefconInfo | null>(null);
   const [defconResetting, setDefconResetting] = useState(false);
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
@@ -264,8 +264,14 @@ const PresencePanel = () => {
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
       : 0
   );
-  const [panelWidth, setPanelWidth] = useState(440);
+  const [panelWidth, setPanelWidth] = useAtom(presencePanelWidthAtom);
   const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "voice" && !hasOpenedVoice) {
+      setHasOpenedVoice(true);
+    }
+  }, [activeTab, hasOpenedVoice]);
 
   useEffect(() => {
     if (!isResizing) return;

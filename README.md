@@ -1,6 +1,18 @@
-# Skaia
+# Welcome to TheWriterCo, Skaia!
 
-Skaia is a self-hosted, multi-tenant web platform. Each tenant gets an isolated database, independent feature toggles, and its own domain — all managed from a single codebase and the **grengo** CLI.
+Skaia is a highly performant, multi-tenant, container-orchestrated platform powered by Go, built around a real-time, atomic state architecture using Jotai. The frontend is a React-powered full-stack application featuring server-injected SEO, delivering both speed and search engine optimization without compromising the real-time experience.
+
+A key innovation in Skaia is our **WebSocket Rerouter** for REST endpoints. This completely bypasses traditional REST setup costs, enabling efficient, high-performance state updates. The result is an application that loads routes and synchronizes state at the raw speed of Go concurrency.
+
+The platform includes a powerful suite of integrated modules, including a customizable page builder, forums, a complete e-commerce solution with secure carting, checkout, payment handling, delivery management, order tracking, and a wallet system built around debit and credit transactions.
+
+Beyond commerce, Skaia offers real-time inbox messaging, push notifications, room-based chat, voice chat, video calls, screen sharing, live presence tracking across routes, shared cursor interaction, and a DEFCON rate limiter with a live widget overlay. Organizations can also build rich interfaces using the integrated UI page builder and extend the platform through Frappe Framework deployments and Apache Superset integration for enterprise business intelligence and reporting.
+
+We're excited to make this project open source as **skaia-repo**.
+
+Thank you for taking the time to explore the platform and browse our current store offerings 🙏
+
+As a self-hosted platform, each tenant gets an isolated database, independent feature toggles, and its own domain — all managed from a single codebase and the **grengo** CLI.
 
 ## Features
 

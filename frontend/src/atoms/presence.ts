@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import type { ReactNode } from "react";
 import { registerResource } from "../utils/wsRegistry";
 
@@ -27,7 +28,11 @@ export const onlineUsersAtom = atom<OnlineUser[]>([]);
 /** Cursor positions of other users on the same route, keyed by user_id. */
 export const cursorPositionsAtom = atom<Map<number, CursorPosition>>(new Map());
 
-export const presencePanelExpandedAtom = atom(false);
+export const presencePanelExpandedAtom = atomWithStorage("presencePanelExpanded", false);
+export const presenceActiveTabAtom = atomWithStorage<
+  "members" | "chat" | "voice" | "physics" | "defcon"
+>("presenceActiveTab", "members");
+export const presencePanelWidthAtom = atomWithStorage("presencePanelWidth", 440);
 
 /**
  * Set by the WS sync hook when a "tp" (teleport) message is received.
