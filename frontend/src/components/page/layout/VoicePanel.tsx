@@ -1231,30 +1231,33 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             marginTop: "12px",
           }}
         >
-          {typeof navigator !== "undefined" &&
-            navigator.mediaDevices &&
-            "getDisplayMedia" in navigator.mediaDevices && (
-              <div className="vp-setting-row" style={{ marginBottom: 0 }}>
-                <span className="vp-setting-label">
-                  <MonitorUp
-                    size={14}
-                    className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
-                  />
-                  Screen Share
-                </span>
-                <label className="vp-switch">
-                  <input
-                    type="checkbox"
-                    checked={screenActive}
-                    onChange={toggleScreen}
-                    disabled={!canSpeak}
-                  />
-                  <div className="vp-switch-track">
-                    <div className="vp-switch-thumb" />
-                  </div>
-                </label>
+          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
+            <span className="vp-setting-label">
+              <MonitorUp
+                size={14}
+                className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
+              />
+              Screen Share
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={screenActive}
+                onChange={toggleScreen}
+                disabled={
+                  !canSpeak ||
+                  !(
+                    typeof navigator !== "undefined" &&
+                    navigator.mediaDevices &&
+                    "getDisplayMedia" in navigator.mediaDevices
+                  )
+                }
+              />
+              <div className="vp-switch-track">
+                <div className="vp-switch-thumb" />
               </div>
-            )}
+            </label>
+          </div>
           {activeScreenUserIds.size > 0 && (
             <div
               style={{
