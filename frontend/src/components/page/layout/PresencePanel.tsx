@@ -272,33 +272,43 @@ const PresencePanel = () => {
     }
   }, [activeTab, hasOpenedVoice]);
 
+  const isPanelSplit = expanded;
+  const actualPanelWidth = isMobile ? Math.min(panelWidth, window.innerWidth * 0.5) : panelWidth;
+
   useEffect(() => {
     if (!isResizing) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const newWidth = Math.max(300, Math.min(window.innerWidth * 0.7, e.clientX));
+    const handleMove = (clientX: number) => {
+      const minW = isMobile ? 150 : 300;
+      const maxW = window.innerWidth * (isMobile ? 0.75 : 0.7);
+      const newWidth = Math.max(minW, Math.min(maxW, clientX));
       setPanelWidth(newWidth);
     };
-    const handleMouseUp = () => setIsResizing(false);
+
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const handleTouchMove = (e: TouchEvent) => handleMove(e.touches[0].clientX);
+    const handleEnd = () => setIsResizing(false);
 
     document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handleEnd);
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleEnd);
     document.body.style.userSelect = "none";
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleEnd);
       document.body.style.userSelect = "";
     };
-  }, [isResizing]);
-
-  const isPanelSplit = expanded && !isMobile;
+  }, [isResizing, isMobile]);
   useEffect(() => {
     if (isPanelSplit) {
-      document.body.style.setProperty("--presence-panel-width", `${panelWidth}px`);
+      document.body.style.setProperty("--presence-panel-width", `${actualPanelWidth}px`);
     } else {
       document.body.style.removeProperty("--presence-panel-width");
     }
-  }, [isPanelSplit, panelWidth]);
+  }, [isPanelSplit, actualPanelWidth]);
 
   const [slowModeEnabled, setSlowModeEnabled] = useState(false);
   const [slowModeInterval, setSlowModeInterval] = useState(10);
