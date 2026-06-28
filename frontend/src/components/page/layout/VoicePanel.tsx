@@ -1931,8 +1931,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 style={{
                   position: "fixed",
                   top: 0,
-                  left: "440px",
-                  width: "calc(100vw - 440px)",
+                  left: "var(--presence-panel-width, 440px)",
+                  width: "calc(100vw - var(--presence-panel-width, 440px))",
                   height: "100vh",
                   background: "transparent",
                   zIndex: 2001,
@@ -1977,8 +1977,8 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               style={{
                 position: "fixed",
                 top: 0,
-                left: "440px",
-                width: "calc(100vw - 440px)",
+                left: "var(--presence-panel-width, 440px)",
+                width: "calc(100vw - var(--presence-panel-width, 440px))",
                 height: "100vh",
                 background: "transparent",
                 zIndex: 2001, // Above presence panel's modal backdrop

@@ -908,16 +908,34 @@
 }
 
 .presence-panel.pp-split-mode .pp-wrapper {
-  width: 440px; /* Increased width for comfortable messaging */
+  /* width: 440px; removed since it's dynamic now, but keeping a fallback or letting inline override */
+  width: 440px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   padding: 12px 20px 20px 20px;
   height: 100vh;
   display: flex;
-  flex-direction: column-reverse; /* Put tabs at top or bottom? User says "fit inside the viewport". */
-  /* Let's keep normal layout but stretch it */
+  flex-direction: column-reverse;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.pp-split-resizer {
+  width: 8px;
+  cursor: ew-resize;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  z-index: 10;
+  position: relative;
+  flex-shrink: 0;
+  margin-left: -4px; /* visually overlap to increase grab area */
+  margin-right: -4px;
+}
+
+.pp-split-resizer:hover,
+.pp-split-resizer--active {
+  /* No visual bar rendered, cursor indicates functionality */
 }
 
 .presence-panel.pp-split-mode .pp-controls {

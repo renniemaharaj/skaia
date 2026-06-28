@@ -264,6 +264,37 @@ const PresencePanel = () => {
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
       : 0
   );
+  const [panelWidth, setPanelWidth] = useState(440);
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(300, Math.min(window.innerWidth * 0.7, e.clientX));
+      setPanelWidth(newWidth);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.userSelect = "none";
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
+
+  const isPanelSplit = expanded && !isMobile;
+  useEffect(() => {
+    if (isPanelSplit) {
+      document.body.style.setProperty("--presence-panel-width", `${panelWidth}px`);
+    } else {
+      document.body.style.removeProperty("--presence-panel-width");
+    }
+  }, [isPanelSplit, panelWidth]);
+
   const [slowModeEnabled, setSlowModeEnabled] = useState(false);
   const [slowModeInterval, setSlowModeInterval] = useState(10);
   const [slowModeLoading, setSlowModeLoading] = useState(true);
@@ -503,15 +534,13 @@ const PresencePanel = () => {
     };
   }, [expanded, isMobile]);
 
-  const panelStyle =
-    expanded && mobilePanelHeight > 0
-      ? ({
-          "--presence-panel-height": `${mobilePanelHeight}px`,
-        } as React.CSSProperties)
-      : undefined;
-
-  const isPanelSplit = expanded && !isMobile;
   const isRoutingLayout = isPanelSplit && !enlargedStreamId;
+  const panelStyle = {
+    ...(expanded && mobilePanelHeight > 0
+      ? { "--presence-panel-height": `${mobilePanelHeight}px` }
+      : {}),
+    ...(isPanelSplit ? { "--presence-panel-width": `${panelWidth}px` } : {}),
+  } as React.CSSProperties;
   const setPresenceSplitMode = useSetAtom(isPresenceSplitModeAtom);
   const layoutChildren = useAtomValue(layoutChildrenAtom);
 
@@ -526,7 +555,7 @@ const PresencePanel = () => {
       style={panelStyle as any}
       id="presence-panel-root"
     >
-      <div className="pp-wrapper">
+      <div className="pp-wrapper" style={isPanelSplit ? { width: panelWidth } : undefined}>
         {/* Control bar: mode tabs + expand toggle */}
         <div className="pp-controls">
           <div className="pp-tabs">
@@ -841,6 +870,12 @@ const PresencePanel = () => {
         </div>
       </div>
 
+      {isPanelSplit && (
+        <div
+          className={`pp-split-resizer${isResizing ? " pp-split-resizer--active" : ""}`}
+          onMouseDown={() => setIsResizing(true)}
+        />
+      )}
       {isRoutingLayout && (
         <div
           className="pp-split-content-area layout-main"
