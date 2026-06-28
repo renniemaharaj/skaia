@@ -86,7 +86,7 @@ func (h *Hub) handleVoiceSignal(sender *Client, payload VoiceSignalPayload) {
 		return
 	}
 	switch payload.Kind {
-	case "offer", "answer", "candidate", "leave":
+	case "offer", "answer", "candidate", "leave", "hello":
 	default:
 		return
 	}

@@ -215,6 +215,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const [screenActive, setScreenActive] = useState(false);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -641,7 +642,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
   const sendVoiceSignal = useCallback(
     (targetUserId: number, payload: Omit<VoiceSignalPayload, "route" | "target_user_id">) => {
-      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.warn(
+          `[VoicePanel] Dropping signal ${payload.kind} to ${targetUserId} because socket is not open at ${Date.now()}`
+        );
+        return;
+      }
+      console.log(
+        `[VoicePanel] Sending signal ${payload.kind} to ${targetUserId} at ${Date.now()}`
+      );
       sendWebSocketMessage(socket, {
         type: "voice:signal",
         payload: {
@@ -663,6 +672,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     broadcastTracks,
     removeTracks,
     getActivePeerIds,
+    syncActivePeers,
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
@@ -682,6 +692,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (micActive) {
       if (streamRef.current) {
         removeTracks(streamRef.current);
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         streamRef.current = null;
       }
       setMicActive(false);
@@ -717,7 +728,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
       broadcastTracks(stream);
     } catch (err) {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         streamRef.current = null;
       }
       toast.error(getMicrophoneErrorMessage(err));
@@ -729,6 +740,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (micActive) {
       if (streamRef.current) {
         removeTracks(streamRef.current);
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         streamRef.current = null;
       }
       try {
@@ -748,6 +760,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (cameraActive) {
       if (cameraStreamRef.current) {
         removeTracks(cameraStreamRef.current);
+        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         cameraStreamRef.current = null;
       }
       setCameraActive(false);
@@ -770,6 +783,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (cameraActive) {
       if (cameraStreamRef.current) {
         removeTracks(cameraStreamRef.current);
+        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         cameraStreamRef.current = null;
       }
       try {
@@ -789,6 +803,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     if (screenActive) {
       if (screenStreamRef.current) {
         removeTracks(screenStreamRef.current);
+        screenStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         screenStreamRef.current = null;
       }
       setScreenActive(false);
@@ -815,13 +830,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   useEffect(() => {
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
       }
       if (cameraStreamRef.current) {
-        cameraStreamRef.current.getTracks().forEach(t => t.stop());
+        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
       }
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(t => t.stop());
+        screenStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
       }
     };
   }, []);
@@ -870,6 +885,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
     const validUserIds = new Set<string>();
 
+    const peers = getActivePeerIds();
     for (const user of onlineUsers) {
       if (
         normalizeRoute(user.route) !== normalizeRoute(location.pathname) ||
@@ -878,25 +894,47 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         continue;
       validUserIds.add(String(user.user_id));
 
-      const peers = getActivePeerIds();
       if (!peers.includes(String(user.user_id))) {
-        if (myPresenceId > user.user_id) {
-          ensureConnection(user.user_id, true, [
-            streamRef.current,
-            cameraStreamRef.current,
-            screenStreamRef.current,
-          ]);
-        }
+        ensureConnection(user.user_id, true, [
+          streamRef.current,
+          cameraStreamRef.current,
+          screenStreamRef.current,
+        ]);
       }
     }
+  }, [
+    location.pathname,
+    myPresenceId,
+    onlineUsers,
+    socket,
+    sendVoiceSignal,
+    ensureConnection,
+    getActivePeerIds,
+  ]);
 
-    const peers = getActivePeerIds();
-    for (const peerId of peers) {
-      if (!validUserIds.has(peerId)) {
-        closePeer(peerId, false);
-      }
-    }
-  }, [location.pathname, myPresenceId, onlineUsers, ensureConnection, closePeer, getActivePeerIds]);
+  const validUserIdsRef = useRef(new Set<string>());
+  useEffect(() => {
+    validUserIdsRef.current = new Set(
+      onlineUsers
+        .filter(
+          u =>
+            normalizeRoute(u.route) === normalizeRoute(location.pathname) &&
+            u.user_id !== myPresenceId
+        )
+        .map(u => String(u.user_id))
+    );
+  }, [onlineUsers, location.pathname, myPresenceId]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      syncActivePeers(Array.from(validUserIdsRef.current), [
+        streamRef.current,
+        cameraStreamRef.current,
+        screenStreamRef.current,
+      ]);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [syncActivePeers]);
 
   const activeMicUserIds = new Set<string>(remoteMicUsers);
   const activeCameraUserIds = new Set<string>();

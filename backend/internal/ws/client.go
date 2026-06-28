@@ -56,10 +56,10 @@ func (c *Client) HasPermission(perm string) bool {
 const (
 	// pongWait is how long we wait for a pong before considering the
 	// connection dead. Clients must respond to pings within this window.
-	pongWait = 60 * time.Second
+	pongWait = 15 * time.Second
 	// pingPeriod is how often we send pings. Must be shorter than pongWait
 	// so the peer has time to reply before the read deadline fires.
-	pingPeriod = (pongWait * 9) / 10 // 54 s
+	pingPeriod = 10 * time.Second
 	// writeWait is the deadline for any individual write (message or ping).
 	writeWait = 10 * time.Second
 )

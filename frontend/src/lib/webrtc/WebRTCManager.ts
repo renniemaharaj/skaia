@@ -1,52 +1,47 @@
-export interface WebRTCStream {
-  peerId: string;
-  stream: MediaStream;
-  startedAt: string;
-}
+import type { SignalPayload } from "./PeerSession";
+import { PeerSession } from "./PeerSession";
+import { VoiceActivityDetector } from "./VoiceActivityDetector";
 
-export interface VoiceSignalPayload {
-  route?: string;
-  target_user_id?: number;
-  sender_user_id?: number;
-  kind: "offer" | "answer" | "candidate" | "leave";
-  sdp?: string;
-  candidate?: RTCIceCandidateInit;
-}
-
-export type SignalSender = (targetUserId: number, payload: VoiceSignalPayload) => void;
+export type VoiceSignalPayload = SignalPayload;
+export type WebRTCStream = { peerId: string; stream: MediaStream; startedAt: string };
 
 export class WebRTCManager {
-  private peerConnections = new Map<string, RTCPeerConnection>();
-  private remoteAudioRefs = new Map<string, HTMLAudioElement>();
-  private remoteStreams: WebRTCStream[] = [];
-  private pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
+  private peerSessions = new Map<string, PeerSession>();
   private peerConnectionStates = new Map<string, RTCPeerConnectionState>();
+  private connectionStatesTimestamps = new Map<
+    string,
+    { state: RTCPeerConnectionState; time: number }
+  >();
   private failedTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-  private signalingQueues = new Map<string, Promise<void>>();
-  private negotiationTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-  private makingOffer = new Map<string, boolean>();
-  private ignoreOffer = new Map<string, boolean>();
+  private pendingCloses = new Map<string, ReturnType<typeof setTimeout>>();
 
-  private audioContext: AudioContext | null = null;
-  private vadAnalysers = new Map<string, AnalyserNode>();
-  private vadLoopId: number | null = null;
-  private vadWasSpeaking = new Map<string, boolean>();
-
-  public onStreamsChanged?: (streams: WebRTCStream[]) => void;
-  public onMicUsersChanged?: (users: string[]) => void;
-  public onAutoplayBlocked?: () => void;
-  public onSpeaking?: (peerId: string) => void;
-  public onConnectionStatesChanged?: (states: Record<string, RTCPeerConnectionState>) => void;
-
-  private globalVolume = 1.0;
+  private remoteStreams: { peerId: string; stream: MediaStream; startedAt: string }[] = [];
+  private remoteAudioRefs = new Map<string, HTMLAudioElement>();
+  private vad = new VoiceActivityDetector();
+  private globalVolume = 1;
   private isPlayerMuted = false;
 
-  private sendSignal: SignalSender;
-  private myUserId: number;
+  public onStreamsChanged?: (
+    streams: { peerId: string; stream: MediaStream; startedAt: string }[]
+  ) => void;
+  public onMicUsersChanged?: (userIds: string[]) => void;
+  public onSpeaking?: (userId: string) => void;
+  public onAutoplayBlocked?: () => void;
+  public onConnectionStatesChanged?: (states: Record<string, RTCPeerConnectionState>) => void;
 
-  constructor(myUserId: number, sendSignal: SignalSender) {
+  private sendSignalToSocket: (targetUserId: number, payload: any) => void;
+  private myUserId: number | null;
+
+  constructor(
+    myUserId: number | null,
+    sendSignalToSocket: (targetUserId: number, payload: any) => void
+  ) {
     this.myUserId = myUserId;
-    this.sendSignal = sendSignal;
+    this.sendSignalToSocket = sendSignalToSocket;
+
+    this.vad.onSpeaking = peerId => {
+      this.onSpeaking?.(peerId);
+    };
   }
 
   public setAudioState(volume: number, muted: boolean) {
@@ -63,22 +58,275 @@ export class WebRTCManager {
   }
 
   public getPeerConnections() {
-    return this.peerConnections;
+    return this.peerSessions;
+  }
+
+  public sendSignal(targetUserId: number, payload: SignalPayload) {
+    this.sendSignalToSocket(targetUserId, payload);
+  }
+
+  public handleSignal(peerId: number, signal: SignalPayload, localStreams: (MediaStream | null)[]) {
+    const key = String(peerId);
+    console.log(`[WebRTCManager] Received signal ${signal.kind} from ${peerId} at ${Date.now()}`);
+
+    // If they leave, destroy the stale peer.
+    if (signal.kind === "leave") {
+      this.closePeer(key, false);
+      return;
+    }
+
+    if (signal.kind === "hello") {
+      this.closePeer(key, false);
+      this.ensureConnection(peerId, false, localStreams);
+      return;
+    }
+
+    const session = this.ensureConnection(peerId, false, localStreams);
+    return session.handleSignal(signal);
+  }
+
+  private handlePendingCloseTimeout = (peerId: string) => {
+    this.closePeer(peerId, false);
+    this.pendingCloses.delete(peerId);
+  };
+
+  public syncActivePeers(validPeerIds: string[], localStreams: (MediaStream | null)[]) {
+    const validSet = new Set(validPeerIds);
+    const now = Date.now();
+
+    for (const peerId of this.peerSessions.keys()) {
+      if (!validSet.has(peerId)) {
+        if (!this.pendingCloses.has(peerId)) {
+          const timeout = setTimeout(() => this.handlePendingCloseTimeout(peerId), 5000);
+          this.pendingCloses.set(peerId, timeout);
+        }
+      } else {
+        const timeout = this.pendingCloses.get(peerId);
+        if (timeout) {
+          clearTimeout(timeout);
+          this.pendingCloses.delete(peerId);
+        }
+
+        // Auto-healing check for active peers
+        const session = this.peerSessions.get(peerId);
+        if (session) {
+          const state = session.pc.connectionState;
+          const meta = this.connectionStatesTimestamps.get(peerId);
+
+          let needsHeal = false;
+          if (state === "failed" || state === "closed") {
+            needsHeal = true;
+          } else if (state === "connecting" && meta && now - meta.time > 5000) {
+            console.warn(`[Auto-heal] Peer ${peerId} stuck in connecting for ${now - meta.time}ms`);
+            needsHeal = true;
+          } else if (state === "new" && meta && now - meta.time > 2000) {
+            console.warn(`[Auto-heal] Peer ${peerId} stuck in new for ${now - meta.time}ms`);
+            needsHeal = true;
+          }
+
+          if (needsHeal) {
+            console.log(`[Auto-heal] Reconnecting peer ${peerId}`);
+            this.closePeer(peerId, false);
+            this.ensureConnection(Number(peerId), true, localStreams);
+          }
+        }
+      }
+    }
+  }
+
+  public ensureConnection(
+    peerId: number,
+    broadcastHello: boolean,
+    localStreams: (MediaStream | null)[]
+  ): PeerSession {
+    const key = String(peerId);
+    let session = this.peerSessions.get(key);
+    if (session) return session;
+
+    const polite = Number(this.myUserId) < peerId;
+
+    // In production, we should pass STUN/TURN servers here.
+    const iceServers: RTCIceServer[] = [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ];
+
+    session = new PeerSession(key, polite, payload => this.sendSignal(peerId, payload), iceServers);
+    console.log(`[WebRTCManager] Created new session for peer ${peerId} at ${Date.now()}`);
+
+    this.peerSessions.set(key, session);
+    this.peerConnectionStates.set(key, session.pc.connectionState);
+
+    if (broadcastHello) {
+      this.sendSignal(peerId, { kind: "hello" });
+    }
+
+    this.connectionStatesTimestamps.set(key, {
+      state: session.pc.connectionState,
+      time: Date.now(),
+    });
+    this.notifyConnectionStates();
+
+    session.pc.ontrack = event => this.handleTrack(key, event);
+
+    session.pc.onconnectionstatechange = () => {
+      const state = session!.pc.connectionState;
+
+      console.log(`[Peer ${peerId}] State transition`, {
+        signaling: session!.pc.signalingState,
+        connection: session!.pc.connectionState,
+        senders: session!.pc.getSenders().length,
+        receivers: session!.pc.getReceivers().length,
+        transceivers: session!.pc.getTransceivers().length,
+      });
+
+      this.peerConnectionStates.set(key, state);
+      this.connectionStatesTimestamps.set(key, { state, time: Date.now() });
+      this.notifyConnectionStates();
+
+      if (state === "failed") {
+        try {
+          session!.pc.restartIce();
+        } catch (e) {
+          console.error("ICE restart error", e);
+        }
+
+        const timeout = setTimeout(() => {
+          if (session!.pc.connectionState === "failed") {
+            this.closePeer(key, false);
+          }
+        }, 10000);
+        this.failedTimeouts.set(key, timeout);
+      } else if (state === "connected") {
+        const timeout = this.failedTimeouts.get(key);
+        if (timeout) {
+          clearTimeout(timeout);
+          this.failedTimeouts.delete(key);
+        }
+      } else if (state === "closed") {
+        this.closePeer(key, false);
+      }
+    };
+
+    session.pc.onsignalingstatechange = () => {
+      console.log(`[Peer ${peerId}] Signaling transition`, {
+        signaling: session!.pc.signalingState,
+        connection: session!.pc.connectionState,
+        senders: session!.pc.getSenders().length,
+        receivers: session!.pc.getReceivers().length,
+        transceivers: session!.pc.getTransceivers().length,
+      });
+    };
+
+    // Explicitly publish tracks and let onnegotiationneeded handle negotiation
+    if (localStreams.some(s => s !== null)) {
+      session.publishTracks(localStreams).catch(console.error);
+    }
+
+    return session;
+  }
+
+  private handleTrack(key: string, event: RTCTrackEvent) {
+    const [stream] = event.streams;
+    if (!stream) return;
+
+    if (!this.remoteStreams.some(s => s.stream === stream && s.peerId === key)) {
+      this.remoteStreams = [
+        ...this.remoteStreams,
+        { peerId: key, stream, startedAt: new Date().toISOString() },
+      ];
+      this.onStreamsChanged?.(this.remoteStreams);
+    }
+
+    if (event.track.kind === "audio") {
+      this.vad.trackAudio(key, event.track.id, stream, event.track);
+
+      const audioKey = `${key}-${event.track.id}`;
+      let audio = this.remoteAudioRefs.get(audioKey);
+      if (!audio) {
+        audio = new Audio();
+        audio.autoplay = true;
+        audio.setAttribute("playsinline", "true");
+        audio.volume = this.globalVolume;
+        this.remoteAudioRefs.set(audioKey, audio);
+        this.updateMicUsers();
+      }
+      if (audio.srcObject !== stream) {
+        audio.srcObject = stream;
+        audio.play().catch(err => {
+          if (err.name === "NotAllowedError") {
+            this.onAutoplayBlocked?.();
+          }
+        });
+      }
+
+      const updateAudioMuteState = () => {
+        if (audio) {
+          const hasVideo = stream.getVideoTracks().length > 0;
+          audio.muted = hasVideo || this.isPlayerMuted;
+        }
+      };
+      updateAudioMuteState();
+      stream.addEventListener("addtrack", updateAudioMuteState);
+
+      event.track.addEventListener("ended", () => {
+        stream.removeEventListener("addtrack", updateAudioMuteState);
+      });
+    }
+
+    event.track.addEventListener("ended", () => {
+      this.vad.untrackAudio(key, event.track.id, stream.id);
+      this.cleanupEndedStream(key, stream);
+    });
+
+    stream.addEventListener("removetrack", () => {
+      this.cleanupEndedStream(key, stream);
+    });
+  }
+
+  private cleanupEndedStream(key: string, stream: MediaStream) {
+    if (stream.getTracks().every(t => t.readyState === "ended")) {
+      this.remoteStreams = this.remoteStreams.filter(s => s.stream !== stream);
+      this.onStreamsChanged?.(this.remoteStreams);
+
+      for (const track of stream.getAudioTracks()) {
+        const audioKey = `${key}-${track.id}`;
+        const audio = this.remoteAudioRefs.get(audioKey);
+        if (audio) {
+          audio.pause();
+          audio.srcObject = null;
+          this.remoteAudioRefs.delete(audioKey);
+        }
+      }
+      this.updateMicUsers();
+    } else {
+      this.remoteStreams = [...this.remoteStreams];
+      this.onStreamsChanged?.(this.remoteStreams);
+    }
+  }
+
+  public async broadcastTracks(streams: (MediaStream | null)[]) {
+    for (const session of this.peerSessions.values()) {
+      await session.publishTracks(streams);
+    }
+  }
+
+  public async removeTracks(streams: (MediaStream | null)[]) {
+    for (const session of this.peerSessions.values()) {
+      await session.removeTracks(streams);
+    }
   }
 
   public closePeer(peerId: string, notify = true) {
-    const pc = this.peerConnections.get(peerId);
-    if (pc) {
-      pc.ontrack = null;
-      pc.onicecandidate = null;
-      pc.onnegotiationneeded = null;
-      pc.close();
-      this.peerConnections.delete(peerId);
+    console.log(`[WebRTCManager] closePeer called for ${peerId} at ${Date.now()}`);
+    const session = this.peerSessions.get(peerId);
+    if (session) {
+      session.close();
+      this.peerSessions.delete(peerId);
       this.peerConnectionStates.delete(peerId);
+      this.connectionStatesTimestamps.delete(peerId);
       this.notifyConnectionStates();
     }
-    this.pendingCandidates.delete(peerId);
-    this.signalingQueues.delete(peerId);
 
     const timeout = this.failedTimeouts.get(peerId);
     if (timeout) {
@@ -86,51 +334,48 @@ export class WebRTCManager {
       this.failedTimeouts.delete(peerId);
     }
 
-    const negTimeout = this.negotiationTimeouts.get(peerId);
-    if (negTimeout) {
-      clearTimeout(negTimeout);
-      this.negotiationTimeouts.delete(peerId);
+    const pendingCloseTimeout = this.pendingCloses.get(peerId);
+    if (pendingCloseTimeout) {
+      clearTimeout(pendingCloseTimeout);
+      this.pendingCloses.delete(peerId);
     }
 
-    this.makingOffer.delete(peerId);
-    this.ignoreOffer.delete(peerId);
+    this.vad.untrackPeer(peerId);
 
-    const analyser = this.vadAnalysers.get(peerId);
-    if (analyser) {
-      analyser.disconnect();
-      this.vadAnalysers.delete(peerId);
-    }
-    this.vadWasSpeaking.delete(peerId);
-
-    if (this.vadAnalysers.size === 0 && this.audioContext) {
-      this.audioContext.close().catch(() => {});
-      this.audioContext = null;
-    }
-
-    const keysToRemove = Array.from(this.remoteAudioRefs.keys()).filter(k =>
-      k.startsWith(`${peerId}-`)
-    );
-    for (const k of keysToRemove) {
-      const audio = this.remoteAudioRefs.get(k);
-      if (audio) {
-        audio.pause();
-        audio.srcObject = null;
-        this.remoteAudioRefs.delete(k);
+    // Clean up all remote streams and audio elements associated with this peer
+    const remainingStreams = [];
+    for (const s of this.remoteStreams) {
+      if (s.peerId === peerId) {
+        for (const track of s.stream.getAudioTracks()) {
+          const audioKey = `${peerId}-${track.id}`;
+          const audio = this.remoteAudioRefs.get(audioKey);
+          if (audio) {
+            audio.pause();
+            audio.srcObject = null;
+            this.remoteAudioRefs.delete(audioKey);
+          }
+        }
+      } else {
+        remainingStreams.push(s);
       }
     }
 
-    this.remoteStreams = this.remoteStreams.filter(s => s.peerId !== peerId);
-    this.onStreamsChanged?.(this.remoteStreams);
-    this.updateMicUsers();
+    if (this.remoteStreams.length !== remainingStreams.length) {
+      this.remoteStreams = remainingStreams;
+      this.onStreamsChanged?.(this.remoteStreams);
+      this.updateMicUsers();
+    }
 
-    const numericPeerId = Number(peerId);
-    if (notify && Number.isFinite(numericPeerId)) {
-      this.sendSignal(numericPeerId, { kind: "leave" });
+    if (notify) {
+      const numericPeerId = Number(peerId);
+      if (Number.isFinite(numericPeerId)) {
+        this.sendSignal(numericPeerId, { kind: "leave" });
+      }
     }
   }
 
   public closeAll() {
-    for (const peerId of Array.from(this.peerConnections.keys())) {
+    for (const peerId of Array.from(this.peerSessions.keys())) {
       this.closePeer(peerId, false);
     }
     this.remoteStreams = [];
@@ -148,344 +393,11 @@ export class WebRTCManager {
   }
 
   private updateMicUsers() {
-    const activePeers = Array.from(this.remoteAudioRefs.keys()).map(k => k.split("-")[0]);
-    this.onMicUsersChanged?.(Array.from(new Set(activePeers)));
-  }
-
-  private startVADLoop() {
-    if (this.vadLoopId) return;
-
-    const loop = () => {
-      if (this.vadAnalysers.size === 0) {
-        this.vadLoopId = null;
-        return;
-      }
-
-      for (const [key, analyser] of this.vadAnalysers.entries()) {
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i];
-        }
-        const average = sum / dataArray.length;
-        const isSpeakingNow = average > 10;
-        const wasSpeaking = this.vadWasSpeaking.get(key) || false;
-
-        if (isSpeakingNow && !wasSpeaking) {
-          this.onSpeaking?.(key);
-        }
-        if (isSpeakingNow) {
-          this.onSpeaking?.(key);
-        }
-        this.vadWasSpeaking.set(key, isSpeakingNow);
-      }
-
-      this.vadLoopId = requestAnimationFrame(loop);
-    };
-
-    this.vadLoopId = requestAnimationFrame(loop);
-  }
-
-  private addLocalTracksToPc(pc: RTCPeerConnection, streams: (MediaStream | null)[]) {
-    for (const stream of streams) {
-      if (!stream) continue;
-      stream.getTracks().forEach(track => {
-        if (!pc.getSenders().some(s => s.track === track)) {
-          pc.addTrack(track, stream);
-        }
-      });
+    const activePeers = new Set<string>();
+    for (const audioKey of this.remoteAudioRefs.keys()) {
+      const peerId = audioKey.split("-")[0];
+      activePeers.add(peerId);
     }
-  }
-
-  public ensureConnection(
-    peerId: number,
-    isInitiator: boolean,
-    localStreams: (MediaStream | null)[]
-  ) {
-    const key = String(peerId);
-    let pc = this.peerConnections.get(key);
-    if (pc) return pc;
-
-    pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        // Add your TURN servers here
-      ],
-    });
-    pc.addTransceiver("audio", { direction: "recvonly" });
-    pc.addTransceiver("video", { direction: "recvonly" });
-    this.peerConnections.set(key, pc);
-    this.peerConnectionStates.set(key, pc.connectionState);
-    this.notifyConnectionStates();
-
-    this.addLocalTracksToPc(pc, localStreams);
-
-    pc.onicecandidate = event => {
-      if (event.candidate) {
-        this.sendSignal(peerId, {
-          kind: "candidate",
-          candidate: event.candidate.toJSON(),
-        });
-      }
-    };
-
-    pc.onnegotiationneeded = () => {
-      const existing = this.negotiationTimeouts.get(key);
-      if (existing) clearTimeout(existing);
-
-      const timeout = setTimeout(async () => {
-        try {
-          this.makingOffer.set(key, true);
-          await pc!.setLocalDescription();
-          this.sendSignal(peerId, { kind: "offer", sdp: pc!.localDescription!.sdp });
-        } catch (e) {
-          console.error("Negotiation error", e);
-        } finally {
-          this.makingOffer.set(key, false);
-        }
-      }, 50);
-      this.negotiationTimeouts.set(key, timeout);
-    };
-
-    pc.ontrack = event => {
-      const [stream] = event.streams;
-      if (!stream) return;
-
-      if (!this.remoteStreams.some(s => s.stream.id === stream.id && s.peerId === key)) {
-        this.remoteStreams = [
-          ...this.remoteStreams,
-          { peerId: key, stream, startedAt: new Date().toISOString() },
-        ];
-        this.onStreamsChanged?.(this.remoteStreams);
-      }
-
-      stream.addEventListener("removetrack", () => {
-        if (stream.getTracks().length === 0) {
-          this.remoteStreams = this.remoteStreams.filter(s => s.stream.id !== stream.id);
-          this.onStreamsChanged?.(this.remoteStreams);
-          const audioKey = `${key}-${stream.id}`;
-          const audio = this.remoteAudioRefs.get(audioKey);
-          if (audio) {
-            audio.pause();
-            audio.srcObject = null;
-            this.remoteAudioRefs.delete(audioKey);
-          }
-          this.updateMicUsers();
-        } else {
-          this.remoteStreams = [...this.remoteStreams];
-          this.onStreamsChanged?.(this.remoteStreams);
-        }
-      });
-
-      event.track.addEventListener("ended", () => {
-        if (stream.getTracks().every(t => t.readyState === "ended")) {
-          this.remoteStreams = this.remoteStreams.filter(s => s.stream.id !== stream.id);
-          this.onStreamsChanged?.(this.remoteStreams);
-          const audioKey = `${key}-${stream.id}`;
-          const audio = this.remoteAudioRefs.get(audioKey);
-          if (audio) {
-            audio.pause();
-            audio.srcObject = null;
-            this.remoteAudioRefs.delete(audioKey);
-          }
-          this.updateMicUsers();
-        } else {
-          this.remoteStreams = [...this.remoteStreams];
-          this.onStreamsChanged?.(this.remoteStreams);
-        }
-      });
-
-      if (event.track.kind === "audio") {
-        const audioKey = `${key}-${stream.id}`;
-        let audio = this.remoteAudioRefs.get(audioKey);
-        if (!audio) {
-          audio = new Audio();
-          audio.autoplay = true;
-          audio.setAttribute("playsinline", "true");
-          audio.volume = this.globalVolume;
-          this.remoteAudioRefs.set(audioKey, audio);
-          this.updateMicUsers();
-        }
-        if (audio.srcObject !== stream) {
-          audio.srcObject = stream;
-          audio.play().catch(err => {
-            if (err.name === "NotAllowedError") {
-              this.onAutoplayBlocked?.();
-            }
-          });
-        }
-
-        if (!this.audioContext) {
-          this.audioContext = new AudioContext();
-        }
-
-        const source = this.audioContext.createMediaStreamSource(new MediaStream([event.track]));
-        const analyser = this.audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-
-        this.vadAnalysers.set(key, analyser);
-        this.startVADLoop();
-
-        const updateAudioMuteState = () => {
-          if (audio) {
-            const hasVideo = stream.getVideoTracks().length > 0;
-            audio!.muted = hasVideo || this.isPlayerMuted;
-          }
-        };
-        updateAudioMuteState();
-        stream.addEventListener("addtrack", updateAudioMuteState);
-
-        event.track.addEventListener("ended", () => {
-          stream.removeEventListener("addtrack", updateAudioMuteState);
-        });
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      this.peerConnectionStates.set(key, pc!.connectionState);
-      this.notifyConnectionStates();
-
-      if (pc!.connectionState === "failed") {
-        pc!
-          .createOffer({ iceRestart: true })
-          .then(offer => {
-            return pc!.setLocalDescription(offer);
-          })
-          .then(() => {
-            this.sendSignal(peerId, { kind: "offer", sdp: pc!.localDescription!.sdp });
-          })
-          .catch(e => console.error("ICE restart error", e));
-
-        const timeout = setTimeout(() => {
-          if (pc!.connectionState === "failed") {
-            this.closePeer(key, false);
-          }
-        }, 10000);
-        this.failedTimeouts.set(key, timeout);
-      } else if (pc!.connectionState === "connected") {
-        const timeout = this.failedTimeouts.get(key);
-        if (timeout) {
-          clearTimeout(timeout);
-          this.failedTimeouts.delete(key);
-        }
-      } else if (pc!.connectionState === "closed") {
-        this.closePeer(key, false);
-      }
-    };
-
-    if (isInitiator) {
-      // The local tracks were added above, which will trigger onnegotiationneeded automatically.
-      // So no need to manually call createOffer here if we rely on the debouncer.
-    }
-
-    return pc;
-  }
-
-  private queueSignal(key: string, fn: () => Promise<void>) {
-    const prev = this.signalingQueues.get(key) ?? Promise.resolve();
-    const next = prev.then(fn).catch(e => console.error("Signal queue error", e));
-    this.signalingQueues.set(key, next);
-    return next;
-  }
-
-  public async handleSignal(
-    peerId: number,
-    signal: VoiceSignalPayload,
-    localStreams: (MediaStream | null)[]
-  ) {
-    const key = String(peerId);
-
-    if (signal.kind === "leave") {
-      this.closePeer(key, false);
-      return;
-    }
-
-    return this.queueSignal(key, async () => {
-      const pc = this.ensureConnection(peerId, false, localStreams);
-
-      const flushCandidates = async () => {
-        const candidates = this.pendingCandidates.get(key) || [];
-        this.pendingCandidates.delete(key);
-        for (const candidate of candidates) {
-          await pc.addIceCandidate(candidate).catch(e => console.error("Flush candidate error", e));
-        }
-      };
-
-      const polite = this.myUserId < peerId;
-      const makingOffer = this.makingOffer.get(key) || false;
-
-      if (signal.kind === "offer" && signal.sdp) {
-        const offerCollision = makingOffer || pc.signalingState !== "stable";
-
-        this.ignoreOffer.set(key, !polite && offerCollision);
-        if (this.ignoreOffer.get(key)) {
-          return;
-        }
-
-        if (offerCollision) {
-          await Promise.all([
-            pc.setLocalDescription({ type: "rollback" }),
-            pc.setRemoteDescription({ type: "offer", sdp: signal.sdp }),
-          ]);
-        } else {
-          await pc.setRemoteDescription({ type: "offer", sdp: signal.sdp });
-        }
-
-        await flushCandidates();
-        this.addLocalTracksToPc(pc, localStreams);
-        await pc.setLocalDescription();
-        this.sendSignal(peerId, { kind: "answer", sdp: pc.localDescription!.sdp });
-        return;
-      }
-
-      if (signal.kind === "answer" && signal.sdp) {
-        await pc.setRemoteDescription({ type: "answer", sdp: signal.sdp });
-        await flushCandidates();
-        return;
-      }
-
-      if (signal.kind === "candidate" && signal.candidate) {
-        try {
-          if (!pc.remoteDescription) {
-            const queued = this.pendingCandidates.get(key) || [];
-            queued.push(signal.candidate);
-            this.pendingCandidates.set(key, queued);
-            return;
-          }
-          await pc.addIceCandidate(signal.candidate);
-        } catch (e) {
-          if (!this.ignoreOffer.get(key)) {
-            console.error("Add candidate error", e);
-          }
-        }
-      }
-    });
-  }
-
-  public broadcastTracks(stream: MediaStream) {
-    stream.getTracks().forEach(track => {
-      for (const pc of this.peerConnections.values()) {
-        const senders = pc.getSenders();
-        if (!senders.some(s => s.track === track)) {
-          pc.addTrack(track, stream);
-        }
-      }
-    });
-  }
-
-  public removeTracks(stream: MediaStream) {
-    const tracks = stream.getTracks();
-    for (const pc of this.peerConnections.values()) {
-      const senders = pc.getSenders();
-      senders.forEach(sender => {
-        if (sender.track && tracks.includes(sender.track)) {
-          pc.removeTrack(sender);
-        }
-      });
-    }
-    tracks.forEach(t => t.stop());
+    this.onMicUsersChanged?.(Array.from(activePeers));
   }
 }

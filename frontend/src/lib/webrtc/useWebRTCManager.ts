@@ -81,15 +81,17 @@ export function useWebRTCManager(
   );
 
   const broadcastTracks = useCallback(
-    (stream: MediaStream) => {
-      manager.broadcastTracks(stream);
+    (streams: (MediaStream | null)[] | MediaStream | null) => {
+      const arr = Array.isArray(streams) ? streams : [streams];
+      manager.broadcastTracks(arr);
     },
     [manager]
   );
 
   const removeTracks = useCallback(
-    (stream: MediaStream) => {
-      manager.removeTracks(stream);
+    (streams: (MediaStream | null)[] | MediaStream | null) => {
+      const arr = Array.isArray(streams) ? streams : [streams];
+      manager.removeTracks(arr);
     },
     [manager]
   );
@@ -98,15 +100,24 @@ export function useWebRTCManager(
     return Array.from(manager.getPeerConnections().keys());
   }, [manager]);
 
+  const syncActivePeers = useCallback(
+    (validPeerIds: string[], localStreams: (MediaStream | null)[]) => {
+      manager.syncActivePeers(validPeerIds, localStreams);
+    },
+    [manager]
+  );
+
   return {
     remoteStreams,
     remoteMicUsers,
     handleSignal,
     ensureConnection,
     closePeer,
+    sendSignal: manager.sendSignal.bind(manager),
     broadcastTracks,
     removeTracks,
     getActivePeerIds,
+    syncActivePeers,
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
