@@ -19,6 +19,7 @@ import {
   ListVideo,
   Trash2,
   X,
+  Maximize,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -2023,6 +2024,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
         const u = onlineUsers.find(x => String(x.user_id) === enlarged.peerId);
         const name = u?.user_name || `User ${enlarged.peerId}`;
+        const displayName = name.length > 7 ? name.substring(0, 7) + "..." : name;
 
         if (isSplitMode) {
           return createPortal(
@@ -2063,14 +2065,42 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 })()}
               </div>
               <div className="up-upload-lightbox-bar">
-                <span className="up-upload-lightbox-name">
+                <span
+                  className="up-upload-lightbox-name"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                  }}
+                >
                   <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
-                  <span style={{ marginLeft: "8px", marginRight: "8px" }}>{name}'s Stream</span>
-                  <span style={{ opacity: 0.7, fontSize: "0.9em" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {displayName}'s Stream
+                  </span>
+                  <span style={{ opacity: 0.7, fontSize: "0.9em", flexShrink: 0 }}>
                     {relativeTimeAgo(enlarged.startedAt)}
                   </span>
                 </span>
                 <div className="thread-actions">
+                  <button
+                    type="button"
+                    className="action-btn view-btn"
+                    title="Fullscreen"
+                    onClick={e => {
+                      const container = e.currentTarget.closest(".vp-stream-split-view");
+                      if (container) {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(console.error);
+                        } else {
+                          container.requestFullscreen().catch(console.error);
+                        }
+                      }
+                    }}
+                  >
+                    <Maximize size={14} />
+                  </button>
                   <button
                     type="button"
                     className="action-btn view-btn"
@@ -2123,14 +2153,42 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 })()}
               </div>
               <div className="up-upload-lightbox-bar">
-                <span className="up-upload-lightbox-name">
+                <span
+                  className="up-upload-lightbox-name"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                  }}
+                >
                   <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
-                  <span style={{ marginLeft: "8px", marginRight: "8px" }}>{name}'s Stream</span>
-                  <span style={{ opacity: 0.7, fontSize: "0.9em" }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {displayName}'s Stream
+                  </span>
+                  <span style={{ opacity: 0.7, fontSize: "0.9em", flexShrink: 0 }}>
                     {relativeTimeAgo(enlarged.startedAt)}
                   </span>
                 </span>
                 <div className="thread-actions">
+                  <button
+                    type="button"
+                    className="action-btn view-btn"
+                    title="Fullscreen"
+                    onClick={e => {
+                      const container = e.currentTarget.closest(".up-upload-lightbox-content");
+                      if (container) {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen().catch(console.error);
+                        } else {
+                          container.requestFullscreen().catch(console.error);
+                        }
+                      }
+                    }}
+                  >
+                    <Maximize size={14} />
+                  </button>
                   <button
                     type="button"
                     className="action-btn view-btn"
