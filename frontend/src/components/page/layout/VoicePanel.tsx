@@ -1221,192 +1221,190 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         </div>
       )}
 
-      {!mediaOnly &&
-        typeof navigator !== "undefined" &&
-        navigator.mediaDevices &&
-        "getDisplayMedia" in navigator.mediaDevices && (
-          <div
-            className="ui-panel vp-settings-panel"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.75rem",
-              marginTop: "12px",
-            }}
-          >
-            <div className="vp-setting-row" style={{ marginBottom: 0 }}>
-              <span className="vp-setting-label">
-                <MonitorUp
-                  size={14}
-                  className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
-                />
-                Screen Share
-              </span>
-              <label className="vp-switch">
-                <input
-                  type="checkbox"
-                  checked={screenActive}
-                  onChange={toggleScreen}
-                  disabled={!canSpeak}
-                />
-                <div className="vp-switch-track">
-                  <div className="vp-switch-thumb" />
-                </div>
-              </label>
-            </div>
+      {!mediaOnly && (
+        <div
+          className="ui-panel vp-settings-panel"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+            marginTop: "12px",
+          }}
+        >
+          {typeof navigator !== "undefined" &&
+            navigator.mediaDevices &&
+            "getDisplayMedia" in navigator.mediaDevices && (
+              <div className="vp-setting-row" style={{ marginBottom: 0 }}>
+                <span className="vp-setting-label">
+                  <MonitorUp
+                    size={14}
+                    className={screenActive ? "vp-text-primary" : "vp-text-secondary"}
+                  />
+                  Screen Share
+                </span>
+                <label className="vp-switch">
+                  <input
+                    type="checkbox"
+                    checked={screenActive}
+                    onChange={toggleScreen}
+                    disabled={!canSpeak}
+                  />
+                  <div className="vp-switch-track">
+                    <div className="vp-switch-thumb" />
+                  </div>
+                </label>
+              </div>
+            )}
+          {activeScreenUserIds.size > 0 && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                paddingTop: "0.25rem",
+                borderTop: "1px solid var(--border-color)",
+              }}
+            >
+              {Array.from(activeScreenUserIds).map(uid => {
+                const isCurrentUser = uid === String(myPresenceId);
+                let user;
+                if (isCurrentUser && currentUser) {
+                  user = {
+                    user_name: currentUser.display_name || currentUser.username,
+                    avatar: currentUser.avatar_url,
+                  };
+                } else {
+                  user = onlineUsers.find(u => String(u.user_id) === uid);
+                }
+                if (!user) return null;
 
-            {activeScreenUserIds.size > 0 && (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "0.5rem",
-                  paddingTop: "0.25rem",
-                  borderTop: "1px solid var(--border-color)",
-                }}
-              >
-                {Array.from(activeScreenUserIds).map(uid => {
-                  const isCurrentUser = uid === String(myPresenceId);
-                  let user;
-                  if (isCurrentUser && currentUser) {
-                    user = {
-                      user_name: currentUser.display_name || currentUser.username,
-                      avatar: currentUser.avatar_url,
-                    };
-                  } else {
-                    user = onlineUsers.find(u => String(u.user_id) === uid);
-                  }
-                  if (!user) return null;
+                return (
+                  <UserProfileOverlay
+                    key={`screen-${uid}`}
+                    userId={uid}
+                    fallbackName={user.user_name}
+                    fallbackAvatar={user.avatar || undefined}
+                  >
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <UserAvatar
+                        src={user.avatar || undefined}
+                        alt={user.user_name}
+                        size={20}
+                        style={{
+                          border: "1px solid var(--primary)",
+                          padding: "1px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    </div>
+                  </UserProfileOverlay>
+                );
+              })}
+            </div>
+          )}
+
+          {streamsByPeer.length > 0 && (
+            <div
+              className="vp-queue-list"
+              style={{
+                marginTop: "12px",
+                borderTop: "1px solid var(--border-color)",
+                paddingTop: "12px",
+              }}
+            >
+              <div className="vp-queue-header">Active Streams</div>
+              <div className="vp-queue-scroll">
+                {streamsByPeer.map(({ peerId, screen, camera, startedAt, screenId, cameraId }) => {
+                  const u = onlineUsers.find(x => String(x.user_id) === peerId);
+                  const name = u?.user_name || `User ${peerId}`;
+                  const mainStream = screen || camera;
+                  const mainId = screenId || cameraId;
+                  if (!mainStream) return null;
 
                   return (
-                    <UserProfileOverlay
-                      key={`screen-${uid}`}
-                      userId={uid}
-                      fallbackName={user.user_name}
-                      fallbackAvatar={user.avatar || undefined}
+                    <div
+                      key={`${peerId}-${mainId}`}
+                      className="vp-queue-item"
+                      style={{
+                        flex: "0 0 160px",
+                        height: "90px",
+                        position: "relative",
+                      }}
+                      onClick={() => setEnlargedStreamId(`${peerId}-${mainId}`)}
                     >
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <UserAvatar
-                          src={user.avatar || undefined}
-                          alt={user.user_name}
-                          size={20}
+                      <RemoteMedia stream={mainStream} volume={globalVolume} />
+                      {screen && camera && (
+                        <div
                           style={{
-                            border: "1px solid var(--primary)",
-                            padding: "1px",
-                            borderRadius: "50%",
+                            position: "absolute",
+                            bottom: "24px",
+                            right: "4px",
+                            width: "48px",
+                            height: "36px",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            border: "1px solid rgba(255,255,255,0.2)",
+                            backgroundColor: "#000",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                            zIndex: 2,
                           }}
-                        />
+                        >
+                          <RemoteMedia stream={camera} volume={0} objectFit="cover" />
+                        </div>
+                      )}
+                      <div
+                        className="vp-queue-item-info"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "4px",
+                          paddingLeft: "6px",
+                          fontSize: "10px",
+                          bottom: 0,
+                          zIndex: 3,
+                        }}
+                      >
+                        <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            overflow: "hidden",
+                            flex: 1,
+                            gap: "4px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "60px",
+                            }}
+                          >
+                            {name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "9px",
+                              color: "var(--text-secondary)",
+                              opacity: 0.8,
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            • {relativeTimeAgo(startedAt)}
+                          </span>
+                        </div>
                       </div>
-                    </UserProfileOverlay>
+                    </div>
                   );
                 })}
               </div>
-            )}
-
-            {streamsByPeer.length > 0 && (
-              <div
-                className="vp-queue-list"
-                style={{
-                  marginTop: "12px",
-                  borderTop: "1px solid var(--border-color)",
-                  paddingTop: "12px",
-                }}
-              >
-                <div className="vp-queue-header">Active Streams</div>
-                <div className="vp-queue-scroll">
-                  {streamsByPeer.map(
-                    ({ peerId, screen, camera, startedAt, screenId, cameraId }) => {
-                      const u = onlineUsers.find(x => String(x.user_id) === peerId);
-                      const name = u?.user_name || `User ${peerId}`;
-                      const mainStream = screen || camera;
-                      const mainId = screenId || cameraId;
-                      if (!mainStream) return null;
-
-                      return (
-                        <div
-                          key={`${peerId}-${mainId}`}
-                          className="vp-queue-item"
-                          style={{
-                            flex: "0 0 160px",
-                            height: "90px",
-                            position: "relative",
-                          }}
-                          onClick={() => setEnlargedStreamId(`${peerId}-${mainId}`)}
-                        >
-                          <RemoteMedia stream={mainStream} volume={globalVolume} />
-                          {screen && camera && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                bottom: "24px",
-                                right: "4px",
-                                width: "48px",
-                                height: "36px",
-                                borderRadius: "4px",
-                                overflow: "hidden",
-                                border: "1px solid rgba(255,255,255,0.2)",
-                                backgroundColor: "#000",
-                                boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
-                                zIndex: 2,
-                              }}
-                            >
-                              <RemoteMedia stream={camera} volume={0} objectFit="cover" />
-                            </div>
-                          )}
-                          <div
-                            className="vp-queue-item-info"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              padding: "4px",
-                              paddingLeft: "6px",
-                              fontSize: "10px",
-                              bottom: 0,
-                              zIndex: 3,
-                            }}
-                          >
-                            <UserAvatar src={u?.avatar || undefined} alt={name} size={16} />
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                overflow: "hidden",
-                                flex: 1,
-                                gap: "4px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  maxWidth: "60px",
-                                }}
-                              >
-                                {name}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "9px",
-                                  color: "var(--text-secondary)",
-                                  opacity: 0.8,
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                • {relativeTimeAgo(startedAt)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+      )}
 
       {!voiceOnly && (
         <div className="vp-media-section ui-panel">
