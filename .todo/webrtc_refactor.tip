@@ -1,0 +1,16 @@
+<--/------->
+
+## webrtc_refactor
+
+### Current Progress
+- **Phase 1: Event Bus & Scaffold** — ✅ Complete
+- **Phase 2: Manager Implementations** — ✅ Complete
+- **Phase 3: Global Audio Wiring** — ✅ Complete
+- **Phase 4: UI Toggle & Menu Labels** — ✅ Complete
+- **Phase 5: Validation & Cutover** — 🟡 In progress
+
+### Next Steps
+- [ ] Test the `v1`/`v2` toggle seamlessly switches implementations without crashing.
+- [ ] Ensure local and remote stream handling works flawlessly in `v2`.
+
+<--/------->

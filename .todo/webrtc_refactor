@@ -1,0 +1,34 @@
+# WebRTC Architecture Refactor (@skaia/webrtc)
+
+## Context
+The existing `WebRTCManager` is a 400-line god object managing peer sessions, tracks, autoplay policies, VAD, and DOM elements via callbacks. It needs to be broken down into specialized managers communicating via an internal event bus to support future growth and stability. We also need to introduce better UI toggles and layout for debugging and control.
+
+## Goal
+- Decouple WebRTC responsibilities into specialized managers (`TrackManager`, `PlaybackManager`, etc.) orchestrated by `SkaiaRTC`.
+- Implement a global event emitter to replace the callback-heavy structure.
+- Introduce a compact v1/v2 toggle in the UI for A/B testing without regressions.
+- Organize menu sections with neat, informative labels.
+- Wire global audio control to properly sync and initialize all track/tab volumes.
+
+## Non-Goals
+- We are not immediately migrating VAD to an AudioWorklet (that is a future enhancement).
+- We are not changing the backend signaling contract (WebSocket/protobuf).
+
+## Steps
+1. Define the `SkaiaRTC` Facade and typed `EventEmitter`.
+2. Extract responsibilities into isolated Managers (`PeerManager`, `TrackManager`, `PlaybackManager`, `VoiceActivityManager`, `ConnectionManager`).
+3. Ensure the global audio control is properly wired into all track volumes and tab volumes as a whole.
+4. Ensure volume is correctly initialized to a positive, non-muted value.
+5. Create a compact `v1`/`v2` WebRTC toggle in the main menu to switch implementations.
+6. Refactor the menu UI to use neat labels and clear sectioning for settings.
+7. Perform side-by-side local testing and eventually retire `v1`.
+
+## Verification
+- Connection establishment and stream broadcast works in `v2`.
+- `v1`/`v2` toggle seamlessly switches implementations.
+- Global volume properly adjusts all tracks immediately and defaults to positive volume.
+- UI menu sections render cleanly with informative labels.
+- Auto-healing and ICE restarts function correctly.
+
+## References
+- `src/lib/webrtc/WebRTCManager.ts` (Legacy implementation)
