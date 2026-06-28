@@ -256,7 +256,7 @@ const PresencePanel = () => {
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 720
+    typeof window !== "undefined" && (window.innerWidth <= 720 || window.innerHeight <= 500)
   );
   const [mobilePanelHeight, setMobilePanelHeight] = useState(
     typeof window !== "undefined"
@@ -272,7 +272,7 @@ const PresencePanel = () => {
     }
   }, [activeTab, hasOpenedVoice]);
 
-  const isPanelSplit = expanded;
+  const isPanelSplit = expanded && !isMobile;
   const actualPanelWidth = isMobile ? Math.min(panelWidth, window.innerWidth * 0.5) : panelWidth;
 
   useEffect(() => {
@@ -467,7 +467,7 @@ const PresencePanel = () => {
     const updateHeight = () => {
       const height = window.visualViewport?.height ?? window.innerHeight;
       setMobilePanelHeight(Math.round(height));
-      setIsMobile(window.innerWidth <= 720);
+      setIsMobile(window.innerWidth <= 720 || window.innerHeight <= 500);
     };
 
     updateHeight();

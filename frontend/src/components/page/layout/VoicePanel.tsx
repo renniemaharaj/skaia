@@ -1985,7 +1985,9 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         const hasActiveVideo =
           enlarged && enlarged.stream.getVideoTracks().some(t => t.readyState !== "ended");
 
-        const isSplitMode = true;
+        const isMobile =
+          typeof window !== "undefined" && (window.innerWidth <= 720 || window.innerHeight <= 500);
+        const isSplitMode = !isMobile;
 
         if (!enlarged || !hasActiveVideo) {
           if (isSplitMode) {
