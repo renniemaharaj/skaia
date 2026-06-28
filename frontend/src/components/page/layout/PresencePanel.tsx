@@ -554,7 +554,7 @@ const PresencePanel = () => {
     ...(expanded && mobilePanelHeight > 0
       ? { "--presence-panel-height": `${mobilePanelHeight}px` }
       : {}),
-    ...(isPanelSplit ? { "--presence-panel-width": `${panelWidth}px` } : {}),
+    ...(isPanelSplit ? { "--presence-panel-width": `${actualPanelWidth}px` } : {}),
   } as React.CSSProperties;
   const layoutChildren = useAtomValue(layoutChildrenAtom);
 
@@ -564,7 +564,7 @@ const PresencePanel = () => {
       style={panelStyle as any}
       id="presence-panel-root"
     >
-      <div className="pp-wrapper" style={isPanelSplit ? { width: panelWidth } : undefined}>
+      <div className="pp-wrapper" style={isPanelSplit ? { width: actualPanelWidth } : undefined}>
         {/* Control bar: mode tabs + expand toggle */}
         <div className="pp-controls">
           <div className="pp-tabs">
