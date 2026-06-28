@@ -1930,7 +1930,11 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               </div>
             </label>
           </div>
+        </div>
+      )}
 
+      {!mediaOnly && (
+        <div className="ui-panel vp-settings-panel">
           <div
             style={{
               fontSize: "11px",
@@ -1938,7 +1942,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
               letterSpacing: "0.5px",
               opacity: 0.6,
               marginBottom: "8px",
-              marginTop: "16px",
+              marginTop: "4px",
             }}
           >
             Developer / Diagnostics
