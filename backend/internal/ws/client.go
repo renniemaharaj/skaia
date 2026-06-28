@@ -224,12 +224,16 @@ func (c *Client) dispatchApiRequest(req *wspb.ApiRequest) {
 		return
 	}
 
-	if c.RealIP != "" {
-		httpReq.Header.Set("X-Real-IP", c.RealIP)
+	for k, v := range req.Headers {
+		lk := strings.ToLower(k)
+		if lk == "x-real-ip" || lk == "x-forwarded-for" || lk == "cf-connecting-ip" || lk == "x-forwarded-host" || lk == "x-forwarded-proto" {
+			continue
+		}
+		httpReq.Header.Set(k, v)
 	}
 
-	for k, v := range req.Headers {
-		httpReq.Header.Set(k, v)
+	if c.RealIP != "" {
+		httpReq.Header.Set("X-Real-IP", c.RealIP)
 	}
 
 	// Important: Do not carry over cookies from websocket upgrade directly, 
