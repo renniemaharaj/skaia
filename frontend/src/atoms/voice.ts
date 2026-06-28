@@ -18,6 +18,8 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
 
 export const enlargedStreamIdAtom = atom<string | null>(null);
 
+export const useV2RTCAtom = atom<boolean>(false);
+
 registerResource(
   "voice:control",
   voicePermissionsAtom,

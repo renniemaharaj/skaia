@@ -30,6 +30,6 @@ export interface MediaState {
 
 export const mediaStateAtom = atom<MediaState | null>(null);
 
-export const playerMutedAtom = atomWithStorage<boolean>("playerMuted", true);
+export const playerMutedAtom = atomWithStorage<boolean>("playerMuted", false);
 
 registerResource("media:sync", mediaStateAtom, (_prev, data: MediaState) => data);

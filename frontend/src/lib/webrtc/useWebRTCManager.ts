@@ -1,24 +1,40 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useAtomValue } from "jotai";
 import { WebRTCManager, type WebRTCStream, type VoiceSignalPayload } from "./WebRTCManager";
+import { SkaiaRTC } from "./v2/SkaiaRTC";
+import { useV2RTCAtom } from "../../atoms/voice";
+import type { SignalPayload } from "./PeerSession";
 
 export function useWebRTCManager(
   myUserId: number,
   sendSignal: (targetUserId: number, payload: VoiceSignalPayload) => void,
   globalVolume: number,
-  isPlayerMuted: boolean
+  isPlayerMuted: boolean,
+  getLocalStreams?: () => MediaStream[]
 ) {
+  const useV2 = useAtomValue(useV2RTCAtom);
+
   const sendSignalRef = useRef(sendSignal);
   useEffect(() => {
     sendSignalRef.current = sendSignal;
   }, [sendSignal]);
 
-  const managerRef = useRef<WebRTCManager | null>(null);
+  const managerRef = useRef<WebRTCManager | SkaiaRTC | null>(null);
+  const managerModeRef = useRef<boolean | null>(null);
 
-  if (!managerRef.current) {
+  if (!managerRef.current || managerModeRef.current !== useV2) {
+    if (managerRef.current) {
+      managerRef.current.closeAll();
+    }
     const stableSend = (targetUserId: number, payload: VoiceSignalPayload) => {
       sendSignalRef.current(targetUserId, payload);
     };
-    managerRef.current = new WebRTCManager(myUserId, stableSend);
+    if (useV2) {
+      managerRef.current = new SkaiaRTC(myUserId, stableSend, getLocalStreams || (() => []));
+    } else {
+      managerRef.current = new WebRTCManager(myUserId, stableSend);
+    }
+    managerModeRef.current = useV2;
   }
   const manager = managerRef.current;
 
@@ -30,27 +46,57 @@ export function useWebRTCManager(
   >({});
 
   useEffect(() => {
-    manager.onStreamsChanged = streams => setRemoteStreams([...streams]);
-    manager.onMicUsersChanged = users => setRemoteMicUsers([...users]);
-    manager.onAutoplayBlocked = () => setAutoplayBlocked(true);
-    manager.onConnectionStatesChanged = states => setPeerConnectionStates(states);
+    if (manager instanceof SkaiaRTC) {
+      const onStreamsChanged = (payload: { streams: any }) =>
+        setRemoteStreams([...payload.streams]);
+      const onMicUsersChanged = (payload: { peers: any }) => setRemoteMicUsers([...payload.peers]);
+      const onAutoplayBlocked = () => setAutoplayBlocked(true);
+      const onConnectionStatesChanged = () => {
+        setPeerConnectionStates(manager.peerManager.connectionManager.getStates());
+      };
+      const onSpeaking = (payload: { peerId: string }) => {
+        window.dispatchEvent(new CustomEvent("voice:speaking", { detail: payload.peerId }));
+      };
 
-    // We can dispatch the custom event here instead of inside the manager
-    manager.onSpeaking = peerId => {
-      window.dispatchEvent(new CustomEvent("voice:speaking", { detail: peerId }));
-    };
+      manager.events.on("streamsChanged", onStreamsChanged);
+      manager.events.on("micUsersChanged", onMicUsersChanged);
+      manager.events.on("autoplayBlocked", onAutoplayBlocked);
+      manager.events.on("connectionStateChange", onConnectionStatesChanged);
+      manager.events.on("speaking", onSpeaking);
 
-    return () => {
-      manager.onStreamsChanged = undefined;
-      manager.onMicUsersChanged = undefined;
-      manager.onAutoplayBlocked = undefined;
-      manager.onConnectionStatesChanged = undefined;
-      manager.onSpeaking = undefined;
-    };
+      return () => {
+        manager.events.off("streamsChanged", onStreamsChanged);
+        manager.events.off("micUsersChanged", onMicUsersChanged);
+        manager.events.off("autoplayBlocked", onAutoplayBlocked);
+        manager.events.off("connectionStateChange", onConnectionStatesChanged);
+        manager.events.off("speaking", onSpeaking);
+      };
+    } else {
+      manager.onStreamsChanged = streams => setRemoteStreams([...streams]);
+      manager.onMicUsersChanged = users => setRemoteMicUsers([...users]);
+      manager.onAutoplayBlocked = () => setAutoplayBlocked(true);
+      manager.onConnectionStatesChanged = states => setPeerConnectionStates(states);
+
+      manager.onSpeaking = peerId => {
+        window.dispatchEvent(new CustomEvent("voice:speaking", { detail: peerId }));
+      };
+
+      return () => {
+        manager.onStreamsChanged = undefined;
+        manager.onMicUsersChanged = undefined;
+        manager.onAutoplayBlocked = undefined;
+        manager.onConnectionStatesChanged = undefined;
+        manager.onSpeaking = undefined;
+      };
+    }
   }, [manager]);
 
   useEffect(() => {
-    manager.setAudioState(globalVolume, isPlayerMuted);
+    if (manager instanceof SkaiaRTC) {
+      manager.playbackManager.setAudioState(globalVolume, isPlayerMuted);
+    } else {
+      manager.setAudioState(globalVolume, isPlayerMuted);
+    }
   }, [manager, globalVolume, isPlayerMuted]);
 
   useEffect(() => {
@@ -60,22 +106,35 @@ export function useWebRTCManager(
   }, [manager]);
 
   const handleSignal = useCallback(
-    async (peerId: number, signal: VoiceSignalPayload, localStreams: (MediaStream | null)[]) => {
-      await manager.handleSignal(peerId, signal, localStreams);
+    async (peerId: number, signal: VoiceSignalPayload) => {
+      const streams = getLocalStreams ? getLocalStreams() : [];
+      if (manager instanceof SkaiaRTC) {
+        await manager.handleSignal(peerId, signal as SignalPayload, streams);
+      } else if (manager instanceof WebRTCManager) {
+        await manager.handleSignal(peerId, signal as SignalPayload, streams);
+      }
     },
-    [manager]
+    [manager, getLocalStreams]
   );
 
   const ensureConnection = useCallback(
     (peerId: number, isInitiator: boolean, localStreams: (MediaStream | null)[]) => {
-      return manager.ensureConnection(peerId, isInitiator, localStreams);
+      if (manager instanceof SkaiaRTC) {
+        return manager.ensureConnection(peerId, isInitiator, localStreams);
+      } else {
+        return manager.ensureConnection(peerId, isInitiator, localStreams);
+      }
     },
     [manager]
   );
 
   const closePeer = useCallback(
     (peerId: string, notify = true) => {
-      manager.closePeer(peerId, notify);
+      if (manager instanceof SkaiaRTC) {
+        manager.peerManager.closePeer(peerId, notify);
+      } else if (manager instanceof WebRTCManager) {
+        manager.closePeer(peerId, notify);
+      }
     },
     [manager]
   );
@@ -97,12 +156,20 @@ export function useWebRTCManager(
   );
 
   const getActivePeerIds = useCallback(() => {
-    return Array.from(manager.getPeerConnections().keys());
+    if (manager instanceof SkaiaRTC) {
+      return Array.from(manager.peerManager.getSessions().keys());
+    } else {
+      return Array.from(manager.getPeerConnections().keys());
+    }
   }, [manager]);
 
   const syncActivePeers = useCallback(
     (validPeerIds: string[], localStreams: (MediaStream | null)[]) => {
-      manager.syncActivePeers(validPeerIds, localStreams);
+      if (manager instanceof SkaiaRTC) {
+        manager.syncActivePeers(validPeerIds);
+      } else if (manager instanceof WebRTCManager) {
+        manager.syncActivePeers(validPeerIds, localStreams);
+      }
     },
     [manager]
   );
@@ -113,7 +180,11 @@ export function useWebRTCManager(
     handleSignal,
     ensureConnection,
     closePeer,
-    sendSignal: manager.sendSignal.bind(manager),
+    sendSignal: (targetUserId: number, payload: VoiceSignalPayload) => {
+      if (manager instanceof WebRTCManager) {
+        manager.sendSignal(targetUserId, payload);
+      }
+    },
     broadcastTracks,
     removeTracks,
     getActivePeerIds,

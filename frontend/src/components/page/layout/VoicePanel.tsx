@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom, presencePanelExpandedAtom } from "../../../atoms/presence";
-import { enlargedStreamIdAtom, voicePermissionsAtom } from "../../../atoms/voice";
+import { enlargedStreamIdAtom, voicePermissionsAtom, useV2RTCAtom } from "../../../atoms/voice";
 import { getGuestSessionId } from "../../../utils/guestSession";
 import { relativeTimeAgo } from "../../../utils/serverTime";
 import { getSoundVolume } from "../../../utils/sound";
@@ -191,6 +191,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   const isPlayerMutedRef = useRef(isPlayerMuted);
   isPlayerMutedRef.current = isPlayerMuted;
   const [historyViewMode, setHistoryViewMode] = useState<"list" | "playlists">("list");
+  const [useV2RTC, setUseV2RTC] = useAtom(useV2RTCAtom);
 
   useEffect(() => {
     const handleVolumeChange = (e: Event) => {
@@ -663,6 +664,12 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     [socket, location.pathname]
   );
 
+  const getLocalStreams = useCallback(() => {
+    return [streamRef.current, cameraStreamRef.current, screenStreamRef.current].filter(
+      Boolean
+    ) as MediaStream[];
+  }, []);
+
   const {
     remoteStreams,
     remoteMicUsers,
@@ -676,7 +683,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
-  } = useWebRTCManager(Number(myPresenceId), sendVoiceSignal, globalVolume, isPlayerMuted);
+  } = useWebRTCManager(
+    Number(myPresenceId),
+    sendVoiceSignal,
+    globalVolume,
+    isPlayerMuted,
+    getLocalStreams
+  );
 
   useEffect(() => {
     if (autoplayBlocked) {
@@ -867,11 +880,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         closePeer(String(peerId), false);
         return;
       }
-      await handleSignal(peerId, signal, [
-        streamRef.current,
-        cameraStreamRef.current,
-        screenStreamRef.current,
-      ]);
+      await handleSignal(peerId, signal);
     };
 
     window.addEventListener("voice:signal", onVoiceSignal);
@@ -1883,6 +1892,18 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
 
       {!mediaOnly && hasManagePermission && (
         <div className="ui-panel vp-settings-panel vp-admin-settings">
+          <div
+            style={{
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              opacity: 0.6,
+              marginBottom: "8px",
+              marginTop: "4px",
+            }}
+          >
+            Moderation Controls
+          </div>
           <div className="vp-setting-row">
             <span className="vp-setting-label vp-text-error">
               <Settings size={14} />
@@ -1905,6 +1926,35 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                 }}
               />
               <div className="vp-switch-track vp-switch-track--danger">
+                <div className="vp-switch-thumb" />
+              </div>
+            </label>
+          </div>
+
+          <div
+            style={{
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              opacity: 0.6,
+              marginBottom: "8px",
+              marginTop: "16px",
+            }}
+          >
+            Developer / Diagnostics
+          </div>
+          <div className="vp-setting-row">
+            <span className="vp-setting-label">
+              <Settings size={14} />
+              Use SkaiaRTC (v2)
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={useV2RTC}
+                onChange={e => setUseV2RTC(e.target.checked)}
+              />
+              <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
               </div>
             </label>

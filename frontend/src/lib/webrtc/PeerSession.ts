@@ -55,6 +55,12 @@ export class PeerSession {
 
   private triggerNegotiation() {
     this.signalQueue.enqueue(async () => {
+      console.log(
+        "[PeerSession] Negotiating",
+        this.pc.signalingState,
+        this.pc.getSenders().length,
+        this.pc.getReceivers().length
+      );
       if (!this.needsNegotiation) return;
       if (this.pc.signalingState !== "stable") return;
 
@@ -145,7 +151,12 @@ export class PeerSession {
     });
   }
 
-  public async publishTracks(streams: (MediaStream | null)[]) {
+  public async publishTracks(streams: MediaStream[]) {
+    console.log(
+      "[PeerSession] Publishing",
+      streams.length,
+      streams.flatMap(s => s.getTracks().map(t => t.kind))
+    );
     for (const stream of streams) {
       if (!stream) continue;
       stream.getTracks().forEach(track => {
@@ -167,7 +178,7 @@ export class PeerSession {
     }
   }
 
-  public async removeTracks(streams: (MediaStream | null)[]) {
+  public async removeTracks(streams: MediaStream[]) {
     for (const stream of streams) {
       if (!stream) continue;
       const tracks = stream.getTracks();

@@ -3,7 +3,11 @@ import { PeerSession } from "./PeerSession";
 import { VoiceActivityDetector } from "./VoiceActivityDetector";
 
 export type VoiceSignalPayload = SignalPayload;
-export type WebRTCStream = { peerId: string; stream: MediaStream; startedAt: string };
+export type WebRTCStream = {
+  peerId: string;
+  stream: MediaStream;
+  startedAt: string;
+};
 
 export class WebRTCManager {
   private peerSessions = new Map<string, PeerSession>();
@@ -15,7 +19,11 @@ export class WebRTCManager {
   private failedTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
   private pendingCloses = new Map<string, ReturnType<typeof setTimeout>>();
 
-  private remoteStreams: { peerId: string; stream: MediaStream; startedAt: string }[] = [];
+  private remoteStreams: {
+    peerId: string;
+    stream: MediaStream;
+    startedAt: string;
+  }[] = [];
   private remoteAudioRefs = new Map<string, HTMLAudioElement>();
   private vad = new VoiceActivityDetector();
   private globalVolume = 1;
@@ -76,8 +84,8 @@ export class WebRTCManager {
     }
 
     if (signal.kind === "hello") {
-      this.closePeer(key, false);
-      this.ensureConnection(peerId, false, localStreams);
+      const session = this.ensureConnection(peerId, false, localStreams);
+      session.negotiate("received-hello");
       return;
     }
 
@@ -139,6 +147,7 @@ export class WebRTCManager {
     broadcastHello: boolean,
     localStreams: (MediaStream | null)[]
   ): PeerSession {
+    console.log("[WebRTCManager] creating", peerId);
     const key = String(peerId);
     let session = this.peerSessions.get(key);
     if (session) return session;
@@ -218,9 +227,12 @@ export class WebRTCManager {
       });
     };
 
-    // Explicitly publish tracks and let onnegotiationneeded handle negotiation
+    // Explicitly publish tracks and negotiate
     if (localStreams.some(s => s !== null)) {
-      session.publishTracks(localStreams).catch(console.error);
+      session
+        .publishTracks(localStreams.filter(Boolean) as MediaStream[])
+        .then(() => session.negotiate("initial-publish"))
+        .catch(console.error);
     }
 
     return session;
@@ -307,13 +319,15 @@ export class WebRTCManager {
 
   public async broadcastTracks(streams: (MediaStream | null)[]) {
     for (const session of this.peerSessions.values()) {
-      await session.publishTracks(streams);
+      await session.publishTracks(streams.filter(Boolean) as MediaStream[]);
+      await session.negotiate("broadcast-tracks");
     }
   }
 
   public async removeTracks(streams: (MediaStream | null)[]) {
     for (const session of this.peerSessions.values()) {
-      await session.removeTracks(streams);
+      await session.removeTracks(streams.filter(Boolean) as MediaStream[]);
+      await session.negotiate("remove-tracks");
     }
   }
 
