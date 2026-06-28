@@ -842,6 +842,16 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
   };
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && window.screen?.orientation?.unlock) {
+        window.screen.orientation.unlock();
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
@@ -2094,7 +2104,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         if (document.fullscreenElement) {
                           document.exitFullscreen().catch(console.error);
                         } else {
-                          container.requestFullscreen().catch(console.error);
+                          container
+                            .requestFullscreen()
+                            .then(() => {
+                              const orientation = window.screen?.orientation as any;
+                              if (orientation?.lock) {
+                                orientation.lock("landscape").catch(console.error);
+                              }
+                            })
+                            .catch(console.error);
                         }
                       }
                     }}
@@ -2182,7 +2200,15 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                         if (document.fullscreenElement) {
                           document.exitFullscreen().catch(console.error);
                         } else {
-                          container.requestFullscreen().catch(console.error);
+                          container
+                            .requestFullscreen()
+                            .then(() => {
+                              const orientation = window.screen?.orientation as any;
+                              if (orientation?.lock) {
+                                orientation.lock("landscape").catch(console.error);
+                              }
+                            })
+                            .catch(console.error);
                         }
                       }
                     }}
