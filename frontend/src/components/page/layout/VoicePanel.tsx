@@ -283,7 +283,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
     updateDevices();
     navigator.mediaDevices.addEventListener("devicechange", updateDevices);
     return () => navigator.mediaDevices.removeEventListener("devicechange", updateDevices);
-  }, [selectedAudioDeviceId, selectedVideoDeviceId]);
+  }, [selectedAudioDeviceId, selectedVideoDeviceId, micActive, cameraActive]);
 
   const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
 
@@ -1158,7 +1158,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
             </label>
           </div>
 
-          {videoDevices.length > 1 && (
+          {videoDevices.length > 0 && (
             <Select
               size="sm"
               variant="minimal"
