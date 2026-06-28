@@ -12,7 +12,16 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type MouseEvent,
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
@@ -27,10 +36,13 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { customConfirm } from "../ui/Prompt";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
-import { BlockRenderer } from "./BlockRenderer";
 import { DirectoryLayout } from "./layout/templates/DirectoryLayout";
 import type { PageSection } from "./types";
 import "./CustomPages.css";
+
+const BlockRenderer = lazy(() =>
+  import("./BlockRenderer").then(m => ({ default: m.BlockRenderer }))
+);
 
 const parsePageSections = (content: string) => {
   try {
@@ -231,25 +243,43 @@ export default function CustomPages() {
 
   const PageThumb = ({ page }: { page: PageBuilderDoc }) => {
     const sections = useMemo(() => parsePageSections(page.content), [page.content]);
+    const ref = useRef<HTMLDivElement>(null);
+    const [inView, setInView] = useState(false);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setInView(true);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
+      );
+      if (ref.current) observer.observe(ref.current);
+      return () => observer.disconnect();
+    }, []);
 
     return (
-      <div className="cp-card__thumb" data-custom-page-preview>
-        {sections.length > 0 ? (
+      <div ref={ref} className="cp-card__thumb" data-custom-page-preview>
+        {inView && sections.length > 0 ? (
           <div className="cp-card__thumb-inner">
-            <BlockRenderer
-              sections={sections}
-              canEdit={false}
-              onUpdateSection={noop}
-              onDeleteSection={noop}
-              onCreateSection={noop}
-              onCreateItem={noop}
-              onUpdateItem={noop}
-              onDeleteItem={noop}
-              onMoveSection={noop}
-            />
+            <Suspense fallback={<div className="cp-card__thumb-empty">Loading...</div>}>
+              <BlockRenderer
+                sections={sections}
+                canEdit={false}
+                onUpdateSection={noop}
+                onDeleteSection={noop}
+                onCreateSection={noop}
+                onCreateItem={noop}
+                onUpdateItem={noop}
+                onDeleteItem={noop}
+                onMoveSection={noop}
+              />
+            </Suspense>
           </div>
         ) : (
-          <div className="cp-card__thumb-empty">No preview</div>
+          <div className="cp-card__thumb-empty">{inView ? "No preview" : "Loading preview..."}</div>
         )}
       </div>
     );

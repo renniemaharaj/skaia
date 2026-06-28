@@ -20,18 +20,38 @@ import {
   getSectionLayout,
   getSectionMargins,
 } from "./EditControls";
-import { CTABlock } from "./blocks/CTABlock";
-import { CardGroupBlock } from "./blocks/CardGroupBlock";
-import { CustomSectionBlock } from "./blocks/CustomSectionBlock";
-import { DataSourcesBlock } from "./blocks/DataSourcesBlock";
-import { DerivedSectionBlock } from "./blocks/DerivedSectionBlock";
-import { EventHighlightsBlock } from "./blocks/EventHighlightsBlock";
-import { FeatureGridBlock } from "./blocks/FeatureGridBlock";
-import { HeroBlock } from "./blocks/HeroBlock";
-import { ProfileCardBlock } from "./blocks/ProfileCardBlock";
-import { RichTextBlock } from "./blocks/RichTextBlock";
-import { SocialLinksBlock } from "./blocks/SocialLinksBlock";
-import { StatCardsBlock } from "./blocks/StatCardsBlock";
+const CTABlock = lazy(() => import("./blocks/CTABlock").then(m => ({ default: m.CTABlock })));
+const CardGroupBlock = lazy(() =>
+  import("./blocks/CardGroupBlock").then(m => ({ default: m.CardGroupBlock }))
+);
+const CustomSectionBlock = lazy(() =>
+  import("./blocks/CustomSectionBlock").then(m => ({ default: m.CustomSectionBlock }))
+);
+const DataSourcesBlock = lazy(() =>
+  import("./blocks/DataSourcesBlock").then(m => ({ default: m.DataSourcesBlock }))
+);
+const DerivedSectionBlock = lazy(() =>
+  import("./blocks/DerivedSectionBlock").then(m => ({ default: m.DerivedSectionBlock }))
+);
+const EventHighlightsBlock = lazy(() =>
+  import("./blocks/EventHighlightsBlock").then(m => ({ default: m.EventHighlightsBlock }))
+);
+const FeatureGridBlock = lazy(() =>
+  import("./blocks/FeatureGridBlock").then(m => ({ default: m.FeatureGridBlock }))
+);
+const HeroBlock = lazy(() => import("./blocks/HeroBlock").then(m => ({ default: m.HeroBlock })));
+const ProfileCardBlock = lazy(() =>
+  import("./blocks/ProfileCardBlock").then(m => ({ default: m.ProfileCardBlock }))
+);
+const RichTextBlock = lazy(() =>
+  import("./blocks/RichTextBlock").then(m => ({ default: m.RichTextBlock }))
+);
+const SocialLinksBlock = lazy(() =>
+  import("./blocks/SocialLinksBlock").then(m => ({ default: m.SocialLinksBlock }))
+);
+const StatCardsBlock = lazy(() =>
+  import("./blocks/StatCardsBlock").then(m => ({ default: m.StatCardsBlock }))
+);
 
 // Heavy blocks — lazy-loaded so they don't bloat the initial bundle.
 // Each will suspend (and show a skeleton fallback) only until its chunk lands.
