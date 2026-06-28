@@ -1,4 +1,5 @@
 import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { registerResource } from "../utils/wsRegistry";
 
 export interface VoicePermissions {
@@ -18,7 +19,7 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
 
 export const enlargedStreamIdAtom = atom<string | null>(null);
 
-export const useV2RTCAtom = atom<boolean>(false);
+export const useV2RTCAtom = atomWithStorage<boolean>("useV2RTC", false);
 
 registerResource(
   "voice:control",
