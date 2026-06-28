@@ -850,6 +850,8 @@ const PresencePanel = () => {
             overflowY: "auto",
             padding: "0 24px",
             maxHeight: "100vh",
+            height: "100vh",
+            display: "block",
           }}
         >
           {layoutChildren}
