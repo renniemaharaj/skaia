@@ -44,8 +44,12 @@ const registryPayload = (payload: WebSocketMessage["payload"]) => payload?.data 
 const registryKey = (type: string, payload: WebSocketMessage["payload"]) =>
   payload?.action ? `${type}:${payload.action}` : type;
 
-export const applyMessageUpdate = (type: string, payload: WebSocketMessage["payload"]) =>
-  applyWsUpdate(registryKey(type, payload), registryPayload(payload));
+export const applyMessageUpdate = (type: string, payload: WebSocketMessage["payload"]) => {
+  if (type === "voice:control" || type.startsWith("voice:")) {
+    return applyWsUpdate(type, registryPayload(payload));
+  }
+  return applyWsUpdate(registryKey(type, payload), registryPayload(payload));
+};
 
 export const dispatchEventBusMessage = (type: string, payload: any) => {
   switch (type) {

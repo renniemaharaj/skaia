@@ -721,6 +721,23 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			json.NewEncoder(w).Encode(map[string]bool{"armed": imw.IsArmed(armedDir)})
 		})
 
+		api.Get("/voice/permissions", func(w http.ResponseWriter, r *http.Request) {
+			route := r.URL.Query().Get("route")
+			if route == "" {
+				utils.WriteError(w, http.StatusBadRequest, "route is required")
+				return
+			}
+			vp := hub.GetVoicePermissions(route)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"route":         route,
+				"voiceEnabled":  vp.VoiceEnabled,
+				"guestsAllowed": vp.GuestsAllowed,
+				"mutedUsers":    vp.MutedUsers,
+				"kickedUsers":   vp.KickedUsers,
+			})
+		})
+
 		api.Route("/site", func(site chi.Router) {
 			site.Use(imw.JWTAuthMiddleware, imw.PermissionMiddleware("home.manage"))
 

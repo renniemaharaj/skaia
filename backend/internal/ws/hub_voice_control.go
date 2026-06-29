@@ -142,3 +142,36 @@ func presenceID(client *Client) int64 {
 	}
 	return client.UserID
 }
+
+// GetVoicePermissions returns the current voice state for a route.
+func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
+	h.voiceMu.RLock()
+	defer h.voiceMu.RUnlock()
+
+	vp, ok := h.voiceRoutes[route]
+	if !ok {
+		return &VoicePermissions{
+			VoiceEnabled:  true,
+			GuestsAllowed: false,
+			MutedUsers:    make(map[int64]bool),
+			KickedUsers:   make(map[int64]bool),
+		}
+	}
+	
+	// Return a deep copy to prevent race conditions during JSON encoding
+	muted := make(map[int64]bool, len(vp.MutedUsers))
+	for k, v := range vp.MutedUsers {
+		muted[k] = v
+	}
+	kicked := make(map[int64]bool, len(vp.KickedUsers))
+	for k, v := range vp.KickedUsers {
+		kicked[k] = v
+	}
+	
+	return &VoicePermissions{
+		VoiceEnabled:  vp.VoiceEnabled,
+		GuestsAllowed: vp.GuestsAllowed,
+		MutedUsers:    muted,
+		KickedUsers:   kicked,
+	}
+}

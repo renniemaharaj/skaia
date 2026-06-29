@@ -27,6 +27,7 @@ import { useMediaDevices } from "./voice/useMediaDevices";
 
 import { useWebRTCManager } from "../../../lib/webrtc/useWebRTCManager";
 import { type VoiceSignalPayload } from "../../../lib/webrtc/WebRTCManager";
+import { apiRequest } from "../../../utils/api";
 
 interface WebRTCPanelProps {
   mediaOnly?: boolean;
@@ -53,7 +54,6 @@ export default function WebRTCPanel({
     return () => window.removeEventListener("sound:volume-change", handleVolumeChange);
   }, []);
 
-  const permissions = useAtomValue(voicePermissionsAtom);
   const socket = useAtomValue(socketAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const onlineUsers = useAtomValue(onlineUsersAtom);
@@ -64,6 +64,19 @@ export default function WebRTCPanel({
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [permissions, setPermissions] = useAtom(voicePermissionsAtom);
+
+  useEffect(() => {
+    const route = normalizeRoute(location.pathname);
+    apiRequest<any>(`/api/voice/permissions?route=${encodeURIComponent(route)}`)
+      .then((data: any) => {
+        if (data && data.route === route) {
+          setPermissions(prev => ({ ...prev, ...data }));
+        }
+      })
+      .catch(console.error);
+  }, [location.pathname, setPermissions]);
 
   useEffect(() => {
     const sid = searchParams.get("streamId");
@@ -265,6 +278,21 @@ export default function WebRTCPanel({
     getLocalStreams
   );
 
+  // When guests are disabled, disconnect all existing guest peer connections
+  useEffect(() => {
+    if (!permissions.guestsAllowed) {
+      getActivePeerIds().forEach(peerId => {
+        // Guests have negative user IDs
+        if (Number(peerId) < 0) {
+          console.log(
+            `[WebRTCPanel] Dropping guest peer ${peerId} because guests are no longer allowed`
+          );
+          closePeer(peerId);
+        }
+      });
+    }
+  }, [permissions.guestsAllowed, getActivePeerIds, closePeer]);
+
   const {
     audioDevices,
     videoDevices,
@@ -355,6 +383,7 @@ export default function WebRTCPanel({
         user.user_id === myPresenceId
       )
         continue;
+      if (!permissions.guestsAllowed && user.user_id < 0) continue;
       validUserIds.add(String(user.user_id));
 
       if (!peers.includes(String(user.user_id))) {
@@ -373,20 +402,22 @@ export default function WebRTCPanel({
     sendVoiceSignal,
     ensureConnection,
     getActivePeerIds,
+    permissions.guestsAllowed,
   ]);
 
   const validUserIdsRef = useRef(new Set<string>());
   useEffect(() => {
     validUserIdsRef.current = new Set(
       onlineUsers
-        .filter(
-          u =>
-            normalizeRoute(u.route) === normalizeRoute(location.pathname) &&
-            u.user_id !== myPresenceId
-        )
+        .filter(u => {
+          if (normalizeRoute(u.route) !== normalizeRoute(location.pathname)) return false;
+          if (u.user_id === myPresenceId) return false;
+          if (!permissions.guestsAllowed && u.user_id < 0) return false;
+          return true;
+        })
         .map(u => String(u.user_id))
     );
-  }, [onlineUsers, location.pathname, myPresenceId]);
+  }, [onlineUsers, location.pathname, myPresenceId, permissions.guestsAllowed]);
 
   useEffect(() => {
     const timer = setInterval(() => {
