@@ -4,14 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"html"
-	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
+
+	log "github.com/skaia/backend/internal/syslog"
 
 	"github.com/redis/go-redis/v9"
 	icfg "github.com/skaia/backend/internal/config"
@@ -21,13 +20,6 @@ import (
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/ratelimit"
 )
-
-type CachedMeta struct {
-	TitleTag   string `json:"title_tag"`
-	DescTag    string `json:"desc_tag"`
-	OGTag      string `json:"og_tag"`
-	FaviconTag string `json:"favicon_tag"`
-}
 
 var (
 	threadRx     = regexp.MustCompile(`^/view-thread/(\d+)`)
@@ -167,7 +159,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		if finalTitle != "" {
-			meta.TitleTag = "<title>" + htmlEscape(finalTitle) + "</title>"
+			meta.setTitle(finalTitle)
 		}
 
 		// Description
@@ -179,7 +171,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 			finalDesc = branding.Tagline
 		}
 		if finalDesc != "" {
-			meta.DescTag = "<meta name=\"description\" content=\"" + htmlEscape(finalDesc) + "\">"
+			meta.setDescription(finalDesc)
 		}
 
 		// OG Image
@@ -191,14 +183,43 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 			finalImg = branding.LogoURL
 		}
 		if finalImg != "" {
-			meta.OGTag = "<meta property=\"og:image\" content=\"" + htmlEscape(finalImg) + "\">"
+			meta.setOGImage(finalImg)
 		}
 
 		// Favicon
 		if branding.LogoURL != "" {
-			meta.FaviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(branding.LogoURL) + "\">"
+			meta.setFavicon(branding.LogoURL)
 		}
 
+		// OG Type
+		meta.setTypeWebsite()
+
+		// // OG Image Width
+		// meta.setOGImageWidth(1200)
+
+		// // OG Image Height
+		// meta.setOGImageHeight(626)
+
+		// OG Image Type
+		meta.setOGImageType("image/jpeg")
+
+		// Twitter Card
+		meta.setTwitterCard("summary_large_image")
+
+		// Twitter Creator // Leave uncommented for now, as we don't have a Twitter handle in the branding config.
+		// if branding.TwitterHandle != "" {
+		// 	meta.setTwitterCreator(branding.TwitterHandle)
+		// }
+
+		// OG Description
+		if finalDesc != "" {
+			meta.setOGDescription(finalDesc)
+		}
+
+		// OG Site Name
+		if siteName != "" {
+			meta.setOGSiteName(siteName)
+		}
 		// 3. Cache the result
 		if metaBytes, err := json.Marshal(meta); err == nil {
 			ttl := 24 * time.Hour
@@ -210,42 +231,4 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 
 		serveInjected(w, data, meta)
 	}
-}
-
-func serveInjected(w http.ResponseWriter, data []byte, meta CachedMeta) {
-	out := string(data)
-	out = replacePlaceholder(out, "%TITLE_PLACEHOLDER%", meta.TitleTag)
-	out = replacePlaceholder(out, "%META_DESCRIPTION_PLACEHOLDER%", meta.DescTag)
-	out = replacePlaceholder(out, "%OG_IMAGE_PLACEHOLDER%", meta.OGTag)
-	out = replacePlaceholder(out, "%FAVICON_PLACEHOLDER%", meta.FaviconTag)
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Write([]byte(out))
-}
-
-func stripHTML(s string) string {
-	// Replace all HTML tags with a space to prevent words from mashing together
-	s = htmlTagRx.ReplaceAllString(s, " ")
-	// Unescape any HTML entities like &amp; back to normal text
-	s = html.UnescapeString(s)
-	// Collapse multiple spaces into one
-	s = multiSpaceRx.ReplaceAllString(s, " ")
-	return strings.TrimSpace(s)
-}
-
-func snip(s string, max int) string {
-	if len(s) <= max {
-		return s
-	}
-	return s[:max] + "..."
-}
-
-func replacePlaceholder(doc, placeholder, replacement string) string {
-	return strings.ReplaceAll(doc, placeholder, replacement)
-}
-
-func htmlEscape(s string) string {
-	return html.EscapeString(s)
 }
