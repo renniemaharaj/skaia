@@ -57,8 +57,11 @@ interface Props {
 
 export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
   const cfg = getCfg(section.config);
-  const bannerUrl = JSON.parse(section.config || "{}").banner_url || "/banner_7783x7783.png";
-  const avatarUrl = JSON.parse(section.config || "{}").avatar_url || "/logo.png";
+  const parsedCfg = JSON.parse(section.config || "{}");
+  const bannerUrl = parsedCfg.banner_url || "/banner_7783x7783.png";
+  const avatarUrl = parsedCfg.avatar_url || "/logo.png";
+  const profileName = parsedCfg.profile_name ?? "Name";
+  const profileSubtitle = parsedCfg.profile_subtitle ?? "Subtitle";
 
   const sectionRef = useRef(section);
   useEffect(() => {
@@ -192,23 +195,23 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
             {canEdit ? (
               <>
                 <EditableText
-                  value={JSON.parse(section.config || "{}").profile_name || "Name"}
+                  value={profileName}
                   onSave={v => updateConfig({ profile_name: v })}
                   tag="h3"
+                  placeholder="Name"
                 />
                 <EditableText
-                  value={JSON.parse(section.config || "{}").profile_subtitle || "Subtitle"}
+                  value={profileSubtitle}
                   onSave={v => updateConfig({ profile_subtitle: v })}
                   tag="p"
                   className="profile-card-subtitle"
+                  placeholder="Subtitle"
                 />
               </>
             ) : (
               <>
-                <h3>{JSON.parse(section.config || "{}").profile_name || "Name"}</h3>
-                <p className="profile-card-subtitle">
-                  {JSON.parse(section.config || "{}").profile_subtitle || "Subtitle"}
-                </p>
+                {profileName && <h3>{profileName}</h3>}
+                {profileSubtitle && <p className="profile-card-subtitle">{profileSubtitle}</p>}
               </>
             )}
 
@@ -248,22 +251,6 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
                 )}
               </div>
             )}
-
-            {/* Description */}
-            {(cfg.description || canEdit) && (
-              <div className="profile-card-description">
-                {canEdit ? (
-                  <EditableText
-                    value={cfg.description}
-                    onSave={v => updateConfig({ description: v })}
-                    tag="p"
-                    placeholder="Add a description…"
-                  />
-                ) : (
-                  cfg.description && <p>{cfg.description}</p>
-                )}
-              </div>
-            )}
           </div>
         </ContentFlatCard>
 
@@ -297,6 +284,22 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
           )}
         </div>
       </div>
+
+      {/* Description */}
+      {(cfg.description || canEdit) && (
+        <div className="profile-card-description">
+          {canEdit ? (
+            <EditableText
+              value={cfg.description}
+              onSave={v => updateConfig({ description: v })}
+              tag="p"
+              placeholder="Add a description…"
+            />
+          ) : (
+            cfg.description && <p>{cfg.description}</p>
+          )}
+        </div>
+      )}
     </section>
   );
 };

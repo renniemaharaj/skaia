@@ -118,15 +118,13 @@
 }
 
 .profile-card-description {
-  border-top: 1px solid var(--border-color);
-  padding-top: 1rem;
-  margin-top: 0.5rem;
+  margin-top: 2rem;
 }
 
 .profile-card-description p {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.7;
   margin: 0;
 }
 
