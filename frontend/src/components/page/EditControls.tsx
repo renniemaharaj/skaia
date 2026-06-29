@@ -10,6 +10,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Copy,
   ImageIcon,
   Loader2,
   Maximize2,
@@ -17,6 +18,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Scissors,
   Trash2,
   Video,
 } from "lucide-react";
@@ -38,6 +40,8 @@ export interface SectionMoveContextValue {
   canMoveUp: boolean;
   canMoveDown: boolean;
   lastEditedBy?: SectionEditor;
+  onCopy?: () => void;
+  onCut?: () => void;
 }
 
 export const SectionMoveContext = createContext<SectionMoveContextValue>({
@@ -748,7 +752,7 @@ export const SectionToolbar = ({
   onBgColorChange?: (c: string) => void;
   extra?: React.ReactNode;
 }) => {
-  const { lastEditedBy } = useContext(SectionMoveContext);
+  const { lastEditedBy, onCopy, onCut } = useContext(SectionMoveContext);
   return (
     <div className="pb-section-toolbar">
       <span className="pb-section-toolbar-label">{label}</span>
@@ -773,6 +777,28 @@ export const SectionToolbar = ({
           <ColorPickerButton value={bgColor} onChange={onBgColorChange} title="Section color" />
         ) : null}
         {extra}
+        {onCopy && (
+          <button
+            className="pb-section-toolbar-btn"
+            onClick={onCopy}
+            title="Copy section"
+            aria-label="Copy section"
+            type="button"
+          >
+            <Copy size={14} />
+          </button>
+        )}
+        {onCut && (
+          <button
+            className="pb-section-toolbar-btn"
+            onClick={onCut}
+            title="Cut section"
+            aria-label="Cut section"
+            type="button"
+          >
+            <Scissors size={14} />
+          </button>
+        )}
         <button
           className="pb-section-toolbar-btn danger"
           onClick={onDelete}

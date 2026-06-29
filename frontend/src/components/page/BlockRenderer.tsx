@@ -2,6 +2,7 @@ import type { PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import React, {
   Suspense,
   lazy,
@@ -193,6 +194,21 @@ const SectionBlock = memo(function SectionBlock({
     ...(bgColor ? { backgroundColor: bgColor } : {}),
   };
 
+  const onCopy = useCallback(async () => {
+    try {
+      const payload = JSON.stringify({ isSkaiaBlock: true, section });
+      await navigator.clipboard.writeText(payload);
+      toast.success("Section copied to clipboard");
+    } catch {
+      toast.error("Failed to copy section");
+    }
+  }, [section]);
+
+  const onCut = useCallback(async () => {
+    await onCopy();
+    onDelete(section.id);
+  }, [onCopy, onDelete, section.id]);
+
   // Memoise the context value so SectionMoveButtons consumers don't re-render
   // unless the section's position actually changed.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -203,8 +219,10 @@ const SectionBlock = memo(function SectionBlock({
       canMoveUp: !isFirst,
       canMoveDown: !isLast,
       lastEditedBy: section.last_edited_by,
+      onCopy,
+      onCut,
     }),
-    [section.id, isFirst, isLast, onMove, section.last_edited_by]
+    [section.id, isFirst, isLast, onMove, section.last_edited_by, onCopy, onCut]
   );
 
   return (
@@ -261,6 +279,51 @@ export const BlockRenderer = memo(function BlockRenderer({
 
   const orderedSections = [...sections].sort((a, b) => a.display_order - b.display_order);
 
+  // Helper for pasting
+  const onCreateSectionRef = useRef(onCreateSection);
+  onCreateSectionRef.current = onCreateSection;
+
+  useEffect(() => {
+    if (!canEdit) return;
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (
+        document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+      try {
+        const text = e.clipboardData?.getData("text") || (await navigator.clipboard.readText());
+        if (!text) return;
+        const parsed = JSON.parse(text);
+        if (parsed.isSkaiaBlock && parsed.section) {
+          e.preventDefault();
+          const targetIndex = activeAddIndex !== null ? activeAddIndex : orderedSections.length;
+
+          const newSection: Omit<PageSection, "id"> = {
+            display_order: targetIndex + 1,
+            section_type: parsed.section.section_type,
+            heading: parsed.section.heading,
+            subheading: parsed.section.subheading,
+            config: parsed.section.config,
+            items: (parsed.section.items || []).map((item: any) => {
+              const { id, section_id, ...rest } = item;
+              return rest;
+            }),
+          };
+
+          onCreateSectionRef.current(newSection);
+          toast.success("Section pasted from clipboard!");
+        }
+      } catch {
+        // Not a valid JSON block, ignore silently
+      }
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  }, [canEdit, activeAddIndex, orderedSections.length]);
+
   // Stable move handler - uses refs so the callback identity never changes.
   const sectionsRef = useRef(orderedSections);
   sectionsRef.current = orderedSections;
@@ -276,6 +339,25 @@ export const BlockRenderer = memo(function BlockRenderer({
   }, []);
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  const [clipboardSection, setClipboardSection] = useState<any | null>(null);
+
+  const checkClipboardForSection = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) {
+        setClipboardSection(null);
+        return;
+      }
+      const parsed = JSON.parse(text);
+      if (parsed.isSkaiaBlock && parsed.section) {
+        setClipboardSection(parsed.section);
+      } else {
+        setClipboardSection(null);
+      }
+    } catch {
+      setClipboardSection(null);
+    }
+  };
 
   const toggleGroup = useCallback((groupId: string) => {
     setOpenGroups(prev => {
@@ -293,13 +375,61 @@ export const BlockRenderer = memo(function BlockRenderer({
     <div className="pb-add-section" key={`add-section-${insertIndex}`}>
       <button
         className="pb-add-section-btn"
-        onClick={() => setActiveAddIndex(prev => (prev === insertIndex ? null : insertIndex))}
+        onClick={() => {
+          if (activeAddIndex === insertIndex) {
+            setActiveAddIndex(null);
+          } else {
+            setActiveAddIndex(insertIndex);
+            checkClipboardForSection();
+          }
+        }}
       >
         <Plus size={18} /> Add Section
       </button>
 
       {activeAddIndex === insertIndex && (
         <div className="pb-add-section-menu">
+          {clipboardSection && (
+            <div className="pb-add-section-group" key="paste-section-btn">
+              <button
+                type="button"
+                className="pb-add-section-group-header"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  border: "1px dashed var(--primary)",
+                }}
+                onClick={() => {
+                  const newSection: Omit<PageSection, "id"> = {
+                    display_order: insertIndex + 1,
+                    section_type: clipboardSection.section_type,
+                    heading: clipboardSection.heading,
+                    subheading: clipboardSection.subheading,
+                    config: clipboardSection.config,
+                    items: (clipboardSection.items || []).map((item: any) => {
+                      const { id, section_id, ...rest } = item;
+                      return rest;
+                    }),
+                  };
+                  onCreateSectionRef.current(newSection);
+                  setActiveAddIndex(null);
+                  setClipboardSection(null);
+                  toast.success("Section pasted successfully!");
+                }}
+              >
+                <div>
+                  <div className="pb-add-section-group-label" style={{ color: "var(--primary)" }}>
+                    Paste Section Here
+                  </div>
+                  <div className="pb-add-section-group-desc">
+                    Paste copied{" "}
+                    {SECTION_TYPE_LABELS[clipboardSection.section_type] ??
+                      clipboardSection.section_type}{" "}
+                    block
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
           {SECTION_TYPE_GROUPS.map(group => (
             <div className="pb-add-section-group" key={group.id}>
               <button
