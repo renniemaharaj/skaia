@@ -5,7 +5,12 @@ import type { ReactNode } from "react";
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
-import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../atoms/auth";
+import {
+  type User,
+  accessTokenAtom,
+  currentUserAtom,
+  refreshTokenAtom,
+} from "../atoms/auth";
 import { featuresAtom, seoAtom } from "../atoms/config";
 import { contextUserAtom } from "../atoms/contextUser";
 import { layoutModeAtom } from "../atoms/layoutMode";
@@ -20,7 +25,11 @@ import { enlargedStreamIdAtom } from "../atoms/voice";
 import { cartItemCountAtom } from "../atoms/store";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
-import { type MFAChallengeContext, type RateLimitDefconInfo, apiRequest } from "../utils/api";
+import {
+  type MFAChallengeContext,
+  type RateLimitDefconInfo,
+  apiRequest,
+} from "../utils/api";
 import "./Layout.css";
 import { Toaster, toast } from "sonner";
 import { physicsSettingsAtom } from "../atoms/physics";
@@ -40,18 +49,22 @@ import RateLimitedPage from "./RateLimitedPage";
 // Heavy ambient/overlay widgets — lazy-loaded so they never block the
 // critical paint path.  Null fallbacks are intentional: these are decorative
 // overlays and showing a spinner in their place would be jarring.
-const PresencePanel = lazy(() => import("../components/page/layout/PresencePanel"));
+const PresencePanel = lazy(
+  () => import("../components/page/layout/PresencePanel"),
+);
 const GlobalUploader = lazy(() => import("../components/ui/GlobalUploader"));
-const GravityParticles = lazy(() => import("../components/ui/GravityParticles"));
+const GravityParticles = lazy(
+  () => import("../components/ui/GravityParticles"),
+);
 const CenterAnchoredSystem = lazy(() =>
-  import("../components/ui/GravityParticles/GravityRenderers").then(m => ({
+  import("../components/ui/GravityParticles/GravityRenderers").then((m) => ({
     default: m.CenterAnchoredSystem,
-  }))
+  })),
 );
 const TextGravityRenderer = lazy(() =>
-  import("../components/ui/GravityParticles/GravityRenderers").then(m => ({
+  import("../components/ui/GravityParticles/GravityRenderers").then((m) => ({
     default: m.TextGravityRenderer,
-  }))
+  })),
 );
 const Particles = lazy(() => import("../components/ui/Particles/Particles"));
 
@@ -62,10 +75,13 @@ const Particles = lazy(() => import("../components/ui/Particles/Particles"));
 const GravityParticlesWithCursors = ({
   particleCount,
   physicsSettings,
-}: { particleCount: number; physicsSettings: { rendererType: string; rendererText: string } }) => {
+}: {
+  particleCount: number;
+  physicsSettings: { rendererType: string; rendererText: string };
+}) => {
   const cursorPositions = useAtomValue(cursorPositionsAtom);
   const externalCursors = useMemo(() => {
-    return Array.from(cursorPositions.values()).map(c => ({
+    return Array.from(cursorPositions.values()).map((c) => ({
       x: c.x * (typeof window !== "undefined" ? window.innerWidth : 1920),
       y: c.y * (typeof window !== "undefined" ? window.innerHeight : 1080),
     }));
@@ -82,7 +98,12 @@ const GravityParticlesWithCursors = ({
       />
     );
   }
-  return <GravityParticles particleCount={particleCount} externalCursors={externalCursors} />;
+  return (
+    <GravityParticles
+      particleCount={particleCount}
+      externalCursors={externalCursors}
+    />
+  );
 };
 
 interface LayoutProps {
@@ -140,17 +161,19 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const features = useAtomValue(featuresAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
 
-  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(() => {
-    const until = getStoredRateLimitUntil();
-    return until ? Math.ceil((until - Date.now()) / 1000) : undefined;
-  });
+  const [holdingSeconds, setHoldingSeconds] = useState<number | undefined>(
+    () => {
+      const until = getStoredRateLimitUntil();
+      return until ? Math.ceil((until - Date.now()) / 1000) : undefined;
+    },
+  );
 
-  const [rateLimitChallenge, setRateLimitChallenge] = useState<string | undefined>(
-    getStoredRateLimitChallenge()
-  );
-  const [rateLimitDefcon, setRateLimitDefcon] = useState<RateLimitDefconInfo | undefined>(
-    getStoredRateLimitDefcon()
-  );
+  const [rateLimitChallenge, setRateLimitChallenge] = useState<
+    string | undefined
+  >(getStoredRateLimitChallenge());
+  const [rateLimitDefcon, setRateLimitDefcon] = useState<
+    RateLimitDefconInfo | undefined
+  >(getStoredRateLimitDefcon());
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaContext, setMfaContext] = useState<MFAChallengeContext>({});
 
@@ -178,7 +201,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       }
       if (detail.defconInfo) {
         try {
-          sessionStorage.setItem(RATE_LIMIT_DEFCON_KEY, JSON.stringify(detail.defconInfo));
+          sessionStorage.setItem(
+            RATE_LIMIT_DEFCON_KEY,
+            JSON.stringify(detail.defconInfo),
+          );
         } catch {}
       } else {
         try {
@@ -186,10 +212,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         } catch {}
       }
 
-      setHoldingSeconds(current => {
-        const next = current === undefined ? seconds : Math.max(current, seconds);
+      setHoldingSeconds((current) => {
+        const next =
+          current === undefined ? seconds : Math.max(current, seconds);
         try {
-          sessionStorage.setItem(RATE_LIMIT_KEY, String(Date.now() + next * 1000));
+          sessionStorage.setItem(
+            RATE_LIMIT_KEY,
+            String(Date.now() + next * 1000),
+          );
         } catch {
           /* ignore */
         }
@@ -204,7 +234,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     if (holdingSeconds === undefined) return;
     const interval = window.setInterval(() => {
-      setHoldingSeconds(seconds => {
+      setHoldingSeconds((seconds) => {
         if (seconds === undefined || seconds <= 1) {
           try {
             sessionStorage.removeItem(RATE_LIMIT_KEY);
@@ -230,7 +260,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       setMfaRequired(true);
     };
     window.addEventListener("auth:mfa-required", handleMfaRequired);
-    return () => window.removeEventListener("auth:mfa-required", handleMfaRequired);
+    return () =>
+      window.removeEventListener("auth:mfa-required", handleMfaRequired);
   }, []);
 
   usePresence(features?.presence ?? true);
@@ -267,7 +298,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     // Read directly from localStorage to avoid stale Jotai atom hydration
     let token = localStorage.getItem("auth.accessToken");
-    if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+    if (token?.startsWith('"') && token.endsWith('"'))
+      token = token.slice(1, -1);
     if (!token) return; // No token, nothing to validate
 
     const validateSession = async () => {
@@ -279,10 +311,13 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         const storedRefreshToken = localStorage.getItem("auth.refreshToken");
         if (storedRefreshToken) {
           try {
-            const refreshResp = await apiRequest<{ access_token: string }>("/auth/refresh", {
-              method: "POST",
-              body: JSON.stringify({ refresh_token: storedRefreshToken }),
-            });
+            const refreshResp = await apiRequest<{ access_token: string }>(
+              "/auth/refresh",
+              {
+                method: "POST",
+                body: JSON.stringify({ refresh_token: storedRefreshToken }),
+              },
+            );
             if (refreshResp?.access_token) {
               setAccessToken(refreshResp.access_token);
             }
@@ -316,7 +351,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         }
         const shouldLogout =
           /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
-            errorMessage
+            errorMessage,
           );
         if (shouldLogout) {
           // Only clear state if it's explicitly an auth failure, not a 500 or timeout
@@ -341,7 +376,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       const shouldLogout =
         !detail?.errorMessage ||
         /invalid session|session expired|invalid token|token parsing|missing or malformed jwt|unauthorized/i.test(
-          detail.errorMessage
+          detail.errorMessage,
         );
       if (!shouldLogout) return;
       console.warn("Unauthorized access detected, clearing auth state", detail);
@@ -368,9 +403,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/tmp/")) return true;
     if (pathname.startsWith("/flow")) return true;
     if (pathname.startsWith("/stream/")) return true;
+    if (pathname.startsWith("/clip-maker")) return true;
     return false;
   };
-  const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
+  const effectiveLayoutMode = isAppModeRoute(location.pathname)
+    ? "application"
+    : layoutMode;
 
   // Normal navigation and hash scrolling
   // Normal navigation and hash scrolling
@@ -423,8 +461,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           const scrollContainer = root || document.documentElement;
 
           target.scrollTo({
-            left: targetCursor.x * scrollContainer.scrollWidth - window.innerWidth / 2,
-            top: targetCursor.y * scrollContainer.scrollHeight - window.innerHeight / 2,
+            left:
+              targetCursor.x * scrollContainer.scrollWidth -
+              window.innerWidth / 2,
+            top:
+              targetCursor.y * scrollContainer.scrollHeight -
+              window.innerHeight / 2,
             behavior: "smooth",
           });
         }
@@ -450,7 +492,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     if (!currentUser) return;
     apiRequest<Role[]>("/users/roles")
-      .then(roles => {
+      .then((roles) => {
         if (roles) setAllRoles(roles);
       })
       .catch(console.error);
@@ -458,7 +500,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const userRoles = currentUser?.roles ?? [];
   const rolesWithDetails = allRoles
-    .filter(r => userRoles.includes(r.name))
+    .filter((r) => userRoles.includes(r.name))
     .sort((a, b) => b.power_level - a.power_level);
   const topRole = rolesWithDetails[0];
   const themeColor = topRole?.theme_color;
@@ -529,11 +571,15 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
       {(() => {
         const hasContextMedia =
-          contextUser && (contextUser.background_image_url || contextUser.background_video_url);
+          contextUser &&
+          (contextUser.background_image_url ||
+            contextUser.background_video_url);
         const effectiveBgImage =
-          contextUser?.background_image_url || (!hasContextMedia ? seo?.dom_skin : null);
+          contextUser?.background_image_url ||
+          (!hasContextMedia ? seo?.dom_skin : null);
         const effectiveBgVideo =
-          contextUser?.background_video_url || (!hasContextMedia ? seo?.dom_video : null);
+          contextUser?.background_video_url ||
+          (!hasContextMedia ? seo?.dom_video : null);
         const effectiveBgPos = contextUser?.background_position || "center";
 
         return (
@@ -596,8 +642,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="layout-guest-sandbox-banner">
           <Info size={16} className="layout-guest-sandbox-icon" />
           <span>
-            Site is in guest sandbox mode for you, most things will fail, but you can still explore
-            the page editor.
+            Site is in guest sandbox mode for you, most things will fail, but
+            you can still explore the page editor.
           </span>
         </div>
       )}
@@ -639,7 +685,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             }}
           >
             <Particles
-              particleColors={isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]}
+              particleColors={
+                isDarkMode ? ["#ffffff", "#ffffff"] : ["#000000", "#000000"]
+              }
               particleCount={200}
               particleSpread={10}
               speed={0.1}
@@ -654,16 +702,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </Suspense>
       )}
-      <Header
-        cartCount={cartCount}
-        isDarkMode={isDarkMode}
-        onDarkModeToggle={dark => specifyTheme(dark ? "dark" : "light")}
-        layoutMode={effectiveLayoutMode as "application" | "web"}
-        onToggleLayoutMode={() =>
-          setLayoutMode(layoutMode === "application" ? "web" : "application")
-        }
-      />
-      <main className="layout-main">{!isPresenceSplitMode ? children : null}</main>
+      {!location.pathname.startsWith("/clip-maker") && (
+        <Header
+          cartCount={cartCount}
+          isDarkMode={isDarkMode}
+          onDarkModeToggle={(dark) => specifyTheme(dark ? "dark" : "light")}
+          layoutMode={effectiveLayoutMode as "application" | "web"}
+          onToggleLayoutMode={() =>
+            setLayoutMode(layoutMode === "application" ? "web" : "application")
+          }
+        />
+      )}
+      <main className="layout-main">
+        {!isPresenceSplitMode ? children : null}
+      </main>
       {effectiveLayoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? (
         <Suspense fallback={null}>

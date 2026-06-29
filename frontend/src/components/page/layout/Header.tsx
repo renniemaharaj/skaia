@@ -139,6 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
     routeAllowed("store") && { to: "/store", label: "Store" },
     routeAllowed("forum") && { to: "/forum", label: "Forum" },
     { to: "/pages", label: "Pages" },
+    { to: "/clip-maker", label: "Clip Maker" },
     isAuthenticated && hasPermission("events.view") && { to: "/activity", label: "Activity" },
   ].filter((item): item is { to: string; label: string; isNew?: boolean } => !!item);
 
@@ -208,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <header className="header">
+    <header className="skaia-header">
       <div className="header-content">
         {canEdit ? (
           <div className="logo" tabIndex={-1}>

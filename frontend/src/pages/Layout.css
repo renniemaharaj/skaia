@@ -16,7 +16,6 @@
 .layout--application .layout-main {
   flex: 1;
   min-height: 0;
-  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;

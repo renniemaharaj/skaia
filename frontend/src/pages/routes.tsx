@@ -2,85 +2,104 @@ import { lazy } from "react";
 import type { CustomRoute, IndexRoute } from "./routing.tsx";
 
 const Index = lazy(() => import("./index/index.tsx"));
-const StorePage = lazy(() => import("./store/index.tsx").then(m => ({ default: m.StorePage })));
+const StorePage = lazy(() =>
+  import("./store/index.tsx").then((m) => ({ default: m.StorePage })),
+);
 const ProductPage = lazy(() =>
-  import("../components/store/ProductPage.tsx").then(m => ({
+  import("../components/store/ProductPage.tsx").then((m) => ({
     default: m.ProductPage,
-  }))
+  })),
 );
 const WalletPage = lazy(() =>
-  import("../components/store/WalletPage.tsx").then(m => ({
+  import("../components/store/WalletPage.tsx").then((m) => ({
     default: m.WalletPage,
-  }))
+  })),
 );
 const OrdersPage = lazy(() =>
-  import("../components/store/OrdersPage.tsx").then(m => ({
+  import("../components/store/OrdersPage.tsx").then((m) => ({
     default: m.OrdersPage,
-  }))
+  })),
 );
 const OrderViewPage = lazy(() =>
-  import("../components/store/OrderViewPage.tsx").then(m => ({
+  import("../components/store/OrderViewPage.tsx").then((m) => ({
     default: m.default,
-  }))
+  })),
 );
 const NewProductPage = lazy(() =>
-  import("../components/store/NewProductPage.tsx").then(m => ({
+  import("../components/store/NewProductPage.tsx").then((m) => ({
     default: m.NewProductPage,
-  }))
+  })),
 );
 const NewStoreCategoryPage = lazy(() =>
-  import("../components/store/NewStoreCategoryPage.tsx").then(m => ({
+  import("../components/store/NewStoreCategoryPage.tsx").then((m) => ({
     default: m.NewStoreCategoryPage,
-  }))
+  })),
 );
-const ForumPage = lazy(() => import("./forum/index.tsx").then(m => ({ default: m.ForumPage })));
+const ForumPage = lazy(() =>
+  import("./forum/index.tsx").then((m) => ({ default: m.ForumPage })),
+);
 const NewForumCategoryPage = lazy(() =>
-  import("./forum/NewForumCategoryPage.tsx").then(m => ({
+  import("./forum/NewForumCategoryPage.tsx").then((m) => ({
     default: m.NewForumCategoryPage,
-  }))
+  })),
 );
-const CartPage = lazy(() => import("./cart/index.tsx").then(m => ({ default: m.CartPage })));
+const CartPage = lazy(() =>
+  import("./cart/index.tsx").then((m) => ({ default: m.CartPage })),
+);
 const NotFoundPage = lazy(() =>
-  import("./not-found/index.tsx").then(m => ({ default: m.NotFoundPage }))
+  import("./not-found/index.tsx").then((m) => ({ default: m.NotFoundPage })),
 );
-const LoginPage = lazy(() => import("./login/index.tsx").then(m => ({ default: m.LoginPage })));
+const LoginPage = lazy(() =>
+  import("./login/index.tsx").then((m) => ({ default: m.LoginPage })),
+);
 const RegisterPage = lazy(() =>
-  import("./register/index.tsx").then(m => ({ default: m.RegisterPage }))
+  import("./register/index.tsx").then((m) => ({ default: m.RegisterPage })),
 );
 const NewThreadPage = lazy(() =>
-  import("./new-thread/index.tsx").then(m => ({ default: m.NewThreadPage }))
+  import("./new-thread/index.tsx").then((m) => ({ default: m.NewThreadPage })),
 );
 const EditThreadPage = lazy(() => import("./edit-thread/index.tsx"));
 const ViewThreadPage = lazy(() => import("./view-thread/index.tsx"));
 const UserDiscovery = lazy(() => import("./users/index.tsx"));
-const CategoryThreadsPage = lazy(() => import("./threads/categories/index.tsx"));
+const CategoryThreadsPage = lazy(
+  () => import("./threads/categories/index.tsx"),
+);
 const InboxPage = lazy(() => import("./inbox/index.tsx"));
 const AdminMetaSettings = lazy(() =>
-  import("./admin/meta.tsx").then(m => ({ default: m.AdminMetaSettings }))
+  import("./admin/meta.tsx").then((m) => ({ default: m.AdminMetaSettings })),
 );
 
-const RolesManagementPage = lazy(() => import("../components/admin/RolesManagementPage.tsx"));
+const RolesManagementPage = lazy(
+  () => import("../components/admin/RolesManagementPage.tsx"),
+);
 const DeploymentsPage = lazy(() =>
-  import("../components/page/deployments/DeploymentsPage.tsx").then(m => ({
+  import("../components/page/deployments/DeploymentsPage.tsx").then((m) => ({
     default: m.DeploymentsPage,
-  }))
+  })),
 );
 const PageBuilder = lazy(() => import("./page/index.tsx"));
 const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
-const DataSourcesPage = lazy(() => import("../components/page/datasources/DataSourcesPage.tsx"));
+const DataSourcesPage = lazy(
+  () => import("../components/page/datasources/DataSourcesPage.tsx"),
+);
 const DataSourceEditorPage = lazy(
-  () => import("../components/page/datasources/DataSourceEditorPage.tsx")
+  () => import("../components/page/datasources/DataSourceEditorPage.tsx"),
 );
 const ActivityPage = lazy(() => import("./activity/index.tsx"));
 const VerifyEmailPage = lazy(() => import("./verify-email/index.tsx"));
 const ForgotPasswordPage = lazy(() => import("./forgot-password/index.tsx"));
 const ResetPasswordPage = lazy(() => import("./reset-password/index.tsx"));
 const VisualizerPage = lazy(() => import("./visualizer/index.tsx"));
-const UserUploadsDirectory = lazy(() => import("../components/user/UserUploadsDirectory.tsx"));
+const UserUploadsDirectory = lazy(
+  () => import("../components/user/UserUploadsDirectory.tsx"),
+);
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
 const FlowPage = lazy(() => import("./flow/index.tsx"));
 const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
 const StreamPage = lazy(() => import("./stream/index.tsx"));
+const ClipMakerPage = lazy(() =>
+  import("./clip-maker/index.tsx").then((m) => ({ default: m.ClipMakerPage })),
+);
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -124,6 +143,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "activity", element: <ActivityPage /> },
   { path: "flow", element: <FlowPage /> },
   { path: "stream", element: <StreamPage /> },
+  { path: "clip-maker", element: <ClipMakerPage /> },
   { path: "settings/users/:userId/*", element: <SettingsPage /> },
   { path: "settings/*", element: <SettingsPage /> },
 ];
