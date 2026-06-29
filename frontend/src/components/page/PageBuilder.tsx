@@ -729,6 +729,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                     <Select
                       className="page-admin-select page-admin-more-item"
                       value={landingPageSlug || ""}
+                      truncateSelectedTo={15}
                       onChange={e => {
                         const val = e.target.value;
                         const p = allPages.find(p => p.slug === val);

@@ -25,6 +25,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
   error?: string;
   /** Full-width mode. */
   block?: boolean;
+  /** Max characters to show in the selected value label (doesn't affect menu items). */
+  truncateSelectedTo?: number;
 }
 
 /**
@@ -43,6 +45,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       label,
       error,
       block = false,
+      truncateSelectedTo,
       disabled,
       className,
       children,
@@ -114,6 +117,10 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       value !== undefined ? String(value) : String(uncontrolledValue || fallbackValue);
     const selectedOption = optionItems.find(opt => opt.value === selectedValue);
     const selectedLabel = selectedOption?.label || "Select";
+    let displayLabel = selectedLabel;
+    if (truncateSelectedTo && displayLabel.length > truncateSelectedTo) {
+      displayLabel = displayLabel.slice(0, truncateSelectedTo) + "…";
+    }
     const menuOptions = useMemo<GlassMenuOption[]>(
       () =>
         optionItems.map(opt => ({
@@ -197,7 +204,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               }
             }}
           >
-            <span className="sk-select__value">{selectedLabel}</span>
+            <span className="sk-select__value">{displayLabel}</span>
             <ChevronDown className="sk-select__arrow" size={16} aria-hidden="true" />
           </button>
           {menuPosition && (
