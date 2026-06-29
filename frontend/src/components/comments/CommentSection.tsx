@@ -102,7 +102,7 @@ const CommentSection = ({
   );
 
   return (
-    <div className={`comment-section ${rootClassName}`.trim()}>
+    <ContentFlatCard className={`comment-section ${rootClassName}`.trim()}>
       <div className="comments-header">
         <div className="comments-header-main">
           <h3>{title}</h3>
@@ -416,7 +416,7 @@ const CommentSection = ({
           You have already reviewed this product.
         </div>
       )}
-    </div>
+    </ContentFlatCard>
   );
 };
 
