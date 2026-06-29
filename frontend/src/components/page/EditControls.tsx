@@ -755,58 +755,72 @@ export const SectionToolbar = ({
   const { lastEditedBy, onCopy, onCut } = useContext(SectionMoveContext);
   return (
     <div className="pb-section-toolbar">
-      <span className="pb-section-toolbar-label">{label}</span>
-      {lastEditedBy && <LastEditedByBadge editor={lastEditedBy} />}
+      <div className="pb-section-toolbar-info">
+        <span className="pb-section-toolbar-label">{label}</span>
+        {lastEditedBy && <LastEditedByBadge editor={lastEditedBy} />}
+      </div>
       <div className="pb-section-toolbar-actions">
-        <SectionMoveButtons />
-        {layout && onLayoutChange ? (
-          <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
-        ) : null}
-        {margins && onMarginsChange ? (
-          <SectionSpacingControls margins={margins} onChange={onMarginsChange} />
-        ) : null}
-        {animation !== undefined && onAnimationChange ? (
-          <SectionAnimationControl
-            animation={animation}
-            onChange={onAnimationChange}
-            intensity={animationIntensity}
-            onIntensityChange={onAnimationIntensityChange}
-          />
-        ) : null}
-        {bgColor !== undefined && onBgColorChange ? (
-          <ColorPickerButton value={bgColor} onChange={onBgColorChange} title="Section color" />
-        ) : null}
-        {extra}
-        {onCopy && (
+        <div className="pb-toolbar-group">
+          <SectionMoveButtons />
+        </div>
+        {(layout || margins) && (
+          <div className="pb-toolbar-group">
+            {layout && onLayoutChange ? (
+              <SectionLayoutControls layout={layout} onChange={onLayoutChange} />
+            ) : null}
+            {margins && onMarginsChange ? (
+              <SectionSpacingControls margins={margins} onChange={onMarginsChange} />
+            ) : null}
+          </div>
+        )}
+        {(animation !== undefined || bgColor !== undefined || extra) && (
+          <div className="pb-toolbar-group">
+            {animation !== undefined && onAnimationChange ? (
+              <SectionAnimationControl
+                animation={animation}
+                onChange={onAnimationChange}
+                intensity={animationIntensity}
+                onIntensityChange={onAnimationIntensityChange}
+              />
+            ) : null}
+            {bgColor !== undefined && onBgColorChange ? (
+              <ColorPickerButton value={bgColor} onChange={onBgColorChange} title="Section color" />
+            ) : null}
+            {extra}
+          </div>
+        )}
+        <div className="pb-toolbar-group">
+          {onCopy && (
+            <button
+              className="pb-section-toolbar-btn"
+              onClick={onCopy}
+              title="Copy section"
+              aria-label="Copy section"
+              type="button"
+            >
+              <Copy size={14} />
+            </button>
+          )}
+          {onCut && (
+            <button
+              className="pb-section-toolbar-btn"
+              onClick={onCut}
+              title="Cut section"
+              aria-label="Cut section"
+              type="button"
+            >
+              <Scissors size={14} />
+            </button>
+          )}
           <button
-            className="pb-section-toolbar-btn"
-            onClick={onCopy}
-            title="Copy section"
-            aria-label="Copy section"
+            className="pb-section-toolbar-btn danger"
+            onClick={onDelete}
+            title="Remove section"
             type="button"
           >
-            <Copy size={14} />
+            <Trash2 size={14} />
           </button>
-        )}
-        {onCut && (
-          <button
-            className="pb-section-toolbar-btn"
-            onClick={onCut}
-            title="Cut section"
-            aria-label="Cut section"
-            type="button"
-          >
-            <Scissors size={14} />
-          </button>
-        )}
-        <button
-          className="pb-section-toolbar-btn danger"
-          onClick={onDelete}
-          title="Remove section"
-          type="button"
-        >
-          <Trash2 size={14} />
-        </button>
+        </div>
       </div>
     </div>
   );
