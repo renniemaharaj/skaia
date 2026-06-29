@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Mic, MicOff, Settings, Volume2, VolumeX, Video, VideoOff, MonitorUp } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+
 import { toast } from "sonner";
 import AdminSettings from "./voice/AdminSettings";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
@@ -11,7 +11,7 @@ import { enlargedStreamIdAtom, voicePermissionsAtom, useV2RTCAtom } from "../../
 import { getGuestSessionId } from "../../../utils/guestSession";
 import { getSoundVolume } from "../../../utils/sound";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
-import Button from "../../input/Button";
+
 import Select from "../../input/Select";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
@@ -19,27 +19,11 @@ import "../../ui/MediaPreviewLightbox.css";
 import "./VoicePanel.css";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { normalizeRoute } from "../../../utils/route";
-import { StreamOverlayControls } from "./StreamOverlayControls";
 import { ActiveStreams } from "./voice/ActiveStreams";
-import { RemoteMedia } from "./voice/RemoteMedia";
-import { DraggablePiP } from "./voice/DraggablePiP";
 import { MediaSection } from "./voice/MediaSection";
+import { EnlargedStream } from "./voice/EnlargedStream";
 
-function getMicrophoneErrorMessage(err: unknown): string {
-  if (err instanceof DOMException) {
-    if (err.name === "NotAllowedError" || err.name === "SecurityError") {
-      return "Microphone access was blocked. Allow microphone permissions and try again.";
-    }
-    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-      return "No microphone was found for this device.";
-    }
-    if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-      return "Your microphone is already in use by another app.";
-    }
-  }
-
-  return "Could not access microphone.";
-}
+import { useMediaDevices } from "./voice/useMediaDevices";
 
 import { useWebRTCManager } from "../../../lib/webrtc/useWebRTCManager";
 import { type VoiceSignalPayload } from "../../../lib/webrtc/WebRTCManager";
@@ -76,12 +60,6 @@ export default function WebRTCPanel({
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
   const mediaState = useAtomValue(mediaStateAtom);
   const location = useLocation();
-  const [micActive, setMicActive] = useState(false);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [screenActive, setScreenActive] = useState(false);
-  const cameraStreamRef = useRef<MediaStream | null>(null);
-  const screenStreamRef = useRef<MediaStream | null>(null);
 
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
@@ -125,32 +103,6 @@ export default function WebRTCPanel({
       setSearchParams(newParams, { replace: true });
     }
   }, [mediaState?.queue, searchParams, setSearchParams]);
-
-  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string>("");
-  const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string>("");
-
-  useEffect(() => {
-    const updateDevices = async () => {
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audios = devices.filter(d => d.kind === "audioinput");
-        const videos = devices.filter(d => d.kind === "videoinput");
-        setAudioDevices(audios);
-        setVideoDevices(videos);
-        if (audios.length > 0 && !selectedAudioDeviceId)
-          setSelectedAudioDeviceId(audios[0].deviceId);
-        if (videos.length > 0 && !selectedVideoDeviceId)
-          setSelectedVideoDeviceId(videos[0].deviceId);
-      } catch (err) {
-        console.error("Could not enumerate devices:", err);
-      }
-    };
-    updateDevices();
-    navigator.mediaDevices.addEventListener("devicechange", updateDevices);
-    return () => navigator.mediaDevices.removeEventListener("devicechange", updateDevices);
-  }, [selectedAudioDeviceId, selectedVideoDeviceId, micActive, cameraActive]);
 
   const [activeSpeakers, setActiveSpeakers] = useState<Record<string, number>>({});
 
@@ -313,6 +265,29 @@ export default function WebRTCPanel({
     getLocalStreams
   );
 
+  const {
+    audioDevices,
+    videoDevices,
+    selectedAudioDeviceId,
+    selectedVideoDeviceId,
+    micActive,
+    cameraActive,
+    screenActive,
+    streamRef,
+    cameraStreamRef,
+    screenStreamRef,
+    toggleMic,
+    toggleCamera,
+    toggleScreen,
+    handleAudioDeviceChange,
+    handleVideoDeviceChange,
+  } = useMediaDevices({
+    canSpeak,
+    ensureAudioGraph,
+    broadcastTracks,
+    removeTracks,
+  });
+
   useEffect(() => {
     if (autoplayBlocked) {
       toast("Browser blocked audio autoplay. Please interact with the page.", {
@@ -323,145 +298,6 @@ export default function WebRTCPanel({
     }
   }, [autoplayBlocked, setAutoplayBlocked]);
 
-  const toggleMic = async () => {
-    if (micActive) {
-      if (streamRef.current) {
-        removeTracks(streamRef.current);
-        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        streamRef.current = null;
-      }
-      setMicActive(false);
-      return;
-    }
-
-    if (!canSpeak) {
-      toast.error("You cannot use the microphone on this route right now.");
-      return;
-    }
-
-    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-      toast.error("Microphone access requires a secure browser context.");
-      return;
-    }
-
-    if (!("RTCPeerConnection" in window)) {
-      toast.error("This browser cannot use WebRTC voice chat.");
-      return;
-    }
-
-    try {
-      const { audioContext } = ensureAudioGraph();
-      if (audioContext?.state === "suspended") {
-        await audioContext.resume();
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: selectedAudioDeviceId ? { deviceId: { exact: selectedAudioDeviceId } } : true,
-      });
-      streamRef.current = stream;
-      setMicActive(true);
-      broadcastTracks(stream);
-    } catch (err) {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        streamRef.current = null;
-      }
-      toast.error(getMicrophoneErrorMessage(err));
-    }
-  };
-
-  const handleAudioDeviceChange = async (deviceId: string) => {
-    setSelectedAudioDeviceId(deviceId);
-    if (micActive) {
-      if (streamRef.current) {
-        removeTracks(streamRef.current);
-        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        streamRef.current = null;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: { deviceId: { exact: deviceId } },
-        });
-        streamRef.current = stream;
-        broadcastTracks(stream);
-      } catch (err) {
-        setMicActive(false);
-        toast.error("Could not switch microphone.");
-      }
-    }
-  };
-
-  const toggleCamera = async () => {
-    if (cameraActive) {
-      if (cameraStreamRef.current) {
-        removeTracks(cameraStreamRef.current);
-        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        cameraStreamRef.current = null;
-      }
-      setCameraActive(false);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: selectedVideoDeviceId ? { deviceId: { exact: selectedVideoDeviceId } } : true,
-      });
-      cameraStreamRef.current = stream;
-      setCameraActive(true);
-      broadcastTracks(stream);
-    } catch (err) {
-      toast.error("Could not access camera.");
-    }
-  };
-
-  const handleVideoDeviceChange = async (deviceId: string) => {
-    setSelectedVideoDeviceId(deviceId);
-    if (cameraActive) {
-      if (cameraStreamRef.current) {
-        removeTracks(cameraStreamRef.current);
-        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        cameraStreamRef.current = null;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: deviceId } },
-        });
-        cameraStreamRef.current = stream;
-        broadcastTracks(stream);
-      } catch (err) {
-        setCameraActive(false);
-        toast.error("Could not switch camera.");
-      }
-    }
-  };
-
-  const toggleScreen = async () => {
-    if (screenActive) {
-      if (screenStreamRef.current) {
-        removeTracks(screenStreamRef.current);
-        screenStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-        screenStreamRef.current = null;
-      }
-      setScreenActive(false);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
-      stream.getVideoTracks()[0].onended = () => {
-        if (screenStreamRef.current) removeTracks(screenStreamRef.current);
-        screenStreamRef.current = null;
-        setScreenActive(false);
-      };
-      screenStreamRef.current = stream;
-      setScreenActive(true);
-      broadcastTracks(stream);
-    } catch (err) {
-      toast.error("Could not share screen.");
-    }
-  };
-
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && window.screen?.orientation?.unlock) {
@@ -470,20 +306,6 @@ export default function WebRTCPanel({
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-      }
-      if (cameraStreamRef.current) {
-        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-      }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -1031,164 +853,14 @@ export default function WebRTCPanel({
         </div>
       )}
 
-      {(() => {
-        if (!enlargedStreamId) return null;
-        if (!isPanelExpanded) return null; // Hide if presence panel is collapsed
-
-        const enlarged = remoteStreams.find(s => `${s.peerId}-${s.stream.id}` === enlargedStreamId);
-        const hasActiveVideo =
-          enlarged && enlarged.stream.getVideoTracks().some(t => t.readyState !== "ended");
-
-        const isMobile =
-          typeof window !== "undefined" && (window.innerWidth <= 720 || window.innerHeight <= 500);
-        const isSplitMode = !isMobile;
-
-        if (!enlarged || !hasActiveVideo) {
-          if (isSplitMode) {
-            return createPortal(
-              <div
-                className="vp-stream-split-view"
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: "var(--presence-panel-width, 440px)",
-                  width: "calc(100vw - var(--presence-panel-width, 440px))",
-                  height: "100vh",
-                  background: "transparent",
-                  zIndex: 2001,
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: "24px",
-                  boxSizing: "border-box",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#000",
-                    color: "#fff",
-                    gap: "16px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--border-color)",
-                  }}
-                >
-                  <VideoOff size={48} opacity={0.5} />
-                  <div style={{ fontSize: "16px", fontWeight: 500 }}>Stream ended or not found</div>
-                  <Button onClick={() => setEnlargedStreamId(null)}>Close</Button>
-                </div>
-              </div>,
-              document.body
-            );
-          }
-          return null;
-        }
-
-        const u = onlineUsers.find(x => String(x.user_id) === enlarged.peerId);
-        const name = u?.user_name || `User ${enlarged.peerId}`;
-        const displayName = name.length > 7 ? name.substring(0, 7) + "..." : name;
-
-        if (isSplitMode) {
-          return createPortal(
-            <div
-              className="vp-stream-split-view"
-              style={{
-                position: "fixed",
-                top: 0,
-                left: "var(--presence-panel-width, 440px)",
-                width: "calc(100vw - var(--presence-panel-width, 440px))",
-                height: "100vh",
-                background: "transparent",
-                zIndex: 2001, // Above presence panel's modal backdrop
-                display: "flex",
-                flexDirection: "column",
-                padding: "24px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
-                <RemoteMedia
-                  stream={enlarged.stream}
-                  volume={globalVolume}
-                  objectFit="contain"
-                  isModal={true}
-                />
-                {(() => {
-                  const otherStreams = remoteStreams.filter(
-                    s =>
-                      s.peerId === enlarged.peerId &&
-                      s.stream.id !== enlarged.stream.id &&
-                      s.stream.getVideoTracks().some(t => t.readyState !== "ended")
-                  );
-                  if (otherStreams.length > 0) {
-                    return <DraggablePiP stream={otherStreams[0].stream} />;
-                  }
-                  return null;
-                })()}
-                <StreamOverlayControls
-                  u={u}
-                  name={name}
-                  displayName={displayName}
-                  enlarged={enlarged}
-                  setEnlargedStreamId={setEnlargedStreamId}
-                />
-              </div>
-            </div>,
-            document.body
-          );
-        }
-
-        // Mobile fallback / non-split fallback
-        return createPortal(
-          <dialog
-            open
-            className="up-upload-lightbox media-preview-lightbox vp-stream-lightbox"
-            onClick={() => setEnlargedStreamId(null)}
-            onKeyDown={e => {
-              if (e.key === "Escape") setEnlargedStreamId(null);
-            }}
-            aria-modal="true"
-          >
-            <div
-              className="up-upload-lightbox-content"
-              onClick={e => e.stopPropagation()}
-              onKeyDown={e => e.stopPropagation()}
-            >
-              <div className="media-preview-frame" style={{ position: "relative" }}>
-                <RemoteMedia
-                  stream={enlarged.stream}
-                  volume={globalVolume}
-                  objectFit="contain"
-                  isModal={true}
-                />
-                {(() => {
-                  const otherStreams = remoteStreams.filter(
-                    s =>
-                      s.peerId === enlarged.peerId &&
-                      s.stream.id !== enlarged.stream.id &&
-                      s.stream.getVideoTracks().some(t => t.readyState !== "ended")
-                  );
-                  if (otherStreams.length > 0) {
-                    return <DraggablePiP stream={otherStreams[0].stream} />;
-                  }
-                  return null;
-                })()}
-                <StreamOverlayControls
-                  u={u}
-                  name={name}
-                  displayName={displayName}
-                  enlarged={enlarged}
-                  setEnlargedStreamId={setEnlargedStreamId}
-                />
-              </div>
-            </div>
-          </dialog>,
-          document.body
-        );
-      })()}
+      <EnlargedStream
+        enlargedStreamId={enlargedStreamId}
+        setEnlargedStreamId={setEnlargedStreamId}
+        isPanelExpanded={isPanelExpanded}
+        remoteStreams={remoteStreams}
+        onlineUsers={onlineUsers}
+        globalVolume={globalVolume}
+      />
     </div>
   );
 }
