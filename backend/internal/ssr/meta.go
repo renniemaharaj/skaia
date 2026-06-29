@@ -1,70 +1,78 @@
 package ssr
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type CachedMeta struct {
 	TitleTag   string   `json:"title_tag"`
 	DescTag    string   `json:"desc_tag"`
-	OGTags     []string `json:"og_tag"`
+	Tags       []string `json:"tags"`
 	FaviconTag string   `json:"favicon_tag"`
 }
 
 func (c *CachedMeta) setTitle(title string) *CachedMeta {
-	c.TitleTag = "<title>" + htmlEscape(title) + "</title>"
+	title = htmlEscape(title)
+	c.TitleTag = "<title>" + title + "</title>"
+	c.addProperty("og:title", title)
+	c.addName("twitter:title", title)
 	return c
 }
 
 func (c *CachedMeta) setDescription(desc string) *CachedMeta {
-	c.DescTag = "<meta name=\"description\" content=\"" + htmlEscape(desc) + "\">"
+	desc = htmlEscape(desc)
+	c.DescTag = `<meta name="description" content="` + desc + `">`
+	c.addProperty("og:description", desc)
+	c.addName("twitter:description", desc)
 	return c
 }
 
-func (c *CachedMeta) setOGImage(imgURL string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:image\" content=\""+htmlEscape(imgURL)+"\">")
+func (c *CachedMeta) setCanonical(url string) *CachedMeta {
+	c.Tags = append(c.Tags, `<link rel="canonical" href="`+htmlEscape(url)+`">`)
+	c.addProperty("og:url", url)
 	return c
 }
 
-func (c *CachedMeta) setFavicon(imgURL string) *CachedMeta {
-	c.FaviconTag = "<link rel=\"icon\" href=\"" + htmlEscape(imgURL) + "\">"
+func (c *CachedMeta) setImage(url string) *CachedMeta {
+	url = htmlEscape(url)
+	c.addProperty("og:image", url)
+	c.addName("twitter:image", url)
 	return c
 }
 
-func (c *CachedMeta) setTypeWebsite() *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:type\" content=\"website\">")
+func (c *CachedMeta) setFavicon(url string) *CachedMeta {
+	c.FaviconTag = `<link rel="icon" href="` + htmlEscape(url) + `">`
 	return c
 }
 
-func (c *CachedMeta) setOGImageWidth(width int) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:image:width\" content=\""+strconv.Itoa(width)+"\">")
+func (c *CachedMeta) setImageMeta(width, height int, mime string) *CachedMeta {
+	if width > 0 {
+		c.addProperty("og:image:width", strconv.Itoa(width))
+	}
+	if height > 0 {
+		c.addProperty("og:image:height", strconv.Itoa(height))
+	}
+	if mime != "" {
+		c.addProperty("og:image:type", mime)
+	}
 	return c
 }
 
-func (c *CachedMeta) setOGImageHeight(height int) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:image:height\" content=\""+strconv.Itoa(height)+"\">")
+func (c *CachedMeta) setDefaults(siteName string) *CachedMeta {
+	c.addProperty("og:type", "website")
+	c.addName("twitter:card", "summary_large_image")
+
+	if siteName != "" {
+		c.addProperty("og:site_name", siteName)
+	}
+
 	return c
 }
 
-func (c *CachedMeta) setOGImageType(imgType string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:image:type\" content=\""+htmlEscape(imgType)+"\">")
-	return c
+func (c *CachedMeta) addProperty(property, content string) {
+	c.Tags = append(c.Tags, `<meta property="`+htmlEscape(property)+`" content="`+htmlEscape(content)+`">`)
 }
 
-func (c *CachedMeta) setTwitterCard(cardType string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta name=\"twitter:card\" content=\""+htmlEscape(cardType)+"\">")
-	return c
-}
-
-func (c *CachedMeta) setTwitterCreator(creator string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta name=\"twitter:creator\" content=\""+htmlEscape(creator)+"\">")
-	return c
-}
-
-func (c *CachedMeta) setOGDescription(desc string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:description\" content=\""+htmlEscape(desc)+"\">")
-	return c
-}
-
-func (c *CachedMeta) setOGSiteName(siteName string) *CachedMeta {
-	c.OGTags = append(c.OGTags, "<meta property=\"og:site_name\" content=\""+htmlEscape(siteName)+"\">")
-	return c
+func (c *CachedMeta) addName(name, content string) {
+	c.Tags = append(c.Tags, `<meta name="`+htmlEscape(name)+`" content="`+htmlEscape(content)+`">`)
 }
