@@ -19,7 +19,6 @@ import {
   ListVideo,
   Trash2,
   X,
-  Maximize,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -42,6 +41,7 @@ import "../../ui/MediaPreviewLightbox.css";
 import "./VoicePanel.css";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { normalizeRoute } from "../../../utils/route";
+import { StreamOverlayControls } from "./StreamOverlayControls";
 
 function getMicrophoneErrorMessage(err: unknown): string {
   if (err instanceof DOMException) {
@@ -2037,98 +2037,6 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         const name = u?.user_name || `User ${enlarged.peerId}`;
         const displayName = name.length > 7 ? name.substring(0, 7) + "..." : name;
 
-        const streamOverlayControls = (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: "24px 16px 16px",
-              background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-              pointerEvents: "none",
-              zIndex: 10,
-            }}
-          >
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                color: "#fff",
-                textShadow: "0 1px 3px rgba(0,0,0,0.8)",
-                pointerEvents: "auto",
-              }}
-            >
-              <UserAvatar src={u?.avatar || undefined} alt={name} size={18} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", fontWeight: 500 }}>
-                {displayName}'s Stream
-              </span>
-              <span style={{ opacity: 0.8, fontSize: "0.9em", flexShrink: 0 }}>
-                {relativeTimeAgo(enlarged.startedAt)}
-              </span>
-            </span>
-            <div style={{ display: "flex", gap: "8px", pointerEvents: "auto" }}>
-              <button
-                type="button"
-                className="action-btn"
-                title="Fullscreen"
-                style={{
-                  background: "rgba(0,0,0,0.6)",
-                  backdropFilter: "blur(4px)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#fff",
-                  padding: "8px",
-                  borderRadius: "8px",
-                }}
-                onClick={e => {
-                  const container = e.currentTarget.closest(
-                    ".vp-stream-split-view, .up-upload-lightbox-content"
-                  );
-                  if (container) {
-                    if (document.fullscreenElement) {
-                      document.exitFullscreen().catch(console.error);
-                    } else {
-                      container
-                        .requestFullscreen()
-                        .then(() => {
-                          const orientation = window.screen?.orientation as any;
-                          if (orientation?.lock) {
-                            orientation.lock("landscape").catch(console.error);
-                          }
-                        })
-                        .catch(console.error);
-                    }
-                  }
-                }}
-              >
-                <Maximize size={16} />
-              </button>
-              <button
-                type="button"
-                className="action-btn"
-                title="Close"
-                style={{
-                  background: "rgba(0,0,0,0.6)",
-                  backdropFilter: "blur(4px)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "#fff",
-                  padding: "8px",
-                  borderRadius: "8px",
-                }}
-                onClick={() => setEnlargedStreamId(null)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        );
-
         if (isSplitMode) {
           return createPortal(
             <div
@@ -2166,7 +2074,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                   }
                   return null;
                 })()}
-                {streamOverlayControls}
+                <StreamOverlayControls
+                  u={u}
+                  name={name}
+                  displayName={displayName}
+                  enlarged={enlarged}
+                  setEnlargedStreamId={setEnlargedStreamId}
+                />
               </div>
             </div>,
             document.body
@@ -2177,7 +2091,7 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
         return createPortal(
           <dialog
             open
-            className="up-upload-lightbox media-preview-lightbox"
+            className="up-upload-lightbox media-preview-lightbox vp-stream-lightbox"
             onClick={() => setEnlargedStreamId(null)}
             onKeyDown={e => {
               if (e.key === "Escape") setEnlargedStreamId(null);
@@ -2208,7 +2122,13 @@ export default function VoicePanel({ mediaOnly = false, voiceOnly = false }: Voi
                   }
                   return null;
                 })()}
-                {streamOverlayControls}
+                <StreamOverlayControls
+                  u={u}
+                  name={name}
+                  displayName={displayName}
+                  enlarged={enlarged}
+                  setEnlargedStreamId={setEnlargedStreamId}
+                />
               </div>
             </div>
           </dialog>,

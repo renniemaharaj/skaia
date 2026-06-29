@@ -396,3 +396,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+@media (max-width: 720px) {
+  .up-upload-lightbox.vp-stream-lightbox {
+    padding: 0;
+  }
+  .up-upload-lightbox.vp-stream-lightbox .up-upload-lightbox-content {
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+}
