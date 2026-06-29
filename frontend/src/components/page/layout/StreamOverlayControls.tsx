@@ -31,16 +31,19 @@ export function StreamOverlayControls({
 
   useEffect(() => {
     resetTimer();
+    window.addEventListener("mousemove", resetTimer);
+    window.addEventListener("click", resetTimer);
+    window.addEventListener("touchstart", resetTimer);
     return () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+      window.removeEventListener("mousemove", resetTimer);
+      window.removeEventListener("click", resetTimer);
+      window.removeEventListener("touchstart", resetTimer);
     };
   }, []);
 
   return (
     <div
-      onMouseMove={resetTimer}
-      onClick={resetTimer}
-      onTouchStart={resetTimer}
       style={{
         position: "absolute",
         inset: 0,
