@@ -645,12 +645,15 @@
 
 .section-spacing-group {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: stretch;
   height: 22px;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  overflow: hidden;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 .section-spacing-pair {
