@@ -1,5 +1,15 @@
 import { useAtom, useAtomValue } from "jotai";
-import { Mic, MicOff, Settings, Volume2, VolumeX, Video, VideoOff, MonitorUp } from "lucide-react";
+import {
+  Mic,
+  MicOff,
+  Settings,
+  Volume2,
+  VolumeX,
+  Video,
+  VideoOff,
+  MonitorUp,
+  Save,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "sonner";
@@ -24,6 +34,7 @@ import { MediaSection } from "./voice/MediaSection";
 import { EnlargedStream } from "./voice/EnlargedStream";
 
 import { useMediaDevices } from "./voice/useMediaDevices";
+import { useLocalRecording } from "./voice/useLocalRecording";
 
 import { useWebRTCManager } from "../../../lib/webrtc/useWebRTCManager";
 import { type VoiceSignalPayload } from "../../../lib/webrtc/WebRTCManager";
@@ -45,6 +56,7 @@ export default function WebRTCPanel({
   const isPlayerMutedRef = useRef(isPlayerMuted);
   isPlayerMutedRef.current = isPlayerMuted;
   const [useV2RTC, setUseV2RTC] = useAtom(useV2RTCAtom);
+  const [recordLocally, setRecordLocally] = useState(false);
 
   useEffect(() => {
     const handleVolumeChange = (e: Event) => {
@@ -315,6 +327,20 @@ export default function WebRTCPanel({
     broadcastTracks,
     removeTracks,
   });
+
+  useLocalRecording(
+    recordLocally && screenActive,
+    screenStreamRef.current,
+    streamRef.current,
+    cameraStreamRef.current,
+    remoteStreams
+  );
+
+  useEffect(() => {
+    if (!screenActive && recordLocally) {
+      setRecordLocally(false);
+    }
+  }, [screenActive, recordLocally]);
 
   useEffect(() => {
     if (autoplayBlocked) {
@@ -770,6 +796,23 @@ export default function WebRTCPanel({
                     "getDisplayMedia" in navigator.mediaDevices
                   )
                 }
+              />
+              <div className="vp-switch-track">
+                <div className="vp-switch-thumb" />
+              </div>
+            </label>
+          </div>
+          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
+            <span className="vp-setting-label">
+              <Save size={14} className={recordLocally ? "vp-text-primary" : "vp-text-secondary"} />
+              Record Locally
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={recordLocally}
+                onChange={e => setRecordLocally(e.target.checked)}
+                disabled={!screenActive && !canSpeak}
               />
               <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
