@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { BarChart3, ChevronDown, Eye, MoreHorizontal, ThumbsUp } from "lucide-react";
+import { BarChart3, Eye, MoreHorizontal, ThumbsUp } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -138,12 +138,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   // Landing page selector state
   const [allPages, setAllPages] = useState<PageBuilderDoc[]>([]);
-  const [landingDropdownOpen, setLandingDropdownOpen] = useState(false);
   const [landingPageSlug, setLandingPageSlug] = useState("");
-  const { handleSetHomepage, settingHomepageId } = useSetHomepage(
-    landingPageSlug,
-    setLandingPageSlug
-  );
+  const { handleSetHomepage } = useSetHomepage(landingPageSlug, setLandingPageSlug);
   const [moreOpen, setMoreOpen] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const moreRef = useRef<HTMLDivElement | null>(null);
@@ -233,8 +229,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setResetInProgress(false);
     }
   }, [refresh, isAdmin]);
-
-  const landingPageLabel = page ? page.title || page.slug : "Landing Page";
 
   // Sync engagement state from page
   useEffect(() => {
@@ -695,200 +689,193 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       <div className="pb-container">
         {showToolbar && (
           <div className="page-admin-bar page-admin-bar--menu">
-            {canChangeVisibility && page && (
-              <div className="page-admin-visibility">
-                <Select
-                  id="page-visibility"
-                  className="page-admin-select"
-                  value={page.visibility || "public"}
-                  onChange={async e => {
-                    const nextVisibility = e.target.value;
-                    try {
-                      await updatePage({
-                        ...page,
-                        visibility: nextVisibility,
-                      });
-                      await refresh(slug);
-                    } catch (err) {
-                      console.error("Failed to update page visibility", err);
-                    }
-                  }}
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                  <option value="unlisted">Unlisted</option>
-                </Select>
-              </div>
-            )}
+            <div className="page-admin-more-wrap" ref={moreRef}>
+              <Button
+                unstyled
+                type="button"
+                className={`action-btn page-admin-more-btn${moreOpen ? " active" : ""}`}
+                onClick={() => setMoreOpen(v => !v)}
+                title="Page settings"
+              >
+                <MoreHorizontal size={18} />
+              </Button>
+              {moreOpen && (
+                <div className="page-admin-more-dropdown">
+                  {canChangeVisibility && page && (
+                    <Select
+                      id="page-visibility"
+                      className="page-admin-select page-admin-more-item"
+                      value={page.visibility || "public"}
+                      onChange={async e => {
+                        const nextVisibility = e.target.value;
+                        try {
+                          await updatePage({
+                            ...page,
+                            visibility: nextVisibility,
+                          });
+                          await refresh(slug);
+                        } catch (err) {
+                          console.error("Failed to update page visibility", err);
+                        }
+                      }}
+                    >
+                      <option value="public">Visibility: Public</option>
+                      <option value="private">Visibility: Private</option>
+                      <option value="unlisted">Visibility: Unlisted</option>
+                    </Select>
+                  )}
 
-            {isAdmin && !slug && (
-              <div className="page-admin-dropdown-wrap">
-                <Button
-                  unstyled
-                  type="button"
-                  className={`page-admin-btn${landingDropdownOpen ? " active" : ""}`}
-                  onClick={() => setLandingDropdownOpen(v => !v)}
-                  title="Set landing page"
-                >
-                  {landingPageLabel}
-                  <ChevronDown size={14} />
-                </Button>
-                {landingDropdownOpen && (
-                  <div className="page-admin-dropdown">
-                    {allPages.map(p => (
-                      <Button
-                        unstyled
-                        key={p.id}
-                        className="page-admin-dropdown-item"
-                        onClick={() => {
+                  {isAdmin && !slug && (
+                    <Select
+                      className="page-admin-select page-admin-more-item"
+                      value={landingPageSlug || ""}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const p = allPages.find(p => p.slug === val);
+                        if (p) {
                           handleSetHomepage(p);
-                          setLandingDropdownOpen(false);
-                        }}
-                        disabled={settingHomepageId === p.id || p.slug === landingPageSlug}
+                          setMoreOpen(false);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>
+                        Set landing page
+                      </option>
+                      {allPages.map(p => (
+                        <option key={p.id} value={p.slug}>
+                          {p.title || p.slug}
+                          {p.slug === landingPageSlug ? " (Current)" : ""}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+
+                  {canArmSite && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className={`page-admin-more-item ${
+                        isArmed ? "page-admin-more-item--success" : "page-admin-more-item--danger"
+                      }`}
+                      onClick={() => {
+                        void handleArmToggle();
+                        setMoreOpen(false);
+                      }}
+                      disabled={armInProgress}
+                    >
+                      {armInProgress
+                        ? isArmed
+                          ? "Disarming…"
+                          : "Arming…"
+                        : isArmed
+                          ? "Disarm site"
+                          : "Arm site"}
+                    </Button>
+                  )}
+
+                  {sandboxToggleIsStandalone && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setGuestSandboxEnabled(current => !current);
+                        setMoreOpen(false);
+                      }}
+                    >
+                      {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
+                    </Button>
+                  )}
+
+                  {showOwnershipBtn && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setShowOwnership(v => !v);
+                        setMoreOpen(false);
+                      }}
+                    >
+                      Manage page ownership
+                    </Button>
+                  )}
+                  {showOwnershipBtn && page?.id && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setShowAnalytics(true);
+                        setMoreOpen(false);
+                      }}
+                    >
+                      Page Analytics
+                    </Button>
+                  )}
+                  {isAdmin && !slug && (
+                    <>
+                      <Link
+                        to="/admin/meta"
+                        className="page-admin-more-item"
+                        onClick={() => setMoreOpen(false)}
                       >
-                        {p.title || p.slug}
-                        {p.slug === landingPageSlug && " (Current)"}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {canDelete && page?.id && (
-              <Button
-                unstyled
-                type="button"
-                className="page-admin-btn page-admin-btn--danger"
-                onClick={handleDeletePage}
-                title="Delete this page"
-              >
-                Delete
-              </Button>
-            )}
-
-            {canArmSite && (
-              <Button
-                unstyled
-                type="button"
-                className={`page-admin-btn ${
-                  isArmed ? "page-admin-btn--success" : "page-admin-btn--danger"
-                }`}
-                onClick={handleArmToggle}
-                disabled={armInProgress}
-                title={isArmed ? "Disarm the site" : "Arm the site"}
-              >
-                {armInProgress
-                  ? isArmed
-                    ? "Disarming…"
-                    : "Arming…"
-                  : isArmed
-                    ? "Disarm site"
-                    : "Arm site"}
-              </Button>
-            )}
-
-            {sandboxToggleIsStandalone && (
-              <Button
-                unstyled
-                type="button"
-                className="page-admin-btn"
-                onClick={() => setGuestSandboxEnabled(current => !current)}
-              >
-                {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
-              </Button>
-            )}
-
-            {(showOwnershipBtn ||
-              (isAdmin && !slug) ||
-              (!sandboxToggleIsStandalone && canShowSandboxToggle)) && (
-              <div className="page-admin-more-wrap" ref={moreRef}>
-                <Button
-                  unstyled
-                  type="button"
-                  className={`action-btn page-admin-more-btn${moreOpen ? " active" : ""}`}
-                  onClick={() => setMoreOpen(v => !v)}
-                  title="More actions"
-                >
-                  <MoreHorizontal size={18} />
-                </Button>
-                {moreOpen && (
-                  <div className="page-admin-more-dropdown">
-                    {showOwnershipBtn && (
+                        Site Meta
+                      </Link>
+                      <Link
+                        to="/admin/roles"
+                        className="page-admin-more-item"
+                        onClick={() => setMoreOpen(false)}
+                      >
+                        Roles
+                      </Link>
                       <Button
                         unstyled
                         type="button"
-                        className="page-admin-more-item"
+                        className="page-admin-more-item page-admin-more-item--danger"
+                        disabled={resetInProgress}
                         onClick={() => {
-                          setShowOwnership(v => !v);
                           setMoreOpen(false);
+                          void handleFactoryReset();
                         }}
                       >
-                        Manage page ownership
+                        {resetInProgress ? "Resetting…" : "Reset all pages"}
                       </Button>
-                    )}
-                    {showOwnershipBtn && page?.id && (
-                      <Button
-                        unstyled
-                        type="button"
-                        className="page-admin-more-item"
-                        onClick={() => {
-                          setShowAnalytics(true);
-                          setMoreOpen(false);
-                        }}
-                      >
-                        Page Analytics
-                      </Button>
-                    )}
-                    {isAdmin && !slug && (
-                      <>
-                        <Link
-                          to="/admin/meta"
-                          className="page-admin-more-item"
-                          onClick={() => setMoreOpen(false)}
-                        >
-                          Site Meta
-                        </Link>
-                        <Link
-                          to="/admin/roles"
-                          className="page-admin-more-item"
-                          onClick={() => setMoreOpen(false)}
-                        >
-                          Roles
-                        </Link>
-                        <Button
-                          unstyled
-                          type="button"
-                          className="page-admin-more-item page-admin-more-item--danger"
-                          disabled={resetInProgress}
-                          onClick={() => {
-                            setMoreOpen(false);
-                            void handleFactoryReset();
-                          }}
-                        >
-                          {resetInProgress ? "Resetting…" : "Reset all pages"}
-                        </Button>
-                      </>
-                    )}
-                    {!isEditable && !sandboxToggleIsStandalone && (
-                      <Button
-                        unstyled
-                        type="button"
-                        className="page-admin-more-item"
-                        onClick={() => {
-                          setGuestSandboxEnabled((current: boolean) => !(current as boolean));
-                          setMoreOpen(false);
-                        }}
-                      >
-                        {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+                    </>
+                  )}
+                  {!isEditable && !sandboxToggleIsStandalone && canShowSandboxToggle && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className="page-admin-more-item"
+                      onClick={() => {
+                        setGuestSandboxEnabled((current: boolean) => !(current as boolean));
+                        setMoreOpen(false);
+                      }}
+                    >
+                      {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
+                    </Button>
+                  )}
+
+                  {canDelete && page?.id && (
+                    <Button
+                      unstyled
+                      type="button"
+                      className="page-admin-more-item page-admin-more-item--danger"
+                      onClick={() => {
+                        setMoreOpen(false);
+                        void handleDeletePage();
+                      }}
+                    >
+                      Delete this page
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
+
         {showOwnership && showOwnershipBtn && (
           <div className="page-admin-bar page-admin-bar--panel">
             <PageOwnershipPanel
