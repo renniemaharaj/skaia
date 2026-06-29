@@ -43,7 +43,7 @@ import { usePresenceUsers } from "../../../hooks/usePresenceUsers";
 import "./PresencePanel.css";
 // Lazy-loaded: opened only on user interaction, so no reason to bloat the initial payload.
 const PhysicsControls = lazy(() => import("./PhysicsControls"));
-const VoicePanel = lazy(() => import("./VoicePanel"));
+const WebRTCPanel = lazy(() => import("./WebRTCPanel"));
 
 /**
  * Extensible per-row action. Add new actions to the rowActions array below.
@@ -746,7 +746,7 @@ const PresencePanel = () => {
           >
             {hasOpenedVoice && (
               <Suspense fallback={null}>
-                <VoicePanel
+                <WebRTCPanel
                   voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile}
                 />
               </Suspense>

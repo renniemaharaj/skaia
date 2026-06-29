@@ -5,6 +5,7 @@ import { registerResource } from "../utils/wsRegistry";
 export interface VoicePermissions {
   route: string;
   voiceEnabled: boolean;
+  guestsAllowed: boolean;
   mutedUsers: Record<number, boolean>;
   kickedUsers: Record<number, boolean>;
 }
@@ -13,6 +14,7 @@ export interface VoicePermissions {
 export const voicePermissionsAtom = atom<VoicePermissions>({
   route: "",
   voiceEnabled: true,
+  guestsAllowed: false,
   mutedUsers: {},
   kickedUsers: {},
 });
@@ -38,9 +40,12 @@ registerResource(
       next.mutedUsers = {};
       next.kickedUsers = {};
       next.voiceEnabled = true;
+      next.guestsAllowed = false;
     }
     if (data.action === "enable") next.voiceEnabled = true;
     if (data.action === "disable") next.voiceEnabled = false;
+    if (data.action === "allow_guests") next.guestsAllowed = true;
+    if (data.action === "deny_guests") next.guestsAllowed = false;
     if (data.action === "mute" && data.target_user_id) {
       next.mutedUsers = {
         ...next.mutedUsers,

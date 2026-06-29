@@ -24,9 +24,10 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 	vp, ok := h.voiceRoutes[vc.Payload.Route]
 	if !ok {
 		vp = &VoicePermissions{
-			VoiceEnabled: true,
-			MutedUsers:   make(map[int64]bool),
-			KickedUsers:  make(map[int64]bool),
+			VoiceEnabled:  true,
+			GuestsAllowed: false,
+			MutedUsers:    make(map[int64]bool),
+			KickedUsers:   make(map[int64]bool),
 		}
 		h.voiceRoutes[vc.Payload.Route] = vp
 	}
@@ -36,6 +37,10 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 		vp.VoiceEnabled = true
 	case "disable":
 		vp.VoiceEnabled = false
+	case "allow_guests":
+		vp.GuestsAllowed = true
+	case "deny_guests":
+		vp.GuestsAllowed = false
 	case "mute":
 		if vc.Payload.TargetUserID != 0 {
 			vp.MutedUsers[vc.Payload.TargetUserID] = true
@@ -70,19 +75,15 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 	}
 }
 
-func (c *Client) handleVoiceSignal(msg Message) {
-	// Only authenticated users may send WebRTC signals
-	if c.UserID == 0 {
-		return
-	}
+func (c *Client) handleWebRTCMessage(msg Message) {
 	var payload VoiceSignalPayload
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return
 	}
-	c.Hub.handleVoiceSignal(c, payload)
+	c.Hub.handleWebRTCMessage(c, payload)
 }
 
-func (h *Hub) handleVoiceSignal(sender *Client, payload VoiceSignalPayload) {
+func (h *Hub) handleWebRTCMessage(sender *Client, payload VoiceSignalPayload) {
 	if sender == nil || payload.Route == "" || payload.TargetUserID == 0 {
 		return
 	}
@@ -99,15 +100,20 @@ func (h *Hub) handleVoiceSignal(sender *Client, payload VoiceSignalPayload) {
 	h.voiceMu.RLock()
 	vp, ok := h.voiceRoutes[payload.Route]
 	voiceEnabled := true
+	guestsAllowed := false
 	muted := false
 	kicked := false
 	if ok {
 		voiceEnabled = vp.VoiceEnabled
+		guestsAllowed = vp.GuestsAllowed
 		muted = vp.MutedUsers[senderID]
 		kicked = vp.KickedUsers[senderID]
 	}
 	h.voiceMu.RUnlock()
 	if !voiceEnabled || muted || kicked {
+		return
+	}
+	if sender.UserID == 0 && !guestsAllowed {
 		return
 	}
 

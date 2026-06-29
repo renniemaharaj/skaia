@@ -20,7 +20,7 @@ import { useWebSocketSync } from "../../../hooks/useWebSocketSync";
 import { apiRequest } from "../../../utils/api";
 import ResourceAnalytics from "../../analytics/ResourceAnalytics";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
-import VoicePanel from "../../page/layout/VoicePanel";
+import WebRTCPanel from "../../page/layout/WebRTCPanel";
 import type { Role } from "../../user/types";
 import RecentThreadsTile from "../RecentThreadsTile";
 import TableOfContentsTile from "../TableOfContentsTile";
@@ -373,7 +373,7 @@ const ViewThreadPage = () => {
           {!readingMode && (
             <aside className="view-thread-sidebar">
               <div className="view-thread-desktop-only">
-                <VoicePanel mediaOnly={true} />
+                <WebRTCPanel mediaOnly={true} />
               </div>
               <div className="view-thread-desktop-only">
                 <TableOfContentsTile htmlContent={currentThread.content} />

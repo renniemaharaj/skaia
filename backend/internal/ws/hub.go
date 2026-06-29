@@ -76,9 +76,10 @@ type CursorBroadcast struct {
 
 // VoicePermissions holds the admin state for voice chat on a specific route.
 type VoicePermissions struct {
-	VoiceEnabled bool
-	MutedUsers   map[int64]bool
-	KickedUsers  map[int64]bool
+	VoiceEnabled  bool
+	GuestsAllowed bool
+	MutedUsers    map[int64]bool
+	KickedUsers   map[int64]bool
 }
 
 // TeleportRequest asks the hub to forward a tp message to a specific user.

@@ -75,7 +75,7 @@ func TestHandleVoiceSignalRelaysToTargetOnly(t *testing.T) {
 	h.clients[target] = true
 	h.clients[other] = true
 
-	h.handleVoiceSignal(sender, VoiceSignalPayload{
+	h.handleWebRTCMessage(sender, VoiceSignalPayload{
 		Route:        "/room",
 		TargetUserID: 7,
 		Kind:         "offer",
@@ -116,7 +116,7 @@ func TestHandleVoiceSignalRejectsCrossRoute(t *testing.T) {
 	h.clients[sender] = true
 	h.clients[target] = true
 
-	h.handleVoiceSignal(sender, VoiceSignalPayload{
+	h.handleWebRTCMessage(sender, VoiceSignalPayload{
 		Route:        "/room-b",
 		TargetUserID: 7,
 		Kind:         "offer",

@@ -183,7 +183,7 @@ func (c *Client) handleMessage(msg Message) {
 		c.handleVoiceControlMsg(msg)
 	case VoiceSignal:
 		if c.signalLimit.allow() {
-			c.handleVoiceSignal(msg)
+			c.handleWebRTCMessage(msg)
 		} else {
 			c.sendClientError("You are sending WebRTC signals too quickly.", 0)
 		}
