@@ -29,6 +29,7 @@ func (h *Handler) Mount(r chi.Router, authMiddlewares ...func(http.Handler) http
 		}
 		r.Get("/mediascraper/scrape", h.scrape)
 		r.Get("/mediascraper/jobs", h.getJobs)
+		r.Get("/mediascraper/youtube", h.searchYouTube)
 		r.Post("/mediascraper/restart", h.restartJobs)
 	})
 }
@@ -153,4 +154,27 @@ func (h *Handler) restartJobs(w http.ResponseWriter, r *http.Request) {
 	ClearJobsAndCache()
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"success":true}`))
+}
+
+func (h *Handler) searchYouTube(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		writeJSONError(w, "query is required", http.StatusBadRequest)
+		return
+	}
+
+	_, authOK := utils.UserIDFromCtx(r)
+	if !authOK {
+		writeJSONError(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	results, err := SearchYouTube(r.Context(), query)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
 }

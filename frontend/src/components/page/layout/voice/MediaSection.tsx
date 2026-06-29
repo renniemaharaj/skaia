@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { normalizeRoute } from "../../../../utils/route";
 import { sendWebSocketMessage } from "../../../../utils/wsProtobuf";
+import { apiRequest } from "../../../../utils/api";
 import UserProfileOverlay from "../../../user/UserProfileOverlay";
 import UserAvatar from "../../../user/UserAvatar";
 import Button from "../../../input/Button";
@@ -146,6 +147,8 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
     return null;
   };
 
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     const isUrl = extractYouTubeId(inputUrl);
     if (!inputUrl || isUrl) {
@@ -153,44 +156,65 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
       return;
     }
 
-    setIsSearching(true);
-    const timer = setTimeout(async () => {
-      const instances = [
-        "https://api.piped.private.coffee",
-        "https://pipedapi.smnz.de",
-        "https://pipedapi.kavin.rocks",
-      ];
-      let success = false;
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+      searchAbortControllerRef.current = null;
+    }
 
-      for (const instance of instances) {
-        try {
-          const res = await fetch(
-            `${instance}/search?q=${encodeURIComponent(inputUrl)}&filter=videos`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            setSearchResults(
-              data.items.slice(0, 5).map((item: any) => ({
-                id: item.url.split("?v=")[1] || item.url.split("/watch?v=")[1],
-                title: item.title,
-                thumbnail: item.thumbnail,
-              }))
-            );
-            success = true;
-            break;
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      const abortController = new AbortController();
+      searchAbortControllerRef.current = abortController;
+
+      try {
+        const data = await apiRequest<any[]>(
+          `/mediascraper/youtube?q=${encodeURIComponent(inputUrl)}`,
+          {
+            signal: abortController.signal,
           }
-        } catch {
-          // Try next instance
+        );
+
+        if (searchAbortControllerRef.current !== abortController) return;
+
+        if (data && Array.isArray(data)) {
+          setSearchResults(
+            data
+              .slice(0, 5)
+              .map(item => {
+                const id = extractYouTubeId(item.url) || "";
+                return {
+                  id,
+                  title: item.title || "Unknown Title",
+                  thumbnail: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+                };
+              })
+              .filter(item => item.id)
+          );
+        } else {
+          setSearchResults([]);
+        }
+      } catch (err: any) {
+        if (
+          err.name === "AbortError" ||
+          err.message === "AbortError" ||
+          (err.message && err.message.includes("aborted"))
+        ) {
+          // Ignore abort errors
+        } else {
+          console.error("YouTube search failed:", err);
+          setSearchResults([]);
+        }
+      } finally {
+        if (searchAbortControllerRef.current === abortController) {
+          setIsSearching(false);
+          searchAbortControllerRef.current = null;
         }
       }
-
-      if (!success) {
-        setSearchResults([]);
-      }
-      setIsSearching(false);
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [inputUrl]);
 
   const handleAddMedia = (e?: React.FormEvent) => {
@@ -377,7 +401,25 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
           aria-label="Search for media or paste a YouTube URL"
           value={inputUrl}
           onChange={e => setInputUrl(e.target.value)}
+          disabled={isSearching}
         />
+        {isSearching && (
+          <button
+            type="button"
+            className="action-btn danger"
+            style={{ marginRight: "8px" }}
+            onClick={() => {
+              if (searchAbortControllerRef.current) {
+                searchAbortControllerRef.current.abort();
+                searchAbortControllerRef.current = null;
+                setIsSearching(false);
+              }
+            }}
+            title="Cancel search"
+          >
+            <X size={14} />
+          </button>
+        )}
         <Button
           type="submit"
           variant="secondary"

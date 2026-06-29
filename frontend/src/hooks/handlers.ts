@@ -26,7 +26,7 @@ export type ValueSetter<T> = (value: T) => void;
 const EVENT_BUS_TYPES = new Set([
   "mediascraper:result",
   "mediascraper:started",
-  "mediascraper:pending",
+  "mediascraper:dropped",
   "grengo:job_update",
   "grengo:action_ack",
   "grengo:stats_update",

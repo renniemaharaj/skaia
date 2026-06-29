@@ -344,7 +344,7 @@ function CompoundMediaScraper({
 
     window.addEventListener("mediascraper:result", handleResult);
     window.addEventListener("mediascraper:started", handleStarted);
-    window.addEventListener("mediascraper:pending", handlePending);
+    window.addEventListener("mediascraper:dropped", handlePending);
 
     const timer = setTimeout(doScrape, 500);
 
@@ -353,7 +353,7 @@ function CompoundMediaScraper({
       clearTimeout(timer);
       window.removeEventListener("mediascraper:result", handleResult);
       window.removeEventListener("mediascraper:started", handleStarted);
-      window.removeEventListener("mediascraper:pending", handlePending);
+      window.removeEventListener("mediascraper:dropped", handlePending);
     };
   }, [url]);
 

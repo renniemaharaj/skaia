@@ -60,7 +60,7 @@ const (
 	GrengoHardwareUpdate    MessageType = "grengo:hardware_update"    // server => client: live hardware stream
 	MediaScraperResult      MessageType = "mediascraper:result"       // server => all: job completion
 	MediaScraperStarted     MessageType = "mediascraper:started"      // server => all: job started processing
-	MediaScraperPending     MessageType = "mediascraper:pending"      // server => all: job cleared and back to pending
+	MediaScraperDropped     MessageType = "mediascraper:dropped"      // server => all: job cleared and back to pending
 	LogsStream              MessageType = "logs:stream"               // server => subscribed clients: realtime log line
 	ProvisioningProgress    MessageType = "provisioning:progress"     // server => subscribed clients: live provisioning log line
 	ProvisioningStatus      MessageType = "provisioning:status"       // server => subscribed + admin clients: instance status changed

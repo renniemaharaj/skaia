@@ -3,229 +3,16 @@ package mediascraper
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
-	"os"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/redis/go-redis/v9"
-	"github.com/skaia/backend/internal/workers"
-	"github.com/skaia/backend/internal/ws"
-	"github.com/renniemaharaj/conveyor/pkg/conveyor"
 )
 
-var (
-	singleton  *rod.Browser
-	singletonMu sync.Mutex
-	rdb        *redis.Client
-	rdbOnce    sync.Once
-	activeJobs int32
-	wsHub      *ws.Hub
-
-	scraperManager *conveyor.Manager
-	initOnce       sync.Once
-)
-
-type jobRequest struct {
-	targetURL string
-}
-
-func initScraper() {
-	initOnce.Do(func() {
-		scraperManager = conveyor.CreateManager().
-			SetMinWorkers(1).
-			SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)). // limit headless browser instances based on CPU
-			SetSafeQueueLength(200)
-		scraperManager.Start()
-	})
-}
-
-
-
-func broadcastJobStarted(targetURL string) {
-	if wsHub == nil {
-		return
-	}
-	type startedPayload struct {
-		URL string `json:"url"`
-	}
-	payload, _ := json.Marshal(startedPayload{URL: targetURL})
-	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperStarted, Payload: payload})
-}
-
-func broadcastJobPending(targetURL string) {
-	if wsHub == nil {
-		return
-	}
-	type pendingPayload struct {
-		URL string `json:"url"`
-	}
-	payload, _ := json.Marshal(pendingPayload{URL: targetURL})
-	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperPending, Payload: payload})
-}
-
-func broadcastJobResult(targetURL string, res *ScrapeResult, err error) {
-	if wsHub == nil {
-		return
-	}
-	type resultPayload struct {
-		URL    string        `json:"url"`
-		Result *ScrapeResult `json:"result,omitempty"`
-		Error  string        `json:"error,omitempty"`
-	}
-	p := resultPayload{URL: targetURL, Result: res}
-	if err != nil {
-		p.Error = err.Error()
-	}
-	payload, _ := json.Marshal(p)
-	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperResult, Payload: payload})
-}
-
-func SetHub(hub *ws.Hub) {
-	wsHub = hub
-}
-
-func ClearJobsAndCache() {
-	initScraper()
-
-	scraperManager.Stop()
-
-	// Drain the queue to drop pending requests
-	drained := false
-	for !drained {
-		select {
-		case req := <-scraperManager.B.C:
-			atomic.AddInt32(&activeJobs, -1)
-			broadcastJobPending(req.Param.(jobRequest).targetURL)
-		default:
-			drained = true
-		}
-	}
-
-	scraperManager = conveyor.CreateManager().
-		SetMinWorkers(1).
-		SetMaxWorkers(workers.Budget(workers.DomainMediaScraper)).
-		SetSafeQueueLength(200)
-	scraperManager.Start()
-
-	ClearCache()
-	broadcastJobsUpdate()
-
-	// Kill the browser so it's recreated fresh
-	singletonMu.Lock()
-	if singleton != nil {
-		_ = singleton.Close()
-		singleton = nil
-	}
-	singletonMu.Unlock()
-}
-
-func ClearCache() {
-	client := getRedis()
-	if client == nil {
-		return
-	}
-	ctx := context.Background()
-	keys, err := client.Keys(ctx, "mediascraper:cache:*").Result()
-	if err == nil && len(keys) > 0 {
-		client.Del(ctx, keys...)
-	}
-	client.Del(ctx, "mediascraper:stats:cache_hits", "mediascraper:stats:new_scrapes")
-}
-
-func GetActiveJobs() int {
-	return int(atomic.LoadInt32(&activeJobs))
-}
-
-type ScraperMetrics struct {
-	ActiveJobs   int   `json:"active_jobs"`
-	CacheHits1h  int64 `json:"cache_hits_1h"`
-	NewScrapes1h int64 `json:"new_scrapes_1h"`
-}
-
-func GetMetrics() ScraperMetrics {
-	client := getRedis()
-	hits, scrapes := int64(0), int64(0)
-	if client != nil {
-		ctx := context.Background()
-		now := time.Now().Unix()
-		cutoff := fmt.Sprintf("%d", now-3600)
-		client.ZRemRangeByScore(ctx, "mediascraper:stats:cache_hits", "-inf", cutoff)
-		client.ZRemRangeByScore(ctx, "mediascraper:stats:new_scrapes", "-inf", cutoff)
-		hits, _ = client.ZCard(ctx, "mediascraper:stats:cache_hits").Result()
-		scrapes, _ = client.ZCard(ctx, "mediascraper:stats:new_scrapes").Result()
-	}
-	return ScraperMetrics{
-		ActiveJobs:   GetActiveJobs(),
-		CacheHits1h:  hits,
-		NewScrapes1h: scrapes,
-	}
-}
-
-func recordCacheHit() {
-	client := getRedis()
-	if client != nil {
-		ctx := context.Background()
-		now := time.Now().Unix()
-		client.ZAdd(ctx, "mediascraper:stats:cache_hits", redis.Z{Score: float64(now), Member: time.Now().UnixNano()})
-	}
-	broadcastJobsUpdate()
-}
-
-func recordNewScrape() {
-	client := getRedis()
-	if client != nil {
-		ctx := context.Background()
-		now := time.Now().Unix()
-		client.ZAdd(ctx, "mediascraper:stats:new_scrapes", redis.Z{Score: float64(now), Member: time.Now().UnixNano()})
-	}
-	broadcastJobsUpdate()
-}
-
-func broadcastJobsUpdate() {
-	if wsHub == nil {
-		return
-	}
-	metrics := GetMetrics()
-	payload, _ := json.Marshal(metrics)
-	wsHub.Broadcast(&ws.Message{Type: ws.MediaScraperJobs, Payload: payload})
-}
-
-func getRedis() *redis.Client {
-	rdbOnce.Do(func() {
-		addr := os.Getenv("REDIS_URL")
-		if addr == "" {
-			addr = "redis://redis:6379/0" // fallback
-		}
-		opts, err := redis.ParseURL(addr)
-		if err == nil {
-			rdb = redis.NewClient(opts)
-		}
-	})
-	return rdb
-}
-
-func Get() *rod.Browser {
-	singletonMu.Lock()
-	defer singletonMu.Unlock()
-	if singleton == nil {
-		path := launcher.New().
-			Bin("/usr/bin/chromium-browser").
-			Headless(true).
-			Leakless(true).
-			Set("disable-blink-features", "AutomationControlled").
-			Set("no-sandbox", "true").
-			MustLaunch()
-
-		singleton = rod.New().ControlURL(path).MustConnect()
-	}
-	return singleton
+type ScrapeResult struct {
+	Images      []string  `json:"images"`
+	LastScanned time.Time `json:"last_scanned"`
 }
 
 func isLikelyThumbnail(src string) bool {
@@ -253,102 +40,65 @@ func resolveURL(link string, base string) string {
 	return baseURL.ResolveReference(uri).String()
 }
 
-type ScrapeResult struct {
-	Images      []string  `json:"images"`
-	LastScanned time.Time `json:"last_scanned"`
-}
-
-func GetCachedImages(targetURL string) *ScrapeResult {
-	redisKey := "mediascraper:cache:" + targetURL
-	client := getRedis()
-
-	if client != nil {
-		if val, err := client.Get(context.Background(), redisKey).Result(); err == nil {
-			var res ScrapeResult
-			if json.Unmarshal([]byte(val), &res) == nil {
-				return &res
-			}
-		}
-	}
-	return nil
-}
-
-func QueueScrape(targetURL string) error {
-	initScraper()
-
-	if cached := GetCachedImages(targetURL); cached != nil {
-		recordCacheHit()
-		broadcastJobResult(targetURL, cached, nil)
-		return nil
-	}
-
-	atomic.AddInt32(&activeJobs, 1)
-	broadcastJobsUpdate()
-
-	job := conveyor.CreateJob(
-		context.Background(),
-		jobRequest{targetURL},
-		func(param any) error {
-			req := param.(jobRequest)
-			broadcastJobStarted(req.targetURL)
-			res, err := doScrape(req.targetURL)
-			
-			atomic.AddInt32(&activeJobs, -1)
-			broadcastJobsUpdate()
-
-			broadcastJobResult(req.targetURL, res, err)
-			return err
-		},
-		nil,
-		nil,
-	)
-
-	select {
-	case scraperManager.B.C <- *job:
-		return nil
-	default:
-		atomic.AddInt32(&activeJobs, -1)
-		broadcastJobsUpdate()
-		return fmt.Errorf("scraping queue is full")
-	}
-}
-
 func doScrape(targetURL string) (*ScrapeResult, error) {
 	if cached := GetCachedImages(targetURL); cached != nil {
 		recordCacheHit()
 		return cached, nil
 	}
 
-	redisKey := "mediascraper:cache:" + targetURL
+	redisKey := getCacheKey(targetURL)
 	client := getRedis()
 
-	// 25-second limit for the rod operations
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()
 
 	b := Get().Context(ctx)
 	page, err := b.Page(proto.TargetCreateTarget{URL: targetURL})
 	if err != nil {
+		ResetBrowser()
 		return nil, err
 	}
 	defer page.Close()
 
-	// Wait up to 10 seconds for the page to load, ignore error if it times out
 	_ = page.Timeout(10 * time.Second).WaitLoad()
 
-	// Try to get images, wait up to 5 seconds for at least one to appear
-	imgEls, err := page.Timeout(5 * time.Second).Elements("img")
-	if err != nil {
-		imgEls = nil
+	var thumbs []string
+
+	// Try meta tags
+	metaEls, _ := page.Timeout(3 * time.Second).Elements("meta")
+	for _, meta := range metaEls {
+		prop, _ := meta.Attribute("property")
+		name, _ := meta.Attribute("name")
+		content, _ := meta.Attribute("content")
+		if content != nil && *content != "" {
+			if (prop != nil && *prop == "og:image") || (name != nil && *name == "twitter:image") {
+				thumbs = append(thumbs, resolveURL(*content, targetURL))
+			}
+		}
 	}
 
-	var thumbs []string
-	for _, img := range imgEls {
-		src, _ := img.Attribute("src")
-		if src != nil && *src != "" {
-			resolved := resolveURL(*src, targetURL)
-			if isLikelyThumbnail(resolved) || isLikelyThumbnail(*src) {
-				thumbs = append(thumbs, resolved)
+	imgEls, err := page.Timeout(5 * time.Second).Elements("img")
+	if err == nil {
+		for _, img := range imgEls {
+			for _, attr := range []string{"src", "data-src", "srcset"} {
+				val, _ := img.Attribute(attr)
+				if val != nil && *val != "" {
+					if attr == "srcset" {
+						parts := strings.Split(*val, ",")
+						if len(parts) > 0 {
+							urlPart := strings.TrimSpace(strings.Split(strings.TrimSpace(parts[0]), " ")[0])
+							resolved := resolveURL(urlPart, targetURL)
+							if isLikelyThumbnail(resolved) || isLikelyThumbnail(urlPart) {
+								thumbs = append(thumbs, resolved)
+							}
+						}
+					} else {
+						resolved := resolveURL(*val, targetURL)
+						if isLikelyThumbnail(resolved) || isLikelyThumbnail(*val) {
+							thumbs = append(thumbs, resolved)
+						}
+					}
+				}
 			}
 		}
 	}

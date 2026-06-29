@@ -56,11 +56,11 @@ export function MediaScraper() {
 
     window.addEventListener("mediascraper:result", handleResult);
     window.addEventListener("mediascraper:started", handleStarted);
-    window.addEventListener("mediascraper:pending", handlePending);
+    window.addEventListener("mediascraper:dropped", handlePending);
     return () => {
       window.removeEventListener("mediascraper:result", handleResult);
       window.removeEventListener("mediascraper:started", handleStarted);
-      window.removeEventListener("mediascraper:pending", handlePending);
+      window.removeEventListener("mediascraper:dropped", handlePending);
     };
   }, [url, job?.status]);
 
