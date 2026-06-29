@@ -40,6 +40,7 @@ type Client struct {
 	cursorLimit    rateBucket
 	presenceLimit  rateBucket
 	broadcastLimit rateBucket
+	signalLimit    rateBucket
 	// lastChatAt tracks when the last global chat message was sent, for slow-mode enforcement.
 	lastChatAt time.Time
 }
@@ -181,7 +182,11 @@ func (c *Client) handleMessage(msg Message) {
 	case VoiceControl:
 		c.handleVoiceControlMsg(msg)
 	case VoiceSignal:
-		c.handleVoiceSignal(msg)
+		if c.signalLimit.allow() {
+			c.handleVoiceSignal(msg)
+		} else {
+			c.sendClientError("You are sending WebRTC signals too quickly.", 0)
+		}
 	case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
 		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 	case GrengoJobAction:

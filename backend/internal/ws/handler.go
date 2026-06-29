@@ -121,6 +121,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		cursorLimit:    newRateBucket(30, 30),
 		presenceLimit:  newRateBucket(5, 5),
 		broadcastLimit: newRateBucket(10, 10),
+		signalLimit:    newRateBucket(30, 30),
 	}
 
 	hub.register <- client

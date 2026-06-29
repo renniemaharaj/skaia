@@ -71,6 +71,10 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 }
 
 func (c *Client) handleVoiceSignal(msg Message) {
+	// Only authenticated users may send WebRTC signals
+	if c.UserID == 0 {
+		return
+	}
 	var payload VoiceSignalPayload
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 		return
