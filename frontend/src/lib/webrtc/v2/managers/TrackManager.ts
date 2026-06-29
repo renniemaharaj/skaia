@@ -26,6 +26,15 @@ export class TrackManager {
       this.peerTracks.set(peerId, tracks);
     }
 
+    if (tracks.size >= 3) {
+      console.warn(
+        `[TrackManager] Rejecting track from peer ${peerId}: maximum track limit (3) reached`
+      );
+      stream.removeTrack(event.track);
+      event.track.stop();
+      return;
+    }
+
     tracks.set(event.track.id, event.track);
     this.events.emit("trackAdded", { peerId, track: event.track, stream });
     this.emitStreamsChanged();

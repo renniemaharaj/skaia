@@ -242,6 +242,21 @@ export class WebRTCManager {
     const [stream] = event.streams;
     if (!stream) return;
 
+    // Limit each peer connection to a strict maximum of 3 tracks
+    const activeStreamsForPeer = this.remoteStreams.filter(s => s.peerId === key);
+    const trackCount = activeStreamsForPeer.reduce(
+      (acc, s) => acc + s.stream.getTracks().length,
+      0
+    );
+    if (trackCount >= 3) {
+      console.warn(
+        `[WebRTCManager] Rejecting track from peer ${key}: maximum track limit (3) reached`
+      );
+      stream.removeTrack(event.track);
+      event.track.stop();
+      return;
+    }
+
     if (!this.remoteStreams.some(s => s.stream === stream && s.peerId === key)) {
       this.remoteStreams = [
         ...this.remoteStreams,
