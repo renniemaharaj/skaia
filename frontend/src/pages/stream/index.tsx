@@ -115,7 +115,7 @@ function StreamStatusScreen({
   }
 
   const copy = {
-    "not-started": "Stream has not started yet",
+    "not-started": "Waiting for a participant to start the stream",
     ended: "Stream has ended",
     retry: "Couldn't start the stream automatically. Please retry.",
   } satisfies Record<Exclude<StreamState, "loading">, string>;
