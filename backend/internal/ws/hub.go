@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 	log "github.com/skaia/backend/internal/syslog"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -80,6 +80,8 @@ type VoicePermissions struct {
 	GuestsAllowed bool
 	MutedUsers    map[int64]bool
 	KickedUsers   map[int64]bool
+	CanManage     bool
+	OwnerID       int64
 }
 
 // TeleportRequest asks the hub to forward a tp message to a specific user.

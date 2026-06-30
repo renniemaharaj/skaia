@@ -16,6 +16,7 @@ var (
 	threadRx     = regexp.MustCompile(`^/view-thread/(\d+)$`)
 	itemRx       = regexp.MustCompile(`^/store/product/(\d+)$`)
 	pageRx       = regexp.MustCompile(`^/page/([^/]+)$`)
+	streamRx     = regexp.MustCompile(`^/stream/([^/]+)$`)
 	staticPageRx = regexp.MustCompile(`^/(privacy|tos)$`)
 	usersRx      = regexp.MustCompile(`^/users/?$`)
 	userRx       = regexp.MustCompile(`^/users/(\d+)$`)
@@ -30,6 +31,7 @@ type routeSEO struct {
 	Desc  string
 	Image string
 	Miss  bool
+	Live  bool
 }
 
 func ssrClientPrefix() string {
@@ -82,6 +84,8 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		ttl := 24 * time.Hour
 		if route.Miss {
 			ttl = 5 * time.Minute
+		} else if route.Live {
+			ttl = 15 * time.Second
 		}
 		setCachedMeta(ctx, rdb, cacheKey, meta, ttl)
 

@@ -45,6 +45,7 @@ import (
 	iprovisioning "github.com/skaia/backend/internal/provisioning"
 	"github.com/skaia/backend/internal/ssr"
 	istore "github.com/skaia/backend/internal/store"
+	istreammeta "github.com/skaia/backend/internal/streammeta"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
@@ -727,7 +728,11 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				utils.WriteError(w, http.StatusBadRequest, "route is required")
 				return
 			}
-			vp := hub.GetVoicePermissions(route)
+			userID := int64(0)
+			if claims, ok := r.Context().Value(ctx.CtxKeyClaims).(*ijwt.Claims); ok && claims != nil {
+				userID = claims.UserID
+			}
+			vp := hub.GetVoicePermissionsForUser(route, userID)
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"route":         route,
@@ -735,6 +740,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				"guestsAllowed": vp.GuestsAllowed,
 				"mutedUsers":    vp.MutedUsers,
 				"kickedUsers":   vp.KickedUsers,
+				"canManage":     vp.CanManage,
+				"ownerId":       vp.OwnerID,
 			})
 		})
 
@@ -938,7 +945,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		provRepo := iprovisioning.NewRepository(db)
 		provSvc := iprovisioning.NewService(provRepo, conveyorManager, hub, grengoSvc)
 		iprovisioning.NewHandler(provSvc).Mount(api, imw.JWTAuthMiddleware)
+		istreammeta.NewHandler(istreammeta.DefaultStore).Mount(api, imw.JWTAuthMiddleware)
 	})
+
+	istreammeta.NewHandler(istreammeta.DefaultStore).MountPublic(r)
 
 	// SSR: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {

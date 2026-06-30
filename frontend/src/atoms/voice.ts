@@ -8,6 +8,8 @@ export interface VoicePermissions {
   guestsAllowed: boolean;
   mutedUsers: Record<number, boolean>;
   kickedUsers: Record<number, boolean>;
+  canManage: boolean;
+  ownerId?: number;
 }
 
 // Current route's voice permissions
@@ -17,6 +19,7 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
   guestsAllowed: false,
   mutedUsers: {},
   kickedUsers: {},
+  canManage: false,
 });
 
 export const enlargedStreamIdAtom = atom<string | null>(null);
@@ -41,6 +44,8 @@ registerResource(
       next.kickedUsers = {};
       next.voiceEnabled = true;
       next.guestsAllowed = false;
+      next.canManage = false;
+      next.ownerId = undefined;
     }
     if (data.action === "enable") next.voiceEnabled = true;
     if (data.action === "disable") next.voiceEnabled = false;

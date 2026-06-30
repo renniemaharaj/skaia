@@ -80,6 +80,7 @@ const UserUploadsDirectory = lazy(() => import("../components/user/UserUploadsDi
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
 const FlowPage = lazy(() => import("./flow/index.tsx"));
 const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
+const StreamPage = lazy(() => import("./stream/index.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -122,6 +123,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "tmp/:sessionId", element: <GrengoPage /> },
   { path: "activity", element: <ActivityPage /> },
   { path: "flow", element: <FlowPage /> },
+  { path: "stream", element: <StreamPage /> },
   { path: "settings/users/:userId/*", element: <SettingsPage /> },
   { path: "settings/*", element: <SettingsPage /> },
 ];
@@ -156,5 +158,6 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "forgot-password", element: <ForgotPasswordPage /> },
   { path: "reset-password", element: <ResetPasswordPage /> },
   { path: "visualizer", element: <VisualizerPage /> },
+  { path: "stream/:streamId", element: <StreamPage /> },
   { path: "directory/:userId", element: <UserUploadsDirectory /> },
 ];

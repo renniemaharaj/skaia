@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"github.com/skaia/backend/internal/streammeta"
 	log "github.com/skaia/backend/internal/syslog"
 )
 
@@ -13,10 +14,10 @@ type VoiceControlAction struct {
 
 // handleVoiceControl updates the admin permissions for voice chat on a specific route.
 func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
-	if vc.Client == nil || !vc.Client.HasPermission("home.manage") {
+	if vc.Payload.Route == "" {
 		return
 	}
-	if vc.Payload.Route == "" {
+	if !h.canManageVoiceRoute(vc.Client, vc.Payload.Route) {
 		return
 	}
 
@@ -143,6 +144,17 @@ func presenceID(client *Client) int64 {
 	return client.UserID
 }
 
+func (h *Hub) canManageVoiceRoute(client *Client, route string) bool {
+	if client == nil {
+		return false
+	}
+	if client.HasPermission("home.manage") {
+		return true
+	}
+	ownerID, ok := streammeta.DefaultStore.OwnerIDForRoute(route)
+	return ok && client.UserID > 0 && client.UserID == ownerID
+}
+
 // GetVoicePermissions returns the current voice state for a route.
 func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
 	h.voiceMu.RLock()
@@ -157,7 +169,7 @@ func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
 			KickedUsers:   make(map[int64]bool),
 		}
 	}
-	
+
 	// Return a deep copy to prevent race conditions during JSON encoding
 	muted := make(map[int64]bool, len(vp.MutedUsers))
 	for k, v := range vp.MutedUsers {
@@ -167,11 +179,20 @@ func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
 	for k, v := range vp.KickedUsers {
 		kicked[k] = v
 	}
-	
+
 	return &VoicePermissions{
 		VoiceEnabled:  vp.VoiceEnabled,
 		GuestsAllowed: vp.GuestsAllowed,
 		MutedUsers:    muted,
 		KickedUsers:   kicked,
 	}
+}
+
+func (h *Hub) GetVoicePermissionsForUser(route string, userID int64) *VoicePermissions {
+	vp := h.GetVoicePermissions(route)
+	if ownerID, ok := streammeta.DefaultStore.OwnerIDForRoute(route); ok {
+		vp.OwnerID = ownerID
+		vp.CanManage = userID > 0 && userID == ownerID
+	}
+	return vp
 }

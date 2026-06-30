@@ -16,6 +16,7 @@ import (
 	icfg "github.com/skaia/backend/internal/config"
 	ictx "github.com/skaia/backend/internal/ctx"
 	ijwt "github.com/skaia/backend/internal/jwt"
+	"github.com/skaia/backend/internal/streammeta"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/ratelimit"
@@ -53,6 +54,11 @@ func firstNonEmpty(values ...string) string {
 }
 
 func cacheRouteKey(r *http.Request) string {
+	if streamRx.MatchString(r.URL.Path) {
+		if v := r.URL.Query().Get("v"); v != "" {
+			return r.URL.Path + "?v=" + v
+		}
+	}
 	return r.URL.Path
 }
 
@@ -135,6 +141,10 @@ func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
 
 	if match := pageRx.FindStringSubmatch(path); match != nil {
 		return resolvePageSEO(db, match[1])
+	}
+
+	if match := streamRx.FindStringSubmatch(path); match != nil {
+		return resolveStreamSEO(r, match[1])
 	}
 
 	if match := staticPageRx.FindStringSubmatch(path); match != nil {
@@ -241,6 +251,28 @@ func resolveUsersSEO(db *sql.DB) routeSEO {
 	return routeSEO{
 		Title: "User Directory",
 		Desc:  desc,
+	}
+}
+
+func resolveStreamSEO(r *http.Request, id string) routeSEO {
+	meta, ok := streammeta.DefaultStore.Get(id)
+	if !ok {
+		return routeSEO{Miss: true, Live: true}
+	}
+
+	image := ""
+	if len(meta.Thumbnail) > 0 {
+		image = "/stream-preview/" + meta.ID
+		if meta.Revision != "" {
+			image += "?v=" + meta.Revision
+		}
+	}
+
+	return routeSEO{
+		Title: firstNonEmpty(meta.Title, "Live Stream"),
+		Desc:  snip(stripHTML(firstNonEmpty(meta.Description, "Join this live stream.")), 160),
+		Image: absoluteURL(r, image),
+		Live:  true,
 	}
 }
 

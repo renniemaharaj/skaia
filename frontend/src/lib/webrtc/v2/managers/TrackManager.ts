@@ -6,7 +6,7 @@ export class TrackManager {
 
   // Track bookkeeping: peerId -> track.id -> MediaStreamTrack
   private peerTracks = new Map<string, Map<string, MediaStreamTrack>>();
-  private peerStreams = new Map<string, { stream: MediaStream; startedAt: string }>();
+  private peerStreams = new Map<string, Map<string, { stream: MediaStream; startedAt: string }>>();
 
   constructor(events: TypedEventEmitter<SkaiaRTCEvents>) {
     this.events = events;
@@ -16,8 +16,13 @@ export class TrackManager {
     const [stream] = event.streams;
     if (!stream) return;
 
-    if (!this.peerStreams.has(peerId) || this.peerStreams.get(peerId)?.stream !== stream) {
-      this.peerStreams.set(peerId, { stream, startedAt: new Date().toISOString() });
+    let streams = this.peerStreams.get(peerId);
+    if (!streams) {
+      streams = new Map();
+      this.peerStreams.set(peerId, streams);
+    }
+    if (!streams.has(stream.id)) {
+      streams.set(stream.id, { stream, startedAt: new Date().toISOString() });
     }
 
     let tracks = this.peerTracks.get(peerId);
@@ -58,6 +63,14 @@ export class TrackManager {
       }
     }
 
+    const streams = this.peerStreams.get(peerId);
+    if (streams && stream.getTracks().every(t => t.readyState === "ended")) {
+      streams.delete(stream.id);
+      if (streams.size === 0) {
+        this.peerStreams.delete(peerId);
+      }
+    }
+
     this.events.emit("trackRemoved", { peerId, track, stream });
     this.emitStreamsChanged();
   }
@@ -75,11 +88,13 @@ export class TrackManager {
   }
 
   private emitStreamsChanged() {
-    const streamsPayload = Array.from(this.peerStreams.entries()).map(([peerId, data]) => ({
-      peerId,
-      stream: data.stream,
-      startedAt: data.startedAt,
-    }));
+    const streamsPayload = Array.from(this.peerStreams.entries()).flatMap(([peerId, streams]) =>
+      Array.from(streams.values()).map(data => ({
+        peerId,
+        stream: data.stream,
+        startedAt: data.startedAt,
+      }))
+    );
     this.events.emit("streamsChanged", { streams: streamsPayload });
   }
 

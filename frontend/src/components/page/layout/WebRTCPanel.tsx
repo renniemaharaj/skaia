@@ -9,6 +9,7 @@ import {
   VideoOff,
   MonitorUp,
   Save,
+  Radio,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -27,11 +28,12 @@ import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "../../ui/MediaPreviewLightbox.css";
 import "./VoicePanel.css";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { normalizeRoute } from "../../../utils/route";
 import { ActiveStreams } from "./voice/ActiveStreams";
 import { MediaSection } from "./voice/MediaSection";
 import { EnlargedStream } from "./voice/EnlargedStream";
+import StreamMetaEditor from "./voice/StreamMetaEditor";
 
 import { useMediaDevices } from "./voice/useMediaDevices";
 import { useLocalRecording } from "./voice/useLocalRecording";
@@ -72,12 +74,18 @@ export default function WebRTCPanel({
   const hasManagePermission = useAtomValue(hasPermissionAtom)("home.manage");
   const mediaState = useAtomValue(mediaStateAtom);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [permissions, setPermissions] = useAtom(voicePermissionsAtom);
+  const streamRouteId = useMemo(() => {
+    const match = location.pathname.match(/^\/stream\/([^/?#]+)$/);
+    return match?.[1] || "";
+  }, [location.pathname]);
+  const canManageVoice = hasManagePermission || permissions.canManage;
 
   useEffect(() => {
     const route = normalizeRoute(location.pathname);
@@ -327,6 +335,11 @@ export default function WebRTCPanel({
     broadcastTracks,
     removeTracks,
   });
+  const streamMetaPreviewStream = screenActive
+    ? screenStreamRef.current
+    : cameraActive
+      ? cameraStreamRef.current
+      : null;
 
   useLocalRecording(
     recordLocally && screenActive,
@@ -783,24 +796,36 @@ export default function WebRTCPanel({
               />
               Screen Share
             </span>
-            <label className="vp-switch">
-              <input
-                type="checkbox"
-                checked={screenActive}
-                onChange={toggleScreen}
-                disabled={
-                  !canSpeak ||
-                  !(
-                    typeof navigator !== "undefined" &&
-                    navigator.mediaDevices &&
-                    "getDisplayMedia" in navigator.mediaDevices
-                  )
-                }
-              />
-              <div className="vp-switch-track">
-                <div className="vp-switch-thumb" />
-              </div>
-            </label>
+            <div className="vp-setting-actions">
+              {!streamRouteId && (
+                <button
+                  type="button"
+                  className="action-btn"
+                  title="Open personal stream route"
+                  onClick={() => navigate("/stream")}
+                >
+                  <Radio size={14} />
+                </button>
+              )}
+              <label className="vp-switch">
+                <input
+                  type="checkbox"
+                  checked={screenActive}
+                  onChange={toggleScreen}
+                  disabled={
+                    !canSpeak ||
+                    !(
+                      typeof navigator !== "undefined" &&
+                      navigator.mediaDevices &&
+                      "getDisplayMedia" in navigator.mediaDevices
+                    )
+                  }
+                />
+                <div className="vp-switch-track">
+                  <div className="vp-switch-thumb" />
+                </div>
+              </label>
+            </div>
           </div>
           <div className="vp-setting-row" style={{ marginBottom: 0 }}>
             <span className="vp-setting-label">
@@ -892,7 +917,11 @@ export default function WebRTCPanel({
         />
       )}
 
-      {!mediaOnly && hasManagePermission && <AdminSettings />}
+      {!mediaOnly && canManageVoice && <AdminSettings />}
+
+      {!mediaOnly && streamRouteId && permissions.canManage && (
+        <StreamMetaEditor streamId={streamRouteId} stream={streamMetaPreviewStream} />
+      )}
 
       {!mediaOnly && (
         <div className="ui-panel vp-settings-panel">
