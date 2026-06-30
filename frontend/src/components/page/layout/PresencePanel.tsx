@@ -329,10 +329,10 @@ const PresencePanel = () => {
   useEffect(() => {
     if (location.pathname.startsWith("/stream/")) {
       setHasOpenedVoice(true);
-      if (activeTab !== "voice") setActiveTab("voice");
-      if (!expanded) setExpanded(true);
+      setActiveTab("voice");
+      setExpanded(true);
     }
-  }, [activeTab, expanded, location.pathname, setActiveTab, setExpanded]);
+  }, [location.pathname, setActiveTab, setExpanded]);
 
   useEffect(() => {
     if (activeTab === "defcon") {
