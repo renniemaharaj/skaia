@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,11 @@ import (
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 	"github.com/skaia/backend/ratelimit"
+)
+
+var (
+	imageSrcRx = regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["']`)
+	youtubeRx  = regexp.MustCompile(`(?i)(?:youtube\.com/(?:watch\?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{6,})`)
 )
 
 func stripHTML(s string) string {
@@ -35,6 +41,19 @@ func snip(s string, max int) string {
 		return s
 	}
 	return s[:max] + "..."
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func cacheRouteKey(r *http.Request) string {
+	return r.URL.Path
 }
 
 func replacePlaceholder(doc, placeholder, replacement string) string {
@@ -103,9 +122,11 @@ func loadSiteConfig(cfgSvc *icfg.Service) (models.Branding, models.SEO) {
 	return branding, seo
 }
 
-func resolveRouteSEO(db *sql.DB, path string) routeSEO {
+func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
+	path := r.URL.Path
+
 	if match := threadRx.FindStringSubmatch(path); match != nil {
-		return resolveThreadSEO(db, match[1])
+		return resolveThreadSEO(db, r, match[1])
 	}
 
 	if match := itemRx.FindStringSubmatch(path); match != nil {
@@ -116,10 +137,26 @@ func resolveRouteSEO(db *sql.DB, path string) routeSEO {
 		return resolvePageSEO(db, match[1])
 	}
 
+	if match := staticPageRx.FindStringSubmatch(path); match != nil {
+		return resolvePageSEO(db, match[1])
+	}
+
+	if usersRx.MatchString(path) {
+		return resolveUsersSEO(db)
+	}
+
+	if match := userRx.FindStringSubmatch(path); match != nil {
+		return resolveUserSEO(db, match[1], "profile")
+	}
+
+	if match := directoryRx.FindStringSubmatch(path); match != nil {
+		return resolveUserSEO(db, match[1], "directory")
+	}
+
 	return routeSEO{}
 }
 
-func resolveThreadSEO(db *sql.DB, idStr string) routeSEO {
+func resolveThreadSEO(db *sql.DB, r *http.Request, idStr string) routeSEO {
 	if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
 		return routeSEO{Miss: true}
 	}
@@ -134,9 +171,16 @@ func resolveThreadSEO(db *sql.DB, idStr string) routeSEO {
 		return routeSEO{Miss: true}
 	}
 
+	image := firstNonEmpty(
+		firstImageFromHTML(content),
+		firstYouTubeThumbnailFromText(content),
+		latestRouteMediaThumbnail(db, r.URL.Path),
+	)
+
 	return routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(content), 160),
+		Image: image,
 	}
 }
 
@@ -145,11 +189,12 @@ func resolveProductSEO(db *sql.DB, idStr string) routeSEO {
 		return routeSEO{Miss: true}
 	}
 
-	var title, desc, img string
+	var title string
+	var desc, img, media sql.NullString
 	err := db.QueryRow(
-		"SELECT name, description, image_url FROM products WHERE id = $1",
+		"SELECT name, description, image_url, media::text FROM products WHERE id = $1",
 		idStr,
-	).Scan(&title, &desc, &img)
+	).Scan(&title, &desc, &img, &media)
 
 	if err != nil {
 		return routeSEO{Miss: true}
@@ -157,8 +202,8 @@ func resolveProductSEO(db *sql.DB, idStr string) routeSEO {
 
 	return routeSEO{
 		Title: title,
-		Desc:  snip(stripHTML(desc), 160),
-		Image: img,
+		Desc:  snip(stripHTML(desc.String), 160),
+		Image: firstNonEmpty(img.String, firstImageFromJSON(media.String)),
 	}
 }
 
@@ -167,11 +212,11 @@ func resolvePageSEO(db *sql.DB, slug string) routeSEO {
 		return routeSEO{Miss: true}
 	}
 
-	var title, desc string
+	var title, desc, content string
 	err := db.QueryRow(
-		"SELECT title, description FROM pages WHERE slug = $1",
+		"SELECT title, description, content::text FROM pages WHERE slug = $1 AND visibility IN ('public', 'unlisted')",
 		slug,
-	).Scan(&title, &desc)
+	).Scan(&title, &desc, &content)
 
 	if err != nil {
 		return routeSEO{Miss: true}
@@ -180,6 +225,54 @@ func resolvePageSEO(db *sql.DB, slug string) routeSEO {
 	return routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(desc), 160),
+		Image: firstImageFromJSON(content),
+	}
+}
+
+func resolveUsersSEO(db *sql.DB) routeSEO {
+	var count int
+	_ = db.QueryRow("SELECT COUNT(*) FROM users WHERE COALESCE(is_suspended, false) = false").Scan(&count)
+
+	desc := "Browse community profiles and creators."
+	if count > 0 {
+		desc = fmt.Sprintf("Browse %d community profiles and creators.", count)
+	}
+
+	return routeSEO{
+		Title: "User Directory",
+		Desc:  desc,
+	}
+}
+
+func resolveUserSEO(db *sql.DB, idStr, kind string) routeSEO {
+	if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
+		return routeSEO{Miss: true}
+	}
+
+	var username string
+	var displayName, bio, avatar, banner, photo, cardArt sql.NullString
+	err := db.QueryRow(
+		`SELECT username, display_name, bio, avatar_url, banner_url, photo_url, profile_card_art_url
+		   FROM users
+		  WHERE id = $1 AND COALESCE(is_suspended, false) = false`,
+		idStr,
+	).Scan(&username, &displayName, &bio, &avatar, &banner, &photo, &cardArt)
+	if err != nil {
+		return routeSEO{Miss: true}
+	}
+
+	name := firstNonEmpty(displayName.String, username)
+	title := name
+	desc := firstNonEmpty(bio.String, "View "+name+"'s profile.")
+	if kind == "directory" {
+		title = name + "'s Uploads"
+		desc = firstNonEmpty(bio.String, "Browse uploads shared by "+name+".")
+	}
+
+	return routeSEO{
+		Title: title,
+		Desc:  snip(stripHTML(desc), 160),
+		Image: firstNonEmpty(cardArt.String, avatar.String, banner.String, photo.String),
 	}
 }
 
@@ -246,4 +339,101 @@ func buildMeta(r *http.Request, branding models.Branding, seo models.SEO, route 
 	meta.setDefaults(siteName)
 
 	return meta
+}
+
+func firstImageFromHTML(s string) string {
+	match := imageSrcRx.FindStringSubmatch(s)
+	if match == nil {
+		return ""
+	}
+	return strings.TrimSpace(match[1])
+}
+
+func firstYouTubeThumbnailFromText(s string) string {
+	match := youtubeRx.FindStringSubmatch(s)
+	if match == nil {
+		return ""
+	}
+	return youtubeThumbnail(match[1])
+}
+
+func youtubeThumbnail(videoID string) string {
+	videoID = strings.TrimSpace(videoID)
+	if videoID == "" {
+		return ""
+	}
+	return "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
+}
+
+func latestRouteMediaThumbnail(db *sql.DB, route string) string {
+	var videoID string
+	err := db.QueryRow(
+		`SELECT video_id FROM media_history WHERE route = $1 ORDER BY created_at DESC LIMIT 1`,
+		route,
+	).Scan(&videoID)
+	if err != nil {
+		return ""
+	}
+	return youtubeThumbnail(videoID)
+}
+
+func firstImageFromJSON(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+
+	var value any
+	if err := json.Unmarshal([]byte(raw), &value); err != nil {
+		return ""
+	}
+
+	return firstImageFromValue(value)
+}
+
+func firstImageFromValue(value any) string {
+	switch v := value.(type) {
+	case []any:
+		for _, item := range v {
+			if img := firstImageFromValue(item); img != "" {
+				return img
+			}
+		}
+	case map[string]any:
+		for _, key := range []string{"image_url", "imageUrl", "image", "thumbnail", "thumbnail_url", "media", "avatar_url", "banner_url", "profile_card_art_url"} {
+			if img := imageString(v[key]); img != "" {
+				return img
+			}
+		}
+		for _, item := range v {
+			if img := firstImageFromValue(item); img != "" {
+				return img
+			}
+		}
+	}
+
+	return ""
+}
+
+func imageString(value any) string {
+	s, ok := value.(string)
+	if !ok {
+		return ""
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	if strings.HasPrefix(s, "data:") {
+		return ""
+	}
+	lower := strings.ToLower(strings.Split(s, "?")[0])
+	if strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg") ||
+		strings.HasSuffix(lower, ".png") || strings.HasSuffix(lower, ".gif") ||
+		strings.HasSuffix(lower, ".webp") || strings.HasSuffix(lower, ".svg") ||
+		strings.HasPrefix(s, "/uploads/") || strings.HasPrefix(s, "http://") ||
+		strings.HasPrefix(s, "https://") {
+		return s
+	}
+	return ""
 }

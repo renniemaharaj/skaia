@@ -16,6 +16,10 @@ var (
 	threadRx     = regexp.MustCompile(`^/view-thread/(\d+)$`)
 	itemRx       = regexp.MustCompile(`^/store/product/(\d+)$`)
 	pageRx       = regexp.MustCompile(`^/page/([^/]+)$`)
+	staticPageRx = regexp.MustCompile(`^/(privacy|tos)$`)
+	usersRx      = regexp.MustCompile(`^/users/?$`)
+	userRx       = regexp.MustCompile(`^/users/(\d+)$`)
+	directoryRx  = regexp.MustCompile(`^/directory/(\d+)$`)
 	htmlTagRx    = regexp.MustCompile(`<[^>]*>`)
 	multiSpaceRx = regexp.MustCompile(`\s+`)
 )
@@ -54,7 +58,6 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		ctx := r.Context()
-		path := r.URL.Path
 
 		if jailedWithoutBypass(ctx, r, rdb) {
 			serveInjected(w, indexHTML, CachedMeta{
@@ -64,7 +67,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 			return
 		}
 
-		cacheKey := ssrClientPrefix() + "ssr:meta:" + path
+		cacheKey := ssrClientPrefix() + "ssr:meta:" + cacheRouteKey(r)
 
 		if meta, ok := getCachedMeta(ctx, rdb, cacheKey); ok {
 			serveInjected(w, indexHTML, meta)
@@ -72,7 +75,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		}
 
 		branding, seo := loadSiteConfig(cfgSvc)
-		route := resolveRouteSEO(db, path)
+		route := resolveRouteSEO(db, r)
 
 		meta := buildMeta(r, branding, seo, route)
 
