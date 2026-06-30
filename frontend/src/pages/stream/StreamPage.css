@@ -4,7 +4,6 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  color: var(--text-primary);
 }
 
 .stream-status__panel {
@@ -15,10 +14,6 @@
   align-items: center;
   justify-content: center;
   gap: 18px;
-  background: #000;
-  color: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
   text-align: center;
 }
 
@@ -28,23 +23,9 @@
   font-size: clamp(1.1rem, 2vw, 1.45rem);
   line-height: 1.25;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
-.stream-status__retry {
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font: inherit;
-  cursor: pointer;
-}
-
-.stream-status__retry:hover {
-  background: rgba(255, 255, 255, 0.14);
+.stream-status__icon-wrap {
+  color: var(--text-secondary);
 }

@@ -9,6 +9,8 @@ import {
   presencePanelExpandedAtom,
 } from "../../atoms/presence";
 import { streamRoutePlaybackAtom } from "../../atoms/voice";
+import { ContentFlatCard } from "../../components/cards/ContentFlatCard";
+import Button from "../../components/input/Button";
 import { apiRequest } from "../../utils/api";
 import { normalizeRoute } from "../../utils/route";
 import "./StreamPage.css";
@@ -51,7 +53,9 @@ export default function StreamPage() {
 
       if (!streamId) {
         try {
-          const created = await apiRequest<StreamMeta>("/stream-meta", { method: "POST" });
+          const created = await apiRequest<StreamMeta>("/stream-meta", {
+            method: "POST",
+          });
           if (alive) navigate(created.route, { replace: true });
         } catch (err) {
           if (!alive) return;
@@ -99,7 +103,13 @@ export default function StreamPage() {
   return <StreamStatusScreen state={state} onRetry={openVoicePanel} />;
 }
 
-function StreamStatusScreen({ state, onRetry }: { state: StreamState; onRetry: () => void }) {
+function StreamStatusScreen({
+  state,
+  onRetry,
+}: {
+  state: StreamState;
+  onRetry: () => void;
+}) {
   if (state === "loading") {
     return <main className="stream-status" aria-label="Loading stream" />;
   }
@@ -112,16 +122,17 @@ function StreamStatusScreen({ state, onRetry }: { state: StreamState; onRetry: (
 
   return (
     <main className="stream-status">
-      <section className="stream-status__panel" aria-live="polite">
-        <VideoOff size={48} opacity={0.55} />
+      <ContentFlatCard className="stream-status__panel" aria-live="polite">
+        <div className="stream-status__icon-wrap">
+          <VideoOff size={48} strokeWidth={1.5} opacity={0.5} />
+        </div>
         <h1>{copy[state]}</h1>
         {state === "retry" && (
-          <button type="button" className="stream-status__retry" onClick={onRetry}>
-            <RotateCcw size={16} />
-            <span>Retry</span>
-          </button>
+          <Button onClick={onRetry} iconLeft={<RotateCcw size={16} />}>
+            Retry
+          </Button>
         )}
-      </section>
+      </ContentFlatCard>
     </main>
   );
 }
