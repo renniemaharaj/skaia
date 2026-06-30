@@ -269,8 +269,8 @@ func resolveStreamSEO(db *sql.DB, r *http.Request, id string) routeSEO {
 	}
 
 	return routeSEO{
-		Title: firstNonEmpty(meta.Title, "Live Stream"),
-		Desc:  snip(stripHTML(firstNonEmpty(meta.Description, "Join this live stream.")), 160),
+		Title: firstNonEmpty(meta.Title, "Stream"),
+		Desc:  snip(stripHTML(firstNonEmpty(meta.Description, "Watch this stream.")), 160),
 		Image: absoluteURL(r, image),
 		Live:  true,
 	}

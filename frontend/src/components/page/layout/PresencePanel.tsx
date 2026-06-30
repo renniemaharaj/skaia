@@ -327,6 +327,14 @@ const PresencePanel = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (location.pathname.startsWith("/stream/")) {
+      setHasOpenedVoice(true);
+      if (activeTab !== "voice") setActiveTab("voice");
+      if (!expanded) setExpanded(true);
+    }
+  }, [activeTab, expanded, location.pathname, setActiveTab, setExpanded]);
+
+  useEffect(() => {
     if (activeTab === "defcon") {
       // Listen for WebSocket pushes from the backend
       const handler = (e: MessageEvent) => {

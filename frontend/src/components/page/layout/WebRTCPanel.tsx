@@ -18,7 +18,12 @@ import AdminSettings from "./voice/AdminSettings";
 import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
 import { mediaStateAtom, playerMutedAtom } from "../../../atoms/media";
 import { onlineUsersAtom, presencePanelExpandedAtom } from "../../../atoms/presence";
-import { enlargedStreamIdAtom, voicePermissionsAtom, useV2RTCAtom } from "../../../atoms/voice";
+import {
+  enlargedStreamIdAtom,
+  streamRoutePlaybackAtom,
+  voicePermissionsAtom,
+  useV2RTCAtom,
+} from "../../../atoms/voice";
 import { getGuestSessionId } from "../../../utils/guestSession";
 import { getSoundVolume } from "../../../utils/sound";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
@@ -77,6 +82,7 @@ export default function WebRTCPanel({
   const navigate = useNavigate();
 
   const [enlargedStreamId, setEnlargedStreamId] = useAtom(enlargedStreamIdAtom);
+  const [, setStreamRoutePlayback] = useAtom(streamRoutePlaybackAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -516,6 +522,63 @@ export default function WebRTCPanel({
       ...data,
     }));
   }, [remoteStreams, activeScreenUserIds, activeCameraUserIds]);
+
+  useEffect(() => {
+    if (!streamRouteId) {
+      setStreamRoutePlayback(prev =>
+        prev.route === "" && prev.activeVideoCount === 0 ? prev : { route: "", activeVideoCount: 0 }
+      );
+      return;
+    }
+
+    setStreamRoutePlayback(prev =>
+      prev.route === location.pathname && prev.activeVideoCount === streamsByPeer.length
+        ? prev
+        : {
+            route: location.pathname,
+            activeVideoCount: streamsByPeer.length,
+          }
+    );
+
+    const openFirstVideoStream = () => {
+      const firstVideoStream = streamsByPeer[0];
+      const firstVideoId = firstVideoStream?.screenId || firstVideoStream?.cameraId;
+      if (!firstVideoStream || !firstVideoId) return;
+
+      const nextEnlargedId = `${firstVideoStream.peerId}-${firstVideoId}`;
+      if (enlargedStreamId !== nextEnlargedId) {
+        setEnlargedStreamId(nextEnlargedId);
+      }
+      if (!isPanelExpanded) {
+        setIsPanelExpanded(true);
+      }
+    };
+
+    openFirstVideoStream();
+    window.addEventListener("stream:retry-open", openFirstVideoStream);
+    return () => {
+      window.removeEventListener("stream:retry-open", openFirstVideoStream);
+    };
+  }, [
+    enlargedStreamId,
+    isPanelExpanded,
+    location.pathname,
+    setEnlargedStreamId,
+    setIsPanelExpanded,
+    setStreamRoutePlayback,
+    streamRouteId,
+    streamsByPeer,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (streamRouteId) {
+        setStreamRoutePlayback(prev =>
+          prev.route === location.pathname ? { route: "", activeVideoCount: 0 } : prev
+        );
+      }
+    };
+  }, [location.pathname, setStreamRoutePlayback, streamRouteId]);
 
   return (
     <div className={`vp-container ${mediaOnly ? "vp-container-media-only" : ""}`}>

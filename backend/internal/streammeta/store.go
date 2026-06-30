@@ -47,7 +47,6 @@ func (s *Store) Create(ownerID int64) Meta {
 		Route:     "/stream/" + id,
 		ShareURL:  "/stream/" + id,
 		OwnerID:   ownerID,
-		Title:     "Live Stream",
 		Revision:  newID(),
 		UpdatedAt: now,
 	}

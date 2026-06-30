@@ -24,6 +24,16 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
 
 export const enlargedStreamIdAtom = atom<string | null>(null);
 
+export interface StreamRoutePlaybackState {
+  route: string;
+  activeVideoCount: number;
+}
+
+export const streamRoutePlaybackAtom = atom<StreamRoutePlaybackState>({
+  route: "",
+  activeVideoCount: 0,
+});
+
 export const useV2RTCAtom = atomWithStorage<boolean>("useV2RTC", false);
 
 registerResource(

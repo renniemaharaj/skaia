@@ -1,31 +1,62 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useAtomValue, useSetAtom } from "jotai";
+import { RotateCcw, VideoOff } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import {
+  onlineUsersAtom,
+  presenceActiveTabAtom,
+  presencePanelExpandedAtom,
+} from "../../atoms/presence";
+import { streamRoutePlaybackAtom } from "../../atoms/voice";
 import { apiRequest } from "../../utils/api";
+import { normalizeRoute } from "../../utils/route";
+import "./StreamPage.css";
 
 interface StreamMeta {
   id: string;
   route: string;
+  owner_id?: number;
   title: string;
   description: string;
 }
 
+type StreamState = "loading" | "not-started" | "ended" | "retry";
+
 export default function StreamPage() {
   const { streamId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [meta, setMeta] = useState<StreamMeta | null>(null);
   const [missing, setMissing] = useState(false);
+  const [createFailed, setCreateFailed] = useState(false);
+  const onlineUsers = useAtomValue(onlineUsersAtom);
+  const playback = useAtomValue(streamRoutePlaybackAtom);
+  const setPresenceExpanded = useSetAtom(presencePanelExpandedAtom);
+  const setPresenceActiveTab = useSetAtom(presenceActiveTabAtom);
+
+  const openVoicePanel = useCallback(() => {
+    setPresenceExpanded(true);
+    setPresenceActiveTab("voice");
+    window.dispatchEvent(new CustomEvent("stream:retry-open"));
+  }, [setPresenceActiveTab, setPresenceExpanded]);
 
   useEffect(() => {
     let alive = true;
 
     async function load() {
+      setMeta(null);
+      setMissing(false);
+      setCreateFailed(false);
+
       if (!streamId) {
         try {
           const created = await apiRequest<StreamMeta>("/stream-meta", { method: "POST" });
           if (alive) navigate(created.route, { replace: true });
         } catch (err) {
-          if (alive) toast.error(err instanceof Error ? err.message : "Could not open stream");
+          if (!alive) return;
+          setCreateFailed(true);
+          toast.error(err instanceof Error ? err.message : "Could not open stream");
         }
         return;
       }
@@ -44,22 +75,53 @@ export default function StreamPage() {
     };
   }, [navigate, streamId]);
 
+  const ownerIsHere = useMemo(() => {
+    if (!meta?.owner_id) return false;
+    const route = normalizeRoute(meta.route || location.pathname);
+    return onlineUsers.some(
+      user => user.user_id === meta.owner_id && normalizeRoute(user.route) === route
+    );
+  }, [location.pathname, meta, onlineUsers]);
+
+  const state: StreamState = useMemo(() => {
+    if (missing) return "ended";
+    if (!meta) return "loading";
+    if (playback.route === location.pathname && playback.activeVideoCount > 0) return "retry";
+    return ownerIsHere ? "not-started" : "ended";
+  }, [location.pathname, meta, missing, ownerIsHere, playback]);
+
   if (!streamId) {
-    return null;
+    return createFailed ? (
+      <StreamStatusScreen state="retry" onRetry={() => window.location.reload()} />
+    ) : null;
   }
 
-  if (missing) {
-    return (
-      <main className="page-content">
-        <h1>Stream unavailable</h1>
-      </main>
-    );
+  return <StreamStatusScreen state={state} onRetry={openVoicePanel} />;
+}
+
+function StreamStatusScreen({ state, onRetry }: { state: StreamState; onRetry: () => void }) {
+  if (state === "loading") {
+    return <main className="stream-status" aria-label="Loading stream" />;
   }
+
+  const copy = {
+    "not-started": "Stream has not started yet",
+    ended: "Stream has ended",
+    retry: "Couldn't start the stream automatically. Please retry.",
+  } satisfies Record<Exclude<StreamState, "loading">, string>;
 
   return (
-    <main className="page-content">
-      <h1>{meta?.title || "Live Stream"}</h1>
-      {meta?.description ? <p>{meta.description}</p> : null}
+    <main className="stream-status">
+      <section className="stream-status__panel" aria-live="polite">
+        <VideoOff size={48} opacity={0.55} />
+        <h1>{copy[state]}</h1>
+        {state === "retry" && (
+          <button type="button" className="stream-status__retry" onClick={onRetry}>
+            <RotateCcw size={16} />
+            <span>Retry</span>
+          </button>
+        )}
+      </section>
     </main>
   );
 }

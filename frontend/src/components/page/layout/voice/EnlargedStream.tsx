@@ -68,7 +68,7 @@ export function EnlargedStream({
             }}
           >
             <VideoOff size={48} opacity={0.5} />
-            <div style={{ fontSize: "16px", fontWeight: 500 }}>Stream ended or not found</div>
+            <div style={{ fontSize: "16px", fontWeight: 500 }}>Stream has ended</div>
             <Button onClick={() => setEnlargedStreamId(null)}>Close</Button>
           </div>
         </div>,
