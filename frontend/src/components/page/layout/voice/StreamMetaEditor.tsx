@@ -68,13 +68,32 @@ export default function StreamMetaEditor({ streamId, stream }: StreamMetaEditorP
     };
   }, [stream]);
 
+  const captureStillDataURL = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !stream || video.videoWidth === 0 || video.videoHeight === 0) {
+      return "";
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 480;
+    canvas.height = 270;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.72);
+  }, [stream]);
+
   useEffect(() => {
     if (loading) return;
 
-    const payload = JSON.stringify({ title, description, thumbnail });
+    const capturedThumbnail = thumbnail || captureStillDataURL();
+    const payload = JSON.stringify({ title, description, thumbnail: capturedThumbnail });
     if (payload === lastPayloadRef.current) return;
 
     const timer = window.setTimeout(() => {
+      if (capturedThumbnail && !thumbnail) {
+        setThumbnail(capturedThumbnail);
+      }
       setSaving(true);
       lastPayloadRef.current = payload;
       apiRequest<StreamMeta>(`/stream-meta/${streamId}`, {
@@ -87,23 +106,17 @@ export default function StreamMetaEditor({ streamId, stream }: StreamMetaEditorP
     }, 650);
 
     return () => window.clearTimeout(timer);
-  }, [description, loading, streamId, thumbnail, title]);
+  }, [captureStillDataURL, description, loading, streamId, thumbnail, title]);
 
   const captureStill = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !stream || video.videoWidth === 0 || video.videoHeight === 0) {
+    const still = captureStillDataURL();
+    if (!still) {
       toast.error("Start camera or screen sharing first");
       return;
     }
 
-    const canvas = document.createElement("canvas");
-    canvas.width = 480;
-    canvas.height = 270;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    setThumbnail(canvas.toDataURL("image/jpeg", 0.72));
-  }, [stream]);
+    setThumbnail(still);
+  }, [captureStillDataURL]);
 
   const copyShareURL = useCallback(async () => {
     await navigator.clipboard.writeText(shareURL);

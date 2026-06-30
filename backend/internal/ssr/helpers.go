@@ -144,7 +144,7 @@ func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
 	}
 
 	if match := streamRx.FindStringSubmatch(path); match != nil {
-		return resolveStreamSEO(r, match[1])
+		return resolveStreamSEO(db, r, match[1])
 	}
 
 	if match := staticPageRx.FindStringSubmatch(path); match != nil {
@@ -254,13 +254,13 @@ func resolveUsersSEO(db *sql.DB) routeSEO {
 	}
 }
 
-func resolveStreamSEO(r *http.Request, id string) routeSEO {
+func resolveStreamSEO(db *sql.DB, r *http.Request, id string) routeSEO {
 	meta, ok := streammeta.DefaultStore.Get(id)
 	if !ok {
 		return routeSEO{Miss: true, Live: true}
 	}
 
-	image := ""
+	image := streamOwnerImage(db, meta.OwnerID)
 	if len(meta.Thumbnail) > 0 {
 		image = "/stream-preview/" + meta.ID
 		if meta.Revision != "" {
@@ -274,6 +274,25 @@ func resolveStreamSEO(r *http.Request, id string) routeSEO {
 		Image: absoluteURL(r, image),
 		Live:  true,
 	}
+}
+
+func streamOwnerImage(db *sql.DB, ownerID int64) string {
+	if ownerID <= 0 {
+		return ""
+	}
+
+	var avatar, banner, photo, cardArt sql.NullString
+	err := db.QueryRow(
+		`SELECT avatar_url, banner_url, photo_url, profile_card_art_url
+		   FROM users
+		  WHERE id = $1 AND COALESCE(is_suspended, false) = false`,
+		ownerID,
+	).Scan(&avatar, &banner, &photo, &cardArt)
+	if err != nil {
+		return ""
+	}
+
+	return firstNonEmpty(avatar.String, banner.String, photo.String, cardArt.String)
 }
 
 func resolveUserSEO(db *sql.DB, idStr, kind string) routeSEO {
