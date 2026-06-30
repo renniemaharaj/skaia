@@ -248,7 +248,7 @@ export class WebRTCManager {
       (acc, s) => acc + s.stream.getTracks().length,
       0
     );
-    if (trackCount >= 1500) {
+    if (trackCount >= 3) {
       console.warn(
         `[WebRTCManager] Rejecting track from peer ${key}: maximum track limit (3) reached`
       );
