@@ -1,4 +1,4 @@
-package ssr
+package seo
 
 import (
 	"context"

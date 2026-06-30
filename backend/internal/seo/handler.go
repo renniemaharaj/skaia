@@ -1,4 +1,4 @@
-package ssr
+package seo
 
 import (
 	"database/sql"
@@ -34,7 +34,7 @@ type routeSEO struct {
 	Live  bool
 }
 
-func ssrClientPrefix() string {
+func seoClientPrefix() string {
 	name := os.Getenv("CLIENT_NAME")
 	if name == "" {
 		return ""
@@ -50,7 +50,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 
 	indexHTML, readErr := os.ReadFile(indexPath)
 	if readErr != nil {
-		log.Printf("ssr: failed to read index file %s: %v", indexPath, readErr)
+		log.Printf("seo: failed to read index file %s: %v", indexPath, readErr)
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 			return
 		}
 
-		cacheKey := ssrClientPrefix() + "ssr:meta:" + cacheRouteKey(r)
+		cacheKey := seoClientPrefix() + "ssr:meta:" + cacheRouteKey(r)
 
 		if meta, ok := getCachedMeta(ctx, rdb, cacheKey); ok {
 			serveInjected(w, indexHTML, meta)

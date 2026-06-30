@@ -45,7 +45,7 @@ internal/
   events/            event dispatcher and activity logging
   upload/            avatar/banner uploads
   ws/                websocket hub, chat, presence
-  ssr/               index.html rewriting with SEO tags
+  seo/               index.html rewriting with SEO tags
   utils/             http helpers
   grengo/            admin dashboard API proxy
 migrations/          SQL schema and seed data

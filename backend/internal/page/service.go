@@ -106,7 +106,7 @@ func (s *Service) DeleteAll() error {
 	return s.repo.DeleteAll()
 }
 
-func (s *Service) invalidateSSR(slug string) {
+func (s *Service) invalidateSEO(slug string) {
 	if s.rdb == nil {
 		return
 	}
@@ -114,8 +114,8 @@ func (s *Service) invalidateSSR(slug string) {
 	if name != "" {
 		name = name + ":"
 	}
-	ssrKey := name + "ssr:meta:/page/" + slug
-	s.rdb.Del(context.Background(), ssrKey)
+	seoKey := name + "ssr:meta:/page/" + slug
+	s.rdb.Del(context.Background(), seoKey)
 }
 
 func (s *Service) Create(p *models.Page) error {
@@ -140,7 +140,7 @@ func (s *Service) Update(p *models.Page) error {
 	}
 	err := s.repo.Update(p)
 	if err == nil {
-		s.invalidateSSR(p.Slug)
+		s.invalidateSEO(p.Slug)
 	}
 	return err
 }

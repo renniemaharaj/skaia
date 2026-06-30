@@ -87,9 +87,9 @@ func (c *ThreadCache) Invalidate(id int64) {
 	if err := c.rdb.Del(ctx, threadKey(id)).Err(); err != nil {
 		log.Printf("forum.ThreadCache.Invalidate(%d): %v", id, err)
 	}
-	// Also invalidate SSR meta
-	ssrKey := forumClientPrefix() + "ssr:meta:/view-thread/" + strconv.FormatInt(id, 10)
-	c.rdb.Del(ctx, ssrKey)
+	// Also invalidate SEO meta.
+	seoKey := forumClientPrefix() + "ssr:meta:/view-thread/" + strconv.FormatInt(id, 10)
+	c.rdb.Del(ctx, seoKey)
 }
 
 // Flush removes all forum thread cache entries.

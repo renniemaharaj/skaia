@@ -43,7 +43,7 @@ import (
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
 	iprovisioning "github.com/skaia/backend/internal/provisioning"
-	"github.com/skaia/backend/internal/ssr"
+	"github.com/skaia/backend/internal/seo"
 	istore "github.com/skaia/backend/internal/store"
 	istreammeta "github.com/skaia/backend/internal/streammeta"
 	iupload "github.com/skaia/backend/internal/upload"
@@ -950,10 +950,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	istreammeta.NewHandler(istreammeta.DefaultStore).MountPublic(r)
 
-	// SSR: serve index.html with injected SEO head tags
+	// SEO: serve index.html with injected SEO head tags
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
-		imw.ExtractTokenMiddleware(ssrHandler).ServeHTTP(w, req)
+		seoHandler := seo.IndexHandler(cfgSvc, rdb, database.DB)
+		imw.ExtractTokenMiddleware(seoHandler).ServeHTTP(w, req)
 	})
 
 	// Proxy /instances/{id} to the corresponding container (or redirect Frappe)
@@ -1022,7 +1022,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	// SPA fallback
 	// API routes and /uploads/* above take precedence.  If a static file
-	// exists on disk we serve it; extensionless paths get the SSR index
+	// exists on disk we serve it; extensionless paths get the SEO index
 	// (client-side routing).  Paths with a file extension that don't exist
 	// on disk get a proper 404.
 	r.NotFound(func(w http.ResponseWriter, req *http.Request) {
@@ -1044,8 +1044,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return
 		}
 
-		ssrHandler := ssr.IndexHandler(cfgSvc, rdb, database.DB)
-		imw.ExtractTokenMiddleware(ssrHandler).ServeHTTP(w, req)
+		seoHandler := seo.IndexHandler(cfgSvc, rdb, database.DB)
+		imw.ExtractTokenMiddleware(seoHandler).ServeHTTP(w, req)
 	})
 
 	return r

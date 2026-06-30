@@ -87,9 +87,9 @@ func (c *ProductCache) Invalidate(id int64) {
 	if err := c.rdb.Del(ctx, productKey(id)).Err(); err != nil {
 		log.Printf("store.ProductCache.Invalidate(%d): %v", id, err)
 	}
-	// Also invalidate SSR meta
-	ssrKey := storeClientPrefix() + "ssr:meta:/store/item/" + strconv.FormatInt(id, 10)
-	c.rdb.Del(ctx, ssrKey)
+	// Also invalidate SEO meta.
+	seoKey := storeClientPrefix() + "ssr:meta:/store/item/" + strconv.FormatInt(id, 10)
+	c.rdb.Del(ctx, seoKey)
 }
 
 // Flush removes all store product cache entries.
