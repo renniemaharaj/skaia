@@ -85,6 +85,7 @@ export default function WebRTCPanel({
   const [, setStreamRoutePlayback] = useAtom(streamRoutePlaybackAtom);
   const [isPanelExpanded, setIsPanelExpanded] = useAtom(presencePanelExpandedAtom);
   const [searchParams, setSearchParams] = useSearchParams();
+  const hasAutoOpenedStreamRef = useRef<string | null>(null);
 
   const [permissions, setPermissions] = useAtom(voicePermissionsAtom);
   const streamRouteId = useMemo(() => {
@@ -540,10 +541,15 @@ export default function WebRTCPanel({
           }
     );
 
-    const openFirstVideoStream = () => {
+    const openFirstVideoStream = (force = false) => {
       const firstVideoStream = streamsByPeer[0];
       const firstVideoId = firstVideoStream?.screenId || firstVideoStream?.cameraId;
       if (!firstVideoStream || !firstVideoId) return;
+
+      if (!force && hasAutoOpenedStreamRef.current === location.pathname) {
+        return;
+      }
+      hasAutoOpenedStreamRef.current = location.pathname;
 
       const nextEnlargedId = `${firstVideoStream.peerId}-${firstVideoId}`;
       if (enlargedStreamId !== nextEnlargedId) {
@@ -555,9 +561,10 @@ export default function WebRTCPanel({
     };
 
     openFirstVideoStream();
-    window.addEventListener("stream:retry-open", openFirstVideoStream);
+    const handleRetry = () => openFirstVideoStream(true);
+    window.addEventListener("stream:retry-open", handleRetry);
     return () => {
-      window.removeEventListener("stream:retry-open", openFirstVideoStream);
+      window.removeEventListener("stream:retry-open", handleRetry);
     };
   }, [
     enlargedStreamId,
