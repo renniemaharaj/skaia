@@ -1,7 +1,6 @@
 /* Composer input wrapper */
 .composer-wrapper {
   width: 100%;
-  border: 2px solid var(--border-color);
   border-radius: 1rem;
   background: var(--bg-color);
   padding: 0.55rem 0.7rem;
