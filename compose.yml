@@ -86,6 +86,48 @@ services:
       retries: 5
       start_period: 5s
 
+  # LiveKit SFU for room voice, camera, and screen-share transport.
+  # Set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL in the root .env.
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: skaia-livekit
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-skaia-dev-key}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-skaia-dev-secret-change-me}
+      LIVEKIT_UDP_START: ${LIVEKIT_UDP_START:-50000}
+      LIVEKIT_UDP_END: ${LIVEKIT_UDP_END:-50100}
+      LIVEKIT_CONFIG: |
+        port: 7880
+        bind_addresses:
+          - "0.0.0.0"
+        rtc:
+          tcp_port: 7881
+          port_range_start: ${LIVEKIT_UDP_START:-50000}
+          port_range_end: ${LIVEKIT_UDP_END:-50100}
+          use_external_ip: true
+        redis:
+          address: redis:6379
+        keys:
+          ${LIVEKIT_API_KEY:-skaia-dev-key}: ${LIVEKIT_API_SECRET:-skaia-dev-secret-change-me}
+    ports:
+      - "${LIVEKIT_SIGNAL_PORT:-7880}:7880/tcp"
+      - "${LIVEKIT_RTC_TCP_PORT:-7881}:7881/tcp"
+      - "${LIVEKIT_UDP_START:-50000}-${LIVEKIT_UDP_END:-50100}:${LIVEKIT_UDP_START:-50000}-${LIVEKIT_UDP_END:-50100}/udp"
+    networks:
+      - skaia-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7880"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # adminer:
   #   image: dpage/pgadmin4:latest
   #   container_name: skaia-pgadmin

@@ -5,11 +5,18 @@ import (
 	"path/filepath"
 )
 
-func cmdComposeUp(follow bool, build bool) {
+func cmdComposeUp(follow bool, build bool, forceRecreate bool) {
 	loadSharedEnv()
 
 	// 0) Build frontend first so that if it fails, the site is not left in a crashed state
 	distDir := buildFrontend()
+	if build {
+		forceRecreate = true
+	}
+	repairLiveKit(liveKitRepairOptions{
+		Rotate:    build,
+		SkipNginx: true,
+	})
 
 	// 1) Optionally build backend image
 	if build {
@@ -20,12 +27,18 @@ func cmdComposeUp(follow bool, build bool) {
 
 	// 2) Start shared infrastructure (postgres + redis)
 	log("Starting shared infrastructure…")
-	if err := dockerCompose(composeFile(), "up", "-d", "postgres", "redis"); err != nil {
+	sharedArgs := []string{"up", "-d"}
+	if forceRecreate {
+		sharedArgs = append(sharedArgs, "--force-recreate")
+	}
+	sharedArgs = append(sharedArgs, "postgres", "redis", "livekit")
+	if err := dockerCompose(composeFile(), sharedArgs...); err != nil {
 		die("Failed to start shared infrastructure: %v", err)
 	}
 
 	waitForHealthy("skaia-postgres", 60)
 	waitForHealthy("skaia-redis", 60)
+	waitForHealthy("skaia-livekit", 60)
 
 	// 3) Ensure network exists for client composes
 	ensureNetwork()
@@ -50,12 +63,17 @@ func cmdComposeUp(follow bool, build bool) {
 		if cname == "" {
 			continue
 		}
+		syncClientComposeRootEnv(cname)
 
 		// Init DB if needed (ignore errors - DB may already exist)
 		cmdDBInit(cname)
 
 		log("Starting %s…", cname)
-		if err := dockerCompose(filepath.Join(dir, "compose.yml"), "up", "-d"); err != nil {
+		clientArgs := []string{"up", "-d"}
+		if forceRecreate {
+			clientArgs = append(clientArgs, "--force-recreate")
+		}
+		if err := dockerCompose(filepath.Join(dir, "compose.yml"), clientArgs...); err != nil {
 			warn("Failed to start %s: %v", cname, err)
 			continue
 		}
@@ -68,7 +86,12 @@ func cmdComposeUp(follow bool, build bool) {
 
 	// 5) Generate nginx config + start nginx
 	generateNginxConfig()
-	if err := dockerCompose(composeFile(), "up", "-d", "nginx"); err != nil {
+	nginxArgs := []string{"up", "-d"}
+	if forceRecreate {
+		nginxArgs = append(nginxArgs, "--force-recreate")
+	}
+	nginxArgs = append(nginxArgs, "nginx")
+	if err := dockerCompose(composeFile(), nginxArgs...); err != nil {
 		die("Failed to start nginx: %v", err)
 	}
 	log("All services started (%d client(s))", started)
@@ -112,7 +135,7 @@ func cmdComposeDown() {
 
 func cmdGlobalStart() {
 	log("Starting all services...")
-	cmdComposeUp(false, true)
+	cmdComposeUp(false, true, false)
 }
 
 func cmdGlobalStop() {

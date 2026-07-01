@@ -27,6 +27,7 @@
     "html-react-parser": "^6.1.2",
     "jotai": "^2.18.0",
     "leaflet": "^1.9.4",
+    "livekit-client": "^2.20.0",
     "lodash": "^4.17.23",
     "lucide-react": "^0.575.0",
     "monaco-editor": "^0.55.1",

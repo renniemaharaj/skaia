@@ -42,6 +42,9 @@ func cmdNew(args []string) {
 
 	// Ensure root .env (interactive if missing).
 	ensureRootEnv()
+	if n := ensureRootLiveKitEnv(); n > 0 {
+		log("Added %d shared LiveKit env var(s) to %s", n, rootEnvFile())
+	}
 
 	fmt.Println()
 	fmt.Printf("%sCreate a new client%s\n", colorBold, colorReset)
@@ -243,6 +246,7 @@ services:
       - "${PORT}:${PORT}"
     env_file:
       - .env
+      - ../../.env
     volumes:
       - ./uploads:/app/uploads
       - ./armed:/app/armed

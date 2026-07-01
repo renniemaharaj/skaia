@@ -319,9 +319,14 @@ export async function apiRequest<T>(
         timer: setTimeout(() => pendingAPIReads.delete(key), API_READ_COALESCE_WINDOW_MS),
       });
 
-      promise.finally(() => {
-        pendingAPIReads.delete(key);
-      });
+      void promise.then(
+        () => {
+          pendingAPIReads.delete(key);
+        },
+        () => {
+          pendingAPIReads.delete(key);
+        }
+      );
 
       return promise;
     }

@@ -297,12 +297,15 @@ export default function WebRTCPanel({
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
+    mode: rtcMode,
   } = useWebRTCManager(
     Number(myPresenceId),
     sendVoiceSignal,
     globalVolume,
     isPlayerMuted,
-    getLocalStreams
+    getLocalStreams,
+    normalizeRoute(location.pathname),
+    getGuestSessionId()
   );
 
   // When guests are disabled, disconnect all existing guest peer connections
@@ -421,23 +424,34 @@ export default function WebRTCPanel({
     if (!myPresenceId) return;
 
     const validUserIds = new Set<string>();
+    const myPresenceKey = String(myPresenceId);
+    let reportedLiveKitError = false;
 
     const peers = getActivePeerIds();
     for (const user of onlineUsers) {
+      const peerKey = String(user.user_id);
       if (
         normalizeRoute(user.route) !== normalizeRoute(location.pathname) ||
-        user.user_id === myPresenceId
+        peerKey === myPresenceKey
       )
         continue;
       if (!permissions.guestsAllowed && user.user_id < 0) continue;
-      validUserIds.add(String(user.user_id));
+      validUserIds.add(peerKey);
 
-      if (!peers.includes(String(user.user_id))) {
-        ensureConnection(user.user_id, true, [
+      if (!peers.includes(peerKey)) {
+        const connection = ensureConnection(user.user_id, true, [
           streamRef.current,
           cameraStreamRef.current,
           screenStreamRef.current,
         ]);
+        if (connection instanceof Promise) {
+          void connection.catch(err => {
+            if (rtcMode !== "livekit" || reportedLiveKitError) return;
+            reportedLiveKitError = true;
+            console.error("LiveKit auto-join failed", err);
+            toast.error("Could not connect to the voice server.");
+          });
+        }
       }
     }
   }, [
@@ -449,15 +463,17 @@ export default function WebRTCPanel({
     ensureConnection,
     getActivePeerIds,
     permissions.guestsAllowed,
+    rtcMode,
   ]);
 
   const validUserIdsRef = useRef(new Set<string>());
   useEffect(() => {
+    const myPresenceKey = String(myPresenceId);
     validUserIdsRef.current = new Set(
       onlineUsers
         .filter(u => {
           if (normalizeRoute(u.route) !== normalizeRoute(location.pathname)) return false;
-          if (u.user_id === myPresenceId) return false;
+          if (String(u.user_id) === myPresenceKey) return false;
           if (!permissions.guestsAllowed && u.user_id < 0) return false;
           return true;
         })
@@ -503,7 +519,11 @@ export default function WebRTCPanel({
       // Best-effort detection for screen sharing vs camera
       const isScreen = videoTracks.some(t => {
         const s = t.getSettings() as any;
-        return s.displaySurface || s.cursor;
+        return (
+          s.displaySurface ||
+          s.cursor ||
+          (stream as MediaStream & { __skaiaSource?: string }).__skaiaSource === "screen_share"
+        );
       });
       if (isScreen) activeScreenUserIds.add(peerId);
       else if (stream.getVideoTracks().length > 0) activeCameraUserIds.add(peerId);
@@ -1010,6 +1030,46 @@ export default function WebRTCPanel({
           <div className="vp-setting-row">
             <span className="vp-setting-label">
               <Settings size={14} />
+              Use LiveKit SFU
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={permissions.useLiveKit ?? true}
+                disabled={!canManageVoice}
+                onChange={e => {
+                  if (socket) {
+                    sendWebSocketMessage(socket, {
+                      type: "voice:control",
+                      payload: {
+                        route: normalizeRoute(location.pathname),
+                        action: e.target.checked ? "use_livekit" : "use_p2p",
+                      },
+                    });
+                  }
+                }}
+              />
+              <div className="vp-switch-track">
+                <div className="vp-switch-thumb" />
+              </div>
+            </label>
+          </div>
+          {!(permissions.useLiveKit ?? true) && (
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#eab308",
+                marginTop: "4px",
+                marginBottom: "8px",
+                lineHeight: "1.3",
+              }}
+            >
+              P2P is great for small groups, but LiveKit is recommended for professional streaming.
+            </div>
+          )}
+          <div className="vp-setting-row">
+            <span className="vp-setting-label">
+              <Settings size={14} />
               Use SkaiaRTC (v2)
             </span>
             <label className="vp-switch">
@@ -1017,12 +1077,14 @@ export default function WebRTCPanel({
                 type="checkbox"
                 checked={useV2RTC}
                 onChange={e => setUseV2RTC(e.target.checked)}
+                disabled={permissions.useLiveKit ?? true}
               />
               <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
               </div>
             </label>
           </div>
+          <div style={{ fontSize: "11px", opacity: 0.65 }}>Transport: {rtcMode}</div>
         </div>
       )}
 

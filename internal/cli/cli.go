@@ -38,6 +38,7 @@ func commandRegistry() []commandEntry {
 		{names: []string{"ship"}, run: runShip},
 		{names: []string{"dev"}, run: runDev},
 		{names: []string{"compose"}, run: runCompose},
+		{names: []string{"livekit"}, run: runLiveKit},
 		{names: []string{"nginx"}, run: runNginx},
 		{names: []string{"db"}, run: runDB},
 		{names: []string{"migrate"}, run: runMigrate},
@@ -134,24 +135,31 @@ func runCompose(rest []string, c Commands) {
 	case "up":
 		follow := false
 		build := false
+		forceRecreate := false
 		for i := 1; i < len(rest); i++ {
 			switch rest[i] {
 			case "--follow", "--no-detach":
 				follow = true
 			case "--build":
 				build = true
+			case "--force-recreate":
+				forceRecreate = true
 			case "-d", "--detach":
 				follow = false
 			default:
 				c.Die("Unknown compose up option: %s", rest[i])
 			}
 		}
-		c.ComposeUp(follow, build)
+		c.ComposeUp(follow, build, forceRecreate)
 	case "down":
 		c.ComposeDown()
 	default:
 		c.Die("Unknown compose subcommand: %s", sub)
 	}
+}
+
+func runLiveKit(rest []string, c Commands) {
+	c.LiveKit(rest)
 }
 
 func runNginx(rest []string, c Commands) {

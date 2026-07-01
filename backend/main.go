@@ -38,6 +38,7 @@ import (
 	"github.com/skaia/backend/internal/grpcserver"
 	iinbox "github.com/skaia/backend/internal/inbox"
 	ijwt "github.com/skaia/backend/internal/jwt"
+	ilivekit "github.com/skaia/backend/internal/livekit"
 	immediascraper "github.com/skaia/backend/internal/mediascraper"
 	imw "github.com/skaia/backend/internal/middleware"
 	inotif "github.com/skaia/backend/internal/notification"
@@ -738,10 +739,84 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				"route":         route,
 				"voiceEnabled":  vp.VoiceEnabled,
 				"guestsAllowed": vp.GuestsAllowed,
+				"useLiveKit":    vp.UseLiveKit,
 				"mutedUsers":    vp.MutedUsers,
 				"kickedUsers":   vp.KickedUsers,
 				"canManage":     vp.CanManage,
 				"ownerId":       vp.OwnerID,
+			})
+		})
+
+		api.Post("/voice/livekit-token", func(w http.ResponseWriter, r *http.Request) {
+			type liveKitTokenRequest struct {
+				Route          string `json:"route"`
+				Identity       int64  `json:"identity"`
+				GuestSessionID string `json:"guest_session_id"`
+			}
+			var req liveKitTokenRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+				return
+			}
+			req.Route = strings.TrimSpace(req.Route)
+			if req.Route == "" {
+				utils.WriteError(w, http.StatusBadRequest, "route is required")
+				return
+			}
+			if req.Identity == 0 {
+				utils.WriteError(w, http.StatusBadRequest, "identity is required")
+				return
+			}
+
+			var userID int64
+			name := "Guest"
+			if claims, ok := r.Context().Value(ctx.CtxKeyClaims).(*ijwt.Claims); ok && claims != nil {
+				userID = claims.UserID
+				if claims.Username != "" {
+					name = claims.Username
+				}
+			}
+
+			vp := hub.GetVoicePermissionsForUser(req.Route, userID)
+			if !vp.VoiceEnabled {
+				utils.WriteError(w, http.StatusForbidden, "voice chat is disabled on this route")
+				return
+			}
+			if vp.MutedUsers[req.Identity] || vp.KickedUsers[req.Identity] {
+				utils.WriteError(w, http.StatusForbidden, "voice access is disabled for this user")
+				return
+			}
+			if userID > 0 {
+				if req.Identity != userID {
+					utils.WriteError(w, http.StatusForbidden, "identity does not match authenticated user")
+					return
+				}
+			} else {
+				if req.Identity >= 0 || req.GuestSessionID == "" || !vp.GuestsAllowed {
+					utils.WriteError(w, http.StatusForbidden, "guests cannot join voice chat on this route")
+					return
+				}
+			}
+
+			cfg := ilivekit.LoadConfig()
+			if !cfg.Enabled() {
+				utils.WriteError(w, http.StatusServiceUnavailable, "livekit is not configured")
+				return
+			}
+			identity := strconv.FormatInt(req.Identity, 10)
+			token, err := ilivekit.MintRoomToken(cfg, req.Route, identity, name, time.Hour)
+			if err != nil {
+				utils.WriteError(w, http.StatusInternalServerError, "could not mint livekit token")
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"url":      cfg.URL,
+				"token":    token,
+				"room":     ilivekit.RoomNameForRoute(req.Route),
+				"identity": identity,
+				"ttl":      3600,
 			})
 		})
 

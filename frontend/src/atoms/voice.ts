@@ -9,6 +9,7 @@ export interface VoicePermissions {
   mutedUsers: Record<number, boolean>;
   kickedUsers: Record<number, boolean>;
   canManage: boolean;
+  useLiveKit: boolean;
   ownerId?: number;
 }
 
@@ -20,6 +21,7 @@ export const voicePermissionsAtom = atom<VoicePermissions>({
   mutedUsers: {},
   kickedUsers: {},
   canManage: false,
+  useLiveKit: true,
 });
 
 export const enlargedStreamIdAtom = atom<string | null>(null);
@@ -35,6 +37,7 @@ export const streamRoutePlaybackAtom = atom<StreamRoutePlaybackState>({
 });
 
 export const useV2RTCAtom = atomWithStorage<boolean>("useV2RTC", false);
+// export const useLiveKitRTCAtom = atomWithStorage<boolean>("useLiveKitRTC", false);
 
 registerResource(
   "voice:control",
@@ -55,12 +58,15 @@ registerResource(
       next.voiceEnabled = true;
       next.guestsAllowed = false;
       next.canManage = false;
+      next.useLiveKit = true;
       next.ownerId = undefined;
     }
     if (data.action === "enable") next.voiceEnabled = true;
     if (data.action === "disable") next.voiceEnabled = false;
     if (data.action === "allow_guests") next.guestsAllowed = true;
     if (data.action === "deny_guests") next.guestsAllowed = false;
+    if (data.action === "use_livekit") next.useLiveKit = true;
+    if (data.action === "use_p2p") next.useLiveKit = false;
     if (data.action === "mute" && data.target_user_id) {
       next.mutedUsers = {
         ...next.mutedUsers,

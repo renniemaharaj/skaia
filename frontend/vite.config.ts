@@ -16,6 +16,9 @@ const htmlDevPlugin = () => ({
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), htmlDevPlugin()],
+  optimizeDeps: {
+    include: ["livekit-client"],
+  },
   server: {
     proxy: {
       "/api": {
