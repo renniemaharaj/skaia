@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 export function getMicrophoneErrorMessage(err: unknown): string {
+  if (
+    err instanceof Error &&
+    /livekit|signal connection|failed to fetch|transport/i.test(err.message)
+  ) {
+    return "Could not connect to the voice server.";
+  }
   if (err instanceof DOMException) {
     if (err.name === "NotAllowedError" || err.name === "SecurityError") {
       return "Microphone access was blocked. Allow microphone permissions and try again.";
@@ -16,11 +22,31 @@ export function getMicrophoneErrorMessage(err: unknown): string {
   return "Could not access microphone.";
 }
 
+function getCameraErrorMessage(err: unknown): string {
+  if (
+    err instanceof Error &&
+    /livekit|signal connection|failed to fetch|transport/i.test(err.message)
+  ) {
+    return "Could not connect to the voice server.";
+  }
+  return "Could not access camera.";
+}
+
+function getScreenShareErrorMessage(err: unknown): string {
+  if (
+    err instanceof Error &&
+    /livekit|signal connection|failed to fetch|transport/i.test(err.message)
+  ) {
+    return "Could not connect to the voice server.";
+  }
+  return "Could not share screen.";
+}
+
 interface UseMediaDevicesProps {
   canSpeak: boolean;
   ensureAudioGraph: () => { audioContext: AudioContext | null; gainNode: GainNode | null };
-  broadcastTracks: (stream: MediaStream) => void;
-  removeTracks: (stream: MediaStream) => void;
+  broadcastTracks: (stream: MediaStream) => void | Promise<void>;
+  removeTracks: (stream: MediaStream) => void | Promise<void>;
 }
 
 export function useMediaDevices({
@@ -113,12 +139,13 @@ export function useMediaDevices({
       });
       streamRef.current = stream;
       setMicActive(true);
-      broadcastTracks(stream);
+      await broadcastTracks(stream);
     } catch (err) {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
         streamRef.current = null;
       }
+      setMicActive(false);
       toast.error(getMicrophoneErrorMessage(err));
     }
   };
@@ -136,10 +163,14 @@ export function useMediaDevices({
           audio: { deviceId: { exact: deviceId } },
         });
         streamRef.current = stream;
-        broadcastTracks(stream);
+        await broadcastTracks(stream);
       } catch (err) {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+          streamRef.current = null;
+        }
         setMicActive(false);
-        toast.error("Could not switch microphone.");
+        toast.error(getMicrophoneErrorMessage(err));
       }
     }
   };
@@ -160,9 +191,14 @@ export function useMediaDevices({
       });
       cameraStreamRef.current = stream;
       setCameraActive(true);
-      broadcastTracks(stream);
+      await broadcastTracks(stream);
     } catch (err) {
-      toast.error("Could not access camera.");
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        cameraStreamRef.current = null;
+      }
+      setCameraActive(false);
+      toast.error(getCameraErrorMessage(err));
     }
   };
 
@@ -179,10 +215,14 @@ export function useMediaDevices({
           video: { deviceId: { exact: deviceId } },
         });
         cameraStreamRef.current = stream;
-        broadcastTracks(stream);
+        await broadcastTracks(stream);
       } catch (err) {
+        if (cameraStreamRef.current) {
+          cameraStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+          cameraStreamRef.current = null;
+        }
         setCameraActive(false);
-        toast.error("Could not switch camera.");
+        toast.error(getCameraErrorMessage(err));
       }
     }
   };
@@ -209,9 +249,14 @@ export function useMediaDevices({
       };
       screenStreamRef.current = stream;
       setScreenActive(true);
-      broadcastTracks(stream);
+      await broadcastTracks(stream);
     } catch (err) {
-      toast.error("Could not share screen.");
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t: MediaStreamTrack) => t.stop());
+        screenStreamRef.current = null;
+      }
+      setScreenActive(false);
+      toast.error(getScreenShareErrorMessage(err));
     }
   };
 

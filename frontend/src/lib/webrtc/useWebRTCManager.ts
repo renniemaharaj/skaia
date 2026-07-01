@@ -2,39 +2,59 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
 import { WebRTCManager, type WebRTCStream, type VoiceSignalPayload } from "./WebRTCManager";
 import { SkaiaRTC } from "./v2/SkaiaRTC";
-import { useV2RTCAtom } from "../../atoms/voice";
+import { useLiveKitRTCAtom, useV2RTCAtom } from "../../atoms/voice";
 import type { SignalPayload } from "./PeerSession";
+import { LiveKitRTC } from "./livekit/LiveKitRTC";
 
 export function useWebRTCManager(
   myUserId: number,
   sendSignal: (targetUserId: number, payload: VoiceSignalPayload) => void,
   globalVolume: number,
   isPlayerMuted: boolean,
-  getLocalStreams?: () => MediaStream[]
+  getLocalStreams?: () => MediaStream[],
+  route = "",
+  guestSessionId = ""
 ) {
   const useV2 = useAtomValue(useV2RTCAtom);
+  const useLiveKit = useAtomValue(useLiveKitRTCAtom);
+  const mode = useLiveKit ? "livekit" : useV2 ? "skaia" : "mesh";
 
   const sendSignalRef = useRef(sendSignal);
   useEffect(() => {
     sendSignalRef.current = sendSignal;
   }, [sendSignal]);
 
-  const managerRef = useRef<WebRTCManager | SkaiaRTC | null>(null);
-  const managerModeRef = useRef<boolean | null>(null);
+  const managerRef = useRef<WebRTCManager | SkaiaRTC | LiveKitRTC | null>(null);
+  const managerModeRef = useRef<string | null>(null);
+  const managerRouteRef = useRef<string>("");
+  const managerUserRef = useRef<number | null>(null);
 
-  if (!managerRef.current || managerModeRef.current !== useV2) {
+  if (
+    !managerRef.current ||
+    managerModeRef.current !== mode ||
+    managerRouteRef.current !== route ||
+    managerUserRef.current !== myUserId
+  ) {
     if (managerRef.current) {
       managerRef.current.closeAll();
     }
     const stableSend = (targetUserId: number, payload: VoiceSignalPayload) => {
       sendSignalRef.current(targetUserId, payload);
     };
-    if (useV2) {
+    if (mode === "livekit") {
+      managerRef.current = new LiveKitRTC({
+        route,
+        identity: myUserId,
+        guestSessionId,
+      });
+    } else if (mode === "skaia") {
       managerRef.current = new SkaiaRTC(myUserId, stableSend, getLocalStreams || (() => []));
     } else {
       managerRef.current = new WebRTCManager(myUserId, stableSend);
     }
-    managerModeRef.current = useV2;
+    managerModeRef.current = mode;
+    managerRouteRef.current = route;
+    managerUserRef.current = myUserId;
   }
   const manager = managerRef.current;
 
@@ -46,7 +66,23 @@ export function useWebRTCManager(
   >({});
 
   useEffect(() => {
-    if (manager instanceof SkaiaRTC) {
+    if (manager instanceof LiveKitRTC) {
+      manager.onStreamsChanged = streams => setRemoteStreams([...streams]);
+      manager.onMicUsersChanged = users => setRemoteMicUsers([...users]);
+      manager.onAutoplayBlocked = () => setAutoplayBlocked(true);
+      manager.onConnectionStatesChanged = states => setPeerConnectionStates(states);
+      manager.onSpeaking = peerId => {
+        window.dispatchEvent(new CustomEvent("voice:speaking", { detail: peerId }));
+      };
+
+      return () => {
+        manager.onStreamsChanged = undefined;
+        manager.onMicUsersChanged = undefined;
+        manager.onAutoplayBlocked = undefined;
+        manager.onConnectionStatesChanged = undefined;
+        manager.onSpeaking = undefined;
+      };
+    } else if (manager instanceof SkaiaRTC) {
       const onStreamsChanged = (payload: { streams: any }) =>
         setRemoteStreams([...payload.streams]);
       const onMicUsersChanged = (payload: { peers: any }) => setRemoteMicUsers([...payload.peers]);
@@ -94,6 +130,8 @@ export function useWebRTCManager(
   useEffect(() => {
     if (manager instanceof SkaiaRTC) {
       manager.playbackManager.setAudioState(globalVolume, isPlayerMuted);
+    } else if (manager instanceof LiveKitRTC) {
+      manager.setAudioState(globalVolume, isPlayerMuted);
     } else {
       manager.setAudioState(globalVolume, isPlayerMuted);
     }
@@ -108,7 +146,9 @@ export function useWebRTCManager(
   const handleSignal = useCallback(
     async (peerId: number, signal: VoiceSignalPayload) => {
       const streams = getLocalStreams ? getLocalStreams() : [];
-      if (manager instanceof SkaiaRTC) {
+      if (manager instanceof LiveKitRTC) {
+        return;
+      } else if (manager instanceof SkaiaRTC) {
         await manager.handleSignal(peerId, signal as SignalPayload, streams);
       } else if (manager instanceof WebRTCManager) {
         await manager.handleSignal(peerId, signal as SignalPayload, streams);
@@ -121,6 +161,8 @@ export function useWebRTCManager(
     (peerId: number, isInitiator: boolean, localStreams: (MediaStream | null)[]) => {
       if (manager instanceof SkaiaRTC) {
         return manager.ensureConnection(peerId, isInitiator, localStreams);
+      } else if (manager instanceof LiveKitRTC) {
+        return null;
       } else {
         return manager.ensureConnection(peerId, isInitiator, localStreams);
       }
@@ -132,6 +174,8 @@ export function useWebRTCManager(
     (peerId: string, notify = true) => {
       if (manager instanceof SkaiaRTC) {
         manager.peerManager.closePeer(peerId, notify);
+      } else if (manager instanceof LiveKitRTC) {
+        // LiveKit participant removal is driven by the SFU room membership.
       } else if (manager instanceof WebRTCManager) {
         manager.closePeer(peerId, notify);
       }
@@ -158,6 +202,8 @@ export function useWebRTCManager(
   const getActivePeerIds = useCallback(() => {
     if (manager instanceof SkaiaRTC) {
       return Array.from(manager.peerManager.getSessions().keys());
+    } else if (manager instanceof LiveKitRTC) {
+      return Array.from(manager.getPeerConnections().keys());
     } else {
       return Array.from(manager.getPeerConnections().keys());
     }
@@ -167,6 +213,8 @@ export function useWebRTCManager(
     (validPeerIds: string[], localStreams: (MediaStream | null)[]) => {
       if (manager instanceof SkaiaRTC) {
         manager.syncActivePeers(validPeerIds);
+      } else if (manager instanceof LiveKitRTC) {
+        manager.syncActivePeers();
       } else if (manager instanceof WebRTCManager) {
         manager.syncActivePeers(validPeerIds, localStreams);
       }
@@ -192,5 +240,6 @@ export function useWebRTCManager(
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
+    mode,
   };
 }

@@ -22,6 +22,7 @@ import {
   enlargedStreamIdAtom,
   streamRoutePlaybackAtom,
   voicePermissionsAtom,
+  useLiveKitRTCAtom,
   useV2RTCAtom,
 } from "../../../atoms/voice";
 import { getGuestSessionId } from "../../../utils/guestSession";
@@ -63,6 +64,7 @@ export default function WebRTCPanel({
   const isPlayerMutedRef = useRef(isPlayerMuted);
   isPlayerMutedRef.current = isPlayerMuted;
   const [useV2RTC, setUseV2RTC] = useAtom(useV2RTCAtom);
+  const [useLiveKitRTC, setUseLiveKitRTC] = useAtom(useLiveKitRTCAtom);
   const [recordLocally, setRecordLocally] = useState(false);
 
   useEffect(() => {
@@ -297,12 +299,15 @@ export default function WebRTCPanel({
     autoplayBlocked,
     setAutoplayBlocked,
     peerConnectionStates,
+    mode: rtcMode,
   } = useWebRTCManager(
     Number(myPresenceId),
     sendVoiceSignal,
     globalVolume,
     isPlayerMuted,
-    getLocalStreams
+    getLocalStreams,
+    normalizeRoute(location.pathname),
+    getGuestSessionId()
   );
 
   // When guests are disabled, disconnect all existing guest peer connections
@@ -421,18 +426,20 @@ export default function WebRTCPanel({
     if (!myPresenceId) return;
 
     const validUserIds = new Set<string>();
+    const myPresenceKey = String(myPresenceId);
 
     const peers = getActivePeerIds();
     for (const user of onlineUsers) {
+      const peerKey = String(user.user_id);
       if (
         normalizeRoute(user.route) !== normalizeRoute(location.pathname) ||
-        user.user_id === myPresenceId
+        peerKey === myPresenceKey
       )
         continue;
       if (!permissions.guestsAllowed && user.user_id < 0) continue;
-      validUserIds.add(String(user.user_id));
+      validUserIds.add(peerKey);
 
-      if (!peers.includes(String(user.user_id))) {
+      if (!peers.includes(peerKey)) {
         ensureConnection(user.user_id, true, [
           streamRef.current,
           cameraStreamRef.current,
@@ -453,11 +460,12 @@ export default function WebRTCPanel({
 
   const validUserIdsRef = useRef(new Set<string>());
   useEffect(() => {
+    const myPresenceKey = String(myPresenceId);
     validUserIdsRef.current = new Set(
       onlineUsers
         .filter(u => {
           if (normalizeRoute(u.route) !== normalizeRoute(location.pathname)) return false;
-          if (u.user_id === myPresenceId) return false;
+          if (String(u.user_id) === myPresenceKey) return false;
           if (!permissions.guestsAllowed && u.user_id < 0) return false;
           return true;
         })
@@ -503,7 +511,11 @@ export default function WebRTCPanel({
       // Best-effort detection for screen sharing vs camera
       const isScreen = videoTracks.some(t => {
         const s = t.getSettings() as any;
-        return s.displaySurface || s.cursor;
+        return (
+          s.displaySurface ||
+          s.cursor ||
+          (stream as MediaStream & { __skaiaSource?: string }).__skaiaSource === "screen_share"
+        );
       });
       if (isScreen) activeScreenUserIds.add(peerId);
       else if (stream.getVideoTracks().length > 0) activeCameraUserIds.add(peerId);
@@ -1010,6 +1022,22 @@ export default function WebRTCPanel({
           <div className="vp-setting-row">
             <span className="vp-setting-label">
               <Settings size={14} />
+              Use LiveKit SFU
+            </span>
+            <label className="vp-switch">
+              <input
+                type="checkbox"
+                checked={useLiveKitRTC}
+                onChange={e => setUseLiveKitRTC(e.target.checked)}
+              />
+              <div className="vp-switch-track">
+                <div className="vp-switch-thumb" />
+              </div>
+            </label>
+          </div>
+          <div className="vp-setting-row">
+            <span className="vp-setting-label">
+              <Settings size={14} />
               Use SkaiaRTC (v2)
             </span>
             <label className="vp-switch">
@@ -1017,12 +1045,14 @@ export default function WebRTCPanel({
                 type="checkbox"
                 checked={useV2RTC}
                 onChange={e => setUseV2RTC(e.target.checked)}
+                disabled={useLiveKitRTC}
               />
               <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
               </div>
             </label>
           </div>
+          <div style={{ fontSize: "11px", opacity: 0.65 }}>Transport: {rtcMode}</div>
         </div>
       )}
 
