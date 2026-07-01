@@ -78,6 +78,7 @@ type CursorBroadcast struct {
 type VoicePermissions struct {
 	VoiceEnabled  bool
 	GuestsAllowed bool
+	UseLiveKit    bool
 	MutedUsers    map[int64]bool
 	KickedUsers   map[int64]bool
 	CanManage     bool

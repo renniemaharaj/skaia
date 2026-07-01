@@ -27,6 +27,7 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 		vp = &VoicePermissions{
 			VoiceEnabled:  true,
 			GuestsAllowed: false,
+			UseLiveKit:    true,
 			MutedUsers:    make(map[int64]bool),
 			KickedUsers:   make(map[int64]bool),
 		}
@@ -42,6 +43,10 @@ func (h *Hub) handleVoiceControl(vc VoiceControlAction) {
 		vp.GuestsAllowed = true
 	case "deny_guests":
 		vp.GuestsAllowed = false
+	case "use_livekit":
+		vp.UseLiveKit = true
+	case "use_p2p":
+		vp.UseLiveKit = false
 	case "mute":
 		if vc.Payload.TargetUserID != 0 {
 			vp.MutedUsers[vc.Payload.TargetUserID] = true
@@ -165,6 +170,7 @@ func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
 		return &VoicePermissions{
 			VoiceEnabled:  true,
 			GuestsAllowed: false,
+			UseLiveKit:    true,
 			MutedUsers:    make(map[int64]bool),
 			KickedUsers:   make(map[int64]bool),
 		}
@@ -183,6 +189,7 @@ func (h *Hub) GetVoicePermissions(route string) *VoicePermissions {
 	return &VoicePermissions{
 		VoiceEnabled:  vp.VoiceEnabled,
 		GuestsAllowed: vp.GuestsAllowed,
+		UseLiveKit:    vp.UseLiveKit,
 		MutedUsers:    muted,
 		KickedUsers:   kicked,
 	}

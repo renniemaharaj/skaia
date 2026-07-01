@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAtomValue } from "jotai";
 import { WebRTCManager, type WebRTCStream, type VoiceSignalPayload } from "./WebRTCManager";
 import { SkaiaRTC } from "./v2/SkaiaRTC";
-import { useLiveKitRTCAtom, useV2RTCAtom } from "../../atoms/voice";
+import { voicePermissionsAtom, useV2RTCAtom } from "../../atoms/voice";
 import type { SignalPayload } from "./PeerSession";
 import { LiveKitRTC } from "./livekit/LiveKitRTC";
 
@@ -16,7 +16,8 @@ export function useWebRTCManager(
   guestSessionId = ""
 ) {
   const useV2 = useAtomValue(useV2RTCAtom);
-  const useLiveKit = useAtomValue(useLiveKitRTCAtom);
+  const permissions = useAtomValue(voicePermissionsAtom);
+  const useLiveKit = permissions.useLiveKit;
   const mode = useLiveKit ? "livekit" : useV2 ? "skaia" : "mesh";
 
   const sendSignalRef = useRef(sendSignal);

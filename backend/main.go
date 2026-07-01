@@ -739,6 +739,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				"route":         route,
 				"voiceEnabled":  vp.VoiceEnabled,
 				"guestsAllowed": vp.GuestsAllowed,
+				"useLiveKit":    vp.UseLiveKit,
 				"mutedUsers":    vp.MutedUsers,
 				"kickedUsers":   vp.KickedUsers,
 				"canManage":     vp.CanManage,

@@ -22,7 +22,6 @@ import {
   enlargedStreamIdAtom,
   streamRoutePlaybackAtom,
   voicePermissionsAtom,
-  useLiveKitRTCAtom,
   useV2RTCAtom,
 } from "../../../atoms/voice";
 import { getGuestSessionId } from "../../../utils/guestSession";
@@ -64,7 +63,6 @@ export default function WebRTCPanel({
   const isPlayerMutedRef = useRef(isPlayerMuted);
   isPlayerMutedRef.current = isPlayerMuted;
   const [useV2RTC, setUseV2RTC] = useAtom(useV2RTCAtom);
-  const [useLiveKitRTC, setUseLiveKitRTC] = useAtom(useLiveKitRTCAtom);
   const [recordLocally, setRecordLocally] = useState(false);
 
   useEffect(() => {
@@ -1037,14 +1035,38 @@ export default function WebRTCPanel({
             <label className="vp-switch">
               <input
                 type="checkbox"
-                checked={useLiveKitRTC}
-                onChange={e => setUseLiveKitRTC(e.target.checked)}
+                checked={permissions.useLiveKit ?? true}
+                disabled={!canManageVoice}
+                onChange={e => {
+                  if (socket) {
+                    sendWebSocketMessage(socket, {
+                      type: "voice:control",
+                      payload: {
+                        route: normalizeRoute(location.pathname),
+                        action: e.target.checked ? "use_livekit" : "use_p2p",
+                      },
+                    });
+                  }
+                }}
               />
               <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
               </div>
             </label>
           </div>
+          {!(permissions.useLiveKit ?? true) && (
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#eab308",
+                marginTop: "4px",
+                marginBottom: "8px",
+                lineHeight: "1.3",
+              }}
+            >
+              P2P is great for small groups, but LiveKit is recommended for professional streaming.
+            </div>
+          )}
           <div className="vp-setting-row">
             <span className="vp-setting-label">
               <Settings size={14} />
@@ -1055,7 +1077,7 @@ export default function WebRTCPanel({
                 type="checkbox"
                 checked={useV2RTC}
                 onChange={e => setUseV2RTC(e.target.checked)}
-                disabled={useLiveKitRTC}
+                disabled={permissions.useLiveKit ?? true}
               />
               <div className="vp-switch-track">
                 <div className="vp-switch-thumb" />
