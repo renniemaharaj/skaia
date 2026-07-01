@@ -7,15 +7,16 @@ import (
 
 func cmdComposeUp(follow bool, build bool, forceRecreate bool) {
 	loadSharedEnv()
-	if n := ensureRootLiveKitEnv(); n > 0 {
-		log("Added %d shared LiveKit env var(s) to %s", n, rootEnvFile())
-	}
-	if n := syncRootComposeLiveKitEnv(); n > 0 {
-		log("LiveKit root compose env_file repaired => %s", composeFile())
-	}
 
 	// 0) Build frontend first so that if it fails, the site is not left in a crashed state
 	distDir := buildFrontend()
+	if build {
+		forceRecreate = true
+	}
+	repairLiveKit(liveKitRepairOptions{
+		Rotate:    build,
+		SkipNginx: true,
+	})
 
 	// 1) Optionally build backend image
 	if build {

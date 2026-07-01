@@ -7,38 +7,63 @@ import (
 
 const liveKitProxyPath = "/livekit"
 
-func cmdLiveKit(args []string) {
-	ensureRootEnv()
+type liveKitRepairOptions struct {
+	URL         string
+	Rotate      bool
+	Recreate    bool
+	ShipDistDir string
+	SkipNginx   bool
+}
 
-	url := liveKitURLArg(args)
+func cmdLiveKit(args []string) {
+	distDir := buildFrontend()
+	repairLiveKit(liveKitRepairOptions{
+		URL:         liveKitURLArg(args),
+		Rotate:      true,
+		Recreate:    true,
+		ShipDistDir: distDir,
+	})
+}
+
+func repairLiveKit(opts liveKitRepairOptions) []string {
+	ensureRootEnv()
+	url := strings.TrimRight(strings.TrimSpace(opts.URL), "/")
 	if url == "" {
 		url = inferLiveKitURL()
 	}
 
-	apiKey := generateLiveKitAPIKey()
-	apiSecret := generateLiveKitAPISecret()
-
-	if err := setEnvVal(rootEnvFile(), "LIVEKIT_API_KEY", apiKey); err != nil {
-		die("Cannot write LIVEKIT_API_KEY to %s: %v", rootEnvFile(), err)
+	apiKey := strings.TrimSpace(envVal(rootEnvFile(), "LIVEKIT_API_KEY"))
+	apiSecret := strings.TrimSpace(envVal(rootEnvFile(), "LIVEKIT_API_SECRET"))
+	if opts.Rotate || apiKey == "" {
+		apiKey = generateLiveKitAPIKey()
+		if err := setEnvVal(rootEnvFile(), "LIVEKIT_API_KEY", apiKey); err != nil {
+			die("Cannot write LIVEKIT_API_KEY to %s: %v", rootEnvFile(), err)
+		}
 	}
-	if err := setEnvVal(rootEnvFile(), "LIVEKIT_API_SECRET", apiSecret); err != nil {
-		die("Cannot write LIVEKIT_API_SECRET to %s: %v", rootEnvFile(), err)
+	if opts.Rotate || apiSecret == "" {
+		apiSecret = generateLiveKitAPISecret()
+		if err := setEnvVal(rootEnvFile(), "LIVEKIT_API_SECRET", apiSecret); err != nil {
+			die("Cannot write LIVEKIT_API_SECRET to %s: %v", rootEnvFile(), err)
+		}
 	}
-	if err := setEnvVal(rootEnvFile(), "LIVEKIT_URL", url); err != nil {
-		die("Cannot write LIVEKIT_URL to %s: %v", rootEnvFile(), err)
+	if opts.Rotate || strings.TrimSpace(envVal(rootEnvFile(), "LIVEKIT_URL")) == "" {
+		if err := setEnvVal(rootEnvFile(), "LIVEKIT_URL", url); err != nil {
+			die("Cannot write LIVEKIT_URL to %s: %v", rootEnvFile(), err)
+		}
 	}
-	log("LiveKit root env updated => %s", rootEnvFile())
+	log("LiveKit root env ready => %s", rootEnvFile())
 	info("  LIVEKIT_API_KEY=%s", apiKey)
-	info("  LIVEKIT_URL=%s", url)
+	info("  LIVEKIT_URL=%s", strings.TrimSpace(envVal(rootEnvFile(), "LIVEKIT_URL")))
 
 	if changed := syncRootComposeLiveKitEnv(); changed > 0 {
 		log("LiveKit root compose env_file repaired => %s", composeFile())
 	}
 
+	clientNames := clientNamesWithEnv()
 	clientCount := 0
 	envRemoved := 0
 	composePatched := 0
-	for _, name := range clientNamesWithEnv() {
+	for _, name := range clientNames {
 		clientCount++
 		n, err := removeEnvVals(clientEnvFile(name), "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET", "LIVEKIT_URL")
 		if err != nil {
@@ -49,10 +74,15 @@ func cmdLiveKit(args []string) {
 	}
 	log("Client LiveKit cleanup complete (%d client(s), %d stale env line(s) removed, %d compose file(s) patched)", clientCount, envRemoved, composePatched)
 
-	generateNginxConfig()
+	if !opts.SkipNginx {
+		generateNginxConfig()
+	}
 
-	ensureNetwork()
-	recreateLiveKitAndClients(clientNamesWithEnv())
+	if opts.Recreate {
+		ensureNetwork()
+		recreateLiveKitAndClients(clientNames, opts.ShipDistDir)
+	}
+	return clientNames
 }
 
 func liveKitURLArg(args []string) string {
@@ -138,13 +168,14 @@ func syncRootComposeLiveKitEnv() int {
 	return 1
 }
 
-func recreateLiveKitAndClients(clientNames []string) {
+func recreateLiveKitAndClients(clientNames []string, distDir string) {
 	log("Recreating LiveKit…")
 	if err := dockerCompose(composeFile(), "up", "-d", "--force-recreate", "livekit"); err != nil {
 		die("Failed to recreate LiveKit: %v", err)
 	}
 	waitForHealthy("skaia-livekit", 60)
 
+	var recreated []string
 	for _, name := range clientNames {
 		if !clientEnabled(name) {
 			continue
@@ -152,7 +183,16 @@ func recreateLiveKitAndClients(clientNames []string) {
 		log("Recreating %s…", name)
 		if err := dockerCompose(clientComposeFile(name), "up", "-d", "--force-recreate"); err != nil {
 			warn("Failed to recreate %s: %v", name, err)
+			continue
 		}
+		recreated = append(recreated, name)
+	}
+
+	if distDir != "" {
+		for _, name := range recreated {
+			shipFrontendDist(name, distDir)
+		}
+		log("Frontend shipped to %d recreated backend(s)", len(recreated))
 	}
 
 	log("Recreating nginx…")
