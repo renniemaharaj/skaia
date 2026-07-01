@@ -17,6 +17,28 @@
   --transition-all: all 0.2s ease;
 }
 
+.twick-isolated-container .clip-maker-export-button-loading {
+  cursor: wait !important;
+  opacity: 0.62 !important;
+  filter: grayscale(0.35);
+}
+
+.twick-isolated-container .clip-maker-export-spinner {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: clip-maker-spin 0.75s linear infinite;
+}
+
+@keyframes clip-maker-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ========================================
    MODALS (Studio themed)
    ======================================== */
