@@ -7,29 +7,23 @@ import (
 	"testing"
 )
 
-func TestSyncEnvDefaultsInitializesMissingLiveKitValues(t *testing.T) {
+func TestEnsureRootLiveKitEnvInitializesSharedValues(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("GRENGO_ROOT", root)
 
-	clientDir := filepath.Join(root, "backends", "home")
-	if err := os.MkdirAll(clientDir, 0755); err != nil {
-		t.Fatalf("mkdir client dir: %v", err)
-	}
-	envFile := filepath.Join(clientDir, ".env")
+	envFile := filepath.Join(root, ".env")
 	initial := strings.Join([]string{
-		"CLIENT_NAME=home",
-		"PORT=1080",
-		"POSTGRES_DB=home",
-		"# LIVEKIT_API_KEY=old-commented-key",
+		"POSTGRES_USER=skaia",
+		"POSTGRES_PASSWORD=secret",
 		"LIVEKIT_API_SECRET=",
 	}, "\n") + "\n"
 	if err := os.WriteFile(envFile, []byte(initial), 0644); err != nil {
 		t.Fatalf("write env: %v", err)
 	}
 
-	added := syncEnvDefaults("home")
+	added := ensureRootLiveKitEnv()
 	if added == 0 {
-		t.Fatal("syncEnvDefaults did not report any additions")
+		t.Fatal("ensureRootLiveKitEnv did not report any additions")
 	}
 
 	apiKey := envVal(envFile, "LIVEKIT_API_KEY")
@@ -52,5 +46,42 @@ func TestSyncEnvDefaultsInitializesMissingLiveKitValues(t *testing.T) {
 	}
 	if strings.Count(string(content), "LIVEKIT_API_SECRET=") != 1 {
 		t.Fatalf("LIVEKIT_API_SECRET should be updated in place, env:\n%s", content)
+	}
+}
+
+func TestSyncClientComposeRootEnvAddsRootEnvAfterClientEnv(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("GRENGO_ROOT", root)
+
+	clientDir := filepath.Join(root, "backends", "home")
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatalf("mkdir client dir: %v", err)
+	}
+	composeFile := filepath.Join(clientDir, "compose.yml")
+	initial := strings.Join([]string{
+		"services:",
+		"  backend:",
+		"    env_file:",
+		"      - .env",
+		"    image: skaia-backend:latest",
+	}, "\n") + "\n"
+	if err := os.WriteFile(composeFile, []byte(initial), 0644); err != nil {
+		t.Fatalf("write compose: %v", err)
+	}
+
+	if changed := syncClientComposeRootEnv("home"); changed != 1 {
+		t.Fatalf("syncClientComposeRootEnv changed = %d, want 1", changed)
+	}
+
+	content, err := os.ReadFile(composeFile)
+	if err != nil {
+		t.Fatalf("read compose: %v", err)
+	}
+	want := "    env_file:\n      - .env\n      - ../../.env\n"
+	if !strings.Contains(string(content), want) {
+		t.Fatalf("compose missing root env_file:\n%s", content)
+	}
+	if changed := syncClientComposeRootEnv("home"); changed != 0 {
+		t.Fatalf("second sync changed = %d, want 0", changed)
 	}
 }

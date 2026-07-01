@@ -92,9 +92,16 @@ func cmdMigrateClient(name string, rebuild bool) {
 		die("Client '%s' not found", name)
 	}
 
+	if n := ensureRootLiveKitEnv(); n > 0 {
+		log("Added %d shared LiveKit env var(s) to %s", n, rootEnvFile())
+	}
+
 	// Sync env defaults - add any missing keys from the registry.
 	if n := syncEnvDefaults(name); n > 0 {
 		log("Added %d missing env var(s) to %s", n, clientEnvFile(name))
+	}
+	if n := syncClientComposeRootEnv(name); n > 0 {
+		log("Added root env_file to %s", clientComposeFile(name))
 	}
 
 	if !pgRunning() {

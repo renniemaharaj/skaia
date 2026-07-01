@@ -42,6 +42,9 @@ func cmdNew(args []string) {
 
 	// Ensure root .env (interactive if missing).
 	ensureRootEnv()
+	if n := ensureRootLiveKitEnv(); n > 0 {
+		log("Added %d shared LiveKit env var(s) to %s", n, rootEnvFile())
+	}
 
 	fmt.Println()
 	fmt.Printf("%sCreate a new client%s\n", colorBold, colorReset)
@@ -143,8 +146,6 @@ func cmdNew(args []string) {
 
 	// Auto-generated values
 	jwtSecret := generateSecret(32)
-	liveKitAPIKey := generateLiveKitAPIKey()
-	liveKitAPISecret := generateLiveKitAPISecret()
 
 	domainList := strings.Join(domains, " ")
 	var corsParts []string
@@ -176,11 +177,6 @@ func cmdNew(args []string) {
 		"",
 		"# Redis",
 		"REDIS_URL=redis://redis:6379",
-		"",
-		"# LiveKit",
-		fmt.Sprintf("LIVEKIT_API_KEY=%s", liveKitAPIKey),
-		fmt.Sprintf("LIVEKIT_API_SECRET=%s", liveKitAPISecret),
-		"LIVEKIT_URL=ws://localhost:7880",
 		"",
 		"# Auth",
 		fmt.Sprintf("JWT_SECRET=%s", jwtSecret),
@@ -250,6 +246,7 @@ services:
       - "${PORT}:${PORT}"
     env_file:
       - .env
+      - ../../.env
     volumes:
       - ./uploads:/app/uploads
       - ./armed:/app/armed

@@ -87,7 +87,7 @@ services:
       start_period: 5s
 
   # LiveKit SFU for room voice, camera, and screen-share transport.
-  # Set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL in the backend env.
+  # Set LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and LIVEKIT_URL in the root .env.
   livekit:
     image: livekit/livekit-server:latest
     container_name: skaia-livekit

@@ -34,10 +34,6 @@ type envDefaultEntry struct {
 var envDefaults = []envDefaultEntry{
 	// Redis
 	{"REDIS_URL", "redis://redis:6379", "Redis", false, nil},
-	// LiveKit
-	{"LIVEKIT_API_KEY", "", "LiveKit", true, generateLiveKitAPIKey},
-	{"LIVEKIT_API_SECRET", "", "", true, generateLiveKitAPISecret},
-	{"LIVEKIT_URL", "ws://localhost:7880", "", true, nil},
 	// Auth
 	{"SESSION_TIMEOUT_MIN", "43200", "Auth", false, nil}, // 1 month = 30d × 24h × 60m
 	{"ENVIRONMENT", "production", "", false, nil},
@@ -76,6 +72,12 @@ var envDefaults = []envDefaultEntry{
 	{"SITE_NAME", "", "", false, nil},
 	// Grengo internal API
 	{"GRENGO_API_URL", "http://host.docker.internal:9100", "Grengo Internal API", false, nil},
+}
+
+var rootLiveKitDefaults = []envDefaultEntry{
+	{"LIVEKIT_API_KEY", "", "LiveKit", true, generateLiveKitAPIKey},
+	{"LIVEKIT_API_SECRET", "", "", true, generateLiveKitAPISecret},
+	{"LIVEKIT_URL", "ws://localhost:7880", "", true, nil},
 }
 
 // syncEnvDefaults reads a client's .env and applies missing envDefaults.
@@ -172,6 +174,108 @@ func generateLiveKitAPIKey() string {
 
 func generateLiveKitAPISecret() string {
 	return generateSecret(32)
+}
+
+func ensureRootLiveKitEnv() int {
+	return syncEnvFileDefaults(rootEnvFile(), rootLiveKitDefaults, false)
+}
+
+func syncEnvFileDefaults(envFile string, defaults []envDefaultEntry, optionalKeysCountCommented bool) int {
+	existing := loadEnvKeys(envFile)
+	active := loadEnvMap(envFile)
+	activeKeys := loadActiveEnvKeys(envFile)
+
+	var toAdd []envDefaultEntry
+	var toSet []envDefaultEntry
+	for _, d := range defaults {
+		if d.Active {
+			if strings.TrimSpace(active[d.Key]) != "" {
+				continue
+			}
+			if _, ok := activeKeys[d.Key]; ok {
+				toSet = append(toSet, d)
+			} else {
+				toAdd = append(toAdd, d)
+			}
+			continue
+		}
+		if _, ok := existing[d.Key]; !ok {
+			toAdd = append(toAdd, d)
+		}
+	}
+
+	if len(toAdd) == 0 && len(toSet) == 0 {
+		return 0
+	}
+
+	if len(toAdd) > 0 {
+		raw, err := os.ReadFile(envFile)
+		if err != nil {
+			warn("Cannot read %s: %v", envFile, err)
+			return 0
+		}
+
+		content := string(raw)
+		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+
+		content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
+
+		lastSection := ""
+		for _, d := range toAdd {
+			if d.Section != "" && d.Section != lastSection {
+				content += fmt.Sprintf("\n# %s\n", d.Section)
+				lastSection = d.Section
+			}
+			value := envDefaultValue(d)
+			if d.Active || !optionalKeysCountCommented {
+				content += fmt.Sprintf("%s=%s\n", d.Key, value)
+				continue
+			}
+			content += fmt.Sprintf("# %s=%s\n", d.Key, value)
+		}
+
+		if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
+			warn("Cannot write %s: %v", envFile, err)
+			return 0
+		}
+	}
+
+	for _, d := range toSet {
+		if err := setEnvVal(envFile, d.Key, envDefaultValue(d)); err != nil {
+			warn("Cannot update %s in %s: %v", d.Key, envFile, err)
+			return len(toAdd)
+		}
+	}
+
+	return len(toAdd) + len(toSet)
+}
+
+func syncClientComposeRootEnv(name string) int {
+	composeFile := clientComposeFile(name)
+	raw, err := os.ReadFile(composeFile)
+	if err != nil {
+		warn("Cannot read %s: %v", composeFile, err)
+		return 0
+	}
+	content := string(raw)
+	if strings.Contains(content, "../../.env") {
+		return 0
+	}
+
+	old := "    env_file:\n      - .env\n"
+	new := "    env_file:\n      - .env\n      - ../../.env\n"
+	if !strings.Contains(content, old) {
+		warn("Cannot add root env_file to %s: env_file block not recognized", composeFile)
+		return 0
+	}
+	content = strings.Replace(content, old, new, 1)
+	if err := os.WriteFile(composeFile, []byte(content), 0644); err != nil {
+		warn("Cannot write %s: %v", composeFile, err)
+		return 0
+	}
+	return 1
 }
 
 func upgradeEnvPerformanceKeys(envFile string) {
