@@ -85,3 +85,34 @@ func TestSyncClientComposeRootEnvAddsRootEnvAfterClientEnv(t *testing.T) {
 		t.Fatalf("second sync changed = %d, want 0", changed)
 	}
 }
+
+func TestSyncRootComposeLiveKitEnvReplacesEmptyEnvFile(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("GRENGO_ROOT", root)
+
+	content := strings.Join([]string{
+		"services:",
+		"  livekit:",
+		"    image: livekit/livekit-server:latest",
+		"    restart: unless-stopped",
+		"    env_file:",
+		"      - \"\"",
+		"    depends_on:",
+		"      redis:",
+		"        condition: service_healthy",
+	}, "\n") + "\n"
+	if err := os.WriteFile(filepath.Join(root, "compose.yml"), []byte(content), 0644); err != nil {
+		t.Fatalf("write compose: %v", err)
+	}
+
+	if changed := syncRootComposeLiveKitEnv(); changed != 1 {
+		t.Fatalf("syncRootComposeLiveKitEnv changed = %d, want 1", changed)
+	}
+	got, err := os.ReadFile(filepath.Join(root, "compose.yml"))
+	if err != nil {
+		t.Fatalf("read compose: %v", err)
+	}
+	if strings.Contains(string(got), "- \"\"") || !strings.Contains(string(got), "      - .env") {
+		t.Fatalf("root compose was not repaired:\n%s", got)
+	}
+}

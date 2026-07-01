@@ -21,6 +21,7 @@ func CLICommands() cli.Commands {
 		Dev:            cmdDev,
 		ComposeUp:      cmdComposeUp,
 		ComposeDown:    cmdComposeDown,
+		LiveKit:        cmdLiveKit,
 		NginxReload:    cmdNginxReload,
 		DBInit:         cmdDBInit,
 		Migrate:        cmdMigrate,

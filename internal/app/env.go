@@ -560,6 +560,40 @@ func setEnvVal(file, key, value string) error {
 	return os.WriteFile(file, []byte(strings.Join(lines, "\n")), 0644)
 }
 
+func removeEnvVals(file string, keys ...string) (int, error) {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return 0, err
+	}
+	remove := map[string]bool{}
+	for _, key := range keys {
+		remove[key] = true
+	}
+
+	var out []string
+	removed := 0
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		keyPart := trimmed
+		commented := false
+		if strings.HasPrefix(keyPart, "#") {
+			commented = true
+			keyPart = strings.TrimSpace(strings.TrimPrefix(keyPart, "#"))
+		}
+		if idx := strings.Index(keyPart, "="); idx > 0 && remove[keyPart[:idx]] {
+			removed++
+			continue
+		}
+		if commented && strings.TrimSpace(line) == "#" {
+			out = append(out, line)
+			continue
+		}
+		out = append(out, line)
+	}
+	return removed, os.WriteFile(file, []byte(strings.Join(out, "\n")), 0644)
+}
+
 // clientDir returns the path to a client directory.
 func clientDir(name string) string {
 	return filepath.Join(backendsDir(), name)

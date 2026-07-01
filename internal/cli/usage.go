@@ -17,8 +17,10 @@ Commands:
   build                                      Build / rebuild the backend Docker image
   ship frontend                              Auto-stash, pull, pop, and rebuild frontend
   dev                                        Start dev environment (infra, API, and vite dev server)
-  compose up [--follow|--no-detach]        Start everything (infra + all clients + nginx); optionally follow logs
+  compose up [--build] [--force-recreate] [--follow|--no-detach]
+                                             Start everything (infra + all clients + nginx); optionally recreate containers
   compose down                               Stop everything
+  livekit [--url <url>]                      Rotate shared LiveKit keys and repair root/client config
   nginx reload                               Regenerate nginx config & hot-reload
   db init <name>                             Create database & run migrations
   migrate <name|all> [--rebuild]             Re-run migrations on existing database
@@ -44,6 +46,8 @@ Examples:
   grengo new skaiacraft                # name provided, rest prompted
   grengo new skaiacraft --domain skaiacraft.com --domain localhost
   grengo compose up
+  grengo compose up --build --force-recreate
+  grengo livekit
   grengo disable writers
   grengo start
   grengo stop

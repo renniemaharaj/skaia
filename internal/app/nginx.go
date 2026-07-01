@@ -367,6 +367,8 @@ proxy_cache_path /var/cache/nginx/uploads
 
 `)
 
+	b.WriteString(liveKitNginxLocation())
+
 	// Webhook location
 	fmt.Fprintf(&b, `    # ── Webhook ───────────────────────────────────────────────────────────
     location = /webhook/github {
