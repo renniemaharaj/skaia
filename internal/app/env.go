@@ -16,113 +16,162 @@ import (
 
 // envDefaultEntry keeps insertion order for the defaults registry.
 type envDefaultEntry struct {
-	Key     string
-	Value   string
-	Section string // optional section header (rendered as "# Section" before this entry)
+	Key       string
+	Value     string
+	Section   string // optional section header (rendered as "# Section" before this entry)
+	Active    bool   // active defaults are written as KEY=value instead of commented examples
+	Generator func() string
 }
 
 // envDefaults is the authoritative list of env vars every client should have.
-// When `grengo migrate` runs it appends any missing keys as **commented-out**
+// When `grengo migrate` runs it appends optional missing keys as **commented-out**
 // lines (e.g. `# SMTP_HOST=`) so admins can see all available knobs without
-// affecting the running config. Keys already present (active or commented) are
-// NEVER overwritten or duplicated.
+// affecting the running config. Required active defaults are written as real
+// KEY=value lines. Keys already present (active or commented) are never
+// duplicated; empty active required keys are initialized in place.
 //
 // To add a new env var: just add it here AND in the cmdNew template.
 var envDefaults = []envDefaultEntry{
 	// Redis
-	{"REDIS_URL", "redis://redis:6379", "Redis"},
+	{"REDIS_URL", "redis://redis:6379", "Redis", false, nil},
+	// LiveKit
+	{"LIVEKIT_API_KEY", "", "LiveKit", true, generateLiveKitAPIKey},
+	{"LIVEKIT_API_SECRET", "", "", true, generateLiveKitAPISecret},
+	{"LIVEKIT_URL", "ws://localhost:7880", "", true, nil},
 	// Auth
-	{"SESSION_TIMEOUT_MIN", "43200", "Auth"}, // 1 month = 30d × 24h × 60m
-	{"ENVIRONMENT", "production", ""},
+	{"SESSION_TIMEOUT_MIN", "43200", "Auth", false, nil}, // 1 month = 30d × 24h × 60m
+	{"ENVIRONMENT", "production", "", false, nil},
 	// Frontend SSR
-	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html", "Frontend SSR"},
+	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html", "Frontend SSR", false, nil},
 	// Features
-	{"FEATURES_ENABLED", "landing,store,forum,cart,users,inbox,presence", "Features"},
+	{"FEATURES_ENABLED", "landing,store,forum,cart,users,inbox,presence", "Features", false, nil},
 	// Payments
-	{"PAYMENT_PROVIDER", "demo", "Payments"},
-	{"STRIPE_SECRET_KEY", "", ""},
-	{"STRIPE_WEBHOOK_SECRET", "", ""},
+	{"PAYMENT_PROVIDER", "demo", "Payments", false, nil},
+	{"STRIPE_SECRET_KEY", "", "", false, nil},
+	{"STRIPE_WEBHOOK_SECRET", "", "", false, nil},
 	// Tuning
-	{"DB_MAX_OPEN_CONNS", "300", "Tuning"},
-	{"DB_MAX_IDLE_CONNS", "150", ""},
-	{"DB_CONN_MAX_LIFETIME_MIN", "30", ""},
-	{"DB_CONN_MAX_IDLE_TIME_MIN", "5", ""},
-	{"WS_MAX_CONNECTIONS", "100000", ""},
-	{"WS_SESSION_SIZE", "100", ""},
-	{"WS_CHAT_RING_SIZE", "80", ""},
-	{"WS_PRESENCE_INTERVAL_MS", "1000", ""},
-	{"HTTP_READ_TIMEOUT_SEC", "3600", ""},
-	{"HTTP_WRITE_TIMEOUT_SEC", "3600", ""},
-	{"HTTP_IDLE_TIMEOUT_SEC", "120", ""},
-	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30", ""},
+	{"DB_MAX_OPEN_CONNS", "300", "Tuning", false, nil},
+	{"DB_MAX_IDLE_CONNS", "150", "", false, nil},
+	{"DB_CONN_MAX_LIFETIME_MIN", "30", "", false, nil},
+	{"DB_CONN_MAX_IDLE_TIME_MIN", "5", "", false, nil},
+	{"WS_MAX_CONNECTIONS", "100000", "", false, nil},
+	{"WS_SESSION_SIZE", "100", "", false, nil},
+	{"WS_CHAT_RING_SIZE", "80", "", false, nil},
+	{"WS_PRESENCE_INTERVAL_MS", "1000", "", false, nil},
+	{"HTTP_READ_TIMEOUT_SEC", "3600", "", false, nil},
+	{"HTTP_WRITE_TIMEOUT_SEC", "3600", "", false, nil},
+	{"HTTP_IDLE_TIMEOUT_SEC", "120", "", false, nil},
+	{"HTTP_SHUTDOWN_TIMEOUT_SEC", "30", "", false, nil},
 	// Upload limits
-	{"MAX_UPLOAD_PER_USER_MB", "500", "Upload Limits"},
-	{"MAX_UPLOAD_TOTAL_MB", "5000", ""},
+	{"MAX_UPLOAD_PER_USER_MB", "500", "Upload Limits", false, nil},
+	{"MAX_UPLOAD_TOTAL_MB", "5000", "", false, nil},
 	// Email / SMTP
-	{"SMTP_HOST", "", "Email / SMTP"},
-	{"SMTP_PORT", "587", ""},
-	{"SMTP_USER", "", ""},
-	{"SMTP_PASSWORD", "", ""},
-	{"SMTP_FROM", "", ""},
-	{"SMTP_FROM_NAME", "", ""},
-	{"BASE_URL", "", ""},
-	{"SITE_NAME", "", ""},
+	{"SMTP_HOST", "", "Email / SMTP", false, nil},
+	{"SMTP_PORT", "587", "", false, nil},
+	{"SMTP_USER", "", "", false, nil},
+	{"SMTP_PASSWORD", "", "", false, nil},
+	{"SMTP_FROM", "", "", false, nil},
+	{"SMTP_FROM_NAME", "", "", false, nil},
+	{"BASE_URL", "", "", false, nil},
+	{"SITE_NAME", "", "", false, nil},
 	// Grengo internal API
-	{"GRENGO_API_URL", "http://host.docker.internal:9100", "Grengo Internal API"},
+	{"GRENGO_API_URL", "http://host.docker.internal:9100", "Grengo Internal API", false, nil},
 }
 
-// syncEnvDefaults reads a client's .env, appends any keys from envDefaults
-// that are missing, and writes the file back. New keys are added **commented
-// out** (e.g. `# SMTP_HOST=`) so they're visible but don't affect the running
-// config. Keys already present - whether active or commented - are never
-// touched. Returns the number of keys added.
+// syncEnvDefaults reads a client's .env and applies missing envDefaults.
+// Optional defaults are appended as commented examples; required active
+// defaults are appended or initialized in place when their active value is
+// empty. Returns the number of keys added or initialized.
 func syncEnvDefaults(name string) int {
 	envFile := clientEnvFile(name)
 	existing := loadEnvKeys(envFile) // includes both active and commented-out keys
+	active := loadEnvMap(envFile)
+	activeKeys := loadActiveEnvKeys(envFile)
 
 	var toAdd []envDefaultEntry
+	var toSet []envDefaultEntry
 	for _, d := range envDefaults {
+		if d.Active {
+			if strings.TrimSpace(active[d.Key]) != "" {
+				continue
+			}
+			if _, ok := activeKeys[d.Key]; ok {
+				toSet = append(toSet, d)
+			} else {
+				toAdd = append(toAdd, d)
+			}
+			continue
+		}
 		if _, ok := existing[d.Key]; !ok {
 			toAdd = append(toAdd, d)
 		}
 	}
 
-	if len(toAdd) == 0 {
+	if len(toAdd) == 0 && len(toSet) == 0 {
 		return 0
 	}
 
-	// Read original content so we can append cleanly.
-	raw, err := os.ReadFile(envFile)
-	if err != nil {
-		warn("Cannot read %s: %v", envFile, err)
-		return 0
-	}
-
-	content := string(raw)
-	// Make sure the existing content ends with a newline.
-	if len(content) > 0 && !strings.HasSuffix(content, "\n") {
-		content += "\n"
-	}
-
-	content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
-
-	lastSection := ""
-	for _, d := range toAdd {
-		if d.Section != "" && d.Section != lastSection {
-			content += fmt.Sprintf("\n# %s\n", d.Section)
-			lastSection = d.Section
+	if len(toAdd) > 0 {
+		// Read original content so we can append cleanly.
+		raw, err := os.ReadFile(envFile)
+		if err != nil {
+			warn("Cannot read %s: %v", envFile, err)
+			return 0
 		}
-		content += fmt.Sprintf("# %s=%s\n", d.Key, d.Value)
+
+		content := string(raw)
+		// Make sure the existing content ends with a newline.
+		if len(content) > 0 && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+
+		content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
+
+		lastSection := ""
+		for _, d := range toAdd {
+			if d.Section != "" && d.Section != lastSection {
+				content += fmt.Sprintf("\n# %s\n", d.Section)
+				lastSection = d.Section
+			}
+			value := envDefaultValue(d)
+			if d.Active {
+				content += fmt.Sprintf("%s=%s\n", d.Key, value)
+				continue
+			}
+			content += fmt.Sprintf("# %s=%s\n", d.Key, value)
+		}
+
+		if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
+			warn("Cannot write %s: %v", envFile, err)
+			return 0
+		}
 	}
 
-	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
-		warn("Cannot write %s: %v", envFile, err)
-		return 0
+	for _, d := range toSet {
+		if err := setEnvVal(envFile, d.Key, envDefaultValue(d)); err != nil {
+			warn("Cannot update %s in %s: %v", d.Key, envFile, err)
+			return len(toAdd)
+		}
 	}
 
 	upgradeEnvPerformanceKeys(envFile)
 
-	return len(toAdd)
+	return len(toAdd) + len(toSet)
+}
+
+func envDefaultValue(d envDefaultEntry) string {
+	if d.Generator != nil {
+		return d.Generator()
+	}
+	return d.Value
+}
+
+func generateLiveKitAPIKey() string {
+	return "skaia-" + generateSecret(12)
+}
+
+func generateLiveKitAPISecret() string {
+	return generateSecret(32)
 }
 
 func upgradeEnvPerformanceKeys(envFile string) {
@@ -217,6 +266,35 @@ func loadEnvKeys(file string) map[string]struct{} {
 		if idx := strings.Index(bare, "="); idx > 0 {
 			key := bare[:idx]
 			// Only count keys that look like env var names (uppercase, underscores, digits).
+			if isEnvKey(key) {
+				m[key] = struct{}{}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		warn("Error reading %s: %v", file, err)
+	}
+
+	return m
+}
+
+func loadActiveEnvKeys(file string) map[string]struct{} {
+	m := make(map[string]struct{})
+	f, err := os.Open(file)
+	if err != nil {
+		return m
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if idx := strings.Index(line, "="); idx > 0 {
+			key := line[:idx]
 			if isEnvKey(key) {
 				m[key] = struct{}{}
 			}

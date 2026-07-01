@@ -143,6 +143,8 @@ func cmdNew(args []string) {
 
 	// Auto-generated values
 	jwtSecret := generateSecret(32)
+	liveKitAPIKey := generateLiveKitAPIKey()
+	liveKitAPISecret := generateLiveKitAPISecret()
 
 	domainList := strings.Join(domains, " ")
 	var corsParts []string
@@ -176,8 +178,8 @@ func cmdNew(args []string) {
 		"REDIS_URL=redis://redis:6379",
 		"",
 		"# LiveKit",
-		"LIVEKIT_API_KEY=skaia-dev-key",
-		"LIVEKIT_API_SECRET=skaia-dev-secret-change-me",
+		fmt.Sprintf("LIVEKIT_API_KEY=%s", liveKitAPIKey),
+		fmt.Sprintf("LIVEKIT_API_SECRET=%s", liveKitAPISecret),
 		"LIVEKIT_URL=ws://localhost:7880",
 		"",
 		"# Auth",
