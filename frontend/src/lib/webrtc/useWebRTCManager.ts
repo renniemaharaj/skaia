@@ -162,7 +162,7 @@ export function useWebRTCManager(
       if (manager instanceof SkaiaRTC) {
         return manager.ensureConnection(peerId, isInitiator, localStreams);
       } else if (manager instanceof LiveKitRTC) {
-        return null;
+        return manager.ensureConnection();
       } else {
         return manager.ensureConnection(peerId, isInitiator, localStreams);
       }

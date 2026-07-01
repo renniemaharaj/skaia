@@ -139,7 +139,14 @@ export class LiveKitRTC {
     if (!this.connectPromise) {
       this.connectPromise = this.connect();
     }
-    await this.connectPromise;
+    try {
+      await this.connectPromise;
+    } catch (err) {
+      this.connectPromise = null;
+      this.tokenPromise = null;
+      this.room = null;
+      throw err;
+    }
     if (!this.room) {
       throw new Error("LiveKit room failed to connect");
     }

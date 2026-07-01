@@ -427,6 +427,7 @@ export default function WebRTCPanel({
 
     const validUserIds = new Set<string>();
     const myPresenceKey = String(myPresenceId);
+    let reportedLiveKitError = false;
 
     const peers = getActivePeerIds();
     for (const user of onlineUsers) {
@@ -440,11 +441,19 @@ export default function WebRTCPanel({
       validUserIds.add(peerKey);
 
       if (!peers.includes(peerKey)) {
-        ensureConnection(user.user_id, true, [
+        const connection = ensureConnection(user.user_id, true, [
           streamRef.current,
           cameraStreamRef.current,
           screenStreamRef.current,
         ]);
+        if (connection instanceof Promise) {
+          void connection.catch(err => {
+            if (rtcMode !== "livekit" || reportedLiveKitError) return;
+            reportedLiveKitError = true;
+            console.error("LiveKit auto-join failed", err);
+            toast.error("Could not connect to the voice server.");
+          });
+        }
       }
     }
   }, [
@@ -456,6 +465,7 @@ export default function WebRTCPanel({
     ensureConnection,
     getActivePeerIds,
     permissions.guestsAllowed,
+    rtcMode,
   ]);
 
   const validUserIdsRef = useRef(new Set<string>());
