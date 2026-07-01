@@ -466,8 +466,8 @@
   word-break: break-word;
 }
 .inbox-msg--me .inbox-msg-content {
-  background: var(--primary-color);
-  color: var(--bg-color);
+  background: var(--secondary-color);
+  color: var(--text-primary);
   border-color: transparent;
 }
 
