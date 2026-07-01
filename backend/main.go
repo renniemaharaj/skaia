@@ -27,6 +27,7 @@ import (
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/authhandler"
+	iclipmaker "github.com/skaia/backend/internal/clipmaker"
 	icfg "github.com/skaia/backend/internal/config"
 	"github.com/skaia/backend/internal/ctx"
 	ics "github.com/skaia/backend/internal/customsection"
@@ -967,6 +968,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		uploadHandler := iupload.NewHandler(hub)
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)
 		iupload.MountUserUploads(api, imw.JWTAuthMiddleware, userSvc, hub)
+		iclipmaker.NewHandler(hub).Mount(api, imw.JWTAuthMiddleware)
 
 		inotif.NewHandler(notifSvc, hub).Mount(api, imw.JWTAuthMiddleware)
 

@@ -11,16 +11,16 @@ async function main() {
   }
   const jsonStr = chunks.join('');
   const projectData = JSON.parse(jsonStr);
+  const workDir = process.argv[2] || __dirname;
+  const outFile = process.argv[3] || path.join(workDir, 'output.mp4');
 
-  // Write it to project.json so project.tsx can import it
-  fs.writeFileSync(path.join(__dirname, 'project.json'), JSON.stringify(projectData, null, 2));
-
-  // Determine output file
-  const outFile = path.join(__dirname, 'output.mp4');
+  fs.mkdirSync(workDir, { recursive: true });
+  fs.copyFileSync(path.join(__dirname, 'project.tsx'), path.join(workDir, 'project.tsx'));
+  fs.writeFileSync(path.join(workDir, 'project.json'), JSON.stringify(projectData, null, 2));
 
   try {
     const resultPath = await renderVideo({
-      projectFile: path.join(__dirname, 'project.tsx'),
+      projectFile: path.join(workDir, 'project.tsx'),
       settings: {
         outFile: outFile,
         logProgress: false

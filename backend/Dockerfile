@@ -21,6 +21,10 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o backend .
 WORKDIR /app/internal/datasource/tsrunner
 RUN npm ci --omit=dev
 
+# install Twick renderer dependencies for server-side clip exports
+WORKDIR /app/internal/videorenderer
+RUN npm ci --omit=dev
+
 WORKDIR /app
 
 # Runtime stage
@@ -33,6 +37,7 @@ WORKDIR /app
 
 COPY --from=builder /app/backend /app/backend
 COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
+COPY --from=builder /app/internal/videorenderer /app/internal/videorenderer
 
 # make sure the compiled binary can be executed
 RUN chmod +x /app/backend

@@ -1,7 +1,9 @@
 import { memo, useState, useEffect } from "react";
 import TwickStudio, { TimelineProvider, LivePlayerProvider, type MediaItem } from "@twick/studio";
 import { useAtomValue } from "jotai";
+import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
+import { apiBaseUrlAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
 import "./isolated-studio.css";
 
@@ -36,9 +38,33 @@ const getVideoMetadata = (
   });
 };
 
+const downloadExport = async (apiBaseUrl: string, downloadUrl: string, filename: string) => {
+  let token = localStorage.getItem("auth.accessToken");
+  if (token?.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+
+  const response = await fetch(`${apiBaseUrl}${downloadUrl}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    throw new Error("Temporary export download failed");
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename || "clip.mp4";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+};
+
 export const ClipMakerPage = memo(() => {
   const currentUser = useAtomValue(currentUserAtom);
+  const apiBaseUrl = useAtomValue(apiBaseUrlAtom);
   const [mediaItems, setMediaItems] = useState<any[] | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!currentUser?.id) {
@@ -64,6 +90,7 @@ export const ClipMakerPage = memo(() => {
         flex: 1,
         display: "flex",
         flexDirection: "column",
+        position: "relative",
         minHeight: 0,
         overflow: "hidden",
       }}
@@ -74,9 +101,66 @@ export const ClipMakerPage = memo(() => {
             <TwickStudio
               studioConfig={{
                 videoProps: { width: 1920, height: 1080 },
-                exportVideo: async () => {
-                  window.alert("Export successful!");
-                  return { status: true, message: "Export completed" };
+                exportVideo: async (...args: any[]) => {
+                  const project =
+                    args.find(arg => arg?.project)?.project ??
+                    args.find(arg => arg?.timeline || arg?.tracks || arg?.items) ??
+                    args[0];
+
+                  if (!project) {
+                    toast.error("Nothing to export yet.");
+                    return { status: false, message: "Project is empty" };
+                  }
+
+                  setIsExporting(true);
+                  const controller = new AbortController();
+                  try {
+                    const upload = await apiRequest<{
+                      saved: boolean;
+                      temporary?: boolean;
+                      url: string;
+                      download_url?: string;
+                      filename: string;
+                      size: number;
+                      type: string;
+                      expires_at?: string;
+                      quota_error?: string;
+                    }>("/clip-maker/export", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        project,
+                        filename: `clip-${Date.now()}.mp4`,
+                      }),
+                      signal: controller.signal,
+                    });
+
+                    if (!upload.saved && upload.download_url) {
+                      await downloadExport(apiBaseUrl, upload.download_url, upload.filename);
+                      toast.info(
+                        "Clip downloaded. It was not saved because your upload storage is full."
+                      );
+                      return {
+                        status: true,
+                        message: "Export downloaded without saving",
+                        url: upload.download_url,
+                        filename: upload.filename,
+                      };
+                    }
+
+                    toast.success("Clip exported to your uploads.");
+                    return {
+                      status: true,
+                      message: "Export completed",
+                      url: upload.url,
+                      filename: upload.filename,
+                    };
+                  } catch (error: any) {
+                    const message = error?.message || "Export failed";
+                    toast.error(message);
+                    return { status: false, message };
+                  } finally {
+                    setIsExporting(false);
+                  }
                 },
                 media: {
                   seed: async manager => {
@@ -116,6 +200,24 @@ export const ClipMakerPage = memo(() => {
                 },
               }}
             />
+          )}
+          {isExporting && (
+            <div
+              style={{
+                position: "absolute",
+                right: 16,
+                bottom: 16,
+                zIndex: 20,
+                padding: "10px 14px",
+                borderRadius: 8,
+                background: "rgba(15, 23, 42, 0.92)",
+                color: "white",
+                fontSize: 14,
+                boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+              }}
+            >
+              Exporting clip...
+            </div>
           )}
         </LivePlayerProvider>
       </TimelineProvider>
