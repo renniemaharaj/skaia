@@ -92,6 +92,8 @@ services:
     image: livekit/livekit-server:latest
     container_name: skaia-livekit
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       redis:
         condition: service_healthy
