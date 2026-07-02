@@ -7,7 +7,7 @@ import { apiBaseUrlAtom } from "../../atoms/config";
 import { apiRequest } from "../../utils/api";
 import "./isolated-studio.css";
 
-const EXPORT_TIMEOUT_MS = 10 * 60 * 1000;
+const EXPORT_TIMEOUT_MS = 2 * 60 * 1000;
 
 const normalizeUploadUrl = (url: string) => {
   if (!url) return url;

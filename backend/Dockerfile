@@ -68,7 +68,8 @@ RUN printf '%s\n' \
     docker.io \
     docker-compose \
     fonts-freefont-ttf \
-    gosu && \
+    gosu \
+    wget && \
     apt-get purge -y --auto-remove && \
     rm -rf /var/lib/apt/lists/* && \
     useradd --create-home --home-dir /app --shell /usr/sbin/nologin appuser

@@ -1,20 +1,54 @@
-import { makeProject } from '@twick/core';
-import { Project } from '@twick/player-react';
-import * as React from 'react';
+import { makeProject, type Project as TwickProject } from '@twick/core';
+import { getActiveEffectsForFrame } from '@twick/effects';
+import { scene } from '@twick/visualizer/src';
 import projectJson from './project.json';
 
-export default makeProject({
-  id: 'exported-project',
-  name: 'Exported Project',
-  components: [
-    {
-      id: 'main',
-      component: () => React.createElement(Project, { project: projectJson }),
-      props: {},
-      durationInFrames: projectJson.durationInFrames || 300,
-      fps: projectJson.fps || 30,
-      width: projectJson.videoResolution?.width || 1920,
-      height: projectJson.videoResolution?.height || 1080,
-    }
-  ]
+type RenderProject = {
+  input?: {
+    properties?: {
+      width?: number;
+      height?: number;
+      fps?: number;
+    };
+    tracks?: unknown[];
+    [key: string]: unknown;
+  };
+  properties?: {
+    width?: number;
+    height?: number;
+    fps?: number;
+  };
+  tracks?: unknown[];
+  backgroundColor?: string;
+  watermark?: unknown;
+  [key: string]: unknown;
+};
+
+const rawProject = projectJson as RenderProject;
+const input = rawProject.input ?? rawProject;
+const width = input.properties?.width ?? 1920;
+const height = input.properties?.height ?? 1080;
+const fps = input.properties?.fps ?? 30;
+
+const project = makeProject({
+  scenes: [scene],
+  variables: {
+    input,
+    playerId: 'skaia-export',
+  },
+  settings: {
+    shared: {
+      size: { x: width, y: height },
+    },
+    rendering: {
+      fps,
+    },
+    preview: {
+      fps,
+    },
+  },
 });
+
+(project as TwickProject).getActiveEffectsForFrame = getActiveEffectsForFrame;
+
+export default project;

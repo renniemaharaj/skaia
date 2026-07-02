@@ -101,6 +101,25 @@ function puppeteerSettings(workDir) {
   };
 }
 
+function rendererAliases(rendererDir) {
+  const modulesDir = path.join(rendererDir, "node_modules");
+
+  return {
+    "@twick/renderer/lib/client/render": path.join(
+      modulesDir,
+      "@twick/renderer/lib/client/render.js",
+    ),
+    "@twick/core": path.join(modulesDir, "@twick/core/dist/index.js"),
+    "@twick/effects": path.join(modulesDir, "@twick/effects/dist/index.js"),
+    "@twick/2d": path.join(modulesDir, "@twick/2d/dist/index.js"),
+    "@twick/2d/jsx-runtime": path.join(modulesDir, "@twick/2d/dist/index.js"),
+    "@twick/visualizer/src": path.join(
+      modulesDir,
+      "@twick/visualizer/src/index.ts",
+    ),
+  };
+}
+
 async function readStdin() {
   const chunks = [];
   process.stdin.setEncoding("utf8");
@@ -169,13 +188,18 @@ async function main() {
         viteConfig: {
           root: workDir,
           cacheDir: viteCacheDir,
+          esbuild: {
+            jsx: "automatic",
+            jsxImportSource: "@twick/2d",
+          },
           server: {
             fs: {
               allow: [workDir, rendererDir],
             },
           },
           resolve: {
-            preserveSymlinks: false,
+            alias: rendererAliases(rendererDir),
+            modules: [path.join(rendererDir, "node_modules"), "node_modules"],
           },
         },
       },

@@ -4,10 +4,13 @@
   "description": "Twick Studio backend renderer",
   "private": true,
   "dependencies": {
-    "@twick/renderer": "^0.15.31",
+    "@twick/2d": "0.15.31",
     "@twick/core": "^0.15.31",
+    "@twick/effects": "0.15.31",
     "@twick/player-react": "^0.15.31",
+    "@twick/renderer": "^0.15.31",
     "@twick/ui": "0.15.31",
+    "@twick/visualizer": "0.15.31",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   }

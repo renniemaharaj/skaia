@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const defaultRenderTimeout = 10 * time.Minute
+const defaultRenderTimeout = 2 * time.Minute
 
 var chromiumExecutableCandidates = []string{
 	"/usr/bin/chromium-browser",
