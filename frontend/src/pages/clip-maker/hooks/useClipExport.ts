@@ -5,7 +5,7 @@ import { useTwickPlayer } from "./useTwickPlayer";
 import { downloadExport, uploadRecording, type VideoSettingsLike } from "../utils/exportUpload";
 import { projectDurationSeconds } from "../utils/project";
 
-const EXPORT_TIMEOUT_MS = 2 * 60 * 1000;
+const EXPORT_TIMEOUT_MS = 10 * 60 * 1000;
 const SETTLE_DELAY_MS = 150;
 
 const delay = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
@@ -48,6 +48,7 @@ export const useClipExport = ({
         await delay(SETTLE_DELAY_MS);
 
         setProgress("Recording timeline...");
+        console.time("clip-maker recordCanvas");
         const recording = await record({
           fps,
           durationSeconds,
@@ -56,9 +57,16 @@ export const useClipExport = ({
             await player.seekToFrame(frameTimeSeconds);
           },
         });
+        console.timeEnd("clip-maker recordCanvas");
+        console.debug("clip-maker recording complete", {
+          size: recording.size,
+          type: recording.type,
+        });
 
         setProgress("Finalizing MP4...");
+        console.time("clip-maker upload/finalize");
         const upload = await uploadRecording(recording, videoSettings, controller.signal);
+        console.timeEnd("clip-maker upload/finalize");
 
         if (!upload.saved && upload.download_url) {
           await downloadExport(apiBaseUrl, upload.download_url, upload.filename);
