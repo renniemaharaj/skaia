@@ -84,7 +84,28 @@ export const createCanvasFramePump = (
           await renderFrame(frameIndex, frameTimeSeconds);
           await waitForPaint();
           context.drawImage(sourceCanvas, 0, 0, captureCanvas.width, captureCanvas.height);
+
+          if (
+            frameIndex === 0 ||
+            frameIndex === Math.floor(totalFrames / 2) ||
+            frameIndex === totalFrames - 1
+          ) {
+            const sample = context.getImageData(
+              0,
+              0,
+              Math.min(4, captureCanvas.width),
+              Math.min(4, captureCanvas.height)
+            );
+            console.debug("clip-maker capture sample", {
+              frameIndex,
+              frameTimeSeconds,
+              dataUrlLength: captureCanvas.toDataURL("image/png").length,
+              pixels: Array.from(sample.data.slice(0, 32)),
+            });
+          }
+
           videoTrack?.requestFrame?.();
+          await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
           console.count("clip-maker requested frame");
         } catch (error) {
           reject(
@@ -209,8 +230,22 @@ export const recordCanvas = async ({
     }
 
     await pump.run(renderFrame, signal);
-    await new Promise<void>(resolve => window.setTimeout(resolve, 100));
-    recorder.requestData();
+
+    console.debug("clip-maker video track before stop", {
+      muted: videoTrack.muted,
+      readyState: videoTrack.readyState,
+      settings: videoTrack.getSettings(),
+      streamTracks: stream.getTracks().map(track => ({
+        kind: track.kind,
+        muted: track.muted,
+        readyState: track.readyState,
+        enabled: track.enabled,
+        settings: track.getSettings(),
+      })),
+      captureDataUrlLength: captureCanvas.toDataURL("image/png").length,
+    });
+
+    await new Promise<void>(resolve => window.setTimeout(resolve, 500));
     await stopRecorder(recorder);
   } catch (error) {
     if (recorder.state !== "inactive") {
