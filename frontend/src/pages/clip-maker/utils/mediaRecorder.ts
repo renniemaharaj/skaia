@@ -1,7 +1,7 @@
 const RECORDER_EVENT_TIMEOUT_MS = 5_000;
 
 export const mediaRecorderMimeType = () => {
-  const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm"];
+  const candidates = ["video/webm;codecs=vp8,opus", "video/webm;codecs=vp9,opus", "video/webm"];
   return candidates.find(type => MediaRecorder.isTypeSupported(type)) ?? "";
 };
 
@@ -84,7 +84,7 @@ export const createCanvasFramePump = (
           await renderFrame(frameIndex, frameTimeSeconds);
           await waitForPaint();
           context.drawImage(sourceCanvas, 0, 0, captureCanvas.width, captureCanvas.height);
-          videoTrack?.requestFrame();
+          videoTrack?.requestFrame?.();
           console.count("clip-maker requested frame");
         } catch (error) {
           reject(
@@ -225,11 +225,12 @@ export const recordCanvas = async ({
     stream.getTracks().forEach(track => track.stop());
   });
 
-  if (blob.size === 0) {
+  if (blob.size < 1024) {
+    const header = new Uint8Array(await blob.slice(0, 32).arrayBuffer());
     throw new Error(
-      `Browser recording was empty; chunks=${chunks.length}; sizes=${chunks
-        .map(chunk => chunk.size)
-        .join(",")}`
+      `Browser recording was invalid; size=${blob.size}; header=${[...header]
+        .map(byte => byte.toString(16).padStart(2, "0"))
+        .join(" ")}; chunks=${chunks.length}; sizes=${chunks.map(chunk => chunk.size).join(",")}`
     );
   }
 

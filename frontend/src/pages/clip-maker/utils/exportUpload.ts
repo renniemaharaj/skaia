@@ -17,7 +17,7 @@ export type VideoSettingsLike = {
   resolution?: { width?: number; height?: number };
 };
 
-export const uploadRecording = (
+export const uploadRecording = async (
   recording: Blob,
   videoSettings: VideoSettingsLike,
   signal: AbortSignal
@@ -30,6 +30,14 @@ export const uploadRecording = (
   formData.append("width", String(videoSettings.resolution?.width || 1920));
   formData.append("height", String(videoSettings.resolution?.height || 1080));
 
+  console.log({
+    size: recording.size,
+    type: recording.type,
+  });
+
+  const header = new Uint8Array(await recording.slice(0, 32).arrayBuffer());
+
+  console.log([...header].map(b => b.toString(16).padStart(2, "0")).join(" "));
   return apiRequest<ExportUpload>("/clip-maker/export", {
     method: "POST",
     body: formData,

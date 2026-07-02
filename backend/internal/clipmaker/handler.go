@@ -63,6 +63,17 @@ func (h *Handler) exportBrowserClip(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	buf := make([]byte, 32)
+	n, _ := file.Read(buf)
+
+	log.Printf(
+		"upload size=%d first bytes=% x",
+		header.Size,
+		buf[:n],
+	)
+
+	_, _ = file.Seek(0, io.SeekStart)
+
 	filename := r.FormValue("filename")
 	if filename == "" && header != nil {
 		filename = header.Filename
