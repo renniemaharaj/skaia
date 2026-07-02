@@ -1,8 +1,12 @@
 package clipmaker
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/png"
 	"io"
 	"mime"
 	"net/http"
@@ -40,6 +44,7 @@ func NewHandler(hub *ws.Hub) *Handler {
 
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	r.With(jwt).Post("/clip-maker/export", h.exportBrowserClip)
+	r.With(jwt).Post("/clip-maker/export/frames", h.exportFrameStream)
 	r.With(jwt).Get("/clip-maker/export/{token}/download", h.downloadTempExport)
 }
 
@@ -102,6 +107,192 @@ func (h *Handler) exportBrowserClip(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("clipmaker: browser export finalized user=%d duration=%s", userID, time.Since(startedAt).Round(time.Millisecond))
 	h.writeRenderedExport(w, userID, renderedPath, filename, startedAt)
+}
+
+type frameStreamMeta struct {
+	Type            string          `json:"type"`
+	Filename        string          `json:"filename"`
+	FPS             int             `json:"fps"`
+	Width           int             `json:"width"`
+	Height          int             `json:"height"`
+	DurationSeconds float64         `json:"duration_seconds"`
+	TotalFrames     int             `json:"total_frames"`
+	Project         json.RawMessage `json:"project,omitempty"`
+}
+
+type frameStreamHeader struct {
+	Type        string  `json:"type"`
+	Index       int     `json:"index"`
+	TimeSeconds float64 `json:"time_seconds"`
+	ContentType string  `json:"content_type"`
+	ByteLength  int64   `json:"byte_length"`
+}
+
+func (h *Handler) exportFrameStream(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxBrowserExportBytes)
+	defer r.Body.Close()
+
+	startedAt := time.Now()
+	reader := bufio.NewReaderSize(r.Body, 1024*1024)
+	meta, err := readFrameStreamMeta(reader)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	workDir, cleanup, err := writeFrameStreamImages(reader, meta)
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	log.Printf("clipmaker: frame stream export started user=%d filename=%q width=%d height=%d fps=%d frames=%d", userID, meta.Filename, meta.Width, meta.Height, meta.FPS, meta.TotalFrames)
+	renderedPath, renderCleanup, err := videorenderer.FinalizePNGFrames(workDir, videorenderer.FrameRenderOptions{
+		Width:       meta.Width,
+		Height:      meta.Height,
+		FPS:         meta.FPS,
+		TotalFrames: meta.TotalFrames,
+	})
+	if renderCleanup != nil {
+		defer renderCleanup()
+	}
+	if err != nil {
+		log.Printf("clipmaker: frame stream export failed user=%d duration=%s error=%v", userID, time.Since(startedAt).Round(time.Millisecond), err)
+		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	log.Printf("clipmaker: frame stream export finalized user=%d duration=%s", userID, time.Since(startedAt).Round(time.Millisecond))
+	h.writeRenderedExport(w, userID, renderedPath, meta.Filename, startedAt)
+}
+
+func readFrameStreamMeta(reader *bufio.Reader) (frameStreamMeta, error) {
+	line, err := reader.ReadBytes('\n')
+	if err != nil {
+		return frameStreamMeta{}, fmt.Errorf("missing frame stream metadata")
+	}
+
+	var meta frameStreamMeta
+	if err := json.Unmarshal(bytes.TrimSpace(line), &meta); err != nil {
+		return frameStreamMeta{}, fmt.Errorf("invalid frame stream metadata")
+	}
+	if meta.Type != "meta" {
+		return frameStreamMeta{}, fmt.Errorf("first frame stream record must be metadata")
+	}
+	if meta.FPS <= 0 || meta.FPS > 120 {
+		return frameStreamMeta{}, fmt.Errorf("invalid frame stream fps")
+	}
+	if meta.Width <= 0 || meta.Height <= 0 || meta.Width > 7680 || meta.Height > 4320 {
+		return frameStreamMeta{}, fmt.Errorf("invalid frame stream dimensions")
+	}
+	if meta.TotalFrames <= 0 || meta.TotalFrames > meta.FPS*60*10 {
+		return frameStreamMeta{}, fmt.Errorf("invalid frame stream frame count")
+	}
+	if meta.Filename == "" {
+		meta.Filename = fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano())
+	}
+	return meta, nil
+}
+
+func writeFrameStreamImages(reader *bufio.Reader, meta frameStreamMeta) (string, func(), error) {
+	workDir, err := os.MkdirTemp("", "skaia-frame-export-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create frame export workspace")
+	}
+	cleanup := func() {
+		_ = os.RemoveAll(workDir)
+	}
+
+	framesDir := filepath.Join(workDir, "frames")
+	if err := os.MkdirAll(framesDir, 0755); err != nil {
+		cleanup()
+		return "", nil, fmt.Errorf("failed to create frame workspace")
+	}
+
+	for expectedIndex := 0; expectedIndex < meta.TotalFrames; expectedIndex++ {
+		header, err := readFrameHeader(reader)
+		if err != nil {
+			cleanup()
+			return "", nil, err
+		}
+		if header.Type != "frame" || header.Index != expectedIndex {
+			cleanup()
+			return "", nil, fmt.Errorf("invalid frame order at frame %d", expectedIndex)
+		}
+		if header.ContentType != "" && header.ContentType != "image/png" {
+			cleanup()
+			return "", nil, fmt.Errorf("frame %d must be image/png", expectedIndex)
+		}
+		if header.ByteLength <= 0 || header.ByteLength > 64*1024*1024 {
+			cleanup()
+			return "", nil, fmt.Errorf("invalid frame %d byte length", expectedIndex)
+		}
+
+		frameBytes := make([]byte, header.ByteLength)
+		if _, err := io.ReadFull(reader, frameBytes); err != nil {
+			cleanup()
+			return "", nil, fmt.Errorf("frame %d is incomplete", expectedIndex)
+		}
+		if err := consumeFrameDelimiter(reader); err != nil {
+			cleanup()
+			return "", nil, fmt.Errorf("frame %d delimiter missing", expectedIndex)
+		}
+		if err := validatePNGFrame(frameBytes, meta.Width, meta.Height, expectedIndex); err != nil {
+			cleanup()
+			return "", nil, err
+		}
+
+		framePath := filepath.Join(framesDir, fmt.Sprintf("frame-%06d.png", expectedIndex))
+		if err := os.WriteFile(framePath, frameBytes, 0644); err != nil {
+			cleanup()
+			return "", nil, fmt.Errorf("failed to write frame %d", expectedIndex)
+		}
+	}
+
+	return workDir, cleanup, nil
+}
+
+func readFrameHeader(reader *bufio.Reader) (frameStreamHeader, error) {
+	line, err := reader.ReadBytes('\n')
+	if err != nil {
+		return frameStreamHeader{}, fmt.Errorf("missing frame header")
+	}
+	var header frameStreamHeader
+	if err := json.Unmarshal(bytes.TrimSpace(line), &header); err != nil {
+		return frameStreamHeader{}, fmt.Errorf("invalid frame header")
+	}
+	return header, nil
+}
+
+func consumeFrameDelimiter(reader *bufio.Reader) error {
+	delimiter, err := reader.ReadByte()
+	if err != nil {
+		return err
+	}
+	if delimiter != '\n' {
+		return fmt.Errorf("invalid frame delimiter")
+	}
+	return nil
+}
+
+func validatePNGFrame(frameBytes []byte, width, height, index int) error {
+	cfg, format, err := image.DecodeConfig(bytes.NewReader(frameBytes))
+	if err != nil || format != "png" {
+		return fmt.Errorf("frame %d is not a valid PNG", index)
+	}
+	if cfg.Width != width || cfg.Height != height {
+		return fmt.Errorf("frame %d dimensions %dx%d do not match export %dx%d", index, cfg.Width, cfg.Height, width, height)
+	}
+	return nil
 }
 
 func (h *Handler) writeRenderedExport(w http.ResponseWriter, userID int64, renderedPath, requestedFilename string, startedAt time.Time) {

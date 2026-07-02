@@ -2,7 +2,7 @@ import { useCallback, useState, type RefObject } from "react";
 import { toast } from "sonner";
 import { useBrowserRecorder } from "./useBrowserRecorder";
 import { useTwickPlayer } from "./useTwickPlayer";
-import { downloadExport, uploadRecording, type VideoSettingsLike } from "../utils/exportUpload";
+import { downloadExport, streamFrameExport, type VideoSettingsLike } from "../utils/exportUpload";
 import { projectDurationSeconds } from "../utils/project";
 
 const EXPORT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -21,7 +21,7 @@ export const useClipExport = ({
   const [progress, setProgress] = useState("");
 
   const player = useTwickPlayer();
-  const { record } = useBrowserRecorder(containerRef);
+  const { capturePngFrames } = useBrowserRecorder(containerRef);
 
   const exportVideo = useCallback(
     async (project: any, videoSettings: VideoSettingsLike = {}) => {
@@ -47,26 +47,32 @@ export const useClipExport = ({
         await player.refreshProject(project);
         await delay(SETTLE_DELAY_MS);
 
-        setProgress("Recording timeline...");
-        console.time("clip-maker recordCanvas");
-        const recording = await record({
-          fps,
-          durationSeconds,
+        setProgress("Streaming frames...");
+        const requestedWidth = videoSettings.resolution?.width || 1920;
+        const requestedHeight = videoSettings.resolution?.height || 1080;
+        const frameCapture = await capturePngFrames({
+          width: requestedWidth,
+          height: requestedHeight,
           signal: controller.signal,
           renderFrame: async (_frameIndex, frameTimeSeconds) => {
             await player.seekToFrame(frameTimeSeconds);
           },
         });
-        console.timeEnd("clip-maker recordCanvas");
-        console.debug("clip-maker recording complete", {
-          size: recording.size,
-          type: recording.type,
-        });
 
         setProgress("Finalizing MP4...");
-        console.time("clip-maker upload/finalize");
-        const upload = await uploadRecording(recording, videoSettings, controller.signal);
-        console.timeEnd("clip-maker upload/finalize");
+        console.time("clip-maker stream/finalize");
+        const upload = await streamFrameExport({
+          apiBaseUrl,
+          fps,
+          durationSeconds,
+          width: frameCapture.width,
+          height: frameCapture.height,
+          project,
+          renderFrame: frameCapture.renderFrame,
+          captureFrame: frameCapture.captureFrame,
+          signal: controller.signal,
+        });
+        console.timeEnd("clip-maker stream/finalize");
 
         if (!upload.saved && upload.download_url) {
           await downloadExport(apiBaseUrl, upload.download_url, upload.filename);
@@ -100,7 +106,7 @@ export const useClipExport = ({
         setProgress("");
       }
     },
-    [apiBaseUrl, player, record]
+    [apiBaseUrl, capturePngFrames, player]
   );
 
   return { exportVideo, isExporting, progress };

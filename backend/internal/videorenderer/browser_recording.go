@@ -19,6 +19,13 @@ type BrowserRecordingOptions struct {
 	FPS    int
 }
 
+type FrameRenderOptions struct {
+	Width       int
+	Height      int
+	FPS         int
+	TotalFrames int
+}
+
 func FinalizeBrowserRecording(recording io.Reader, options BrowserRecordingOptions) (string, func(), error) {
 	timeout := 5 * time.Minute
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
@@ -121,6 +128,87 @@ func browserRecordingFFmpegArgs(inputPath, outFile string, options BrowserRecord
 		"-b:a", "192k",
 		"-movflags", "+faststart",
 		"-shortest",
+		outFile,
+	}
+}
+
+func FinalizePNGFrames(frameWorkDir string, options FrameRenderOptions) (string, func(), error) {
+	timeout := 5 * time.Minute
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	outputDir, err := os.MkdirTemp("", "skaia-frame-render-*")
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to create frame render workspace: %w", err)
+	}
+	cleanup := func() {
+		_ = os.RemoveAll(outputDir)
+	}
+
+	outFile := filepath.Join(outputDir, fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano()))
+	args := pngFrameFFmpegArgs(filepath.Join(frameWorkDir, "frames", "frame-%06d.png"), outFile, options)
+	cmd := exec.CommandContext(ctx, "ffmpeg", args...)
+	cmd.Dir = frameWorkDir
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			killProcessGroup(cmd.Process)
+			cleanup()
+			return "", nil, fmt.Errorf(
+				"frame export finalization timed out after %s\nstdout:\n%s\nstderr:\n%s",
+				timeout,
+				stdout.String(),
+				stderr.String(),
+			)
+		}
+
+		cleanup()
+		return "", nil, fmt.Errorf(
+			"frame export finalization failed: %w\nstdout:\n%s\nstderr:\n%s",
+			err,
+			stdout.String(),
+			stderr.String(),
+		)
+	}
+
+	if _, err := os.Stat(outFile); err != nil {
+		cleanup()
+		return "", nil, fmt.Errorf("frame export output missing: %s: %w", outFile, err)
+	}
+
+	return outFile, cleanup, nil
+}
+
+func pngFrameFFmpegArgs(inputPattern, outFile string, options FrameRenderOptions) []string {
+	width := options.Width
+	if width <= 0 {
+		width = 1920
+	}
+	height := options.Height
+	if height <= 0 {
+		height = 1080
+	}
+	fps := options.FPS
+	if fps <= 0 {
+		fps = 30
+	}
+
+	return []string{
+		"-y",
+		"-framerate", strconv.Itoa(fps),
+		"-i", inputPattern,
+		"-frames:v", strconv.Itoa(options.TotalFrames),
+		"-r", strconv.Itoa(fps),
+		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1", width, height, width, height),
+		"-c:v", "libx264",
+		"-preset", "veryfast",
+		"-pix_fmt", "yuv420p",
+		"-movflags", "+faststart",
 		outFile,
 	}
 }

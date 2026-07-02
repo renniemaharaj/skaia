@@ -5,6 +5,22 @@ export const mediaRecorderMimeType = () => {
   return candidates.find(type => MediaRecorder.isTypeSupported(type)) ?? "";
 };
 
+const waitForRecorderStart = (recorder: MediaRecorder) =>
+  new Promise<void>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error("Browser recording did not start cleanly"));
+    }, RECORDER_EVENT_TIMEOUT_MS);
+
+    recorder.addEventListener(
+      "start",
+      () => {
+        window.clearTimeout(timeoutId);
+        resolve();
+      },
+      { once: true }
+    );
+  });
+
 const stopRecorder = (recorder: MediaRecorder) =>
   new Promise<void>((resolve, reject) => {
     if (recorder.state === "inactive") {
@@ -45,8 +61,7 @@ export const createCanvasFramePump = (
   sourceCanvas: HTMLCanvasElement,
   captureCanvas: HTMLCanvasElement,
   fps: number,
-  durationSeconds: number,
-  videoTrack?: CanvasCaptureMediaStreamTrack
+  durationSeconds: number
 ): FramePump => {
   const totalFrames = Math.max(1, Math.ceil(durationSeconds * fps));
   const frameIntervalMs = 1000 / Math.max(fps, 1);
@@ -104,9 +119,8 @@ export const createCanvasFramePump = (
             });
           }
 
-          videoTrack?.requestFrame?.();
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
-          console.count("clip-maker requested frame");
+          console.count("clip-maker drew frame");
         } catch (error) {
           reject(
             error instanceof Error ? error : new Error("Could not capture the preview canvas")
@@ -163,7 +177,10 @@ export const recordCanvas = async ({
 
   context.drawImage(canvas, 0, 0, captureCanvas.width, captureCanvas.height);
 
-  const stream = captureCanvas.captureStream(0);
+  // Use a real FPS stream instead of captureStream(0) + requestFrame().
+  // Chrome can happily report requestFrame() calls while MediaRecorder still
+  // writes only a tiny WebM header with no encoded video clusters.
+  const stream = captureCanvas.captureStream(Math.max(1, fps));
   const videoTrack = stream.getVideoTracks()[0] as CanvasCaptureMediaStreamTrack | undefined;
 
   console.debug("capture stream", {
@@ -216,18 +233,22 @@ export const recordCanvas = async ({
     });
   });
 
-  const pump = createCanvasFramePump(canvas, captureCanvas, fps, durationSeconds, videoTrack);
+  const pump = createCanvasFramePump(canvas, captureCanvas, fps, durationSeconds);
 
   try {
     if (signal?.aborted) {
       throw new DOMException("Export was cancelled", "AbortError");
     }
 
-    recorder.start();
+    recorder.start(250);
+    await waitForRecorderStart(recorder);
 
     if (recorder.state !== "recording") {
       throw new Error("Browser recording did not start");
     }
+
+    // Give MediaRecorder one compositor tick after start before drawing frames.
+    await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
 
     await pump.run(renderFrame, signal);
 
@@ -245,6 +266,7 @@ export const recordCanvas = async ({
       captureDataUrlLength: captureCanvas.toDataURL("image/png").length,
     });
 
+    recorder.requestData();
     await new Promise<void>(resolve => window.setTimeout(resolve, 500));
     await stopRecorder(recorder);
   } catch (error) {
