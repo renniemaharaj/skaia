@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +22,7 @@ import (
 	"github.com/skaia/backend/internal/ws"
 )
 
-const maxProjectJSONBytes = 10 * 1024 * 1024
+const maxBrowserExportBytes = 512 * 1024 * 1024
 const tempExportTTL = time.Hour
 
 var tempCleanupOnce sync.Once
@@ -40,63 +39,67 @@ func NewHandler(hub *ws.Hub) *Handler {
 }
 
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
-	r.With(jwt).Post("/clip-maker/export", h.exportClip)
+	r.With(jwt).Post("/clip-maker/export", h.exportBrowserClip)
 	r.With(jwt).Get("/clip-maker/export/{token}/download", h.downloadTempExport)
 }
 
-func (h *Handler) exportClip(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) exportBrowserClip(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxProjectJSONBytes)
-	var req struct {
-		Project  json.RawMessage `json:"project"`
-		Filename string          `json:"filename"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid export request")
-		return
-	}
-	if len(req.Project) == 0 || string(req.Project) == "null" {
-		utils.WriteError(w, http.StatusBadRequest, "project is required")
+	r.Body = http.MaxBytesReader(w, r.Body, maxBrowserExportBytes)
+	if err := r.ParseMultipartForm(maxBrowserExportBytes); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid browser export upload")
 		return
 	}
 
-	cleanupExpiredTempExports()
-
-	project, rewrittenURLs, err := prepareProjectForRender(req.Project)
+	file, header, err := r.FormFile("recording")
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid project")
+		utils.WriteError(w, http.StatusBadRequest, "recording is required")
 		return
 	}
+	defer file.Close()
+
+	filename := r.FormValue("filename")
+	if filename == "" && header != nil {
+		filename = header.Filename
+	}
+
+	width := positiveFormInt(r, "width", 1920)
+	height := positiveFormInt(r, "height", 1080)
+	fps := positiveFormInt(r, "fps", 30)
 
 	startedAt := time.Now()
-	log.Printf("clipmaker: export started user=%d filename=%q upload_urls_rewritten=%d", userID, req.Filename, rewrittenURLs)
-	renderedPath, cleanup, direct, err := renderDirectUploadVideo(req.Project, userID)
-	if !direct {
-		renderedPath, cleanup, err = videorenderer.RenderVideo(project)
-	} else if err == nil {
-		log.Printf("clipmaker: direct upload export user=%d duration=%s", userID, time.Since(startedAt).Round(time.Millisecond))
-	}
+	log.Printf("clipmaker: browser export started user=%d filename=%q width=%d height=%d fps=%d", userID, filename, width, height, fps)
+
+	renderedPath, cleanup, err := videorenderer.FinalizeBrowserRecording(file, videorenderer.BrowserRecordingOptions{
+		Width:  width,
+		Height: height,
+		FPS:    fps,
+	})
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
-		log.Printf("clipmaker: export failed user=%d duration=%s error=%v", userID, time.Since(startedAt).Round(time.Millisecond), err)
+		log.Printf("clipmaker: browser export failed user=%d duration=%s error=%v", userID, time.Since(startedAt).Round(time.Millisecond), err)
 		utils.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	log.Printf("clipmaker: render completed user=%d duration=%s", userID, time.Since(startedAt).Round(time.Millisecond))
 
+	log.Printf("clipmaker: browser export finalized user=%d duration=%s", userID, time.Since(startedAt).Round(time.Millisecond))
+	h.writeRenderedExport(w, userID, renderedPath, filename, startedAt)
+}
+
+func (h *Handler) writeRenderedExport(w http.ResponseWriter, userID int64, renderedPath, requestedFilename string, startedAt time.Time) {
 	info, err := os.Stat(renderedPath)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "rendered file missing")
 		return
 	}
-	filename := req.Filename
+	filename := requestedFilename
 	if filename == "" {
 		filename = fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano())
 	}
@@ -134,286 +137,16 @@ func (h *Handler) exportClip(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func prepareProjectForRender(project json.RawMessage) (json.RawMessage, int, error) {
-	var value any
-	if err := json.Unmarshal(project, &value); err != nil {
-		return nil, 0, err
+func positiveFormInt(r *http.Request, key string, fallback int) int {
+	value := strings.TrimSpace(r.FormValue(key))
+	if value == "" {
+		return fallback
 	}
-
-	rewritten := 0
-	baseURL := renderBaseURL()
-	value = rewriteUploadURLs(value, baseURL, &rewritten)
-
-	if rewritten == 0 {
-		return project, 0, nil
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed <= 0 {
+		return fallback
 	}
-
-	bytes, err := json.Marshal(value)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return bytes, rewritten, nil
-}
-
-func rewriteUploadURLs(value any, baseURL string, rewritten *int) any {
-	switch v := value.(type) {
-	case map[string]any:
-		for key, child := range v {
-			v[key] = rewriteUploadURLs(child, baseURL, rewritten)
-		}
-		return v
-	case []any:
-		for i, child := range v {
-			v[i] = rewriteUploadURLs(child, baseURL, rewritten)
-		}
-		return v
-	case string:
-		if strings.HasPrefix(v, "/uploads/") {
-			*rewritten = *rewritten + 1
-			return baseURL + v
-		}
-		return v
-	default:
-		return v
-	}
-}
-
-func renderBaseURL() string {
-	if value := strings.TrimRight(os.Getenv("SKAIA_RENDER_BASE_URL"), "/"); value != "" {
-		return value
-	}
-
-	port := strings.TrimSpace(os.Getenv("PORT"))
-	if port == "" {
-		port = "8080"
-	}
-
-	return "http://127.0.0.1:" + port
-}
-
-func renderDirectUploadVideo(project json.RawMessage, userID int64) (string, func(), bool, error) {
-	src, ok, err := directUploadVideoSource(project, userID)
-	if err != nil || !ok {
-		return "", nil, ok, err
-	}
-
-	workDir, err := os.MkdirTemp("", "skaia-direct-export-*")
-	if err != nil {
-		return "", nil, true, fmt.Errorf("failed to create direct export workspace: %w", err)
-	}
-
-	cleanup := func() {
-		_ = os.RemoveAll(workDir)
-	}
-
-	outFile := filepath.Join(workDir, fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano()))
-	if err := copyFile(src, outFile); err != nil {
-		cleanup()
-		return "", nil, true, err
-	}
-
-	return outFile, cleanup, true, nil
-}
-
-func directUploadVideoSource(project json.RawMessage, userID int64) (string, bool, error) {
-	var root any
-	if err := json.Unmarshal(project, &root); err != nil {
-		return "", false, err
-	}
-
-	input := renderInput(root)
-	if input == nil {
-		return "", false, nil
-	}
-	if input["watermark"] != nil {
-		return "", false, nil
-	}
-
-	tracks, ok := input["tracks"].([]any)
-	if !ok {
-		return "", false, nil
-	}
-
-	var video map[string]any
-	for _, trackValue := range tracks {
-		track, ok := trackValue.(map[string]any)
-		if !ok {
-			return "", false, nil
-		}
-		elements, _ := track["elements"].([]any)
-		if len(elements) == 0 {
-			continue
-		}
-		if video != nil || len(elements) != 1 {
-			return "", false, nil
-		}
-		element, ok := elements[0].(map[string]any)
-		if !ok {
-			return "", false, nil
-		}
-		video = element
-	}
-
-	if video == nil || stringValue(video["type"]) != "video" || numberValue(video["s"]) != 0 {
-		return "", false, nil
-	}
-	if hasAny(video, "animation", "transition", "textEffect", "effect", "effects") || hasEditedFrame(video["frame"]) {
-		return "", false, nil
-	}
-
-	props, _ := video["props"].(map[string]any)
-	src := stringValue(props["src"])
-	if src == "" || numberValue(props["time"]) != 0 || nonDefaultNumber(props["playbackRate"], 1) {
-		return "", false, nil
-	}
-
-	if duration, ok := sourceDurationSeconds(root, src); ok && abs(numberValue(video["e"])-duration) > 0.25 {
-		return "", false, nil
-	}
-
-	sourcePath, ok := localUserUploadVideoPath(src, userID)
-	if !ok {
-		return "", false, nil
-	}
-
-	return sourcePath, true, nil
-}
-
-func renderInput(root any) map[string]any {
-	value, ok := root.(map[string]any)
-	if !ok {
-		return nil
-	}
-	if input, ok := value["input"].(map[string]any); ok {
-		return input
-	}
-	return value
-}
-
-func localUserUploadVideoPath(src string, userID int64) (string, bool) {
-	path := src
-	if parsed, err := url.Parse(src); err == nil && parsed.Path != "" {
-		path = parsed.Path
-	}
-
-	prefix := fmt.Sprintf("/uploads/users/%d/videos/", userID)
-	if !strings.HasPrefix(path, prefix) || strings.Contains(path, "..") || strings.ToLower(filepath.Ext(path)) != ".mp4" {
-		return "", false
-	}
-
-	candidate := "." + path
-	absBase, err := filepath.Abs(upload.UploadsDir)
-	if err != nil {
-		return "", false
-	}
-	absCandidate, err := filepath.Abs(candidate)
-	if err != nil {
-		return "", false
-	}
-	if absCandidate != absBase && !strings.HasPrefix(absCandidate, absBase+string(os.PathSeparator)) {
-		return "", false
-	}
-	if info, err := os.Stat(absCandidate); err != nil || info.IsDir() {
-		return "", false
-	}
-
-	return absCandidate, true
-}
-
-func sourceDurationSeconds(root any, src string) (float64, bool) {
-	project, ok := root.(map[string]any)
-	if !ok {
-		return 0, false
-	}
-	assets, ok := project["assets"].(map[string]any)
-	if !ok {
-		if input, ok := project["input"].(map[string]any); ok {
-			assets, _ = input["assets"].(map[string]any)
-		}
-	}
-	for _, value := range assets {
-		asset, ok := value.(map[string]any)
-		if !ok || stringValue(asset["url"]) != src {
-			continue
-		}
-		duration := numberValue(asset["duration"])
-		if duration > 1000 {
-			duration = duration / 1000
-		}
-		if duration > 0 {
-			return duration, true
-		}
-	}
-	return 0, false
-}
-
-func copyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("failed to open source video: %w", err)
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("failed to create direct export: %w", err)
-	}
-
-	if _, err := io.Copy(out, in); err != nil {
-		_ = out.Close()
-		return fmt.Errorf("failed to copy source video: %w", err)
-	}
-	return out.Close()
-}
-
-func hasAny(value map[string]any, keys ...string) bool {
-	for _, key := range keys {
-		if value[key] != nil {
-			return true
-		}
-	}
-	return false
-}
-
-func hasEditedFrame(value any) bool {
-	frame, ok := value.(map[string]any)
-	if !ok {
-		return false
-	}
-	return hasAny(frame, "x", "y", "rotation", "width", "height")
-}
-
-func stringValue(value any) string {
-	str, _ := value.(string)
-	return str
-}
-
-func numberValue(value any) float64 {
-	switch v := value.(type) {
-	case float64:
-		return v
-	case int:
-		return float64(v)
-	default:
-		return 0
-	}
-}
-
-func nonDefaultNumber(value any, defaultValue float64) bool {
-	switch value.(type) {
-	case nil:
-		return false
-	default:
-		return numberValue(value) != defaultValue
-	}
-}
-
-func abs(value float64) float64 {
-	if value < 0 {
-		return -value
-	}
-	return value
+	return parsed
 }
 
 func (h *Handler) writeTemporaryExport(w http.ResponseWriter, userID int64, renderedPath, filename string, size int64, reason string) {

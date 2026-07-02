@@ -44,9 +44,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 WORKDIR /app/internal/datasource/tsrunner
 RUN npm ci --omit=dev
 
-WORKDIR /app/internal/videorenderer
-RUN npm ci --omit=dev
-
 WORKDIR /app
 
 # Runtime stage
@@ -64,9 +61,9 @@ RUN printf '%s\n' \
     apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
-    chromium \
     docker.io \
     docker-compose \
+    ffmpeg \
     fonts-freefont-ttf \
     gosu \
     wget && \
@@ -78,23 +75,14 @@ COPY --from=builder /opt/node /opt/node
 
 WORKDIR /app
 
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-ENV TMPDIR=/tmp/skaia-render
-ENV TEMP=/tmp/skaia-render
-ENV TMP=/tmp/skaia-render
-
 COPY --from=builder /app/backend /app/backend
 COPY --from=builder /app/internal/datasource/tsrunner /app/internal/datasource/tsrunner
-COPY --from=builder /app/internal/videorenderer /app/internal/videorenderer
 
 RUN mkdir -p \
     /app/uploads \
-    /app/armed \
-    /tmp/skaia-render && \
+    /app/armed && \
     chmod +x /app/backend && \
-    chown -R appuser:appuser \
-    /app \
-    /tmp/skaia-render
+    chown -R appuser:appuser /app
 
 COPY <<'EOF' /app/entrypoint.sh
 #!/bin/sh
@@ -102,14 +90,11 @@ set -e
 
 mkdir -p \
     /app/uploads \
-    /app/armed \
-    /tmp/skaia-render
+    /app/armed
 
 chown -R appuser:appuser /app/uploads 2>/dev/null || true
 chown -R appuser:appuser /app/armed 2>/dev/null || true
-chown -R appuser:appuser /tmp/skaia-render 2>/dev/null || true
 chown -R appuser:appuser /app/internal/datasource 2>/dev/null || true
-chown -R appuser:appuser /app/internal/videorenderer 2>/dev/null || true
 
 if [ -S /var/run/docker.sock ]; then
     chgrp appuser /var/run/docker.sock 2>/dev/null || true
