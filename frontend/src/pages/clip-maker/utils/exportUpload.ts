@@ -78,66 +78,97 @@ export const streamFrameExport = async ({
   const totalFrames = Math.max(1, Math.ceil(durationSeconds * fps));
   const encoder = new TextEncoder();
 
-  const body = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const enqueueLine = (value: unknown) => {
-        controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
-      };
+  const writeFrameStream = async (enqueue: (chunk: Uint8Array) => void) => {
+    const enqueueLine = (value: unknown) => {
+      enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
+    };
 
-      try {
-        enqueueLine({
-          type: "meta",
-          filename,
-          fps,
-          width,
-          height,
-          duration_seconds: durationSeconds,
-          total_frames: totalFrames,
-          project,
-        });
+    enqueueLine({
+      type: "meta",
+      filename,
+      fps,
+      width,
+      height,
+      duration_seconds: durationSeconds,
+      total_frames: totalFrames,
+      project,
+    });
 
-        for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
-          if (signal.aborted) {
-            throw new DOMException("Export was cancelled", "AbortError");
-          }
-
-          const frameTimeSeconds = Math.min(frameIndex / fps, durationSeconds);
-          await renderFrame(frameIndex, frameTimeSeconds);
-          const blob = await captureFrame();
-          const bytes = new Uint8Array(await blob.arrayBuffer());
-
-          enqueueLine({
-            type: "frame",
-            index: frameIndex,
-            time_seconds: frameTimeSeconds,
-            content_type: blob.type || "image/png",
-            byte_length: bytes.byteLength,
-          });
-          controller.enqueue(bytes);
-          controller.enqueue(encoder.encode("\n"));
-        }
-
-        controller.close();
-      } catch (error) {
-        controller.error(error);
+    for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
+      if (signal.aborted) {
+        throw new DOMException("Export was cancelled", "AbortError");
       }
-    },
-    cancel() {
-      signal.throwIfAborted?.();
-    },
-  });
 
-  const response = await fetch(`${apiBaseUrl}/clip-maker/export/frames`, {
-    method: "POST",
-    headers: {
-      ...authHeaders(),
-      "Content-Type": "application/x-skaia-frame-stream",
-    },
-    body,
-    signal,
-    // Chromium requires this for streaming request bodies.
-    duplex: "half",
-  } as RequestInit & { duplex: "half" });
+      const frameTimeSeconds = Math.min(frameIndex / fps, durationSeconds);
+      await renderFrame(frameIndex, frameTimeSeconds);
+      const blob = await captureFrame();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+
+      enqueueLine({
+        type: "frame",
+        index: frameIndex,
+        time_seconds: frameTimeSeconds,
+        content_type: blob.type || "image/png",
+        byte_length: bytes.byteLength,
+      });
+      enqueue(bytes);
+      enqueue(encoder.encode("\n"));
+    }
+  };
+
+  const createStreamingBody = () =>
+    new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          await writeFrameStream(chunk => controller.enqueue(chunk));
+          controller.close();
+        } catch (error) {
+          controller.error(error);
+        }
+      },
+      cancel() {
+        signal.throwIfAborted?.();
+      },
+    });
+
+  const createBufferedBody = async () => {
+    const chunks: ArrayBuffer[] = [];
+    await writeFrameStream(chunk => {
+      const copy = new Uint8Array(chunk.byteLength);
+      copy.set(chunk);
+      chunks.push(copy.buffer);
+    });
+    return new Blob(chunks, { type: "application/octet-stream" });
+  };
+
+  const postFrameStream = async (body: BodyInit, streaming: boolean) => {
+    const init: RequestInit & { duplex?: "half" } = {
+      method: "POST",
+      headers: {
+        ...authHeaders(),
+        "Content-Type": "application/octet-stream",
+      },
+      body,
+      signal,
+    };
+
+    if (streaming) {
+      // Chromium requires this for streaming request bodies.
+      init.duplex = "half";
+    }
+
+    return fetch(`${apiBaseUrl}/clip-maker/export/frames`, init);
+  };
+
+  let response: Response;
+  try {
+    response = await postFrameStream(createStreamingBody() as BodyInit, true);
+  } catch (error) {
+    if (signal.aborted) {
+      throw error;
+    }
+    response = await postFrameStream(await createBufferedBody(), false);
+  }
 
   if (!response.ok) {
     let message = `HTTP ${response.status}`;
