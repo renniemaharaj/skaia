@@ -6,6 +6,7 @@
 package upload
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,7 +14,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
-	log "github.com/skaia/backend/internal/syslog"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -22,10 +22,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"database/sql"
-	"github.com/skaia/backend/database"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/skaia/backend/database"
+	log "github.com/skaia/backend/internal/syslog"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 )
@@ -601,6 +601,28 @@ func saveFile(src io.Reader, dir, filename string, userID int64, subdir string) 
 
 	url = fmt.Sprintf("/uploads/users/%d/%s/%s", userID, subdir, filename)
 	return url, size, nil
+}
+
+// SaveGeneratedVideo stores a server-generated MP4 in the caller's video uploads.
+func SaveGeneratedVideo(src io.Reader, userID int64, filename string) (UploadResponse, error) {
+	if filename == "" {
+		filename = fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano())
+	}
+	if strings.ToLower(filepath.Ext(filename)) != ".mp4" {
+		filename = strings.TrimSuffix(sanitizeName(filename), filepath.Ext(filename)) + ".mp4"
+	}
+	filename = sanitizeName(filename)
+
+	dir, err := userDir(userID, "videos")
+	if err != nil {
+		return UploadResponse{}, err
+	}
+
+	url, size, err := saveFile(src, dir, filename, userID, "videos")
+	if err != nil {
+		return UploadResponse{}, err
+	}
+	return UploadResponse{URL: url, Filename: filename, Size: size, Type: "video/mp4"}, nil
 }
 
 // detectContentType sniffs the MIME type from the first 512 bytes of file,

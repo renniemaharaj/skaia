@@ -1,0 +1,58 @@
+# Clip Maker Export
+
+## Scope
+
+Browser-rendered Twick frame capture, media transfer, backend validation, and
+ffmpeg MP4 finalization.
+
+## Load when
+
+Changing clip-maker export, Twick frame/audio capture, `/clip-maker/export/frames`,
+ffmpeg rendering, or temporary export downloads.
+
+## Owns
+
+- Frontend protocol writer: `frontend/src/pages/clip-maker/utils/exportUpload.ts`
+- Export orchestration: `frontend/src/pages/clip-maker/hooks/useClipExport.ts`
+- Backend protocol reader: `backend/internal/clipmaker/handler.go`
+- ffmpeg finalizer: `backend/internal/videorenderer/browser_recording.go`
+- Route: `POST /clip-maker/export/frames`
+
+## Contracts
+
+- The request body is `application/octet-stream` with newline-delimited JSON
+  headers followed by exact-length binary payloads and a newline delimiter.
+- The first record is metadata with dimensions, FPS, duration, frame count, and
+  audio-record count. Ordered PNG frame records follow, then ordered audio records.
+- Audio records carry source bytes plus timeline start/end, source trim, playback
+  rate, and volume. Both Twick audio and audible video elements may contribute.
+- The browser fetches media bytes. The backend never resolves project-provided URLs.
+- The backend validates record order, lengths, PNG data/dimensions, timing, rate,
+  volume, track count, and total request size before invoking ffmpeg.
+- ffmpeg builds H.264/yuv420p video, trims and offsets each audio input, mixes all
+  active inputs, encodes AAC at 192 kbps, and limits output to the frame duration.
+- A project with no active audio produces a valid video-only MP4.
+- Streaming upload is attempted first. Browser/proxy transport failure retries the
+  same protocol as a buffered Blob without building video in the frontend.
+
+## Invariants
+
+- Export requests require JWT authentication and remain capped at 512 MiB.
+- At most 32 audio records are accepted; each is capped at 128 MiB.
+- Export duration is positive and at most ten minutes.
+- Authentication headers are never forwarded to cross-origin media hosts.
+- Workspaces and temporary render outputs are removed after request completion.
+
+## Verify
+
+- Backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- Frontend: from `frontend/`, `mise exec node@24.16.0 -- npm run build`
+- Focused argument/protocol tests:
+  `backend/internal/videorenderer/browser_recording_test.go` and
+  `backend/internal/clipmaker/frame_stream_test.go`
+
+## Trace
+
+- `.routines/worker`
+- `.routines/correctness`
+- `.routines/auditor`

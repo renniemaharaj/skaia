@@ -62,7 +62,10 @@ const Particles = lazy(() => import("../components/ui/Particles/Particles"));
 const GravityParticlesWithCursors = ({
   particleCount,
   physicsSettings,
-}: { particleCount: number; physicsSettings: { rendererType: string; rendererText: string } }) => {
+}: {
+  particleCount: number;
+  physicsSettings: { rendererType: string; rendererText: string };
+}) => {
   const cursorPositions = useAtomValue(cursorPositionsAtom);
   const externalCursors = useMemo(() => {
     return Array.from(cursorPositions.values()).map(c => ({
@@ -368,6 +371,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/tmp/")) return true;
     if (pathname.startsWith("/flow")) return true;
     if (pathname.startsWith("/stream/")) return true;
+    if (pathname.startsWith("/clip-maker")) return true;
     return false;
   };
   const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
@@ -654,15 +658,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </Suspense>
       )}
-      <Header
-        cartCount={cartCount}
-        isDarkMode={isDarkMode}
-        onDarkModeToggle={dark => specifyTheme(dark ? "dark" : "light")}
-        layoutMode={effectiveLayoutMode as "application" | "web"}
-        onToggleLayoutMode={() =>
-          setLayoutMode(layoutMode === "application" ? "web" : "application")
-        }
-      />
+      {!location.pathname.startsWith("/clip-maker") && (
+        <Header
+          cartCount={cartCount}
+          isDarkMode={isDarkMode}
+          onDarkModeToggle={dark => specifyTheme(dark ? "dark" : "light")}
+          layoutMode={effectiveLayoutMode as "application" | "web"}
+          onToggleLayoutMode={() =>
+            setLayoutMode(layoutMode === "application" ? "web" : "application")
+          }
+        />
+      )}
       <main className="layout-main">{!isPresenceSplitMode ? children : null}</main>
       {effectiveLayoutMode === "web" && <Footer />}
       {(features?.presence ?? true) ? (

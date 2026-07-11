@@ -46,7 +46,6 @@ export const pendingTpUserAtom = atom<number | null>(null);
 export const layoutChildrenAtom = atom<ReactNode | null>(null);
 
 registerResource("presence:update", onlineUsersAtom, (_prev, data: { users?: OnlineUser[] }) => {
-  console.log("presence:update", data);
   return Array.isArray(data) ? data : _prev;
 });
 registerResource("cursor:update", cursorPositionsAtom, (prev, data: CursorPosition) => {
