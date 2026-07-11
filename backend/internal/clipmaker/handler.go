@@ -8,6 +8,7 @@ import (
 	"image"
 	_ "image/png"
 	"io"
+	"math"
 	"mime"
 	"net/http"
 	"os"
@@ -27,6 +28,8 @@ import (
 )
 
 const maxBrowserExportBytes = 512 * 1024 * 1024
+const maxAudioTrackBytes = 128 * 1024 * 1024
+const maxAudioTracks = 32
 const tempExportTTL = time.Hour
 
 var tempCleanupOnce sync.Once
@@ -110,14 +113,14 @@ func (h *Handler) exportBrowserClip(w http.ResponseWriter, r *http.Request) {
 }
 
 type frameStreamMeta struct {
-	Type            string          `json:"type"`
-	Filename        string          `json:"filename"`
-	FPS             int             `json:"fps"`
-	Width           int             `json:"width"`
-	Height          int             `json:"height"`
-	DurationSeconds float64         `json:"duration_seconds"`
-	TotalFrames     int             `json:"total_frames"`
-	Project         json.RawMessage `json:"project,omitempty"`
+	Type            string  `json:"type"`
+	Filename        string  `json:"filename"`
+	FPS             int     `json:"fps"`
+	Width           int     `json:"width"`
+	Height          int     `json:"height"`
+	DurationSeconds float64 `json:"duration_seconds"`
+	TotalFrames     int     `json:"total_frames"`
+	AudioTracks     int     `json:"audio_tracks"`
 }
 
 type frameStreamHeader struct {
@@ -126,6 +129,18 @@ type frameStreamHeader struct {
 	TimeSeconds float64 `json:"time_seconds"`
 	ContentType string  `json:"content_type"`
 	ByteLength  int64   `json:"byte_length"`
+}
+
+type audioStreamHeader struct {
+	Type         string  `json:"type"`
+	Index        int     `json:"index"`
+	StartSeconds float64 `json:"start_seconds"`
+	EndSeconds   float64 `json:"end_seconds"`
+	TrimSeconds  float64 `json:"trim_seconds"`
+	PlaybackRate float64 `json:"playback_rate"`
+	Volume       float64 `json:"volume"`
+	ContentType  string  `json:"content_type"`
+	ByteLength   int64   `json:"byte_length"`
 }
 
 func (h *Handler) exportFrameStream(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +161,7 @@ func (h *Handler) exportFrameStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	workDir, cleanup, err := writeFrameStreamImages(reader, meta)
+	workDir, audioTracks, cleanup, err := writeFrameStreamMedia(reader, meta)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -161,6 +176,7 @@ func (h *Handler) exportFrameStream(w http.ResponseWriter, r *http.Request) {
 		Height:      meta.Height,
 		FPS:         meta.FPS,
 		TotalFrames: meta.TotalFrames,
+		AudioTracks: audioTracks,
 	})
 	if renderCleanup != nil {
 		defer renderCleanup()
@@ -197,16 +213,22 @@ func readFrameStreamMeta(reader *bufio.Reader) (frameStreamMeta, error) {
 	if meta.TotalFrames <= 0 || meta.TotalFrames > meta.FPS*60*10 {
 		return frameStreamMeta{}, fmt.Errorf("invalid frame stream frame count")
 	}
+	if math.IsNaN(meta.DurationSeconds) || math.IsInf(meta.DurationSeconds, 0) || meta.DurationSeconds <= 0 || meta.DurationSeconds > 600 {
+		return frameStreamMeta{}, fmt.Errorf("invalid frame stream duration")
+	}
+	if meta.AudioTracks < 0 || meta.AudioTracks > maxAudioTracks {
+		return frameStreamMeta{}, fmt.Errorf("invalid audio track count")
+	}
 	if meta.Filename == "" {
 		meta.Filename = fmt.Sprintf("clip-%d.mp4", time.Now().UnixNano())
 	}
 	return meta, nil
 }
 
-func writeFrameStreamImages(reader *bufio.Reader, meta frameStreamMeta) (string, func(), error) {
+func writeFrameStreamMedia(reader *bufio.Reader, meta frameStreamMeta) (string, []videorenderer.AudioTrack, func(), error) {
 	workDir, err := os.MkdirTemp("", "skaia-frame-export-*")
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to create frame export workspace")
+		return "", nil, nil, fmt.Errorf("failed to create frame export workspace")
 	}
 	cleanup := func() {
 		_ = os.RemoveAll(workDir)
@@ -215,50 +237,116 @@ func writeFrameStreamImages(reader *bufio.Reader, meta frameStreamMeta) (string,
 	framesDir := filepath.Join(workDir, "frames")
 	if err := os.MkdirAll(framesDir, 0755); err != nil {
 		cleanup()
-		return "", nil, fmt.Errorf("failed to create frame workspace")
+		return "", nil, nil, fmt.Errorf("failed to create frame workspace")
 	}
 
 	for expectedIndex := 0; expectedIndex < meta.TotalFrames; expectedIndex++ {
 		header, err := readFrameHeader(reader)
 		if err != nil {
 			cleanup()
-			return "", nil, err
+			return "", nil, nil, err
 		}
 		if header.Type != "frame" || header.Index != expectedIndex {
 			cleanup()
-			return "", nil, fmt.Errorf("invalid frame order at frame %d", expectedIndex)
+			return "", nil, nil, fmt.Errorf("invalid frame order at frame %d", expectedIndex)
 		}
 		if header.ContentType != "" && header.ContentType != "image/png" {
 			cleanup()
-			return "", nil, fmt.Errorf("frame %d must be image/png", expectedIndex)
+			return "", nil, nil, fmt.Errorf("frame %d must be image/png", expectedIndex)
 		}
 		if header.ByteLength <= 0 || header.ByteLength > 64*1024*1024 {
 			cleanup()
-			return "", nil, fmt.Errorf("invalid frame %d byte length", expectedIndex)
+			return "", nil, nil, fmt.Errorf("invalid frame %d byte length", expectedIndex)
 		}
 
 		frameBytes := make([]byte, header.ByteLength)
 		if _, err := io.ReadFull(reader, frameBytes); err != nil {
 			cleanup()
-			return "", nil, fmt.Errorf("frame %d is incomplete", expectedIndex)
+			return "", nil, nil, fmt.Errorf("frame %d is incomplete", expectedIndex)
 		}
 		if err := consumeFrameDelimiter(reader); err != nil {
 			cleanup()
-			return "", nil, fmt.Errorf("frame %d delimiter missing", expectedIndex)
+			return "", nil, nil, fmt.Errorf("frame %d delimiter missing", expectedIndex)
 		}
 		if err := validatePNGFrame(frameBytes, meta.Width, meta.Height, expectedIndex); err != nil {
 			cleanup()
-			return "", nil, err
+			return "", nil, nil, err
 		}
 
 		framePath := filepath.Join(framesDir, fmt.Sprintf("frame-%06d.png", expectedIndex))
 		if err := os.WriteFile(framePath, frameBytes, 0644); err != nil {
 			cleanup()
-			return "", nil, fmt.Errorf("failed to write frame %d", expectedIndex)
+			return "", nil, nil, fmt.Errorf("failed to write frame %d", expectedIndex)
 		}
 	}
 
-	return workDir, cleanup, nil
+	audioTracks := make([]videorenderer.AudioTrack, 0, meta.AudioTracks)
+	for expectedIndex := 0; expectedIndex < meta.AudioTracks; expectedIndex++ {
+		header, err := readAudioHeader(reader)
+		if err != nil {
+			cleanup()
+			return "", nil, nil, err
+		}
+		if err := validateAudioHeader(header, expectedIndex, meta.DurationSeconds); err != nil {
+			cleanup()
+			return "", nil, nil, err
+		}
+		audioPath := filepath.Join(workDir, fmt.Sprintf("audio-%03d.media", expectedIndex))
+		file, err := os.Create(audioPath)
+		if err != nil {
+			cleanup()
+			return "", nil, nil, fmt.Errorf("failed to create audio track %d", expectedIndex)
+		}
+		_, copyErr := io.CopyN(file, reader, header.ByteLength)
+		closeErr := file.Close()
+		if copyErr != nil || closeErr != nil {
+			cleanup()
+			return "", nil, nil, fmt.Errorf("audio track %d is incomplete", expectedIndex)
+		}
+		if err := consumeFrameDelimiter(reader); err != nil {
+			cleanup()
+			return "", nil, nil, fmt.Errorf("audio track %d delimiter missing", expectedIndex)
+		}
+		audioTracks = append(audioTracks, videorenderer.AudioTrack{
+			Path: audioPath, StartSeconds: header.StartSeconds, EndSeconds: header.EndSeconds,
+			TrimSeconds: header.TrimSeconds, PlaybackRate: header.PlaybackRate, Volume: header.Volume,
+		})
+	}
+
+	return workDir, audioTracks, cleanup, nil
+}
+
+func readAudioHeader(reader *bufio.Reader) (audioStreamHeader, error) {
+	line, err := reader.ReadBytes('\n')
+	if err != nil {
+		return audioStreamHeader{}, fmt.Errorf("missing audio header")
+	}
+	var header audioStreamHeader
+	if err := json.Unmarshal(bytes.TrimSpace(line), &header); err != nil {
+		return audioStreamHeader{}, fmt.Errorf("invalid audio header")
+	}
+	return header, nil
+}
+
+func validateAudioHeader(header audioStreamHeader, expectedIndex int, durationSeconds float64) error {
+	finite := func(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+	if header.Type != "audio" || header.Index != expectedIndex {
+		return fmt.Errorf("invalid audio track order at track %d", expectedIndex)
+	}
+	if !finite(header.StartSeconds) || !finite(header.EndSeconds) || !finite(header.TrimSeconds) ||
+		!finite(header.PlaybackRate) || !finite(header.Volume) {
+		return fmt.Errorf("audio track %d has invalid values", expectedIndex)
+	}
+	if header.StartSeconds < 0 || header.EndSeconds <= header.StartSeconds || header.EndSeconds > durationSeconds+0.001 || header.TrimSeconds < 0 {
+		return fmt.Errorf("audio track %d has invalid timing", expectedIndex)
+	}
+	if header.PlaybackRate < 0.25 || header.PlaybackRate > 4 || header.Volume < 0 || header.Volume > 4 {
+		return fmt.Errorf("audio track %d has invalid playback settings", expectedIndex)
+	}
+	if header.ByteLength <= 0 || header.ByteLength > maxAudioTrackBytes {
+		return fmt.Errorf("audio track %d has invalid byte length", expectedIndex)
+	}
+	return nil
 }
 
 func readFrameHeader(reader *bufio.Reader) (frameStreamHeader, error) {

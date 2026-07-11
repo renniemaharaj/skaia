@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -24,6 +25,16 @@ type FrameRenderOptions struct {
 	Height      int
 	FPS         int
 	TotalFrames int
+	AudioTracks []AudioTrack
+}
+
+type AudioTrack struct {
+	Path         string
+	StartSeconds float64
+	EndSeconds   float64
+	TrimSeconds  float64
+	PlaybackRate float64
+	Volume       float64
 }
 
 func FinalizeBrowserRecording(recording io.Reader, options BrowserRecordingOptions) (string, func(), error) {
@@ -198,17 +209,67 @@ func pngFrameFFmpegArgs(inputPattern, outFile string, options FrameRenderOptions
 		fps = 30
 	}
 
-	return []string{
+	args := []string{
 		"-y",
 		"-framerate", strconv.Itoa(fps),
 		"-i", inputPattern,
+	}
+	for _, track := range options.AudioTracks {
+		args = append(args, "-i", track.Path)
+	}
+
+	args = append(args,
 		"-frames:v", strconv.Itoa(options.TotalFrames),
 		"-r", strconv.Itoa(fps),
 		"-vf", fmt.Sprintf("scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2,setsar=1", width, height, width, height),
+	)
+	if len(options.AudioTracks) > 0 {
+		filters := make([]string, 0, len(options.AudioTracks)+1)
+		mixInputs := ""
+		for index, track := range options.AudioTracks {
+			duration := track.EndSeconds - track.StartSeconds
+			trimStart := track.TrimSeconds * track.PlaybackRate
+			trimDuration := duration * track.PlaybackRate
+			label := fmt.Sprintf("a%d", index)
+			filters = append(filters, fmt.Sprintf(
+				"[%d:a]atrim=start=%s:duration=%s,asetpts=PTS-STARTPTS,%svolume=%s,adelay=%d:all=1[%s]",
+				index+1, ffmpegFloat(trimStart), ffmpegFloat(trimDuration), atempoFilters(track.PlaybackRate),
+				ffmpegFloat(track.Volume), int64(track.StartSeconds*1000), label,
+			))
+			mixInputs += "[" + label + "]"
+		}
+		filters = append(filters, fmt.Sprintf("%samix=inputs=%d:duration=longest:normalize=0[aout]", mixInputs, len(options.AudioTracks)))
+		args = append(args, "-filter_complex", strings.Join(filters, ";"), "-map", "0:v:0", "-map", "[aout]")
+	}
+	args = append(args,
 		"-c:v", "libx264",
 		"-preset", "veryfast",
 		"-pix_fmt", "yuv420p",
-		"-movflags", "+faststart",
-		outFile,
+	)
+	if len(options.AudioTracks) > 0 {
+		args = append(args, "-c:a", "aac", "-b:a", "192k")
 	}
+	args = append(args,
+		"-movflags", "+faststart",
+		"-t", ffmpegFloat(float64(options.TotalFrames)/float64(fps)),
+		outFile,
+	)
+	return args
+}
+
+func ffmpegFloat(value float64) string {
+	return strconv.FormatFloat(value, 'f', 6, 64)
+}
+
+func atempoFilters(rate float64) string {
+	filters := ""
+	for rate > 2 {
+		filters += "atempo=2,"
+		rate /= 2
+	}
+	for rate < 0.5 {
+		filters += "atempo=0.5,"
+		rate /= 0.5
+	}
+	return filters + "atempo=" + ffmpegFloat(rate) + ","
 }

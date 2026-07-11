@@ -23,6 +23,13 @@ const authHeaders = (): Record<string, string> => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+const fetchAudioSource = (src: string, apiBaseUrl: string, signal: AbortSignal) => {
+  const sourceUrl = new URL(src, window.location.href);
+  const apiUrl = new URL(apiBaseUrl || window.location.origin, window.location.href);
+  const headers = sourceUrl.origin === apiUrl.origin ? authHeaders() : undefined;
+  return fetch(sourceUrl, { headers, signal });
+};
+
 export const uploadRecording = async (
   recording: Blob,
   videoSettings: VideoSettingsLike,
@@ -63,6 +70,51 @@ export type StreamFramesOptions = {
   signal: AbortSignal;
 };
 
+type ProjectAudioTrack = {
+  src: string;
+  startSeconds: number;
+  endSeconds: number;
+  trimSeconds: number;
+  playbackRate: number;
+  volume: number;
+};
+
+const projectAudioTracks = (project: any, durationSeconds: number): ProjectAudioTrack[] => {
+  const input = project?.input ?? project;
+  const tracks = Array.isArray(input?.tracks) ? input.tracks : [];
+  const audio: ProjectAudioTrack[] = [];
+
+  for (const track of tracks) {
+    const elements = Array.isArray(track?.elements) ? track.elements : [];
+    for (const element of elements) {
+      if (element?.type !== "audio" && element?.type !== "video") continue;
+      if (element?.props?.play === false) continue;
+      const src = typeof element?.props?.src === "string" ? element.props.src.trim() : "";
+      const startSeconds = Number(element?.s);
+      const endSeconds = Math.min(Number(element?.e), durationSeconds);
+      if (!src || !Number.isFinite(startSeconds) || !Number.isFinite(endSeconds)) continue;
+      if (startSeconds < 0 || endSeconds <= startSeconds) continue;
+
+      const trimSeconds = Number(element?.props?.time ?? 0);
+      const playbackRate = Number(element?.props?.playbackRate ?? 1);
+      const volume = Number(element?.props?.volume ?? 1);
+      audio.push({
+        src,
+        startSeconds,
+        endSeconds,
+        trimSeconds: Number.isFinite(trimSeconds) && trimSeconds >= 0 ? trimSeconds : 0,
+        playbackRate:
+          Number.isFinite(playbackRate) && playbackRate >= 0.25 && playbackRate <= 4
+            ? playbackRate
+            : 1,
+        volume: Number.isFinite(volume) && volume >= 0 && volume <= 4 ? volume : 1,
+      });
+    }
+  }
+
+  return audio.slice(0, 32);
+};
+
 export const streamFrameExport = async ({
   apiBaseUrl,
   fps,
@@ -77,6 +129,7 @@ export const streamFrameExport = async ({
   const filename = `clip-${Date.now()}.mp4`;
   const totalFrames = Math.max(1, Math.ceil(durationSeconds * fps));
   const encoder = new TextEncoder();
+  const audioTracks = projectAudioTracks(project, durationSeconds);
 
   const writeFrameStream = async (enqueue: (chunk: Uint8Array) => void) => {
     const enqueueLine = (value: unknown) => {
@@ -91,7 +144,7 @@ export const streamFrameExport = async ({
       height,
       duration_seconds: durationSeconds,
       total_frames: totalFrames,
-      project,
+      audio_tracks: audioTracks.length,
     });
 
     for (let frameIndex = 0; frameIndex < totalFrames; frameIndex += 1) {
@@ -109,6 +162,29 @@ export const streamFrameExport = async ({
         index: frameIndex,
         time_seconds: frameTimeSeconds,
         content_type: blob.type || "image/png",
+        byte_length: bytes.byteLength,
+      });
+      enqueue(bytes);
+      enqueue(encoder.encode("\n"));
+    }
+
+    for (let audioIndex = 0; audioIndex < audioTracks.length; audioIndex += 1) {
+      if (signal.aborted) throw new DOMException("Export was cancelled", "AbortError");
+      const track = audioTracks[audioIndex];
+      const response = await fetchAudioSource(track.src, apiBaseUrl, signal);
+      if (!response.ok) throw new Error(`Could not load audio track ${audioIndex + 1}`);
+      const blob = await response.blob();
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+
+      enqueueLine({
+        type: "audio",
+        index: audioIndex,
+        start_seconds: track.startSeconds,
+        end_seconds: track.endSeconds,
+        trim_seconds: track.trimSeconds,
+        playback_rate: track.playbackRate,
+        volume: track.volume,
+        content_type: blob.type || "application/octet-stream",
         byte_length: bytes.byteLength,
       });
       enqueue(bytes);
