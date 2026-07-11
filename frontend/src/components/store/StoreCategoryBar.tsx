@@ -3,6 +3,7 @@ import {
   ClipboardList,
   Columns2,
   LayoutGrid,
+  PanelLeft,
   Plus,
   SlidersHorizontal,
   Trash2,
@@ -29,8 +30,10 @@ interface StoreCategoryBarProps {
   canDeleteCategory: boolean;
   isAuthenticated: boolean;
   viewMode: StoreViewMode;
+  isDocked: boolean;
   onChangeFilters: (filters: StoreFilterState) => void;
   onChangeViewMode: (viewMode: StoreViewMode) => void;
+  onToggleDock: () => void;
   onToggleOwnProducts: () => void;
   onToggleCategory: (categoryId: string) => void;
   onClearFilters: () => void;
@@ -59,8 +62,10 @@ export function StoreCategoryBar({
   canDeleteCategory,
   isAuthenticated,
   viewMode,
+  isDocked,
   onChangeFilters,
   onChangeViewMode,
+  onToggleDock,
   onToggleOwnProducts,
   onToggleCategory,
   onClearFilters,
@@ -129,6 +134,20 @@ export function StoreCategoryBar({
             </div>
           ))}
           <div className="store-bar-actions">
+            <Button
+              size="sm"
+              variant="action"
+              className="store-dock-toggle"
+              onClick={onToggleDock}
+              title={isDocked ? "Use horizontal store controls" : "Dock store controls on the left"}
+              aria-label={
+                isDocked ? "Use horizontal store controls" : "Dock store controls on the left"
+              }
+              aria-pressed={isDocked}
+              iconLeft={<PanelLeft size={16} />}
+            >
+              <span className="store-action-label">{isDocked ? "Undock" : "Dock"}</span>
+            </Button>
             {canCreateCategory && (
               <Button
                 size="sm"

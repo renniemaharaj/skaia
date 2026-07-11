@@ -75,6 +75,9 @@ const hasPendingVendorWork = (order: Order) => {
 
 export const Store: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [isCategoryBarDocked, setIsCategoryBarDocked] = useState(
+    () => localStorage.getItem("store-category-bar-docked") === "true"
+  );
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedMedia, setSelectedMedia] = useState<{
     items: PreviewMediaItem[];
@@ -428,41 +431,54 @@ export const Store: React.FC = () => {
     }
   };
 
+  const handleToggleCategoryBarDock = () => {
+    setIsCategoryBarDocked(docked => {
+      localStorage.setItem("store-category-bar-docked", String(!docked));
+      return !docked;
+    });
+  };
+
   return (
     <div className="store-container">
-      <StoreCategoryBar
-        categories={categories}
-        filters={filters}
-        resultCount={visibleProducts.length}
-        currentUser={currentUser}
-        walletBalance={walletBalance}
-        pendingOrderCount={pendingOrderCount}
-        canCreateCategory={canCreateCategory}
-        canCreateProduct={canCreateProduct}
-        canDeleteCategory={canDeleteCategory}
-        isAuthenticated={isAuthenticated}
-        viewMode={viewMode}
-        onChangeFilters={setFilters}
-        onChangeViewMode={handleChangeViewMode}
-        onToggleOwnProducts={handleToggleOwnProducts}
-        onToggleCategory={handleToggleCategory}
-        onClearFilters={handleClearFilters}
-        onDeleteCategory={handleDeleteCategory}
-        onNavigate={navigate}
-      />
+      <div
+        className={`store-catalog-layout${isCategoryBarDocked ? " store-catalog-layout--docked" : ""}`}
+      >
+        <StoreCategoryBar
+          categories={categories}
+          filters={filters}
+          resultCount={visibleProducts.length}
+          currentUser={currentUser}
+          walletBalance={walletBalance}
+          pendingOrderCount={pendingOrderCount}
+          canCreateCategory={canCreateCategory}
+          canCreateProduct={canCreateProduct}
+          canDeleteCategory={canDeleteCategory}
+          isAuthenticated={isAuthenticated}
+          viewMode={viewMode}
+          isDocked={isCategoryBarDocked}
+          onChangeFilters={setFilters}
+          onChangeViewMode={handleChangeViewMode}
+          onToggleDock={handleToggleCategoryBarDock}
+          onToggleOwnProducts={handleToggleOwnProducts}
+          onToggleCategory={handleToggleCategory}
+          onClearFilters={handleClearFilters}
+          onDeleteCategory={handleDeleteCategory}
+          onNavigate={navigate}
+        />
 
-      <StoreProductGrid
-        loading={loading}
-        products={visibleProducts}
-        canCreateProduct={canCreateProduct}
-        canEditProduct={canEditProduct}
-        canDeleteProduct={canDeleteProduct}
-        viewMode={viewMode}
-        onEditProduct={setEditingProduct}
-        onDeleteProduct={handleDeleteProduct}
-        onAddToCart={handleAddToCart}
-        onImagePreview={handlePreviewProductMedia}
-      />
+        <StoreProductGrid
+          loading={loading}
+          products={visibleProducts}
+          canCreateProduct={canCreateProduct}
+          canEditProduct={canEditProduct}
+          canDeleteProduct={canDeleteProduct}
+          viewMode={viewMode}
+          onEditProduct={setEditingProduct}
+          onDeleteProduct={handleDeleteProduct}
+          onAddToCart={handleAddToCart}
+          onImagePreview={handlePreviewProductMedia}
+        />
+      </div>
 
       {selectedMedia && (
         <MediaPreviewLightbox
