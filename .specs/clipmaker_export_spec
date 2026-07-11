@@ -1,4 +1,4 @@
-# Clip Maker Export
+# Clipmaker Export
 
 ## Scope
 
@@ -7,16 +7,16 @@ ffmpeg MP4 finalization.
 
 ## Load when
 
-Changing clip-maker export, Twick frame/audio capture, `/clip-maker/export/frames`,
+Changing clipmaker export, Twick frame/audio capture, `/clipmaker/export/frames`,
 ffmpeg rendering, or temporary export downloads.
 
 ## Owns
 
-- Frontend protocol writer: `frontend/src/pages/clip-maker/utils/exportUpload.ts`
-- Export orchestration: `frontend/src/pages/clip-maker/hooks/useClipExport.ts`
+- Frontend protocol writer: `frontend/src/pages/clipmaker/utils/exportUpload.ts`
+- Export orchestration: `frontend/src/pages/clipmaker/hooks/useClipExport.ts`
 - Backend protocol reader: `backend/internal/clipmaker/handler.go`
 - ffmpeg finalizer: `backend/internal/videorenderer/browser_recording.go`
-- Route: `POST /clip-maker/export/frames`
+- Route: `POST /clipmaker/export/frames`
 
 ## Contracts
 

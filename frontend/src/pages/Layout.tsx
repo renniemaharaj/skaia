@@ -371,7 +371,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/tmp/")) return true;
     if (pathname.startsWith("/flow")) return true;
     if (pathname.startsWith("/stream/")) return true;
-    if (pathname.startsWith("/clip-maker")) return true;
+    if (pathname.startsWith("/clipmaker")) return true;
     return false;
   };
   const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
@@ -658,7 +658,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </Suspense>
       )}
-      {!location.pathname.startsWith("/clip-maker") && (
+      {!location.pathname.startsWith("/clipmaker") && (
         <Header
           cartCount={cartCount}
           isDarkMode={isDarkMode}

@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 const useTheme = () => {
   const location = useLocation();
-  const isClipMaker = location.pathname.startsWith("/clip-maker");
+  const isClipMaker = location.pathname.startsWith("/clipmaker");
 
   const detectOverride = () => {
     const override = localStorage.getItem("theme");

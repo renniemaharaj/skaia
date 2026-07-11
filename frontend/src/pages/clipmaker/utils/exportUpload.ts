@@ -51,7 +51,7 @@ export const uploadRecording = async (
   const header = new Uint8Array(await recording.slice(0, 32).arrayBuffer());
 
   console.log([...header].map(b => b.toString(16).padStart(2, "0")).join(" "));
-  return apiRequest<ExportUpload>("/clip-maker/export", {
+  return apiRequest<ExportUpload>("/clipmaker/export", {
     method: "POST",
     body: formData,
     signal,
@@ -233,7 +233,7 @@ export const streamFrameExport = async ({
       init.duplex = "half";
     }
 
-    return fetch(`${apiBaseUrl}/clip-maker/export/frames`, init);
+    return fetch(`${apiBaseUrl}/clipmaker/export/frames`, init);
   };
 
   let response: Response;

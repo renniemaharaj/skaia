@@ -111,7 +111,7 @@ export const syncExportButtonState = (root: HTMLElement | null, isExporting: boo
   exportButtons.forEach(button => {
     if (isExporting) {
       const existingIcon = Array.from(button.children).find(child => {
-        if (child.classList.contains("clip-maker-export-spinner")) return false;
+        if (child.classList.contains("clipmaker-export-spinner")) return false;
         const tagName = child.tagName.toLowerCase();
         const className =
           typeof child.className === "string"
@@ -126,20 +126,20 @@ export const syncExportButtonState = (root: HTMLElement | null, isExporting: boo
       if (!button.dataset.clipMakerOriginalDisabled) {
         button.dataset.clipMakerOriginalDisabled = button.disabled ? "true" : "false";
       }
-      if (existingIcon && !existingIcon.hasAttribute("data-clip-maker-hidden-export-icon")) {
-        existingIcon.setAttribute("data-clip-maker-hidden-export-icon", "true");
+      if (existingIcon && !existingIcon.hasAttribute("data-clipmaker-hidden-export-icon")) {
+        existingIcon.setAttribute("data-clipmaker-hidden-export-icon", "true");
         existingIcon.setAttribute(
-          "data-clip-maker-original-display",
+          "data-clipmaker-original-display",
           existingIcon.style.display || ""
         );
         existingIcon.style.display = "none";
       }
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
-      button.classList.add("clip-maker-export-button-loading");
-      if (!button.querySelector(".clip-maker-export-spinner")) {
+      button.classList.add("clipmaker-export-button-loading");
+      if (!button.querySelector(".clipmaker-export-spinner")) {
         const spinner = document.createElement("span");
-        spinner.className = "clip-maker-export-spinner";
+        spinner.className = "clipmaker-export-spinner";
         spinner.setAttribute("aria-hidden", "true");
         button.prepend(spinner);
       }
@@ -149,14 +149,14 @@ export const syncExportButtonState = (root: HTMLElement | null, isExporting: boo
     const wasDisabled = button.dataset.clipMakerOriginalDisabled === "true";
     button.disabled = wasDisabled;
     button.removeAttribute("aria-busy");
-    button.classList.remove("clip-maker-export-button-loading");
-    button.querySelector(".clip-maker-export-spinner")?.remove();
+    button.classList.remove("clipmaker-export-button-loading");
+    button.querySelector(".clipmaker-export-spinner")?.remove();
     button
-      .querySelectorAll<HTMLElement | SVGElement>("[data-clip-maker-hidden-export-icon]")
+      .querySelectorAll<HTMLElement | SVGElement>("[data-clipmaker-hidden-export-icon]")
       .forEach(icon => {
-        icon.style.display = icon.getAttribute("data-clip-maker-original-display") || "";
-        icon.removeAttribute("data-clip-maker-hidden-export-icon");
-        icon.removeAttribute("data-clip-maker-original-display");
+        icon.style.display = icon.getAttribute("data-clipmaker-original-display") || "";
+        icon.removeAttribute("data-clipmaker-hidden-export-icon");
+        icon.removeAttribute("data-clipmaker-original-display");
       });
     delete button.dataset.clipMakerOriginalDisabled;
   });

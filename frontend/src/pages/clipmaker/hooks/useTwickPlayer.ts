@@ -1,6 +1,6 @@
 import { PLAYER_STATE, useLivePlayerContext } from "@twick/live-player";
 import { TIMELINE_ACTION, useTimelineContext } from "@twick/timeline";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 const PROJECT_REFRESH_TIMEOUT_MS = 8_000;
 const FRAME_SEEK_TIMEOUT_MS = 200;
@@ -91,11 +91,8 @@ export const useTwickPlayer = () => {
     setPlayerState(PLAYER_STATE.PAUSED);
   }, [setCurrentTime, setSeekTime, setPlayerState]);
 
-  return {
-    totalDuration,
-    refreshProject,
-    seekToFrame,
-    beginPreview,
-    endPreview,
-  };
+  return useMemo(
+    () => ({ totalDuration, refreshProject, seekToFrame, beginPreview, endPreview }),
+    [totalDuration, refreshProject, seekToFrame, beginPreview, endPreview]
+  );
 };

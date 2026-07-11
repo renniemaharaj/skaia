@@ -46,9 +46,9 @@ func NewHandler(hub *ws.Hub) *Handler {
 }
 
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
-	r.With(jwt).Post("/clip-maker/export", h.exportBrowserClip)
-	r.With(jwt).Post("/clip-maker/export/frames", h.exportFrameStream)
-	r.With(jwt).Get("/clip-maker/export/{token}/download", h.downloadTempExport)
+	r.With(jwt).Post("/clipmaker/export", h.exportBrowserClip)
+	r.With(jwt).Post("/clipmaker/export/frames", h.exportFrameStream)
+	r.With(jwt).Get("/clipmaker/export/{token}/download", h.downloadTempExport)
 }
 
 func (h *Handler) exportBrowserClip(w http.ResponseWriter, r *http.Request) {
@@ -452,7 +452,7 @@ func (h *Handler) writeTemporaryExport(w http.ResponseWriter, userID int64, rend
 		"filename":     tmp.Filename,
 		"size":         tmp.Size,
 		"type":         "video/mp4",
-		"download_url": fmt.Sprintf("/clip-maker/export/%s/download", tmp.Token),
+		"download_url": fmt.Sprintf("/clipmaker/export/%s/download", tmp.Token),
 		"expires_at":   tmp.ExpiresAt,
 		"quota_error":  reason,
 	})

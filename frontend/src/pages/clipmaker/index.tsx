@@ -1,6 +1,6 @@
 import TwickStudio, { TimelineProvider, LivePlayerProvider } from "@twick/studio";
 import { useAtomValue } from "jotai";
-import { memo, useRef } from "react";
+import { memo, useMemo, useRef } from "react";
 import { apiBaseUrlAtom } from "../../atoms/config";
 import { useClipExport } from "./hooks/useClipExport";
 import { useExportButtonSync } from "./hooks/useExportButtonSync";
@@ -16,24 +16,23 @@ const StudioWithExport = memo(
   ({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) => {
     const apiBaseUrl = useAtomValue(apiBaseUrlAtom);
     const { exportVideo, isExporting, progress } = useClipExport({ apiBaseUrl, containerRef });
+    const studioConfig = useMemo(
+      () => ({ videoProps: { width: 1920, height: 1080 }, exportVideo }),
+      [exportVideo]
+    );
 
     useExportButtonSync(containerRef, isExporting);
 
     return (
       <>
-        <TwickStudio
-          studioConfig={{
-            videoProps: { width: 1920, height: 1080 },
-            exportVideo,
-          }}
-        />
+        <TwickStudio studioConfig={studioConfig} />
         {isExporting && (
-          <div className="clip-maker-export-overlay" role="status" aria-live="polite">
-            <div className="clip-maker-export-dialog">
-              <span className="clip-maker-export-spinner" aria-hidden="true" />
+          <div className="clipmaker-export-overlay" role="status" aria-live="polite">
+            <div className="clipmaker-export-dialog">
+              <span className="clipmaker-export-spinner" aria-hidden="true" />
               <div>
-                <div className="clip-maker-export-title">Exporting clip</div>
-                <div className="clip-maker-export-message">
+                <div className="clipmaker-export-title">Exporting clip</div>
+                <div className="clipmaker-export-message">
                   {progress || "Recording timeline..."}
                 </div>
               </div>
@@ -63,7 +62,7 @@ export const ClipMakerPage = memo(() => {
         overflow: "hidden",
       }}
     >
-      <TimelineProvider contextId="clip-maker">
+      <TimelineProvider contextId="clipmaker">
         <LivePlayerProvider>
           <StudioWithExport containerRef={containerRef} />
         </LivePlayerProvider>

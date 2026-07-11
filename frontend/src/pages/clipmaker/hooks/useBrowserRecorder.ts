@@ -1,4 +1,4 @@
-import { useCallback, type RefObject } from "react";
+import { type RefObject, useCallback } from "react";
 import { recordCanvas } from "../utils/mediaRecorder";
 import { collectAudioTracks, findCaptureCanvas } from "../utils/twickDom";
 
@@ -17,7 +17,7 @@ export const useBrowserRecorder = (containerRef: RefObject<HTMLDivElement | null
     }) => {
       const root = containerRef.current;
       if (!root) {
-        throw new Error("Clip maker is not ready yet");
+        throw new Error("Clipmaker is not ready yet");
       }
 
       const canvas = findCaptureCanvas(root);
@@ -81,7 +81,7 @@ export const useBrowserRecorder = (containerRef: RefObject<HTMLDivElement | null
     }) => {
       const root = containerRef.current;
       if (!root) {
-        throw new Error("Clip maker is not ready yet");
+        throw new Error("Clipmaker is not ready yet");
       }
 
       const canvas = findCaptureCanvas(root);

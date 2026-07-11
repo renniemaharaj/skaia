@@ -111,7 +111,7 @@ export const createCanvasFramePump = (
               Math.min(4, captureCanvas.width),
               Math.min(4, captureCanvas.height)
             );
-            console.debug("clip-maker capture sample", {
+            console.debug("clipmaker capture sample", {
               frameIndex,
               frameTimeSeconds,
               dataUrlLength: captureCanvas.toDataURL("image/png").length,
@@ -120,7 +120,7 @@ export const createCanvasFramePump = (
           }
 
           await new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()));
-          console.count("clip-maker drew frame");
+          console.count("clipmaker drew frame");
         } catch (error) {
           reject(
             error instanceof Error ? error : new Error("Could not capture the preview canvas")
@@ -211,7 +211,7 @@ export const recordCanvas = async ({
   const stopped = new Promise<Blob>((resolve, reject) => {
     recorder.addEventListener("dataavailable", event => {
       if (event.data.size > 0) chunks.push(event.data);
-      console.debug("clip-maker recorder chunk", {
+      console.debug("clipmaker recorder chunk", {
         size: event.data.size,
         type: event.data.type,
         chunks: chunks.length,
@@ -220,7 +220,7 @@ export const recordCanvas = async ({
     });
 
     recorder.addEventListener("stop", () => {
-      console.debug("clip-maker recorder stopped", {
+      console.debug("clipmaker recorder stopped", {
         chunks: chunks.length,
         sizes: chunks.map(chunk => chunk.size),
         mimeType: recorder.mimeType,
@@ -252,7 +252,7 @@ export const recordCanvas = async ({
 
     await pump.run(renderFrame, signal);
 
-    console.debug("clip-maker video track before stop", {
+    console.debug("clipmaker video track before stop", {
       muted: videoTrack.muted,
       readyState: videoTrack.readyState,
       settings: videoTrack.getSettings(),

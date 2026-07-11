@@ -17,23 +17,23 @@
   --transition-all: all 0.2s ease;
 }
 
-.twick-isolated-container .clip-maker-export-button-loading {
+.twick-isolated-container .clipmaker-export-button-loading {
   cursor: wait !important;
   opacity: 0.62 !important;
   filter: grayscale(0.35);
 }
 
-.twick-isolated-container .clip-maker-export-spinner {
+.twick-isolated-container .clipmaker-export-spinner {
   width: 0.875rem;
   height: 0.875rem;
   flex: 0 0 auto;
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
-  animation: clip-maker-spin 0.75s linear infinite;
+  animation: clipmaker-spin 0.75s linear infinite;
 }
 
-.clip-maker-export-overlay {
+.clipmaker-export-overlay {
   position: absolute;
   inset: 0;
   z-index: 10020;
@@ -45,7 +45,7 @@
   cursor: wait;
 }
 
-.clip-maker-export-dialog {
+.clipmaker-export-dialog {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -58,25 +58,25 @@
   box-shadow: 0 18px 52px rgba(0, 0, 0, 0.48);
 }
 
-.clip-maker-export-dialog .clip-maker-export-spinner {
+.clipmaker-export-dialog .clipmaker-export-spinner {
   width: 1.25rem;
   height: 1.25rem;
 }
 
-.clip-maker-export-title {
+.clipmaker-export-title {
   font-size: 0.95rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
-.clip-maker-export-message {
+.clipmaker-export-message {
   margin-top: 0.2rem;
   font-size: 0.82rem;
   color: var(--text-secondary);
   line-height: 1.35;
 }
 
-@keyframes clip-maker-spin {
+@keyframes clipmaker-spin {
   to {
     transform: rotate(360deg);
   }
@@ -3608,7 +3608,7 @@ video::-webkit-media-controls-panel {
   font-size: 0 !important;
 }
 .twick-isolated-container h1.text-gradient::after {
-  content: "Clip Maker";
+  content: "Clipmaker";
   font-size: 1.5rem;
   background: linear-gradient(to right, var(--primary-color), var(--primary-light));
   -webkit-background-clip: text;

@@ -1,0 +1,29 @@
+# Clipmaker Reliability
+
+## Context
+The clipmaker naming was inconsistent across browser/API routes, frontend source paths, and its specification. Twick also received unstable configuration callbacks during React state updates, allowing its editor/media integration to rebuild while a project was active.
+
+## Goal
+- Use `clipmaker` consistently for source paths, routes, identifiers, styles, and diagnostics.
+- Keep Twick configuration and export callbacks stable across progress and player-context updates.
+
+## Non-Goals
+- Replacing Twick or redesigning the editor/export protocol.
+
+## Steps
+1. Rename clipmaker paths and protocol references.
+2. Stabilize values passed into `TwickStudio`.
+3. Run frontend/backend verification.
+4. Update the export specification and record results.
+
+## Verification
+- Frontend typecheck and production build.
+- Backend clipmaker tests.
+- Repository search for stale legacy spellings.
+
+## References
+- `.specs/clipmaker_export_spec`
+- `.routines/correctness`
+- `.routines/worker`
+- `frontend/src/pages/clipmaker/`
+- `backend/internal/clipmaker/handler.go`

@@ -1,3 +1,4 @@
+/** Returns the furthest element endpoint in a Twick project. */
 export const projectDurationSeconds = (project: any): number => {
   const input = project?.input ?? project;
   const tracks = Array.isArray(input?.tracks) ? input.tracks : [];

@@ -21,7 +21,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 | Security, privileges, step-up, sessions, audit, rate limiting | `security_architecture_spec`, `auth_user_separation_spec`, `backend_spec`, `infrastructure_spec` |
 | Frontend UI, state, routes, cart/store pages | `frontend_spec`, `realtime_wss_spec`, `route_resolution_spec` |
 | WebSocket, presence, voice, media, push delivery | `realtime_wss_spec`, `voice_chat_architecture.md` |
-| Clip maker, frame streaming, ffmpeg export | `clip_maker_export_spec` |
+| Clipmaker, frame streaming, ffmpeg export | `clipmaker_export_spec` |
 | Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `caching_cdn_spec` |
 | Deploy, tenancy, grengo, nginx, cache headers | `infrastructure_spec`, `caching_cdn_spec`, `migrations_spec` |
 

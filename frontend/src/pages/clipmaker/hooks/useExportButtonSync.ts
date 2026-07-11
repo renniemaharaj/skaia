@@ -1,6 +1,7 @@
-import { useEffect, type RefObject } from "react";
+import { type RefObject, useEffect } from "react";
 import { syncExportButtonState } from "../utils/twickDom";
 
+/** Mirrors export progress into Twick's internally rendered button. */
 export const useExportButtonSync = (
   containerRef: RefObject<HTMLDivElement | null>,
   isExporting: boolean

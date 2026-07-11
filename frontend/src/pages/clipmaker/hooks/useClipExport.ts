@@ -1,9 +1,9 @@
-import { useCallback, useState, type RefObject } from "react";
+import { type RefObject, useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { type VideoSettingsLike, downloadExport, streamFrameExport } from "../utils/exportUpload";
+import { projectDurationSeconds } from "../utils/project";
 import { useBrowserRecorder } from "./useBrowserRecorder";
 import { useTwickPlayer } from "./useTwickPlayer";
-import { downloadExport, streamFrameExport, type VideoSettingsLike } from "../utils/exportUpload";
-import { projectDurationSeconds } from "../utils/project";
 
 const EXPORT_TIMEOUT_MS = 10 * 60 * 1000;
 const SETTLE_DELAY_MS = 150;
@@ -60,7 +60,7 @@ export const useClipExport = ({
         });
 
         setProgress("Finalizing MP4...");
-        console.time("clip-maker stream/finalize");
+        console.time("clipmaker stream/finalize");
         const upload = await streamFrameExport({
           apiBaseUrl,
           fps,
@@ -72,7 +72,7 @@ export const useClipExport = ({
           captureFrame: frameCapture.captureFrame,
           signal: controller.signal,
         });
-        console.timeEnd("clip-maker stream/finalize");
+        console.timeEnd("clipmaker stream/finalize");
 
         if (!upload.saved && upload.download_url) {
           await downloadExport(apiBaseUrl, upload.download_url, upload.filename);
@@ -109,5 +109,8 @@ export const useClipExport = ({
     [apiBaseUrl, capturePngFrames, player]
   );
 
-  return { exportVideo, isExporting, progress };
+  return useMemo(
+    () => ({ exportVideo, isExporting, progress }),
+    [exportVideo, isExporting, progress]
+  );
 };
