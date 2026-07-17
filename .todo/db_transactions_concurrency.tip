@@ -1,0 +1,16 @@
+<--/------->
+
+## db_transactions_concurrency
+
+### Current Progress
+- **Phase 1: Transaction wrapper** — ⬜ Not started
+- **Phase 2: Atomic checkout and stock** — ⬜ Not started
+- **Phase 3: Wallet locking and constraints** — ⬜ Not started
+- **Phase 4: Idempotency and concurrency tests** — ⬜ Not started
+
+### Next Steps
+- [ ] Audit current checkout and wallet transaction boundaries before implementation.
+- [ ] Update the plan to the standard `.todo/README.md` structure and link affected store/security specs.
+- [ ] Implement through `.routines/worker` with DB-backed concurrent request tests.
+
+<--/------->

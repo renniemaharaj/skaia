@@ -52,7 +52,6 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `018_inbox_group_conversations.sql` | Group inbox conversations |
 | `019_inbox_group_roles.sql` | Group inbox roles |
 | `020_store_orders.sql` | Store orders/payments/subscriptions |
-| `020_user_cards.sql` | User card table; duplicate numeric prefix exists |
 | `021_store_wallet.sql` | Wallet transactions |
 | `022_store_reviews.sql` | Product reviews |
 | `023_store_special_actions.sql` | Product special actions JSONB |
@@ -61,14 +60,14 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `026_scrub_user_card_secrets.sql` | Reduce stored card numbers to last-four and clear CVV |
 | `027_vendor_order_statuses.sql` | Per-vendor order item status/note timestamps and `store-seller` to `Vendor` role consolidation |
 | `028_mfa_challenge_context.sql` | Machine-readable MFA challenge reason and sensitive-action label |
+| `029_client_backend_provisioning.sql` | Client backend provisioning records |
 
 ## Invariants
 
 - New runtime schema must update `001_schema.sql`; do not rely only on an
   incremental migration for fresh installs.
-- Duplicate numeric prefixes sort lexically; avoid adding more duplicate numbers.
-  The existing `020_*` pair is tolerated because filenames are distinct and
-  idempotent.
+- Migration filenames must use the next unused numeric prefix; avoid duplicate
+  prefixes because files sort lexically.
 - Column removal or data reshaping belongs in an incremental migration with
   guarded reads/writes.
 - Auth secrets stay in auth tables, not `users`.

@@ -70,7 +70,7 @@ docs disagree.
 - `router.go`
 - `internal/`
 - `backend/`
-- `backend/frontend/`
+- `frontend/`
 
 ## Extension/See Also
 
@@ -80,13 +80,13 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-06-19
+- 2026-07-16
 
 ## Last Run Remarks
 
-- Corrected security intent drift: exact-cycle TOTP and universal fresh step-up
-  are targets rather than current guarantees, and superuser permission bypass is
-  not yet consistent across middleware and service/repository checks.
+- Confirmed interactive sections belong in the existing page registry/builder and
+  require a normalized response domain rather than `pages.content`; corrected
+  active `backend/frontend` references and the migration file index.
 
 ## Next Steps
 

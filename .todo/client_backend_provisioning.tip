@@ -1,0 +1,17 @@
+<--/------->
+
+## client_backend_provisioning
+
+### Current Progress
+- **Phase 1: Database and registry** — ✅ Complete
+- **Phase 2: Queue and orchestration** — ✅ Complete
+- **Phase 3: Frappe integration** — ✅ Complete
+- **Phase 4: Superset integration** — ✅ Complete
+- **Phase 5: Realtime logs and frontend** — ✅ Complete
+- **Phase 6: Completion verification** — ⬜ Not started
+
+### Next Steps
+- [ ] Verify the implemented routes, migrations, worker behavior, frontend build, and focused backend tests.
+- [ ] Move any durable provisioning contracts into `.specs/`, then retire this plan pair if verification passes.
+
+<--/------->

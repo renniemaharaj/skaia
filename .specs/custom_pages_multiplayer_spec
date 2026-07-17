@@ -14,11 +14,11 @@ section registry validation, or page WebSocket handling.
 
 | File | Contract |
 | --- | --- |
-| `backend/frontend/src/pages/page/PageBuilder.tsx` | `mergeSections`, `stableStringify`, save pipeline |
-| `backend/frontend/src/pages/page/BlockRenderer.tsx` | memoized section rendering |
-| `backend/frontend/src/hooks/usePageData.ts` | live page events, refresh, edit guard |
-| `backend/frontend/src/pages/page/SaveStatusBar.tsx` | held incoming-change status |
-| `backend/frontend/src/pages/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit` |
+| `frontend/src/components/page/PageBuilder.tsx` | `mergeSections`, `stableStringify`, save pipeline |
+| `frontend/src/components/page/BlockRenderer.tsx` | memoized section rendering |
+| `frontend/src/hooks/usePageData.ts` | live page events, refresh, edit guard |
+| `frontend/src/components/page/SaveStatusBar.tsx` | held incoming-change status |
+| `frontend/src/components/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit` |
 | `backend/internal/s_registry` | canonical section/component registry |
 
 ## Reconciliation Contract
@@ -79,9 +79,9 @@ Breaking any link can make every section rerender on every save/push.
 
 ## Verify
 
-- `rg "mergeSections|stableStringify|editingCount|pendingIncoming|BroadcastPageExceptUser" backend/frontend/src backend/internal -n`
-- `backend/frontend/src/pages/page/PageBuilder.tsx`
-- `backend/frontend/src/hooks/usePageData.ts`
+- `rg "mergeSections|stableStringify|editingCount|pendingIncoming|BroadcastPageExceptUser" frontend/src backend/internal -n`
+- `frontend/src/components/page/PageBuilder.tsx`
+- `frontend/src/hooks/usePageData.ts`
 - `backend/internal/s_registry`
 
 ## Trace
@@ -89,3 +89,4 @@ Breaking any link can make every section rerender on every save/push.
 - `.specs/route_resolution_spec`
 - `.specs/realtime_wss_spec`
 - `.specs/frontend_spec`
+- `.specs/custom_page_interactive_sections_spec`

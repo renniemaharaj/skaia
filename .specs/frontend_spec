@@ -12,12 +12,12 @@ WebSocket consumers, or page-builder UX.
 
 ## Owns
 
-- App shell/routes: `backend/frontend/src/App.tsx`, `src/pages/routes.tsx`,
-  `src/pages/Layout.tsx`
-- State: `backend/frontend/src/atoms/*`
-- API utilities: `backend/frontend/src/utils/api.ts`
-- WebSocket singleton: `backend/frontend/src/hooks/useWebSocketSync.ts`
-- Design tokens/utilities: `backend/frontend/src/index.css`, `src/utilities.css`
+- App shell/routes: `frontend/src/App.tsx`, `frontend/src/pages/routes.tsx`,
+  `frontend/src/pages/Layout.tsx`
+- State: `frontend/src/atoms/*`
+- API utilities: `frontend/src/utils/api.ts`
+- WebSocket singleton: `frontend/src/hooks/useWebSocketSync.ts`
+- Design tokens/utilities: `frontend/src/index.css`, `frontend/src/utilities.css`
 - Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
 
 ## Architecture Contracts
@@ -155,10 +155,10 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 ## Verify
 
-- CSS drift: `rg "#[0-9a-fA-F]{3,8}|rgba\\(|rgb\\(|var\\([^)]*," backend/frontend/src --glob '*.css'`
-- WS usage: `rg "useWebSocketSync|subscribe\\(|unsubscribe\\(" backend/frontend/src -n`
-- Store/cart: `backend/frontend/src/pages/cart/index.tsx`, `src/atoms/store.ts`
-- Tests/build when relevant: run frontend package scripts from `backend/frontend/`.
+- CSS drift: `rg "#[0-9a-fA-F]{3,8}|rgba\\(|rgb\\(|var\\([^)]*," frontend/src --glob '*.css'`
+- WS usage: `rg "useWebSocketSync|subscribe\\(|unsubscribe\\(" frontend/src -n`
+- Store/cart: `frontend/src/pages/cart/index.tsx`, `frontend/src/atoms/store.ts`
+- Tests/build when relevant: run frontend package scripts from `frontend/`.
 
 ## Trace
 

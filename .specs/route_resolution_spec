@@ -13,9 +13,9 @@ behavior, or page WebSocket events.
 ## Owns
 
 - Backend: `backend/internal/page/handler.go`, `backend/internal/page/service.go`
-- Frontend: `backend/frontend/src/pages/index/index.tsx`,
-  `backend/frontend/src/pages/page/PageBuilder.tsx`,
-  `backend/frontend/src/hooks/usePageData.ts`
+- Frontend: `frontend/src/pages/index/index.tsx`,
+  `frontend/src/components/page/PageBuilder.tsx`,
+  `frontend/src/hooks/usePageData.ts`
 - Config key: `site_config.landing_page_slug`
 
 ## Cold Load `/`
@@ -72,9 +72,9 @@ page pushes.
 
 ## Verify
 
-- `rg "landing-slug|set-homepage|landing_page_changed|landing_page_updated" backend backend/frontend/src -n`
+- `rg "landing-slug|set-homepage|landing_page_changed|landing_page_updated" backend frontend/src -n`
 - `backend/internal/page/handler.go`
-- `backend/frontend/src/hooks/usePageData.ts`
+- `frontend/src/hooks/usePageData.ts`
 
 ## Trace
 

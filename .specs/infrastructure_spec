@@ -15,7 +15,7 @@ lifecycle, env vars, uploads paths, maintenance/armed mode, or deployment docs.
 - CLI/API: root Go module (`main.go`, `router.go`, `internal/`)
 - Nginx generator: `internal/app/nginx.go`
 - Backend image: `backend/Dockerfile`
-- Frontend nginx image variant: `backend/frontend/nginx/default.conf`
+- Frontend nginx image variant: `frontend/nginx/default.conf`
 - Shared/runtime config: root `.env`, per-tenant `backends/<tenant>/.env`
 
 ## Deployment Model

@@ -84,7 +84,7 @@ update specs and .tip with durable facts
 ## Verification
 
 - Backend changes: from `backend/`, run `JWT_SECRET=test-secret go test ./...` unless a narrower targeted run is explicitly justified in the `.tip`
-- Frontend changes: from `backend/frontend/`, run build/test/lint commands relevant to the touched area
+- Frontend changes: from `frontend/`, run build/test/lint commands relevant to the touched area
 - Migrations: verify fresh-schema and legacy/idempotency behavior where possible; record DB-backed coverage gaps when `TEST_DATABASE_URL` is unavailable
 - Shared contracts: run both backend and frontend verification
 
@@ -103,7 +103,7 @@ update specs and .tip with durable facts
 - `.routines/auditor`
 - `.specs/`
 - `backend/`
-- `backend/frontend/`
+- `frontend/`
 
 ## Extension/See Also
 

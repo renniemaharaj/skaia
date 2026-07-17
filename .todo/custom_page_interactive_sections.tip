@@ -1,0 +1,22 @@
+<--/------->
+
+## custom_page_interactive_sections
+
+### Current Progress
+- **Phase 1: Contract and threat model** — ⬜ Not started
+- **Phase 2: Schema and domain foundation** — ⬜ Not started
+- **Phase 3: Registry and builder foundation** — ⬜ Not started
+- **Phase 4: Forms vertical slice** — ⬜ Not started
+- **Phase 5: Q&A vertical slice** — ⬜ Not started
+- **Phase 6: Survey vertical slice** — ⬜ Not started
+- **Phase 7: Poll vertical slice** — ⬜ Not started
+- **Phase 8: Voting vertical slice** — ⬜ Not started
+- **Phase 9: Hardening and staged delivery** — ⬜ Not started
+
+### Next Steps
+- [ ] Review and approve `.specs/custom_page_interactive_sections_spec`, especially anonymity, result visibility, retention, and voting limitations.
+- [ ] Produce the migration/table sketch and centralized authorization matrix before implementation.
+- [ ] Execute Phase 2 with `.routines/worker` and record exact migrations/tests here.
+- [ ] Keep later section types feature-disabled until the preceding vertical-slice audit passes.
+
+<--/------->

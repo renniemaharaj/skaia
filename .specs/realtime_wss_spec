@@ -14,8 +14,8 @@ limit/error WS messages.
 ## Owns
 
 - Backend: `backend/internal/ws/*`
-- Frontend: `backend/frontend/src/hooks/useWebSocketSync.ts`
-- State: `backend/frontend/src/atoms/{auth,forum,store,inbox,notifications,presence,chat,voice,media,events}.ts`
+- Frontend: `frontend/src/hooks/useWebSocketSync.ts`
+- State: `frontend/src/atoms/{auth,forum,store,inbox,notifications,presence,chat,voice,media,events}.ts`
 
 ## Connection Contract
 
@@ -131,7 +131,7 @@ shared mutations converge through WS:
 ## Verify
 
 - Backend messages: `rg "Broadcast|Propagate|SendToUser|Message\\{" backend/internal -n`
-- Frontend reducer: `backend/frontend/src/hooks/useWebSocketSync.ts`
+- Frontend reducer: `frontend/src/hooks/useWebSocketSync.ts`
 - WS tests: `backend/internal/ws/*_test.go`
 
 ## Trace
@@ -139,4 +139,5 @@ shared mutations converge through WS:
 - `.specs/frontend_spec`
 - `.specs/backend_spec`
 - `.specs/route_resolution_spec`
+- `.specs/custom_page_interactive_sections_spec`
 - `.specs/voice_chat_architecture.md`

@@ -60,7 +60,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 - Docs/routine-only: `rg` stale names, verify linked files exist, inspect `git diff --stat`.
 - Backend changes: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`.
-- Frontend changes: from `backend/frontend/`, run the relevant build/test/lint command.
+- Frontend changes: from `frontend/`, run the relevant build/test/lint command.
 - Migrations: verify sorted filenames and idempotency patterns; note DB-backed gaps.
 - UI changes: inspect relevant CSS for token compliance and responsive/empty/error states.
 
@@ -79,7 +79,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 - `router.go`
 - `internal/`
 - `backend/`
-- `backend/frontend/`
+- `frontend/`
 
 ## Extension/See Also
 
@@ -89,14 +89,13 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-06-19
+- 2026-07-16
 
 ## Last Run Remarks
 
-- Security architecture audit separated implemented controls from target
-  invariants and made centralized policy, session/action-bound step-up,
-  fail-closed authorization, and audit coverage explicit quality gates in
-  `.specs/security_architecture_spec`.
+- Audited the interactive-section plan across authorization, anonymity, schema
+  history, record lifecycle, concurrency, accessibility, responsive results,
+  realtime privacy, staged delivery, and formal-voting limitations.
 
 ## Next Steps
 

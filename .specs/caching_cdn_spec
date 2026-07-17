@@ -14,7 +14,7 @@ resolution, SSR, or CDN-facing behavior.
 
 - API cache headers: `backend/internal/utils/http.go`
 - Runtime nginx generator: `internal/app/nginx.go`
-- Frontend image nginx variant: `backend/frontend/nginx/default.conf`
+- Frontend image nginx variant: `frontend/nginx/default.conf`
 - Page flow: `.specs/route_resolution_spec`
 
 ## Contracts
@@ -54,7 +54,7 @@ Live page changes bypass CDN through WebSocket:
 ## Verify
 
 - `rg "Cache-Control|Pragma|no-store" backend internal main.go router.go -n`
-- `rg "landing-slug|pages/index|landing_page_changed" backend backend/frontend .specs -n`
+- `rg "landing-slug|pages/index|landing_page_changed" backend frontend .specs -n`
 
 ## Trace
 

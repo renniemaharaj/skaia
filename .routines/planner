@@ -91,7 +91,7 @@ operational policies.
 - `router.go`
 - `internal/`
 - `backend/`
-- `backend/frontend/`
+- `frontend/`
 
 ## Extension/See Also
 
@@ -103,13 +103,13 @@ operational policies.
 
 ## Last Ran
 
-- 2026-06-19
+- 2026-07-16
 
 ## Last Run Remarks
 
-- Added the authoritative security architecture card and the phased
-  `security_invariants_hardening` todo pair; linked security-sensitive routing
-  from the spec index and operating instructions.
+- Added the interactive custom-page section spec and phased todo for forms, Q&A,
+  surveys, polls, and voting; linked the new load set and corrected affected
+  frontend/migration documentation drift.
 
 ## Next Steps
 
