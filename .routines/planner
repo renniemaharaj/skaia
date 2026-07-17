@@ -103,13 +103,13 @@ operational policies.
 
 ## Last Ran
 
-- 2026-07-16
+- 2026-07-17
 
 ## Last Run Remarks
 
-- Added the interactive custom-page section spec and phased todo for forms, Q&A,
-  surveys, polls, and voting; linked the new load set and corrected affected
-  frontend/migration documentation drift.
+- Retired the completed but contradictory interactive-section plan pair, preserved
+  its durable JSON-backed architecture in the spec, and created the focused
+  `interactive_sections_audit_remediation` worker handoff.
 
 ## Next Steps
 

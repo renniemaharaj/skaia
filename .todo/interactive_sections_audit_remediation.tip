@@ -1,0 +1,44 @@
+<--/------->
+
+## interactive_sections_audit_remediation
+
+### Current Progress
+
+- **Phase 1: Post-reset audit and contract reconciliation** — ✅ Complete
+- **Phase 2: Privacy, authorization, and integrity containment** — ⬜ Not started
+- **Phase 3: Realtime and participant UX remediation** — ⬜ Not started
+- **Phase 4: Regression coverage and final verification** — ⬜ Not started
+
+### Severity Snapshot
+
+- **Critical:** full page WebSocket broadcasts and clipboard serialization can expose
+  raw records; unscoped idempotency lookup can return a matching participant record.
+- **High:** new/re-keyed sections can import client-supplied records, answer values are
+  not validated against field contracts, IDs are not unique/positive, and privileged
+  operations lack a service policy/audit boundary.
+- **Medium:** new blocks cannot submit until design is persisted, retries are not
+  idempotent, realtime invalidation is absent, CORS omits `PATCH`, and multiple result
+  and response-limit states are incomplete.
+- **Low:** the old repository update path and duplicate frontend declarations remain.
+
+### Next Steps
+
+- [ ] Stop unsanitized page WebSocket and clipboard egress; add negative disclosure tests.
+- [ ] Scope idempotency to the caller and prevent builder APIs from importing records.
+- [ ] Enforce section identity and canonical answer/config validation server-side.
+- [ ] Add service policy gates and metadata-only audit events for manager mutations.
+- [ ] Persist new-block defaults and complete response-limit/result/error UX.
+- [ ] Add safe realtime invalidation and allow/test cross-origin `PATCH` moderation.
+- [ ] Remove audited dead/duplicated code and add backend/frontend concurrency coverage.
+- [ ] Re-run all verification commands and update the durable spec if contracts change.
+
+### Audit Verification Record
+
+- 2026-07-17: backend `go test ./...` passed with the required cache/temp/JWT environment.
+- 2026-07-17: frontend `npm run lint` passed (492 files).
+- 2026-07-17: focused interactive Vitest passed (4 tests).
+- 2026-07-17: frontend production build passed; existing large-chunk warnings remain.
+- These are baseline gates only; the unchecked findings above do not have regression
+  coverage and are not considered remediated.
+
+<--/------->

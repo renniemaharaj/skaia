@@ -1,0 +1,106 @@
+# Interactive Sections Audit Remediation
+
+## Context
+
+The 2026-07-17 audit of `b3867355..a33fc6c9` found that the reimplemented
+interactive-section feature follows the JSON-backed architecture in
+`.specs/custom_page_interactive_sections_spec`, but leaves sensitive record data
+exposed through existing page flows and does not enforce several server-owned
+contracts. The baseline backend suite, frontend lint, focused utility tests, and
+production build pass because these boundaries are not covered by current tests.
+
+## Goal
+
+- Prevent raw responses, user IDs, and idempotency keys from leaving authorized
+  response-management paths.
+- Make record creation, limits, validation, and idempotency server-owned and
+  consistent across page saves, section copy/paste, and participant submissions.
+- Restore safe realtime convergence and complete participant/manager behavior.
+- Add focused regression coverage for every audited failure mode.
+
+## Non-Goals
+
+- Replacing `pages.content` with interactive tables or a parallel domain model.
+- Adding guest participation, file uploads, exports, or certified-election claims.
+- Broad page-builder or centralized-security refactors unrelated to these routes.
+
+## Findings and Steps
+
+1. **Critical — contain record egress and replay reads**
+   - Replace full-page WebSocket payloads in landing-page and ownership broadcasts
+     with record-free metadata or an authorized REST-refresh signal. Existing calls
+     at `backend/internal/page/handler.go:123`, `:729`, and `:1208` can serialize raw
+     `pages.content` to every connected client.
+   - Strip `records` and `result_summary` before an interactive section is written
+     to the clipboard, not only after a paste. Apply the same clearing to the
+     alternate “Paste Section Here” path at
+     `frontend/src/components/page/BlockRenderer.tsx:412`.
+   - Scope idempotency lookup to the authenticated user and section. Never return
+     another participant's raw record when a caller supplies a matching key.
+   - Add WebSocket/clipboard/idempotency tests that assert answer values, user IDs,
+     respondent metadata, and idempotency keys are absent from unauthorized output.
+
+2. **High — restore server-owned integrity and authorization**
+   - Reject or strip client-supplied records from page create/update, including a
+     newly added or re-keyed interactive section; only the transactional response
+     mutation may create records.
+   - Validate unique positive numeric section IDs before save so mutation and
+     record-preservation logic cannot address or merge the wrong section.
+   - Validate submitted values by field type, configured options, array shape,
+     scalar type, and numeric bounds. Poll/vote choices not present in the stored
+     option set must be rejected.
+   - Move moderation/deletion authorization to a fail-closed service policy boundary
+     and emit metadata-only audit events for privileged record mutations, consistent
+     with `.specs/security_architecture_spec`.
+   - Make missing/invalid result-visibility policy fail closed instead of exposing
+     aggregates by default.
+
+3. **Medium — fix creation, realtime, and participant UX regressions**
+   - Persist `defaultInteractiveConfig(type)` when a block is created. The current
+     `{}` stored by `BlockRenderer` renders client defaults but causes the first
+     server submission to fail with an unknown answer.
+   - Keep one idempotency key for a logical submit/retry rather than generating a new
+     UUID for every retry.
+   - Enforce configured response limits in participant UI for form, Q&A, and survey,
+     while retaining the server as the authority.
+   - Broadcast a content-free page invalidation after submit/moderate/delete so other
+     sessions refetch their authorized projection and satisfy the realtime contract.
+   - Add `PATCH` to the API CORS method policy and cover Q&A moderation from an
+     allowed cross-origin client.
+   - Render boolean, consent, rating, scale, and NPS aggregates already produced by
+     the backend, and add explicit moderation failure feedback.
+
+4. **Low — remove redundancy and close coverage gaps**
+   - Remove the now-unused page repository `Update` method after all page saves were
+     moved to `UpdatePreservingInteractive`.
+   - Remove duplicated `PageItem` declarations and duplicated adjacent comments in
+     `frontend/src/components/page/types.ts`.
+   - Add service/handler tests for limits, authorization, deletion, idempotency,
+     visibility defaults, answer validation, and safe page updates; add a DB-backed
+     concurrency test for builder-save/submit serialization.
+   - Add component tests for a newly inserted block, both paste entrypoints, response
+     limits, manager tables, result variants, and error states.
+
+## Verification
+
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- From `frontend/`: `npm run lint`,
+  `npx vitest run src/components/page/interactiveTypes.test.ts` plus new focused
+  component tests, and `npm run build`.
+- Inspect every `BroadcastPage` call and copied section payload; no raw interactive
+  record or idempotency key may be broadcast or placed on the clipboard.
+- Exercise guest, participant, other participant, editor, owner, and admin reads and
+  mutations on public/private pages.
+- Run DB-backed concurrent submit/save tests and a cross-origin Q&A `PATCH` check.
+
+## References
+
+- `.specs/custom_page_interactive_sections_spec`
+- `.specs/security_architecture_spec`
+- `.specs/realtime_wss_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `backend/internal/page/`
+- `backend/internal/s_registry/`
+- `frontend/src/components/page/`

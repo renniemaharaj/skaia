@@ -89,13 +89,14 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-07-16
+- 2026-07-17
 
 ## Last Run Remarks
 
-- Audited the interactive-section plan across authorization, anonymity, schema
-  history, record lifecycle, concurrency, accessibility, responsive results,
-  realtime privacy, staged delivery, and formal-voting limitations.
+- Audited `b3867355..a33fc6c9` across JSON persistence, HTTP/WS privacy,
+  authorization, idempotency, validation, copy/duplicate safety, realtime state,
+  Formik UI, tests, CSS, and todo/spec drift; recorded prioritized remediation in
+  `.todo/interactive_sections_audit_remediation`.
 
 ## Next Steps
 

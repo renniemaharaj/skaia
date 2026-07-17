@@ -28,9 +28,14 @@ custom-page block builder.
   records while applying definition and presentation changes. A stale autosave
   must not erase a response submitted concurrently.
 - Copying an interactive section and duplicating a page copy the design with an
-  empty records array. User submissions must never be cloned.
+  empty records array. Record data must be removed before clipboard serialization
+  and rechecked on paste; user submissions must never be cloned.
 - A section holds at most 50 fields and 1,000 records. Each submission is bounded,
   validated on the server, and may include an idempotency key.
+- Section IDs are unique positive integers. The server rejects client-supplied
+  records on page create/update and owns every record mutation.
+- Idempotency keys are scoped to the authenticated participant and section. A retry
+  may return only that participant's existing authorized record.
 - Polls and votes allow one record per authenticated user. Other types use their
   configured response limit (`0` means unlimited).
 
@@ -47,6 +52,8 @@ custom-page block builder.
 - Result visibility is `never`, `after_participation`, or `always`. Raw records
   are removed server-side from page content before it is returned; CSS is never
   used as an authorization boundary.
+- Page WebSocket and cache-invalidation payloads never contain raw records,
+  respondent metadata, user IDs, answers, or idempotency keys.
 
 ## Section behavior
 
@@ -64,6 +71,8 @@ custom-page block builder.
 - Controls use existing `Button`, glass `Select`/`FormikSelect`, `TableView`,
   design tokens, and the ultra-dense page-builder spacing model.
 - Manager tabs are Preview, Responses/Moderation, Results, and Design.
+- New interactive blocks persist their type defaults when inserted; rendered defaults
+  may not exist only in client memory.
 - Response rows expose a compact expand control. Expanded content renders the
   complete submitted field set as read-only values.
 - Native checkbox/radio controls have explicit dimensions and never inherit the
@@ -90,7 +99,7 @@ interactive-section resource or persistence model.
 
 ## Trace
 
-- `.todo/custom_page_interactive_sections.tip`
+- `.todo/interactive_sections_audit_remediation.tip`
 - `backend/internal/page/interactive.go`
 - `backend/internal/s_registry/interactive.go`
 - `frontend/src/components/page/blocks/InteractiveSectionBlock.tsx`

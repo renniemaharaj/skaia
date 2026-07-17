@@ -80,13 +80,14 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-07-16
+- 2026-07-17
 
 ## Last Run Remarks
 
-- Confirmed interactive sections belong in the existing page registry/builder and
-  require a normalized response domain rather than `pages.content`; corrected
-  active `backend/frontend` references and the migration file index.
+- Re-audited the post-reset interactive implementation and confirmed the governing
+  architecture stores definitions and records in `pages.content`; retired the
+  contradictory table/domain todo and routed behavioral gaps to
+  `.todo/interactive_sections_audit_remediation`.
 
 ## Next Steps
 
