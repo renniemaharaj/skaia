@@ -3,6 +3,10 @@
   position: fixed;
   min-width: 200px;
   max-width: 300px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   padding: var(--radius-xs);
   border-radius: var(--radius-lg);
   display: flex;

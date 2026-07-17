@@ -53,8 +53,16 @@ export function GlassMenu({ x, y, options, onClose }: GlassMenuProps) {
   // Adjust positioning to avoid edge clipping
   const estimatedHeight = currentOptions.length * 40 + 20 + (history.length > 0 ? 40 : 0);
   const estimatedWidth = 250;
-  const safeY = Math.min(y, window.innerHeight - estimatedHeight);
-  const safeX = Math.min(x, window.innerWidth - estimatedWidth);
+  const viewportPadding = 8;
+  const renderedHeight = Math.min(estimatedHeight, window.innerHeight * 0.9);
+  const safeY = Math.max(
+    viewportPadding,
+    Math.min(y, window.innerHeight - renderedHeight - viewportPadding)
+  );
+  const safeX = Math.max(
+    viewportPadding,
+    Math.min(x, window.innerWidth - estimatedWidth - viewportPadding)
+  );
 
   const style: React.CSSProperties = {
     top: `${safeY}px`,

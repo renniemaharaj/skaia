@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { Field, FieldArray, Form, Formik, type FormikHelpers } from "formik";
+import { Field, FieldArray, Form, Formik, type FormikHelpers, useField } from "formik";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import FormikSelect from "../../formik/FormikSelect";
 import Button from "../../input/Button";
 import { TableView, type TableColumn } from "../../ui/TableView/TableView";
 import { customConfirm } from "../../ui/Prompt";
+import StarRating from "../../ui/StarRating";
 import { apiRequest } from "../../../utils/api";
 import {
   INTERACTIVE_FIELD_TYPES,
@@ -57,11 +58,45 @@ const displayValue = (value: unknown) => {
   return value == null || value === "" ? "—" : String(value);
 };
 
+function FormikStarRating({
+  name,
+  maxRating,
+  disabled,
+}: {
+  name: string;
+  maxRating: number;
+  disabled: boolean;
+}) {
+  const [field, , helpers] = useField(name);
+  return (
+    <StarRating
+      rating={Number(field.value) || 0}
+      maxRating={maxRating}
+      size={20}
+      disabled={disabled}
+      onChange={rating => helpers.setValue(rating)}
+    />
+  );
+}
+
 function FieldControl({
   field,
   disabled = false,
 }: { field: InteractiveField; disabled?: boolean }) {
   const label = `${field.label}${field.required ? " *" : ""}`;
+  if (field.type === "rating") {
+    return (
+      <div className="interactive-field interactive-field--rating">
+        <span>{label}</span>
+        <FormikStarRating
+          name={field.key}
+          maxRating={Math.max(1, Math.min(field.max ?? 5, 10))}
+          disabled={disabled}
+        />
+        {field.description && <small>{field.description}</small>}
+      </div>
+    );
+  }
   if (field.type === "textarea") {
     return (
       <label className="interactive-field interactive-field--wide">
@@ -119,7 +154,7 @@ function FieldControl({
       </label>
     );
   }
-  const numeric = field.type === "rating" || field.type === "scale" || field.type === "nps";
+  const numeric = field.type === "scale" || field.type === "nps";
   const inputType = numeric ? "number" : field.type === "phone" ? "tel" : field.type;
   return (
     <label
@@ -340,6 +375,10 @@ function DesignView({
                       <span>Label</span>
                       <Field name={`fields.${index}.label`} />
                     </label>
+                    <label>
+                      <span>Placeholder</span>
+                      <Field name={`fields.${index}.placeholder`} placeholder="Optional" />
+                    </label>
                     <FormikSelect
                       name={`fields.${index}.type`}
                       size="sm"
@@ -370,6 +409,7 @@ function DesignView({
                   type="button"
                   size="sm"
                   variant="secondary"
+                  className="interactive-add-field"
                   onClick={() =>
                     push({
                       key: `field-${Date.now()}`,

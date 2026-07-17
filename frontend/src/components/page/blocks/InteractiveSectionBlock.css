@@ -132,6 +132,9 @@
 .interactive-field--compact {
   width: min(100%, 13rem);
 }
+.interactive-field--rating {
+  width: fit-content;
+}
 .interactive-field--choices {
   display: inline-grid;
   width: fit-content;
@@ -388,7 +391,7 @@
 }
 .interactive-field-editor {
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) 10rem 6rem minmax(11rem, 1fr) 2rem;
+  grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 1fr) 9rem 6rem minmax(10rem, 1fr) 2rem;
   align-items: end;
   gap: .4rem;
   padding: .4rem;
@@ -398,6 +401,10 @@
 }
 .interactive-field-editor .interactive-options {
   grid-column: auto;
+}
+.interactive-add-field {
+  width: auto;
+  justify-self: start;
 }
 .interactive-designer-actions {
   display: flex;
