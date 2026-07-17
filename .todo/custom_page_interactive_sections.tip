@@ -2,21 +2,53 @@
 
 ## custom_page_interactive_sections
 
-### Current Progress
-- **Phase 1: Contract and threat model** — ⬜ Not started
-- **Phase 2: Schema and domain foundation** — ⬜ Not started
-- **Phase 3: Registry and builder foundation** — ⬜ Not started
-- **Phase 4: Forms vertical slice** — ⬜ Not started
-- **Phase 5: Q&A vertical slice** — ⬜ Not started
-- **Phase 6: Survey vertical slice** — ⬜ Not started
-- **Phase 7: Poll vertical slice** — ⬜ Not started
-- **Phase 8: Voting vertical slice** — ⬜ Not started
-- **Phase 9: Hardening and staged delivery** — ⬜ Not started
+### Architecture decision
 
-### Next Steps
-- [ ] Review and approve `.specs/custom_page_interactive_sections_spec`, especially anonymity, result visibility, retention, and voting limitations.
-- [ ] Produce the migration/table sketch and centralized authorization matrix before implementation.
-- [ ] Execute Phase 2 with `.routines/worker` and record exact migrations/tests here.
-- [ ] Keep later section types feature-disabled until the preceding vertical-slice audit passes.
+- **Single custom-page model:** interactive types are ordinary `PageSection`
+  entries stored in `pages.content`.
+- **No new tables or migrations:** definitions and records live in the existing
+  section `config`, exactly alongside current page section data.
+- **One shell:** `BlockRenderer` and `SectionToolbar` govern legacy and interactive
+  blocks uniformly.
+
+### Current Progress
+
+- **Phase 1: Registry and contracts** — ✅ Complete
+  - Registered `form`, `qa`, `survey`, `poll`, and `vote`.
+  - Added bounded server validation for fields, options, status, and records.
+- **Phase 2: Existing-page persistence** — ✅ Complete
+  - Added transactional mutation of `pages.content` by page/section ID.
+  - Builder saves preserve concurrently submitted records.
+  - Page/section duplication clears submitted data.
+- **Phase 3: Privacy and authorization** — ✅ Complete
+  - Participation requires authentication and respects private-page access.
+  - Raw records are sanitized from non-manager page reads.
+  - Free-text fields are excluded from result aggregates.
+  - Admin/owner/editor moderation and deletion use existing page permissions.
+- **Phase 4: Interactive UI** — ✅ Complete
+  - Shared dense Formik block for forms, Q&A, surveys, polls, and voting.
+  - Existing section toolbar and controls are preserved without duplication.
+  - Glass selects, compact tabs/actions, stable native radio sizing.
+- **Phase 5: Records and results** — ✅ Complete
+  - Shared `TableView`, expandable disabled response detail, deletion.
+  - Q&A moderation/answer/pin/status workflow.
+  - Choice totals, percentages, and participation-aware results.
+- **Phase 6: Verification** — ✅ Complete
+  - Backend regression tests and full suite pass.
+  - Frontend utility tests, lint, and production build are recorded below.
+
+### Persistence boundary
+
+The only durable row changed by an interactive submission is the existing row in
+`pages`. The submission is appended to the matching section's `config.records`
+inside `pages.content`. There is no `page_interactive_sections` table and no
+response repository/domain parallel to the page builder.
+
+### Verification record
+
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- `npm run lint`
+- `npx vitest run src/components/page/interactiveTypes.test.ts`
+- `npm run build`
 
 <--/------->

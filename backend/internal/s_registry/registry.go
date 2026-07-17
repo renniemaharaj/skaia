@@ -37,6 +37,11 @@ var definitions = []Definition{
 	def("data_sources", "Data Sources", "rich", "Datasource management block.", `{}`),
 	def("derived_section", "Derived Section", "rich", "Datasource-backed rendered section.", `{"type":"object","properties":{"datasource_id":{"type":"integer","minimum":1},"column_map":{"type":"object"},"row_key_column":{"type":"string"},"row_overrides":{"type":"object"},"card_template":{"type":"object"}}}`),
 	def("custom_section", "Custom Section", "rich", "Reusable custom datasource-backed section.", `{"type":"object","properties":{"custom_section_id":{"type":"integer","minimum":1},"column_map":{"type":"object"},"row_key_column":{"type":"string"},"row_overrides":{"type":"object"},"card_template":{"type":"object"}}}`),
+	def("form", "Form", "interactive", "Schema-designed form with section-local responses.", interactiveConfigSchema),
+	def("qa", "Questions & Answers", "interactive", "Moderated questions and answers.", interactiveConfigSchema),
+	def("survey", "Survey", "interactive", "Multi-question survey with summarized results.", interactiveConfigSchema),
+	def("poll", "Poll", "interactive", "Audience poll with participation-aware results.", interactiveConfigSchema),
+	def("vote", "Voting", "interactive", "Confirmed ballot with controlled result visibility.", interactiveConfigSchema),
 }
 
 var definitionsByType = func() map[string]Definition {
@@ -109,6 +114,11 @@ func ValidateContent(content string, resolver Resolver) error {
 			return fmt.Errorf("section %d config is invalid: %w", i, err)
 		}
 		if resolver == nil {
+			if IsInteractive(section.SectionType) {
+				if err := ValidateInteractiveConfig(section.SectionType, cfg); err != nil {
+					return fmt.Errorf("section %d interactive config is invalid: %w", i, err)
+				}
+			}
 			continue
 		}
 		if err := validateIntegrationRefs(i, section.SectionType, cfg, resolver); err != nil {
@@ -118,6 +128,11 @@ func ValidateContent(content string, resolver Resolver) error {
 		if section.SectionType == "derived_section" || section.SectionType == "custom_section" {
 			if err := ValidateComponentConfig(cfg); err != nil {
 				return fmt.Errorf("section %d component config is invalid: %w", i, err)
+			}
+		}
+		if IsInteractive(section.SectionType) {
+			if err := ValidateInteractiveConfig(section.SectionType, cfg); err != nil {
+				return fmt.Errorf("section %d interactive config is invalid: %w", i, err)
 			}
 		}
 	}

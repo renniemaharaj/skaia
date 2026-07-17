@@ -2,165 +2,95 @@
 
 ## Scope
 
-Schema-designed forms, Q&A, surveys, polls, and voting embedded as custom-page
-sections, including submissions, moderation, results, permissions, and realtime UI.
+Formik-driven forms, Q&A, surveys, polls, and voting embedded in the existing
+custom-page block builder.
 
-## Load when
+## Governing architecture
 
-Changing interactive section types, page-content validation, response/ballot APIs,
-results visibility, page ownership/editor permissions, or interactive-section UI.
+- Interactive types are ordinary `PageSection` values: `form`, `qa`, `survey`,
+  `poll`, and `vote`.
+- Definitions, settings, and submitted records are serialized in that section's
+  `config` inside the existing `pages.content` JSONB document.
+- There is no interactive-section table, response table, projection, alternate
+  section model, or secondary rendering shell.
+- `BlockRenderer` remains the only section host. Every interactive block receives
+  the same `SectionToolbar`, layout, margin/padding, animation, copy/cut, move,
+  and delete behavior as legacy blocks.
+- The existing page registry validates interactive types and config bounds.
+  No migration is required.
 
-## Owns
+## Persistence and concurrency
 
-- Planned backend domain: `backend/internal/pageinteraction/`
-- Models and migrations: `backend/models/`, `backend/internal/migrations/`
-- Registry/validation: `backend/internal/s_registry/`
-- Builder/renderers: `frontend/src/components/page/`
-- Shared results table: `frontend/src/components/ui/TableView/`
-- Planned API prefix: `/api/pages/{pageId}/interactive-sections/{sectionKey}`
+- Participant writes address an existing page ID and numeric section ID, lock
+  the page row, mutate only that section's `config.records`, and update
+  `pages.content` transactionally.
+- Normal builder saves lock the same page row and preserve the current interactive
+  records while applying definition and presentation changes. A stale autosave
+  must not erase a response submitted concurrently.
+- Copying an interactive section and duplicating a page copy the design with an
+  empty records array. User submissions must never be cloned.
+- A section holds at most 50 fields and 1,000 records. Each submission is bounded,
+  validated on the server, and may include an idempotency key.
+- Polls and votes allow one record per authenticated user. Other types use their
+  configured response limit (`0` means unlimited).
 
-## Architecture
+## Privacy and authorization
 
-- Interactive content extends the existing `PageSection` registry and renderer;
-  it is not a parallel page system or a datasource workaround.
-- Registered types are `form`, `qa`, `survey`, `poll`, and `vote`.
-- Every interactive section config has an immutable UUID `section_key`, a
-  `schema_version`, presentation settings, audience policy, result policy, and
-  type-specific definition. Keys must be unique within a page.
-- `pages.content` remains the builder document. On page create/update, the page
-  service validates definitions and transactionally reconciles a normalized
-  runtime projection. Removed sections become archived so their records remain
-  manageable; copying a section always creates a new key and no records.
-- Submitted records store a schema snapshot/version, so an expanded historical
-  row can render the exact disabled form that produced it after later edits.
-- Use `handler => service => repository`. REST owns reads/mutations; server
-  confirmation emits aggregate/count invalidations through the existing singleton
-  WebSocket. Private answers, respondent identity, and ballots never enter a
-  broadcast payload.
+- Page visibility is checked before participation.
+- Participation currently requires an authenticated user. This provides a stable
+  identity for response limits without inventing a guest identity store.
+- Admins, page owners, and editors may read, moderate, and delete all records.
+- Other viewers receive only their own records. Published/answered Q&A records are
+  additionally visible as the public Q&A feed.
+- Public result payloads contain aggregates for choice, boolean, rating, scale,
+  and NPS fields only. Free-text values are never placed into result summaries.
+- Result visibility is `never`, `after_participation`, or `always`. Raw records
+  are removed server-side from page content before it is returned; CSS is never
+  used as an authorization boundary.
 
-## Persistence contract
+## Section behavior
 
-| Entity | Required data |
-| --- | --- |
-| Runtime section | UUID key, page, type, validated definition/settings JSONB, schema version, active/archived state, open/close times, creator, timestamps |
-| Response | UUID, section key, respondent user or pseudonymous guest key, schema snapshot, answers JSONB, status, submitted timestamp, soft-deletion metadata |
-| Choice selection | Response/ballot, question key, option key, rank where applicable; normalized for safe aggregates |
-| Q&A item | Question, author/guest identity, moderation state, answer, answerer, pinned/answered timestamps, soft-deletion metadata |
-| Participation ledger | Section, participant identity hash/user, attempt, idempotency key, timestamp; enforces configured limits without exposing secret choices |
-
-- Foreign keys cascade only when the page is intentionally purged. Routine record
-  deletion is soft delete with audit metadata; a separately authorized retention
-  job may permanently purge expired data.
-- Index page/key/time, active records, respondent lookups, moderation state, and
-  normalized option aggregates. List endpoints are cursor-paginated and bounded.
-- Anonymous secret voting separates eligibility/participation from ballot choices;
-  no row or event may make a secret ballot attributable to a participant.
-
-## Section contracts
-
-| Type | Participant experience | Manager/result experience |
+| Type | Participant view | Manager view |
 | --- | --- | --- |
-| Form | Schema-driven fields, validation, optional receipt and own submitted read-only view | Search/filter/export-ready `TableView`; configured summary columns; expandable exact disabled form; audited record deletion |
-| Q&A | Ask a question and view allowed published/pinned/answered items; optional authenticated upvote | Moderation queue, answer/edit/publish/pin/archive/delete, status/count summaries |
-| Survey | Multi-question/branching flow, progress, saved draft only when enabled, confirmation and own response | Completion/funnel and per-question charts/tables; response table when anonymity policy permits |
-| Poll | One or more configured choices, clear participation state, results according to policy | Counts, percentages, total responses, abstentions; option management locks after participation begins |
-| Vote | Explicit ballot review/confirm flow; single, approval, or ranked mode; receipt proves participation but not secret choice | Open/closed state, turnout, invalid/abstain totals, appropriate tally UI; final results immutable after close unless an audited recount is started |
+| Form | Configured fields, validation, success state | Response table and expanded disabled values |
+| Q&A | Ask question; see own pending and published/answered questions | Moderation table, answer, publish/archive, pin, delete |
+| Survey | Multi-field response with one-response default | Response table and structured result summaries |
+| Poll | One-choice participation and policy-gated results | Response table, totals, counts, percentages |
+| Vote | Review notice, confirmed single ballot, immutable participant choice | Response table and policy-gated tally |
 
-`qa` means questions and answers, not software quality assurance.
+## UI contract
 
-## Definition and lifecycle
+- All user-entered forms use Formik, including design and moderation forms.
+- Controls use existing `Button`, glass `Select`/`FormikSelect`, `TableView`,
+  design tokens, and the ultra-dense page-builder spacing model.
+- Manager tabs are Preview, Responses/Moderation, Results, and Design.
+- Response rows expose a compact expand control. Expanded content renders the
+  complete submitted field set as read-only values.
+- Native checkbox/radio controls have explicit dimensions and never inherit the
+  global full-width text-input styling.
+- Poll/vote results always pair bars with text counts and percentages.
 
-- Common settings: title/help/success text, layout/theme-safe style targets,
-  audience (`public`, `authenticated`, allowlisted roles), response limit, result
-  visibility, anonymity, open/close schedule, retention, notifications, and closed
-  state copy.
-- Stable question/field/option UUID keys survive reordering and label changes.
-- Supported form fields initially include short/long text, email, phone, URL,
-  number, date/time, select, multi-select, radio, checkbox, consent, and rating.
-  Survey adds scale/NPS/matrix and branching. File input is a gated follow-up that
-  must reuse upload ownership/quota/type checks and malware policy.
-- Server validation is canonical: required/length/range/pattern/choice membership,
-  branching reachability, option cardinality, duplicate keys, schedules, audience,
-  and payload/field limits. Client validation mirrors it for feedback only.
-- Structural changes after the first response create a new schema version. Poll
-  options and open voting ballots cannot be destructively edited; clone/version
-  instead. Closing is idempotent and uses server time.
-- Vote definitions lock an eligibility snapshot, quorum rule, versioned tally
-  algorithm (plurality, approval, or instant-runoff for ranked ballots), and a
-  deterministic tie rule before opening. Recounts preserve inputs and audit both
-  the old and new result artifacts.
+## Existing-page API extension
 
-## Authorization and privacy
+- `POST /api/pages/{pageId}/sections/{sectionId}/responses`
+- `PATCH /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
+- `DELETE /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
 
-- Page visibility is checked before section access. Participation policy is an
-  additional restriction and cannot make a private page public.
-- Admin, page owner, and current page editor can manage records and view manager
-  results. Backend policy is centralized and checked for every list/read/export,
-  moderate, close/reopen, and delete operation; frontend flags are UX only.
-- Participants can read their own response only when enabled. They cannot enumerate
-  others. Anonymous responses never expose identity to managers when configured as
-  anonymous; explain this irreversibility before activation.
-- Guest participation uses a signed, HttpOnly scoped token plus rate limiting and
-  abuse controls. It is a deterrent, not a guarantee of one human/one response;
-  formal votes default to authenticated eligibility.
-- Do not put sensitive answers in URLs, logs, analytics, audit-event metadata,
-  caches, notifications, or WS events. Escape plain text and sanitize any allowed
-  rich content. CSV export must neutralize spreadsheet formulas.
-- Record reads/exports/deletes, moderation, lifecycle changes, and recounts are
-  audited. Destructive and privacy-sensitive actions require confirmation; bulk
-  operations report partial failures.
-
-## Results and UI contract
-
-- Managers see section-local tabs: `Participate/Preview`, `Responses` or
-  `Moderation`, `Results`, and `Design`. Non-managers see only policy-allowed views.
-- Result visibility supports `never`, `after_participation`, `after_close`, and
-  `always`; managers always receive authorized results. The API returns capabilities
-  and result state, not hidden raw data that CSS merely conceals.
-- Form/survey rows use the shared `TableView` with search, filters, server sorting,
-  pagination, column selection, selection/bulk delete, empty/loading/error states,
-  and an accessible expandable detail row. On narrow screens, rows become labeled
-  summaries with the same actions and detail content.
-- Poll/vote results use accessible totals, percentages and text labels alongside
-  charts; never rely on color alone. Q&A uses a readable public feed plus a dense
-  moderation table. Dates use local display with server-time semantics.
-- Builder design supports drag/reorder, field settings, conditional-logic checks,
-  summary-column selection, result-policy preview, desktop/mobile preview, undo-safe
-  edits, and explicit publish/close warnings. All CSS uses existing tokens.
-- Keyboard operation, focus restoration after row expansion/modals, semantic
-  fieldsets/legends, described errors, reduced motion, and screen-reader live status
-  are required. Submission is idempotent and resistant to double-click/retry.
-
-## API and realtime contract
-
-- Public/capability reads resolve page + section together; never accept a bare
-  section key without verifying its page.
-- Separate participant endpoints (definition/state, submit, own response, public
-  results/Q&A) from manager endpoints (records, detail, moderation, lifecycle,
-  export/delete). Return stable machine-readable validation codes.
-- Mutations accept an idempotency key and use transactions for limit checks,
-  response/selection writes, and aggregates. Concurrent final submissions cannot
-  exceed configured capacity or vote once limits.
-- WS events carry only `{ page_id, section_key, action, aggregate_revision }` and
-  direct capability-safe updates. Clients refetch authorized aggregates/rows and
-  merge into section-local state; no polling and no second socket.
+These routes mutate the existing page document. They do not represent a separate
+interactive-section resource or persistence model.
 
 ## Verify
 
-- Backend unit/integration tests: schema validation/versioning, authorization matrix,
-  anonymity, idempotency/concurrency, schedules, aggregation, soft delete, pagination,
-  private-page access, and audit emission.
-- Frontend tests: builder validation, each participant state, results-policy gates,
-  expanded disabled historical form, manager delete, realtime invalidation, keyboard
-  flow, responsive table/cards, loading/empty/error/offline/retry states.
-- Commands: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
-  and, from `frontend/`, `npm run lint`, targeted `npm test`, and `npm run build`.
+- Backend: registry validation, transactional record preservation, sanitization,
+  duplicate clearing, response limits, moderation authorization, and deletion.
+- Frontend: defaults, validation, copied-record clearing, Formik rendering,
+  manager tables, results, dense responsive styling, lint, tests, and build.
+- Commands: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`;
+  from `frontend/`, `npm run lint`, focused `vitest`, and `npm run build`.
 
 ## Trace
 
-- `.todo/custom_page_interactive_sections`
-- `.specs/custom_pages_multiplayer_spec`
-- `.specs/security_architecture_spec`
-- `.specs/realtime_wss_spec`
-- `.specs/migrations_spec`
-- `.routines/planner`, `.routines/correctness`, `.routines/auditor`
+- `.todo/custom_page_interactive_sections.tip`
+- `backend/internal/page/interactive.go`
+- `backend/internal/s_registry/interactive.go`
+- `frontend/src/components/page/blocks/InteractiveSectionBlock.tsx`

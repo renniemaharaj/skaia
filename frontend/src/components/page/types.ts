@@ -107,6 +107,11 @@ export const SECTION_TYPES = [
   "data_sources",
   "derived_section",
   "custom_section",
+  "form",
+  "qa",
+  "survey",
+  "poll",
+  "vote",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
@@ -126,6 +131,11 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   data_sources: "Data Sources",
   derived_section: "Derived Section",
   custom_section: "Custom Section",
+  form: "Form",
+  qa: "Questions & Answers",
+  survey: "Survey",
+  poll: "Poll",
+  vote: "Voting",
 };
 
 export interface SectionTypeGroup {
@@ -153,6 +163,12 @@ export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
     label: "Rich content",
     description: "Text, code and custom sections for advanced content.",
     types: ["rich_text", "code_editor", "data_sources", "derived_section", "custom_section"],
+  },
+  {
+    id: "interactive",
+    label: "Interactive",
+    description: "Forms, questions, surveys, polls and voting.",
+    types: ["form", "qa", "survey", "poll", "vote"],
   },
 ];
 

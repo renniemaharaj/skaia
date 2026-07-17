@@ -1,5 +1,6 @@
 import type { PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
+import { clearInteractiveRecords } from "./interactiveTypes";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -53,6 +54,9 @@ const SocialLinksBlock = lazy(() =>
 const StatCardsBlock = lazy(() =>
   import("./blocks/StatCardsBlock").then(m => ({ default: m.StatCardsBlock }))
 );
+const InteractiveSectionBlock = lazy(() =>
+  import("./blocks/InteractiveSectionBlock").then(m => ({ default: m.InteractiveSectionBlock }))
+);
 
 // Heavy blocks — lazy-loaded so they don't bloat the initial bundle.
 // Each will suspend (and show a skeleton fallback) only until its chunk lands.
@@ -103,6 +107,11 @@ const BLOCK_MAP: Record<
   data_sources: DataSourcesBlock as never,
   derived_section: DerivedSectionBlock as never,
   custom_section: CustomSectionBlock as never,
+  form: InteractiveSectionBlock as never,
+  qa: InteractiveSectionBlock as never,
+  survey: InteractiveSectionBlock as never,
+  poll: InteractiveSectionBlock as never,
+  vote: InteractiveSectionBlock as never,
 };
 
 /**
@@ -306,7 +315,9 @@ export const BlockRenderer = memo(function BlockRenderer({
             section_type: parsed.section.section_type,
             heading: parsed.section.heading,
             subheading: parsed.section.subheading,
-            config: parsed.section.config,
+            config: ["form", "qa", "survey", "poll", "vote"].includes(parsed.section.section_type)
+              ? clearInteractiveRecords(parsed.section.config)
+              : parsed.section.config,
             items: (parsed.section.items || []).map((item: any) => {
               const { id, section_id, ...rest } = item;
               return rest;

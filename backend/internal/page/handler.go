@@ -3,6 +3,7 @@ package page
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strconv"
@@ -55,6 +56,9 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 			r.Put("/{id}", h.updatePage)
 			r.Delete("/{id}", h.deletePage)
 			r.Post("/{id}/duplicate", h.duplicatePage)
+			r.Post("/{id}/sections/{sectionId}/responses", h.submitInteractiveResponse)
+			r.Patch("/{id}/sections/{sectionId}/responses/{recordId}", h.patchInteractiveResponse)
+			r.Delete("/{id}/sections/{sectionId}/responses/{recordId}", h.deleteInteractiveResponse)
 
 			// Ownership & editor management
 			r.Put("/{id}/owner", h.setOwner)
@@ -223,6 +227,7 @@ func (h *Handler) getIndex(w http.ResponseWriter, r *http.Request) {
 	uid, _ := utils.UserIDFromCtx(r)
 	h.svc.EnrichPageEngagement(p, uidPtr(uid))
 	p.CanDelete = h.canDeletePageForPage(r, p)
+	h.sanitizeInteractivePage(r, p)
 	utils.WriteJSON(w, http.StatusOK, p)
 }
 
@@ -231,6 +236,14 @@ func uidPtr(uid int64) *int64 {
 		return nil
 	}
 	return &uid
+}
+
+func (h *Handler) sanitizeInteractivePage(r *http.Request, p *models.Page) {
+	if p == nil {
+		return
+	}
+	uid, _ := utils.UserIDFromCtx(r)
+	p.Content = SanitizeInteractiveContent(p.Content, uid, h.canEditPage(r, p.ID))
 }
 
 func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
@@ -255,6 +268,7 @@ func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
 	uid, _ := utils.UserIDFromCtx(r)
 	h.svc.EnrichPageEngagement(p, uidPtr(uid))
 	p.CanDelete = h.canDeletePageForPage(r, p)
+	h.sanitizeInteractivePage(r, p)
 	utils.WriteJSON(w, http.StatusOK, p)
 }
 
@@ -267,6 +281,9 @@ func (h *Handler) listPages(w http.ResponseWriter, r *http.Request) {
 	}
 	if pages == nil {
 		pages = []*models.Page{}
+	}
+	for _, p := range pages {
+		h.sanitizeInteractivePage(r, p)
 	}
 	utils.WriteJSON(w, http.StatusOK, pages)
 }
@@ -423,6 +440,137 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) interactiveTarget(w http.ResponseWriter, r *http.Request) (int64, int64, int64, bool) {
+	pageID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid page id")
+		return 0, 0, 0, false
+	}
+	sectionID, err := parseID(r, "sectionId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid section id")
+		return 0, 0, 0, false
+	}
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "sign in to participate")
+		return 0, 0, 0, false
+	}
+	p, err := h.svc.GetByID(pageID)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "page not found")
+		return 0, 0, 0, false
+	}
+	if p.Visibility == "private" && !h.canEditPage(r, pageID) {
+		utils.WriteError(w, http.StatusForbidden, "this page is private")
+		return 0, 0, 0, false
+	}
+	return pageID, sectionID, uid, true
+}
+
+func writeInteractiveError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrInteractiveSectionNotFound), errors.Is(err, ErrInteractiveRecordNotFound):
+		utils.WriteError(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, ErrInteractiveClosed), errors.Is(err, ErrInteractiveDuplicate):
+		utils.WriteError(w, http.StatusConflict, err.Error())
+	default:
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+	}
+}
+
+func (h *Handler) submitInteractiveResponse(w http.ResponseWriter, r *http.Request) {
+	pageID, sectionID, uid, ok := h.interactiveTarget(w, r)
+	if !ok {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
+	var body struct {
+		Answers        map[string]interface{} `json:"answers"`
+		IdempotencyKey string                 `json:"idempotency_key"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid response")
+		return
+	}
+	if body.Answers == nil {
+		body.Answers = map[string]interface{}{}
+	}
+	if body.IdempotencyKey == "" {
+		body.IdempotencyKey = r.Header.Get("Idempotency-Key")
+	}
+	name := fmt.Sprintf("User %d", uid)
+	if user, err := h.userSvc.GetByID(uid); err == nil {
+		name = user.DisplayName
+		if strings.TrimSpace(name) == "" {
+			name = user.Username
+		}
+	}
+	record, err := h.svc.SubmitInteractive(pageID, sectionID, uid, name, body.IdempotencyKey, body.Answers)
+	if err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	config, err := h.svc.InteractiveConfig(pageID, sectionID, uid, h.canEditPage(r, pageID))
+	if err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{"record": record, "config": config})
+}
+
+func (h *Handler) deleteInteractiveResponse(w http.ResponseWriter, r *http.Request) {
+	pageID, sectionID, uid, ok := h.interactiveTarget(w, r)
+	if !ok {
+		return
+	}
+	if !h.canEditPage(r, pageID) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	recordID := chi.URLParam(r, "recordId")
+	if recordID == "" {
+		utils.WriteError(w, http.StatusBadRequest, "missing record id")
+		return
+	}
+	if err := h.svc.DeleteInteractiveRecord(pageID, sectionID, recordID); err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	config, err := h.svc.InteractiveConfig(pageID, sectionID, uid, true)
+	if err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "deleted", "config": config})
+}
+
+func (h *Handler) patchInteractiveResponse(w http.ResponseWriter, r *http.Request) {
+	pageID, sectionID, uid, ok := h.interactiveTarget(w, r)
+	if !ok {
+		return
+	}
+	if !h.canEditPage(r, pageID) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var patch InteractiveRecordPatch
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&patch); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid moderation update")
+		return
+	}
+	if err := h.svc.PatchInteractiveRecord(pageID, sectionID, chi.URLParam(r, "recordId"), patch); err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	config, err := h.svc.InteractiveConfig(pageID, sectionID, uid, true)
+	if err != nil {
+		writeInteractiveError(w, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "updated", "config": config})
+}
+
 func pageUpdatePatch(p *models.Page) map[string]interface{} {
 	if p == nil {
 		return nil
@@ -510,6 +658,7 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 		}
 		p.CanDelete = h.canDeletePageForPage(r, p)
 		p.CanEdit = h.canEditPage(r, p.ID)
+		h.sanitizeInteractivePage(r, p)
 	}
 
 	// Include the current landing page slug so the frontend can show a badge.

@@ -37,6 +37,21 @@ func TestRegistryDefinitionsIncludeIntegrationTypes(t *testing.T) {
 	}
 }
 
+func TestRegistryDefinitionsIncludeInteractivePageSections(t *testing.T) {
+	for _, typ := range []string{"form", "qa", "survey", "poll", "vote"} {
+		if _, ok := Get(typ); !ok {
+			t.Fatalf("expected %s definition", typ)
+		}
+	}
+}
+
+func TestValidateContentRejectsInvalidInteractiveFields(t *testing.T) {
+	err := ValidateContent(`[{"section_type":"form","config":"{\"fields\":[{\"key\":\"x\",\"type\":\"executable\"}]}"}]`, nil)
+	if err == nil || !strings.Contains(err.Error(), "unsupported type") {
+		t.Fatalf("expected interactive field validation error, got %v", err)
+	}
+}
+
 func TestValidateContentRejectsUnknownSectionType(t *testing.T) {
 	err := ValidateContent(`[{"section_type":"mystery","config":"{}"}]`, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported section_type") {

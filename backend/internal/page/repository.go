@@ -1,6 +1,7 @@
 package page
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/skaia/backend/database"
@@ -102,6 +103,50 @@ func (r *sqlRepository) Update(p *models.Page) error {
 		 RETURNING updated_at`,
 		p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
 	).Scan(&p.UpdatedAt)
+}
+
+// UpdatePreservingInteractive serializes an ordinary page-builder save with
+// participant writes and preserves the records owned by interactive configs.
+func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var current string
+		if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id = $1 FOR UPDATE`, p.ID).Scan(&current); err != nil {
+			return err
+		}
+		merged, err := mergeInteractiveRecords(current, p.Content)
+		if err != nil {
+			return err
+		}
+		p.Content = merged
+		return exec.QueryRow(
+			`UPDATE pages
+			 SET slug = $2, title = $3, description = $4,
+			     content = $5::jsonb, visibility = $6, updated_at = CURRENT_TIMESTAMP
+			 WHERE id = $1
+			 RETURNING updated_at`,
+			p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
+		).Scan(&p.UpdatedAt)
+	})
+}
+
+// MutateContent locks and rewrites the existing pages.content document. It is
+// the persistence primitive for interactive records; no secondary table exists.
+func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string, error)) error {
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var current string
+		if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id = $1 FOR UPDATE`, pageID).Scan(&current); err != nil {
+			return err
+		}
+		next, err := mutate(current)
+		if err != nil {
+			return err
+		}
+		_, err = exec.Exec(
+			`UPDATE pages SET content = $2::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+			pageID, next,
+		)
+		return err
+	})
 }
 
 func (r *sqlRepository) Delete(id int64) error {

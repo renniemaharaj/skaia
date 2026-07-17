@@ -658,6 +658,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     saveStatus,
     pendingIncoming,
     pageId: page?.id,
+    canManagePage: isEditable,
   };
 
   if (isNewPage) {

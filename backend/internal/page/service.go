@@ -138,7 +138,7 @@ func (s *Service) Update(p *models.Page) error {
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
-	err := s.repo.Update(p)
+	err := s.repo.UpdatePreservingInteractive(p)
 	if err == nil {
 		s.invalidateSEO(p.Slug)
 	}
@@ -166,7 +166,7 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 		Slug:        newSlug,
 		Title:       title,
 		Description: src.Description,
-		Content:     src.Content,
+		Content:     ClearInteractiveRecords(src.Content),
 		Visibility:  "private",
 	}
 	if dup.Content == "" {

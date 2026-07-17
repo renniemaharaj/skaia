@@ -8,6 +8,8 @@ type Repository interface {
 	GetByID(id int64) (*models.Page, error)
 	Create(p *models.Page) error
 	Update(p *models.Page) error
+	UpdatePreservingInteractive(p *models.Page) error
+	MutateContent(pageID int64, mutate func(string) (string, error)) error
 	Delete(id int64) error
 	DeleteAll() error
 	List() ([]*models.Page, error)

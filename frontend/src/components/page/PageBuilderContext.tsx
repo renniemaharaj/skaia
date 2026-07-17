@@ -16,6 +16,8 @@ export interface PageBuilderContextValue {
   pendingIncoming: boolean;
   /** The current page ID (if known). Used by blocks for env-var-aware execution. */
   pageId?: number;
+  /** Actual server-backed page edit capability; unlike block canEdit, this never includes guest sandbox mode. */
+  canManagePage: boolean;
 }
 
 const noop = () => {};
@@ -27,6 +29,7 @@ export const PageBuilderContext = createContext<PageBuilderContextValue>({
   saveStatus: "idle",
   pendingIncoming: false,
   pageId: undefined,
+  canManagePage: false,
 });
 
 export function usePageBuilderContext(): PageBuilderContextValue {
