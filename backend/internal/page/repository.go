@@ -94,17 +94,6 @@ func (r *sqlRepository) Create(p *models.Page) error {
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
-func (r *sqlRepository) Update(p *models.Page) error {
-	return r.db.QueryRow(
-		`UPDATE pages
-		 SET slug = $2, title = $3, description = $4,
-		     content = $5::jsonb, visibility = $6, updated_at = CURRENT_TIMESTAMP
-		 WHERE id = $1
-		 RETURNING updated_at`,
-		p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
-	).Scan(&p.UpdatedAt)
-}
-
 // UpdatePreservingInteractive serializes an ordinary page-builder save with
 // participant writes and preserves the records owned by interactive configs.
 func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {

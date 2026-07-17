@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/skaia/backend/internal/workers"
 	"github.com/renniemaharaj/conveyor/pkg/conveyor"
+	"github.com/skaia/backend/internal/workers"
 )
 
 var pkgLog = log.New("Events")
@@ -73,14 +73,17 @@ const (
 	ActPlanDeleted           = "store.plan_deleted"
 
 	// Pages
-	ActPageCreated        = "page.created"
-	ActPageUpdated        = "page.updated"
-	ActPageDeleted        = "page.deleted"
-	ActPageLiked          = "page.liked"
-	ActPageUnliked        = "page.unliked"
-	ActPageCommentCreated = "page.comment_created"
-	ActPageCommentUpdated = "page.comment_updated"
-	ActPageCommentDeleted = "page.comment_deleted"
+	ActPageCreated           = "page.created"
+	ActPageUpdated           = "page.updated"
+	ActPageDeleted           = "page.deleted"
+	ActPageLiked             = "page.liked"
+	ActPageUnliked           = "page.unliked"
+	ActPageCommentCreated    = "page.comment_created"
+	ActPageCommentUpdated    = "page.comment_updated"
+	ActPageCommentDeleted    = "page.comment_deleted"
+	ActPageResponseSubmitted = "page.interactive_response_submitted"
+	ActPageResponseModerated = "page.interactive_response_moderated"
+	ActPageResponseDeleted   = "page.interactive_response_deleted"
 
 	// Config / Landing
 	ActBrandingUpdated = "config.branding_updated"
@@ -161,7 +164,7 @@ func envIntDefault(key string, def int) int {
 func NewDispatcher(db *sql.DB) *Dispatcher {
 	workersCount := envIntDefault("EVENTS_WORKERS", workers.Budget(workers.DomainEvents))
 	bufSize := envIntDefault("EVENTS_BUFFER", 4096)
-	
+
 	m := conveyor.CreateManager().
 		SetMinWorkers(1).
 		SetMaxWorkers(workersCount).
@@ -191,12 +194,12 @@ func (d *Dispatcher) Stop() {
 	pkgLog.Info("dispatcher stopped")
 }
 
-// Dispatch pushes a job onto the conveyor belt. 
+// Dispatch pushes a job onto the conveyor belt.
 func (d *Dispatcher) Dispatch(job Job) {
 	if d.done.Load() {
 		return
 	}
-	
+
 	d.manager.B.Push(conveyor.CreateJob(
 		context.Background(),
 		job,

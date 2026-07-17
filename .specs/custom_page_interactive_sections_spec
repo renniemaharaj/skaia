@@ -36,6 +36,8 @@ custom-page block builder.
   records on page create/update and owns every record mutation.
 - Idempotency keys are scoped to the authenticated participant and section. A retry
   may return only that participant's existing authorized record.
+- The participant client retains one idempotency key for an unchanged logical
+  submission until it receives success; changing answers starts a new key.
 - Polls and votes allow one record per authenticated user. Other types use their
   configured response limit (`0` means unlimited).
 
@@ -45,6 +47,10 @@ custom-page block builder.
 - Participation currently requires an authenticated user. This provides a stable
   identity for response limits without inventing a guest identity store.
 - Admins, page owners, and editors may read, moderate, and delete all records.
+- Moderation and deletion call the centralized `security.PagePolicy` from the page
+  service. Missing policy dependencies and permission lookup failures deny access.
+- Privileged record mutations emit metadata-only page audit events containing the
+  page, section, record ID, action, actor, and request metadata, never answer data.
 - Other viewers receive only their own records. Published/answered Q&A records are
   additionally visible as the public Q&A feed.
 - Public result payloads contain aggregates for choice, boolean, rating, scale,
@@ -54,6 +60,8 @@ custom-page block builder.
   used as an authorization boundary.
 - Page WebSocket and cache-invalidation payloads never contain raw records,
   respondent metadata, user IDs, answers, or idempotency keys.
+- Interactive mutations broadcast `{id, partial: true, interactive: true}` and
+  clients refetch their authorized REST projection.
 
 ## Section behavior
 

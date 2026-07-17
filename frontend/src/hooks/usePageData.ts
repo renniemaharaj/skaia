@@ -223,9 +223,13 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
       // Only applies when the hook is in "index" mode (no explicit slug).
       if (action === "landing_page_changed" && data) {
         if (!requestedSlugRef.current) {
-          // We're on the index route - swap to the new landing page.
-          setPage(data as PageBuilderDoc);
-          currentSlugRef.current = data.slug ?? null;
+          if (data.partial) {
+            currentSlugRef.current = data.slug ?? null;
+            refresh();
+          } else {
+            setPage(data as PageBuilderDoc);
+            currentSlugRef.current = data.slug ?? null;
+          }
           return;
         }
       }

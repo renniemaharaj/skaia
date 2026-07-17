@@ -1,6 +1,11 @@
 import type { PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
-import { clearInteractiveRecords } from "./interactiveTypes";
+import {
+  clearInteractiveRecords,
+  configForNewSection,
+  isInteractiveSectionType,
+  sectionForClipboard,
+} from "./interactiveTypes";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -205,7 +210,7 @@ const SectionBlock = memo(function SectionBlock({
 
   const onCopy = useCallback(async () => {
     try {
-      const payload = JSON.stringify({ isSkaiaBlock: true, section });
+      const payload = JSON.stringify({ isSkaiaBlock: true, section: sectionForClipboard(section) });
       await navigator.clipboard.writeText(payload);
       toast.success("Section copied to clipboard");
     } catch {
@@ -280,7 +285,7 @@ export const BlockRenderer = memo(function BlockRenderer({
       section_type: type,
       heading: SECTION_TYPE_LABELS[type] ?? type,
       subheading: "",
-      config: "{}",
+      config: configForNewSection(type),
       items: [],
     });
     setActiveAddIndex(null);
@@ -315,7 +320,7 @@ export const BlockRenderer = memo(function BlockRenderer({
             section_type: parsed.section.section_type,
             heading: parsed.section.heading,
             subheading: parsed.section.subheading,
-            config: ["form", "qa", "survey", "poll", "vote"].includes(parsed.section.section_type)
+            config: isInteractiveSectionType(parsed.section.section_type)
               ? clearInteractiveRecords(parsed.section.config)
               : parsed.section.config,
             items: (parsed.section.items || []).map((item: any) => {
@@ -415,7 +420,9 @@ export const BlockRenderer = memo(function BlockRenderer({
                     section_type: clipboardSection.section_type,
                     heading: clipboardSection.heading,
                     subheading: clipboardSection.subheading,
-                    config: clipboardSection.config,
+                    config: isInteractiveSectionType(clipboardSection.section_type)
+                      ? clearInteractiveRecords(clipboardSection.config)
+                      : clipboardSection.config,
                     items: (clipboardSection.items || []).map((item: any) => {
                       const { id, section_id, ...rest } = item;
                       return rest;

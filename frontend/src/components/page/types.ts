@@ -1,7 +1,5 @@
 /** Types for the page block system. */
 
-/** Types for the page block system. */
-
 export interface PageItem {
   id: number;
   section_id: number;
@@ -20,18 +18,6 @@ export interface SectionEditor {
   display_name: string;
   avatar_url?: string;
   edited_at?: string;
-}
-
-export interface PageItem {
-  id: number;
-  section_id: number;
-  display_order: number;
-  icon: string;
-  heading: string;
-  subheading: string;
-  image_url: string;
-  link_url: string;
-  config: string;
 }
 
 export interface PageSection {
@@ -89,7 +75,6 @@ export interface FooterConfig {
   social_links: FooterSocialLink[];
 }
 
-/** All section types the renderer knows about. */
 /** All section types the renderer knows about. */
 
 export const SECTION_TYPES = [

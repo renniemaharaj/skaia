@@ -14,7 +14,8 @@ boundaries, Turnstile, security metrics, or any privileged/sensitive action.
 
 ## Owns
 
-- Policy target: `backend/internal/security/` (planned centralized package)
+- Policy target: `backend/internal/security/` (`PagePolicy` is implemented; broader
+  user/session policy centralization remains planned)
 - Current auth/session code: `backend/internal/auth/`, `backend/internal/session/`
 - Current RBAC code: `backend/internal/user/`, `backend/internal/middleware/perm.go`
 - Rate limiting: `backend/middleware/ratelimit.go`, `backend/ratelimit/`
@@ -53,6 +54,9 @@ is not an architectural invariant and must not be treated as one.
   responses or silently discard lookup failures.
 - Permission storage and middleware must share one documented superuser rule;
   conflicting middleware/service interpretations are forbidden.
+- Interactive page response moderation/deletion uses `security.PagePolicy` through
+  a required page-service dependency; owner, editor, and `home.manage` decisions
+  fail closed on missing dependencies or lookup errors.
 
 ### Step-up and session trust
 

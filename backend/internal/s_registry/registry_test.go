@@ -46,14 +46,14 @@ func TestRegistryDefinitionsIncludeInteractivePageSections(t *testing.T) {
 }
 
 func TestValidateContentRejectsInvalidInteractiveFields(t *testing.T) {
-	err := ValidateContent(`[{"section_type":"form","config":"{\"fields\":[{\"key\":\"x\",\"type\":\"executable\"}]}"}]`, nil)
+	err := ValidateContent(`[{"id":1,"section_type":"form","config":"{\"status\":\"open\",\"result_visibility\":\"never\",\"response_limit\":0,\"fields\":[{\"key\":\"x\",\"type\":\"executable\"}]}"}]`, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported type") {
 		t.Fatalf("expected interactive field validation error, got %v", err)
 	}
 }
 
 func TestValidateContentRejectsUnknownSectionType(t *testing.T) {
-	err := ValidateContent(`[{"section_type":"mystery","config":"{}"}]`, nil)
+	err := ValidateContent(`[{"id":1,"section_type":"mystery","config":"{}"}]`, nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported section_type") {
 		t.Fatalf("expected unsupported section_type error, got %v", err)
 	}
@@ -66,8 +66,19 @@ func TestValidateContentRejectsNonArrayContent(t *testing.T) {
 	}
 }
 
+func TestValidateContentRejectsInvalidSectionIdentity(t *testing.T) {
+	for _, content := range []string{
+		`[{"id":0,"section_type":"hero","config":"{}"}]`,
+		`[{"id":1,"section_type":"hero","config":"{}"},{"id":1,"section_type":"rich_text","config":"{}"}]`,
+	} {
+		if err := ValidateContent(content, nil); err == nil {
+			t.Fatalf("expected invalid section identity to be rejected: %s", content)
+		}
+	}
+}
+
 func TestValidateContentRejectsInvalidDatasourceReference(t *testing.T) {
-	content := `[{"section_type":"derived_section","config":"{\"datasource_id\":42}"}]`
+	content := `[{"id":1,"section_type":"derived_section","config":"{\"datasource_id\":42}"}]`
 	err := ValidateContent(content, fakeResolver{dataSources: map[int64]bool{1: true}})
 	if err == nil || !strings.Contains(err.Error(), "unknown datasource_id 42") {
 		t.Fatalf("expected unknown datasource error, got %v", err)
@@ -76,8 +87,8 @@ func TestValidateContentRejectsInvalidDatasourceReference(t *testing.T) {
 
 func TestValidateContentAcceptsKnownIntegrationReferences(t *testing.T) {
 	content := `[
-		{"section_type":"derived_section","config":"{\"datasource_id\":7}"},
-		{"section_type":"custom_section","config":{"custom_section_id":9}}
+		{"id":1,"section_type":"derived_section","config":"{\"datasource_id\":7}"},
+		{"id":2,"section_type":"custom_section","config":{"custom_section_id":9}}
 	]`
 	err := ValidateContent(content, fakeResolver{
 		dataSources:    map[int64]bool{7: true},

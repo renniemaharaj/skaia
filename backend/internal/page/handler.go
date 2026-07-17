@@ -120,7 +120,7 @@ func (h *Handler) setPageAsHomepage(w http.ResponseWriter, r *http.Request) {
 		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": p.Slug},
 		Fn: func() {
 			if p != nil {
-				h.hub.BroadcastPage("landing_page_changed", p)
+				h.hub.BroadcastPage("landing_page_changed", pageInvalidation(p))
 			}
 			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": p.Slug})
 		},
@@ -314,6 +314,7 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 				h.svc.EnrichPage(existing)
 				uid, _ := utils.UserIDFromCtx(r)
 				h.svc.EnrichPageEngagement(existing, uidPtr(uid))
+				h.sanitizeInteractivePage(r, existing)
 				utils.WriteJSON(w, http.StatusConflict, existing)
 				return
 			}
@@ -414,6 +415,7 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	userID, _ := utils.UserIDFromCtx(r)
 	if updated != nil {
 		h.svc.EnrichPage(updated)
+		h.sanitizeInteractivePage(r, updated)
 		utils.WriteJSON(w, http.StatusOK, updated)
 		h.dispatcher.Dispatch(ievents.Job{
 			UserID:     userID,
@@ -426,6 +428,7 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	} else {
+		h.sanitizeInteractivePage(r, &p)
 		utils.WriteJSON(w, http.StatusOK, p)
 		h.dispatcher.Dispatch(ievents.Job{
 			UserID:     userID,
@@ -470,6 +473,8 @@ func (h *Handler) interactiveTarget(w http.ResponseWriter, r *http.Request) (int
 
 func writeInteractiveError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, ErrInteractiveForbidden):
+		utils.WriteError(w, http.StatusForbidden, err.Error())
 	case errors.Is(err, ErrInteractiveSectionNotFound), errors.Is(err, ErrInteractiveRecordNotFound):
 		utils.WriteError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, ErrInteractiveClosed), errors.Is(err, ErrInteractiveDuplicate):
@@ -477,6 +482,24 @@ func writeInteractiveError(w http.ResponseWriter, err error) {
 	default:
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 	}
+}
+
+func (h *Handler) dispatchInteractiveMutation(r *http.Request, userID, pageID, sectionID int64, recordID, activity, action string) {
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID:     userID,
+		Activity:   activity,
+		Resource:   ievents.ResPage,
+		ResourceID: pageID,
+		IP:         ievents.ClientIP(r),
+		Meta: map[string]interface{}{
+			"action": action, "section_id": sectionID, "record_id": recordID,
+		},
+		Fn: func() {
+			h.hub.BroadcastPage("page_updated", map[string]interface{}{
+				"id": pageID, "partial": true, "interactive": true,
+			})
+		},
+	})
 }
 
 func (h *Handler) submitInteractiveResponse(w http.ResponseWriter, r *http.Request) {
@@ -516,7 +539,10 @@ func (h *Handler) submitInteractiveResponse(w http.ResponseWriter, r *http.Reque
 		writeInteractiveError(w, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{"record": record, "config": config})
+	safeRecord := *record
+	safeRecord.IdempotencyKey = ""
+	utils.WriteJSON(w, http.StatusCreated, map[string]interface{}{"record": &safeRecord, "config": config})
+	h.dispatchInteractiveMutation(r, uid, pageID, sectionID, record.ID, ievents.ActPageResponseSubmitted, "submit_response")
 }
 
 func (h *Handler) deleteInteractiveResponse(w http.ResponseWriter, r *http.Request) {
@@ -524,16 +550,12 @@ func (h *Handler) deleteInteractiveResponse(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	if !h.canEditPage(r, pageID) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	recordID := chi.URLParam(r, "recordId")
 	if recordID == "" {
 		utils.WriteError(w, http.StatusBadRequest, "missing record id")
 		return
 	}
-	if err := h.svc.DeleteInteractiveRecord(pageID, sectionID, recordID); err != nil {
+	if err := h.svc.DeleteInteractiveRecord(pageID, sectionID, recordID, uid); err != nil {
 		writeInteractiveError(w, err)
 		return
 	}
@@ -543,6 +565,7 @@ func (h *Handler) deleteInteractiveResponse(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "deleted", "config": config})
+	h.dispatchInteractiveMutation(r, uid, pageID, sectionID, recordID, ievents.ActPageResponseDeleted, "delete_response")
 }
 
 func (h *Handler) patchInteractiveResponse(w http.ResponseWriter, r *http.Request) {
@@ -550,16 +573,13 @@ func (h *Handler) patchInteractiveResponse(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	if !h.canEditPage(r, pageID) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	var patch InteractiveRecordPatch
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10)).Decode(&patch); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid moderation update")
 		return
 	}
-	if err := h.svc.PatchInteractiveRecord(pageID, sectionID, chi.URLParam(r, "recordId"), patch); err != nil {
+	recordID := chi.URLParam(r, "recordId")
+	if err := h.svc.PatchInteractiveRecord(pageID, sectionID, recordID, patch, uid); err != nil {
 		writeInteractiveError(w, err)
 		return
 	}
@@ -569,6 +589,7 @@ func (h *Handler) patchInteractiveResponse(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"status": "updated", "config": config})
+	h.dispatchInteractiveMutation(r, uid, pageID, sectionID, recordID, ievents.ActPageResponseModerated, "moderate_response")
 }
 
 func pageUpdatePatch(p *models.Page) map[string]interface{} {
@@ -585,6 +606,13 @@ func pageUpdatePatch(p *models.Page) map[string]interface{} {
 		"updated_at":  p.UpdatedAt,
 		"partial":     true,
 	}
+}
+
+func pageInvalidation(p *models.Page) map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return map[string]interface{}{"id": p.ID, "slug": p.Slug, "partial": true}
 }
 
 func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
@@ -717,6 +745,7 @@ func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 	userID, _ := utils.UserIDFromCtx(r)
 	if page != nil {
 		h.svc.EnrichPage(page)
+		h.sanitizeInteractivePage(r, page)
 		utils.WriteJSON(w, http.StatusOK, page)
 		h.dispatcher.Dispatch(ievents.Job{
 			UserID:     userID,
@@ -726,7 +755,7 @@ func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 			IP:         ievents.ClientIP(r),
 			Meta:       map[string]interface{}{"action": "set_owner", "new_owner": body.UserID},
 			Fn: func() {
-				h.hub.BroadcastPage("page_updated", page)
+				h.hub.BroadcastPage("page_updated", pageUpdatePatch(page))
 			},
 		})
 	} else {
@@ -1184,8 +1213,7 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "slug": body.Slug})
 
-	// Fetch the full new landing page so we can push it through WebSocket,
-	// completely bypassing any CDN / browser HTTP caching.
+	// Resolve only page identity for a content-free client invalidation.
 	var fullPage *models.Page
 	if body.Slug != "" {
 		if p, err := h.svc.GetBySlug(body.Slug); err == nil {
@@ -1202,10 +1230,8 @@ func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
 		IP:       ievents.ClientIP(r),
 		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": body.Slug},
 		Fn: func() {
-			// Push the full page through page:update so the frontend can swap
-			// without any HTTP request (cache-proof).
 			if fullPage != nil {
-				h.hub.BroadcastPage("landing_page_changed", fullPage)
+				h.hub.BroadcastPage("landing_page_changed", pageInvalidation(fullPage))
 			}
 			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
 		},

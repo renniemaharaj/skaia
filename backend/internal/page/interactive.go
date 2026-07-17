@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"net/mail"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,6 +19,7 @@ var (
 	ErrInteractiveClosed          = errors.New("interactive section is closed")
 	ErrInteractiveDuplicate       = errors.New("response limit reached")
 	ErrInteractiveRecordNotFound  = errors.New("interactive record not found")
+	ErrInteractiveForbidden       = errors.New("interactive response management forbidden")
 )
 
 type InteractiveRecord struct {
@@ -185,17 +189,120 @@ func validateAnswers(cfg map[string]interface{}, answers map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unknown answer %q", key)
 		}
-		if text, ok := value.(string); ok && len(text) > 10000 {
-			return fmt.Errorf("answer %q is too long", key)
-		}
 		fieldType, _ := field["type"].(string)
-		if fieldType == "consent" {
-			if required, _ := field["required"].(bool); required && value != true {
+		switch fieldType {
+		case "text", "textarea", "email", "phone", "url", "date", "time":
+			text, ok := value.(string)
+			if !ok {
+				return fmt.Errorf("answer %q must be a string", key)
+			}
+			if len(text) > 10000 {
+				return fmt.Errorf("answer %q is too long", key)
+			}
+			trimmed := strings.TrimSpace(text)
+			if fieldType == "email" && trimmed != "" {
+				address, err := mail.ParseAddress(trimmed)
+				if err != nil || address.Address != trimmed || !strings.Contains(trimmed, "@") {
+					return fmt.Errorf("answer %q must be a valid email address", key)
+				}
+			}
+			if fieldType == "url" && trimmed != "" {
+				parsed, err := url.ParseRequestURI(trimmed)
+				if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+					return fmt.Errorf("answer %q must be an http or https URL", key)
+				}
+			}
+			if fieldType == "date" && trimmed != "" {
+				if _, err := time.Parse("2006-01-02", trimmed); err != nil {
+					return fmt.Errorf("answer %q must be a valid date", key)
+				}
+			}
+			if fieldType == "time" && trimmed != "" {
+				if _, err := time.Parse("15:04", trimmed); err != nil {
+					return fmt.Errorf("answer %q must be a valid time", key)
+				}
+			}
+		case "select", "radio":
+			choice, ok := value.(string)
+			if !ok || !configuredOption(field, choice) {
+				return fmt.Errorf("answer %q must be a configured option", key)
+			}
+		case "multi_select":
+			choices, ok := value.([]interface{})
+			if !ok {
+				return fmt.Errorf("answer %q must be an array", key)
+			}
+			seen := map[string]bool{}
+			for _, rawChoice := range choices {
+				choice, ok := rawChoice.(string)
+				if !ok || seen[choice] || !configuredOption(field, choice) {
+					return fmt.Errorf("answer %q contains an invalid option", key)
+				}
+				seen[choice] = true
+			}
+		case "checkbox", "consent":
+			checked, ok := value.(bool)
+			if !ok {
+				return fmt.Errorf("answer %q must be boolean", key)
+			}
+			if required, _ := field["required"].(bool); required && !checked {
 				return fmt.Errorf("%s must be accepted", key)
 			}
+		case "number", "rating", "scale", "nps":
+			number, ok := value.(float64)
+			if !ok || math.IsNaN(number) || math.IsInf(number, 0) {
+				return fmt.Errorf("answer %q must be numeric", key)
+			}
+			min, max := numericBounds(fieldType, field)
+			if (min != nil && number < *min) || (max != nil && number > *max) {
+				return fmt.Errorf("answer %q is outside the configured bounds", key)
+			}
+			if (fieldType == "rating" || fieldType == "scale" || fieldType == "nps") && number != math.Trunc(number) {
+				return fmt.Errorf("answer %q must be a whole number", key)
+			}
+		default:
+			return fmt.Errorf("answer %q has an unsupported field type", key)
 		}
 	}
 	return nil
+}
+
+func configuredOption(field map[string]interface{}, value string) bool {
+	options, _ := field["options"].([]interface{})
+	for _, raw := range options {
+		option, _ := raw.(map[string]interface{})
+		if key, _ := option["key"].(string); key == value {
+			return true
+		}
+	}
+	return false
+}
+
+func numericBounds(fieldType string, field map[string]interface{}) (*float64, *float64) {
+	var min, max *float64
+	if value, ok := field["min"].(float64); ok {
+		min = &value
+	}
+	if value, ok := field["max"].(float64); ok {
+		max = &value
+	}
+	if min == nil {
+		value := 1.0
+		if fieldType == "nps" {
+			value = 0
+		}
+		if fieldType == "rating" || fieldType == "scale" || fieldType == "nps" {
+			min = &value
+		}
+	}
+	if max == nil && (fieldType == "rating" || fieldType == "scale" || fieldType == "nps") {
+		value := 5.0
+		if fieldType == "nps" {
+			value = 10
+		}
+		max = &value
+	}
+	return min, max
 }
 
 func numberSetting(cfg map[string]interface{}, key string, fallback int) int {
@@ -207,6 +314,12 @@ func numberSetting(cfg map[string]interface{}, key string, fallback int) int {
 
 // SubmitInteractive appends a response to an existing PageSection config.
 func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respondentName, idempotencyKey string, answers map[string]interface{}) (*InteractiveRecord, error) {
+	if userID <= 0 {
+		return nil, ErrInteractiveForbidden
+	}
+	if len(idempotencyKey) > 200 {
+		return nil, fmt.Errorf("idempotency key is too long")
+	}
 	var created *InteractiveRecord
 	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
@@ -220,6 +333,9 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 		cfg, err := sectionConfig(section)
 		if err != nil {
 			return "", err
+		}
+		if err := s_registry.ValidateInteractiveConfig(typ, cfg); err != nil {
+			return "", fmt.Errorf("interactive config is invalid: %w", err)
 		}
 		if status, _ := cfg["status"].(string); status == "closed" {
 			return "", ErrInteractiveClosed
@@ -235,14 +351,15 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 		count := 0
 		for _, raw := range records {
 			record, _ := raw.(map[string]interface{})
-			if key, _ := record["idempotency_key"].(string); idempotencyKey != "" && key == idempotencyKey {
+			recordUserID, _ := record["user_id"].(float64)
+			if key, _ := record["idempotency_key"].(string); idempotencyKey != "" && int64(recordUserID) == userID && key == idempotencyKey {
 				blob, _ := json.Marshal(record)
 				var existing InteractiveRecord
 				_ = json.Unmarshal(blob, &existing)
 				created = &existing
 				return content, nil
 			}
-			if recordUserID, _ := record["user_id"].(float64); int64(recordUserID) == userID {
+			if int64(recordUserID) == userID {
 				count++
 			}
 		}
@@ -278,7 +395,10 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 	return created, err
 }
 
-func (s *Service) DeleteInteractiveRecord(pageID, targetSectionID int64, recordID string) error {
+func (s *Service) DeleteInteractiveRecord(pageID, targetSectionID int64, recordID string, actorID int64) error {
+	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
+		return err
+	}
 	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
@@ -318,8 +438,11 @@ func (s *Service) DeleteInteractiveRecord(pageID, targetSectionID int64, recordI
 	return err
 }
 
-func (s *Service) PatchInteractiveRecord(pageID, targetSectionID int64, recordID string, patch InteractiveRecordPatch) error {
-	return s.repo.MutateContent(pageID, func(content string) (string, error) {
+func (s *Service) PatchInteractiveRecord(pageID, targetSectionID int64, recordID string, patch InteractiveRecordPatch, actorID int64) error {
+	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
+		return err
+	}
+	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -371,6 +494,20 @@ func (s *Service) PatchInteractiveRecord(pageID, targetSectionID int64, recordID
 		next, err := json.Marshal(sections)
 		return string(next), err
 	})
+	if err == nil {
+		s.invalidateSEOByID(pageID)
+	}
+	return err
+}
+
+func (s *Service) requireInteractiveManager(pageID, actorID int64) error {
+	if s.interactivePolicy == nil {
+		return ErrInteractiveForbidden
+	}
+	if err := s.interactivePolicy.RequireInteractiveResponseManager(pageID, actorID); err != nil {
+		return ErrInteractiveForbidden
+	}
+	return nil
 }
 
 func interactiveResultSummary(cfg map[string]interface{}) map[string]interface{} {
@@ -455,8 +592,19 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 		}
 		allRecords := recordsFromConfig(cfg)
 		cfg["result_summary"] = interactiveResultSummary(cfg)
-		if !canManage {
-			visible := make([]interface{}, 0)
+		visible := make([]interface{}, 0, len(allRecords))
+		if canManage {
+			for _, raw := range allRecords {
+				record, _ := raw.(map[string]interface{})
+				copyRecord := make(map[string]interface{}, len(record))
+				for key, value := range record {
+					copyRecord[key] = value
+				}
+				delete(copyRecord, "idempotency_key")
+				visible = append(visible, copyRecord)
+			}
+			cfg["records"] = visible
+		} else {
 			participated := false
 			for _, raw := range allRecords {
 				record, _ := raw.(map[string]interface{})
@@ -471,16 +619,16 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 				for key, value := range record {
 					copyRecord[key] = value
 				}
+				delete(copyRecord, "idempotency_key")
 				if !own {
 					delete(copyRecord, "user_id")
-					delete(copyRecord, "idempotency_key")
 				}
 				visible = append(visible, copyRecord)
 				participated = participated || own
 			}
 			cfg["records"] = visible
 			visibility, _ := cfg["result_visibility"].(string)
-			if visibility == "never" || (visibility == "after_participation" && !participated) {
+			if visibility != "always" && !(visibility == "after_participation" && participated) {
 				delete(cfg, "result_summary")
 			}
 		}

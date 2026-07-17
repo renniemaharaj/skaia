@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 import { Field, FieldArray, Form, Formik, type FormikHelpers } from "formik";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../../atoms/auth";
 import FormikSelect from "../../formik/FormikSelect";
@@ -17,6 +17,9 @@ import {
   type InteractiveRecord,
   type InteractiveSectionType,
   initialInteractiveValues,
+  interactiveResponseLimitReached,
+  interactiveResultEntries,
+  normalizeInteractiveAnswers,
   parseInteractiveConfig,
   validateInteractiveValues,
 } from "../interactiveTypes";
@@ -204,7 +207,7 @@ function QAAnswerForm({
   );
 }
 
-function ResultsView({ config }: { config: InteractiveConfig }) {
+export function ResultsView({ config }: { config: InteractiveConfig }) {
   const summary = config.result_summary;
   if (!summary) return <div className="interactive-empty">Results are not available yet.</div>;
   return (
@@ -215,16 +218,18 @@ function ResultsView({ config }: { config: InteractiveConfig }) {
       </div>
       {config.fields.map(field => {
         const counts = summary.counts?.[field.key];
-        if (!counts || !choiceField(field.type)) return null;
+        if (!counts) return null;
+        const entries = interactiveResultEntries(field, counts);
+        if (entries.length === 0) return null;
         return (
           <div key={field.key} className="interactive-result-group">
             <strong>{field.label}</strong>
-            {(field.options ?? []).map(option => {
-              const count = counts[option.key] ?? 0;
+            {entries.map(([value, label]) => {
+              const count = counts[value] ?? 0;
               const percent = summary.total ? Math.round((count / summary.total) * 100) : 0;
               return (
-                <div key={option.key} className="interactive-result-row">
-                  <span>{option.label}</span>
+                <div key={value} className="interactive-result-row">
+                  <span>{label}</span>
                   <div className="interactive-result-track">
                     <i style={{ width: `${percent}%` }} />
                   </div>
@@ -400,6 +405,7 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }
   const [config, setConfig] = useState(initialConfig);
   const [tab, setTab] = useState<Tab>("preview");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const submissionRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const { pageId, canManagePage } = usePageBuilderContext();
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -411,7 +417,8 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }
   );
   const alreadyParticipated = ownRecords.length > 0;
   const participationLocked =
-    config.status === "closed" || ((type === "poll" || type === "vote") && alreadyParticipated);
+    config.status === "closed" ||
+    interactiveResponseLimitReached(type, config.response_limit, ownRecords.length);
 
   const replaceRuntimeConfig = (raw: string) => setConfig(parseInteractiveConfig(raw, type));
   const persistDesign = (next: InteractiveConfig) => {
@@ -429,15 +436,21 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }
       helpers.setSubmitting(false);
       return;
     }
+    const answers = normalizeInteractiveAnswers(config.fields, values);
+    const fingerprint = JSON.stringify(answers);
+    if (!submissionRef.current || submissionRef.current.fingerprint !== fingerprint) {
+      submissionRef.current = { fingerprint, key: crypto.randomUUID() };
+    }
     try {
       const response = await apiRequest<{ config: string }>(
         `/pages/${pageId}/sections/${section.id}/responses`,
         {
           method: "POST",
-          body: JSON.stringify({ answers: values, idempotency_key: crypto.randomUUID() }),
+          body: JSON.stringify({ answers, idempotency_key: submissionRef.current.key }),
         }
       );
       replaceRuntimeConfig(response.config);
+      submissionRef.current = null;
       helpers.resetForm();
       toast.success(config.success_text);
       if (type === "poll" || type === "vote") setTab("results");
@@ -468,15 +481,19 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }
     values: { answer: string; status: string; pinned: boolean }
   ) => {
     if (!pageId) return;
-    const response = await apiRequest<{ config: string }>(
-      `/pages/${pageId}/sections/${section.id}/responses/${record.id}`,
-      {
-        method: "PATCH",
-        body: JSON.stringify(values),
-      }
-    );
-    replaceRuntimeConfig(response.config);
-    toast.success("Question updated");
+    try {
+      const response = await apiRequest<{ config: string }>(
+        `/pages/${pageId}/sections/${section.id}/responses/${record.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(values),
+        }
+      );
+      replaceRuntimeConfig(response.config);
+      toast.success("Question updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update question");
+    }
   };
 
   const columns: TableColumn<InteractiveRecord>[] = [

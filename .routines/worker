@@ -114,9 +114,17 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-06-20T07:10:00-04:00
+- 2026-07-17T08:42:00-04:00
 
 ## Last Run Remarks
+
+- Completed `interactive_sections_audit_remediation` across backend privacy,
+  centralized page policy, integrity validation, content-free realtime, CORS,
+  frontend participant/manager UX, regression tests, and durable specs.
+- Verification passed: backend `go test ./...`; local Postgres concurrent
+  builder-save/submit test; 12 focused frontend tests; lint; TypeScript; and build.
+
+## Previous Run Remarks (2026-06-20)
 
 - Executed `grengo_backend_refactor` / `grengo_cli_refactor` critical fixes and provisioning/real-time badge improvements:
   - **Fixed Frappe deployment failure**: `frappe.go` `cmdFrappeProvision` was calling `services.NewCommandRunner.RunSelf("docker", ...)` which executed `grengo docker compose ...` instead of the Docker binary. Fixed to use `exec.Command("docker", "compose", "-f", composePath, "up", "-d")` directly.

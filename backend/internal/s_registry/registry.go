@@ -82,6 +82,7 @@ func IsSupported(typ string) bool {
 }
 
 type contentSection struct {
+	ID          int64           `json:"id"`
 	SectionType string          `json:"section_type"`
 	Config      json.RawMessage `json:"config"`
 }
@@ -102,7 +103,15 @@ func ValidateContent(content string, resolver Resolver) error {
 		return fmt.Errorf("content must be a JSON array of sections: %w", err)
 	}
 
+	seenSectionIDs := make(map[int64]struct{}, len(sections))
 	for i, section := range sections {
+		if section.ID <= 0 {
+			return fmt.Errorf("section %d must have a positive numeric id", i)
+		}
+		if _, exists := seenSectionIDs[section.ID]; exists {
+			return fmt.Errorf("section %d has duplicate id %d", i, section.ID)
+		}
+		seenSectionIDs[section.ID] = struct{}{}
 		if section.SectionType == "" {
 			return fmt.Errorf("section %d is missing section_type", i)
 		}

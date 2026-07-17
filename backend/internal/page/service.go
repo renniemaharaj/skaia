@@ -23,6 +23,10 @@ type CustomSectionGetter interface {
 	GetByID(id int64) (*models.CustomSection, error)
 }
 
+type InteractivePolicy interface {
+	RequireInteractiveResponseManager(pageID, actorID int64) error
+}
+
 type contentResolver struct {
 	dataSources    DataSourceGetter
 	customSections CustomSectionGetter
@@ -73,12 +77,19 @@ func WithRedisClient(rdb *redis.Client) Option {
 	}
 }
 
+func WithInteractivePolicy(policy InteractivePolicy) Option {
+	return func(s *Service) {
+		s.interactivePolicy = policy
+	}
+}
+
 // Service wraps the page repository with business logic.
 type Service struct {
-	repo            Repository
-	inboxSender     models.InboxSender
-	contentResolver s_registry.Resolver
-	rdb             *redis.Client
+	repo              Repository
+	inboxSender       models.InboxSender
+	contentResolver   s_registry.Resolver
+	rdb               *redis.Client
+	interactivePolicy InteractivePolicy
 }
 
 // NewService creates a new page Service.
@@ -125,6 +136,7 @@ func (s *Service) Create(p *models.Page) error {
 	if p.Visibility == "" {
 		p.Visibility = "public"
 	}
+	p.Content = ClearInteractiveRecords(p.Content)
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
@@ -135,6 +147,7 @@ func (s *Service) Update(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"
 	}
+	p.Content = ClearInteractiveRecords(p.Content)
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}

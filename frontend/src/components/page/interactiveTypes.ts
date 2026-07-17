@@ -1,9 +1,15 @@
-import type { SectionType } from "./types";
+import type { PageSection, SectionType } from "./types";
 
 export type InteractiveSectionType = Extract<
   SectionType,
   "form" | "qa" | "survey" | "poll" | "vote"
 >;
+
+const interactiveSectionTypes = new Set<SectionType>(["form", "qa", "survey", "poll", "vote"]);
+
+export function isInteractiveSectionType(type: string): type is InteractiveSectionType {
+  return interactiveSectionTypes.has(type as SectionType);
+}
 export type InteractiveFieldType =
   | "text"
   | "textarea"
@@ -169,6 +175,19 @@ export function defaultInteractiveConfig(type: InteractiveSectionType): Interact
   };
 }
 
+export function configForNewSection(type: string): string {
+  return isInteractiveSectionType(type) ? JSON.stringify(defaultInteractiveConfig(type)) : "{}";
+}
+
+export function interactiveResponseLimitReached(
+  type: InteractiveSectionType,
+  responseLimit: number,
+  ownResponseCount: number
+): boolean {
+  const effectiveLimit = type === "poll" || type === "vote" ? 1 : Math.max(0, responseLimit);
+  return effectiveLimit > 0 && ownResponseCount >= effectiveLimit;
+}
+
 export function parseInteractiveConfig(
   raw: string,
   type: InteractiveSectionType
@@ -193,8 +212,13 @@ export function clearInteractiveRecords(raw: string): string {
     const parsed = JSON.parse(raw || "{}");
     return JSON.stringify({ ...parsed, records: [], result_summary: undefined });
   } catch {
-    return raw;
+    return JSON.stringify({ records: [] });
   }
+}
+
+export function sectionForClipboard(section: PageSection): PageSection {
+  if (!isInteractiveSectionType(section.section_type)) return section;
+  return { ...section, config: clearInteractiveRecords(section.config) };
 }
 
 export function initialInteractiveValues(fields: InteractiveField[]): Record<string, unknown> {
@@ -208,6 +232,46 @@ export function initialInteractiveValues(fields: InteractiveField[]): Record<str
           : "",
     ])
   );
+}
+
+export function normalizeInteractiveAnswers(
+  fields: InteractiveField[],
+  values: Record<string, unknown>
+): Record<string, unknown> {
+  const answers: Record<string, unknown> = {};
+  for (const field of fields) {
+    const value = values[field.key];
+    if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) continue;
+    answers[field.key] =
+      field.type === "number" ||
+      field.type === "rating" ||
+      field.type === "scale" ||
+      field.type === "nps"
+        ? Number(value)
+        : value;
+  }
+  return answers;
+}
+
+export function interactiveResultEntries(
+  field: InteractiveField,
+  counts: Record<string, number>
+): ReadonlyArray<readonly [string, string]> {
+  if (field.type === "radio" || field.type === "select" || field.type === "multi_select") {
+    return (field.options ?? []).map(option => [option.key, option.label] as const);
+  }
+  if (field.type === "checkbox" || field.type === "consent") {
+    return [
+      ["true", "Yes"],
+      ["false", "No"],
+    ];
+  }
+  if (field.type === "rating" || field.type === "scale" || field.type === "nps") {
+    return Object.keys(counts)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(value => [value, value] as const);
+  }
+  return [];
 }
 
 export function validateInteractiveValues(

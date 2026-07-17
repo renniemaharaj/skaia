@@ -126,6 +126,9 @@ shared mutations converge through WS:
 - Direct/private messages must be authorized server-side.
 - Store cart updates target the owner; catalog updates broadcast.
 - Page updates exclude the sender when the HTTP response is already authoritative.
+- Interactive response mutations and landing-page changes use content-free partial
+  page invalidations. Clients refetch through REST; full `pages.content` documents
+  are never broadcast because they can contain authorization-scoped records.
 - Slow consumers must not block the hub; use bounded/non-blocking sends where required.
 
 ## Verify

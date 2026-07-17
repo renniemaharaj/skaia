@@ -45,6 +45,7 @@ import (
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
 	iprovisioning "github.com/skaia/backend/internal/provisioning"
+	isecurity "github.com/skaia/backend/internal/security"
 	"github.com/skaia/backend/internal/seo"
 	istore "github.com/skaia/backend/internal/store"
 	istreammeta "github.com/skaia/backend/internal/streammeta"
@@ -60,6 +61,17 @@ import (
 type SimpleResponse struct {
 	Message string `json:"message"`
 	Status  string `json:"status"`
+}
+
+func apiCORSOptions(origins []string) cors.Options {
+	return cors.Options{
+		AllowedOrigins:   origins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "X-TOTP-Code"},
+		ExposedHeaders:   []string{},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}
 }
 
 var sitemapPaths = []string{
@@ -562,14 +574,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		})
 	})
 	r.Use(middleware.Recoverer)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   origins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type", "X-TOTP-Code"},
-		ExposedHeaders:   []string{},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	r.Use(cors.Handler(apiCORSOptions(origins)))
 
 	// Note: We don't apply the rate limiter globally here because doing so would
 	// block the React frontend from loading its HTML/JS/CSS assets during a jail
@@ -992,7 +997,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		ics.NewHandler(csSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		pageRepo := ipage.NewRepository(db)
-		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb))
+		pagePolicy := isecurity.NewPagePolicy(pageRepo, userSvc)
+		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb), ipage.WithInteractivePolicy(pagePolicy))
 		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 
 		// Events log admin API.
