@@ -6,8 +6,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: .75rem;
-  margin: .4rem 0 .65rem;
+  gap: 0.75rem;
+  margin: 0.4rem 0 0.65rem;
 }
 .interactive-heading > div {
   min-width: 0;
@@ -15,27 +15,27 @@
 .interactive-heading > div > span {
   display: block;
   color: var(--text-secondary);
-  font-size: .64rem;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .interactive-heading h2 {
-  margin: .1rem 0;
+  margin: 0.1rem 0;
   font-size: clamp(1.35rem, 2vw, 2rem);
   line-height: 1.12;
 }
 .interactive-heading p {
-  margin: .1rem 0;
-  font-size: .82rem;
+  margin: 0.1rem 0;
+  font-size: 0.82rem;
 }
 .interactive-open-state {
   flex: none;
-  padding: .18rem .5rem;
+  padding: 0.18rem 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: 999px;
   color: var(--text-secondary);
-  font-size: .68rem;
+  font-size: 0.68rem;
   text-transform: capitalize;
 }
 .interactive-open-state--open {
@@ -46,7 +46,7 @@
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
-  margin: 0 0 .65rem;
+  margin: 0 0 0.65rem;
   overflow-x: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
@@ -54,14 +54,14 @@
 }
 .interactive-tabs button {
   min-height: 1.9rem;
-  padding: .25rem .62rem;
+  padding: 0.25rem 0.62rem;
   border: 0;
   border-right: 1px solid var(--border-color);
   border-radius: 0;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
-  font-size: .75rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
 }
@@ -82,12 +82,12 @@
 .interactive-form {
   display: grid;
   justify-items: start;
-  gap: .65rem;
+  gap: 0.65rem;
 }
 .interactive-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .55rem .7rem;
+  gap: 0.55rem 0.7rem;
   width: min(100%, 46rem);
 }
 .interactive-form-grid > div:has(.interactive-field--wide),
@@ -97,22 +97,22 @@
 }
 .interactive-field {
   display: grid;
-  gap: .22rem;
+  gap: 0.22rem;
   min-width: 0;
   margin: 0;
   border: 0;
   padding: 0;
-  font-size: .78rem;
+  /* font-size: 0.78rem; */
 }
 .interactive-field > span,
 .interactive-field legend {
   color: var(--text-primary);
-  font-size: .72rem;
+  font-size: 0.72rem;
   font-weight: 650;
 }
 .interactive-field small {
   color: var(--text-secondary);
-  font-size: .68rem;
+  font-size: 0.68rem;
 }
 .interactive-field input:not([type="radio"]):not([type="checkbox"]),
 .interactive-field textarea,
@@ -121,13 +121,13 @@
 .interactive-moderation-form textarea {
   width: 100%;
   min-height: 2rem;
-  padding: .38rem .5rem;
+  padding: 0.38rem 0.5rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
   color: var(--text-primary);
   font: inherit;
-  font-size: .78rem;
+  /* font-size: .78rem; */
 }
 .interactive-field--compact {
   width: min(100%, 13rem);
@@ -139,7 +139,7 @@
   display: inline-grid;
   width: fit-content;
   max-width: 100%;
-  gap: .2rem;
+  gap: 0.2rem;
 }
 .interactive-choice,
 .interactive-check {
@@ -148,12 +148,12 @@
   justify-content: flex-start;
   width: fit-content;
   max-width: 100%;
-  gap: .38rem;
+  gap: 0.38rem;
   min-height: 1.65rem;
   margin: 0;
-  padding: .16rem .3rem;
+  padding: 0.16rem 0.3rem;
   border-radius: var(--radius-sm);
-  font-size: .78rem;
+  /* font-size: 0.78rem; */
 }
 .interactive-choice:hover {
   background: var(--bg-secondary);
@@ -188,51 +188,51 @@
 }
 .interactive-error {
   display: block;
-  margin-top: .15rem;
+  margin-top: 0.15rem;
   color: var(--error-color);
-  font-size: .68rem;
+  font-size: 0.68rem;
 }
 .interactive-ballot-note,
 .interactive-notice {
   max-width: 46rem;
-  padding: .38rem .55rem;
+  padding: 0.38rem 0.55rem;
   border-left: 3px solid var(--warning-color);
   background: color-mix(in srgb, var(--warning-color) 5%, transparent);
   color: var(--text-secondary);
-  font-size: .75rem;
+  font-size: 0.75rem;
 }
 .interactive-qa-feed {
   display: grid;
-  gap: .45rem;
+  gap: 0.45rem;
   max-width: 50rem;
-  margin-top: .8rem;
+  margin-top: 0.8rem;
 }
 .interactive-qa-feed article {
-  padding: .65rem .75rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
 }
 .interactive-qa-feed small {
   color: var(--text-secondary);
-  font-size: .66rem;
+  font-size: 0.66rem;
 }
 .interactive-qa-feed h3 {
-  margin: .18rem 0;
+  margin: 0.18rem 0;
   font-size: 1rem;
 }
 .interactive-qa-feed p {
-  margin: .25rem 0 0;
-  font-size: .8rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
 }
 .interactive-status {
   display: inline-flex;
   width: fit-content;
-  padding: .12rem .35rem;
+  padding: 0.12rem 0.35rem;
   border-radius: 999px;
   background: var(--bg-tertiary);
   color: var(--text-secondary);
-  font-size: .64rem;
+  font-size: 0.64rem;
   text-transform: capitalize;
 }
 .interactive-status--answered,
@@ -242,7 +242,7 @@
 }
 .interactive-responses {
   display: grid;
-  gap: .5rem;
+  gap: 0.5rem;
 }
 .interactive-icon-btn {
   display: inline-flex;
@@ -266,8 +266,8 @@
 }
 .interactive-expanded {
   display: grid;
-  gap: .55rem;
-  padding: .65rem;
+  gap: 0.55rem;
+  padding: 0.65rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
@@ -275,24 +275,24 @@
 .interactive-record-detail {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: .45rem;
+  gap: 0.45rem;
 }
 .interactive-record-value {
   display: grid;
-  gap: .15rem;
+  gap: 0.15rem;
 }
 .interactive-record-value > span {
   color: var(--text-secondary);
-  font-size: .66rem;
+  font-size: 0.66rem;
   font-weight: 650;
 }
 .interactive-record-value > div {
   min-height: 1.8rem;
-  padding: .32rem .45rem;
+  padding: 0.32rem 0.45rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
-  font-size: .76rem;
+  font-size: 0.76rem;
   white-space: pre-wrap;
 }
 .interactive-record-value--wide {
@@ -302,45 +302,45 @@
   display: grid;
   grid-template-columns: minmax(12rem, 1fr) 10rem auto auto;
   align-items: end;
-  gap: .4rem;
+  gap: 0.4rem;
 }
 .interactive-results {
   display: grid;
-  gap: .7rem;
+  gap: 0.7rem;
 }
 .interactive-total {
   display: inline-flex;
   align-items: baseline;
-  gap: .35rem;
+  gap: 0.35rem;
 }
 .interactive-total strong {
   font-size: 1.45rem;
 }
 .interactive-total span {
   color: var(--text-secondary);
-  font-size: .72rem;
+  font-size: 0.72rem;
 }
 .interactive-result-group {
   display: grid;
-  gap: .35rem;
+  gap: 0.35rem;
   max-width: 38rem;
 }
-.interactive-result-group > strong {
-  font-size: .78rem;
-}
+/* .interactive-result-group > strong { */
+/* font-size: 0.78rem; */
+/* } */
 .interactive-result-row {
   display: grid;
   grid-template-columns: minmax(7rem, 1fr) minmax(8rem, 2fr) 5rem;
   align-items: center;
-  gap: .5rem;
-  font-size: .72rem;
+  gap: 0.5rem;
+  font-size: 0.72rem;
 }
 .interactive-result-row b {
   text-align: right;
-  font-size: .68rem;
+  font-size: 0.68rem;
 }
 .interactive-result-track {
-  height: .38rem;
+  height: 0.38rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--bg-tertiary);
@@ -351,15 +351,15 @@
   background: var(--primary-color);
 }
 .interactive-empty {
-  padding: .8rem;
+  padding: 0.8rem;
   color: var(--text-secondary);
-  font-size: .76rem;
+  font-size: 0.76rem;
   text-align: center;
 }
 .interactive-designer {
   display: grid;
-  gap: .6rem;
-  padding: .65rem;
+  gap: 0.6rem;
+  padding: 0.65rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
@@ -367,19 +367,19 @@
 .interactive-designer-settings {
   display: grid;
   grid-template-columns: 9rem 11rem minmax(10rem, 1fr) 7rem;
-  gap: .45rem;
+  gap: 0.45rem;
   align-items: end;
 }
 .interactive-designer-settings label,
 .interactive-field-editor label {
   display: grid;
-  gap: .15rem;
+  gap: 0.15rem;
   margin: 0;
 }
 .interactive-designer-settings label > span,
 .interactive-field-editor label > span {
   color: var(--text-secondary);
-  font-size: .64rem;
+  font-size: 0.64rem;
   font-weight: 650;
 }
 .interactive-designer-settings .interactive-designer-success {
@@ -387,14 +387,16 @@
 }
 .interactive-field-list {
   display: grid;
-  gap: .35rem;
+  gap: 0.35rem;
 }
 .interactive-field-editor {
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 1fr) 9rem 6rem minmax(10rem, 1fr) 2rem;
+  grid-template-columns:
+    minmax(9rem, 1fr) minmax(8rem, 1fr) 9rem 6rem minmax(10rem, 1fr)
+    2rem;
   align-items: end;
-  gap: .4rem;
-  padding: .4rem;
+  gap: 0.4rem;
+  padding: 0.4rem;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: var(--bg-primary);
